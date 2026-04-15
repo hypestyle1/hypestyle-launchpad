@@ -14,7 +14,7 @@ export default function AnnouncementBar() {
         {repeated.map((item, i) => (
           <span
             key={i}
-            className="mx-6 text-[11px] font-medium uppercase tracking-[0.15em] text-primary-foreground"
+            className="mx-6 text-[10px] font-normal tracking-[0.1em] text-primary-foreground"
           >
             {item}
           </span>
