@@ -6,13 +6,13 @@
 
 @layer base {
   :root {
-    --bg: 40 14% 95%;          /* #F5F4F0 */
-    --bg-alt: 38 13% 91%;     /* #ECEAE4 */
+    --bg: 0 0% 100%;           /* #FFFFFF */
+    --bg-alt: 0 0% 95%;       /* #F2F2F2 */
     --bg-white: 0 0% 100%;
     --bg-dark: 0 0% 4%;       /* #0A0A0A */
     --bg-dark2: 0 0% 8%;      /* #141414 */
     
-    --background: 40 14% 95%;
+    --background: 0 0% 100%;
     --foreground: 0 0% 4%;
     
     --card: 0 0% 100%;
@@ -24,13 +24,13 @@
     --primary: 0 0% 4%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 38 13% 91%;
+    --secondary: 0 0% 95%;
     --secondary-foreground: 0 0% 4%;
-    
-    --muted: 38 13% 91%;
+
+    --muted: 0 0% 95%;
     --muted-foreground: 0 0% 42%;   /* #6B6B6B */
-    
-    --accent: 38 13% 91%;
+
+    --accent: 0 0% 95%;
     --accent-foreground: 0 0% 4%;
     
     --destructive: 4 64% 46%;   /* #C0392B */
@@ -38,9 +38,9 @@
     
     --text-light: 37 5% 59%;    /* #9B9890 */
     
-    --border: 38 10% 87%;       /* #E0DDD6 */
-    --border-mid: 38 6% 76%;    /* #C8C5BD */
-    --input: 38 10% 87%;
+    --border: 0 0% 88%;         /* #E0E0E0 */
+    --border-mid: 0 0% 76%;     /* #C2C2C2 */
+    --input: 0 0% 88%;
     --ring: 0 0% 4%;
     
     --radius: 0px;

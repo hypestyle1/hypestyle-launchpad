@@ -5,7 +5,11 @@ import { useReveal } from "@/hooks/useReveal";
 
 const products = [
   { name: "Baby Come Back", category: "Tee", price: 13200, originalPrice: 22000, badge: "−40%", image: "product-baby-come-back.webp" },
-  { name: "Racing Tee Verde", category: "Tee", price: 19500, originalPrice: 26000, badge: "−25%", image: "product-racing-tee-verde.webp" },
+  { name: "Honda Hype Tee", category: "Tee", price: 19500, originalPrice: 26000, badge: "−25%", image: "regular tee 1.webp" },
+  { name: "PlayStation Tee", category: "Tee", price: 19500, originalPrice: 26000, badge: "−25%", image: "regular tee 3.webp" },
+  { name: "Hype Bubble Tee", category: "Tee", price: 18000, originalPrice: 24000, badge: "−25%", image: "regular tee 4.webp" },
+  { name: "Baby Come Back Cap", category: "Accesorio", price: 11250, originalPrice: 15000, badge: "−25%", image: "TRUCKER CAP - NO FAITH, NO GLORY.webp" },
+  { name: "Buzo Graphite", category: "Hoodie", price: 31500, originalPrice: 42000, badge: "−25%", image: "product-buzo-graphite.webp" },
   { name: "Jesus Tee", category: "Long Sleeve", price: 18000, originalPrice: 24000, badge: "−25%", image: "product-jesus-tee.webp" },
   { name: "Camo Cap Orange", category: "Accesorio", price: 11250, originalPrice: 15000, badge: "−25%", image: "product-camo-cap-orange.webp" },
 ];
@@ -14,9 +18,7 @@ function Countdown() {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
 
   useEffect(() => {
-    // Target: May 13, 2026 23:59:59 (end of Hot Sale)
     const target = new Date("2026-05-13T23:59:59-03:00").getTime();
-
     const tick = () => {
       const diff = Math.max(0, target - Date.now());
       setTime({
@@ -26,7 +28,6 @@ function Countdown() {
         s: Math.floor((diff % 60000) / 1000),
       });
     };
-
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
@@ -63,7 +64,7 @@ export default function SpecialPrices() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (
-          <div key={p.name} className={`reveal rd${i + 2}`}>
+          <div key={p.name} className={`reveal rd${Math.min(i + 2, 8)}`}>
             <ProductCard {...p} />
           </div>
         ))}

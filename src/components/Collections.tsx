@@ -1,7 +1,7 @@
 import { useReveal } from "@/hooks/useReveal";
 
 const collections = [
-  { name: "Tees", href: "/us/tees/", image: "cat-tees.webp" },
+  { name: "Tees", href: "/us/tees/", image: "regular tee 1.webp" },
   { name: "Hoodies", href: "/us/hoodies/", image: "cat-hoodies.webp" },
   { name: "Sets", href: "/us/sets/", image: "cat-sets.webp" },
   { name: "Accesorios", href: "/us/accesorios/", image: "cat-accesorios.webp" },
@@ -20,8 +20,12 @@ export default function Collections() {
             href={c.href}
             className={`reveal rd${i + 2} group relative h-[320px] md:h-[420px] overflow-hidden bg-bg-alt`}
           >
-            {/* Placeholder bg */}
-            <div className="absolute inset-0 bg-gradient-to-br from-muted-foreground/30 to-bg-dark/40 group-hover:scale-105 transition-transform duration-700" />
+            <img
+              src={`/${c.image}`}
+              alt={c.name}
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-bg-dark/80 via-transparent to-transparent group-hover:from-bg-dark/90 transition-colors duration-500" />
             {/* Text */}

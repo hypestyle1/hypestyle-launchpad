@@ -21,7 +21,14 @@ export default function ProductCard({ name, category, price, originalPrice, badg
     <div className="group">
       {/* Image container */}
       <div className="relative aspect-[4/5] overflow-hidden bg-bg-alt">
-        <div className="w-full h-full bg-gradient-to-br from-muted to-bg-alt group-hover:scale-[1.04] transition-transform duration-500" />
+        <img
+          src={`/${image}`}
+          alt={name}
+          className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
 
         {badge && (
           <span className={`absolute top-3 left-3 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${badgeStyle()}`}>

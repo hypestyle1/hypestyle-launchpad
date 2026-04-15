@@ -66,7 +66,7 @@ export default function Footer() {
       <div className="reveal rd2 max-w-[1400px] mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="col-span-2 md:col-span-1">
-          <p className="text-lg font-bold tracking-tight uppercase mb-3">HYPESTYLE</p>
+          <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-6 w-auto object-contain mb-3" />
           <p className="text-[12px] text-primary-foreground/50 leading-relaxed mb-4">
             Streetwear desde Buenos Aires. Drops limitados. Envíos a todo el mundo.
           </p>

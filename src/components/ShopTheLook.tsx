@@ -29,29 +29,28 @@ interface Look {
 const looks: Look[] = [
   {
     id: "look-01",
-    title: "Look 01",
-    image: "stl-look-01.jpg",
+    title: "Camo Set — Look 01",
+    image: "stl-look-camo-front.png",
     products: [
-      { category: "Crewneck", name: "Lady Tribal Black", price: 35000, image: "product-lady-tribal-black.webp", slug: "lady-tribal-black" },
-      { category: "Jort", name: "Jort Lettering Pink", price: 28000, image: "product-jort-lettering-pink.webp", slug: "jort-lettering-pink" },
+      { category: "Set", name: "Camo Set Completo", price: 85000, image: "product-camo-set-completo.webp", slug: "camo-set-completo" },
+      { category: "Accesorio", name: "Camo Cap Orange", price: 15000, image: "product-camo-cap-orange.webp", slug: "camo-cap-orange" },
     ],
   },
   {
     id: "look-02",
-    title: "Look 02",
-    image: "stl-look-02.jpg",
+    title: "Camo Set — Look 02",
+    image: "stl-look-camo-side.webp",
     products: [
-      { category: "Hoodie", name: "Buzo Graphite", price: 42000, image: "product-buzo-graphite.webp", slug: "buzo-graphite" },
-      { category: "Tee", name: "Racing Tee Verde", price: 26000, image: "product-racing-tee-verde.webp", slug: "racing-tee-verde" },
+      { category: "Set", name: "Camo Set Completo", price: 85000, image: "product-camo-set-completo.webp", slug: "camo-set-completo" },
+      { category: "Accesorio", name: "Camo Cap Orange", price: 15000, image: "product-camo-cap-orange.webp", slug: "camo-cap-orange" },
     ],
   },
   {
     id: "look-03",
-    title: "Look 03",
-    image: "stl-look-03.jpg",
+    title: "Camo Set — Look 03",
+    image: "stl-look-camo-side2.png",
     products: [
-      { category: "Long Sleeve", name: "Jesus Tee", price: 24000, image: "product-jesus-tee.webp", slug: "jesus-tee" },
-      { category: "Tank", name: "Wafle Gris", price: 18000, image: "product-wafle-gris.webp", slug: "wafle-gris" },
+      { category: "Set", name: "Camo Set Completo", price: 85000, image: "product-camo-set-completo.webp", slug: "camo-set-completo" },
       { category: "Accesorio", name: "Camo Cap Orange", price: 15000, image: "product-camo-cap-orange.webp", slug: "camo-cap-orange" },
     ],
   },
@@ -81,8 +80,12 @@ export default function ShopTheLook() {
               onClick={() => setActiveLook(look)}
               className="relative w-full aspect-[3/4] overflow-hidden bg-bg-alt group block text-left"
             >
-              {/* Placeholder gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-muted to-bg-alt" />
+              <img
+                src={`/${look.image}`}
+                alt={look.title}
+                className="absolute inset-0 w-full h-full object-cover object-top"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
 
               {/* Hover overlay */}
               <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors duration-300" />
@@ -122,7 +125,12 @@ export default function ShopTheLook() {
                     <div className="flex gap-4 py-4">
                       {/* Product thumbnail */}
                       <div className="w-20 h-20 flex-shrink-0 bg-bg-alt overflow-hidden">
-                        <div className="w-full h-full bg-gradient-to-br from-muted to-bg-alt" />
+                        <img
+                          src={`/${product.image}`}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
                       </div>
 
                       {/* Product info */}

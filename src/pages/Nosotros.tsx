@@ -65,10 +65,10 @@ export default function Nosotros() {
               style={{ maxHeight: "600px", overflow: "hidden" }}
             >
               <img
-                src="/founders-photo.jpg"
-                alt="Valentín Pozzi y Juan Corona, fundadores de Hypestyle"
-                className="w-full h-auto object-cover object-top"
-                style={{ maxHeight: "600px" }}
+                src="/team-photo.jpeg"
+                alt="Equipo Hypestyle"
+                className="w-full object-cover"
+                style={{ maxHeight: "600px", objectPosition: "center 15%" }}
                 onError={(e) => {
                   const el = e.currentTarget;
                   el.style.display = "none";
@@ -96,32 +96,28 @@ export default function Nosotros() {
             {/* Signatures */}
             <div className="reveal rd3 flex justify-center gap-16 md:gap-24">
               <div className="flex flex-col items-center">
-                <img
-                  src="/firma-pozzi.png"
-                  alt="Firma de Valentín Pozzi"
-                  className="h-12 w-auto object-contain mb-3"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-                <span className="text-[13px] font-semibold text-foreground">Valentín Pozzi</span>
-                <span className="text-[12px] font-normal text-muted-foreground">
-                  Founder & Creative
+                {/* Firma real: reemplazar con <img src="/firma-pozzi.png" className="h-12 w-auto object-contain mb-3" /> */}
+                <span
+                  className="block mb-3 text-foreground select-none"
+                  style={{ fontFamily: "'Dancing Script', 'Brush Script MT', cursive", fontSize: "36px", lineHeight: 1, letterSpacing: "-0.01em" }}
+                >
+                  Pozzi
                 </span>
+                <div className="w-24 border-t border-foreground/30 mb-3" />
+                <span className="text-[13px] font-semibold text-foreground">Valentín Pozzi</span>
+                <span className="text-[12px] font-normal text-muted-foreground">Founder & Creative</span>
               </div>
               <div className="flex flex-col items-center">
-                <img
-                  src="/firma-corona.png"
-                  alt="Firma de Juan Corona"
-                  className="h-12 w-auto object-contain mb-3"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-                <span className="text-[13px] font-semibold text-foreground">Juan Corona</span>
-                <span className="text-[12px] font-normal text-muted-foreground">
-                  Co-Creative Director
+                {/* Firma real: reemplazar con <img src="/firma-corona.png" className="h-12 w-auto object-contain mb-3" /> */}
+                <span
+                  className="block mb-3 text-foreground select-none"
+                  style={{ fontFamily: "'Dancing Script', 'Brush Script MT', cursive", fontSize: "36px", lineHeight: 1, letterSpacing: "-0.01em" }}
+                >
+                  Corona
                 </span>
+                <div className="w-24 border-t border-foreground/30 mb-3" />
+                <span className="text-[13px] font-semibold text-foreground">Juan Corona</span>
+                <span className="text-[12px] font-normal text-muted-foreground">Co-Creative Director</span>
               </div>
             </div>
 

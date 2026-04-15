@@ -81,7 +81,7 @@ export default function Navbar() {
                   href={link.href}
                   className="text-[12px] font-normal tracking-[0.06em] text-foreground hover:opacity-50 transition-opacity duration-200 flex items-center gap-1"
                 >
-                  {link.label}
+                  <span className="whitespace-nowrap">{link.label}</span>
                   {link.hasDropdown && (
                     <ChevronDown className="w-3 h-3" strokeWidth={1.2} />
                   )}
