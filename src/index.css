@@ -114,21 +114,7 @@
     animation: marquee 20s linear infinite;
   }
 
-  /* Nav link underline */
-  .nav-link {
-    @apply relative;
-  }
-  
-  .nav-link::after {
-    content: '';
-    @apply absolute bottom-0 left-0 w-full h-[1px] bg-foreground origin-bottom-left;
-    transform: scaleX(0);
-    transition: transform 0.3s ease;
-  }
-  
-  .nav-link:hover::after {
-    transform: scaleX(1);
-  }
+  /* Nav link underline — removed, using opacity hover now */
 
   /* Grab cursor for drag scroll */
   .cursor-grab { cursor: grab; }
