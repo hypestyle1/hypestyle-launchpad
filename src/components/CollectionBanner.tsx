@@ -20,20 +20,40 @@ const collections: Collection[] = [
     name: "No Love, Only Style",
     editorial: "No Love, Only Style banner.webp",
     products: [
-      { name: "No Love, Only Style Top", category: "Tee", price: 26000, image: "No Love, Only Style Top.webp" },
-      { name: "Baby Come Back Cap", category: "Accesorio", price: 15000, image: "baby come back CAP.webp" },
-      { name: "Baby Come Back White", category: "Tee", price: 24000, image: "product-baby-come-back-white.webp" },
-      { name: "Jort Lettering Pink", category: "Jort", price: 28000, image: "product-jort-lettering-pink.webp" },
+      { name: "No Love, Only Style — Top", category: "Top", price: 33000, image: "No Love, Only Style Top.webp" },
+      { name: "Trucker Cap — Baby Come Back", category: "Accesorio", price: 38000, image: "baby come back CAP.webp" },
+      { name: "Baby Come Back — Tee", category: "Tee", price: 68000, image: "product-baby-come-back-white.webp" },
+      { name: "Lettering Pink — Jort", category: "Jort", price: 69000, image: "product-jort-lettering-pink.webp" },
     ],
   },
   {
     name: "Camo Set",
     editorial: "stl-look-camo-outdoor.png",
     products: [
-      { name: "Camo Set Completo", category: "Set", price: 85000, image: "product-camo-set-completo.webp" },
-      { name: "Camo Cap Orange", category: "Accesorio", price: 15000, image: "product-camo-cap-orange.webp" },
-      { name: "Camo Look Front", category: "Look", price: 85000, image: "stl-look-camo-front.png" },
-      { name: "Camo Look Side", category: "Look", price: 85000, image: "stl-look-camo-side.webp" },
+      { name: "Camo Full Set", category: "Set", price: 246000, image: "product-camo-set-completo.webp" },
+      { name: "Camo Cap", category: "Accesorio", price: 40000, image: "product-camo-cap-orange.webp" },
+      { name: "Zip Hoodie Camo", category: "Hoodie", price: 128000, image: "stl-look-camo-front.png" },
+      { name: "Sweatpant Camo", category: "Pantalón", price: 118000, image: "stl-look-camo-side.webp" },
+    ],
+  },
+  {
+    name: "Summer 26",
+    editorial: "summer drop banner.webp",
+    products: [
+      { name: "Mesh RealTree™ Pink", category: "Tee", price: 28000, image: "mesh rosa.webp" },
+      { name: "Jersey Fileteado x Alfredo Genovese", category: "Jersey", price: 32000, image: "product-fileteado-tee.webp" },
+      { name: "Lettering Pink — Jort", category: "Jort", price: 28000, image: "product-jort-lettering-pink.webp" },
+      { name: "Regular Tee", category: "Tee", price: 18000, image: "regular tee 1.webp" },
+    ],
+  },
+  {
+    name: "Race Drop",
+    editorial: "race drop banner.webp",
+    products: [
+      { name: "Race Tee", category: "Tee", price: 68000, image: "product-racing-tee-verde.webp" },
+      { name: "No Service For The Faithless — Tee", category: "Tee", price: 68000, image: "No servide for the faithless tee.webp" },
+      { name: "No Service For The Faithless — Hoodie", category: "Hoodie", price: 77000, image: "hoodie lettering.webp" },
+      { name: "Trucker Cap — No Faith, No Glory", category: "Accesorio", price: 32000, image: "TRUCKER CAP - NO FAITH, NO GLORY.webp" },
     ],
   },
 ];
@@ -55,12 +75,12 @@ export default function CollectionBanner() {
   const col = collections[active];
 
   return (
-    <section className="max-w-[1400px] mx-auto px-4 py-16 md:py-24" ref={ref}>
+    <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
 
       {/* Header con tabs */}
       <div className="reveal rd1 flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-3">Colección</p>
+          <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-3">Colecciones</p>
           {/* Tabs */}
           <div className="flex gap-6">
             {collections.map((c, i) => (

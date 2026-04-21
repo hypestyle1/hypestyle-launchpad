@@ -1,29 +1,35 @@
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
+import { PRODUCTS } from "@/data/products";
 
-const products = [
-  { name: "Jort Lettering Pink", category: "Jort", price: 28000, badge: "Back", image: "product-jort-lettering-pink.webp" },
-  { name: "Jort Lettering Grey", category: "Jort", price: 28000, badge: "Back", image: "jort lettering grey.webp" },
-  { name: "Lettering Jort", category: "Jort", price: 28000, badge: "Back", image: "lettering jort.webp" },
-  { name: "Hype Script Tee", category: "Tee", price: 24000, badge: "Back", image: "regular tee 2.webp" },
-  { name: "Gorra Randal", category: "Accesorio", price: 15000, badge: "Back", image: "gorra randal.webp" },
-  { name: "Wafle Gris", category: "Tank", price: 18000, badge: "Back", image: "product-wafle-gris.webp" },
-  { name: "Remera Fileteado", category: "Tee", price: 28000, badge: "Back", image: "product-fileteado-tee.webp" },
-  { name: "Camo Cap Orange", category: "Accesorio", price: 15000, badge: "Back", image: "product-camo-cap-orange.webp" },
-  { name: "Mesh Rosa Camo", category: "Jersey", price: 28000, badge: "Back", image: "mesh rosa.webp" },
-  { name: "Zippo Hypestyle", category: "Accesorio", price: 18000, badge: "Back", image: "zippo.webp" },
-  { name: "No Servide Tee", category: "Tee", price: 26000, badge: "Back", image: "No servide for the faithless tee.webp" },
-  { name: "Pack Regular Tees", category: "Pack", price: 55000, badge: "Back", image: "pack regular tees.webp" },
+const BACK_SLUGS = [
+  "lettering-pink-jort", "jort-cargo-realtree-beige", "jort-cargo-realtree-pink",
+  "aerogrey-tees", "trucker-cap-11-x-art-by-randal",
+  "waffle-crest-sleeveless-pearl-grey", "jersey-fileteado-x-alfredo-genovese",
+  "camo-cap", "mesh-realtree-pink-tee", "per-aspera-ad-astra-zippo",
+  "no-service-for-the-faithless-tees", "regular-tees-3-pack-black-white-melange",
 ];
+
+const products = BACK_SLUGS
+  .map(slug => PRODUCTS.find(p => p.slug === slug))
+  .filter(Boolean)
+  .map(p => ({
+    id: p!.slug,
+    name: p!.name, category: p!.category, price: p!.price,
+    originalPrice: p!.originalPrice,
+    image: p!.images[0], images: p!.images,
+    sizes: p!.sizes, stock: p!.stock,
+    href: `/producto/${p!.slug}/`,
+  }));
 
 export default function BackInStock() {
   const ref = useReveal();
 
   return (
-    <section id="back-in-stock" className="max-w-[1400px] mx-auto px-4 py-16 md:py-24" ref={ref}>
+    <section id="back-in-stock" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="Back in Stock" link="/productos/" />
+        <SectionHeader title="Best Sellers" link="/back-in-stock/" linkLabel="Ver más" />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (

@@ -45,9 +45,9 @@
     
     --radius: 0px;
     
-    --announce-h: 32px;
-    --nav-h: 56px;
-    --offset: 88px;
+    --announce-h: 42px;  /* top(10px) + bar(28px) + gap(4px) */
+    --nav-h: 48px;
+    --offset: 90px;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -101,6 +101,11 @@
   .rd8 { transition-delay: 490ms; }
 
   /* Marquee / Announcement infinite scroll */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   @keyframes marquee {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
@@ -111,7 +116,7 @@
   }
   
   .animate-marquee-fast {
-    animation: marquee 20s linear infinite;
+    animation: marquee 45s linear infinite;
   }
 
   /* Nav link underline — removed, using opacity hover now */

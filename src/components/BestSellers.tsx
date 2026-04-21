@@ -1,25 +1,32 @@
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
+import { PRODUCTS } from "@/data/products";
 
-const products = [
-  { name: "Lady Tribal Black", category: "Crewneck", price: 35000, badge: "Best Seller", image: "product-lady-tribal-black.webp" },
-  { name: "Fleece Jacket", category: "Jacket", price: 65000, badge: "New", image: "fleece jacket.webp" },
-  { name: "Camo Set Completo", category: "Set", price: 85000, badge: "Best Seller", image: "product-camo-set-completo.webp" },
-  { name: "Racing Tee Verde", category: "Tee", price: 26000, badge: "Best Seller", image: "product-racing-tee-verde.webp" },
-  { name: "Hoodie Lettering", category: "Hoodie", price: 42000, badge: "New", image: "hoodie lettering.webp" },
-  { name: "Hyped Up Grey", category: "Hoodie", price: 38000, badge: "New", image: "hyped up grey.webp" },
-  { name: "Sweatpant Bombé Bordo", category: "Pantalón", price: 36000, badge: "New", image: "sweatpant bombe bordo.webp" },
-  { name: "Mesh Azul", category: "Jersey", price: 28000, badge: "New", image: "mesh azul.webp" },
+const BEST_SELLER_SLUGS = [
+  "zip-hoodie-pink", "sweatpant-pink", "camo-full-set-combo", "zip-hoodie-camo",
+  "no-service-for-the-faithless-tees", "race-tee", "lettering-graphite-hoodie", "hoodie-stay-hustle",
 ];
+
+const products = BEST_SELLER_SLUGS
+  .map(slug => PRODUCTS.find(p => p.slug === slug))
+  .filter(Boolean)
+  .map(p => ({
+    id: p!.slug,
+    name: p!.name, category: p!.category, price: p!.price,
+    originalPrice: p!.originalPrice,
+    image: p!.images[0], images: p!.images,
+    sizes: p!.sizes, stock: p!.stock,
+    href: `/producto/${p!.slug}/`,
+  }));
 
 export default function BestSellers() {
   const ref = useReveal();
 
   return (
-    <section id="best-sellers" className="max-w-[1400px] mx-auto px-4 py-16 md:py-24" ref={ref}>
+    <section id="best-sellers" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="Best Sellers" link="/productos/" />
+        <SectionHeader title="New In" link="/best-sellers/" linkLabel="Ver más" />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (

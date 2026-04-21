@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 interface SectionHeaderProps {
   title: string;
   link?: string;
@@ -13,9 +15,9 @@ export default function SectionHeader({ title, link, linkLabel = "Ver todo", chi
         {children}
       </div>
       {link && (
-        <a href={link} className="nav-link text-[12px] font-medium uppercase tracking-[0.1em] text-muted-foreground pb-0.5">
+        <Link to={link} className="nav-link text-[12px] font-medium uppercase tracking-[0.1em] text-muted-foreground pb-0.5">
           {linkLabel}
-        </a>
+        </Link>
       )}
     </div>
   );

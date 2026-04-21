@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Instagram } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useReveal } from "@/hooks/useReveal";
 
 const shopLinks = [
-  { label: "Tees", href: "/us/tees/" },
-  { label: "Hoodies", href: "/us/hoodies/" },
-  { label: "Sets", href: "/us/sets/" },
-  { label: "Accesorios", href: "/us/accesorios/" },
-  { label: "Ver todo", href: "/productos/" },
+  { label: "Arriba",     href: "/arriba/" },
+  { label: "Abajo",      href: "/abajo/" },
+  { label: "Accesorios", href: "/accesorios/" },
+  { label: "Sets",       href: "/sets/" },
+  { label: "Ver todo",   href: "/productos/" },
 ];
 
 const infoLinks = [
@@ -17,11 +17,20 @@ const infoLinks = [
   { label: "Contacto", href: "/contacto/" },
 ];
 
-const payMethods = ["VISA", "MASTERCARD", "AMEX", "MERCADOPAGO", "DÉBITO"];
+const rrssLinks = [
+  { label: "Instagram", href: "https://instagram.com/hypestylearg" },
+  { label: "TikTok", href: "https://tiktok.com/@hypestyle" },
+  { label: "YouTube", href: "https://youtube.com/@hypestyle" },
+  { label: "Facebook", href: "https://facebook.com/hypestylearg" },
+  { label: "WhatsApp", href: "https://wa.me/" },
+];
+
+const languages = ["ES", "EN", "PT", "DE", "FR", "IT"];
 
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [activeLang, setActiveLang] = useState("ES");
   const ref = useReveal();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,106 +40,118 @@ export default function Footer() {
 
   return (
     <footer className="bg-bg-dark text-primary-foreground" ref={ref}>
-      {/* Newsletter */}
-      <div className="reveal rd1 max-w-[1400px] mx-auto px-4 py-14 md:py-20 border-b border-primary-foreground/10">
-        <div className="max-w-md">
-          <h3 className="text-2xl md:text-3xl font-bold mb-2">Enterate primero.</h3>
-          <p className="text-primary-foreground/50 text-sm mb-6">
-            Drops, restocks y acceso anticipado. Sin spam.
-          </p>
-          <form onSubmit={handleSubmit} className="flex">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-              className="flex-1 bg-transparent border border-primary-foreground/20 px-4 py-3 text-[13px] text-primary-foreground placeholder:text-primary-foreground/30 focus:outline-none focus:border-primary-foreground/50 transition-colors"
-              required
-            />
-            <button
-              type="submit"
-              className={`px-6 py-3 text-[12px] font-semibold uppercase tracking-wider transition-colors ${
-                submitted
-                  ? "bg-primary-foreground/20 text-primary-foreground/60"
-                  : "bg-primary-foreground text-bg-dark hover:bg-primary-foreground/90"
-              }`}
-              disabled={submitted}
-            >
-              {submitted ? "✓ Suscripto" : "Suscribirse"}
-            </button>
-          </form>
-        </div>
-      </div>
 
-      {/* Columns */}
-      <div className="reveal rd2 max-w-[1400px] mx-auto px-4 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
-        {/* Brand */}
-        <div className="col-span-2 md:col-span-1">
-          <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-6 w-auto object-contain mb-3" />
-          <p className="text-[12px] text-primary-foreground/50 leading-relaxed mb-4">
-            Streetwear desde Buenos Aires. Drops limitados. Envíos a todo el mundo.
-          </p>
-          <div className="flex gap-3">
-            <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <Instagram className="w-5 h-5 text-primary-foreground/50 hover:text-primary-foreground transition-colors" />
-            </a>
-            <a href="#" aria-label="TikTok" className="text-primary-foreground/50 hover:text-primary-foreground transition-colors text-[13px] font-medium">
-              TikTok
-            </a>
-            <a href="#" aria-label="Facebook" className="text-primary-foreground/50 hover:text-primary-foreground transition-colors text-[13px] font-medium">
-              FB
-            </a>
+      {/* Newsletter + columnas — mismo nivel como EME */}
+      <div className="reveal rd1 max-w-[1400px] mx-auto px-4 pt-16 pb-12 grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-12 border-b border-primary-foreground/10">
+
+        {/* Newsletter + Brand */}
+        <div className="flex flex-col justify-between gap-10">
+          {/* Newsletter */}
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Newsletter</p>
+            <h3 className="text-[18px] md:text-[22px] font-bold uppercase leading-snug mb-1">
+              Suscribite y obtené un 10% de descuento
+            </h3>
+            <p className="text-[11px] text-primary-foreground/35 mb-6">
+              *No es acumulable con otras promociones
+            </p>
+
+            {submitted ? (
+              <p className="text-[13px] text-primary-foreground/50">✓ ¡Listo! Ya sos parte del círculo.</p>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex border-b border-primary-foreground/30 focus-within:border-primary-foreground transition-colors max-w-sm">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  className="flex-1 bg-transparent py-3 text-[13px] text-primary-foreground placeholder:text-primary-foreground/25 focus:outline-none"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="text-[12px] font-semibold uppercase tracking-wider text-primary-foreground/60 hover:text-primary-foreground transition-colors px-2 py-3"
+                >
+                  →
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* Brand */}
+          <div>
+            <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-6 w-auto object-contain object-left mb-3" />
+            <p className="text-[12px] text-primary-foreground/50 leading-relaxed">
+              Streetwear desde Buenos Aires. Drops limitados.<br />Envíos a todo el mundo.
+            </p>
           </div>
         </div>
 
-        {/* Shop */}
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/40 mb-4">Shop</p>
-          {shopLinks.map((l) => (
-            <a key={l.label} href={l.href} className="block text-[13px] text-primary-foreground/60 hover:text-primary-foreground transition-colors mb-2">
-              {l.label}
-            </a>
-          ))}
-        </div>
+        {/* Columnas */}
+        <div className="grid grid-cols-3 gap-8">
+          {/* Shop */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Shop</p>
+            {shopLinks.map((l) => (
+              <Link key={l.label} to={l.href}
+                className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
+                {l.label}
+              </Link>
+            ))}
+          </div>
 
-        {/* Info */}
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/40 mb-4">Info</p>
-          {infoLinks.map((l) => (
-            <a key={l.label} href={l.href} className="block text-[13px] text-primary-foreground/60 hover:text-primary-foreground transition-colors mb-2">
-              {l.label}
-            </a>
-          ))}
-        </div>
+          {/* Info */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Info</p>
+            {infoLinks.map((l) => (
+              <Link key={l.label} to={l.href}
+                className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
+                {l.label}
+              </Link>
+            ))}
+          </div>
 
-        {/* Seguinos */}
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/40 mb-4">Seguinos</p>
-          <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" className="block text-[13px] text-primary-foreground/60 hover:text-primary-foreground transition-colors mb-2">
-            @hypestylearg
-          </a>
-          <a href="#" className="block text-[13px] text-primary-foreground/60 hover:text-primary-foreground transition-colors mb-2">
-            TikTok
-          </a>
-          <a href="#" className="block text-[13px] text-primary-foreground/60 hover:text-primary-foreground transition-colors mb-2">
-            Facebook
-          </a>
+          {/* RRSS — única aparición */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">RRSS</p>
+            {rrssLinks.map((l) => (
+              <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
+                className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
+                {l.label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Bottom bar */}
-      <div className="max-w-[1400px] mx-auto px-4 py-6 border-t border-primary-foreground/10 flex flex-col md:flex-row items-center justify-between gap-4">
-        <p className="text-[11px] text-primary-foreground/30">
-          © 2026 Hypestyle. Buenos Aires, Argentina.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {payMethods.map((m) => (
-            <span key={m} className="text-[10px] font-medium uppercase tracking-wider text-primary-foreground/30 border border-primary-foreground/10 px-2.5 py-1">
-              {m}
+      <div className="max-w-[1400px] mx-auto px-4 py-6 flex flex-col items-center gap-3">
+        {/* Selector de idioma */}
+        <div className="flex items-center gap-4">
+          {languages.map((lang, i) => (
+            <span key={lang} className="flex items-center gap-4">
+              <button
+                onClick={() => setActiveLang(lang)}
+                className={`text-[11px] uppercase tracking-[0.12em] transition-colors ${
+                  activeLang === lang
+                    ? "text-primary-foreground font-semibold"
+                    : "text-primary-foreground/30 hover:text-primary-foreground/60"
+                }`}
+              >
+                {lang}
+              </button>
+              {i < languages.length - 1 && (
+                <span className="text-primary-foreground/15 text-[10px]">·</span>
+              )}
             </span>
           ))}
         </div>
+
+        <p className="text-[11px] text-primary-foreground/25">
+          © 2026 Hypestyle. Buenos Aires, Argentina.
+        </p>
       </div>
+
 
       {/* Easter egg */}
       <div className="relative overflow-hidden pb-4">
@@ -138,6 +159,7 @@ export default function Footer() {
           HYPESTYLE
         </p>
       </div>
+
     </footer>
   );
 }

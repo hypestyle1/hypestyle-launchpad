@@ -3,16 +3,23 @@ import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 
-const products = [
-  { name: "Baby Come Back", category: "Tee", price: 13200, originalPrice: 22000, badge: "−40%", image: "product-baby-come-back.webp" },
-  { name: "Honda Hype Tee", category: "Tee", price: 19500, originalPrice: 26000, badge: "−25%", image: "regular tee 1.webp" },
-  { name: "PlayStation Tee", category: "Tee", price: 19500, originalPrice: 26000, badge: "−25%", image: "regular tee 3.webp" },
-  { name: "Hype Bubble Tee", category: "Tee", price: 18000, originalPrice: 24000, badge: "−25%", image: "regular tee 4.webp" },
-  { name: "Baby Come Back Cap", category: "Accesorio", price: 11250, originalPrice: 15000, badge: "−25%", image: "TRUCKER CAP - NO FAITH, NO GLORY.webp" },
-  { name: "Buzo Graphite", category: "Hoodie", price: 31500, originalPrice: 42000, badge: "−25%", image: "product-buzo-graphite.webp" },
-  { name: "Jesus Tee", category: "Long Sleeve", price: 18000, originalPrice: 24000, badge: "−25%", image: "product-jesus-tee.webp" },
-  { name: "Camo Cap Orange", category: "Accesorio", price: 11250, originalPrice: 15000, badge: "−25%", image: "product-camo-cap-orange.webp" },
-];
+import { PRODUCTS } from "@/data/products";
+
+const products = PRODUCTS
+  .filter(p => p.originalPrice && p.originalPrice > p.price)
+  .sort((a, b) => (b.originalPrice! - b.price) / b.originalPrice! - (a.originalPrice! - a.price) / a.originalPrice!)
+  .slice(0, 8)
+  .map(p => {
+    const pct = Math.round((1 - p.price / p.originalPrice!) * 100);
+    return {
+      id: p.slug,
+      name: p.name, category: p.category, price: p.price,
+      originalPrice: p.originalPrice, badge: `−${pct}%`,
+      image: p.images[0], images: p.images,
+      sizes: p.sizes, stock: p.stock,
+      href: `/producto/${p.slug}/`,
+    };
+  });
 
 function Countdown() {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -56,9 +63,9 @@ export default function SpecialPrices() {
   const ref = useReveal();
 
   return (
-    <section className="max-w-[1400px] mx-auto px-4 py-16 md:py-24" ref={ref}>
+    <section id="special-prices" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="Special Prices" link="/productos/">
+        <SectionHeader title="Special Prices" link="/special-prices/" linkLabel="Ver más">
           <Countdown />
         </SectionHeader>
       </div>

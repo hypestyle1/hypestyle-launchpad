@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocale } from "@/context/LocaleContext";
 import SectionHeader from "./SectionHeader";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useReveal } from "@/hooks/useReveal";
@@ -60,21 +61,22 @@ export default function ShopTheLook() {
   const dragRef = useDragScroll();
   const revealRef = useReveal();
   const [activeLook, setActiveLook] = useState<Look | null>(null);
+  const { formatPrice } = useLocale();
 
   return (
-    <section className="max-w-[1400px] mx-auto px-4 py-16 md:py-24" ref={revealRef}>
+    <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={revealRef}>
       <div className="reveal rd1">
         <SectionHeader title="Shop the Look" link="/looks/" />
       </div>
 
       <div
         ref={dragRef}
-        className="reveal rd2 flex gap-[2px] overflow-x-auto no-scrollbar cursor-grab select-none"
+        className="reveal rd2 flex gap-[2px] overflow-x-auto no-scrollbar snap-x snap-mandatory cursor-grab select-none px-[10vw] md:px-0"
       >
         {looks.map((look) => (
           <div
             key={look.id}
-            className="min-w-[80vw] sm:min-w-[40vw] lg:min-w-[33.333%] flex-shrink-0"
+            className="flex-none w-[80vw] md:flex-1 snap-center transition-transform duration-300 ease-out hover:scale-[1.02] hover:z-10 relative"
           >
             <button
               onClick={() => setActiveLook(look)}
@@ -83,14 +85,10 @@ export default function ShopTheLook() {
               <img
                 src={`/${look.image}`}
                 alt={look.title}
-                className="absolute inset-0 w-full h-full object-cover object-top"
+                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
-
-              {/* Hover overlay */}
               <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors duration-300" />
-
-              {/* Hover button */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <span className="px-6 py-2.5 bg-primary-foreground text-foreground text-[12px] font-semibold uppercase tracking-wider">
                   Ver look →
@@ -142,7 +140,7 @@ export default function ShopTheLook() {
                           {product.name}
                         </p>
                         <p className="text-[14px] font-semibold text-foreground mt-0.5">
-                          ${product.price.toLocaleString("es-AR")}
+                          {formatPrice(product.price)}
                         </p>
                         <a
                           href={`/producto/${product.slug}`}
