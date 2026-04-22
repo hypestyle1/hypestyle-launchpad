@@ -9,6 +9,19 @@ export default function VideoSection() {
         className="absolute inset-0 w-full h-full border-0 pointer-events-none"
         style={{ transform: "scale(1.05)" }}
       />
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+
+      {/* CTA */}
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center pb-8 md:pb-14">
+        <a
+          href="/producto/jersey-fileteado-x-alfredo-genovese/"
+          className="px-8 py-3 border border-white text-white text-[11px] md:text-[12px] uppercase tracking-[0.18em] hover:bg-white hover:text-black transition-colors duration-300"
+        >
+          Ver Colección
+        </a>
+      </div>
     </section>
   );
 }

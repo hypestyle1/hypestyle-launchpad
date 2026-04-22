@@ -93,6 +93,11 @@ export default function CartDrawer() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium leading-tight">{item.name}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">Talle: {item.size}</p>
+                  {item.customization && (item.customization.playerName || item.customization.number) && (
+                    <p className="text-[11px] text-foreground/70 mt-0.5 font-medium">
+                      Dorsal: {item.customization.number && `#${item.customization.number}`}{item.customization.playerName && ` ${item.customization.playerName}`}
+                    </p>
+                  )}
                   <p className="text-[13px] font-semibold mt-1">{formatPrice(item.price)}</p>
                   <div className="flex items-center gap-3 mt-2">
                     <button

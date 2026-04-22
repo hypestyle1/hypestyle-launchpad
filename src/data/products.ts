@@ -13,6 +13,8 @@ export interface Product {
   stock: Record<string, "ok" | "low" | "out">;
   colors: { label: string; value: string; image: string }[];
   images: string[];
+  customizable?: boolean;
+  customPreviewImage?: string;
 }
 
 const CARE_APPAREL = [
@@ -28,6 +30,27 @@ const CARE_ACCESSORY = [
 ];
 
 export const PRODUCTS: Product[] = [
+  {
+    slug: "la-nuestra-jersey-mundial-26",
+    id: "la-nuestra-jersey-mundial-26",
+    name: "LA NUESTRA — Jersey Mundial '26",
+    category: "Jersey",
+    price: 89900,
+    description: `HYPESTYLE x MUNDIAL '26\n\nJersey de fútbol edición especial Mundial 2026. Inspirado en la estética de los jerseys clásicos de Argentina, con tipografía retro y diseño full sublimado. Cada unidad es personalizable con tu nombre y número.\n\nTela técnica sublimada de secado rápido\nDiseño albiceleste con detalles dorados\nEscudo Hypestyle frontal\nPersonalizable — nombre y número en dorso\nFit medio oversize`,
+    careItems: CARE_APPAREL,
+    fit: "Regular Fit",
+    sizes: ["S", "M", "L", "XL"],
+    stock: { S: "ok", M: "ok", L: "ok", XL: "ok" },
+    colors: [
+      { label: "Albiceleste", value: "#74b9e0", image: "products/argentina-jersey/mockup-frente.jpg" },
+    ],
+    images: [
+      "products/argentina-jersey/mockup-frente.jpg",
+      "products/argentina-jersey/mockup-espalda.jpg",
+    ],
+    customizable: true,
+    customPreviewImage: "products/argentina-jersey/preview-frente.png",
+  },
   {
     slug: "ladytribal-black-longsleeve",
     id: "ladytribal-black-longsleeve",

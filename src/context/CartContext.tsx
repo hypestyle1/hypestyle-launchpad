@@ -7,6 +7,7 @@ export interface CartItem {
   image: string;
   size: string;
   quantity: number;
+  customization?: { playerName: string; number: string };
 }
 
 interface CartState {

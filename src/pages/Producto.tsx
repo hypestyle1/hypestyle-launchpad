@@ -204,14 +204,7 @@ export default function Producto() {
   const handleAdd = () => {
     if (!selectedSize) { setSizeError(true); return; }
     setSizeError(false);
-    add({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images[0],
-      size: selectedSize,
-      quantity: 1,
-    });
+    add({ id: product.id, name: product.name, price: product.price, image: product.images[0], size: selectedSize, quantity: 1 });
     setAdded(true);
   };
 
@@ -463,6 +456,22 @@ export default function Producto() {
                   <p className="text-[11px] text-destructive mt-1">Seleccioná un talle para continuar</p>
                 )}
               </div>
+
+              {/* ── CTA Personalizar ── */}
+              {product.customizable && (
+                <a
+                  href={`/personalizar/${product.slug}/`}
+                  className="flex items-center justify-between w-full border-2 border-foreground px-5 py-4 mb-3 rounded-[10px] hover:bg-foreground hover:text-background transition-colors group"
+                >
+                  <div>
+                    <p className="text-[13px] font-bold uppercase tracking-[0.08em]">Personalizar tu dorsal</p>
+                    <p className="text-[11px] text-muted-foreground group-hover:text-background/70 transition-colors mt-0.5">Elegí nombre y número — preview en tiempo real</p>
+                  </div>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M4 9h10M9 4l5 5-5 5" />
+                  </svg>
+                </a>
+              )}
 
               {/* Add to cart */}
               <button

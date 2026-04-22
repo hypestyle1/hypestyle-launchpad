@@ -24,9 +24,9 @@ export default function Index() {
         <BenefitsStrip />
         <BestSellers />
         <ShopTheLook />
+        <VideoSection />
         <CollectionBanner />
         <BackInStock />
-        <VideoSection />
         <SpecialPrices />
         <EditorialBanner />
       </main>

@@ -28,6 +28,7 @@ import BestSellersPage from "./pages/BestSellersPage.tsx";
 import SpecialPricesPage from "./pages/SpecialPricesPage.tsx";
 import BackInStockPage from "./pages/BackInStockPage.tsx";
 import NovedadesPage from "./pages/NovedadesPage.tsx";
+import Personalizar from "./pages/Personalizar.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/nosotros/" element={<Nosotros />} />
           <Route path="/politicas-de-devolucion/" element={<Politicas />} />
           <Route path="/producto/:slug/" element={<Producto />} />
+          <Route path="/personalizar/:slug/" element={<Personalizar />} />
           <Route path="/checkout/" element={<Checkout />} />
           <Route path="/confirmacion/" element={<ConfirmacionPedido />} />
           <Route path="/pendiente-de-pago/" element={<PendientePago />} />
