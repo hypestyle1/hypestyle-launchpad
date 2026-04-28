@@ -1,6 +1,8 @@
 import { PRODUCTS } from '@/data/products';
 import ProductoClient from './ProductoClient';
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
   return PRODUCTS.map(p => ({ slug: p.slug }));
 }
