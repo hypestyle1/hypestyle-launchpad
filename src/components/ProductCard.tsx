@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocale } from "@/context/LocaleContext";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { checkStock } from "@/lib/checkStock";
 
 interface ProductCardProps {
   id?: string;
@@ -26,14 +27,27 @@ export default function ProductCard({
   const { toggle, has } = useWishlist();
   const [hovered, setHovered] = useState(false);
   const [addedSize, setAddedSize] = useState<string | null>(null);
+  const [checkingSize, setCheckingSize] = useState<string | null>(null);
+  // Sizes found out-of-stock by live check — persisted for this card's lifetime
+  const [liveOutSizes, setLiveOutSizes] = useState<Set<string>>(new Set());
   const wishlisted = id ? has(id) : false;
 
   const hoverImage = images && images.length > 1 ? images[1] : null;
 
-  const handleAddToCart = (size: string, e: React.MouseEvent) => {
+  const handleAddToCart = async (size: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!id) return;
+    if (!id || checkingSize) return;
+
+    setCheckingSize(size);
+    const result = await checkStock(id, size);
+    setCheckingSize(null);
+
+    if (result === 'out') {
+      setLiveOutSizes(prev => new Set([...prev, size]));
+      return;
+    }
+
     add({ id, name, price, image, size, quantity: 1 });
     setAddedSize(size);
     setDrawerOpen(true);
@@ -61,7 +75,7 @@ export default function ProductCard({
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-bg-alt">
         <img
-          src={`/${image}`}
+          src={image ? (image.startsWith('http') ? image : `/${image}`) : ''}
           alt={name}
           className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
             hovered && hoverImage ? "opacity-0" : "opacity-100"
@@ -70,7 +84,7 @@ export default function ProductCard({
         />
         {hoverImage && (
           <img
-            src={`/${hoverImage}`}
+            src={hoverImage.startsWith('http') ? hoverImage : `/${hoverImage}`}
             alt={name}
             className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
               hovered ? "opacity-100" : "opacity-0"
@@ -119,26 +133,45 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Size selector — aparece on hover */}
+        {/* Size selector — visible on hover */}
         {hasSizes && (
-          <div className={`mt-2 flex flex-wrap gap-x-3 gap-y-1 transition-all duration-200 ${hovered ? "opacity-100 max-h-12" : "opacity-0 max-h-0 overflow-hidden"}`}>
+          <div className={`mt-2 flex flex-wrap gap-x-3 gap-y-1 transition-all duration-200 ${
+            hovered ? "opacity-100 max-h-12" : "opacity-0 max-h-0 overflow-hidden"
+          }`}>
             {addedSize ? (
               <span className="text-[11px] text-foreground/60">✓ {addedSize} agregado</span>
             ) : (
               sizes!.map((size) => {
-                const isOut = stock?.[size] === "out";
+                const isOut = stock?.[size] === "out" || liveOutSizes.has(size);
+                const isChecking = checkingSize === size;
                 return (
                   <button
                     key={size}
-                    onClick={(e) => !isOut && handleAddToCart(size, e)}
-                    disabled={isOut}
-                    className={`text-[11px] uppercase tracking-wide transition-colors ${
+                    onClick={(e) => !isOut && !isChecking && handleAddToCart(size, e)}
+                    disabled={isOut || !!checkingSize}
+                    className={`text-[11px] uppercase tracking-wide transition-colors min-w-[16px] flex items-center justify-center ${
                       isOut
                         ? "text-foreground/20 cursor-not-allowed line-through"
+                        : isChecking
+                        ? "text-foreground/40 cursor-wait"
+                        : checkingSize
+                        ? "text-foreground/30"
                         : "text-foreground/50 hover:text-foreground"
                     }`}
                   >
-                    {size}
+                    {isChecking ? (
+                      <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                    ) : isOut ? (
+                      <>
+                        {size}
+                        <span className="ml-1 text-[9px] normal-case tracking-normal no-underline" style={{ textDecoration: 'none' }}>
+                          sin stock
+                        </span>
+                      </>
+                    ) : size}
                   </button>
                 );
               })

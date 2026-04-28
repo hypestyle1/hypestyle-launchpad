@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 interface SubTab {
   label: string;
@@ -15,8 +15,8 @@ interface SubTab {
 interface CategoryConfig {
   title: string;
   subtitle: string;
-  categories: string[];   // categorías base de esta página
-  tabs?: SubTab[];        // filtros internos
+  categories: string[];
+  tabs?: SubTab[];
 }
 
 const CATEGORY_MAP: Record<string, CategoryConfig> = {
@@ -73,46 +73,43 @@ export default function Categoria() {
   const [activeTab, setActiveTab] = useState(0);
   const [sort, setSort] = useState<SortKey>("default");
   const [sizeFilter, setSizeFilter] = useState<string[]>([]);
-  const ref = useReveal();
 
-  // Reset filters when route changes
+  const { data: allProducts = [] } = useProducts(100);
+  const ref = useReveal([allProducts]);
+
   useMemo(() => { setActiveTab(0); setSizeFilter([]); setSort("default"); }, [pathname]);
 
   const baseProducts = useMemo(() => {
     const base = config.categories.length === 0
-      ? PRODUCTS
-      : PRODUCTS.filter((p) => config.categories.includes(p.category));
+      ? allProducts
+      : allProducts.filter(p => config.categories.includes(p.category));
 
     if (!config.tabs || activeTab === 0 || config.tabs[activeTab].categories.length === 0) {
       return base;
     }
-    return base.filter((p) => config.tabs![activeTab].categories.includes(p.category));
-  }, [config, activeTab]);
+    return base.filter(p => config.tabs![activeTab].categories.includes(p.category));
+  }, [allProducts, config, activeTab]);
 
-  // All sizes available in current base (for filter chips)
   const availableSizes = useMemo(() => {
     const set = new Set<string>();
-    baseProducts.forEach((p) => p.sizes.forEach((s) => set.add(s)));
-    return ["XS", "S", "M", "L", "XL", "XXL", "U"].filter((s) => set.has(s));
+    baseProducts.forEach(p => p.sizes.forEach(s => set.add(s)));
+    return ["XS", "S", "M", "L", "XL", "XXL", "U"].filter(s => set.has(s));
   }, [baseProducts]);
 
   const products = useMemo(() => {
     let result = [...baseProducts];
-
     if (sizeFilter.length > 0) {
-      result = result.filter((p) =>
-        sizeFilter.some((s) => p.sizes.includes(s) && p.stock[s] !== "out")
+      result = result.filter(p =>
+        sizeFilter.some(s => p.sizes.includes(s) && p.stock[s] !== "out")
       );
     }
-
     if (sort === "price-asc") result.sort((a, b) => a.price - b.price);
     else if (sort === "price-desc") result.sort((a, b) => b.price - a.price);
-
     return result;
   }, [baseProducts, sizeFilter, sort]);
 
   const toggleSize = (s: string) =>
-    setSizeFilter((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
+    setSizeFilter(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
   return (
     <>
@@ -120,14 +117,12 @@ export default function Categoria() {
       <Navbar />
       <main className="pt-[var(--offset)]">
 
-        {/* Header */}
         <section className="bg-bg-dark text-primary-foreground py-16 md:py-20 px-6 text-center">
           <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Shop</p>
           <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3">{config.title}</h1>
           <p className="text-[14px] text-primary-foreground/40">{config.subtitle}</p>
         </section>
 
-        {/* Sub-category tabs */}
         {config.tabs && config.tabs.length > 1 && (
           <div className="border-b border-border sticky top-[var(--offset)] bg-background z-10">
             <div className="max-w-[1400px] mx-auto px-4 flex items-center gap-0 overflow-x-auto scrollbar-none">
@@ -148,13 +143,11 @@ export default function Categoria() {
           </div>
         )}
 
-        {/* Filter bar */}
         <div className="border-b border-border bg-background">
           <div className="max-w-[1400px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
-            {/* Size chips */}
             {availableSizes.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap">
-                {availableSizes.map((s) => (
+                {availableSizes.map(s => (
                   <button
                     key={s}
                     onClick={() => toggleSize(s)}
@@ -177,13 +170,11 @@ export default function Categoria() {
                 )}
               </div>
             )}
-
-            {/* Sort — pushed to the right */}
             <div className="ml-auto flex items-center gap-2">
               <span className="text-[11px] text-muted-foreground hidden sm:block">Ordenar:</span>
               <select
                 value={sort}
-                onChange={(e) => setSort(e.target.value as SortKey)}
+                onChange={e => setSort(e.target.value as SortKey)}
                 className="text-[11px] border border-border rounded-[6px] px-2.5 py-1.5 bg-background text-foreground cursor-pointer outline-none hover:border-foreground/40 transition-colors"
               >
                 <option value="default">Relevancia</option>
@@ -194,7 +185,6 @@ export default function Categoria() {
           </div>
         </div>
 
-        {/* Grid */}
         <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
           {products.length === 0 ? (
             <p className="text-center text-muted-foreground py-20">No hay productos en esta categoría todavía.</p>
@@ -212,11 +202,11 @@ export default function Categoria() {
                       category={p.category}
                       price={p.price}
                       originalPrice={p.originalPrice}
-                      image={p.images[0]}
+                      image={p.image}
                       images={p.images}
                       sizes={p.sizes}
                       stock={p.stock}
-                      href={`/producto/${p.slug}/`}
+                      href={p.href}
                     />
                   </div>
                 ))}

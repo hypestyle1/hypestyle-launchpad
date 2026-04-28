@@ -6,7 +6,9 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useLocale } from "@/context/LocaleContext";
-import { getProduct, getRelated } from "@/data/products";
+import { getRelated } from "@/data/products";
+import { useProduct } from "@/hooks/useProduct";
+import { checkStock } from "@/lib/checkStock";
 
 
 function CareIcon({ type }: { type: string }) {
@@ -121,17 +123,25 @@ function SizeGuideModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// Resolve full image URL — WP returns absolute URLs, static data uses relative paths
+function imgUrl(src: string): string {
+  return src.startsWith('http') ? src : `/${src}`;
+}
+
 export default function Producto() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { formatPrice, currency } = useLocale();
-  const product = getProduct(slug || "");
+  const { data: product, isLoading } = useProduct(slug);
   const related = product ? getRelated(product.slug) : [];
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState(false);
+  const [stockError, setStockError] = useState(false);
+  const [stockChecking, setStockChecking] = useState(false);
+  const [liveOutSizes, setLiveOutSizes] = useState<Set<string>>(new Set());
   const [added, setAdded] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
@@ -148,6 +158,19 @@ export default function Producto() {
       setSelectedSize(null);
     }
   }, [product?.slug]);
+
+  if (isLoading && !product) {
+    return (
+      <>
+        <AnnouncementBar />
+        <Navbar />
+        <main className="pt-[var(--offset)] flex items-center justify-center min-h-[60vh]">
+          <div className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   if (!product) {
     return (
@@ -201,10 +224,22 @@ export default function Producto() {
 
   const transferPrice = Math.round(product.price * 0.85);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!selectedSize) { setSizeError(true); return; }
     setSizeError(false);
-    add({ id: product.id, name: product.name, price: product.price, image: product.images[0], size: selectedSize, quantity: 1 });
+    setStockError(false);
+    setStockChecking(true);
+
+    const result = await checkStock(product.id, selectedSize);
+    setStockChecking(false);
+
+    if (result === 'out') {
+      setLiveOutSizes(prev => new Set([...prev, selectedSize]));
+      setStockError(true);
+      return;
+    }
+
+    add({ id: product.id, name: product.name, price: product.price, image: imgUrl(product.images[0]), size: selectedSize, quantity: 1 });
     setAdded(true);
   };
 
@@ -243,7 +278,7 @@ export default function Producto() {
                       i === selectedImage ? "border-foreground" : "border-transparent"
                     }`}
                   >
-                    <img src={`/${img}`} alt="" className="w-full h-full object-cover" />
+                    <img src={imgUrl(img)} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -259,7 +294,7 @@ export default function Producto() {
                 >
                   <img
                     key={selectedImage}
-                    src={`/${product.images[selectedImage]}`}
+                    src={imgUrl(product.images[selectedImage])}
                     alt={product.name}
                     draggable={false}
                     className="w-full h-full object-cover"
@@ -379,7 +414,7 @@ export default function Producto() {
                         }`}
                       >
                         <img
-                          src={`/${c.image}`}
+                          src={imgUrl(c.image)}
                           alt={c.label}
                           className="w-full h-full object-cover"
                         />
@@ -415,12 +450,12 @@ export default function Producto() {
                 <div className="flex gap-2 flex-wrap">
                   {product.sizes.map((s) => {
                     const st = product.stock[s];
-                    const isOut = st === "out";
+                    const isOut = st === "out" || liveOutSizes.has(s);
                     return (
                       <button
                         key={s}
                         disabled={isOut}
-                        onClick={() => { setSelectedSize(s); setSizeError(false); }}
+                        onClick={() => { setSelectedSize(s); setSizeError(false); setStockError(false); }}
                         className={`relative px-4 py-2 text-[12px] font-semibold uppercase border transition-colors rounded-[10px] ${
                           isOut
                             ? "border-border text-foreground/25 cursor-not-allowed"
@@ -444,23 +479,29 @@ export default function Producto() {
                 </div>
 
                 {/* Stock feedback */}
-                {stockLabel === "low" && (
+                {stockLabel === "low" && !liveOutSizes.has(selectedSize!) && (
                   <p className="text-[11px] text-amber-600 font-medium mt-1.5">
                     Últimas unidades disponibles
                   </p>
                 )}
-                {stockLabel === "out" && (
+                {(stockLabel === "out" || liveOutSizes.has(selectedSize!)) && (
                   <p className="text-[11px] text-destructive mt-1.5">Talle agotado</p>
                 )}
-                {sizeError && (
+                {stockError && (
+                  <p className="text-[11px] text-destructive mt-1">Este talle ya no tiene stock disponible</p>
+                )}
+                {sizeError && !stockError && (
                   <p className="text-[11px] text-destructive mt-1">Seleccioná un talle para continuar</p>
                 )}
               </div>
 
               {/* ── CTA Personalizar ── */}
               {product.customizable && (
-                <a
-                  href={`/personalizar/${product.slug}/`}
+                <button
+                  onClick={() => {
+                    if (!selectedSize) { setSizeError(true); return; }
+                    navigate(`/personalizar/${product.slug}/?talle=${selectedSize}`);
+                  }}
                   className="flex items-center justify-between w-full border-2 border-foreground px-5 py-4 mb-3 rounded-[10px] hover:bg-foreground hover:text-background transition-colors group"
                 >
                   <div>
@@ -470,16 +511,25 @@ export default function Producto() {
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M4 9h10M9 4l5 5-5 5" />
                   </svg>
-                </a>
+                </button>
               )}
 
               {/* Add to cart */}
               <button
                 ref={addBtnRef}
                 onClick={handleAdd}
-                className="w-full bg-bg-dark text-primary-foreground py-4 text-[13px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors mb-4 rounded-[10px]"
+                disabled={stockChecking}
+                className="w-full bg-bg-dark text-primary-foreground py-4 text-[13px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors mb-4 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Agregar al carrito
+                {stockChecking ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    Verificando stock...
+                  </>
+                ) : "Agregar al carrito"}
               </button>
 
               {/* Accordions */}
@@ -513,7 +563,21 @@ export default function Producto() {
         <section className="max-w-[1400px] mx-auto px-4 pb-20">
           <h2 className="text-lg font-bold uppercase tracking-tight mb-6">Completa el Look</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
-            {related.map((p) => <ProductCard key={p.name} {...p} />)}
+            {related.map((p) => (
+            <ProductCard
+              key={p.slug}
+              id={p.slug}
+              name={p.name}
+              category={p.category}
+              price={p.price}
+              originalPrice={p.originalPrice}
+              image={p.images[0] ?? ''}
+              images={p.images}
+              sizes={p.sizes}
+              stock={p.stock}
+              href={`/producto/${p.slug}/`}
+            />
+          ))}
           </div>
         </section>
 
@@ -536,8 +600,15 @@ export default function Producto() {
         </div>
         <button
           onClick={handleAdd}
-          className="flex-shrink-0 bg-bg-dark text-primary-foreground px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-bg-dark/85 transition-colors rounded-[10px]"
+          disabled={stockChecking}
+          className="flex-shrink-0 bg-bg-dark text-primary-foreground px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5"
         >
+          {stockChecking ? (
+            <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          ) : null}
           Agregar
         </button>
       </div>
@@ -553,7 +624,7 @@ export default function Producto() {
 
             <div className="flex items-center gap-3 p-5 border-b border-border">
               <div className="w-14 h-16 bg-bg-alt overflow-hidden flex-shrink-0">
-                <img src={`/${product.images[0]}`} alt={product.name} className="w-full h-full object-cover" />
+                <img src={imgUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1">
                 <p className="text-[13px] font-semibold">{product.name}</p>
@@ -574,7 +645,7 @@ export default function Producto() {
                 {related.map((p) => (
                   <div key={p.name}>
                     <div className="aspect-square bg-bg-alt overflow-hidden mb-1.5">
-                      <img src={`/${p.image}`} alt={p.name} className="w-full h-full object-cover" />
+                      <img src={imgUrl(p.images[0] ?? '')} alt={p.name} className="w-full h-full object-cover" />
                     </div>
                     <p className="text-[10px] leading-tight text-foreground truncate">{p.name}</p>
                     <div className="flex items-center justify-between mt-0.5">

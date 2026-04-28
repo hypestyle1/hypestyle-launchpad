@@ -2,8 +2,8 @@
 
 @font-face {
   font-family: 'AdidasWorldCup';
-  src: url('/adidas-2006.otf') format('opentype');
-  font-display: swap;
+  src: url('/Francia2006.otf') format('opentype');
+  font-display: block;
 }
 
 @tailwind base;

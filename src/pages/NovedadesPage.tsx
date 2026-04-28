@@ -3,13 +3,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
-import { PRODUCTS } from "@/data/products";
-
-// Los últimos productos agregados al catálogo
-const products = PRODUCTS.slice(0, 8);
+import { useProducts } from "@/hooks/useProducts";
 
 export default function NovedadesPage() {
-  const ref = useReveal();
+  const { data: products = [] } = useProducts(8);
+  const ref = useReveal([products]);
 
   return (
     <>
@@ -34,11 +32,11 @@ export default function NovedadesPage() {
                   category={p.category}
                   price={p.price}
                   originalPrice={p.originalPrice}
-                  image={p.images[0]}
+                  image={p.image}
                   images={p.images}
                   sizes={p.sizes}
                   stock={p.stock}
-                  href={`/producto/${p.slug}/`}
+                  href={p.href}
                   badge="New"
                 />
               </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useLocale } from "@/context/LocaleContext";
+import { createOrderAndPreference } from "@/lib/wc-client";
 
 type Step = "info" | "envio" | "pago";
 
@@ -51,6 +52,8 @@ export default function Checkout() {
   });
 
   const [pago, setPago] = useState<PagoForm>({ metodo: "", instagram: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const subtotal = total;
   const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
@@ -69,29 +72,74 @@ export default function Checkout() {
     setStep("pago");
   };
 
-  const handlePagoSubmit = (e: React.FormEvent) => {
+  const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pago.metodo) return;
-    // Guardar datos del pedido para la página siguiente
-    sessionStorage.setItem("hype_order", JSON.stringify({
-      orderNum: Math.floor(100000 + Math.random() * 900000),
-      items,
-      total: totalFinal,
-      metodo: pago.metodo,
-      email: info.email,
-      nombre: info.nombre,
-      apellido: info.apellido,
-      direccion: info.direccion,
-      ciudad: info.ciudad,
-      provincia: info.provincia,
-      cp: info.cp,
-      telefono: info.telefono,
-    }));
-    clear();
-    if (pago.metodo === "transferencia") {
-      navigate("/pendiente-de-pago/");
-    } else {
-      navigate("/confirmacion/");
+    if (!pago.metodo || submitting) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    const isTransfer = pago.metodo === "transferencia";
+    const isMp = pago.metodo === "mercadopago" || pago.metodo === "tarjeta";
+
+    try {
+      const orderRes = await createOrderAndPreference({
+        items: items.map((item) => ({
+          id: item.id,
+          slug: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size,
+          image: item.image,
+        })),
+        customer: {
+          email: info.email,
+          nombre: info.nombre,
+          apellido: info.apellido,
+          dni: info.dni,
+          direccion: info.direccion,
+          depto: info.depto,
+          cp: info.cp,
+          ciudad: info.ciudad,
+          provincia: info.provincia,
+          telefono: info.telefono,
+          instagram: pago.instagram,
+        },
+        shipping: envioCosto,
+        discountAmount: isTransfer ? Math.round(subtotal * 0.15) : 0,
+        paymentMethod: pago.metodo,
+      });
+
+      sessionStorage.setItem("hype_order", JSON.stringify({
+        wcOrderId: orderRes.wcOrderId,
+        wcOrderNumber: orderRes.wcOrderNumber,
+        orderNum: orderRes.wcOrderNumber,
+        items,
+        total: isTransfer ? transferTotal : totalFinal,
+        metodo: pago.metodo,
+        email: info.email,
+        nombre: info.nombre,
+        apellido: info.apellido,
+        direccion: info.direccion,
+        ciudad: info.ciudad,
+        provincia: info.provincia,
+        cp: info.cp,
+        telefono: info.telefono,
+      }));
+
+      clear();
+
+      if (isMp && orderRes.initPoint) {
+        window.location.href = orderRes.initPoint;
+      } else if (isTransfer) {
+        navigate("/pendiente-de-pago/");
+      } else {
+        navigate("/confirmacion/");
+      }
+    } catch {
+      setSubmitError("Hubo un error al procesar el pedido. Verificá tu conexión e intentá de nuevo.");
+      setSubmitting(false);
     }
   };
 
@@ -384,14 +432,31 @@ export default function Checkout() {
                 )}
               </div>
 
+              {submitError && (
+                <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">
+                  {submitError}
+                </p>
+              )}
+
               <div className="flex items-center justify-between pt-2">
                 <button type="button" onClick={() => setStep("envio")}
                   className="text-[12px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
                   ‹ Volver al envío
                 </button>
-                <button type="submit"
-                  className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]">
-                  Realizar pedido
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Procesando...
+                    </>
+                  ) : "Realizar pedido"}
                 </button>
               </div>
             </form>
@@ -406,7 +471,7 @@ export default function Checkout() {
               {items.map((item) => (
                 <div key={`${item.id}-${item.size}`} className="flex gap-3 items-center">
                   <div className="relative w-16 h-20 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[10px]">
-                    <img src={`/${item.image}`} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.image ? (item.image.startsWith('http') ? item.image : `/${item.image}`) : ''} alt={item.name} className="w-full h-full object-cover" />
                     <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground/60 text-white text-[10px] flex items-center justify-center font-bold">
                       {item.quantity}
                     </span>

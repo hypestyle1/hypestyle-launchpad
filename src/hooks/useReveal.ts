@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
-export function useReveal() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useReveal(deps: any[] = []) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,13 +20,14 @@ export function useReveal() {
       { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
     );
 
-    // Observe the container and all .reveal children
-    const reveals = el.querySelectorAll(".reveal");
+    // Only observe elements not yet revealed
+    const reveals = el.querySelectorAll(".reveal:not(.visible)");
     reveals.forEach((r) => observer.observe(r));
-    if (el.classList.contains("reveal")) observer.observe(el);
+    if (el.classList.contains("reveal") && !el.classList.contains("visible")) observer.observe(el);
 
     return () => observer.disconnect();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 
   return ref;
 }

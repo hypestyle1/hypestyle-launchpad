@@ -10,7 +10,8 @@ export default function PendientePago() {
   const navigate = useNavigate();
   const { formatPrice } = useLocale();
   const [order, setOrder] = useState<{
-    orderNum: number;
+    wcOrderNumber?: string;
+    orderNum: number | string;
     items: { name: string; price: number; quantity: number; size: string; image: string }[];
     total: number;
     email: string;
@@ -44,6 +45,7 @@ export default function PendientePago() {
   // The total stored already accounts for shipping but not the discount if via transfer
   // Let's just show what was saved
   const displayTotal = order.total;
+  const displayOrderNum = order.wcOrderNumber || order.orderNum;
 
   const today = new Date();
   const fecha = today.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" });
@@ -75,7 +77,7 @@ export default function PendientePago() {
           {/* Order number */}
           <div>
             <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Pedido</p>
-            <p className="text-[22px] font-bold">#{order.orderNum}</p>
+            <p className="text-[22px] font-bold">#{displayOrderNum}</p>
           </div>
 
           {/* En espera de pago */}
@@ -159,7 +161,7 @@ export default function PendientePago() {
               {order.items.map((item, i) => (
                 <div key={i} className="flex gap-3 items-center">
                   <div className="relative w-16 h-20 bg-[#f0f0ec] flex-shrink-0 overflow-hidden">
-                    <img src={`/${item.image}`} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={item.image ? (item.image.startsWith('http') ? item.image : `/${item.image}`) : ''} alt={item.name} className="w-full h-full object-cover" />
                     <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground/60 text-white text-[10px] flex items-center justify-center font-bold">
                       {item.quantity}
                     </span>
@@ -204,7 +206,7 @@ export default function PendientePago() {
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Pedido</span>
-                  <span className="font-medium">#{order.orderNum}</span>
+                  <span className="font-medium">#{displayOrderNum}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Fecha</span>

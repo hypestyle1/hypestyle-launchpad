@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { getProduct } from "@/data/products";
 import Navbar from "@/components/Navbar";
@@ -16,23 +16,20 @@ function drawArcText(
   text: string,
   cx: number,
   cy: number,
-  radius: number
+  radius: number,
+  letterSpacing = 0
 ) {
   if (!text) return;
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
 
-  // Measure total width
-  let totalWidth = 0;
-  for (const ch of text) totalWidth += ctx.measureText(ch).width;
-
-  // Total arc angle covered by the text
+  const widths = [...text].map(ch => ctx.measureText(ch).width);
+  const totalWidth = widths.reduce((a, w) => a + w, 0) + letterSpacing * (text.length - 1);
   const totalAngle = totalWidth / radius;
-  // Start angle: -π/2 is the top of the circle; shift left by half the arc
   let angle = -Math.PI / 2 - totalAngle / 2;
 
-  for (const ch of text) {
-    const w = ctx.measureText(ch).width;
+  for (let i = 0; i < text.length; i++) {
+    const w = widths[i];
     const charAngle = w / radius;
     const drawAngle = angle + charAngle / 2;
 
@@ -41,21 +38,22 @@ function drawArcText(
       cx + radius * Math.cos(drawAngle),
       cy + radius * Math.sin(drawAngle)
     );
-    // Rotate so the character is tangent to the arc (upright on the curve)
     ctx.rotate(drawAngle + Math.PI / 2);
-    ctx.fillText(ch, 0, 0);
+    ctx.fillText(text[i], 0, 0);
     ctx.restore();
 
-    angle += charAngle;
+    angle += charAngle + letterSpacing / radius;
   }
 }
 
 // ─── Jersey renderer ──────────────────────────────────────────────────
 const FONT = `"AdidasWorldCup", "Arial Black", Arial, sans-serif`;
 
-async function ensureFont() {
-  // CSS @font-face registers the name; this call triggers the download if needed
-  await document.fonts.load(`bold 60px "AdidasWorldCup"`).catch(() => {});
+// Carga la fuente via FontFace API para garantizar disponibilidad en canvas.
+// CSS @font-face es lazy (solo carga cuando el DOM la usa); el canvas no activa
+// esa carga, así que hay que forzarla manualmente antes de dibujar.
+function ensureFont(): Promise<void> {
+  return document.fonts.load('bold 60px "AdidasWorldCup"').then(() => {});
 }
 
 
@@ -91,10 +89,6 @@ async function renderJersey(
   ctx.fillStyle = "#0a0a0a";
 
   if (view === "espalda") {
-    // ── Name in the blue yoke ──
-    // Yoke band = y 25%–37% of canvas. Arc crest target: y≈30% (center of yoke).
-    // r = S*1.2, cy = S*(0.30+1.2) = S*1.50 → crest at S*0.30
-    // Larger radius = flatter curve, matching the gentle arc in the design.
     if (playerName) {
       const fontSize = playerName.length > 10
         ? Math.round(S * 0.056)
@@ -102,12 +96,11 @@ async function renderJersey(
         ? Math.round(S * 0.066)
         : Math.round(S * 0.076);
       ctx.font = `bold ${fontSize}px ${FONT}`;
-      drawArcText(ctx, playerName, S / 2, S * 1.50, S * 1.20);
+      ctx.fillStyle = "#0a0a0a";
+      const spacing = Math.round(fontSize * 0.08);
+      drawArcText(ctx, playerName, S / 2, S * 1.54, S * 1.20, spacing);
     }
 
-    // ── Large number in the body ──
-    // 1 digit: fontSize 33%, 2 digits: fontSize 25%
-    // top at 38% keeps it clear of the yoke; bottom lands ~63% (1-digit) or ~63% (2-digit)
     if (playerNumber) {
       const fontSize = playerNumber.length === 1
         ? Math.round(S * 0.33)
@@ -115,20 +108,19 @@ async function renderJersey(
       ctx.font = `bold ${fontSize}px ${FONT}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(playerNumber, S * 0.5, S * 0.38);
+      ctx.fillStyle = "#0a0a0a";
+      ctx.fillText(playerNumber, S * 0.5, S * 0.43);
     }
   }
 
   if (view === "frente") {
-    // ── Small number on the chest ──
-    // Design ref: center x ≈ 50%, y ≈ 34%, fontSize ≈ 9% of S
     if (playerNumber) {
-      ctx.fillStyle = "#0a0a0a";
       const fontSize = Math.round(S * 0.09);
       ctx.font = `bold ${fontSize}px ${FONT}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(playerNumber, S * 0.50, S * 0.34);
+      ctx.fillStyle = "#0a0a0a";
+      ctx.fillText(playerNumber, S * 0.50, S * 0.46);
     }
   }
 }
@@ -140,11 +132,12 @@ export default function Personalizar() {
   const { add, setDrawerOpen } = useCart();
   const product = getProduct(slug || "");
 
+  const [searchParams] = useSearchParams();
+  const selectedSize = searchParams.get("talle");
+
   const [view, setView] = useState<"espalda" | "frente">("espalda");
   const [playerName, setPlayerName] = useState("");
   const [playerNumber, setPlayerNumber] = useState("");
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [sizeError, setSizeError] = useState(false);
   const [added, setAdded] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -167,8 +160,6 @@ export default function Personalizar() {
   }
 
   const handleAdd = () => {
-    if (!selectedSize) { setSizeError(true); return; }
-    setSizeError(false);
     add({
       id: product.id,
       name: product.name,
@@ -280,29 +271,11 @@ export default function Personalizar() {
 
               <div className="border-t border-white/10 mb-6" />
 
-              <div className="mb-6">
-                <label className="block text-[11px] font-bold uppercase tracking-[0.15em] text-white/60 mb-3">Talle</label>
-                <div className="flex gap-2 flex-wrap">
-                  {product.sizes.map((s) => {
-                    const isOut = product.stock[s] === "out";
-                    return (
-                      <button
-                        key={s}
-                        disabled={isOut}
-                        onClick={() => { setSelectedSize(s); setSizeError(false); }}
-                        className={`px-4 py-2.5 text-[12px] font-bold uppercase border transition-colors rounded-[8px] ${
-                          isOut ? "border-white/10 text-white/20 cursor-not-allowed"
-                          : selectedSize === s ? "border-white bg-white text-black"
-                          : "border-white/25 text-white hover:border-white/60"
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    );
-                  })}
-                </div>
-                {sizeError && <p className="text-red-400 text-[11px] mt-2">Seleccioná un talle para continuar</p>}
-              </div>
+              {selectedSize && (
+                <p className="text-[11px] text-white/40 uppercase tracking-[0.15em] mb-6">
+                  Talle seleccionado: <span className="text-white font-bold">{selectedSize}</span>
+                </p>
+              )}
 
               {(playerName || playerNumber) && (
                 <div className="border border-white/10 rounded-[10px] px-4 py-3 mb-5 bg-white/5">
