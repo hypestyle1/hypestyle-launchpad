@@ -1,0 +1,4 @@
+- Mover video entre Shop The Look y colecciones. el tendría que tener un botón o algo que promocione la colección o el producto. al clickear te redirije a otra pagina.
+- Ver como funciona la edición una vez subida, preparar web para el HotSale.
+- Ver lo de la personalización de la remera en vivo (El cliente elige el número y nombre → se ve en tiempo real en la camiseta → agrega al carrito con esos datos → vos recibís el pedido con la personalización. un configurador visual en tiempo real
+- 
