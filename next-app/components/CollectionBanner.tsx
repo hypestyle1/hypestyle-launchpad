@@ -9,6 +9,7 @@ type Product = {
   category: string;
   price: number;
   image: string;
+  href?: string;
 };
 
 type Collection = {
@@ -22,40 +23,40 @@ const collections: Collection[] = [
     name: "No Love, Only Style",
     editorial: "No Love, Only Style banner.webp",
     products: [
-      { name: "No Love, Only Style — Top", category: "Top", price: 33000, image: "No Love, Only Style Top.webp" },
-      { name: "Trucker Cap — Baby Come Back", category: "Accesorio", price: 38000, image: "baby come back CAP.webp" },
-      { name: "Baby Come Back — Tee", category: "Tee", price: 68000, image: "product-baby-come-back-white.webp" },
-      { name: "Lettering Pink — Jort", category: "Jort", price: 69000, image: "product-jort-lettering-pink.webp" },
+      { name: "No Love, Only Style — Top", category: "Top", price: 33000, image: "No Love, Only Style Top.webp", href: "/producto/no-love-only-style-tops" },
+      { name: "Trucker Cap — Baby Come Back", category: "Accesorio", price: 38000, image: "baby come back CAP.webp", href: "/producto/trucker-cap-baby-come-back" },
+      { name: "Baby Come Back — Tee", category: "Tee", price: 68000, image: "product-baby-come-back-white.webp", href: "/producto/baby-come-back-tees" },
+      { name: "Lettering Pink — Jort", category: "Jort", price: 69000, image: "product-jort-lettering-pink.webp", href: "/producto/lettering-pink-jort" },
     ],
   },
   {
     name: "Camo Set",
     editorial: "stl-look-camo-outdoor.png",
     products: [
-      { name: "Camo Full Set", category: "Set", price: 246000, image: "product-camo-set-completo.webp" },
-      { name: "Camo Cap", category: "Accesorio", price: 40000, image: "product-camo-cap-orange.webp" },
-      { name: "Zip Hoodie Camo", category: "Hoodie", price: 128000, image: "stl-look-camo-front.png" },
-      { name: "Sweatpant Camo", category: "Pantalón", price: 118000, image: "stl-look-camo-side.webp" },
+      { name: "Camo Full Set", category: "Set", price: 246000, image: "product-camo-set-completo.webp", href: "/producto/camo-full-set-combo" },
+      { name: "Camo Cap", category: "Accesorio", price: 40000, image: "product-camo-cap-orange.webp", href: "/producto/camo-cap" },
+      { name: "Zip Hoodie Camo", category: "Hoodie", price: 128000, image: "stl-look-camo-front.png", href: "/producto/zip-hoodie-camo" },
+      { name: "Sweatpant Camo", category: "Pantalón", price: 118000, image: "stl-look-camo-side.webp", href: "/producto/sweatpant-camo" },
     ],
   },
   {
     name: "Summer 26",
     editorial: "summer drop banner.webp",
     products: [
-      { name: "Mesh RealTree™ Pink", category: "Tee", price: 28000, image: "mesh rosa.webp" },
-      { name: "Jersey Fileteado x Alfredo Genovese", category: "Jersey", price: 32000, image: "product-fileteado-tee.webp" },
-      { name: "Lettering Pink — Jort", category: "Jort", price: 28000, image: "product-jort-lettering-pink.webp" },
-      { name: "Regular Tee", category: "Tee", price: 18000, image: "regular tee 1.webp" },
+      { name: "Mesh RealTree™ Pink", category: "Tee", price: 28000, image: "mesh rosa.webp", href: "/producto/mesh-realtree-pink-tee" },
+      { name: "Jersey Fileteado x Alfredo Genovese", category: "Jersey", price: 32000, image: "product-fileteado-tee.webp", href: "/productos/" },
+      { name: "Lettering Pink — Jort", category: "Jort", price: 28000, image: "product-jort-lettering-pink.webp", href: "/producto/lettering-pink-jort" },
+      { name: "Regular Tee", category: "Tee", price: 18000, image: "regular tee 1.webp", href: "/producto/regular-tee-black" },
     ],
   },
   {
     name: "Race Drop",
     editorial: "race drop banner.webp",
     products: [
-      { name: "Race Tee", category: "Tee", price: 68000, image: "product-racing-tee-verde.webp" },
-      { name: "No Service For The Faithless — Tee", category: "Tee", price: 68000, image: "No servide for the faithless tee.webp" },
-      { name: "No Service For The Faithless — Hoodie", category: "Hoodie", price: 77000, image: "hoodie lettering.webp" },
-      { name: "Trucker Cap — No Faith, No Glory", category: "Accesorio", price: 32000, image: "TRUCKER CAP - NO FAITH, NO GLORY.webp" },
+      { name: "Race Tee", category: "Tee", price: 68000, image: "product-racing-tee-verde.webp", href: "/producto/race-tee" },
+      { name: "No Service For The Faithless — Tee", category: "Tee", price: 68000, image: "No servide for the faithless tee.webp", href: "/producto/no-service-for-the-faithless-tees" },
+      { name: "No Service For The Faithless — Hoodie", category: "Hoodie", price: 77000, image: "hoodie lettering.webp", href: "/producto/no-service-for-the-faithless-hoodie" },
+      { name: "Trucker Cap — No Faith, No Glory", category: "Accesorio", price: 32000, image: "TRUCKER CAP - NO FAITH, NO GLORY.webp", href: "/productos/" },
     ],
   },
 ];
