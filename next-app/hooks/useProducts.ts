@@ -6,7 +6,7 @@ import { PRODUCTS } from '@/data/products';
 
 const GET_PRODUCTS = `
   query GetProducts($first: Int) {
-    products(first: $first, where: { status: "publish" }) {
+    products(first: $first, where: { status: "publish", orderby: { field: DATE, order: DESC } }) {
       nodes {
         id
         name
