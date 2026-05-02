@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import AnnouncementBar from '@/components/AnnouncementBar';
@@ -111,7 +111,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
   const router = useRouter();
   const { formatPrice, currency } = useLocale();
   const { data: product, isLoading } = useProduct(slug);
-  const related = product ? getRelated(product.slug) : [];
+  const related = useMemo(() => product ? getRelated(product.slug) : [], [product?.slug]);
 
   const [mounted, setMounted]               = useState(false);
   const [selectedImage, setSelectedImage]   = useState(0);
