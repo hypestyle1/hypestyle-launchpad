@@ -3,15 +3,17 @@
 import { useState, useEffect } from "react";
 
 const SESSION_KEY = "hype_popup_shown";
+const WP_URL = process.env.NEXT_PUBLIC_WP_URL || "https://lightpink-rook-704850.hostingersite.com";
 
 export default function NewsletterPopup() {
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (sessionStorage.getItem(SESSION_KEY)) return;
-    const id = setTimeout(() => setVisible(true), 12000);
+    const id = setTimeout(() => setVisible(true), 4000);
     return () => clearTimeout(id);
   }, []);
 
@@ -20,11 +22,20 @@ export default function NewsletterPopup() {
     setVisible(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || loading) return;
+    setLoading(true);
+    try {
+      await fetch(`${WP_URL}/wp-json/hypestyle/v1/newsletter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } catch {}
+    setLoading(false);
     setSubmitted(true);
-    setTimeout(close, 1800);
+    setTimeout(close, 2000);
   };
 
   if (!visible) return null;
@@ -93,9 +104,10 @@ export default function NewsletterPopup() {
                 />
                 <button
                   type="submit"
-                  className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors"
+                  disabled={loading}
+                  className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors disabled:opacity-60"
                 >
-                  Unirme
+                  {loading ? "..." : "Unirme"}
                 </button>
               </form>
             )}
