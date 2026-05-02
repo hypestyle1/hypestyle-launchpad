@@ -13,8 +13,12 @@ export default function NewsletterPopup() {
 
   useEffect(() => {
     if (sessionStorage.getItem(SESSION_KEY)) return;
-    const id = setTimeout(() => setVisible(true), 10000);
-    return () => clearTimeout(id);
+    const show = () => setTimeout(() => setVisible(true), 1000);
+    if (document.readyState === 'complete') {
+      show();
+    } else {
+      window.addEventListener('load', show, { once: true });
+    }
   }, []);
 
   const close = () => {
