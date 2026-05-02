@@ -44,7 +44,7 @@ const collections: Collection[] = [
     editorial: "summer drop banner.webp",
     products: [
       { name: "Mesh RealTree™ Pink", category: "Tee", price: 28000, image: "mesh rosa.webp", href: "/producto/mesh-realtree-pink-tee" },
-      { name: "Jersey Fileteado x Alfredo Genovese", category: "Jersey", price: 32000, image: "product-fileteado-tee.webp", href: "/productos/" },
+      { name: "Jersey Fileteado x Alfredo Genovese", category: "Jersey", price: 32000, image: "product-fileteado-tee.webp", href: "/producto/jersey-fileteado-x-alfredo-genovese" },
       { name: "Lettering Pink — Jort", category: "Jort", price: 28000, image: "product-jort-lettering-pink.webp", href: "/producto/lettering-pink-jort" },
       { name: "Regular Tee", category: "Tee", price: 18000, image: "regular tee 1.webp", href: "/producto/regular-tee-black" },
     ],
@@ -56,7 +56,7 @@ const collections: Collection[] = [
       { name: "Race Tee", category: "Tee", price: 68000, image: "product-racing-tee-verde.webp", href: "/producto/race-tee" },
       { name: "No Service For The Faithless — Tee", category: "Tee", price: 68000, image: "No servide for the faithless tee.webp", href: "/producto/no-service-for-the-faithless-tees" },
       { name: "No Service For The Faithless — Hoodie", category: "Hoodie", price: 77000, image: "hoodie lettering.webp", href: "/producto/no-service-for-the-faithless-hoodie" },
-      { name: "Trucker Cap — No Faith, No Glory", category: "Accesorio", price: 32000, image: "TRUCKER CAP - NO FAITH, NO GLORY.webp", href: "/productos/" },
+      { name: "Trucker Cap — No Faith, No Glory", category: "Accesorio", price: 32000, image: "TRUCKER CAP - NO FAITH, NO GLORY.webp", href: "/producto/trucker-cap-no-faith-no-glory" },
     ],
   },
 ];
