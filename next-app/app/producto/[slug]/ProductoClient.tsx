@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -210,8 +211,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
               <div className="hidden md:flex flex-col gap-2 w-[72px] flex-shrink-0">
                 {product.images.map((img, i) => (
                   <button key={img} onClick={() => setSelectedImage(i)}
-                    className={`w-full aspect-square overflow-hidden border-[1.5px] transition-colors ${i === selectedImage ? 'border-foreground' : 'border-transparent'}`}>
-                    <img src={imgUrl(img)} alt="" className="w-full h-full object-cover" />
+                    className={`relative w-full aspect-square overflow-hidden border-[1.5px] transition-colors ${i === selectedImage ? 'border-foreground' : 'border-transparent'}`}>
+                    <Image src={imgUrl(img)} alt="" fill sizes="72px" className="object-cover" />
                   </button>
                 ))}
               </div>
@@ -219,8 +220,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 <div className="relative aspect-square overflow-hidden bg-bg-alt select-none cursor-crosshair"
                   onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
                   onMouseMove={handleMouseMove} onMouseLeave={() => setZoomPos(null)}>
-                  <img key={selectedImage} src={imgUrl(product.images[selectedImage])} alt={product.name}
-                    draggable={false} className="w-full h-full object-cover"
+                  <Image key={selectedImage} src={imgUrl(product.images[selectedImage])} alt={product.name}
+                    fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
                     style={{ transform: zoomPos ? 'scale(2)' : 'scale(1)', transformOrigin: zoomPos ? `${zoomPos.x}% ${zoomPos.y}%` : 'center', transition: zoomPos ? 'transform 0.1s ease' : 'transform 0.3s ease', animation: 'fadeIn 0.25s ease' }} />
                   {selectedImage > 0 && (
                     <button onClick={() => setSelectedImage(p => p - 1)}
@@ -295,8 +296,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   <div className="flex gap-2">
                     {product.colors.map(c => (
                       <button key={c.label} onClick={() => setSelectedColor(c.label)} title={c.label}
-                        className={`w-[44px] h-[44px] overflow-hidden border transition-colors duration-150 rounded-[5px] ${selectedColor === c.label ? 'border-foreground' : 'border-border hover:border-foreground/40'}`}>
-                        <img src={imgUrl(c.image)} alt={c.label} className="w-full h-full object-cover" />
+                        className={`relative w-[44px] h-[44px] overflow-hidden border transition-colors duration-150 rounded-[5px] ${selectedColor === c.label ? 'border-foreground' : 'border-border hover:border-foreground/40'}`}>
+                        {c.image && <Image src={imgUrl(c.image)} alt={c.label} fill sizes="44px" className="object-cover" />}
                       </button>
                     ))}
                   </div>
@@ -434,8 +435,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
         <div className="fixed inset-0 z-[180] flex items-center justify-center p-4 bg-black/30" onClick={() => setAdded(false)}>
           <div className="bg-white w-full max-w-[480px] shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 p-5 border-b border-border">
-              <div className="w-14 h-16 bg-bg-alt overflow-hidden flex-shrink-0">
-                <img src={imgUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover" />
+              <div className="relative w-14 h-16 bg-bg-alt overflow-hidden flex-shrink-0">
+                <Image src={imgUrl(product.images[0])} alt={product.name} fill sizes="56px" className="object-cover" />
               </div>
               <div className="flex-1">
                 <p className="text-[13px] font-semibold">{product.name}</p>

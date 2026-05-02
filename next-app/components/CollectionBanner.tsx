@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import Image from "next/image";
 import ProductCard from "./ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 
@@ -128,11 +129,12 @@ export default function CollectionBanner() {
           {/* Derecha: foto editorial — llena toda la altura del grid */}
           <div className="relative overflow-hidden bg-bg-alt min-h-[300px]">
             <a href="/productos/" className="absolute inset-0 group block">
-              <img
+              <Image
                 src={`/${col.editorial}`}
                 alt={col.name}
-                className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover group-hover:scale-[1.02] transition-transform duration-700"
               />
               <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-bg-dark/75 to-transparent">
                 <p className="text-primary-foreground/70 text-[10px] uppercase tracking-[0.15em] mb-1">Colección completa</p>
