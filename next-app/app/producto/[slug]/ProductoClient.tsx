@@ -101,7 +101,9 @@ function SizeGuideModal({ onClose }: { onClose: () => void }) {
 }
 
 function imgUrl(src: string): string {
-  return src.startsWith('http') ? src : `/${src}`;
+  if (!src) return '';
+  const s = src.replace('http://hypestyle.local', 'https://lightpink-rook-704850.hostingersite.com');
+  return s.startsWith('http') ? s : `/${s}`;
 }
 
 export default function ProductoClient({ slug }: { slug: string }) {
