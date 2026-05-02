@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 
 type BannerSlide = {
   type: "banner";
@@ -73,15 +74,26 @@ export default function Hero() {
           style={{ opacity: i === current ? 1 : 0, pointerEvents: i === current ? "auto" : "none" }}
         >
           <a href={s.href} className="block w-full h-full">
-            <picture className="w-full h-full block">
-              <source media="(min-width: 768px)" srcSet={`/${s.imageDesktop}`} />
-              <img
+            <div className="relative w-full h-full">
+              {/* Mobile */}
+              <Image
                 src={`/${s.imageMobile}`}
                 alt=""
-                className="w-full h-full object-cover"
-                style={{ objectPosition: "center center" }}
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className="object-cover object-center md:hidden"
               />
-            </picture>
+              {/* Desktop */}
+              <Image
+                src={`/${s.imageDesktop}`}
+                alt=""
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className="object-cover object-center hidden md:block"
+              />
+            </div>
           </a>
 
           {s.type === "overlay" && (

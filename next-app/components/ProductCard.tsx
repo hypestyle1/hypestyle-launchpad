@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import Image from "next/image";
 import { useLocale } from "@/context/LocaleContext";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -76,22 +77,26 @@ export default function ProductCard({
     >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-bg-alt">
-        <img
-          src={image ? (image.startsWith('http') ? image : `/${image}`) : ''}
-          alt={name}
-          className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
-            hovered && hoverImage ? "opacity-0" : "opacity-100"
-          }`}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-        />
+        {image ? (
+          <Image
+            src={image.startsWith('http') ? image : `/${image}`}
+            alt={name}
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            className={`object-cover object-top transition-all duration-500 ${
+              hovered && hoverImage ? "opacity-0" : "opacity-100"
+            }`}
+          />
+        ) : null}
         {hoverImage && (
-          <img
+          <Image
             src={hoverImage.startsWith('http') ? hoverImage : `/${hoverImage}`}
             alt={name}
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            className={`object-cover object-top transition-all duration-500 ${
               hovered ? "opacity-100" : "opacity-0"
             }`}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}
 
