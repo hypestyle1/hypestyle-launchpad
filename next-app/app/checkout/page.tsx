@@ -237,7 +237,14 @@ export default function Checkout() {
               {items.map(item => (
                 <div key={`${item.id}-${item.size}`} className="flex gap-3 items-center">
                   <div className="relative w-16 h-20 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[10px]">
-                    <img src={item.image ? (item.image.startsWith('http') ? item.image : `/${item.image}`) : ''} alt={item.name} className="w-full h-full object-cover" />
+                    {item.image ? (
+                      <img
+                        src={item.image.startsWith('http') ? item.image : `/${item.image}`}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : null}
                     <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground/60 text-white text-[10px] flex items-center justify-center font-bold">{item.quantity}</span>
                   </div>
                   <div className="flex-1 min-w-0">

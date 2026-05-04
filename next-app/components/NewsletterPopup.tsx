@@ -13,7 +13,25 @@ export default function NewsletterPopup() {
 
   useEffect(() => {
     if (sessionStorage.getItem(SESSION_KEY)) return;
-    const show = () => setTimeout(() => setVisible(true), 1000);
+
+    const show = () => {
+      let imagesReady = false;
+      let timerDone = false;
+
+      const tryShow = () => { if (imagesReady && timerDone) setVisible(true); };
+
+      setTimeout(() => { timerDone = true; tryShow(); }, 7000);
+
+      let loaded = 0;
+      const onDone = () => { loaded++; if (loaded >= 2) { imagesReady = true; tryShow(); } };
+      const i1 = new window.Image();
+      const i2 = new window.Image();
+      i1.onload = i1.onerror = onDone;
+      i2.onload = i2.onerror = onDone;
+      i1.src = '/HYPE - POP UP (2).gif';
+      i2.src = '/CUPON.jpg.jpeg';
+    };
+
     if (document.readyState === 'complete') {
       show();
     } else {

@@ -13,6 +13,12 @@ const suggested = [
   { id: "racing-tee-verde",   name: "Racing Tee Verde",  category: "Tee",       price: 26000,  image: "product-racing-tee-verde.webp" },
 ];
 
+function imgSrc(src?: string) {
+  if (!src) return '';
+  if (src.startsWith('http') || src.startsWith('/')) return src;
+  return `/${src}`;
+}
+
 export default function CartDrawer() {
   const { items, drawerOpen, setDrawerOpen, remove, increment, decrement, total, count, add } = useCart();
   const { formatPrice } = useLocale();
@@ -90,7 +96,7 @@ export default function CartDrawer() {
             items.map((item) => (
               <div key={`${item.id}-${item.size}`} className="flex gap-4">
                 <div className="w-20 h-24 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[5px]">
-                  <img src={item.image?.startsWith('http') ? item.image : `/${item.image}`} alt={item.name} className="w-full h-full object-cover" />
+                  <img src={imgSrc(item.image)} alt={item.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium leading-tight">{item.name}</p>
@@ -138,7 +144,7 @@ export default function CartDrawer() {
                   .map((p) => (
                     <div key={p.id}>
                       <div className="aspect-square bg-bg-alt overflow-hidden mb-1.5 rounded-[5px]">
-                        <img src={p.image?.startsWith('http') ? p.image : `/${p.image}`} alt={p.name} className="w-full h-full object-cover" />
+                        <img src={imgSrc(p.image)} alt={p.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       </div>
                       <p className="text-[11px] font-medium leading-tight truncate">{p.name}</p>
                       <div className="flex items-center justify-between mt-0.5">

@@ -7,6 +7,7 @@ import CookieBanner from '@/components/CookieBanner';
 import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
+import PasswordGate from '@/components/PasswordGate';
 
 export const metadata: Metadata = {
   title: 'Hypestyle — Streetwear Drops Limitados',
@@ -24,7 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LocaleSuggestion />
           <CookieBanner />
           <MetaPixel />
-          {children}
+          <PasswordGate>
+            {children}
+          </PasswordGate>
         </Providers>
       </body>
     </html>
