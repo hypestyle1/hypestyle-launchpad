@@ -1,6 +1,7 @@
 'use client';
 
 import { useCart } from "@/context/CartContext";
+import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import { useRouter } from "next/navigation";
 
@@ -12,12 +13,6 @@ const suggested = [
   { id: "buzo-graphite",      name: "Buzo Graphite",     category: "Hoodie",    price: 42000,  image: "product-buzo-graphite.webp" },
   { id: "racing-tee-verde",   name: "Racing Tee Verde",  category: "Tee",       price: 26000,  image: "product-racing-tee-verde.webp" },
 ];
-
-function imgSrc(src?: string) {
-  if (!src) return '';
-  if (src.startsWith('http') || src.startsWith('/')) return src;
-  return `/${src}`;
-}
 
 export default function CartDrawer() {
   const { items, drawerOpen, setDrawerOpen, remove, increment, decrement, total, count, add } = useCart();

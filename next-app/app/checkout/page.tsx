@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
+import { imgSrc } from '@/lib/img';
 
 type Step = 'info' | 'envio' | 'pago';
 
@@ -239,7 +240,7 @@ export default function Checkout() {
                   <div className="relative w-16 h-20 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[10px]">
                     {item.image ? (
                       <img
-                        src={item.image.startsWith('http') ? item.image : `/${item.image}`}
+                        src={imgSrc(item.image)}
                         alt={item.name}
                         className="w-full h-full object-cover"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}

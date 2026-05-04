@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/context/LocaleContext';
+import { imgSrc } from '@/lib/img';
 
 const CVU = '0000168300000005801714';
 const TITULAR = 'Pozzi Valentín';
@@ -89,7 +90,7 @@ export default function PendientePago() {
               {order.items.map((item: any, i: number) => (
                 <div key={i} className="flex gap-3 items-center">
                   <div className="relative w-16 h-20 bg-[#f0f0ec] flex-shrink-0 overflow-hidden">
-                    <img src={item.image ? (item.image.startsWith('http') ? item.image : `/${item.image}`) : ''} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={imgSrc(item.image)} alt={item.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground/60 text-white text-[10px] flex items-center justify-center font-bold">{item.quantity}</span>
                   </div>
                   <div className="flex-1 min-w-0"><p className="text-[13px] font-medium leading-tight">{item.name}</p><p className="text-[11px] text-muted-foreground">Talle: {item.size}</p></div>

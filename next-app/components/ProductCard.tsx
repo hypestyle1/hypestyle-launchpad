@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -79,7 +80,7 @@ export default function ProductCard({
       <div className="relative aspect-square overflow-hidden bg-bg-alt">
         {image ? (
           <Image
-            src={image.startsWith('http') ? image : `/${image}`}
+            src={imgSrc(image)}
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -90,7 +91,7 @@ export default function ProductCard({
         ) : null}
         {hoverImage && (
           <Image
-            src={hoverImage.startsWith('http') ? hoverImage : `/${hoverImage}`}
+            src={imgSrc(hoverImage)}
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"

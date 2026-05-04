@@ -4,6 +4,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
 import { useLocale } from "@/context/LocaleContext";
 import { PRODUCTS } from "@/data/products";
+import { imgSrc } from "@/lib/img";
 import { useState } from "react";
 
 export default function WishlistDrawer() {
@@ -69,7 +70,7 @@ export default function WishlistDrawer() {
                 return (
                   <div key={p.slug} className="flex gap-4">
                     <a href={`/producto/${p.slug}/`} className="w-20 h-24 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[5px] block">
-                      <img src={`/${p.images[0]}`} alt={p.name} className="w-full h-full object-cover" />
+                      <img src={imgSrc(p.images[0])} alt={p.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     </a>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">

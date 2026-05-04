@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, ShoppingBag, Menu, X, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { imgSrc } from '@/lib/img';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -312,7 +313,7 @@ export default function Navbar() {
                 <Link key={p.slug} href={`/producto/${p.slug}/`}
                   onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
-                  <img src={`/${p.images[0]}`} alt={p.name}
+                  <img src={imgSrc(p.images[0])} alt={p.name}
                     className="w-10 h-10 object-cover flex-shrink-0 bg-bg-alt"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   <div className="flex-1 min-w-0">
