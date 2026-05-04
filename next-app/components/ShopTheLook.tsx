@@ -36,8 +36,8 @@ const looks: Look[] = [
     title: "Camo Set — Look 01",
     image: "stl-look-camo-front.png",
     products: [
-      { category: "Set", name: "Camo Set Completo", price: 85000, image: "product-camo-set-completo.webp", slug: "camo-set-completo" },
-      { category: "Accesorio", name: "Camo Cap Orange", price: 15000, image: "product-camo-cap-orange.webp", slug: "camo-cap-orange" },
+      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-look-camo-front.png", slug: "zip-hoodie-camo" },
+      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
     ],
   },
   {
@@ -45,8 +45,8 @@ const looks: Look[] = [
     title: "Camo Set — Look 02",
     image: "stl-look-camo-side.webp",
     products: [
-      { category: "Set", name: "Camo Set Completo", price: 85000, image: "product-camo-set-completo.webp", slug: "camo-set-completo" },
-      { category: "Accesorio", name: "Camo Cap Orange", price: 15000, image: "product-camo-cap-orange.webp", slug: "camo-cap-orange" },
+      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-look-camo-front.png", slug: "zip-hoodie-camo" },
+      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
     ],
   },
   {
@@ -54,8 +54,8 @@ const looks: Look[] = [
     title: "Camo Set — Look 03",
     image: "stl-look-camo-side2.png",
     products: [
-      { category: "Set", name: "Camo Set Completo", price: 85000, image: "product-camo-set-completo.webp", slug: "camo-set-completo" },
-      { category: "Accesorio", name: "Camo Cap Orange", price: 15000, image: "product-camo-cap-orange.webp", slug: "camo-cap-orange" },
+      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-look-camo-front.png", slug: "zip-hoodie-camo" },
+      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
     ],
   },
 ];
