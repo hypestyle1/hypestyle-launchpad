@@ -147,7 +147,32 @@ export default function ProductCard({
             hovered ? "opacity-100 max-h-12" : "opacity-0 max-h-0 overflow-hidden"
           }`}>
             {addedSize ? (
-              <span className="text-[11px] text-foreground/60">✓ {addedSize} agregado</span>
+              <span className="text-[11px] text-foreground/60">✓ agregado</span>
+            ) : sizes!.length === 1 ? (
+              /* Talle único — botón directo sin mostrar el nombre del talle */
+              (() => {
+                const size = sizes![0];
+                const isOut = stock?.[size] === "out" || liveOutSizes.has(size);
+                const isChecking = checkingSize === size;
+                return (
+                  <button
+                    onClick={(e) => !isOut && !isChecking && handleAddToCart(size, e)}
+                    disabled={isOut || !!checkingSize}
+                    className={`text-[11px] uppercase tracking-wide transition-colors ${
+                      isOut ? "text-foreground/20 cursor-not-allowed" :
+                      isChecking ? "text-foreground/40 cursor-wait" :
+                      "text-foreground/50 hover:text-foreground"
+                    }`}
+                  >
+                    {isChecking ? (
+                      <svg className="animate-spin w-3 h-3 inline" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                    ) : isOut ? "Sin stock" : "Agregar"}
+                  </button>
+                );
+              })()
             ) : (
               sizes!.map((size) => {
                 const isOut = stock?.[size] === "out" || liveOutSizes.has(size);
@@ -158,13 +183,10 @@ export default function ProductCard({
                     onClick={(e) => !isOut && !isChecking && handleAddToCart(size, e)}
                     disabled={isOut || !!checkingSize}
                     className={`text-[11px] uppercase tracking-wide transition-colors min-w-[16px] flex items-center justify-center ${
-                      isOut
-                        ? "text-foreground/20 cursor-not-allowed line-through"
-                        : isChecking
-                        ? "text-foreground/40 cursor-wait"
-                        : checkingSize
-                        ? "text-foreground/30"
-                        : "text-foreground/50 hover:text-foreground"
+                      isOut ? "text-foreground/20 cursor-not-allowed line-through" :
+                      isChecking ? "text-foreground/40 cursor-wait" :
+                      checkingSize ? "text-foreground/30" :
+                      "text-foreground/50 hover:text-foreground"
                     }`}
                   >
                     {isChecking ? (
@@ -172,7 +194,7 @@ export default function ProductCard({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                       </svg>
-                    ) : isOut ? size : size}
+                    ) : size}
                   </button>
                 );
               })

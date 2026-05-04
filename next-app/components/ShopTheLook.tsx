@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import SectionHeader from "./SectionHeader";
 import { useDragScroll } from "@/hooks/useDragScroll";
@@ -85,7 +86,7 @@ export default function ShopTheLook() {
               className="relative w-full aspect-[3/4] overflow-hidden bg-bg-alt group block text-left"
             >
               <img
-                src={`/${look.image}`}
+                src={imgSrc(look.image)}
                 alt={look.title}
                 className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -126,7 +127,7 @@ export default function ShopTheLook() {
                       {/* Product thumbnail */}
                       <div className="w-20 h-20 flex-shrink-0 bg-bg-alt overflow-hidden">
                         <img
-                          src={`/${product.image}`}
+                          src={imgSrc(product.image)}
                           alt={product.name}
                           className="w-full h-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -145,7 +146,8 @@ export default function ShopTheLook() {
                           {formatPrice(product.price)}
                         </p>
                         <a
-                          href={`/producto/${product.slug}`}
+                          href={`/producto/${product.slug}/`}
+                          onClick={() => setActiveLook(null)}
                           className="text-[12px] text-border-mid hover:text-foreground transition-colors mt-1 inline-block"
                         >
                           Ver producto →
