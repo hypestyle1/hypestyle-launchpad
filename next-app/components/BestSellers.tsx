@@ -5,8 +5,14 @@ import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
+const HIDDEN_SLUGS = [
+  'la-nuestra-jersey-mundial-26',
+  'camo-full-set-combo',
+];
+
 export default function BestSellers() {
-  const { data: products = [] } = useProducts(8);
+  const { data: raw = [] } = useProducts(16);
+  const products = raw.filter(p => !HIDDEN_SLUGS.includes(p.slug)).slice(0, 8);
   const ref = useReveal([products]);
 
   return (
