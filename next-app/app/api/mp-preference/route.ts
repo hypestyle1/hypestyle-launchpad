@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const MP_TOKEN   = process.env.MP_ACCESS_TOKEN!;
 const FRONTEND   = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle-launchpad.vercel.app';
+const WP_URL     = process.env.NEXT_PUBLIC_WP_URL || '';
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
         failure: `${FRONTEND}/checkout/`,
       },
       auto_return: 'approved',
+      ...(WP_URL && { notification_url: `${WP_URL}/wp-json/hypestyle/v1/mp-webhook` }),
       payer: {
         email:   customer?.email   || '',
         name:    customer?.nombre  || '',

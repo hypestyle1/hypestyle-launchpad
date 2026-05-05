@@ -71,6 +71,11 @@ export default function Checkout() {
         direccion: info.direccion, ciudad: info.ciudad, provincia: info.provincia,
         cp: info.cp, telefono: info.telefono,
       }));
+      if (isMp && !orderRes.initPoint) {
+        setSubmitError('No se pudo iniciar el pago con MercadoPago. Intentá de nuevo o elegí otro método.');
+        setSubmitting(false);
+        return;
+      }
       clear();
       if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
       else if (isTransfer) { router.push('/pendiente-de-pago/'); }
