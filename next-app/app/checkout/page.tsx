@@ -46,7 +46,7 @@ export default function Checkout() {
   const envioCosto = freeShipping ? 0 : ENVIO_COSTO;
   const descuento = couponApplied ? Math.round(subtotal * 0.1) : 0;
   const totalFinal = subtotal - descuento + (step === 'pago' || step === 'envio' ? envioCosto : 0);
-  const transferTotal = Math.round(subtotal * 0.85) + (step === 'pago' || step === 'envio' ? envioCosto : 0);
+  const transferTotal = Math.round(subtotal * 0.90) + (step === 'pago' || step === 'envio' ? envioCosto : 0);
 
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +60,7 @@ export default function Checkout() {
         items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image })),
         customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, telefono: info.telefono, instagram: pago.instagram },
         shipping: envioCosto,
-        discountAmount: isTransfer ? Math.round(subtotal * 0.15) : 0,
+        discountAmount: isTransfer ? Math.round(subtotal * 0.10) : 0,
         paymentMethod: pago.metodo,
       });
       sessionStorage.setItem('hype_order', JSON.stringify({
@@ -207,7 +207,7 @@ export default function Checkout() {
                 <div className="space-y-2">
                   {[
                     { id: 'tarjeta', label: 'Tarjeta de crédito o débito', sub: 'Hasta 3 cuotas sin interés' },
-                    { id: 'transferencia', label: 'Transferencia o depósito bancario', sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (15% off)` : '' },
+                    { id: 'transferencia', label: 'Transferencia o depósito bancario', sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (10% off)` : '' },
                     { id: 'mercadopago', label: 'Mercado Pago', sub: '' },
                     { id: 'paypal', label: 'PayPal', sub: '' },
                     { id: 'efectivo', label: 'Efectivo', sub: '' },
