@@ -17,7 +17,20 @@ export default function ConfirmacionClient() {
   useEffect(() => {
     window.scrollTo(0, 0);
     const raw = sessionStorage.getItem('hype_order');
-    if (raw) { setOrder(JSON.parse(raw)); sessionStorage.removeItem('hype_order'); }
+    if (raw) {
+      const parsed: OrderData = JSON.parse(raw);
+      setOrder(parsed);
+      sessionStorage.removeItem('hype_order');
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'Purchase', {
+          value: parsed.total,
+          currency: 'ARS',
+          contents: parsed.items.map(i => ({ id: i.name, quantity: i.quantity })),
+          content_type: 'product',
+          order_id: String(parsed.wcOrderNumber || parsed.orderNum),
+        });
+      }
+    }
     setFecha(new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }));
   }, []);
 

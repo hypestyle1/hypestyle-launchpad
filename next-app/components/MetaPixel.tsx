@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useCookieConsent } from '@/context/CookieContext';
 
-const PIXEL_ID = '899809176222944';
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '899809176222944';
 
 declare global {
   interface Window { fbq: any; _fbq: any; }
@@ -25,6 +26,18 @@ function loadPixel() {
 
 export default function MetaPixel() {
   const { consent } = useCookieConsent();
-  useEffect(() => { if (consent === 'all') loadPixel(); }, [consent]);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (consent !== 'all') return;
+    loadPixel();
+  }, [consent]);
+
+  useEffect(() => {
+    if (consent === 'all' && window.fbq) {
+      window.fbq('track', 'PageView');
+    }
+  }, [pathname, consent]);
+
   return null;
 }
