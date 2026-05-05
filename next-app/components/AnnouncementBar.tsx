@@ -1,9 +1,10 @@
 'use client';
 
 const items = [
-  "Hasta 3 y 6 cuotas sin interés",
+  "10 · 11 · 12 · 13 de Mayo — Ofertas exclusivas",
+  "Envío gratis desde $200.000",
+  "Hasta 3 cuotas sin interés",
   "Worldwide Shipping vía DHL",
-  "© Style&Culture — Est. 2018",
   "30 días para cambios y devoluciones",
 ];
 

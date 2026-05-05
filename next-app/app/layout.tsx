@@ -8,6 +8,7 @@ import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
 import PasswordGate from '@/components/PasswordGate';
+import WhatsAppButton from '@/components/WhatsAppButton';
 
 export const metadata: Metadata = {
   title: 'Hypestyle — Streetwear Drops Limitados',
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PasswordGate>
             {children}
           </PasswordGate>
+          <WhatsAppButton />
         </Providers>
       </body>
     </html>

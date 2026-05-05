@@ -13,6 +13,7 @@ import EditorialBanner from '@/components/EditorialBanner';
 import BenefitsStrip from '@/components/BenefitsStrip';
 import VideoSection from '@/components/VideoSection';
 import Footer from '@/components/Footer';
+import EventCountdown from '@/components/EventCountdown';
 
 export default function Home() {
   return (
@@ -22,6 +23,7 @@ export default function Home() {
       <NewsletterPopup />
       <main className="pt-[var(--offset)]">
         <Hero />
+        <EventCountdown />
         <BenefitsStrip />
         <BestSellers />
         <ShopTheLook />

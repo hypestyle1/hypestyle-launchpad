@@ -23,6 +23,7 @@ export default function BestSellers() {
               category={p.category}
               price={p.price}
               originalPrice={p.originalPrice}
+              badge={p.originalPrice ? `−${Math.round((1 - p.price / p.originalPrice) * 100)}%` : undefined}
               image={p.image}
               images={p.images}
               sizes={p.sizes}

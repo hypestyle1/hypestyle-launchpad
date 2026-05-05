@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const UNLOCK_KEY = 'hype_unlocked_v1';
-const PASSWORD = 'HOTSALE'; // cambiar antes del lanzamiento
+const PASSWORD = 'MEGADROP'; // cambiar antes del lanzamiento
 const HOT_SALE = new Date('2026-05-10T00:00:00-03:00');
 
 /* ── Countdown ─────────────────────────────────────────────────────── */
