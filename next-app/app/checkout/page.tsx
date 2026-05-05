@@ -17,7 +17,7 @@ const PROVINCIAS = [
   'Tierra del Fuego', 'Tucumán',
 ];
 
-const ENVIO_COSTO = 8500;
+const ENVIO_COSTO = 200;
 const FREE_SHIPPING_THRESHOLD = 200000;
 
 interface InfoForm {
