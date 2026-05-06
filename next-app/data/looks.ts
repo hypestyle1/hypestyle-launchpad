@@ -57,6 +57,15 @@ export const LOOKS: Look[] = [
     ],
   },
   {
+    id: "look-jersey-genovese",
+    title: "Jersey Fileteado x Genovese",
+    image: "stl-look-jersey-genovese.png",
+    products: [
+      { category: "Jersey", name: "JERSEY FILETEADO – x ALFREDO GENOVESE", price: 78400, image: "products/jersey-fileteado-x-alfredo-genovese-foto.webp", slug: "jersey-fileteado-x-alfredo-genovese" },
+      { category: "Short", name: "LETTERING GRAPHITE - JORT", price: 55000, image: "stl-look-jersey-genovese.png", slug: "lettering-graphite-jort" },
+    ],
+  },
+  {
     id: "look-01",
     title: "Camo Set",
     image: "stl-look-camo-front.png",

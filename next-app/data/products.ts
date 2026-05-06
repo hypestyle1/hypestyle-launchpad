@@ -1594,7 +1594,8 @@ export const PRODUCTS: Product[] = [
     "products/jersey-fileteado-x-alfredo-genovese-3.png",
     "products/jersey-fileteado-x-alfredo-genovese-4.png",
     "products/jersey-fileteado-x-alfredo-genovese-5.png",
-    "products/jersey-fileteado-x-alfredo-genovese-6.jpg"
+    "products/jersey-fileteado-x-alfredo-genovese-6.jpg",
+    "products/jersey-fileteado-x-alfredo-genovese-foto.webp"
     ],
   },
   {
