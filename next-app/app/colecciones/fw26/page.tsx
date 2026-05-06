@@ -42,11 +42,11 @@ export default function FW26Page() {
                   category={p.category}
                   price={p.price}
                   originalPrice={p.originalPrice}
-                  image={p.image}
+                  image={p.images[0]}
                   images={p.images}
                   sizes={p.sizes}
                   stock={p.stock}
-                  href={p.href}
+                  href={`/producto/${p.slug}/`}
                 />
               </div>
             ))}
