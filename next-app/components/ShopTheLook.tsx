@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import SectionHeader from "./SectionHeader";
@@ -22,6 +22,18 @@ export default function ShopTheLook() {
   const [activeLook, setActiveLook] = useState<Look | null>(null);
   const { formatPrice } = useLocale();
 
+  const visibleLooks = useMemo(() => {
+    const key = 'hype_looks_order';
+    let order: string[] = [];
+    try { order = JSON.parse(sessionStorage.getItem(key) || '[]'); } catch {}
+    if (order.length !== LOOKS.length) {
+      order = [...LOOKS].sort(() => Math.random() - 0.5).map(l => l.id);
+      try { sessionStorage.setItem(key, JSON.stringify(order)); } catch {}
+    }
+    const sorted = order.map(id => LOOKS.find(l => l.id === id)).filter(Boolean) as Look[];
+    return sorted.slice(0, 4);
+  }, []);
+
   return (
     <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={revealRef}>
       <div className="reveal rd1">
@@ -32,7 +44,7 @@ export default function ShopTheLook() {
         ref={dragRef}
         className="reveal rd2 flex gap-[2px] overflow-x-auto no-scrollbar snap-x snap-mandatory cursor-grab select-none px-[10vw] md:px-0"
       >
-        {LOOKS.map((look) => (
+        {visibleLooks.map((look) => (
           <div
             key={look.id}
             className="flex-none w-[80vw] md:flex-1 snap-center transition-transform duration-300 ease-out hover:scale-[1.02] hover:z-10 relative"
