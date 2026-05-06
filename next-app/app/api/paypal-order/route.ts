@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
       usdRate,
     });
   } catch (err) {
-    console.error('[paypal-order]', err);
-    return NextResponse.json({ error: 'Error interno' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[paypal-order]', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
