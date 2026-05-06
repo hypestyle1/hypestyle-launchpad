@@ -33,8 +33,9 @@ export default function ConfirmacionClient() {
     }
     setFecha(new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }));
 
-    // Fallback: confirm MP payment directly when redirected back from MP
     const params = new URLSearchParams(window.location.search);
+
+    // MP: confirm payment on return from MercadoPago
     const paymentId = params.get('collection_id') || params.get('payment_id');
     const externalRef = params.get('external_reference');
     const mpStatus = params.get('collection_status') || params.get('status');
@@ -44,6 +45,18 @@ export default function ConfirmacionClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payment_id: paymentId, order_id: parseInt(externalRef, 10) }),
+      }).catch(() => {});
+    }
+
+    // PayPal: capture on return from PayPal approval
+    const ppToken  = params.get('token');
+    const payerId  = params.get('PayerID');
+    const wcOrderIdParam = params.get('order');
+    if (ppToken && payerId && wcOrderIdParam) {
+      fetch('/api/paypal-capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paypalOrderId: ppToken, wcOrderId: parseInt(wcOrderIdParam, 10) }),
       }).catch(() => {});
     }
   }, []);

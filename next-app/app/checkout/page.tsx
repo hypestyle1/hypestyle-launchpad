@@ -88,15 +88,23 @@ export default function Checkout() {
     const isPaypal   = pago.metodo === 'paypal';
     const isMp = pago.metodo === 'mercadopago' || pago.metodo === 'tarjeta';
     try {
-      const orderRes = await createOrderAndPreference({
-        items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image })),
-        customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, telefono: info.telefono, instagram: pago.instagram },
-        shipping: envioCosto,
-        discountAmount: isTransfer ? Math.round(subtotal * 0.10) : 0,
-        paymentMethod: pago.metodo,
-        shippingMethodId: selectedRate?.id,
-        shippingLabel: selectedRate?.label,
-      });
+      let orderRes;
+      try {
+        orderRes = await createOrderAndPreference({
+          items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image })),
+          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, telefono: info.telefono, instagram: pago.instagram },
+          shipping: envioCosto,
+          discountAmount: isTransfer ? Math.round(subtotal * 0.10) : 0,
+          paymentMethod: pago.metodo,
+          shippingMethodId: selectedRate?.id,
+          shippingLabel: selectedRate?.label,
+        });
+      } catch (wcErr) {
+        console.error('[checkout] create-order error:', wcErr);
+        setSubmitError('Error al crear el pedido. Revisá tu conexión e intentá de nuevo.');
+        setSubmitting(false);
+        return;
+      }
       sessionStorage.setItem('hype_order', JSON.stringify({
         wcOrderId: orderRes.wcOrderId, wcOrderNumber: orderRes.wcOrderNumber,
         orderNum: orderRes.wcOrderNumber, items,
@@ -110,18 +118,44 @@ export default function Checkout() {
         setSubmitting(false);
         return;
       }
-      if (isPaypal && !orderRes.paypalUrl) {
-        setSubmitError('No se pudo iniciar el pago con PayPal. Intentá de nuevo.');
-        setSubmitting(false);
+      if (isPaypal) {
+        let ppRes;
+        try {
+          ppRes = await fetch('/api/paypal-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wcOrderId: orderRes.wcOrderId, totalARS: totalFinal }),
+          });
+        } catch (ppErr) {
+          console.error('[checkout] paypal-order fetch error:', ppErr);
+          setSubmitError('Error de red al conectar con PayPal. Intentá de nuevo.');
+          setSubmitting(false);
+          return;
+        }
+        if (!ppRes.ok) {
+          const errData = await ppRes.json().catch(() => ({})) as { error?: string };
+          console.error('[checkout] paypal-order non-ok:', ppRes.status, errData);
+          setSubmitError(`PayPal: ${errData.error || 'Error ' + ppRes.status}. Intentá de nuevo.`);
+          setSubmitting(false);
+          return;
+        }
+        const ppData = await ppRes.json() as { approvalUrl?: string };
+        if (!ppData.approvalUrl) {
+          setSubmitError('PayPal no devolvió un link de pago. Intentá de nuevo.');
+          setSubmitting(false);
+          return;
+        }
+        clear();
+        window.location.href = ppData.approvalUrl;
         return;
       }
       clear();
-      if (isMp && orderRes.initPoint)       { window.location.href = orderRes.initPoint; }
-      else if (isPaypal && orderRes.paypalUrl) { window.location.href = orderRes.paypalUrl; }
-      else if (isTransfer)                   { router.push('/pendiente-de-pago/'); }
-      else                                   { router.push('/confirmacion/'); }
-    } catch {
-      setSubmitError('Hubo un error al procesar el pedido. Verificá tu conexión e intentá de nuevo.');
+      if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
+      else if (isTransfer)            { router.push('/pendiente-de-pago/'); }
+      else                            { router.push('/confirmacion/'); }
+    } catch (err) {
+      console.error('[checkout] unexpected error:', err);
+      setSubmitError('Error inesperado. Revisá la consola del navegador.');
       setSubmitting(false);
     }
   };

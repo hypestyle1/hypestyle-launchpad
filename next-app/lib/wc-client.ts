@@ -1,6 +1,6 @@
-const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'http://hypestyle.local';
+const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 
-const MP_METHODS = ['mercadopago', 'tarjeta', 'efectivo', 'paypal'];
+const MP_METHODS = ['mercadopago', 'tarjeta', 'efectivo'];
 
 export interface OrderItem {
   id: string;
@@ -48,8 +48,8 @@ export async function createOrderAndPreference(
   payload: CreateOrderPayload,
 ): Promise<CreateOrderResponse> {
 
-  // 1 — Crear orden en WooCommerce (PHP)
-  const wcRes = await fetch(`${WP_URL}/wp-json/hypestyle/v1/create-order`, {
+  // 1 — Crear orden en WooCommerce (via proxy server-side para evitar CORS)
+  const wcRes = await fetch('/api/create-order', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
