@@ -32,6 +32,14 @@ interface Look {
 
 const looks: Look[] = [
   {
+    id: "look-halfzip-polo",
+    title: "Half Zip Polo Grey",
+    image: "stl-look-halfzip-polo-grey.png",
+    products: [
+      { category: "Polo", name: "Half Zip Polo Grey", price: 0, image: "stl-look-halfzip-polo-grey.png", slug: "half-zip-polo-grey" },
+    ],
+  },
+  {
     id: "look-melange",
     title: "Melange Tracksuit",
     image: "stl-look-melange-tracksuit.png",
