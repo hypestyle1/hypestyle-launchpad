@@ -51,26 +51,8 @@ const looks: Look[] = [
   },
   {
     id: "look-01",
-    title: "Camo Set — Look 01",
+    title: "Camo Set",
     image: "stl-look-camo-front.png",
-    products: [
-      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-look-camo-front.png", slug: "zip-hoodie-camo" },
-      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
-    ],
-  },
-  {
-    id: "look-02",
-    title: "Camo Set — Look 02",
-    image: "stl-look-camo-side.webp",
-    products: [
-      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-look-camo-front.png", slug: "zip-hoodie-camo" },
-      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
-    ],
-  },
-  {
-    id: "look-03",
-    title: "Camo Set — Look 03",
-    image: "stl-look-camo-side2.png",
     products: [
       { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-look-camo-front.png", slug: "zip-hoodie-camo" },
       { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
