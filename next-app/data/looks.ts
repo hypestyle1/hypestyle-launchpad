@@ -15,6 +15,14 @@ export interface Look {
 
 export const LOOKS: Look[] = [
   {
+    id: "look-halfzip-polo-black",
+    title: "Half Zip Polo Black",
+    image: "stl-look-halfzip-polo-black.png",
+    products: [
+      { category: "Polo", name: "Half Zip Polo — Black", price: 69000, image: "products/half-zip-polo-black-0.webp", slug: "half-zip-polo-black" },
+    ],
+  },
+  {
     id: "look-halfzip-polo-navy",
     title: "Half Zip Polo Navy",
     image: "stl-look-halfzip-polo-navy.png",
