@@ -19,7 +19,7 @@ export const LOOKS: Look[] = [
     title: "Half Zip Polo Navy",
     image: "stl-look-halfzip-polo-navy.png",
     products: [
-      { category: "Polo", name: "Half Zip Polo Navy", price: 0, image: "stl-look-halfzip-polo-navy.png", slug: "half-zip-polo-navy" },
+      { category: "Polo", name: "Half Zip Polo — Navy", price: 0, image: "products/half-zip-polo-navy-0.webp", slug: "half-zip-polo-navy" },
     ],
   },
   {
@@ -27,7 +27,7 @@ export const LOOKS: Look[] = [
     title: "Half Zip Polo Grey",
     image: "stl-look-halfzip-polo-grey.png",
     products: [
-      { category: "Polo", name: "Half Zip Polo Grey", price: 0, image: "stl-look-halfzip-polo-grey.png", slug: "half-zip-polo-grey" },
+      { category: "Polo", name: "Half Zip Polo — Grey", price: 0, image: "products/half-zip-polo-grey-0.webp", slug: "half-zip-polo-grey" },
     ],
   },
   {
