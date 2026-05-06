@@ -32,6 +32,15 @@ interface Look {
 
 const looks: Look[] = [
   {
+    id: "look-melange",
+    title: "Melange Tracksuit",
+    image: "stl-look-melange-tracksuit.png",
+    products: [
+      { category: "Hoodie", name: "Melange Hoodie", price: 0, image: "stl-look-melange-tracksuit.png", slug: "hoodie-melange" },
+      { category: "Pantalón", name: "Melange SweatPant", price: 0, image: "stl-look-melange-tracksuit.png", slug: "sweatpant-melange" },
+    ],
+  },
+  {
     id: "look-pink",
     title: "Pink Set",
     image: "stl-look-pink-set.png",
