@@ -9,6 +9,7 @@ type Product = {
   name: string;
   category: string;
   price: number;
+  originalPrice?: number;
   image: string;
   href?: string;
 };
@@ -16,12 +17,36 @@ type Product = {
 type Collection = {
   name: string;
   editorial: string;
+  href: string;
   products: Product[];
 };
 
 const collections: Collection[] = [
   {
+    name: "FW26",
+    href: "/colecciones/fw26/",
+    editorial: "stl-look-halfzip-polo-navy.png",
+    products: [
+      { name: "Half Zip Polo — Grey", category: "Polo", price: 69000, originalPrice: 138000, image: "products/half-zip-polo-grey-0.webp", href: "/producto/half-zip-polo-grey" },
+      { name: "Half Zip Polo — Navy", category: "Polo", price: 69000, originalPrice: 138000, image: "products/half-zip-polo-navy-0.webp", href: "/producto/half-zip-polo-navy" },
+      { name: "Half Zip Polo — Black", category: "Polo", price: 69000, originalPrice: 138000, image: "products/half-zip-polo-black-0.webp", href: "/producto/half-zip-polo-black" },
+      { name: "Melange Hoodie", category: "Hoodie", price: 0, image: "stl-look-melange-tracksuit.png", href: "/producto/hoodie-melange" },
+    ],
+  },
+  {
+    name: "Pink Set Drop",
+    href: "/colecciones/pink-set-drop/",
+    editorial: "stl-look-pink-set.png",
+    products: [
+      { name: "Zip Hoodie Pink", category: "Hoodie", price: 135000, image: "products/zip-hoodie-pink-0.webp", href: "/producto/zip-hoodie-pink" },
+      { name: "SweatPant Pink", category: "Pantalón", price: 125000, image: "products/sweatpant-pink-0.webp", href: "/producto/sweatpant-pink" },
+      { name: "Half Zip Polo — Grey", category: "Polo", price: 69000, originalPrice: 138000, image: "products/half-zip-polo-grey-0.webp", href: "/producto/half-zip-polo-grey" },
+      { name: "Lettering Pink — Jort", category: "Jort", price: 69000, image: "product-jort-lettering-pink.webp", href: "/producto/lettering-pink-jort" },
+    ],
+  },
+  {
     name: "No Love, Only Style",
+    href: "/colecciones/no-love-only-style/",
     editorial: "No Love, Only Style banner.webp",
     products: [
       { name: "No Love, Only Style — Top", category: "Top", price: 33000, image: "No Love, Only Style Top.webp", href: "/producto/no-love-only-style-tops" },
@@ -32,7 +57,8 @@ const collections: Collection[] = [
   },
   {
     name: "Camo Set",
-    editorial: "stl-look-camo-outdoor.png",
+    href: "/colecciones/camo-set/",
+    editorial: "stl-look-camo-front.png",
     products: [
       { name: "Camo Full Set", category: "Set", price: 246000, image: "product-camo-set-completo.webp", href: "/producto/camo-full-set-combo" },
       { name: "Camo Cap", category: "Accesorio", price: 40000, image: "product-camo-cap-orange.webp", href: "/producto/camo-cap" },
@@ -41,17 +67,8 @@ const collections: Collection[] = [
     ],
   },
   {
-    name: "Summer 26",
-    editorial: "summer drop banner.webp",
-    products: [
-      { name: "Mesh RealTree™ Pink", category: "Tee", price: 28000, image: "mesh rosa.webp", href: "/producto/mesh-realtree-pink-tee" },
-      { name: "Jersey Fileteado x Alfredo Genovese", category: "Jersey", price: 32000, image: "product-fileteado-tee.webp", href: "/producto/jersey-fileteado-x-alfredo-genovese" },
-      { name: "Lettering Pink — Jort", category: "Jort", price: 28000, image: "product-jort-lettering-pink.webp", href: "/producto/lettering-pink-jort" },
-      { name: "Regular Tee", category: "Tee", price: 18000, image: "regular tee 1.webp", href: "/producto/regular-tee-black" },
-    ],
-  },
-  {
     name: "Race Drop",
+    href: "/colecciones/race-drop/",
     editorial: "race drop banner.webp",
     products: [
       { name: "Race Tee", category: "Tee", price: 68000, image: "product-racing-tee-verde.webp", href: "/producto/race-tee" },
@@ -70,10 +87,7 @@ export default function CollectionBanner() {
   const switchTo = (i: number) => {
     if (i === active) return;
     setFading(true);
-    setTimeout(() => {
-      setActive(i);
-      setFading(false);
-    }, 220);
+    setTimeout(() => { setActive(i); setFading(false); }, 220);
   };
 
   const col = collections[active];
@@ -81,20 +95,16 @@ export default function CollectionBanner() {
   return (
     <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
 
-      {/* Header con tabs */}
       <div className="reveal rd1 flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
           <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-3">Colecciones</p>
-          {/* Tabs */}
-          <div className="flex gap-6">
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
             {collections.map((c, i) => (
               <button
                 key={c.name}
                 onClick={() => switchTo(i)}
                 className={`text-xl md:text-2xl font-bold uppercase tracking-tight transition-colors duration-200 ${
-                  i === active
-                    ? "text-foreground"
-                    : "text-foreground/25 hover:text-foreground/50"
+                  i === active ? "text-foreground" : "text-foreground/25 hover:text-foreground/50"
                 }`}
               >
                 {c.name}
@@ -103,32 +113,22 @@ export default function CollectionBanner() {
           </div>
         </div>
         <a
-          href="/productos/"
-          className="text-[12px] uppercase tracking-[0.08em] font-medium text-foreground/50 hover:text-foreground transition-colors"
+          href={col.href}
+          className="text-[12px] uppercase tracking-[0.08em] font-medium text-foreground/50 hover:text-foreground transition-colors whitespace-nowrap"
         >
-          Ver todo →
+          Ver más →
         </a>
       </div>
 
-      {/* Contenido con fade */}
-      <div
-        style={{
-          opacity: fading ? 0 : 1,
-          transition: "opacity 220ms ease",
-        }}
-      >
+      <div style={{ opacity: fading ? 0 : 1, transition: "opacity 220ms ease" }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-[2px]">
-
-          {/* Izquierda: 2×2 productos */}
           <div className="grid grid-cols-2 gap-[2px]">
             {col.products.map((p) => (
               <ProductCard key={p.name} {...p} />
             ))}
           </div>
-
-          {/* Derecha: foto editorial — llena toda la altura del grid */}
           <div className="relative overflow-hidden bg-bg-alt min-h-[300px]">
-            <a href="/productos/" className="absolute inset-0 group block">
+            <a href={col.href} className="absolute inset-0 group block">
               <Image
                 src={`/${col.editorial}`}
                 alt={col.name}
@@ -142,7 +142,6 @@ export default function CollectionBanner() {
               </div>
             </a>
           </div>
-
         </div>
       </div>
 
