@@ -40,6 +40,7 @@ export interface CreateOrderResponse {
   wcOrderId: number;
   wcOrderNumber: string;
   initPoint: string | null;
+  paypalUrl: string | null;
   error?: string;
 }
 
@@ -59,7 +60,7 @@ export async function createOrderAndPreference(
     throw new Error(err.message || `WC HTTP ${wcRes.status}`);
   }
 
-  const order = await wcRes.json() as { wcOrderId: number; wcOrderNumber: string };
+  const order = await wcRes.json() as { wcOrderId: number; wcOrderNumber: string; paypalUrl?: string | null };
 
   // 2 — Crear preferencia MP (Next.js API, token de producción en Vercel)
   let initPoint: string | null = null;
@@ -88,5 +89,6 @@ export async function createOrderAndPreference(
     wcOrderId:     order.wcOrderId,
     wcOrderNumber: order.wcOrderNumber,
     initPoint,
+    paypalUrl:     order.paypalUrl ?? null,
   };
 }

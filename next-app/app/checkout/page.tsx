@@ -85,6 +85,7 @@ export default function Checkout() {
     setSubmitting(true);
     setSubmitError(null);
     const isTransfer = pago.metodo === 'transferencia';
+    const isPaypal   = pago.metodo === 'paypal';
     const isMp = pago.metodo === 'mercadopago' || pago.metodo === 'tarjeta';
     try {
       const orderRes = await createOrderAndPreference({
@@ -109,10 +110,16 @@ export default function Checkout() {
         setSubmitting(false);
         return;
       }
+      if (isPaypal && !orderRes.paypalUrl) {
+        setSubmitError('No se pudo iniciar el pago con PayPal. Intentá de nuevo.');
+        setSubmitting(false);
+        return;
+      }
       clear();
-      if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
-      else if (isTransfer) { router.push('/pendiente-de-pago/'); }
-      else { router.push('/confirmacion/'); }
+      if (isMp && orderRes.initPoint)       { window.location.href = orderRes.initPoint; }
+      else if (isPaypal && orderRes.paypalUrl) { window.location.href = orderRes.paypalUrl; }
+      else if (isTransfer)                   { router.push('/pendiente-de-pago/'); }
+      else                                   { router.push('/confirmacion/'); }
     } catch {
       setSubmitError('Hubo un error al procesar el pedido. Verificá tu conexión e intentá de nuevo.');
       setSubmitting(false);
