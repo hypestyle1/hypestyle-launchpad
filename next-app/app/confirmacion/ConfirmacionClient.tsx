@@ -32,6 +32,20 @@ export default function ConfirmacionClient() {
       }
     }
     setFecha(new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }));
+
+    // Fallback: confirm MP payment directly when redirected back from MP
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get('collection_id') || params.get('payment_id');
+    const externalRef = params.get('external_reference');
+    const mpStatus = params.get('collection_status') || params.get('status');
+    if (paymentId && externalRef && mpStatus === 'approved') {
+      const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
+      fetch(`${WP_URL}/wp-json/hypestyle/v1/confirm-payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_id: paymentId, order_id: parseInt(externalRef, 10) }),
+      }).catch(() => {});
+    }
   }, []);
 
   const mpStatus  = searchParams.get('collection_status') || searchParams.get('status');

@@ -32,6 +32,8 @@ export interface CreateOrderPayload {
   shipping: number;
   discountAmount: number;
   paymentMethod: string;
+  shippingMethodId?: string;
+  shippingLabel?: string;
 }
 
 export interface CreateOrderResponse {

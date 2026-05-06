@@ -17,9 +17,9 @@ const PROVINCIAS = [
   'Tierra del Fuego', 'Tucumán',
 ];
 
-const ENVIO_COSTO = 200;
 const FREE_SHIPPING_THRESHOLD = 200000;
 
+interface ShippingRate { id: string; label: string; cost: number }
 interface InfoForm {
   email: string; newsletter: boolean; nombre: string; apellido: string; dni: string;
   direccion: string; depto: string; cp: string; ciudad: string; provincia: string; telefono: string;
@@ -41,12 +41,43 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Shipping rates state
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
+  const [loadingRates, setLoadingRates] = useState(false);
+  const [ratesError, setRatesError] = useState<string | null>(null);
+
   const subtotal = total;
   const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
-  const envioCosto = freeShipping ? 0 : ENVIO_COSTO;
+  const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
+  const shippingReady = freeShipping || !!selectedRate;
   const descuento = couponApplied ? Math.round(subtotal * 0.1) : 0;
   const totalFinal = subtotal - descuento + (step === 'pago' || step === 'envio' ? envioCosto : 0);
   const transferTotal = Math.round(subtotal * 0.90) + (step === 'pago' || step === 'envio' ? envioCosto : 0);
+
+  const fetchRates = async () => {
+    if (!info.cp) return;
+    setLoadingRates(true);
+    setRatesError(null);
+    setShippingRates([]);
+    setSelectedRate(null);
+    try {
+      const res = await fetch(
+        `/api/andreani-rates?cp=${encodeURIComponent(info.cp)}&provincia=${encodeURIComponent(info.provincia)}&valor=${subtotal}&peso=0.5`
+      );
+      const data: { rates?: ShippingRate[]; error?: string } = await res.json();
+      if (data.rates && data.rates.length > 0) {
+        setShippingRates(data.rates);
+        setSelectedRate(data.rates[0]);
+      } else {
+        setRatesError('No se encontraron opciones de envío para este código postal.');
+      }
+    } catch {
+      setRatesError('No se pudo calcular el envío. Intentá de nuevo.');
+    } finally {
+      setLoadingRates(false);
+    }
+  };
 
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +93,8 @@ export default function Checkout() {
         shipping: envioCosto,
         discountAmount: isTransfer ? Math.round(subtotal * 0.10) : 0,
         paymentMethod: pago.metodo,
+        shippingMethodId: selectedRate?.id,
+        shippingLabel: selectedRate?.label,
       });
       sessionStorage.setItem('hype_order', JSON.stringify({
         wcOrderId: orderRes.wcOrderId, wcOrderNumber: orderRes.wcOrderNumber,
@@ -113,7 +146,7 @@ export default function Checkout() {
       <div className="max-w-[1100px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12">
         <div>
           {step === 'info' && (
-            <form onSubmit={e => { e.preventDefault(); setStep('envio'); }} className="space-y-6">
+            <form onSubmit={e => { e.preventDefault(); setStep('envio'); fetchRates(); }} className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-[15px] font-semibold">Contacto</h2>
@@ -165,21 +198,61 @@ export default function Checkout() {
                   <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">Cambiar</button>
                 </div>
               </div>
+
               <div>
                 <h2 className="text-[15px] font-semibold mb-3">Método de envío</h2>
-                <label className="flex items-center justify-between border border-foreground px-4 py-4 cursor-pointer bg-blue-50/30 rounded-[10px]">
-                  <div className="flex items-center gap-3">
-                    <input type="radio" name="envio" defaultChecked className="w-4 h-4 accent-foreground" />
-                    <div><p className="text-[13px] font-medium">Andreani — Envío a domicilio</p><p className="text-[11px] text-muted-foreground">5 a 10 días hábiles</p></div>
+
+                {loadingRates && (
+                  <div className="border border-border px-4 py-4 rounded-[10px] flex items-center gap-3">
+                    <svg className="animate-spin w-4 h-4 text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    <p className="text-[13px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
                   </div>
-                  {freeShipping ? (
-                    <div className="text-right"><span className="text-[12px] text-muted-foreground line-through block">{formatPrice(ENVIO_COSTO)}</span><span className="text-[13px] font-semibold text-green-700">Gratis</span></div>
-                  ) : <span className="text-[13px] font-semibold">{formatPrice(ENVIO_COSTO)}</span>}
-                </label>
+                )}
+
+                {ratesError && !loadingRates && (
+                  <div className="space-y-3">
+                    <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
+                    <button type="button" onClick={fetchRates}
+                      className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
+                      Intentar de nuevo
+                    </button>
+                  </div>
+                )}
+
+                {!loadingRates && shippingRates.length > 0 && (
+                  <div className="space-y-2">
+                    {shippingRates.map(rate => (
+                      <label key={rate.id} className={`flex items-center justify-between border px-4 py-4 cursor-pointer transition-colors rounded-[10px] ${selectedRate?.id === rate.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
+                        <div className="flex items-center gap-3">
+                          <input type="radio" name="envio" checked={selectedRate?.id === rate.id}
+                            onChange={() => setSelectedRate(rate)} className="w-4 h-4 accent-foreground" />
+                          <div>
+                            <p className="text-[13px] font-medium">{rate.label}</p>
+                          </div>
+                        </div>
+                        {freeShipping ? (
+                          <div className="text-right">
+                            <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
+                            <span className="text-[13px] font-semibold text-green-700">Gratis</span>
+                          </div>
+                        ) : (
+                          <span className="text-[13px] font-semibold">{formatPrice(rate.cost)}</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
+
               <div className="flex items-center justify-between pt-2">
                 <button type="button" onClick={() => setStep('info')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">‹ Volver a información</button>
-                <button type="submit" className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]">Continuar con el pago</button>
+                <button type="submit" disabled={loadingRates || !shippingReady}
+                  className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed">
+                  Continuar con el pago
+                </button>
               </div>
             </form>
           )}
@@ -195,6 +268,12 @@ export default function Checkout() {
                   <div className="flex gap-2"><span className="text-muted-foreground">Enviar a</span><span>{info.direccion}, {info.ciudad}</span></div>
                   <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">Cambiar</button>
                 </div>
+                {selectedRate && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex gap-2"><span className="text-muted-foreground">Envío</span><span>{selectedRate.label}</span></div>
+                    <button type="button" onClick={() => setStep('envio')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">Cambiar</button>
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-[13px] font-semibold mb-1">Dejanos tu Instagram para sumarte a Close Friends.</p>
@@ -274,10 +353,23 @@ export default function Checkout() {
               {descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento (10%)</span><span>−{formatPrice(descuento)}</span></div>}
               <div className="flex justify-between text-[13px]">
                 <span className="text-muted-foreground">Envío</span>
-                <span>{step === 'info' ? <span className="text-muted-foreground">Se calcula a continuación</span> : freeShipping ? <><span className="line-through text-muted-foreground mr-1">{formatPrice(ENVIO_COSTO)}</span><span className="text-green-700 font-semibold">Gratis</span></> : formatPrice(ENVIO_COSTO)}</span>
+                <span>
+                  {step === 'info' ? (
+                    <span className="text-muted-foreground">Se calcula a continuación</span>
+                  ) : loadingRates ? (
+                    <span className="text-muted-foreground">Calculando...</span>
+                  ) : freeShipping ? (
+                    <><span className="line-through text-muted-foreground mr-1">{selectedRate ? formatPrice(selectedRate.cost) : ''}</span><span className="text-green-700 font-semibold">Gratis</span></>
+                  ) : selectedRate ? (
+                    formatPrice(selectedRate.cost)
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </span>
               </div>
               <div className="flex justify-between text-[16px] font-bold border-t border-border pt-3 mt-2">
-                <span>Total</span><span>{formatPrice(step === 'info' ? subtotal - descuento : totalFinal)}</span>
+                <span>Total</span>
+                <span>{formatPrice(step === 'info' || !shippingReady ? subtotal - descuento : totalFinal)}</span>
               </div>
             </div>
           </div>
