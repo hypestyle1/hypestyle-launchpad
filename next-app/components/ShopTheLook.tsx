@@ -14,59 +14,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { X } from "lucide-react";
-
-interface LookProduct {
-  category: string;
-  name: string;
-  price: number;
-  image: string;
-  slug: string;
-}
-
-interface Look {
-  id: string;
-  title: string;
-  image: string;
-  products: LookProduct[];
-}
-
-const looks: Look[] = [
-  {
-    id: "look-halfzip-polo",
-    title: "Half Zip Polo Grey",
-    image: "stl-look-halfzip-polo-grey.png",
-    products: [
-      { category: "Polo", name: "Half Zip Polo Grey", price: 0, image: "stl-look-halfzip-polo-grey.png", slug: "half-zip-polo-grey" },
-    ],
-  },
-  {
-    id: "look-melange",
-    title: "Melange Tracksuit",
-    image: "stl-look-melange-tracksuit.png",
-    products: [
-      { category: "Hoodie", name: "Melange Hoodie", price: 0, image: "stl-look-melange-tracksuit.png", slug: "hoodie-melange" },
-      { category: "Pantalón", name: "Melange SweatPant", price: 0, image: "stl-look-melange-tracksuit.png", slug: "sweatpant-melange" },
-    ],
-  },
-  {
-    id: "look-pink",
-    title: "Pink Set",
-    image: "stl-look-pink-set.png",
-    products: [
-      { category: "Hoodie", name: "Zip Hoodie Pink", price: 135000, image: "stl-look-pink-set.png", slug: "zip-hoodie-pink" },
-      { category: "Pantalón", name: "SweatPant Pink", price: 125000, image: "stl-look-pink-set.png", slug: "sweatpant-pink" },
-    ],
-  },
-  {
-    id: "look-01",
-    title: "Camo Set",
-    image: "stl-look-camo-front.png",
-    products: [
-      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-look-camo-front.png", slug: "zip-hoodie-camo" },
-      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
-    ],
-  },
-];
+import { LOOKS, type Look } from "@/data/looks";
 
 export default function ShopTheLook() {
   const dragRef = useDragScroll();
@@ -84,7 +32,7 @@ export default function ShopTheLook() {
         ref={dragRef}
         className="reveal rd2 flex gap-[2px] overflow-x-auto no-scrollbar snap-x snap-mandatory cursor-grab select-none px-[10vw] md:px-0"
       >
-        {looks.map((look) => (
+        {LOOKS.map((look) => (
           <div
             key={look.id}
             className="flex-none w-[80vw] md:flex-1 snap-center transition-transform duration-300 ease-out hover:scale-[1.02] hover:z-10 relative"
