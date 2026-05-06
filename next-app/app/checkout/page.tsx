@@ -317,9 +317,9 @@ export default function Checkout() {
                 )}
               </div>
               <div>
-                <p className="text-[13px] font-semibold mb-1">Dejanos tu Instagram para sumarte a Close Friends.</p>
+                <p className="text-[13px] font-semibold mb-1">Instagram <span className="text-destructive">*</span></p>
                 <textarea value={pago.instagram} onChange={e => setPago({ ...pago, instagram: e.target.value })}
-                  placeholder="Escribí acá tu usuario de Instagram" rows={2}
+                  placeholder="@tuusuario — para sumarte a Close Friends" rows={2} required
                   className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors resize-none rounded-[10px]" />
               </div>
               <div>
@@ -330,7 +330,6 @@ export default function Checkout() {
                     { id: 'transferencia', label: 'Transferencia o depósito bancario', sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (10% off)` : '' },
                     { id: 'mercadopago', label: 'Mercado Pago', sub: '' },
                     { id: 'paypal', label: 'PayPal', sub: '' },
-                    { id: 'efectivo', label: 'Efectivo', sub: '' },
                   ].map(m => (
                     <label key={m.id} className={`flex items-center gap-3 border px-4 py-3.5 cursor-pointer transition-colors rounded-[10px] ${pago.metodo === m.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
                       <input type="radio" name="metodo" value={m.id} checked={pago.metodo === m.id} onChange={() => setPago({ ...pago, metodo: m.id })} className="w-4 h-4 accent-foreground" />
