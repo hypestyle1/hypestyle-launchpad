@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const MP_TOKEN   = process.env.MP_ACCESS_TOKEN!;
 const FRONTEND   = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle-launchpad.vercel.app';
-const WP_URL     = process.env.NEXT_PUBLIC_WP_URL || '';
+const WP_URL     = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 
 export async function POST(req: NextRequest) {
   try {
