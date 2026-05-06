@@ -20,6 +20,7 @@ const PROVINCIAS = [
 const FREE_SHIPPING_THRESHOLD = 200000;
 
 interface ShippingRate { id: string; label: string; cost: number }
+interface AndBranch { id: string; label: string; direccion: string }
 interface InfoForm {
   email: string; newsletter: boolean; nombre: string; apellido: string; dni: string;
   direccion: string; depto: string; cp: string; ciudad: string; provincia: string; telefono: string;
@@ -47,6 +48,14 @@ export default function Checkout() {
   const [loadingRates, setLoadingRates] = useState(false);
   const [ratesError, setRatesError] = useState<string | null>(null);
 
+  // Andreani branches state
+  const [branches, setBranches] = useState<AndBranch[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<AndBranch | null>(null);
+  const [loadingBranches, setLoadingBranches] = useState(false);
+
+  const isSucursal = selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal');
+  const branchReady = !isSucursal || !!selectedBranch;
+
   const subtotal = total;
   const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
   const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
@@ -61,6 +70,8 @@ export default function Checkout() {
     setRatesError(null);
     setShippingRates([]);
     setSelectedRate(null);
+    setBranches([]);
+    setSelectedBranch(null);
     try {
       const res = await fetch(
         `/api/andreani-rates?cp=${encodeURIComponent(info.cp)}&provincia=${encodeURIComponent(info.provincia)}&valor=${subtotal}&peso=0.5`
@@ -77,6 +88,28 @@ export default function Checkout() {
     } finally {
       setLoadingRates(false);
     }
+  };
+
+  const fetchBranches = async (rate: ShippingRate) => {
+    const isSuc = rate.label?.toLowerCase().includes('sucursal') || rate.id?.toLowerCase().includes('sucursal');
+    if (!isSuc) { setBranches([]); setSelectedBranch(null); return; }
+    setLoadingBranches(true);
+    setBranches([]);
+    setSelectedBranch(null);
+    try {
+      const res = await fetch(`/api/andreani-branches?cp=${encodeURIComponent(info.cp)}`);
+      const data: { branches?: AndBranch[] } = await res.json();
+      setBranches(data.branches ?? []);
+    } catch {
+      setBranches([]);
+    } finally {
+      setLoadingBranches(false);
+    }
+  };
+
+  const handleRateSelect = (rate: ShippingRate) => {
+    setSelectedRate(rate);
+    fetchBranches(rate);
   };
 
   const handlePagoSubmit = async (e: React.FormEvent) => {
@@ -98,6 +131,7 @@ export default function Checkout() {
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
           shippingLabel: selectedRate?.label,
+          shippingBranch: selectedBranch ? `${selectedBranch.label} — ${selectedBranch.direccion}` : undefined,
         });
       } catch (wcErr) {
         console.error('[checkout] create-order error:', wcErr);
@@ -269,7 +303,7 @@ export default function Checkout() {
                       <label key={rate.id} className={`flex items-center justify-between border px-4 py-4 cursor-pointer transition-colors rounded-[10px] ${selectedRate?.id === rate.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
                         <div className="flex items-center gap-3">
                           <input type="radio" name="envio" checked={selectedRate?.id === rate.id}
-                            onChange={() => setSelectedRate(rate)} className="w-4 h-4 accent-foreground" />
+                            onChange={() => handleRateSelect(rate)} className="w-4 h-4 accent-foreground" />
                           <div>
                             <p className="text-[13px] font-medium">{rate.label}</p>
                           </div>
@@ -286,11 +320,43 @@ export default function Checkout() {
                     ))}
                   </div>
                 )}
+
+                {/* Selector de sucursal Andreani */}
+                {isSucursal && (
+                  <div className="mt-4">
+                    <p className="text-[13px] font-semibold mb-2">Elegí tu sucursal Andreani</p>
+                    {loadingBranches && (
+                      <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
+                        <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                        Buscando sucursales cerca de CP {info.cp}...
+                      </div>
+                    )}
+                    {!loadingBranches && branches.length > 0 && (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {branches.map(b => (
+                          <label key={b.id} className={`flex items-start gap-3 border px-4 py-3 cursor-pointer transition-colors rounded-[10px] ${selectedBranch?.id === b.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
+                            <input type="radio" name="sucursal" checked={selectedBranch?.id === b.id}
+                              onChange={() => setSelectedBranch(b)} className="w-4 h-4 accent-foreground mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-[13px] font-medium">{b.label}</p>
+                              {b.direccion && <p className="text-[11px] text-muted-foreground">{b.direccion}</p>}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    {!loadingBranches && branches.length === 0 && (
+                      <p className="text-[12px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
+                        No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-2">
                 <button type="button" onClick={() => setStep('info')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">‹ Volver a información</button>
-                <button type="submit" disabled={loadingRates || !shippingReady}
+                <button type="submit" disabled={loadingRates || !shippingReady || !branchReady}
                   className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed">
                   Continuar con el pago
                 </button>
@@ -311,8 +377,11 @@ export default function Checkout() {
                 </div>
                 {selectedRate && (
                   <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex gap-2"><span className="text-muted-foreground">Envío</span><span>{selectedRate.label}</span></div>
-                    <button type="button" onClick={() => setStep('envio')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">Cambiar</button>
+                    <div className="flex gap-2 flex-col">
+                      <div className="flex gap-2"><span className="text-muted-foreground">Envío</span><span>{selectedRate.label}</span></div>
+                      {selectedBranch && <span className="text-[11px] text-muted-foreground pl-0">{selectedBranch.label} — {selectedBranch.direccion}</span>}
+                    </div>
+                    <button type="button" onClick={() => setStep('envio')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px] flex-shrink-0 ml-4">Cambiar</button>
                   </div>
                 )}
               </div>
