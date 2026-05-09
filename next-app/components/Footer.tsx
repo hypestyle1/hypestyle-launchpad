@@ -25,7 +25,7 @@ const rrssLinks = [
   { label: "TikTok", href: "https://tiktok.com/@hypestyle" },
   { label: "YouTube", href: "https://youtube.com/@hypestyle" },
   { label: "Facebook", href: "https://facebook.com/hypestylearg" },
-  { label: "WhatsApp", href: "https://wa.me/" },
+  { label: "WhatsApp", href: "https://wa.me/5491178292430" },
 ];
 
 const languages = ["ES", "EN", "PT", "DE", "FR", "IT"];
