@@ -233,7 +233,7 @@ export default function Checkout() {
                       onChange={(e) => setInfo({ ...info, apellido: e.target.value })}
                       className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                   </div>
-                  <input placeholder="DNI" value={info.dni}
+                  <input placeholder="DNI" required value={info.dni}
                     onChange={(e) => setInfo({ ...info, dni: e.target.value })}
                     className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                   <input placeholder="Dirección y número" required value={info.direccion}
