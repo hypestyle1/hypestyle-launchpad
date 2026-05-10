@@ -8,7 +8,7 @@ import { imgSrc } from '@/lib/img';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { PRODUCTS } from '@/data/products';
+import { useProducts } from '@/hooks/useProducts';
 import LocalePopup from '@/components/LocalePopup';
 
 const navLinks = [
@@ -90,12 +90,15 @@ export default function Navbar() {
   const { count, setDrawerOpen } = useCart();
   const { items: wishlistItems, setDrawerOpen: openWishlist } = useWishlist();
   const { formatPrice } = useLocale();
+  const { data: allProducts = [] } = useProducts(100);
 
   const searchResults = searchQuery.length >= 2
-    ? PRODUCTS.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 6)
+    ? allProducts
+        .filter(p =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.category.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .slice(0, 6)
     : [];
 
   useEffect(() => {
@@ -313,7 +316,7 @@ export default function Navbar() {
                 <Link key={p.slug} href={`/producto/${p.slug}/`}
                   onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
-                  <img src={imgSrc(p.images[0])} alt={p.name}
+                  <img src={imgSrc(p.image)} alt={p.name}
                     className="w-10 h-10 object-cover flex-shrink-0 bg-bg-alt"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   <div className="flex-1 min-w-0">

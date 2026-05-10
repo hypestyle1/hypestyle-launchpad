@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
-import { getProduct } from '@/data/products';
+import { useProduct } from '@/hooks/useProduct';
 import Navbar from '@/components/Navbar';
 import AnnouncementBar from '@/components/AnnouncementBar';
 
@@ -61,7 +61,7 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { add, setDrawerOpen } = useCart();
-  const product = getProduct(slug || '');
+  const { data: product, isLoading } = useProduct(slug || undefined);
   const selectedSize = searchParams.get('talle');
 
   const [view, setView] = useState<'espalda' | 'frente'>('espalda');
@@ -76,6 +76,12 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
 
   useEffect(() => { redraw(); }, [redraw]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  if (isLoading) return (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   if (!product) return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">

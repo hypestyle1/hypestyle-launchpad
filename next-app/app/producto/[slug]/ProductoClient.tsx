@@ -9,8 +9,8 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
-import { getRelated } from '@/data/products';
 import { useProduct } from '@/hooks/useProduct';
+import { useProducts } from '@/hooks/useProducts';
 import { checkStock } from '@/lib/checkStock';
 
 function CareIcon({ type }: { type: string }) {
@@ -111,7 +111,13 @@ export default function ProductoClient({ slug }: { slug: string }) {
   const router = useRouter();
   const { formatPrice, currency } = useLocale();
   const { data: product, isLoading } = useProduct(slug);
-  const related = useMemo(() => product ? getRelated(product.slug) : [], [product?.slug]);
+  const { data: allProducts = [] } = useProducts(20);
+  const related = useMemo(() => {
+    if (!product) return [];
+    return [...allProducts.filter(p => p.slug !== product.slug)]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 4);
+  }, [allProducts, product?.slug]);
 
   const [mounted, setMounted]               = useState(false);
   const [selectedImage, setSelectedImage]   = useState(0);
@@ -403,10 +409,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
           <h2 className="text-lg font-bold uppercase tracking-tight mb-6">Completa el Look</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
             {related.map(p => (
-              <ProductCard key={p.slug} id={p.slug} name={p.name} category={p.category}
-                price={p.price} originalPrice={p.originalPrice}
-                image={p.images[0] ?? ''} images={p.images} sizes={p.sizes} stock={p.stock}
-                href={`/producto/${p.slug}/`} />
+              <ProductCard key={p.slug} {...p} />
             ))}
           </div>
         </section>

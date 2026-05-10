@@ -1,9 +1,10 @@
 'use client';
 
+import { useMemo } from 'react';
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 const BACK_SLUGS = [
   "lettering-pink-jort", "jort-cargo-realtree-beige", "jort-cargo-realtree-pink",
@@ -13,19 +14,12 @@ const BACK_SLUGS = [
   "no-service-for-the-faithless-tees", "regular-tees-3-pack-black-white-melange",
 ];
 
-const products = BACK_SLUGS
-  .map(slug => PRODUCTS.find(p => p.slug === slug))
-  .filter(Boolean)
-  .map(p => ({
-    id: p!.slug,
-    name: p!.name, category: p!.category, price: p!.price,
-    originalPrice: p!.originalPrice,
-    image: p!.images[0], images: p!.images,
-    sizes: p!.sizes, stock: p!.stock,
-    href: `/producto/${p!.slug}/`,
-  }));
-
 export default function BackInStock() {
+  const { data: allProducts = [] } = useProducts(100);
+  const products = useMemo(
+    () => allProducts.filter(p => BACK_SLUGS.includes(p.slug)),
+    [allProducts]
+  );
   const ref = useReveal();
 
   return (
@@ -35,7 +29,7 @@ export default function BackInStock() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (
-          <div key={p.name} className={`reveal rd${Math.min(i + 2, 8)}`}>
+          <div key={p.slug} className={`reveal rd${Math.min(i + 2, 8)}`}>
             <ProductCard {...p} />
           </div>
         ))}

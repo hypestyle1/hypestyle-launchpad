@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchGraphQL } from '@/lib/graphql-client';
-import { PRODUCTS } from '@/data/products';
 
 const GET_PRODUCTS = `
   query GetProducts($first: Int) {
@@ -113,43 +112,17 @@ function fromWPNode(node: any): NormalizedProduct {
   };
 }
 
-function staticFallback(first: number, category?: string): NormalizedProduct[] {
-  const list = category
-    ? PRODUCTS.filter(p => p.category.toLowerCase() === category.toLowerCase())
-    : PRODUCTS;
-  return list.slice(0, first).map(p => ({
-    id: p.slug,
-    name: p.name,
-    slug: p.slug,
-    category: p.category,
-    price: p.price,
-    originalPrice: p.originalPrice,
-    image: p.images[0] ?? '',
-    images: p.images,
-    href: `/producto/${p.slug}/`,
-    sizes: p.sizes,
-    stock: p.stock,
-  }));
-}
-
 export function useProducts(first = 20, category?: string) {
   return useQuery<NormalizedProduct[]>({
     queryKey: ['products', first, category],
     staleTime: 2 * 60 * 1000,
-    initialData: () => staticFallback(first, category),
-    initialDataUpdatedAt: Date.now(),
     queryFn: async (): Promise<NormalizedProduct[]> => {
-      try {
-        const data = await fetchGraphQL<{ products: { nodes: any[] } }>(GET_PRODUCTS, { first });
-        const nodes = data?.products?.nodes ?? [];
-        if (!nodes.length) return staticFallback(first, category);
-        const all = nodes.map(fromWPNode);
-        return category
-          ? all.filter(p => p.category.toLowerCase() === category.toLowerCase())
-          : all;
-      } catch {
-        return staticFallback(first, category);
-      }
+      const data = await fetchGraphQL<{ products: { nodes: any[] } }>(GET_PRODUCTS, { first });
+      const nodes = data?.products?.nodes ?? [];
+      const all = nodes.map(fromWPNode);
+      return category
+        ? all.filter(p => p.category.toLowerCase() === category.toLowerCase())
+        : all;
     },
   });
 }
