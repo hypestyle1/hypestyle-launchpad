@@ -1,27 +1,10 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
-
-import { PRODUCTS } from "@/data/products";
-
-const products = PRODUCTS
-  .filter(p => p.originalPrice && p.originalPrice > p.price)
-  .sort((a, b) => (b.originalPrice! - b.price) / b.originalPrice! - (a.originalPrice! - a.price) / a.originalPrice!)
-  .slice(0, 8)
-  .map(p => {
-    const pct = Math.round((1 - p.price / p.originalPrice!) * 100);
-    return {
-      id: p.slug,
-      name: p.name, category: p.category, price: p.price,
-      originalPrice: p.originalPrice, badge: `−${pct}%`,
-      image: p.images[0], images: p.images,
-      sizes: p.sizes, stock: p.stock,
-      href: `/producto/${p.slug}/`,
-    };
-  });
+import { useProducts } from "@/hooks/useProducts";
 
 function Countdown() {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -62,6 +45,21 @@ function Countdown() {
 }
 
 export default function SpecialPrices() {
+  const { data: allProducts = [] } = useProducts(100);
+  const products = useMemo(() => {
+    return allProducts
+      .filter(p => p.originalPrice !== undefined && p.originalPrice > p.price)
+      .sort((a, b) =>
+        (b.originalPrice! - b.price) / b.originalPrice! -
+        (a.originalPrice! - a.price) / a.originalPrice!
+      )
+      .slice(0, 8)
+      .map(p => ({
+        ...p,
+        badge: `−${Math.round((1 - p.price / p.originalPrice!) * 100)}%`,
+      }));
+  }, [allProducts]);
+
   const ref = useReveal();
 
   return (
@@ -73,7 +71,7 @@ export default function SpecialPrices() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (
-          <div key={p.name} className={`reveal rd${Math.min(i + 2, 8)}`}>
+          <div key={p.slug} className={`reveal rd${Math.min(i + 2, 8)}`}>
             <ProductCard {...p} />
           </div>
         ))}

@@ -3,7 +3,7 @@
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
 import { useLocale } from "@/context/LocaleContext";
-import { PRODUCTS } from "@/data/products";
+import { useProducts, type NormalizedProduct } from "@/hooks/useProducts";
 import { imgSrc } from "@/lib/img";
 import { useState } from "react";
 
@@ -12,15 +12,14 @@ export default function WishlistDrawer() {
   const { add, setDrawerOpen: openCart } = useCart();
   const { formatPrice } = useLocale();
   const [addedId, setAddedId] = useState<string | null>(null);
+  const { data: allProducts = [] } = useProducts(200);
 
   if (!drawerOpen) return null;
 
-  const products = items
-    .map((slug) => PRODUCTS.find((p) => p.slug === slug))
-    .filter(Boolean) as (typeof PRODUCTS[0])[];
+  const products = allProducts.filter(p => items.includes(p.slug));
 
-  const handleAddToCart = (p: typeof PRODUCTS[0], size: string) => {
-    add({ id: p.slug, name: p.name, price: p.price, image: p.images[0], size, quantity: 1 });
+  const handleAddToCart = (p: NormalizedProduct, size: string) => {
+    add({ id: p.slug, name: p.name, price: p.price, image: p.image, size, quantity: 1 });
     setAddedId(p.slug);
     setTimeout(() => setAddedId(null), 1500);
     openCart(true);
@@ -70,7 +69,7 @@ export default function WishlistDrawer() {
                 return (
                   <div key={p.slug} className="flex gap-4">
                     <a href={`/producto/${p.slug}/`} className="w-20 h-24 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[5px] block">
-                      <img src={imgSrc(p.images[0])} alt={p.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <img src={imgSrc(p.image)} alt={p.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     </a>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">

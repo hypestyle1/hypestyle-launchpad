@@ -1,11 +1,12 @@
 'use client';
 
+import { useMemo } from 'react';
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 const SLUGS = [
   'zip-hoodie-pink',
@@ -18,7 +19,11 @@ const SLUGS = [
 ];
 
 export default function PinkSetDropPage() {
-  const products = PRODUCTS.filter(p => SLUGS.includes(p.slug));
+  const { data: allProducts = [] } = useProducts(100);
+  const products = useMemo(
+    () => allProducts.filter(p => SLUGS.includes(p.slug)),
+    [allProducts]
+  );
   const ref = useReveal([products]);
 
   return (
@@ -38,18 +43,7 @@ export default function PinkSetDropPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
             {products.map((p, i) => (
               <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
-                <ProductCard
-                  id={p.slug}
-                  name={p.name}
-                  category={p.category}
-                  price={p.price}
-                  originalPrice={p.originalPrice}
-                  image={p.images[0]}
-                  images={p.images}
-                  sizes={p.sizes}
-                  stock={p.stock}
-                  href={`/producto/${p.slug}/`}
-                />
+                <ProductCard {...p} />
               </div>
             ))}
           </div>

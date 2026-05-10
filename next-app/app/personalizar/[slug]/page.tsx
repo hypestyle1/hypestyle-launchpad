@@ -1,9 +1,13 @@
 import { Suspense } from 'react';
-import { PRODUCTS } from '@/data/products';
+import { fetchProductSlugs } from '@/lib/wp-products';
 import PersonalizarClient from './PersonalizarClient';
 
+export const revalidate = 3600;
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
-  return PRODUCTS.filter(p => p.customizable).map(p => ({ slug: p.slug }));
+  const slugs = await fetchProductSlugs();
+  return slugs.map(slug => ({ slug }));
 }
 
 export default function PersonalizarPage({ params }: { params: { slug: string } }) {

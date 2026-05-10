@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchGraphQL } from '@/lib/graphql-client';
-import { PRODUCTS, type Product } from '@/data/products';
+import { type Product } from '@/data/products';
 
 const GET_PRODUCT = `
   query GetProduct($slug: ID!) {
@@ -167,23 +167,15 @@ function fromWPNode(node: any): Product {
 }
 
 export function useProduct(slug: string | undefined) {
-  const staticProduct = slug ? PRODUCTS.find(p => p.slug === slug) : undefined;
-
   return useQuery<Product | undefined>({
     queryKey: ['product', slug],
     enabled: !!slug,
     staleTime: 2 * 60 * 1000,
-    initialData: staticProduct,
-    initialDataUpdatedAt: Date.now(),
     queryFn: async (): Promise<Product | undefined> => {
       if (!slug) return undefined;
-      try {
-        const data = await fetchGraphQL<{ product: any }>(GET_PRODUCT, { slug });
-        if (!data?.product) return staticProduct;
-        return fromWPNode(data.product);
-      } catch {
-        return staticProduct;
-      }
+      const data = await fetchGraphQL<{ product: any }>(GET_PRODUCT, { slug });
+      if (!data?.product) return undefined;
+      return fromWPNode(data.product);
     },
   });
 }
