@@ -54,9 +54,9 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-const SIZE_GUIDE_IMAGE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
+const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
 
-function SizeGuideModal({ onClose }: { onClose: () => void }) {
+function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div className="bg-white w-full max-w-[520px] shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -67,7 +67,7 @@ function SizeGuideModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <div className="relative w-full">
-          <Image src={SIZE_GUIDE_IMAGE} alt="Guía de talles" width={520} height={600} className="w-full h-auto" />
+          <Image src={image} alt="Guía de talles" width={520} height={600} className="w-full h-auto" />
         </div>
       </div>
     </div>
@@ -414,7 +414,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
       </div>
 
       {/* Size guide */}
-      {sizeGuideOpen && <SizeGuideModal onClose={() => setSizeGuideOpen(false)} />}
+      {sizeGuideOpen && <SizeGuideModal onClose={() => setSizeGuideOpen(false)} image={product.sizeGuideImage || DEFAULT_SIZE_GUIDE} />}
 
       {/* Added to cart popup */}
       {added && (

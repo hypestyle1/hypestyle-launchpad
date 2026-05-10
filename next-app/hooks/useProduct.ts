@@ -171,11 +171,16 @@ function fromWPNode(node: any): Product {
     (a: any) => a.name?.toLowerCase() === 'fit'
   );
   const fit = fitAttr?.options?.[0]?.trim() || extractFit(description, category);
+
+  const sizeGuideAttr = (node.attributes?.nodes ?? []).find(
+    (a: any) => a.name?.toLowerCase() === 'size-guide' || a.name?.toLowerCase() === 'guia-talles'
+  );
+  const sizeGuideImage = sizeGuideAttr?.options?.[0]?.trim() || undefined;
   const careItems = category === 'Accesorio' ? CARE_ACCESSORY : CARE_APPAREL;
 
   return {
     slug, id: slug, name, category, price, originalPrice,
-    description, modelInfo, careItems, fit, sizes, stock,
+    description, modelInfo, sizeGuideImage, careItems, fit, sizes, stock,
     colors: [{ label: color.label, value: color.value, image: allImages[0] }],
     images: allImages,
   };
