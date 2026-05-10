@@ -10,7 +10,6 @@ const GET_PRODUCTS = `
         id
         name
         slug
-        productTags { nodes { slug } }
         ... on SimpleProduct {
           price
           regularPrice
@@ -20,6 +19,7 @@ const GET_PRODUCTS = `
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name } }
+          productTags { nodes { slug } }
         }
         ... on VariableProduct {
           price
@@ -27,6 +27,7 @@ const GET_PRODUCTS = `
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name } }
+          productTags { nodes { slug } }
           variations(first: 20) {
             nodes {
               stockStatus
