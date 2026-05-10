@@ -11,6 +11,7 @@ const GET_PRODUCT = `
       name
       slug
       description
+      shortDescription
       ... on SimpleProduct {
         price
         regularPrice
@@ -121,6 +122,7 @@ function fromWPNode(node: any): Product {
   const slug     = node.slug || '';
   const category = node.productCategories?.nodes?.[0]?.name || 'Remera';
   const description = stripHtml(node.description || '');
+  const modelInfo   = stripHtml(node.shortDescription || '') || undefined;
 
   const regular = parsePrice(node.regularPrice || node.price);
   const sale    = parsePrice(node.salePrice);
@@ -160,7 +162,7 @@ function fromWPNode(node: any): Product {
 
   return {
     slug, id: slug, name, category, price, originalPrice,
-    description, careItems, fit, sizes, stock,
+    description, modelInfo, careItems, fit, sizes, stock,
     colors: [{ label: color.label, value: color.value, image: allImages[0] }],
     images: allImages,
   };

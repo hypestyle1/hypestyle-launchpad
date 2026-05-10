@@ -72,10 +72,6 @@ function SizeGuideModal({ onClose }: { onClose: () => void }) {
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 1l12 12M13 1L1 13" /></svg>
           </button>
         </div>
-        <div className="px-6 py-4 bg-[#f8f8f6] border-b border-border space-y-1">
-          <p className="text-[12px] text-foreground/70"><span className="font-semibold text-foreground">Modelo (hombre)</span> — 1.80m de altura, talle <span className="font-semibold">M</span></p>
-          <p className="text-[12px] text-foreground/70"><span className="font-semibold text-foreground">Modelo (mujer)</span> — 1.68m de altura, talle <span className="font-semibold">S</span></p>
-        </div>
         <div className="px-6 py-5">
           <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-3">Medidas en centímetros</p>
           <table className="w-full text-[12px]">
@@ -288,10 +284,11 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 )}
               </div>
 
-              <div className="bg-[#f8f8f6] border border-border px-5 py-5 space-y-0.5 mt-3 rounded-[10px]">
-                <p className="text-[12px] text-foreground/70"><span className="font-semibold text-foreground">Modelo (hombre)</span> — 1.80m de altura, talle <span className="font-semibold">M</span></p>
-                <p className="text-[12px] text-foreground/70"><span className="font-semibold text-foreground">Modelo (mujer)</span> — 1.68m de altura, talle <span className="font-semibold">S</span></p>
-              </div>
+              {product.modelInfo && (
+                <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 rounded-[10px]">
+                  <p className="text-[12px] text-foreground/70 whitespace-pre-line">{product.modelInfo}</p>
+                </div>
+              )}
 
               {product.colors.length > 1 && (
                 <div className="mb-4 mt-4">

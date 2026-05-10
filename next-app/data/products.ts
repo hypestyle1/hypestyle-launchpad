@@ -15,6 +15,7 @@ export interface Product {
   images: string[];
   customizable?: boolean;
   customPreviewImage?: string;
+  modelInfo?: string;
 }
 
 const CARE_APPAREL = [
