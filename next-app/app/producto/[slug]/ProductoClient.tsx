@@ -115,7 +115,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
     if (product) {
       setSelectedColor(product.colors[0].label);
       setSelectedImage(0);
-      setSelectedSize(product.category === 'Accesorio' ? (product.sizes[0] ?? null) : null);
+      const isSingleUnique = product.sizes.length === 1 && product.sizes[0] === 'Única';
+      setSelectedSize(isSingleUnique ? 'Única' : null);
     }
   }, [product?.slug]);
 
@@ -297,7 +298,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
 
               <div className="border-t border-border mb-4" />
 
-              {product.category !== 'Accesorio' && (
+              {!(product.sizes.length === 1 && product.sizes[0] === 'Única') && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] font-semibold uppercase tracking-wider">
