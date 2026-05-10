@@ -285,7 +285,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
               </div>
 
               {product.modelInfo && (
-                <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 rounded-[10px]">
+                <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 mb-4 rounded-[10px]">
                   <p className="text-[12px] text-foreground/70 whitespace-pre-line">{product.modelInfo}</p>
                 </div>
               )}

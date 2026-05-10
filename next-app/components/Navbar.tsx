@@ -22,7 +22,7 @@ const navLinks = [
 const megaMenu = {
   general: [
     { label: 'Ver todo',       href: '/productos/',      homeHash: null,             isNew: false },
-    { label: 'New In',         href: '/best-sellers/',   homeHash: 'best-sellers',   isNew: true  },
+    { label: 'New In',         href: '/new-in/',          homeHash: 'best-sellers',   isNew: true  },
     { label: 'Colecciones',    href: '/colecciones/',    homeHash: null,             isNew: false },
     { label: 'Best Sellers',   href: '/back-in-stock/',  homeHash: 'back-in-stock',  isNew: false },
     { label: 'Special Prices', href: '/special-prices/', homeHash: 'special-prices', isNew: false },
@@ -47,7 +47,7 @@ const mobilePanels = {
     title: 'Shop',
     items: [
       { label: 'Ver todos los productos', href: '/productos/',      homeHash: null,             panel: null },
-      { label: 'New In',                   href: '/best-sellers/',   homeHash: 'best-sellers',   panel: null },
+      { label: 'New In',                   href: '/new-in/',          homeHash: 'best-sellers',   panel: null },
       { label: 'Colecciones',              href: '/colecciones/',    homeHash: null,             panel: null },
       { label: 'Special Prices',           href: '/special-prices/', homeHash: 'special-prices', panel: null },
       { label: 'Arriba',                   href: null,               homeHash: null,             panel: 'arriba' },
