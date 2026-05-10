@@ -54,7 +54,7 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-const SIZE_GUIDE_IMAGE = '/size-guide.jpg';
+const SIZE_GUIDE_IMAGE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
 
 function SizeGuideModal({ onClose }: { onClose: () => void }) {
   return (
