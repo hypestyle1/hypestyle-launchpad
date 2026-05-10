@@ -12,7 +12,7 @@ export default function BackInStock() {
   return (
     <section id="back-in-stock" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="Best Sellers" link="/back-in-stock/" linkLabel="Ver más" />
+        <SectionHeader title="Best Sellers" link="/best-sellers/" linkLabel="Ver más" />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (
