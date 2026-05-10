@@ -54,13 +54,7 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-const sizeChart = [
-  { size: 'XS', pecho: '84–88', cintura: '66–70', cadera: '90–94' },
-  { size: 'S',  pecho: '88–92', cintura: '70–74', cadera: '94–98' },
-  { size: 'M',  pecho: '92–96', cintura: '74–78', cadera: '98–102' },
-  { size: 'L',  pecho: '96–100', cintura: '78–82', cadera: '102–106' },
-  { size: 'XL', pecho: '100–104', cintura: '82–86', cadera: '106–110' },
-];
+const SIZE_GUIDE_IMAGE = '/size-guide.jpg';
 
 function SizeGuideModal({ onClose }: { onClose: () => void }) {
   return (
@@ -72,25 +66,8 @@ function SizeGuideModal({ onClose }: { onClose: () => void }) {
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 1l12 12M13 1L1 13" /></svg>
           </button>
         </div>
-        <div className="px-6 py-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-3">Medidas en centímetros</p>
-          <table className="w-full text-[12px]">
-            <thead><tr className="border-b border-border">
-              <th className="text-left pb-2 font-semibold text-[11px] uppercase tracking-wider">Talle</th>
-              <th className="text-center pb-2 font-semibold text-[11px] uppercase tracking-wider">Pecho</th>
-              <th className="text-center pb-2 font-semibold text-[11px] uppercase tracking-wider">Cintura</th>
-              <th className="text-center pb-2 font-semibold text-[11px] uppercase tracking-wider">Cadera</th>
-            </tr></thead>
-            <tbody>{sizeChart.map((row, i) => (
-              <tr key={row.size} className={`border-b border-border/50 ${i % 2 === 0 ? '' : 'bg-[#f8f8f6]'}`}>
-                <td className="py-2.5 font-bold">{row.size}</td>
-                <td className="py-2.5 text-center text-muted-foreground">{row.pecho}</td>
-                <td className="py-2.5 text-center text-muted-foreground">{row.cintura}</td>
-                <td className="py-2.5 text-center text-muted-foreground">{row.cadera}</td>
-              </tr>
-            ))}</tbody>
-          </table>
-          <p className="text-[11px] text-muted-foreground mt-4 leading-relaxed">Las medidas son del cuerpo, no de la prenda. Si estás entre dos talles, te recomendamos el más grande.</p>
+        <div className="relative w-full">
+          <Image src={SIZE_GUIDE_IMAGE} alt="Guía de talles" width={520} height={600} className="w-full h-auto" />
         </div>
       </div>
     </div>

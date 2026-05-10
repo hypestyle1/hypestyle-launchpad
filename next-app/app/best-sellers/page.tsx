@@ -8,7 +8,7 @@ import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
 export default function BestSellersPage() {
-  const { data: products = [], isLoading } = useProducts(100, undefined, 'new-in');
+  const { data: products = [], isLoading } = useProducts(100, undefined, 'best-seller');
   const ref = useReveal([products]);
 
   return (
@@ -19,8 +19,8 @@ export default function BestSellersPage() {
 
         <section className="bg-bg-dark text-primary-foreground py-20 px-6 text-center">
           <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Shop</p>
-          <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3">New In</h1>
-          <p className="text-[14px] text-primary-foreground/40">Los más vendidos de la temporada</p>
+          <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3">Best Sellers</h1>
+          <p className="text-[14px] text-primary-foreground/40">Los clásicos que volvieron — por tiempo limitado</p>
         </section>
 
         <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>

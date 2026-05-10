@@ -24,7 +24,7 @@ const megaMenu = {
     { label: 'Ver todo',       href: '/productos/',      homeHash: null,             isNew: false },
     { label: 'New In',         href: '/new-in/',          homeHash: 'best-sellers',   isNew: true  },
     { label: 'Colecciones',    href: '/colecciones/',    homeHash: null,             isNew: false },
-    { label: 'Best Sellers',   href: '/back-in-stock/',  homeHash: 'back-in-stock',  isNew: false },
+    { label: 'Best Sellers',   href: '/best-sellers/',   homeHash: 'back-in-stock',  isNew: false },
     { label: 'Special Prices', href: '/special-prices/', homeHash: 'special-prices', isNew: false },
   ],
   categorias: [

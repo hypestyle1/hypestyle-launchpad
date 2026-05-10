@@ -68,6 +68,8 @@ const COLOR_HEX: Record<string, string> = {
   realtree: '#5a6b42', wheat: '#c8a96e', earth: '#7b5a3c', brown: '#7b5a3c',
 };
 
+const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', 'Única'];
+
 const FIT_KEYWORDS: [string, string][] = [
   ['boxy oversized', 'Boxy Oversized'], ['boxy fit', 'Boxy Fit'],
   ['oversized', 'Oversized'], ['jogger', 'Jogger Fit'],
@@ -157,6 +159,12 @@ function fromWPNode(node: any): Product {
     sizes.push('Única');
     stock['Única'] = stockStatus(node.stockStatus || 'IN_STOCK', node.stockQuantity ?? null);
   }
+
+  sizes.sort((a, b) => {
+    const ai = SIZE_ORDER.indexOf(a);
+    const bi = SIZE_ORDER.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
 
   const color   = guessColor(name);
   const fitAttr = (node.attributes?.nodes ?? []).find(
