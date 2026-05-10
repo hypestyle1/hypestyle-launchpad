@@ -4,12 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchGraphQL } from '@/lib/graphql-client';
 
 const GET_PRODUCTS = `
-  query GetProducts($first: Int, $tag: String) {
-    products(first: $first, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC }, tag: $tag }) {
+  query GetProducts($first: Int) {
+    products(first: $first, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
       nodes {
         id
         name
         slug
+        productTags { nodes { slug } }
         ... on SimpleProduct {
           price
           regularPrice
@@ -51,6 +52,7 @@ export interface NormalizedProduct {
   href: string;
   sizes: string[];
   stock: Record<string, 'ok' | 'low' | 'out'>;
+  tags: string[];
 }
 
 function parsePrice(s?: string | null): number {
@@ -109,6 +111,7 @@ function fromWPNode(node: any): NormalizedProduct {
     href: `/producto/${node.slug}/`,
     sizes,
     stock,
+    tags: (node.productTags?.nodes ?? []).map((t: any) => t.slug),
   };
 }
 
@@ -117,12 +120,12 @@ export function useProducts(first = 20, category?: string, tag?: string) {
     queryKey: ['products', first, category, tag],
     staleTime: 2 * 60 * 1000,
     queryFn: async (): Promise<NormalizedProduct[]> => {
-      const data = await fetchGraphQL<{ products: { nodes: any[] } }>(GET_PRODUCTS, { first, tag });
+      const data = await fetchGraphQL<{ products: { nodes: any[] } }>(GET_PRODUCTS, { first });
       const nodes = data?.products?.nodes ?? [];
-      const all = nodes.map(fromWPNode);
-      return category
-        ? all.filter(p => p.category.toLowerCase() === category.toLowerCase())
-        : all;
+      let all = nodes.map(fromWPNode);
+      if (category) all = all.filter(p => p.category.toLowerCase() === category.toLowerCase());
+      if (tag) all = all.filter(p => p.tags.includes(tag));
+      return all;
     },
   });
 }
