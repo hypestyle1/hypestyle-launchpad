@@ -2,7 +2,7 @@ import { fetchGraphQL } from './graphql-client';
 
 const GET_SLUGS = `
   query GetProductSlugs($first: Int) {
-    products(first: $first, where: { status: "publish" }) {
+    products(first: $first, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
       nodes { slug }
     }
   }

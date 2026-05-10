@@ -5,7 +5,7 @@ import { fetchGraphQL } from '@/lib/graphql-client';
 
 const GET_PRODUCTS = `
   query GetProducts($first: Int) {
-    products(first: $first, where: { status: "publish", orderby: { field: DATE, order: DESC } }) {
+    products(first: $first, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
       nodes {
         id
         name
