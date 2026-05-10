@@ -4,8 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchGraphQL } from '@/lib/graphql-client';
 
 const GET_PRODUCTS = `
-  query GetProducts($first: Int) {
-    products(first: $first, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
+  query GetProducts($first: Int, $tag: String) {
+    products(first: $first, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC }, tag: $tag }) {
       nodes {
         id
         name
@@ -112,12 +112,12 @@ function fromWPNode(node: any): NormalizedProduct {
   };
 }
 
-export function useProducts(first = 20, category?: string) {
+export function useProducts(first = 20, category?: string, tag?: string) {
   return useQuery<NormalizedProduct[]>({
-    queryKey: ['products', first, category],
+    queryKey: ['products', first, category, tag],
     staleTime: 2 * 60 * 1000,
     queryFn: async (): Promise<NormalizedProduct[]> => {
-      const data = await fetchGraphQL<{ products: { nodes: any[] } }>(GET_PRODUCTS, { first });
+      const data = await fetchGraphQL<{ products: { nodes: any[] } }>(GET_PRODUCTS, { first, tag });
       const nodes = data?.products?.nodes ?? [];
       const all = nodes.map(fromWPNode);
       return category

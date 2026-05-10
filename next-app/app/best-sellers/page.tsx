@@ -8,7 +8,7 @@ import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
 export default function BestSellersPage() {
-  const { data: products = [] } = useProducts(20);
+  const { data: products = [], isLoading } = useProducts(100, undefined, 'new-in');
   const ref = useReveal([products]);
 
   return (
@@ -24,6 +24,11 @@ export default function BestSellersPage() {
         </section>
 
         <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : null}
           <p className="text-[12px] text-muted-foreground mb-6">{products.length} productos</p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
             {products.map((p, i) => (

@@ -45,20 +45,16 @@ function Countdown() {
 }
 
 export default function SpecialPrices() {
-  const { data: allProducts = [] } = useProducts(100);
-  const products = useMemo(() => {
-    return allProducts
-      .filter(p => p.originalPrice !== undefined && p.originalPrice > p.price)
-      .sort((a, b) =>
-        (b.originalPrice! - b.price) / b.originalPrice! -
-        (a.originalPrice! - a.price) / a.originalPrice!
-      )
-      .slice(0, 8)
-      .map(p => ({
-        ...p,
-        badge: `−${Math.round((1 - p.price / p.originalPrice!) * 100)}%`,
-      }));
-  }, [allProducts]);
+  const { data: allProducts = [] } = useProducts(8, undefined, 'special-price');
+  const products = useMemo(() =>
+    allProducts.map(p => ({
+      ...p,
+      badge: p.originalPrice && p.originalPrice > p.price
+        ? `−${Math.round((1 - p.price / p.originalPrice!) * 100)}%`
+        : undefined,
+    })),
+    [allProducts]
+  );
 
   const ref = useReveal();
 

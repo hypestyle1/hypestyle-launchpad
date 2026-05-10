@@ -47,19 +47,15 @@ function Countdown() {
 }
 
 export default function SpecialPricesPage() {
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [], isLoading } = useProducts(100, undefined, 'special-price');
 
   const products = useMemo(() =>
-    allProducts
-      .filter(p => p.originalPrice && p.originalPrice > p.price)
-      .sort((a, b) =>
-        (b.originalPrice! - b.price) / b.originalPrice! -
-        (a.originalPrice! - a.price) / a.originalPrice!
-      )
-      .map(p => ({
-        ...p,
-        badge: `−${Math.round((1 - p.price / p.originalPrice!) * 100)}%`,
-      })),
+    allProducts.map(p => ({
+      ...p,
+      badge: p.originalPrice && p.originalPrice > p.price
+        ? `−${Math.round((1 - p.price / p.originalPrice!) * 100)}%`
+        : undefined,
+    })),
     [allProducts]
   );
 
