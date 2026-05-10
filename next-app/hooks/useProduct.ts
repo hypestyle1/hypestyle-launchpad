@@ -21,7 +21,7 @@ const GET_PRODUCT = `
         image { sourceUrl }
         galleryImages { nodes { sourceUrl } }
         productCategories { nodes { name } }
-        attributes { nodes { name value } }
+        attributes { nodes { name options } }
       }
       ... on VariableProduct {
         price
@@ -29,7 +29,7 @@ const GET_PRODUCT = `
         image { sourceUrl }
         galleryImages { nodes { sourceUrl } }
         productCategories { nodes { name } }
-        attributes { nodes { name value } }
+        attributes { nodes { name options } }
         variations(first: 100) {
           nodes {
             stockStatus
@@ -162,7 +162,7 @@ function fromWPNode(node: any): Product {
   const fitAttr = (node.attributes?.nodes ?? []).find(
     (a: any) => a.name?.toLowerCase() === 'fit'
   );
-  const fit = fitAttr?.value?.trim() || extractFit(description, category);
+  const fit = fitAttr?.options?.[0]?.trim() || extractFit(description, category);
   const careItems = category === 'Accesorio' ? CARE_ACCESSORY : CARE_APPAREL;
 
   return {
