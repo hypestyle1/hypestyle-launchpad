@@ -50,7 +50,7 @@ export default function CategoriaPage() {
   const [sort, setSort] = useState<SortKey>('default');
   const [sizeFilter, setSizeFilter] = useState<string[]>([]);
 
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [], isLoading } = useProducts(100);
   const ref = useReveal([allProducts]);
 
   const baseProducts = useMemo(() => {
@@ -133,7 +133,11 @@ export default function CategoriaPage() {
         </div>
 
         <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
-          {products.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : products.length === 0 ? (
             <p className="text-center text-muted-foreground py-20">No hay productos en esta categoría todavía.</p>
           ) : (
             <>
