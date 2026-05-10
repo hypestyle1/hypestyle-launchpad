@@ -112,7 +112,11 @@ export default function ProductoClient({ slug }: { slug: string }) {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    if (product) { setSelectedColor(product.colors[0].label); setSelectedImage(0); setSelectedSize(null); }
+    if (product) {
+      setSelectedColor(product.colors[0].label);
+      setSelectedImage(0);
+      setSelectedSize(product.category === 'Accesorio' ? (product.sizes[0] ?? null) : null);
+    }
   }, [product?.slug]);
 
   useEffect(() => {
@@ -284,13 +288,16 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Fit</span>
-                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] border border-border px-2.5 py-1 rounded-[10px]">{product.fit}</span>
-              </div>
+              {product.category !== 'Accesorio' && (
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Fit</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] border border-border px-2.5 py-1 rounded-[10px]">{product.fit}</span>
+                </div>
+              )}
 
               <div className="border-t border-border mb-4" />
 
+              {product.category !== 'Accesorio' && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] font-semibold uppercase tracking-wider">
@@ -334,6 +341,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 {stockError && <p className="text-[11px] text-destructive mt-1">Este talle ya no tiene stock disponible</p>}
                 {sizeError && !stockError && <p className="text-[11px] text-destructive mt-1">Seleccioná un talle para continuar</p>}
               </div>
+              )}
 
               {product.customizable && (
                 <button
