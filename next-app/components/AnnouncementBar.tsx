@@ -2,7 +2,7 @@
 
 const items = [
   "10 · 11 · 12 · 13 de Mayo — Ofertas exclusivas",
-  "Envío gratis desde $200.000",
+  "Envío gratis desde $250.000",
   "Hasta 3 cuotas sin interés",
   "Worldwide Shipping vía DHL",
   "30 días para cambios y devoluciones",

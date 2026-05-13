@@ -1,23 +1,33 @@
 'use client';
 
+import { useMemo } from "react";
 import { useCart } from "@/context/CartContext";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import { useRouter } from "next/navigation";
+import { useProducts } from "@/hooks/useProducts";
 
-const FREE_SHIPPING = 200000;
+const FREE_SHIPPING = 250000;
 
-const suggested = [
-  { id: "camo-cap-orange",    name: "Camo Cap Orange",   category: "Accesorio", price: 15000,  image: "product-camo-cap-orange.webp" },
-  { id: "baby-come-back",     name: "Baby Come Back",    category: "Tee",       price: 24000,  image: "product-baby-come-back.webp" },
-  { id: "buzo-graphite",      name: "Buzo Graphite",     category: "Hoodie",    price: 42000,  image: "product-buzo-graphite.webp" },
-  { id: "racing-tee-verde",   name: "Racing Tee Verde",  category: "Tee",       price: 26000,  image: "product-racing-tee-verde.webp" },
-];
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 export default function CartDrawer() {
   const { items, drawerOpen, setDrawerOpen, remove, increment, decrement, total, count, add } = useCart();
   const { formatPrice } = useLocale();
   const router = useRouter();
+  const { data: allProducts = [] } = useProducts(100);
+  const suggested = useMemo(
+    () => shuffled(allProducts.filter(p => !items.find(i => i.id === p.slug))).slice(0, 4),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [drawerOpen, allProducts.length]
+  );
 
   if (!drawerOpen) return null;
 
@@ -133,19 +143,16 @@ export default function CartDrawer() {
             <div className="pt-4 border-t border-border">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3">Completa el look</p>
               <div className="grid grid-cols-2 gap-3">
-                {suggested
-                  .filter((s) => !items.find((i) => i.id === s.id))
-                  .slice(0, 4)
-                  .map((p) => (
+                {suggested.map((p) => (
                     <div key={p.id}>
                       <div className="aspect-square bg-bg-alt overflow-hidden mb-1.5 rounded-[5px]">
-                        <img src={imgSrc(p.image)} alt={p.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        <img src={p.image} alt={p.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       </div>
                       <p className="text-[11px] font-medium leading-tight truncate">{p.name}</p>
                       <div className="flex items-center justify-between mt-0.5">
                         <p className="text-[11px] text-muted-foreground">{formatPrice(p.price)}</p>
                         <button
-                          onClick={() => add({ id: p.id, name: p.name, price: p.price, image: p.image, size: "U", quantity: 1 })}
+                          onClick={() => add({ id: p.slug, name: p.name, price: p.price, image: p.image, size: "U", quantity: 1 })}
                           className="w-5 h-5 rounded-full border border-foreground/30 flex items-center justify-center text-[13px] font-light hover:bg-foreground hover:text-white transition-colors"
                         >
                           +

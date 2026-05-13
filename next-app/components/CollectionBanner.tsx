@@ -25,23 +25,12 @@ const collections: Collection[] = [
   {
     name: "FW26",
     href: "/colecciones/fw26/",
-    editorial: "stl-look-halfzip-polo-navy.png",
+    editorial: "fw26-hstars-editorial.jpg",
     products: [
-      { name: "Half Zip Polo — Grey", category: "Polo", price: 69000, originalPrice: 138000, image: "products/half-zip-polo-grey-0.webp", href: "/producto/half-zip-polo-grey" },
-      { name: "Half Zip Polo — Navy", category: "Polo", price: 69000, originalPrice: 138000, image: "products/half-zip-polo-navy-0.webp", href: "/producto/half-zip-polo-navy" },
-      { name: "Half Zip Polo — Black", category: "Polo", price: 69000, originalPrice: 138000, image: "products/half-zip-polo-black-0.webp", href: "/producto/half-zip-polo-black" },
-      { name: "Melange Hoodie", category: "Hoodie", price: 0, image: "stl-look-melange-tracksuit.png", href: "/producto/hoodie-melange" },
-    ],
-  },
-  {
-    name: "Pink Set Drop",
-    href: "/colecciones/pink-set-drop/",
-    editorial: "stl-look-pink-set.png",
-    products: [
-      { name: "Zip Hoodie Pink", category: "Hoodie", price: 135000, image: "products/zip-hoodie-pink-0.webp", href: "/producto/zip-hoodie-pink" },
-      { name: "SweatPant Pink", category: "Pantalón", price: 125000, image: "products/sweatpant-pink-0.webp", href: "/producto/sweatpant-pink" },
-      { name: "Half Zip Polo — Grey", category: "Polo", price: 69000, originalPrice: 138000, image: "products/half-zip-polo-grey-0.webp", href: "/producto/half-zip-polo-grey" },
-      { name: "Lettering Pink — Jort", category: "Jort", price: 69000, image: "product-jort-lettering-pink.webp", href: "/producto/lettering-pink-jort" },
+      { name: "Hoodie Grey HStars", category: "Hoodie", price: 99990, originalPrice: 150000, image: "products/hoodie-grey-hstars-0.png", href: "/producto/hoodie-grey-hstars" },
+      { name: "Half Zip Polo — Navy", category: "Polo", price: 87000, originalPrice: 145000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-6-1.png", href: "/producto/half-zip-polo-navy" },
+      { name: "Zip Hoodie Pink", category: "Hoodie", price: 120000, originalPrice: 150000, image: "products/zip-hoodie-pink-0.jpg", href: "/producto/zip-hoodie-pink" },
+      { name: "Half Zip Polo — Black", category: "Polo", price: 87000, originalPrice: 145000, image: "products/half-zip-polo-black-0.webp", href: "/producto/half-zip-polo-black" },
     ],
   },
   {
@@ -57,7 +46,7 @@ const collections: Collection[] = [
   },
   {
     name: "Camo Set",
-    href: "/colecciones/camo-set/",
+    href: "/colecciones/camo-set-drop/",
     editorial: "stl-look-camo-front.png",
     products: [
       { name: "Camo Full Set", category: "Set", price: 246000, image: "product-camo-set-completo.webp", href: "/producto/camo-full-set-combo" },
@@ -68,13 +57,24 @@ const collections: Collection[] = [
   },
   {
     name: "Race Drop",
-    href: "/colecciones/race-drop/",
+    href: "/colecciones/race/",
     editorial: "race drop banner.webp",
     products: [
       { name: "Race Tee", category: "Tee", price: 68000, image: "product-racing-tee-verde.webp", href: "/producto/race-tee" },
       { name: "No Service For The Faithless — Tee", category: "Tee", price: 68000, image: "No servide for the faithless tee.webp", href: "/producto/no-service-for-the-faithless-tees" },
       { name: "No Service For The Faithless — Hoodie", category: "Hoodie", price: 77000, image: "hoodie lettering.webp", href: "/producto/no-service-for-the-faithless-hoodie" },
       { name: "Trucker Cap — No Faith, No Glory", category: "Accesorio", price: 32000, image: "TRUCKER CAP - NO FAITH, NO GLORY.webp", href: "/producto/trucker-cap-no-faith-no-glory" },
+    ],
+  },
+  {
+    name: "Summer '26",
+    href: "/colecciones/summer-26/",
+    editorial: "summer drop banner.webp",
+    products: [
+      { name: "AEROPINK - TEEs", category: "Tee", price: 38250, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mesa-de-trabajo-1-copia-d001477687accf22e917679044697808-1024-1024.png", href: "/producto/aeropink-tees" },
+      { name: "Mesh RealTree™ Pink – Tee", category: "Tee", price: 68000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mesh-corregidos-hsmesa-de-trabajo-1-1f8ea6ed864faa441c17648638960971-1024-1024.png", href: "/producto/mesh-realtree-pink-tee" },
+      { name: "LETTERING PINK - JORT", category: "Jort", price: 69000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/jort-lettering-v4-pink-f7d6a3ce40c84a043217705731602927-1024-1024.png", href: "/producto/lettering-pink-jort" },
+      { name: "JORT CARGO - REALTREE® PINK", category: "Jort", price: 69000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/camufladasmesa-de-trabajo-3-56748a2b37abdc560717705671603162-1024-1024.png", href: "/producto/jort-cargo-realtree-pink" },
     ],
   },
 ];

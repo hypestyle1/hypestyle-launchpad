@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 
-const EVENT_START = new Date('2026-05-10T00:00:00-03:00');
-const EVENT_END   = new Date('2026-05-13T23:59:59-03:00');
+const EVENT_END = new Date('2026-05-13T23:59:59-03:00');
 
 function useCountdown(target: Date) {
   const calc = () => {
@@ -15,83 +16,80 @@ function useCountdown(target: Date) {
       s: Math.floor((diff % 60000) / 1000),
     };
   };
-  const [time, setTime] = useState(calc);
+  const [t, setT] = useState(calc);
   useEffect(() => {
-    const id = setInterval(() => setTime(calc()), 1000);
+    const id = setInterval(() => setT(calc()), 1000);
     return () => clearInterval(id);
   }, []);
-  return time;
+  return t;
 }
 
-function Unit({ value, label }: { value: number; label: string }) {
+function pad(n: number) { return String(n).padStart(2, '0'); }
+
+function Digit({ value, label }: { value: number; label: string }) {
   const [prev, setPrev] = useState(value);
   const [flip, setFlip] = useState(false);
-
   useEffect(() => {
     if (value === prev) return;
     setFlip(true);
-    const t = setTimeout(() => { setPrev(value); setFlip(false); }, 200);
+    const t = setTimeout(() => { setPrev(value); setFlip(false); }, 150);
     return () => clearTimeout(t);
   }, [value]);
-
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center gap-1">
       <span
-        className="text-[30px] md:text-[40px] font-bold tabular-nums leading-none"
-        style={{
-          transition: 'opacity 200ms, transform 200ms',
-          opacity: flip ? 0 : 1,
-          transform: flip ? 'translateY(-6px)' : 'none',
-        }}
+        className="text-[32px] md:text-[44px] font-black tabular-nums leading-none"
+        style={{ transition: 'opacity 150ms', opacity: flip ? 0 : 1 }}
       >
-        {String(prev).padStart(2, '0')}
+        {pad(prev)}
       </span>
-      <span className="text-[8px] uppercase tracking-[0.25em] text-white/35 mt-1.5">{label}</span>
+      <span className="text-[7px] uppercase tracking-[0.2em] text-white/35">{label}</span>
     </div>
   );
 }
 
 export default function EventCountdown() {
-  const now = Date.now();
-  if (now > EVENT_END.getTime()) return null;
-
-  const live = now >= EVENT_START.getTime();
-  const { d, h, m, s } = useCountdown(EVENT_START);
+  if (Date.now() > EVENT_END.getTime()) return null;
+  const { d, h, m, s } = useCountdown(EVENT_END);
 
   return (
-    <div className="bg-bg-dark text-white">
-      <div className="max-w-[1400px] mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-5">
+    <div className="bg-[#0a0a0a] text-white py-6 md:py-5 px-6 md:px-10 border-y border-white/8">
+      <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-5 md:gap-0">
 
-        {/* Left */}
-        <div className="text-center md:text-left">
-          <p className="text-[9px] uppercase tracking-[0.35em] text-white/35 mb-1">
-            {live ? 'En curso — 10 al 13 de Mayo' : 'Próximamente — 10 al 13 de Mayo'}
-          </p>
-          <p className="text-[17px] md:text-[20px] font-bold uppercase tracking-tight leading-tight">
-            {live ? 'Ofertas exclusivas activas' : 'Mega Drop · Descuentos exclusivos'}
+        {/* Left — logo + dates */}
+        <div className="flex flex-col items-center md:items-start gap-1.5">
+          <Image
+            src="/hypeweek-logo-white.png"
+            alt="Hypeweek"
+            width={130}
+            height={38}
+            className="object-contain"
+          />
+          <p className="text-[8px] uppercase tracking-[0.28em] text-white/35">
+            Descuentos exclusivos · 10 · 11 · 12 · 13 de Mayo
           </p>
         </div>
 
-        {/* Countdown */}
-        {!live && (
-          <div className="flex items-center gap-4 md:gap-6">
-            <Unit value={d} label="Días" />
-            <span className="text-white/20 text-[24px] font-thin mb-4">:</span>
-            <Unit value={h} label="Horas" />
-            <span className="text-white/20 text-[24px] font-thin mb-4">:</span>
-            <Unit value={m} label="Min" />
-            <span className="text-white/20 text-[24px] font-thin mb-4">:</span>
-            <Unit value={s} label="Seg" />
-          </div>
-        )}
+        {/* Center — countdown */}
+        <div className="flex items-start justify-center gap-3 md:gap-5">
+          <Digit value={d} label="Días" />
+          <span className="text-white/20 text-[26px] font-thin mt-0.5">:</span>
+          <Digit value={h} label="Horas" />
+          <span className="text-white/20 text-[26px] font-thin mt-0.5">:</span>
+          <Digit value={m} label="Min" />
+          <span className="text-white/20 text-[26px] font-thin mt-0.5">:</span>
+          <Digit value={s} label="Seg" />
+        </div>
 
-        {/* CTA */}
-        <a
-          href="/productos/"
-          className="text-[10px] uppercase tracking-[0.25em] border border-white/25 hover:bg-white hover:text-black transition-all duration-300 px-7 py-3 whitespace-nowrap"
-        >
-          {live ? 'Ver ofertas' : 'Ver productos'}
-        </a>
+        {/* Right — CTA */}
+        <div className="flex justify-center md:justify-end">
+          <Link
+            href="/special-prices/"
+            className="bg-white text-black text-[9px] font-bold uppercase tracking-[0.22em] px-8 py-3 hover:bg-white/85 transition-colors"
+          >
+            Ver Ofertas
+          </Link>
+        </div>
 
       </div>
     </div>

@@ -53,6 +53,9 @@ export default function ProductCard({
     }
 
     add({ id, name, price, image, size, quantity: 1 });
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'AddToCart', { content_ids: [id], content_name: name, value: price, currency: 'ARS', content_type: 'product' });
+    }
     setAddedSize(size);
     setDrawerOpen(true);
     setTimeout(() => setAddedSize(null), 2000);

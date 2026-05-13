@@ -70,6 +70,18 @@ const COLOR_HEX: Record<string, string> = {
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', 'Única'];
 
+const HALF_ZIP_COLORWAYS = [
+  { label: 'Navy',    value: '#1a2744', slug: 'half-zip-polo-navy',    image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-6-1.png' },
+  { label: 'Melange', value: '#b8b4ae', slug: 'half-zip-polo-melange', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-2-1.png' },
+  { label: 'Black',   value: '#1a1a1a', slug: 'half-zip-polo-black',   image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-1.png' },
+];
+
+const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
+  'half-zip-polo-navy':    HALF_ZIP_COLORWAYS,
+  'half-zip-polo-melange': HALF_ZIP_COLORWAYS,
+  'half-zip-polo-black':   HALF_ZIP_COLORWAYS,
+};
+
 const FIT_KEYWORDS: [string, string][] = [
   ['boxy oversized', 'Boxy Oversized'], ['boxy fit', 'Boxy Fit'],
   ['oversized', 'Oversized'], ['jogger', 'Jogger Fit'],
@@ -128,10 +140,12 @@ function fromWPNode(node: any): Product {
   const description = stripHtml(node.description || '');
   const modelInfo   = stripHtml(node.shortDescription || '') || undefined;
 
-  const regular = parsePrice(node.regularPrice || node.price);
-  const sale    = parsePrice(node.salePrice);
-  const price   = (sale > 0 && sale < regular) ? sale : regular;
-  const originalPrice = (sale > 0 && sale < regular) ? regular : undefined;
+  const regular  = parsePrice(node.regularPrice);
+  const explicit = parsePrice(node.salePrice);
+  const current  = parsePrice(node.price);
+  const active   = explicit > 0 ? explicit : current;
+  const price    = active > 0 ? active : regular;
+  const originalPrice = (price > 0 && price < regular) ? regular : undefined;
 
   const allImages: string[] = [];
   if (node.image?.sourceUrl) allImages.push(node.image.sourceUrl);
@@ -181,7 +195,12 @@ function fromWPNode(node: any): Product {
   return {
     slug, id: slug, name, category, price, originalPrice,
     description, modelInfo, sizeGuideImage, careItems, fit, sizes, stock,
-    colors: [{ label: color.label, value: color.value, image: allImages[0] }],
+    colors: COLORWAYS[slug]?.map(c => ({
+      label: c.label,
+      value: c.value,
+      image: c.image,
+      href: `/producto/${c.slug}/`,
+    })) ?? [{ label: color.label, value: color.value, image: allImages[0] }],
     images: allImages,
   };
 }
@@ -190,7 +209,7 @@ export function useProduct(slug: string | undefined) {
   return useQuery<Product | undefined>({
     queryKey: ['product', slug],
     enabled: !!slug,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0,
     queryFn: async (): Promise<Product | undefined> => {
       if (!slug) return undefined;
       const data = await fetchGraphQL<{ product: any }>(GET_PRODUCT, { slug });

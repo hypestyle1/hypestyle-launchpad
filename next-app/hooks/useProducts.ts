@@ -1,132 +1,26 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { fetchGraphQL } from '@/lib/graphql-client';
+import { fromWPNode, NormalizedProduct } from '@/lib/products-normalize';
 
-const GET_PRODUCTS = `
-  query GetProducts($first: Int) {
-    products(first: $first, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
-      nodes {
-        id
-        name
-        slug
-        ... on SimpleProduct {
-          price
-          regularPrice
-          salePrice
-          stockStatus
-          stockQuantity
-          image { sourceUrl }
-          galleryImages { nodes { sourceUrl } }
-          productCategories { nodes { name } }
-          productTags { nodes { slug } }
-        }
-        ... on VariableProduct {
-          price
-          regularPrice
-          image { sourceUrl }
-          galleryImages { nodes { sourceUrl } }
-          productCategories { nodes { name } }
-          productTags { nodes { slug } }
-          variations(first: 20) {
-            nodes {
-              stockStatus
-              stockQuantity
-              attributes { nodes { name value } }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
+export type { NormalizedProduct };
 
-export interface NormalizedProduct {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  images: string[];
-  href: string;
-  sizes: string[];
-  stock: Record<string, 'ok' | 'low' | 'out'>;
-  tags: string[];
-}
-
-function parsePrice(s?: string | null): number {
-  if (!s) return 0;
-  return parseFloat(s.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
-}
-
-function stockStatus(status: string, qty: number | null): 'ok' | 'low' | 'out' {
-  if (status === 'OUT_OF_STOCK') return 'out';
-  if (qty !== null && qty <= 3) return 'low';
-  return 'ok';
-}
-
-function fromWPNode(node: any): NormalizedProduct {
-  const regular = parsePrice(node.regularPrice || node.price);
-  const sale = parsePrice(node.salePrice);
-  const price = (sale > 0 && sale < regular) ? sale : regular;
-  const originalPrice = (sale > 0 && sale < regular) ? regular : undefined;
-
-  const images: string[] = [];
-  if (node.image?.sourceUrl) images.push(node.image.sourceUrl);
-  (node.galleryImages?.nodes || []).forEach((g: any) => {
-    if (g.sourceUrl && !images.includes(g.sourceUrl)) images.push(g.sourceUrl);
-  });
-  if (!images.length) images.push('');
-
-  const sizes: string[] = [];
-  const stock: Record<string, 'ok' | 'low' | 'out'> = {};
-  const variations: any[] = node.variations?.nodes ?? [];
-
-  if (variations.length) {
-    for (const v of variations) {
-      const sizeAttr = v.attributes?.nodes?.find(
-        (a: any) => a.name === 'talle' || a.name === 'Talle' || a.name === 'size',
-      );
-      const sz = sizeAttr?.value?.trim() || 'Única';
-      if (!sizes.includes(sz)) {
-        sizes.push(sz);
-        stock[sz] = stockStatus(v.stockStatus, v.stockQuantity ?? null);
-      }
-    }
-  } else {
-    sizes.push('Única');
-    stock['Única'] = stockStatus(node.stockStatus || 'IN_STOCK', node.stockQuantity ?? null);
-  }
-
-  return {
-    id: node.slug,
-    name: node.name,
-    slug: node.slug,
-    category: node.productCategories?.nodes?.[0]?.name ?? '',
-    price,
-    originalPrice,
-    image: images[0],
-    images,
-    href: `/producto/${node.slug}/`,
-    sizes,
-    stock,
-    tags: (node.productTags?.nodes ?? []).map((t: any) => t.slug),
-  };
-}
-
-export function useProducts(first = 20, category?: string, tag?: string) {
-  return useQuery<NormalizedProduct[]>({
-    queryKey: ['products', first, category, tag],
-    staleTime: 2 * 60 * 1000,
+export function useProducts(limit = 0, category?: string, tag?: string) {
+  return useQuery<NormalizedProduct[], Error, NormalizedProduct[]>({
+    queryKey: ['products'],
+    staleTime: 5 * 60_000,
     queryFn: async (): Promise<NormalizedProduct[]> => {
-      const data = await fetchGraphQL<{ products: { nodes: any[] } }>(GET_PRODUCTS, { first });
-      const nodes = data?.products?.nodes ?? [];
-      let all = nodes.map(fromWPNode);
-      if (category) all = all.filter(p => p.category.toLowerCase() === category.toLowerCase());
-      if (tag) all = all.filter(p => p.tags.includes(tag));
-      return all;
+      const res = await fetch('/api/products');
+      if (!res.ok) throw new Error('Failed to load products');
+      const data: { products: { nodes: any[] } } = await res.json();
+      return (data?.products?.nodes ?? []).map(fromWPNode);
+    },
+    select: (data) => {
+      let out = data;
+      if (category) out = out.filter(p => p.category.toLowerCase() === category.toLowerCase());
+      if (tag) out = out.filter(p => p.tags.includes(tag));
+      if (limit > 0) out = out.slice(0, limit);
+      return out;
     },
   });
 }

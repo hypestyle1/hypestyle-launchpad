@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 
 const SESSION_KEY = "hype_popup_shown";
-const WP_URL = process.env.NEXT_PUBLIC_WP_URL || "https://lightpink-rook-704850.hostingersite.com";
 
 export default function NewsletterPopup() {
   const [visible, setVisible] = useState(false);
@@ -49,7 +48,7 @@ export default function NewsletterPopup() {
     if (!email || loading) return;
     setLoading(true);
     try {
-      await fetch(`${WP_URL}/wp-json/hypestyle/v1/newsletter`, {
+      await fetch('/api/newsletter-subscribe', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

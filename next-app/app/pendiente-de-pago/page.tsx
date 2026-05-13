@@ -19,8 +19,28 @@ export default function PendientePago() {
   useEffect(() => {
     const raw = sessionStorage.getItem('hype_order');
     if (!raw) { router.push('/'); return; }
-    setOrder(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    setOrder(parsed);
     setFecha(new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }));
+
+    // Enviar email de confirmación (solo una vez)
+    fetch('/api/send-confirmation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderNum:      parsed.wcOrderNumber || parsed.orderNum,
+        wcOrderId:     parsed.wcOrderId,
+        orderKey:      parsed.orderKey,
+        items:         parsed.items,
+        total:         parsed.total,
+        email:         parsed.email,
+        nombre:        parsed.nombre,
+        apellido:      parsed.apellido,
+        ciudad:        parsed.ciudad,
+        provincia:     parsed.provincia,
+        paymentMethod: parsed.metodo,
+      }),
+    }).catch(() => {});
   }, [router]);
 
   const handleCopy = () => {

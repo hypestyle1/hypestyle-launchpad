@@ -7,7 +7,6 @@ import CookieBanner from '@/components/CookieBanner';
 import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
-import PasswordGate from '@/components/PasswordGate';
 import WhatsAppButton from '@/components/WhatsAppButton';
 
 export const metadata: Metadata = {
@@ -26,9 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LocaleSuggestion />
           <CookieBanner />
           <MetaPixel />
-          <PasswordGate>
-            {children}
-          </PasswordGate>
+          {children}
           <WhatsAppButton />
         </Providers>
       </body>

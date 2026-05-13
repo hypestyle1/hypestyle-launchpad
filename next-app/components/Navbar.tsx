@@ -34,11 +34,11 @@ const megaMenu = {
     { label: 'Sets',       href: '/sets/',       indent: false },
   ],
   colecciones: [
-    { label: 'No Love, Only Style', href: '/no-love-only-style/' },
-    { label: 'Camo Set Drop',       href: '/camo-set-drop/' },
-    { label: 'Race Drop',           href: '/race/' },
-    { label: 'Summer 26',           href: '/summer-26/' },
-    { label: 'Regular Tees',        href: '/regular-tees/' },
+    { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
+    { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop/' },
+    { label: 'Race Drop',           href: '/colecciones/race/' },
+    { label: 'Summer 26',           href: '/colecciones/summer-26/' },
+    { label: 'Regular Tees',        href: '/colecciones/regular-tees/' },
   ],
 };
 
@@ -56,11 +56,11 @@ const mobilePanels = {
       { label: 'Sets',                     href: '/sets/',           homeHash: null,             panel: null },
     ],
     collections: [
-      { label: 'No Love, Only Style', href: '/no-love-only-style/' },
-      { label: 'Camo Set Drop',       href: '/camo-set-drop/' },
-      { label: 'Race Drop',           href: '/race/' },
-      { label: 'Summer 26',           href: '/summer-26/' },
-      { label: 'Regular Tees',        href: '/regular-tees/' },
+      { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
+      { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop/' },
+      { label: 'Race Drop',           href: '/colecciones/race/' },
+      { label: 'Summer 26',           href: '/colecciones/summer-26/' },
+      { label: 'Regular Tees',        href: '/colecciones/regular-tees/' },
     ],
   },
   arriba:     { title: 'Arriba',     verTodo: '/arriba/',     items: [{ label: 'Hoodies', href: '/hoodies/', panel: null }, { label: 'Remeras', href: '/tees/', panel: null }, { label: 'Accesorios', href: '/accesorios/', panel: null }] },

@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 interface OrderData {
-  wcOrderId?: number; wcOrderNumber?: string; orderNum: string | number;
+  wcOrderId?: number; wcOrderNumber?: string; orderKey?: string; orderNum: string | number;
   items: { name: string; price: number; quantity: number; size: string; image: string }[];
   total: number; email: string; nombre: string; apellido: string; ciudad: string; provincia: string;
+  metodo?: string;
 }
 
 export default function ConfirmacionClient() {
@@ -21,6 +22,25 @@ export default function ConfirmacionClient() {
       const parsed: OrderData = JSON.parse(raw);
       setOrder(parsed);
       sessionStorage.removeItem('hype_order');
+
+      fetch('/api/send-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderNum:      parsed.wcOrderNumber || parsed.orderNum,
+          wcOrderId:     parsed.wcOrderId,
+          orderKey:      parsed.orderKey,
+          items:         parsed.items,
+          total:         parsed.total,
+          email:         parsed.email,
+          nombre:        parsed.nombre,
+          apellido:      parsed.apellido,
+          ciudad:        parsed.ciudad,
+          provincia:     parsed.provincia,
+          paymentMethod: parsed.metodo,
+        }),
+      }).catch(() => {});
+
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'Purchase', {
           value: parsed.total,
@@ -40,11 +60,10 @@ export default function ConfirmacionClient() {
     const externalRef = params.get('external_reference');
     const mpStatus = params.get('collection_status') || params.get('status');
     if (paymentId && externalRef && mpStatus === 'approved') {
-      const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
-      fetch(`${WP_URL}/wp-json/hypestyle/v1/confirm-payment`, {
+      fetch('/api/confirm-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_id: paymentId, order_id: parseInt(externalRef, 10) }),
+        body: JSON.stringify({ payment_id: paymentId, order_id: parseInt(externalRef, 10), status: 'approved' }),
       }).catch(() => {});
     }
 

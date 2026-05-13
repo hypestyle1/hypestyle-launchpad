@@ -11,7 +11,7 @@ export interface Product {
   fit: string;
   sizes: string[];
   stock: Record<string, "ok" | "low" | "out">;
-  colors: { label: string; value: string; image: string }[];
+  colors: { label: string; value: string; image: string; href?: string }[];
   images: string[];
   customizable?: boolean;
   customPreviewImage?: string;

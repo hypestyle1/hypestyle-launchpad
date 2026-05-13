@@ -10,9 +10,14 @@ import { useReveal } from '@/hooks/useReveal';
 import { useProducts } from '@/hooks/useProducts';
 
 interface SubTab { label: string; categories: string[] }
-interface CategoryConfig { title: string; subtitle: string; categories: string[]; tabs?: SubTab[] }
+interface CategoryConfig { title: string; subtitle: string; categories: string[]; tag?: string; tabs?: SubTab[] }
 
 const CATEGORY_MAP: Record<string, CategoryConfig> = {
+  '/colecciones/no-love-only-style': { title: 'No Love Only Style', subtitle: 'Colección exclusiva — drops limitados', categories: [], tag: 'no-love-only-style' },
+  '/colecciones/camo-set-drop':      { title: 'Camo Set Drop',      subtitle: 'Set completo en camo print', categories: [], tag: 'camo-set-drop' },
+  '/colecciones/race':               { title: 'Race',                subtitle: 'Motorsport · Estética vintage racing', categories: [], tag: 'race' },
+  '/colecciones/summer-26':          { title: "Summer '26",          subtitle: 'La colección de verano', categories: [], tag: 'summer-26' },
+  '/colecciones/regular-tees':       { title: 'Regular Tees',        subtitle: 'Remeras de corte regular — básicos premium', categories: [], tag: 'regular-tee' },
   '/arriba': {
     title: 'Arriba', subtitle: 'Hoodies, remeras, longsleeves y más',
     categories: ['Hoodie', 'Crewneck', 'Tee', 'Top', 'Sleeveless', 'Longsleeve', 'Jersey'],
@@ -54,9 +59,10 @@ export default function CategoriaPage() {
   const ref = useReveal([allProducts]);
 
   const baseProducts = useMemo(() => {
-    const base = config.categories.length === 0
+    let base = config.categories.length === 0
       ? allProducts
       : allProducts.filter(p => config.categories.includes(p.category));
+    if (config.tag) base = base.filter(p => p.tags.includes(config.tag!));
     if (!config.tabs || activeTab === 0 || config.tabs[activeTab].categories.length === 0) return base;
     return base.filter(p => config.tabs![activeTab].categories.includes(p.category));
   }, [allProducts, config, activeTab]);
@@ -146,7 +152,7 @@ export default function CategoriaPage() {
                 {products.map((p, i) => (
                   <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
                     <ProductCard id={p.slug} name={p.name} category={p.category} price={p.price}
-                      originalPrice={p.originalPrice} image={p.image} images={p.images}
+                      originalPrice={p.originalPrice} badge={p.badge} image={p.image} images={p.images}
                       sizes={p.sizes} stock={p.stock} href={p.href} />
                   </div>
                 ))}

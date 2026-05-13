@@ -25,8 +25,8 @@ type Slide = BannerSlide | OverlaySlide;
 const slides: Slide[] = [
   {
     type: "banner",
-    imageDesktop: "banner desktop/2-slide-1774199985083-578615582-b6c9592f4752284284165dfb7d5633d01774199986-1920-1920.webp",
-    imageMobile: "Banner Movile/2-slide-1774199985089-7163840392-14dbaf7acdc4aaa8e83700e9e1d4f6b51774199990-1920-1920.webp",
+    imageDesktop: "banner desktop/banner-halfzip-hero.png",
+    imageMobile: "Banner Movile/banner-halfzip-hero-mobile.png",
     href: "/sets/",
   },
   {
@@ -34,21 +34,6 @@ const slides: Slide[] = [
     imageDesktop: "banner desktop/banner web 1.webp",
     imageMobile: "Banner Movile/2-slide-1775426199856-2293205106-6ebf06ac84175b43435d613cd6e659cc1775426225-1920-1920.webp",
     href: "/productos/",
-  },
-  {
-    type: "banner",
-    imageDesktop: "banner desktop/banner web 2.webp",
-    imageMobile: "Banner Movile/2-slide-1770743028998-1812841277-d6e90ca1a8aa16296d47ce6e591779b61770743049-1920-1920.webp",
-    href: "/productos/",
-  },
-  {
-    type: "overlay",
-    imageDesktop: "stl-look-camo-outdoor.png",
-    imageMobile: "Banner Movile/zipup2-pink.webp",
-    label: "Camo Set Drop",
-    sublabel: "La colección",
-    cta: "Shop Now",
-    href: "/sets/",
   },
 ];
 

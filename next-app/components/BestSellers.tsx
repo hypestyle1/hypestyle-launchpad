@@ -1,12 +1,28 @@
 'use client';
 
+import { useMemo } from "react";
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
+const ORDER = [
+  'only-god-can-judge-me-blanca',
+  'only-god-can-judge-me-negra',
+  'camo-full-set-combo',
+  'hoodie-grey-hstars',
+  'half-zip-polo-navy',
+  'half-zip-polo-melange',
+  'half-zip-polo-black',
+  'zip-hoodie-pink',
+];
+
 export default function BestSellers() {
-  const { data: products = [] } = useProducts(8, undefined, 'new-in');
+  const { data: allProducts = [] } = useProducts(100);
+  const products = useMemo(
+    () => ORDER.map(slug => allProducts.find(p => p.slug === slug)).filter(Boolean) as typeof allProducts,
+    [allProducts]
+  );
   const ref = useReveal([products]);
 
   return (
@@ -23,6 +39,7 @@ export default function BestSellers() {
               category={p.category}
               price={p.price}
               originalPrice={p.originalPrice}
+              badge={p.badge}
               image={p.image}
               images={p.images}
               sizes={p.sizes}

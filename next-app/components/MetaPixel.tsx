@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useCookieConsent } from '@/context/CookieContext';
 
-const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '899809176222944';
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '412944573148639';
 
 declare global {
   interface Window { fbq: any; _fbq: any; }

@@ -39,6 +39,7 @@ export default function NewInPage() {
                   category={p.category}
                   price={p.price}
                   originalPrice={p.originalPrice}
+                  badge={p.badge}
                   image={p.image}
                   images={p.images}
                   sizes={p.sizes}

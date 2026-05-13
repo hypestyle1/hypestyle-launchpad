@@ -15,63 +15,72 @@ export interface Look {
 
 export const LOOKS: Look[] = [
   {
-    id: "look-halfzip-polo-black",
-    title: "Half Zip Polo Black",
-    image: "stl-look-halfzip-polo-black.png",
+    id: "look-hstars-grey",
+    title: "HStars Grey Set",
+    image: "stl-hstars-grey.png",
     products: [
-      { category: "Polo", name: "Half Zip Polo — Black", price: 69000, image: "products/half-zip-polo-black-0.webp", slug: "half-zip-polo-black" },
+      { category: "Hoodie", name: "Hoodie Grey HStars", price: 99990, image: "products/hoodie-grey-hstars-0.png", slug: "hoodie-grey-hstars" },
+      { category: "Pantalón", name: "SweatPant Grey HStars", price: 94000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/PANT.png", slug: "sweatpant-grey-hstars" },
+    ],
+  },
+  {
+    id: "look-pink-set",
+    title: "Pink Set",
+    image: "stl-pink-set.png",
+    products: [
+      { category: "Hoodie", name: "Zip Hoodie Pink", price: 120000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/sin-titulo-2mesa-de-trabajo-1-jpg-8778ac83aab416038417766405540031-1024-1024.jpg", slug: "zip-hoodie-pink" },
+      { category: "Pantalón", name: "SweatPant Pink", price: 125000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/sin-titulo-2mesa-de-trabajo-3-jpg-cff6d51a6c991ca63617766409766712-1024-1024.jpg", slug: "sweatpant-pink" },
+    ],
+  },
+  {
+    id: "look-camo-set",
+    title: "Camo Set",
+    image: "stl-camo-set.jpeg",
+    products: [
+      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-camo-set.jpeg", slug: "zip-hoodie-camo" },
+      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
+    ],
+  },
+  {
+    id: "look-realtree-pink",
+    title: "Realtree Pink",
+    image: "stl-realtree-pink.png",
+    products: [
+      { category: "Remera", name: "Mesh Realtree Pink Tee", price: 78000, image: "products/mesh-realtree-pink-tee-0.png", slug: "mesh-realtree-pink-tee" },
+      { category: "Jort", name: "Jort Cargo Realtree Pink", price: 69000, image: "products/jort-cargo-realtree-pink-0.png", slug: "jort-cargo-realtree-pink" },
     ],
   },
   {
     id: "look-halfzip-polo-navy",
     title: "Half Zip Polo Navy",
-    image: "stl-look-halfzip-polo-navy.png",
+    image: "stl-halfzip-navy.jpg",
     products: [
-      { category: "Polo", name: "Half Zip Polo — Navy", price: 69000, image: "products/half-zip-polo-navy-0.webp", slug: "half-zip-polo-navy" },
+      { category: "Polo", name: "Half Zip Polo — Navy", price: 87000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-6-1.png", slug: "half-zip-polo-navy" },
     ],
   },
   {
-    id: "look-halfzip-polo",
-    title: "Half Zip Polo Grey",
-    image: "stl-look-halfzip-polo-grey.png",
+    id: "look-halfzip-polo-melange",
+    title: "Half Zip Polo Melange",
+    image: "stl-halfzip-melange.jpg",
     products: [
-      { category: "Polo", name: "Half Zip Polo — Grey", price: 69000, image: "products/half-zip-polo-grey-0.webp", slug: "half-zip-polo-grey" },
+      { category: "Polo", name: "Half Zip Polo — Melange", price: 87000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-2-1.png", slug: "half-zip-polo-melange" },
     ],
   },
   {
-    id: "look-melange",
-    title: "Melange Tracksuit",
-    image: "stl-look-melange-tracksuit.png",
+    id: "look-halfzip-polo-black",
+    title: "Half Zip Polo Black",
+    image: "stl-halfzip-black.jpg",
     products: [
-      { category: "Hoodie", name: "Melange Hoodie", price: 0, image: "stl-look-melange-tracksuit.png", slug: "hoodie-melange" },
-      { category: "Pantalón", name: "Melange SweatPant", price: 0, image: "stl-look-melange-tracksuit.png", slug: "sweatpant-melange" },
+      { category: "Polo", name: "Half Zip Polo — Black", price: 87000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-1.png", slug: "half-zip-polo-black" },
     ],
   },
   {
-    id: "look-pink",
-    title: "Pink Set",
-    image: "stl-look-pink-set.png",
+    id: "look-graphite-set",
+    title: "Graphite Set",
+    image: "stl-look-unknown.png",
     products: [
-      { category: "Hoodie", name: "Zip Hoodie Pink", price: 135000, image: "stl-look-pink-set.png", slug: "zip-hoodie-pink" },
-      { category: "Pantalón", name: "SweatPant Pink", price: 125000, image: "stl-look-pink-set.png", slug: "sweatpant-pink" },
-    ],
-  },
-  {
-    id: "look-jersey-genovese",
-    title: "Jersey Fileteado x Genovese",
-    image: "stl-look-jersey-genovese.png",
-    products: [
-      { category: "Jersey", name: "JERSEY FILETEADO – x ALFREDO GENOVESE", price: 78400, image: "products/jersey-fileteado-x-alfredo-genovese-foto.webp", slug: "jersey-fileteado-x-alfredo-genovese" },
-      { category: "Short", name: "LETTERING GRAPHITE - JORT", price: 55000, image: "stl-look-jersey-genovese.png", slug: "lettering-graphite-jort" },
-    ],
-  },
-  {
-    id: "look-01",
-    title: "Camo Set",
-    image: "stl-look-camo-front.png",
-    products: [
-      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-look-camo-front.png", slug: "zip-hoodie-camo" },
-      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
+      { category: "Hoodie", name: "No Service For The Faithless - Hoodie", price: 52800, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/buzo-graphite_-nsftf-8db78fd41cab49461117737767457023-1024-1024.png", slug: "no-service-for-the-faithless-hoodie" },
+      { category: "Short", name: "Lettering Graphite - Jort", price: 55200, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mockup-jort-rustico-topo-frente-d1125bede86cfd3f8817612674654803-1024-1024.png", slug: "lettering-graphite-jort" },
     ],
   },
 ];

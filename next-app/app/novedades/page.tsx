@@ -34,12 +34,12 @@ export default function NovedadesPage() {
                   category={p.category}
                   price={p.price}
                   originalPrice={p.originalPrice}
+                  badge={p.badge ?? "New"}
                   image={p.image}
                   images={p.images}
                   sizes={p.sizes}
                   stock={p.stock}
                   href={p.href}
-                  badge="New"
                 />
               </div>
             ))}

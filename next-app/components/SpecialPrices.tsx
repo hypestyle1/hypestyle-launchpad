@@ -56,7 +56,7 @@ export default function SpecialPrices() {
     [allProducts]
   );
 
-  const ref = useReveal();
+  const ref = useReveal([products]);
 
   return (
     <section id="special-prices" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>

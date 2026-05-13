@@ -1,5 +1,3 @@
-'use client';
-
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import NewsletterPopup from '@/components/NewsletterPopup';

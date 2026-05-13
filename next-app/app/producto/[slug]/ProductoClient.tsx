@@ -104,9 +104,14 @@ export default function ProductoClient({ slug }: { slug: string }) {
   const [sizeGuideOpen, setSizeGuideOpen]   = useState(false);
   const [showSticky, setShowSticky]         = useState(false);
   const [zoomPos, setZoomPos]               = useState<{ x: number; y: number } | null>(null);
+  const [isGalleryOpen, setIsGalleryOpen]   = useState(false);
+  const [galleryZoom, setGalleryZoom]       = useState(1);
+  const [galleryOffset, setGalleryOffset]   = useState({ x: 0, y: 0 });
 
-  const touchStartX = useRef<number | null>(null);
-  const addBtnRef = useRef<HTMLButtonElement>(null);
+  const touchStartX  = useRef<number | null>(null);
+  const panStartRef  = useRef<{ x: number; y: number; offX: number; offY: number } | null>(null);
+  const didPanRef    = useRef(false);
+  const addBtnRef    = useRef<HTMLButtonElement>(null);
   const { add, setDrawerOpen } = useCart();
 
   useEffect(() => { setMounted(true); }, []);
@@ -153,6 +158,40 @@ export default function ProductoClient({ slug }: { slug: string }) {
     touchStartX.current = null;
   };
 
+  const handleGalleryTouchStart = (e: React.TouchEvent) => {
+    didPanRef.current = false;
+    if (galleryZoom > 1) {
+      panStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, offX: galleryOffset.x, offY: galleryOffset.y };
+    } else {
+      touchStartX.current = e.touches[0].clientX;
+    }
+  };
+
+  const handleGalleryTouchMove = (e: React.TouchEvent) => {
+    if (galleryZoom <= 1 || !panStartRef.current) return;
+    const rawDx = e.touches[0].clientX - panStartRef.current.x;
+    const rawDy = e.touches[0].clientY - panStartRef.current.y;
+    if (Math.abs(rawDx) > 5 || Math.abs(rawDy) > 5) didPanRef.current = true;
+    const dx = rawDx / galleryZoom;
+    const dy = rawDy / galleryZoom;
+    const maxX = (window.innerWidth * (galleryZoom - 1)) / (2 * galleryZoom);
+    const maxY = (window.innerHeight * (galleryZoom - 1)) / (2 * galleryZoom);
+    setGalleryOffset({
+      x: Math.max(-maxX, Math.min(maxX, panStartRef.current.offX + dx)),
+      y: Math.max(-maxY, Math.min(maxY, panStartRef.current.offY + dy)),
+    });
+  };
+
+  const handleGalleryTouchEnd = (e: React.TouchEvent) => {
+    if (galleryZoom > 1) { panStartRef.current = null; return; }
+    if (touchStartX.current === null) return;
+    const delta = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(delta) < 40) { touchStartX.current = null; return; }
+    if (delta > 0) setSelectedImage(p => Math.min(p + 1, product.images.length - 1));
+    else setSelectedImage(p => Math.max(p - 1, 0));
+    touchStartX.current = null;
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setZoomPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
@@ -168,6 +207,16 @@ export default function ProductoClient({ slug }: { slug: string }) {
     if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, selectedSize])); setStockError(true); return; }
     add({ id: product.id, name: product.name, price: product.price, image: imgUrl(product.images[0]), size: selectedSize, quantity: 1 });
     setAdded(true);
+  };
+
+  const toggleGalleryZoom = () => {
+    if (didPanRef.current) { didPanRef.current = false; return; }
+    if (galleryZoom > 1) {
+      setGalleryZoom(1);
+      setGalleryOffset({ x: 0, y: 0 });
+    } else {
+      setGalleryZoom(2.5);
+    }
   };
 
   const stockLabel = selectedSize ? product.stock[selectedSize] : null;
@@ -203,18 +252,19 @@ export default function ProductoClient({ slug }: { slug: string }) {
               <div className="flex-1 flex flex-col gap-3">
                 <div className="relative aspect-square overflow-hidden bg-bg-alt select-none cursor-crosshair"
                   onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
-                  onMouseMove={handleMouseMove} onMouseLeave={() => setZoomPos(null)}>
+                  onMouseMove={handleMouseMove} onMouseLeave={() => setZoomPos(null)}
+                  onClick={() => { if (window.innerWidth < 1024) setIsGalleryOpen(true); }}>
                   <Image key={selectedImage} src={imgUrl(product.images[selectedImage])} alt={product.name}
                     fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
                     style={{ transform: zoomPos ? 'scale(2)' : 'scale(1)', transformOrigin: zoomPos ? `${zoomPos.x}% ${zoomPos.y}%` : 'center', transition: zoomPos ? 'transform 0.1s ease' : 'transform 0.3s ease', animation: 'fadeIn 0.25s ease' }} />
                   {selectedImage > 0 && (
-                    <button onClick={() => setSelectedImage(p => p - 1)}
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p - 1); }}
                       className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm" aria-label="Anterior">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 3L5 8l5 5" /></svg>
                     </button>
                   )}
                   {selectedImage < product.images.length - 1 && (
-                    <button onClick={() => setSelectedImage(p => p + 1)}
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p + 1); }}
                       className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm" aria-label="Siguiente">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 3l5 5-5 5" /></svg>
                     </button>
@@ -227,6 +277,9 @@ export default function ProductoClient({ slug }: { slug: string }) {
                       Passá el cursor para hacer zoom
                     </span>
                   )}
+                  <span className="md:hidden absolute bottom-3 left-3 text-[10px] text-white bg-black/35 backdrop-blur-sm px-2 py-0.5 pointer-events-none">
+                    Tocá para ampliar
+                  </span>
                 </div>
                 <div className="md:hidden flex items-center justify-center gap-1.5">
                   {product.images.map((_, i) => (
@@ -442,6 +495,68 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 Ignorar y continuar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full screen mobile gallery */}
+      {isGalleryOpen && (
+        <div className="fixed inset-0 z-[300] bg-black flex flex-col animate-in fade-in duration-200 overflow-hidden">
+          <div className="flex items-center justify-between p-4 text-white z-10">
+            <span className="text-[12px] font-medium uppercase tracking-widest">
+              {selectedImage + 1} / {product.images.length}
+            </span>
+            <button onClick={() => { setIsGalleryOpen(false); setGalleryZoom(1); }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex-1 relative overflow-hidden flex items-center justify-center"
+            style={{ touchAction: galleryZoom > 1 ? 'none' : 'pan-y', cursor: galleryZoom > 1 ? 'grab' : 'zoom-in' }}
+            onTouchStart={handleGalleryTouchStart}
+            onTouchMove={handleGalleryTouchMove}
+            onTouchEnd={handleGalleryTouchEnd}
+            onClick={toggleGalleryZoom}>
+            <div className="relative w-full h-full"
+                 style={{ transform: `scale(${galleryZoom}) translate(${galleryOffset.x}px, ${galleryOffset.y}px)` }}>
+              <Image
+                src={imgUrl(product.images[selectedImage])}
+                alt=""
+                fill
+                className="object-contain"
+                sizes="100vw"
+                priority
+              />
+            </div>
+
+            {/* Overlay controls - only show when not zoomed */}
+            {galleryZoom === 1 && (
+              <>
+                <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
+                  {selectedImage > 0 && (
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p - 1); }}
+                      className="pointer-events-auto w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg transition-transform active:scale-95" aria-label="Anterior">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                  )}
+                  <div />
+                  {selectedImage < product.images.length - 1 && (
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p + 1); }}
+                      className="pointer-events-auto w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg transition-transform active:scale-95" aria-label="Siguiente">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                  )}
+                </div>
+
+                <div className="absolute bottom-10 left-0 right-0 text-center pointer-events-none">
+                  <p className="text-[11px] text-white/50 uppercase tracking-[0.2em] mb-2">Deslizá para navegar</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-[0.1em]">Tocá para hacer zoom</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

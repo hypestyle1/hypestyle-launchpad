@@ -17,7 +17,7 @@ const PROVINCIAS = [
   'Tierra del Fuego', 'Tucumán',
 ];
 
-const FREE_SHIPPING_THRESHOLD = 200000;
+const FREE_SHIPPING_THRESHOLD = 250000;
 
 interface ShippingRate { id: string; label: string; cost: number }
 interface AndBranch { id: string; label: string; direccion: string }
@@ -34,6 +34,8 @@ export default function Checkout() {
   const [step, setStep] = useState<Step>('info');
   const [coupon, setCoupon] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
+  const [couponValidating, setCouponValidating] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [info, setInfo] = useState<InfoForm>({
     email: '', newsletter: false, nombre: '', apellido: '', dni: '',
     direccion: '', depto: '', cp: '', ciudad: '', provincia: 'Buenos Aires', telefono: '',
@@ -61,8 +63,9 @@ export default function Checkout() {
   const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
   const shippingReady = freeShipping || !!selectedRate;
   const descuento = couponApplied ? Math.round(subtotal * 0.1) : 0;
-  const totalFinal = subtotal - descuento + (step === 'pago' || step === 'envio' ? envioCosto : 0);
-  const transferTotal = Math.round(subtotal * 0.90) + (step === 'pago' || step === 'envio' ? envioCosto : 0);
+  const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
+  const totalFinal = subtotal - descuento + envioEnPaso;
+  const transferTotal = Math.round(subtotal * 0.90) - descuento + envioEnPaso;
 
   const fetchRates = async () => {
     if (!info.cp) return;
@@ -127,7 +130,7 @@ export default function Checkout() {
           items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image })),
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
-          discountAmount: isTransfer ? Math.round(subtotal * 0.10) : 0,
+          discountAmount: (isTransfer ? Math.round(subtotal * 0.10) : 0) + descuento,
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
           shippingLabel: selectedRate?.label,
@@ -141,6 +144,7 @@ export default function Checkout() {
       }
       sessionStorage.setItem('hype_order', JSON.stringify({
         wcOrderId: orderRes.wcOrderId, wcOrderNumber: orderRes.wcOrderNumber,
+        orderKey: orderRes.orderKey,
         orderNum: orderRes.wcOrderNumber, items,
         total: isTransfer ? transferTotal : totalFinal,
         metodo: pago.metodo, email: info.email, nombre: info.nombre, apellido: info.apellido,
@@ -262,7 +266,7 @@ export default function Checkout() {
           )}
 
           {step === 'envio' && (
-            <form onSubmit={e => { e.preventDefault(); setStep('pago'); }} className="space-y-6">
+            <form onSubmit={e => { e.preventDefault(); setStep('pago'); if (typeof window !== 'undefined' && window.fbq) { window.fbq('track', 'InitiateCheckout', { value: totalFinal, currency: 'ARS', num_items: items.reduce((s, i) => s + i.quantity, 0) }); } }} className="space-y-6">
               <div className="border border-border divide-y divide-border text-[13px] rounded-[10px] overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex gap-2"><span className="text-muted-foreground">Contacto</span><span>{info.email}</span></div>
@@ -449,13 +453,35 @@ export default function Checkout() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-2 mb-5">
-              <input type="text" placeholder="Código de descuento" value={coupon} onChange={e => setCoupon(e.target.value)}
-                className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-              <button onClick={() => { if (coupon) setCouponApplied(true); }}
-                className="px-4 py-2.5 border border-border text-[12px] font-medium hover:border-foreground transition-colors rounded-[10px]">
-                Aplicar
-              </button>
+            <div className="space-y-1.5 mb-5">
+              <div className="flex gap-2">
+                <input type="text" placeholder="Código de descuento" value={coupon}
+                  onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponApplied) setCouponApplied(false); }}
+                  className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                <button
+                  onClick={async () => {
+                    if (!coupon.trim() || couponValidating) return;
+                    setCouponValidating(true);
+                    setCouponError(null);
+                    try {
+                      const res = await fetch('/api/validate-coupon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: coupon }),
+                      });
+                      const data = await res.json() as { valid: boolean; error?: string };
+                      if (data.valid) { setCouponApplied(true); }
+                      else { setCouponError(data.error || 'Código inválido'); }
+                    } catch { setCouponError('Error al validar el código'); }
+                    finally { setCouponValidating(false); }
+                  }}
+                  disabled={couponValidating || couponApplied}
+                  className="px-4 py-2.5 border border-border text-[12px] font-medium hover:border-foreground transition-colors rounded-[10px] disabled:opacity-60">
+                  {couponApplied ? '✓ Aplicado' : couponValidating ? '...' : 'Aplicar'}
+                </button>
+              </div>
+              {couponError && <p className="text-[11px] text-destructive">{couponError}</p>}
+              {couponApplied && <p className="text-[11px] text-green-700 font-medium">Cupón HYPE10 aplicado — 10% off</p>}
             </div>
             <div className="space-y-2 border-t border-border pt-4">
               <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
@@ -480,6 +506,9 @@ export default function Checkout() {
                 <span>Total</span>
                 <span>{formatPrice(step === 'info' || !shippingReady ? subtotal - descuento : totalFinal)}</span>
               </div>
+              {step === 'pago' && pago.metodo === 'transferencia' && (
+                <p className="text-[11px] text-green-700 font-semibold mt-1 text-right">Con transferencia pagás {formatPrice(transferTotal)}</p>
+              )}
             </div>
           </div>
         </div>

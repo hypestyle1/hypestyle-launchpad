@@ -1,13 +1,35 @@
 'use client';
 
+import { useMemo } from "react";
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
+const PINNED_ORDER = [
+  'per-aspera-ad-astra-zippo',
+  'mesh-realtree-pink-tee',
+  'no-service-for-the-faithless-hoodie',
+  'lettering-melange-jort',
+  'jersey-fileteado-x-alfredo-genovese',
+  'race-tee',
+  'trucker-cap-baby-come-back',
+  'mesh-realtree-tee',
+  'lettering-graphite-hoodie',
+  'lettering-graphite-jort',
+];
+
 export default function BackInStock() {
-  const { data: products = [] } = useProducts(100, undefined, 'best-seller');
-  const ref = useReveal();
+  const { data: raw = [] } = useProducts(100, undefined, 'best-seller');
+  const ref = useReveal([raw]);
+
+  const products = useMemo(() => {
+    const bySlug = new Map(raw.map(p => [p.slug, p]));
+    const pinned = PINNED_ORDER.map(s => bySlug.get(s)).filter(Boolean) as typeof raw;
+    const pinnedSet = new Set(PINNED_ORDER);
+    const rest = raw.filter(p => !pinnedSet.has(p.slug));
+    return [...pinned, ...rest].slice(0, 20);
+  }, [raw]);
 
   return (
     <section id="back-in-stock" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
