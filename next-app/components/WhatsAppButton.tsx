@@ -1,7 +1,7 @@
 'use client';
 
-const WA_NUMBER  = '5491178292430'; // ← reemplazado con el número de Hypestyle
-const WA_MESSAGE = encodeURIComponent('Hola! Tengo una consulta sobre un pedido de Hypestyle.');
+const WA_NUMBER  = '5491178292430';
+const WA_MESSAGE = encodeURIComponent('Hola Hype!');
 
 export default function WhatsAppButton() {
   return (

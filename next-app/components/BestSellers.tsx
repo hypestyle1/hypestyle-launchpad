@@ -5,30 +5,39 @@ import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/hooks/useProducts";
 
-const ORDER = [
-  'only-god-can-judge-me-blanca',
-  'only-god-can-judge-me-negra',
-  'camo-full-set-combo',
-  'hoodie-grey-hstars',
+const HIDDEN_SLUGS: string[] = [];
+
+const HOTSALE_PRIORITY = [
+  'half-zip-polo-grey',
   'half-zip-polo-navy',
-  'half-zip-polo-melange',
   'half-zip-polo-black',
-  'zip-hoodie-pink',
+  'ogcjm-blanca',
+  'ogcjm-negra',
 ];
 
+function sortHotSale(list: NormalizedProduct[]): NormalizedProduct[] {
+  const visible = list.filter(p => !HIDDEN_SLUGS.includes(p.slug));
+  const priority = HOTSALE_PRIORITY.map(slug => visible.find(p => p.slug === slug)).filter(Boolean) as NormalizedProduct[];
+  const rest = visible.filter(p => !HOTSALE_PRIORITY.includes(p.slug));
+  const restSorted = [...rest.filter(p => p.originalPrice), ...rest.filter(p => !p.originalPrice)];
+  return [...priority, ...restSorted].slice(0, 8);
+}
+
 export default function BestSellers() {
-  const { data: allProducts = [] } = useProducts(100);
-  const products = useMemo(
-    () => ORDER.map(slug => allProducts.find(p => p.slug === slug)).filter(Boolean) as typeof allProducts,
-    [allProducts]
-  );
+  const { data: raw = [] } = useProducts(24);
+  const products = useMemo(() => sortHotSale(raw), [raw]);
   const ref = useReveal([products]);
 
   return (
     <section id="best-sellers" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="New In" link="/new-in/" linkLabel="Ver más" />
+        <SectionHeader title="Hot Week" link="/productos/" linkLabel="Ver todo">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground border border-border px-2.5 py-1 leading-none">
+            Termina el 13 de Mayo
+          </span>
+        </SectionHeader>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (

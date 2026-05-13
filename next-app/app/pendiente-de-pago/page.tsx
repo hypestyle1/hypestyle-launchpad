@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from '@/context/LocaleContext';
 import { imgSrc } from '@/lib/img';
 
-const CVU = '0000168300000005801714';
+const CVU = '0000003100024686621335';
+const ALIAS = 'hypestyle2';
 const TITULAR = 'Pozzi Valentín';
-const BANCO = 'LEMON CASH';
+const BANCO = 'MERCADO PAGO';
 
 export default function PendientePago() {
   const router = useRouter();
@@ -58,11 +59,10 @@ export default function PendientePago() {
         <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto object-contain mx-auto" /></a>
       </div>
       <div className="bg-[#1a1a1a] text-white text-center px-6 py-10">
-        <p className="text-[12px] uppercase tracking-[0.2em] text-white/60 mb-3">STYLE&CULTURE</p>
         <p className="text-[15px] md:text-[17px] font-light leading-relaxed max-w-[620px] mx-auto">
           Gracias por ser parte. Estamos preparando tu pedido con el respeto que merece la cultura.
         </p>
-        <p className="text-[13px] uppercase tracking-[0.3em] text-white/40 mt-5 font-semibold">STYLE&CULTURE.</p>
+        <img src="/STYLE&CULTURE WHITE.png" alt="Style & Culture" className="h-3 w-auto mx-auto mt-6 opacity-40" />
       </div>
       <div className="max-w-[1100px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12">
         <div className="space-y-8">
@@ -89,6 +89,8 @@ export default function PendientePago() {
                 <div className="h-px bg-border" />
                 <div className="flex items-center justify-between"><p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Titular</p><p className="text-[13px] font-semibold">{TITULAR}</p></div>
                 <div className="h-px bg-border" />
+                <div className="flex items-center justify-between"><p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Alias</p><p className="text-[13px] font-semibold">{ALIAS}</p></div>
+                <div className="h-px bg-border" />
                 <div className="flex items-center justify-between gap-4">
                   <div><p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">CVU</p><p className="text-[13px] font-mono font-semibold tracking-wider">{CVU}</p></div>
                   <button onClick={handleCopy}
@@ -99,6 +101,9 @@ export default function PendientePago() {
                 <div className="h-px bg-border" />
                 <div className="flex items-center justify-between"><p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Monto a transferir</p><p className="text-[15px] font-bold">{formatPrice(displayTotal)}</p></div>
               </div>
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
+                Una vez acreditado el pago tu orden se aprueba automáticamente. Si en 48hs no se acredita, la orden se cancela.
+              </p>
               <button onClick={() => router.push('/checkout/')} className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">Cambiar medio de pago</button>
             </div>
           </div>

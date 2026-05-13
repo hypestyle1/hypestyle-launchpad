@@ -27,10 +27,10 @@ const collections: Collection[] = [
     href: "/colecciones/fw26/",
     editorial: "fw26-hstars-editorial.jpg",
     products: [
-      { name: "Hoodie Grey HStars", category: "Hoodie", price: 99990, originalPrice: 150000, image: "products/hoodie-grey-hstars-0.png", href: "/producto/hoodie-grey-hstars" },
-      { name: "Half Zip Polo — Navy", category: "Polo", price: 87000, originalPrice: 145000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-6-1.png", href: "/producto/half-zip-polo-navy" },
-      { name: "Zip Hoodie Pink", category: "Hoodie", price: 120000, originalPrice: 150000, image: "products/zip-hoodie-pink-0.jpg", href: "/producto/zip-hoodie-pink" },
-      { name: "Half Zip Polo — Black", category: "Polo", price: 87000, originalPrice: 145000, image: "products/half-zip-polo-black-0.webp", href: "/producto/half-zip-polo-black" },
+      { name: "Half Zip Polo — Melange",         category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-grey-0.png",  href: "/producto/half-zip-polo-grey" },
+      { name: "Half Zip Polo — Navy",            category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-navy-0.png",  href: "/producto/half-zip-polo-navy" },
+      { name: "Half Zip Polo — Black",           category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-black-0.png", href: "/producto/half-zip-polo-black" },
+      { name: "ONLY GOD CAN JUDGE ME — Blanca",  category: "Tee",    price: 46500,  originalPrice: 69000,  image: "products/ogcjm-blanca-0.png",        href: "/producto/ogcjm-blanca" },
     ],
   },
   {
@@ -93,21 +93,30 @@ export default function CollectionBanner() {
   const col = collections[active];
 
   return (
-    <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
+    <section className="max-w-[1400px] mx-auto py-10 md:py-14" ref={ref}>
 
-      <div className="reveal rd1 flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+      <div className="reveal rd1 flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 px-4">
         <div>
           <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-3">Colecciones</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 items-end">
             {collections.map((c, i) => (
               <button
                 key={c.name}
                 onClick={() => switchTo(i)}
-                className={`text-xl md:text-2xl font-bold uppercase tracking-tight transition-colors duration-200 ${
+                className={`flex flex-col items-start transition-colors duration-200 ${
                   i === active ? "text-foreground" : "text-foreground/25 hover:text-foreground/50"
                 }`}
               >
-                {c.name}
+                <span className={`font-bold uppercase tracking-tight ${
+                  i === active ? "text-xl md:text-2xl" : "text-[13px] md:text-xl"
+                }`}>
+                  {c.name}
+                </span>
+                {c.name === "FW26" && (
+                  <span className="text-[7px] uppercase tracking-[0.12em] border border-current px-1.5 py-0.5 mt-1 leading-none">
+                    Nueva temporada
+                  </span>
+                )}
               </button>
             ))}
           </div>

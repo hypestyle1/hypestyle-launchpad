@@ -23,10 +23,10 @@ export default function Home() {
         <Hero />
         <EventCountdown />
         <BenefitsStrip />
+        <CollectionBanner />
         <BestSellers />
         <ShopTheLook />
         <VideoSection />
-        <CollectionBanner />
         <BackInStock />
         <SpecialPrices />
         <EditorialBanner />

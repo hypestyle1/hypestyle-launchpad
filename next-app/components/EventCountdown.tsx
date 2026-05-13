@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const EVENT_END = new Date('2026-05-13T23:59:59-03:00');
+const EVENT_START = new Date('2026-05-10T00:00:00-03:00');
+const EVENT_END   = new Date('2026-05-13T23:59:59-03:00');
 
 function useCountdown(target: Date) {
   const calc = () => {
@@ -49,7 +50,10 @@ function Digit({ value, label }: { value: number; label: string }) {
 }
 
 export default function EventCountdown() {
-  if (Date.now() > EVENT_END.getTime()) return null;
+  const now = Date.now();
+  if (now > EVENT_END.getTime()) return null;
+
+  const live = now >= EVENT_START.getTime();
   const { d, h, m, s } = useCountdown(EVENT_END);
 
   return (
@@ -66,7 +70,7 @@ export default function EventCountdown() {
             className="object-contain"
           />
           <p className="text-[8px] uppercase tracking-[0.28em] text-white/35">
-            Descuentos exclusivos · 10 · 11 · 12 · 13 de Mayo
+            {live ? 'En curso —' : ''} Descuentos exclusivos · 10 · 11 · 12 · 13 de Mayo
           </p>
         </div>
 

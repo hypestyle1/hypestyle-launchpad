@@ -120,8 +120,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
     if (product) {
       setSelectedColor(product.colors[0].label);
       setSelectedImage(0);
-      const isSingleUnique = product.sizes.length === 1 && product.sizes[0] === 'Única';
-      setSelectedSize(isSingleUnique ? 'Única' : null);
+      // auto-select if only one size (talle único)
+      setSelectedSize(product.sizes.length === 1 ? product.sizes[0] : null);
     }
   }, [product?.slug]);
 
@@ -197,7 +197,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
     setZoomPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
   };
 
-  const transferPrice = Math.round(product.price * 0.85);
+  const transferRate  = product.transferRate ?? 15;
+  const transferPrice = Math.round(product.price * (1 - transferRate / 100));
 
   const handleAdd = async () => {
     if (!selectedSize) { setSizeError(true); return; }
@@ -310,7 +311,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   <>
                     <p className="text-[12px] text-muted-foreground mt-1">
                       O <span className="font-semibold text-foreground">{formatPrice(transferPrice)}</span> con Transferencia o depósito bancario{' '}
-                      <span className="text-green-700 font-semibold">(15% off)</span>
+                      <span className="text-green-700 font-semibold">(+{transferRate}% off)</span>
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       O hasta 3 cuotas sin interés de {formatPrice(Math.round(product.price / 3))}
@@ -333,8 +334,10 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   </div>
                   <div className="flex gap-2">
                     {product.colors.map(c => (
-                      <button key={c.label} onClick={() => setSelectedColor(c.label)} title={c.label}
-                        className={`relative w-[44px] h-[44px] overflow-hidden border transition-colors duration-150 rounded-[5px] ${selectedColor === c.label ? 'border-foreground' : 'border-border hover:border-foreground/40'}`}>
+                      <button key={c.label}
+                        onClick={() => c.slug && c.slug !== product.slug ? router.push(`/producto/${c.slug}/`) : setSelectedColor(c.label)}
+                        title={c.label}
+                        className={`relative w-[44px] h-[44px] overflow-hidden border transition-colors duration-150 rounded-[5px] ${selectedColor === c.label || c.slug === product.slug ? 'border-foreground' : 'border-border hover:border-foreground/40'}`}>
                         {c.image && <Image src={imgUrl(c.image)} alt={c.label} fill sizes="44px" className="object-cover" />}
                       </button>
                     ))}
@@ -351,7 +354,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
 
               <div className="border-t border-border mb-4" />
 
-              {!(product.sizes.length === 1 && product.sizes[0] === 'Única') && (
+              {product.sizes.length > 1 && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] font-semibold uppercase tracking-wider">

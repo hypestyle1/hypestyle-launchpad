@@ -61,7 +61,7 @@ export default function SpecialPrices() {
   return (
     <section id="special-prices" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="Special Prices" link="/special-prices/" linkLabel="Ver más">
+        <SectionHeader title="Liquidación Hot Week" link="/special-prices/" linkLabel="Ver más">
           <Countdown />
         </SectionHeader>
       </div>

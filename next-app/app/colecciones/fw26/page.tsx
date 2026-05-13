@@ -9,13 +9,27 @@ import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
 const SLUGS = [
-  'hoodie-grey-hstars',
-  'sweatpant-grey-hstars',
-  'half-zip-polo-melange',
+  // Half Zip Polo
+  'half-zip-polo-grey',
   'half-zip-polo-navy',
   'half-zip-polo-black',
+  // OGCJM
+  'ogcjm-blanca',
+  'ogcjm-negra',
+  // Melange set
+  'hoodie-melange',
+  'sweatpant-melange',
+  // Pink Set Drop
   'zip-hoodie-pink',
   'sweatpant-pink',
+  // Camo Drop
+  'zip-hoodie-camo',
+  'sweatpant-camo',
+  'camo-full-set-combo',
+  'camo-cap',
+  // HStars
+  'hoodie-grey-hstars',
+  'sweatpant-grey-hstars',
 ];
 
 export default function FW26Page() {
@@ -43,7 +57,19 @@ export default function FW26Page() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
             {products.map((p, i) => (
               <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
-                <ProductCard {...p} />
+                <ProductCard
+                  id={p.slug}
+                  name={p.name}
+                  category={p.category}
+                  price={p.price}
+                  originalPrice={p.originalPrice}
+                  badge={p.originalPrice ? `−${Math.round((1 - p.price / p.originalPrice) * 100)}%` : undefined}
+                  image={p.images[0]}
+                  images={p.images}
+                  sizes={p.sizes}
+                  stock={p.stock}
+                  href={`/producto/${p.slug}/`}
+                />
               </div>
             ))}
           </div>

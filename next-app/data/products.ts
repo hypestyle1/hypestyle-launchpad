@@ -6,12 +6,13 @@ export interface Product {
   category: string;
   price: number;
   originalPrice?: number;
+  transferRate?: number;
   description: string;
   careItems: { icon: string; text: string }[];
   fit: string;
   sizes: string[];
   stock: Record<string, "ok" | "low" | "out">;
-  colors: { label: string; value: string; image: string; href?: string }[];
+  colors: { label: string; value: string; image: string; slug?: string; href?: string }[];
   images: string[];
   customizable?: boolean;
   customPreviewImage?: string;
@@ -33,25 +34,103 @@ const CARE_ACCESSORY = [
 
 export const PRODUCTS: Product[] = [
   {
-    slug: "half-zip-polo-grey",
-    id: "half-zip-polo-grey",
-    name: "Half Zip Polo — Grey",
-    category: "Polo",
-    price: 69000,
-    originalPrice: 138000,
-    description: `HYPESTYLE DEPARTMENT\n\nHalf Zip Polo en color gris melange. Cuello polo con media cremallera, fit oversize. Gráficos bordados: escudo, caballo y lettering Hypestyle.\n\nMaterial: 80% algodón, 20% poliéster\nFit oversize\nCuello polo con cremallera\nBordados en pecho y manga`,
+    slug: "hoodie-melange",
+    id: "hoodie-melange",
+    name: "Hoodie Melange",
+    category: "Hoodie",
+    price: 0,
+    description: `HYPESTYLE DEPARTMENT\n\nHoodie oversize en color gris melange.\n\n• Fit Boxy Oversized\n• 100% algodón`,
     careItems: CARE_APPAREL,
-    fit: "Oversize",
+    fit: "Boxy Oversized",
     sizes: ["S", "M", "L", "XL"],
     stock: { S: "ok", M: "ok", L: "ok", XL: "ok" },
     colors: [
-      { label: "Grey", value: "#c8c8c8", image: "products/half-zip-polo-grey-0.webp" },
+      { label: "Melange", value: "#9fa3a8", image: "products/hoodie-melange-0.png", slug: "hoodie-melange" },
     ],
     images: [
-      "products/half-zip-polo-grey-0.webp",
-      "products/half-zip-polo-grey-1.webp",
-      "products/half-zip-polo-grey-2.webp",
-      "products/half-zip-polo-grey-3.webp",
+      "products/hoodie-melange-0.png",
+    ],
+  },
+  {
+    slug: "sweatpant-melange",
+    id: "sweatpant-melange",
+    name: "Sweatpant Melange",
+    category: "Pantalón",
+    price: 0,
+    description: `HYPESTYLE DEPARTMENT\n\nSweatpant oversize en color gris melange.\n\n• Fit relajado\n• 100% algodón`,
+    careItems: CARE_APPAREL,
+    fit: "Regular Fit",
+    sizes: ["S", "M", "L", "XL"],
+    stock: { S: "ok", M: "ok", L: "ok", XL: "ok" },
+    colors: [
+      { label: "Melange", value: "#9fa3a8", image: "products/sweatpant-melange-0.png", slug: "sweatpant-melange" },
+    ],
+    images: [
+      "products/sweatpant-melange-0.png",
+    ],
+  },
+  {
+    slug: "ogcjm-blanca",
+    id: "ogcjm-blanca",
+    name: "ONLY GOD CAN JUDGE ME — Blanca",
+    category: "Tee",
+    price: 46500,
+    originalPrice: 69000,
+    description: `ONLY GOD CAN JUDGE ME\n\nRemera oversize con estampa gráfica frontal.\n\n• Fit Boxy\n• 100% algodón\n• Estampa serigrafía alta densidad`,
+    careItems: CARE_APPAREL,
+    fit: "Boxy",
+    sizes: ["S", "M", "L", "XL"],
+    stock: { S: "ok", M: "ok", L: "ok", XL: "ok" },
+    colors: [
+      { label: "Blanca", value: "#f5f5f0", image: "products/ogcjm-blanca-0.png", slug: "ogcjm-blanca" },
+      { label: "Negra",  value: "#1a1a1a", image: "products/ogcjm-negra-0.png",  slug: "ogcjm-negra" },
+    ],
+    images: [
+      "products/ogcjm-blanca-0.png",
+      "products/ogcjm-blanca-1.png",
+    ],
+  },
+  {
+    slug: "ogcjm-negra",
+    id: "ogcjm-negra",
+    name: "ONLY GOD CAN JUDGE ME — Negra",
+    category: "Tee",
+    price: 46500,
+    originalPrice: 69000,
+    description: `ONLY GOD CAN JUDGE ME\n\nRemera oversize con estampa gráfica frontal.\n\n• Fit Boxy\n• 100% algodón\n• Estampa serigrafía alta densidad`,
+    careItems: CARE_APPAREL,
+    fit: "Boxy",
+    sizes: ["S", "M", "L", "XL"],
+    stock: { S: "ok", M: "ok", L: "ok", XL: "ok" },
+    colors: [
+      { label: "Blanca", value: "#f5f5f0", image: "products/ogcjm-blanca-0.png", slug: "ogcjm-blanca" },
+      { label: "Negra",  value: "#1a1a1a", image: "products/ogcjm-negra-0.png",  slug: "ogcjm-negra" },
+    ],
+    images: [
+      "products/ogcjm-negra-0.png",
+      "products/ogcjm-negra-1.png",
+    ],
+  },
+  {
+    slug: "half-zip-polo-grey",
+    id: "half-zip-polo-grey",
+    name: "Half Zip Polo — Melange",
+    category: "Polo",
+    price: 87000,
+    originalPrice: 145000,
+    description: `HYPESTYLE DEPARTMENT\n\nHalf Zip Polo en color gris melange. Cuello polo con media cremallera, fit oversize. Gráficos bordados: escudo, caballo y lettering Hypestyle.\n\nMaterial: 80% algodón, 20% poliéster\nFit oversize\nCuello polo con cremallera\nBordados en pecho y manga`,
+    careItems: CARE_APPAREL,
+    fit: "Boxy",
+    sizes: ["S", "M", "L", "XL"],
+    stock: { S: "ok", M: "ok", L: "ok", XL: "ok" },
+    colors: [
+      { label: "Navy",    value: "#212246", image: "products/half-zip-polo-navy-0.png",  slug: "half-zip-polo-navy" },
+      { label: "Melange", value: "#9fa3a8", image: "products/half-zip-polo-grey-0.png",  slug: "half-zip-polo-grey" },
+      { label: "Black",   value: "#1a1a1a", image: "products/half-zip-polo-black-0.png", slug: "half-zip-polo-black" },
+    ],
+    images: [
+      "products/half-zip-polo-grey-0.png",
+      "products/half-zip-polo-grey-1.png",
     ],
   },
   {
@@ -59,21 +138,21 @@ export const PRODUCTS: Product[] = [
     id: "half-zip-polo-navy",
     name: "Half Zip Polo — Navy",
     category: "Polo",
-    price: 69000,
-    originalPrice: 138000,
+    price: 87000,
+    originalPrice: 145000,
     description: `HYPESTYLE DEPARTMENT\n\nHalf Zip Polo en color azul navy. Cuello polo con media cremallera, fit oversize. Gráficos bordados en dorado: escudo, caballo y lettering Hypestyle.\n\nMaterial: 80% algodón, 20% poliéster\nFit oversize\nCuello polo con cremallera\nBordados en pecho y manga`,
     careItems: CARE_APPAREL,
-    fit: "Oversize",
+    fit: "Boxy",
     sizes: ["S", "M", "L", "XL"],
     stock: { S: "ok", M: "ok", L: "ok", XL: "ok" },
     colors: [
-      { label: "Navy", value: "#1a2744", image: "products/half-zip-polo-navy-0.webp" },
+      { label: "Navy",    value: "#212246", image: "products/half-zip-polo-navy-0.png",  slug: "half-zip-polo-navy" },
+      { label: "Melange", value: "#9fa3a8", image: "products/half-zip-polo-grey-0.png",  slug: "half-zip-polo-grey" },
+      { label: "Black",   value: "#1a1a1a", image: "products/half-zip-polo-black-0.png", slug: "half-zip-polo-black" },
     ],
     images: [
-      "products/half-zip-polo-navy-0.webp",
-      "products/half-zip-polo-navy-1.webp",
-      "products/half-zip-polo-navy-2.webp",
-      "products/half-zip-polo-navy-3.webp",
+      "products/half-zip-polo-navy-0.png",
+      "products/half-zip-polo-navy-1.png",
     ],
   },
   {
@@ -81,22 +160,21 @@ export const PRODUCTS: Product[] = [
     id: "half-zip-polo-black",
     name: "Half Zip Polo — Black",
     category: "Polo",
-    price: 69000,
-    originalPrice: 138000,
+    price: 87000,
+    originalPrice: 145000,
     description: `HYPESTYLE DEPARTMENT\n\nHalf Zip Polo en color negro. Cuello polo con media cremallera, fit oversize. Gráficos bordados en blanco: escudo, caballo y lettering Hypestyle.\n\nMaterial: 80% algodón, 20% poliéster\nFit oversize\nCuello polo con cremallera\nBordados en pecho y manga`,
     careItems: CARE_APPAREL,
-    fit: "Oversize",
+    fit: "Boxy",
     sizes: ["S", "M", "L", "XL"],
     stock: { S: "ok", M: "ok", L: "ok", XL: "ok" },
     colors: [
-      { label: "Black", value: "#1a1a1a", image: "products/half-zip-polo-black-0.webp" },
+      { label: "Navy",    value: "#212246", image: "products/half-zip-polo-navy-0.png",  slug: "half-zip-polo-navy" },
+      { label: "Melange", value: "#9fa3a8", image: "products/half-zip-polo-grey-0.png",  slug: "half-zip-polo-grey" },
+      { label: "Black",   value: "#1a1a1a", image: "products/half-zip-polo-black-0.png", slug: "half-zip-polo-black" },
     ],
     images: [
-      "products/half-zip-polo-black-0.webp",
-      "products/half-zip-polo-black-1.webp",
-      "products/half-zip-polo-black-2.webp",
-      "products/half-zip-polo-black-3.webp",
-      "products/half-zip-polo-black-4.webp",
+      "products/half-zip-polo-black-0.png",
+      "products/half-zip-polo-black-1.png",
     ],
   },
   {
@@ -671,8 +749,9 @@ export const PRODUCTS: Product[] = [
     id: "fleece-jacket-v1-negrogris",
     name: "FLEECE JACKET V1 - (Negro/Gris)",
     category: "Hoodie",
-    price: 62300,
-    originalPrice: 89000,
+    price: 52800,
+    originalPrice: 88000,
+    transferRate: 10,
     description: `DETALLES: Combinación de Bouclé polar negro y Groo esmerilado gris Recortes en frente, espalda, mangas y capucha Bordado frontal con logo Hypestyle Cierre metálico YKK frontal Bolsillos laterales abiertos Talles disponibles: S, M, L Fit boxy con caída relajada Terminaciones de calidad premium
 
 •
@@ -715,8 +794,9 @@ export const PRODUCTS: Product[] = [
     id: "crewneck-hyped-up-grey",
     name: "CREWNECK HYPED UP! GREY",
     category: "Crewneck",
-    price: 62300,
-    originalPrice: 89000,
+    price: 52800,
+    originalPrice: 88000,
+    transferRate: 10,
     description: `CREWNECK HYPEDUP! GRIS MELANGE
 
 • FRIZA 100% algodón (300 gsm)
@@ -2021,8 +2101,9 @@ export const PRODUCTS: Product[] = [
     id: "hoodie-stay-hustle",
     name: "HOODIE - STAY HUSTLE.",
     category: "Hoodie",
-    price: 68600,
-    originalPrice: 98000,
+    price: 52800,
+    originalPrice: 88000,
+    transferRate: 10,
     description: `HOODIE  STAY HUSTLE. Buzo de rústico gris grafito, pensado para el día a día y las noches de calle. Estampa STAY HUSTLE en el frente y gráfico complementario en la espalda. Tela rústica, cómoda y liviana Color: gris grafito Estampa frontal y trasera de alta definición Capucha y bolsillo canguro Puños y cintura elastizados para mejor calce
 
 •
@@ -2062,8 +2143,9 @@ export const PRODUCTS: Product[] = [
     id: "lettering-graphite-hoodie",
     name: "LETTERING GRAPHITE - HOODIE",
     category: "Hoodie",
-    price: 68600,
-    originalPrice: 98000,
+    price: 52800,
+    originalPrice: 88000,
+    transferRate: 10,
     description: `LETTERING GRAPHITE - HOODIE Buzo de rústico gris grafito, pensado para el día a día y las noches de calle. Estampa LETTERING en el frente. Tela rústica, cómoda y liviana Color: gris grafito Estampa frontal y trasera de alta definición Capucha y bolsillo canguro Puños y cintura elastizados para mejor calce
 
 •
@@ -2304,7 +2386,9 @@ export const PRODUCTS: Product[] = [
     id: "no-service-for-the-faithless-hoodie",
     name: "NO SERVICE FOR THE FAITHLESS - HOODIE",
     category: "Hoodie",
-    price: 44000,
+    price: 52800,
+    originalPrice: 88000,
+    transferRate: 10,
     description: `LETTERING GRAPHITE - HOODIE Buzo de rústico gris grafito, pensado para el día a día y las noches de calle. Estampa NSFTF en el frente. Tela rústica, cómoda y liviana Color: gris grafito Estampa frontal y trasera de alta definición Capucha y bolsillo canguro Puños y cintura elastizados para mejor calce
 
 •
@@ -2345,7 +2429,7 @@ export const PRODUCTS: Product[] = [
 •
 •`,
     careItems: CARE_APPAREL,
-    fit: "Regular Fit",
+    fit: "Oversize",
     sizes: ["S", "M", "L", "XL"],
     stock: {
     "S": "out",
@@ -2354,7 +2438,10 @@ export const PRODUCTS: Product[] = [
     "XL": "low"
     },
     colors: [
-      { label: "Default", value: "#111111", image: "products/no-service-for-the-faithless-tees-0.webp" },
+      { label: "Blanco",         value: "#f5f5f5", image: "products/no-service-for-the-faithless-tees-0.webp" },
+      { label: "Negro",          value: "#111111", image: "products/no-service-for-the-faithless-tees-1.webp" },
+      { label: "Gris",           value: "#888888", image: "products/no-service-for-the-faithless-tees-2.webp" },
+      { label: "Verde militar",  value: "#4a5240", image: "products/no-service-for-the-faithless-tees-3.png" },
     ],
     images: [
     "products/no-service-for-the-faithless-tees-0.webp",
