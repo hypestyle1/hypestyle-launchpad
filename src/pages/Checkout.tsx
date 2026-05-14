@@ -379,7 +379,7 @@ export default function Checkout() {
                       </div>
                       <div className="flex-1">
                         <p className="text-[13px] font-medium">Transferencia o depósito bancario</p>
-                        {currency === "ARS" && <p className="text-[11px] text-green-700 font-semibold">Pagás {formatPrice(transferTotal)} (15% off)</p>}
+                        {currency === "ARS" && <p className="text-[11px] text-green-700 font-semibold">Pagás {formatPrice(transferTotal)} (10% off)</p>}
                       </div>
                     </div>
                     <div className="px-4 py-4 bg-foreground/[0.02]">
@@ -399,7 +399,7 @@ export default function Checkout() {
                   <div className="space-y-2">
                     {[
                       { id: "tarjeta", label: "Tarjeta de crédito o débito", sub: "Hasta 3 cuotas sin interés" },
-                      { id: "transferencia", label: "Transferencia o depósito bancario", sub: currency === "ARS" ? `Pagás ${formatPrice(transferTotal)} (15% off)` : "" },
+                      { id: "transferencia", label: "Transferencia o depósito bancario", sub: currency === "ARS" ? `Pagás ${formatPrice(transferTotal)} (10% off)` : "" },
                       { id: "mercadopago", label: "Mercado Pago", sub: "" },
                       { id: "paypal", label: "PayPal", sub: "" },
                       { id: "efectivo", label: "Efectivo", sub: "" },

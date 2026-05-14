@@ -41,7 +41,7 @@ export default function PendientePago() {
   if (!order) return null;
 
   const transferTotal = Math.round(order.total * 0.85 / 1.15); // approximate — already correct from checkout
-  // Use the pre-calculated total stored; since transfer gives 15% off on subtotal
+  // Use the pre-calculated total stored; since transfer gives 10% off on subtotal
   // The total stored already accounts for shipping but not the discount if via transfer
   // Let's just show what was saved
   const displayTotal = order.total;
