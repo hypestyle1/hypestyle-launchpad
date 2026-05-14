@@ -17,7 +17,7 @@ const faqs = [
       },
       {
         q: "¿Qué métodos de pago aceptan?",
-        a: "Aceptamos transferencia bancaria (con 15% de descuento), MercadoPago y tarjetas de crédito/débito.",
+        a: "Aceptamos transferencia bancaria (con 10% de descuento), MercadoPago y tarjetas de crédito/débito.",
       },
       {
         q: "¿Cuándo se confirma mi pedido?",

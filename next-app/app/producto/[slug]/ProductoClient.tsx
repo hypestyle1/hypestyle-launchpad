@@ -197,7 +197,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
     setZoomPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
   };
 
-  const transferRate  = product.transferRate ?? 15;
+  const transferRate  = product.transferRate ?? 10;
   const transferPrice = Math.round(product.price * (1 - transferRate / 100));
 
   const handleAdd = async () => {
