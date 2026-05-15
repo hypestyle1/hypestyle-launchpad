@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const EVENT_START = new Date('2026-05-10T00:00:00-03:00');
-const EVENT_END   = new Date('2026-05-13T23:59:59-03:00');
+const EVENT_END   = new Date('2026-05-17T23:59:59-03:00');
 
 function useCountdown(target: Date) {
   const calc = () => {
