@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const EVENT_START = new Date('2026-05-10T00:00:00-03:00');
-const EVENT_END   = new Date('2026-05-13T23:59:59-03:00');
+const EVENT_END = new Date('2026-05-17T23:59:59-03:00');
 
 function useCountdown(target: Date) {
   const calc = () => {
@@ -70,7 +70,7 @@ export default function EventCountdown() {
             className="object-contain"
           />
           <p className="text-[8px] uppercase tracking-[0.28em] text-white/35">
-            {live ? 'En curso —' : ''} Descuentos exclusivos · 10 · 11 · 12 · 13 de Mayo
+            {live ? 'En curso —' : ''} Descuentos exclusivos · 10 · 11 · 12 · 13 · 14 · 15 · 16 · 17 de Mayo
           </p>
         </div>
 
