@@ -222,7 +222,7 @@ export default function Producto() {
     });
   };
 
-  const transferPrice = Math.round(product.price * 0.90);
+  const transferPrice = Math.round(product.price * 0.85);
 
   const handleAdd = async () => {
     if (!selectedSize) { setSizeError(true); return; }
@@ -374,7 +374,7 @@ export default function Producto() {
                   <>
                     <p className="text-[12px] text-muted-foreground mt-1">
                       O <span className="font-semibold text-foreground">{formatPrice(transferPrice)}</span> con Transferencia o depósito bancario{" "}
-                      <span className="text-green-700 font-semibold">(10% off)</span>
+                      <span className="text-green-700 font-semibold">(15% off)</span>
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       O hasta 3 cuotas sin interés de {formatPrice(Math.round(product.price / 3))}
