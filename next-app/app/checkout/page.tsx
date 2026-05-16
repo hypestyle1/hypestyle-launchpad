@@ -459,7 +459,7 @@ export default function Checkout() {
             <div className="space-y-1.5 mb-5">
               <div className="flex gap-2">
                 <input type="text" placeholder="Código de descuento" value={coupon}
-                  onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponApplied) setCouponApplied(false); }}
+                  onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponData) setCouponData(null); }}
                   className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                 <button
                   onClick={async () => {
