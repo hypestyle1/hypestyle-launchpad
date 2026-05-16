@@ -31,6 +31,7 @@ export interface CreateOrderPayload {
   customer: OrderCustomer;
   shipping: number;
   discountAmount: number;
+  couponCode?: string;
   paymentMethod: string;
   shippingMethodId?: string;
   shippingLabel?: string;

@@ -33,7 +33,7 @@ export default function Checkout() {
   const { formatPrice, currency } = useLocale();
   const [step, setStep] = useState<Step>('info');
   const [coupon, setCoupon] = useState('');
-  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [info, setInfo] = useState<InfoForm>({
@@ -62,7 +62,9 @@ export default function Checkout() {
   const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
   const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
   const shippingReady = freeShipping || !!selectedRate;
-  const descuento = couponApplied ? Math.round(subtotal * 0.1) : 0;
+  const descuento = couponData ? (
+    couponData.type === 'percent' ? Math.round(subtotal * (couponData.amount / 100)) : couponData.amount
+  ) : 0;
   const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
   const totalFinal = subtotal - descuento + envioEnPaso;
   const transferTotal = Math.round(subtotal * 0.90) - descuento + envioEnPaso;
@@ -130,7 +132,8 @@ export default function Checkout() {
           items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image })),
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
-          discountAmount: (isTransfer ? Math.round(subtotal * 0.10) : 0) + descuento,
+          discountAmount: (isTransfer ? Math.round(subtotal * 0.10) : 0),
+          couponCode: couponData?.code,
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
           shippingLabel: selectedRate?.label,
@@ -456,7 +459,7 @@ export default function Checkout() {
             <div className="space-y-1.5 mb-5">
               <div className="flex gap-2">
                 <input type="text" placeholder="Código de descuento" value={coupon}
-                  onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponApplied) setCouponApplied(false); }}
+                  onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponData) setCouponData(null); }}
                   className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                 <button
                   onClick={async () => {
@@ -467,25 +470,27 @@ export default function Checkout() {
                       const res = await fetch('/api/validate-coupon', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: coupon }),
+                        body: JSON.stringify({ code: coupon, total: subtotal }),
                       });
-                      const data = await res.json() as { valid: boolean; error?: string };
-                      if (data.valid) { setCouponApplied(true); }
+                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; error?: string };
+                      if (data.valid && data.code && data.type && data.amount !== undefined) {
+                        setCouponData({ code: data.code, type: data.type, amount: data.amount });
+                      }
                       else { setCouponError(data.error || 'Código inválido'); }
                     } catch { setCouponError('Error al validar el código'); }
                     finally { setCouponValidating(false); }
                   }}
-                  disabled={couponValidating || couponApplied}
+                  disabled={couponValidating || !!couponData}
                   className="px-4 py-2.5 border border-border text-[12px] font-medium hover:border-foreground transition-colors rounded-[10px] disabled:opacity-60">
-                  {couponApplied ? '✓ Aplicado' : couponValidating ? '...' : 'Aplicar'}
+                  {couponData ? '✓ Aplicado' : couponValidating ? '...' : 'Aplicar'}
                 </button>
               </div>
               {couponError && <p className="text-[11px] text-destructive">{couponError}</p>}
-              {couponApplied && <p className="text-[11px] text-green-700 font-medium">Cupón HYPE10 aplicado — 10% off</p>}
+              {couponData && <p className="text-[11px] text-green-700 font-medium">Cupón {couponData.code} aplicado — {couponData.type === 'percent' ? `${couponData.amount}% off` : formatPrice(couponData.amount)}</p>}
             </div>
             <div className="space-y-2 border-t border-border pt-4">
               <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-              {descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento (10%)</span><span>−{formatPrice(descuento)}</span></div>}
+              {descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(descuento)}</span></div>}
               <div className="flex justify-between text-[13px]">
                 <span className="text-muted-foreground">Envío</span>
                 <span>
