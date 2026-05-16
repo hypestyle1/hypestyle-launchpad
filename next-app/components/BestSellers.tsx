@@ -35,7 +35,7 @@ export default function BestSellers() {
       <div className="reveal rd1">
         <SectionHeader title="Hot Week" link="/productos/" linkLabel="Ver todo">
           <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground border border-border px-2.5 py-1 leading-none">
-            Termina el 13 de Mayo
+            Termina el 17 de Mayo
           </span>
         </SectionHeader>
       </div>
