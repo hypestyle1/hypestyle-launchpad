@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+.next
+out
+build
+next-app/.next
+next-app/out
+next-app/node_modules

@@ -1,0 +1,14 @@
+{
+  "name": "hypestyle-launchpad",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix next-app",
+    "build": "npm run build --prefix next-app",
+    "vercel-build": "npm run build --prefix next-app",
+    "start": "npm run start --prefix next-app",
+    "lint": "npm run lint --prefix next-app"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
