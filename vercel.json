@@ -1,6 +1,6 @@
 {
-  "installCommand": "cd next-app && npm install",
-  "buildCommand": "cd next-app && next build",
-  "outputDirectory": "next-app/.next",
-  "devCommand": "cd next-app && next dev"
+  "installCommand": "npm install",
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "devCommand": "next dev"
 }
