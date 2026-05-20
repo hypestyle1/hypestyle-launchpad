@@ -1,4 +1,4 @@
-const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
+const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://hypestyle.local/graphql';
 
 export async function fetchGraphQL<T>(query: string, variables?: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
   const response = await fetch(GRAPHQL_URL, {

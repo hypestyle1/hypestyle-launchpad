@@ -1,6 +1,6 @@
 import { fromWPNode, NormalizedProduct } from './products-normalize';
 
-const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
+const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://hypestyle.local/graphql';
 
 const GET_PRODUCTS = `
   query GetProducts($first: Int) {
