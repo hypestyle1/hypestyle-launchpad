@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import ProductCard from "./ProductCard";
 import { useReveal } from "@/hooks/useReveal";
+import { NormalizedProduct } from "@/lib/products-normalize";
+import { fetchAllProducts } from "@/lib/products-server";
 
 type Product = {
   name: string;
@@ -26,12 +28,7 @@ const collections: Collection[] = [
     name: "FW26",
     href: "/colecciones/fw26/",
     editorial: "fw26-hstars-editorial.jpg",
-    products: [
-      { name: "Half Zip Polo — Melange",         category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-grey-0.png",  href: "/producto/half-zip-polo-grey" },
-      { name: "Half Zip Polo — Navy",            category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-navy-0.png",  href: "/producto/half-zip-polo-navy" },
-      { name: "Half Zip Polo — Black",           category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-black-0.png", href: "/producto/half-zip-polo-black" },
-      { name: "ONLY GOD CAN JUDGE ME — Blanca",  category: "Tee",    price: 46500,  originalPrice: 69000,  image: "products/ogcjm-blanca-0.png",        href: "/producto/ogcjm-blanca" },
-    ],
+    products: [], // Will be populated from WordPress
   },
   {
     name: "No Love, Only Style",
@@ -83,6 +80,41 @@ export default function CollectionBanner() {
   const ref = useReveal();
   const [active, setActive] = useState(0);
   const [fading, setFading] = useState(false);
+  const [fw26Products, setFw26Products] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const allProducts: NormalizedProduct[] = await fetchAllProducts();
+        const fw26TaggedProducts = allProducts.filter(p => p.tags.includes('fw26'));
+        
+        const formattedProducts: Product[] = fw26TaggedProducts.map(p => ({
+          name: p.name,
+          category: p.category,
+          price: p.price,
+          originalPrice: p.originalPrice,
+          image: p.image,
+          href: p.href,
+        }));
+        
+        setFw26Products(formattedProducts);
+      } catch (error) {
+        console.error('Error fetching FW26 products:', error);
+        // Fallback to hardcoded products if API fails
+        setFw26Products([
+          { name: "Half Zip Polo — Melange",         category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-grey-0.png",  href: "/producto/half-zip-polo-grey" },
+          { name: "Half Zip Polo — Navy",            category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-navy-0.png",  href: "/producto/half-zip-polo-navy" },
+          { name: "Half Zip Polo — Black",           category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-black-0.png", href: "/producto/half-zip-polo-black" },
+          { name: "ONLY GOD CAN JUDGE ME — Blanca",  category: "Tee",    price: 46500,  originalPrice: 69000,  image: "products/ogcjm-blanca-0.png",        href: "/producto/ogcjm-blanca" },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const switchTo = (i: number) => {
     if (i === active) return;
@@ -91,6 +123,17 @@ export default function CollectionBanner() {
   };
 
   const col = collections[active];
+
+  // Show loading state for FW26 collection
+  if (active === 0 && loading) {
+    return (
+      <section className="max-w-[1400px] mx-auto py-10 md:py-14" ref={ref}>
+        <div className="text-center py-10">
+          <p>Loading products...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="max-w-[1400px] mx-auto py-10 md:py-14" ref={ref}>
