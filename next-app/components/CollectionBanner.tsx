@@ -6,6 +6,7 @@ import ProductCard from "./ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { NormalizedProduct } from "@/lib/products-normalize";
 import { fetchAllProducts } from "@/lib/products-server";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Product = {
   name: string;
@@ -43,7 +44,7 @@ const collections: Collection[] = [
   },
   {
     name: "Camo Set",
-    href: "/colecciones/camo-set-drop/",
+    href: "/colecciones/camo-set/",
     editorial: "stl-look-camo-front.png",
     products: [
       { name: "Camo Full Set", category: "Set", price: 246000, image: "product-camo-set-completo.webp", href: "/producto/camo-full-set-combo" },
@@ -54,7 +55,7 @@ const collections: Collection[] = [
   },
   {
     name: "Race Drop",
-    href: "/colecciones/race/",
+    href: "/colecciones/race-drop/",
     editorial: "race drop banner.webp",
     products: [
       { name: "Race Tee", category: "Tee", price: 68000, image: "product-racing-tee-verde.webp", href: "/producto/race-tee" },
@@ -68,24 +69,31 @@ const collections: Collection[] = [
     href: "/colecciones/summer-26/",
     editorial: "summer drop banner.webp",
     products: [
-      { name: "AEROPINK - TEEs", category: "Tee", price: 38250, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mesa-de-trabajo-1-copia-d001477687accf22e917679044697808-1024-1024.png", href: "/producto/aeropink-tees" },
-      { name: "Mesh RealTree™ Pink – Tee", category: "Tee", price: 68000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mesh-corregidos-hsmesa-de-trabajo-1-1f8ea6ed864faa441c17648638960971-1024-1024.png", href: "/producto/mesh-realtree-pink-tee" },
-      { name: "LETTERING PINK - JORT", category: "Jort", price: 69000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/jort-lettering-v4-pink-f7d6a3ce40c84a043217705731602927-1024-1024.png", href: "/producto/lettering-pink-jort" },
-      { name: "JORT CARGO - REALTREE® PINK", category: "Jort", price: 69000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/camufladasmesa-de-trabajo-3-56748a2b37abdc560717705671603162-1024-1024.png", href: "/producto/jort-cargo-realtree-pink" },
+      { name: "Mesh RealTree™ Pink", category: "Tee", price: 28000, image: "mesh rosa.webp", href: "/producto/mesh-realtree-pink" },
+      { name: "Jersey Fileteado x Alfredo Genovese", category: "Jersey", price: 32000, image: "product-fileteado-tee.webp", href: "/productos/" },
+      { name: "Lettering Pink — Jort", category: "Jort", price: 28000, image: "product-jort-lettering-pink.webp", href: "/producto/lettering-pink-jort" },
+      { name: "Regular Tee", category: "Tee", price: 18000, image: "regular tee 1.webp", href: "/producto/regular-tee-black" },
     ],
   },
 ];
+
+const SkeletonCard = () => (
+  <div className="flex flex-col gap-3">
+    <Skeleton className="aspect-square w-full rounded-none bg-bg-alt/60" />
+    <div className="mt-3 px-0.5 space-y-2">
+      <Skeleton className="h-3 w-1/4 rounded-none bg-bg-alt/60" />
+      <Skeleton className="h-4 w-3/4 rounded-none bg-bg-alt/60" />
+      <Skeleton className="h-3.5 w-1/3 rounded-none bg-bg-alt/60" />
+    </div>
+  </div>
+);
 
 export default function CollectionBanner() {
   const ref = useReveal();
   const [active, setActive] = useState(0);
   const [fading, setFading] = useState(false);
-  const [fw26Products, setFw26Products] = useState<Product[]>([
-    { name: "Half Zip Polo — Melange",         category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-grey-0.png",  href: "/producto/half-zip-polo-grey" },
-    { name: "Half Zip Polo — Navy",            category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-navy-0.png",  href: "/producto/half-zip-polo-navy" },
-    { name: "Half Zip Polo — Black",           category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-black-0.png", href: "/producto/half-zip-polo-black" },
-    { name: "ONLY GOD CAN JUDGE ME — Blanca",  category: "Tee",    price: 46500,  originalPrice: 69000,  image: "products/ogcjm-blanca-0.png",        href: "/producto/ogcjm-blanca" },
-  ]);
+  const [fw26Products, setFw26Products] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -107,6 +115,15 @@ export default function CollectionBanner() {
         }
       } catch (error) {
         console.error('Error fetching FW26 products:', error);
+        // Fallback to hardcoded products if API fails
+        setFw26Products([
+          { name: "Half Zip Polo — Melange",         category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-grey-0.png",  href: "/producto/half-zip-polo-grey" },
+          { name: "Half Zip Polo — Navy",            category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-navy-0.png",  href: "/producto/half-zip-polo-navy" },
+          { name: "Half Zip Polo — Black",           category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-black-0.png", href: "/producto/half-zip-polo-black" },
+          { name: "ONLY GOD CAN JUDGE ME — Blanca",  category: "Tee",    price: 46500,  originalPrice: 69000,  image: "products/ogcjm-blanca-0.png",        href: "/producto/ogcjm-blanca" },
+        ]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -163,9 +180,18 @@ export default function CollectionBanner() {
       <div style={{ opacity: fading ? 0 : 1, transition: "opacity 220ms ease" }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-[2px]">
           <div className="grid grid-cols-2 gap-[2px]">
-            {displayProducts.map((p) => (
-              <ProductCard key={p.name} {...p} />
-            ))}
+            {active === 0 && loading ? (
+              <>
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+              </>
+            ) : (
+              displayProducts.map((p) => (
+                <ProductCard key={p.name} {...p} />
+              ))
+            )}
           </div>
           <div className="relative overflow-hidden bg-bg-alt min-h-[300px]">
             <a href={col.href} className="absolute inset-0 group block">
