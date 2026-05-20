@@ -80,8 +80,12 @@ export default function CollectionBanner() {
   const ref = useReveal();
   const [active, setActive] = useState(0);
   const [fading, setFading] = useState(false);
-  const [fw26Products, setFw26Products] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fw26Products, setFw26Products] = useState<Product[]>([
+    { name: "Half Zip Polo — Melange",         category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-grey-0.png",  href: "/producto/half-zip-polo-grey" },
+    { name: "Half Zip Polo — Navy",            category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-navy-0.png",  href: "/producto/half-zip-polo-navy" },
+    { name: "Half Zip Polo — Black",           category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-black-0.png", href: "/producto/half-zip-polo-black" },
+    { name: "ONLY GOD CAN JUDGE ME — Blanca",  category: "Tee",    price: 46500,  originalPrice: 69000,  image: "products/ogcjm-blanca-0.png",        href: "/producto/ogcjm-blanca" },
+  ]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -98,18 +102,11 @@ export default function CollectionBanner() {
           href: p.href,
         }));
         
-        setFw26Products(formattedProducts);
+        if (formattedProducts.length > 0) {
+          setFw26Products(formattedProducts);
+        }
       } catch (error) {
         console.error('Error fetching FW26 products:', error);
-        // Fallback to hardcoded products if API fails
-        setFw26Products([
-          { name: "Half Zip Polo — Melange",         category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-grey-0.png",  href: "/producto/half-zip-polo-grey" },
-          { name: "Half Zip Polo — Navy",            category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-navy-0.png",  href: "/producto/half-zip-polo-navy" },
-          { name: "Half Zip Polo — Black",           category: "Polo",   price: 87000,  originalPrice: 145000, image: "products/half-zip-polo-black-0.png", href: "/producto/half-zip-polo-black" },
-          { name: "ONLY GOD CAN JUDGE ME — Blanca",  category: "Tee",    price: 46500,  originalPrice: 69000,  image: "products/ogcjm-blanca-0.png",        href: "/producto/ogcjm-blanca" },
-        ]);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -123,17 +120,6 @@ export default function CollectionBanner() {
   };
 
   const col = collections[active];
-
-  // Show loading state for FW26 collection
-  if (active === 0 && loading) {
-    return (
-      <section className="max-w-[1400px] mx-auto py-10 md:py-14" ref={ref}>
-        <div className="text-center py-10">
-          <p>Loading products...</p>
-        </div>
-      </section>
-    );
-  }
 
   const displayProducts = active === 0 ? fw26Products : col.products;
 
