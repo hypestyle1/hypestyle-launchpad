@@ -8,41 +8,31 @@ import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
-const GROUPS = [
-  {
-    label: 'Half-Zip Polo',
-    slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black'],
-  },
-  {
-    label: 'Pink Set',
-    slugs: ['hoodie-pink', 'zip-hoodie-pink', 'sweatpant-pink'],
-  },
-  {
-    label: 'Camo Drop',
-    slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap'],
-  },
-  {
-    label: 'Remeras',
-    slugs: ['only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra'],
-  },
-  {
-    label: 'Conjunto Gris',
-    slugs: ['hoodie-grey-hstars', 'sweatpant-grey-hstars', 'hoodie-melange', 'sweatpant-melange'],
-  },
-];
+interface Group { label: string; slugs: string[] }
 
-const ALL_SLUGS = GROUPS.flatMap(g => g.slugs);
+export interface CollectionConfig {
+  title: string;
+  subtitle: string;
+  headerBg?: string;
+  headerImage?: string;
+  dark?: boolean;
+  groups: Group[];
+}
 
-export default function FW26Page() {
+export default function CollectionGroupedPage({ config }: { config: CollectionConfig }) {
+  const allSlugs = config.groups.flatMap(g => g.slugs);
   const { data: allProducts = [] } = useProducts(100);
+
   const bySlug = useMemo(() => {
     const map: Record<string, (typeof allProducts)[0]> = {};
     allProducts.forEach(p => { map[p.slug] = p; });
     return map;
   }, [allProducts]);
 
-  const total = useMemo(() => ALL_SLUGS.filter(s => bySlug[s]).length, [bySlug]);
+  const total = useMemo(() => allSlugs.filter(s => bySlug[s]).length, [bySlug]);
   const ref = useReveal([bySlug]);
+
+  const isDark = config.dark !== false;
 
   return (
     <>
@@ -50,20 +40,37 @@ export default function FW26Page() {
       <Navbar />
       <main className="pt-[var(--offset)]">
 
-        <section className="relative bg-bg-dark text-primary-foreground py-20 px-6 text-center overflow-hidden">
-          <img src="/fw26-camo-editorial.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/55" />
+        <section
+          className={`relative py-20 px-6 text-center overflow-hidden ${isDark ? 'bg-bg-dark text-primary-foreground' : ''}`}
+          style={config.headerBg ? { background: config.headerBg } : undefined}
+        >
+          {config.headerImage && (
+            <>
+              <img
+                src={config.headerImage}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/55" />
+            </>
+          )}
           <div className="relative z-10">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 mb-3">Colección</p>
-            <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3 text-white">FW26</h1>
-            <p className="text-[14px] text-white/40">Fall / Winter 2026</p>
+            <p className={`text-[11px] uppercase tracking-[0.18em] mb-3 ${isDark || config.headerImage ? 'text-white/40' : 'text-black/40'}`}>
+              Colección
+            </p>
+            <h1 className={`text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3 ${isDark || config.headerImage ? 'text-white' : 'text-black'}`}>
+              {config.title}
+            </h1>
+            <p className={`text-[14px] ${isDark || config.headerImage ? 'text-white/40' : 'text-black/50'}`}>
+              {config.subtitle}
+            </p>
           </div>
         </section>
 
         <div className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
           <p className="text-[12px] text-muted-foreground mb-10">{total} productos</p>
 
-          {GROUPS.map(group => {
+          {config.groups.map(group => {
             const items = group.slugs.map(s => bySlug[s]).filter(Boolean);
             if (items.length === 0) return null;
             return (
