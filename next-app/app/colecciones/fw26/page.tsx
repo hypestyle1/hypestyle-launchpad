@@ -10,7 +10,7 @@ import { useProducts } from "@/hooks/useProducts";
 
 const SLUGS = [
   // Half Zip Polo
-  'half-zip-polo-grey',
+  'half-zip-polo-melange',
   'half-zip-polo-navy',
   'half-zip-polo-black',
   // OGCJM
