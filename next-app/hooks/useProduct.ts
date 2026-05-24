@@ -81,12 +81,30 @@ const RACE_TEE_COLORWAYS = [
   { label: 'Gris',  value: '#808080', slug: 'race-tee-gris', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/racing-tee-g-_-frente1-809aeca8ef8ac9703f17752459918651-640-0-d36f3ddcd2565fe20817752747475247-1024-1024.webp' },
 ];
 
+const NO_SERVICE_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'no-service-for-the-faithless-white', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/racing-tees-1-c7f74657e013e491c017739458566697-1024-1024-5cdeca07c1f0022d2017752750197776-1024-1024.webp' },
+  { label: 'Black', value: '#1a1a1a', slug: 'no-service-for-the-faithless-black', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/faithless-tee-7-fe9cdee514608705da17739414718987-1024-1024-7de40fc420b6f5fd8517752750048245-1024-1024.webp' },
+  { label: 'Grey',  value: '#888888', slug: 'no-service-for-the-faithless-grey',  image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/faithless-tee-4-e559cabcab8bd2791317739414254597-1024-1024.png' },
+  { label: 'Green', value: '#4a5c2e', slug: 'no-service-for-the-faithless-green', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/racing-tees-1-c7f74657e013e491c017739458566697-1024-1024-5cdeca07c1f0022d2017752750197776-1024-1024.webp' },
+];
+
+const BABY_COME_BACK_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'baby-come-back-tees',  image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mesa-de-trabajo-3-c14b1f4b5c87b4512e17708515886120-1024-1024.png' },
+  { label: 'Black', value: '#1a1a1a', slug: 'baby-come-back-black', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mesa-de-trabajo-3-fbffee6d9870b660fe17714294583297-1024-1024.jpg' },
+];
+
 const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'half-zip-polo-navy':    HALF_ZIP_COLORWAYS,
   'half-zip-polo-melange': HALF_ZIP_COLORWAYS,
   'half-zip-polo-black':   HALF_ZIP_COLORWAYS,
   'race-tee':              RACE_TEE_COLORWAYS,
   'race-tee-gris':         RACE_TEE_COLORWAYS,
+  'no-service-for-the-faithless-white': NO_SERVICE_COLORWAYS,
+  'no-service-for-the-faithless-black': NO_SERVICE_COLORWAYS,
+  'no-service-for-the-faithless-grey':  NO_SERVICE_COLORWAYS,
+  'no-service-for-the-faithless-green': NO_SERVICE_COLORWAYS,
+  'baby-come-back-tees':  BABY_COME_BACK_COLORWAYS,
+  'baby-come-back-black': BABY_COME_BACK_COLORWAYS,
 };
 
 const FIT_KEYWORDS: [string, string][] = [

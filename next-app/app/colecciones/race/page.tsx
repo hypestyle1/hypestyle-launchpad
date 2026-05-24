@@ -7,7 +7,7 @@ const config: CollectionConfig = {
   subtitle: 'Motorsport · Estética vintage racing',
   groups: [
     { label: 'Hoodie', slugs: ['no-service-for-the-faithless-hoodie'] },
-    { label: 'Remeras', slugs: ['race-tee', 'race-tee-gris', 'no-service-for-the-faithless-tees'] },
+    { label: 'Remeras', slugs: ['race-tee', 'race-tee-gris', 'no-service-for-the-faithless-white', 'no-service-for-the-faithless-black', 'no-service-for-the-faithless-grey', 'no-service-for-the-faithless-green'] },
   ],
 };
 
