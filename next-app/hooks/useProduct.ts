@@ -76,10 +76,17 @@ const HALF_ZIP_COLORWAYS = [
   { label: 'Black',   value: '#1a1a1a', slug: 'half-zip-polo-black',   image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-1.png' },
 ];
 
+const RACE_TEE_COLORWAYS = [
+  { label: 'Verde', value: '#4a5c2e', slug: 'race-tee',      image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/racing-tee-verde-_-frente1-88b3eeeabd65c4f79917752459630095-1024-1024.png' },
+  { label: 'Gris',  value: '#808080', slug: 'race-tee-gris', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/racing-tee-g-_-frente1-809aeca8ef8ac9703f17752459918651-640-0-d36f3ddcd2565fe20817752747475247-1024-1024.webp' },
+];
+
 const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'half-zip-polo-navy':    HALF_ZIP_COLORWAYS,
   'half-zip-polo-melange': HALF_ZIP_COLORWAYS,
   'half-zip-polo-black':   HALF_ZIP_COLORWAYS,
+  'race-tee':              RACE_TEE_COLORWAYS,
+  'race-tee-gris':         RACE_TEE_COLORWAYS,
 };
 
 const FIT_KEYWORDS: [string, string][] = [
