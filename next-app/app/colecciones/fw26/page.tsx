@@ -14,8 +14,8 @@ const SLUGS = [
   'half-zip-polo-navy',
   'half-zip-polo-black',
   // OGCJM
-  'ogcjm-blanca',
-  'ogcjm-negra',
+  'only-god-can-judge-me-blanca',
+  'only-god-can-judge-me-negra',
   // Melange set
   'hoodie-melange',
   'sweatpant-melange',
@@ -51,7 +51,7 @@ export default function FW26Page() {
         <section className="bg-bg-dark text-primary-foreground py-20 px-6 text-center">
           <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Colección</p>
           <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3">FW26</h1>
-          <p className="text-[14px] text-primary-foreground/40">Fall / Winter 2026 — Incluyendo Pink Set Drop</p>
+          <p className="text-[14px] text-primary-foreground/40">Fall / Winter 2026</p>
         </section>
 
         <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
