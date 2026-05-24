@@ -43,17 +43,6 @@ const collections: Collection[] = [
     ],
   },
   {
-    name: "Camo Set",
-    href: "/colecciones/camo-set/",
-    editorial: "stl-look-camo-front.png",
-    products: [
-      { name: "Camo Full Set", category: "Set", price: 246000, image: "product-camo-set-completo.webp", href: "/producto/camo-full-set-combo" },
-      { name: "Camo Cap", category: "Accesorio", price: 40000, image: "product-camo-cap-orange.webp", href: "/producto/camo-cap" },
-      { name: "Zip Hoodie Camo", category: "Hoodie", price: 128000, image: "stl-look-camo-front.png", href: "/producto/zip-hoodie-camo" },
-      { name: "Sweatpant Camo", category: "Pantalón", price: 118000, image: "stl-look-camo-side.webp", href: "/producto/sweatpant-camo" },
-    ],
-  },
-  {
     name: "Race Drop",
     href: "/colecciones/race-drop/",
     editorial: "race drop banner.webp",
