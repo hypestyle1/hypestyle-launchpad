@@ -19,7 +19,7 @@ const GROUPS = [
   },
   {
     label: 'Camo Drop',
-    slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap'],
+    slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap', 'beanie-camo'],
   },
   {
     label: 'Remeras',
