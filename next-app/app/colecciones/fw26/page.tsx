@@ -30,6 +30,8 @@ const SLUGS = [
   // HStars
   'hoodie-grey-hstars',
   'sweatpant-grey-hstars',
+  // Hoodie Pink
+  'hoodie-pink',
 ];
 
 export default function FW26Page() {
