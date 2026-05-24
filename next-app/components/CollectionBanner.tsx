@@ -28,7 +28,7 @@ const collections: Collection[] = [
   {
     name: "FW26",
     href: "/colecciones/fw26/",
-    editorial: "fw26-hstars-editorial.jpg",
+    editorial: "fw26-camo-editorial.jpg",
     products: [], // Will be populated from WordPress
   },
   {
