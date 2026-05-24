@@ -2,7 +2,6 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import NewsletterPopup from '@/components/NewsletterPopup';
 import Hero from '@/components/Hero';
-import BestSellers from '@/components/BestSellers';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
 import SpecialPrices from '@/components/SpecialPrices';
@@ -24,7 +23,6 @@ export default function Home() {
         <EventCountdown />
         <BenefitsStrip />
         <CollectionBanner />
-        <BestSellers />
         <ShopTheLook />
         <VideoSection />
         <BackInStock />
