@@ -199,6 +199,7 @@ function fromWPNode(node: any): Product {
       label: c.label,
       value: c.value,
       image: c.image,
+      slug: c.slug,
       href: `/producto/${c.slug}/`,
     })) ?? [{ label: color.label, value: color.value, image: allImages[0] }],
     images: allImages,
