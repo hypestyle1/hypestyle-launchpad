@@ -8,39 +8,41 @@ import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
-const SLUGS = [
-  // Half Zip Polo
-  'half-zip-polo-melange',
-  'half-zip-polo-navy',
-  'half-zip-polo-black',
-  // OGCJM
-  'only-god-can-judge-me-blanca',
-  'only-god-can-judge-me-negra',
-  // Melange set
-  'hoodie-melange',
-  'sweatpant-melange',
-  // Pink Set Drop
-  'zip-hoodie-pink',
-  'sweatpant-pink',
-  // Camo Drop
-  'zip-hoodie-camo',
-  'sweatpant-camo',
-  'camo-full-set-combo',
-  'camo-cap',
-  // HStars
-  'hoodie-grey-hstars',
-  'sweatpant-grey-hstars',
-  // Hoodie Pink
-  'hoodie-pink',
+const GROUPS = [
+  {
+    label: 'Half-Zip Polo',
+    slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black'],
+  },
+  {
+    label: 'Pink Set',
+    slugs: ['hoodie-pink', 'zip-hoodie-pink', 'sweatpant-pink'],
+  },
+  {
+    label: 'Camo Drop',
+    slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap'],
+  },
+  {
+    label: 'Remeras',
+    slugs: ['only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra'],
+  },
+  {
+    label: 'Conjunto Gris',
+    slugs: ['hoodie-grey-hstars', 'sweatpant-grey-hstars', 'hoodie-melange', 'sweatpant-melange'],
+  },
 ];
+
+const ALL_SLUGS = GROUPS.flatMap(g => g.slugs);
 
 export default function FW26Page() {
   const { data: allProducts = [] } = useProducts(100);
-  const products = useMemo(
-    () => allProducts.filter(p => SLUGS.includes(p.slug)),
-    [allProducts]
-  );
-  const ref = useReveal([products]);
+  const bySlug = useMemo(() => {
+    const map: Record<string, (typeof allProducts)[0]> = {};
+    allProducts.forEach(p => { map[p.slug] = p; });
+    return map;
+  }, [allProducts]);
+
+  const total = useMemo(() => ALL_SLUGS.filter(s => bySlug[s]).length, [bySlug]);
+  const ref = useReveal([bySlug]);
 
   return (
     <>
@@ -54,28 +56,44 @@ export default function FW26Page() {
           <p className="text-[14px] text-primary-foreground/40">Fall / Winter 2026</p>
         </section>
 
-        <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
-          <p className="text-[12px] text-muted-foreground mb-6">{products.length} productos</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
-            {products.map((p, i) => (
-              <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
-                <ProductCard
-                  id={p.slug}
-                  name={p.name}
-                  category={p.category}
-                  price={p.price}
-                  originalPrice={p.originalPrice}
-                  badge={p.originalPrice ? `−${Math.round((1 - p.price / p.originalPrice) * 100)}%` : undefined}
-                  image={p.images[0]}
-                  images={p.images}
-                  sizes={p.sizes}
-                  stock={p.stock}
-                  href={`/producto/${p.slug}/`}
-                />
+        <div className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
+          <p className="text-[12px] text-muted-foreground mb-10">{total} productos</p>
+
+          {GROUPS.map(group => {
+            const items = group.slugs.map(s => bySlug[s]).filter(Boolean);
+            if (items.length === 0) return null;
+            return (
+              <div key={group.label} className="mb-14">
+                <div className="flex items-center gap-4 mb-5">
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
+                    {group.label}
+                  </span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+                  {items.map((p, i) => (
+                    <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
+                      <ProductCard
+                        id={p.slug}
+                        name={p.name}
+                        category={p.category}
+                        price={p.price}
+                        originalPrice={p.originalPrice}
+                        badge={p.originalPrice ? `−${Math.round((1 - p.price / p.originalPrice) * 100)}%` : undefined}
+                        image={p.images[0]}
+                        images={p.images}
+                        sizes={p.sizes}
+                        stock={p.stock}
+                        href={`/producto/${p.slug}/`}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </section>
+            );
+          })}
+        </div>
 
       </main>
       <Footer />
