@@ -33,6 +33,9 @@ const BEST_SELLERS_SLUGS = [
   'honda-black-tee',
   'skyline-tee',
   'aerogrey-tees',
+  'mesh-camo-blue-tee',
+  'mesh-camo-grey-tee',
+  'lettering-pink-jort',
 ];
 
 export default function BestSellers() {
