@@ -1,13 +1,49 @@
 'use client';
 
+import { useMemo } from 'react';
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
+const BEST_SELLERS_SLUGS = [
+  // — orden original hasta Lettering Graphite Jort —
+  'per-aspera-ad-astra-zippo',
+  'mesh-realtree-pink-tee',
+  'no-service-for-the-faithless-hoodie',
+  'lettering-melange-jort',
+  'jersey-fileteado-x-alfredo-genovese',
+  'race-tee',
+  'trucker-cap-baby-come-back',
+  'mesh-realtree-tee',
+  'lettering-graphite-hoodie',
+  'lettering-graphite-jort',
+  // — nuevos —
+  'fleece-jacket-v1-negrogris',
+  'jort-cargo-realtree-beige',
+  'jort-cargo-realtree-pink',
+  'hoodie-shield-olive',
+  'sweatpants-bombe-bordo',
+  'sleeveless-ranglan',
+  'knitted-tshirt-sand',
+  'raglan-tee-tribal-cross',
+  'hypestation-white-tee',
+  'hypestation-black-tee',
+  'honda-white-tee',
+  'honda-black-tee',
+  'skyline-tee',
+  'aerogrey-tees',
+];
+
 export default function BestSellers() {
-  const { data: products = [] } = useProducts(8);
-  const ref = useReveal([products]);
+  const { data: allProducts = [] } = useProducts(0);
+  const ref = useReveal([allProducts]);
+
+  const products = useMemo(() => {
+    const bySlug: Record<string, (typeof allProducts)[0]> = {};
+    allProducts.forEach(p => { bySlug[p.slug] = p; });
+    return BEST_SELLERS_SLUGS.map(s => bySlug[s]).filter(Boolean);
+  }, [allProducts]);
 
   return (
     <section id="best-sellers" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
