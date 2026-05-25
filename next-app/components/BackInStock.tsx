@@ -6,7 +6,7 @@ import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 
-const PINNED_ORDER = [
+const BEST_SELLERS_SLUGS = [
   'per-aspera-ad-astra-zippo',
   'mesh-realtree-pink-tee',
   'no-service-for-the-faithless-hoodie',
@@ -17,19 +17,33 @@ const PINNED_ORDER = [
   'mesh-realtree-tee',
   'lettering-graphite-hoodie',
   'lettering-graphite-jort',
+  'fleece-jacket-v1-negrogris',
+  'jort-cargo-realtree-beige',
+  'jort-cargo-realtree-pink',
+  'hoodie-shield-olive',
+  'sweatpants-bombe-bordo',
+  'sleeveless-ranglan',
+  'knitted-tshirt-sand',
+  'raglan-tee-tribal-cross',
+  'hypestation-white-tee',
+  'hypestation-black-tee',
+  'honda-white-tee',
+  'honda-black-tee',
+  'skyline-tee',
+  'aerogrey-tees',
+  'mesh-camo-blue-tee',
+  'mesh-camo-grey-tee',
+  'lettering-pink-jort',
 ];
 
 export default function BackInStock() {
-  const { data: raw = [] } = useProducts(100, undefined, 'best-seller');
-  const ref = useReveal([raw]);
+  const { data: allProducts = [] } = useProducts(0);
+  const ref = useReveal([allProducts]);
 
   const products = useMemo(() => {
-    const bySlug = new Map(raw.map(p => [p.slug, p]));
-    const pinned = PINNED_ORDER.map(s => bySlug.get(s)).filter(Boolean) as typeof raw;
-    const pinnedSet = new Set(PINNED_ORDER);
-    const rest = raw.filter(p => !pinnedSet.has(p.slug));
-    return [...pinned, ...rest].slice(0, 20);
-  }, [raw]);
+    const bySlug = new Map(allProducts.map(p => [p.slug, p]));
+    return BEST_SELLERS_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts;
+  }, [allProducts]);
 
   return (
     <section id="back-in-stock" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>

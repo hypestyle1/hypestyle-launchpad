@@ -4,7 +4,6 @@ import NewsletterPopup from '@/components/NewsletterPopup';
 import Hero from '@/components/Hero';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
-import SpecialPrices from '@/components/SpecialPrices';
 import CollectionBanner from '@/components/CollectionBanner';
 import EditorialBanner from '@/components/EditorialBanner';
 import BenefitsStrip from '@/components/BenefitsStrip';
@@ -26,7 +25,6 @@ export default function Home() {
         <ShopTheLook />
         <VideoSection />
         <BackInStock />
-        <SpecialPrices />
         <EditorialBanner />
       </main>
       <Footer />
