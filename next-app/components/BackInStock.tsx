@@ -34,6 +34,11 @@ const BEST_SELLERS_SLUGS = [
   'mesh-camo-blue-tee',
   'mesh-camo-grey-tee',
   'lettering-pink-jort',
+  'sleeveless-ranglan-white',
+  'sleeveless-ranglan-militar-green',
+  'sleeveless-ranglan-grey',
+  'sleeveless-ranglan-black',
+  'hoodie-stay-hustle',
 ];
 
 export default function BackInStock() {
