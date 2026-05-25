@@ -88,9 +88,16 @@ export default function CollectionBanner() {
     const fetchProducts = async () => {
       try {
         const allProducts: NormalizedProduct[] = await fetchAllProducts();
-        const fw26TaggedProducts = allProducts.filter(p => p.tags.includes('fw26'));
-        
-        const formattedProducts: Product[] = fw26TaggedProducts.map(p => ({
+        const FW26_SLUGS = [
+          'camo-full-set-combo',
+          'half-zip-polo-navy',
+          'only-god-can-judge-me-blanca',
+          'hoodie-pink',
+        ];
+        const bySlug = new Map(allProducts.map(p => [p.slug, p]));
+        const fw26Picked = FW26_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as NormalizedProduct[];
+
+        const formattedProducts: Product[] = fw26Picked.map(p => ({
           name: p.name,
           category: p.category,
           price: p.price,
