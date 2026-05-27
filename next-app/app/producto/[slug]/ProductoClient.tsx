@@ -436,6 +436,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 </Accordion>
                 <Accordion title="Envíos y devoluciones">
                   <p>Envíos a todo el país vía Andreani. El costo se calcula en el checkout.</p>
+                  <p className="mt-2">🌍 <strong>Worldwide shipping available.</strong> International orders ship via DHL Express — final cost coordinated after purchase.</p>
                   <p className="mt-2">Cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.</p>
                   <a href="/politicas-de-devolucion/" className="underline text-foreground hover:text-foreground/70 transition-colors mt-2 block">Ver políticas completas →</a>
                 </Accordion>

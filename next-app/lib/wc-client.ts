@@ -22,6 +22,7 @@ export interface OrderCustomer {
   cp: string;
   ciudad: string;
   provincia: string;
+  pais?: string;
   telefono: string;
   instagram?: string;
 }
@@ -51,8 +52,15 @@ export async function createOrderAndPreference(
   payload: CreateOrderPayload,
 ): Promise<CreateOrderResponse> {
 
-  // 1 — Crear orden en WooCommerce (via proxy server-side para evitar CORS)
-  const wcRes = await fetch('/api/create-order', {
+  // 1 — Crear orden en WooCommerce
+  // All domestic orders use the WC REST API path (create-order-gocuotas).
+  // The WP custom endpoint is not used — it has an unpredictable payment-method whitelist.
+  const isIntl = payload.customer.pais && payload.customer.pais !== 'AR';
+  const orderEndpoint = isIntl
+    ? '/api/create-order-intl'
+    : '/api/create-order-gocuotas';
+
+  const wcRes = await fetch(orderEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

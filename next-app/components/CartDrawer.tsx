@@ -179,6 +179,9 @@ export default function CartDrawer() {
                 "Envío calculado en el checkout"
               )}
             </p>
+            <p className="text-[11px] text-muted-foreground">
+              🌍 <span className="font-medium text-foreground/60">Worldwide shipping</span> available via DHL Express
+            </p>
             <button
               onClick={() => { setDrawerOpen(false); router.push("/checkout"); }}
               className="w-full bg-bg-dark text-primary-foreground py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]"

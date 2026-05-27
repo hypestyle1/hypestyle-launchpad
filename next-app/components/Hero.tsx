@@ -1,142 +1,98 @@
 'use client';
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 
-type BannerSlide = {
-  type: "banner";
+type Slide = {
   imageDesktop: string;
   imageMobile: string;
   href: string;
+  overlayRight?: {
+    sublabel: string;
+    label: string;
+    cta: string;
+  };
 };
-
-type OverlaySlide = {
-  type: "overlay";
-  imageDesktop: string;
-  imageMobile: string;
-  label: string;
-  sublabel: string;
-  cta: string;
-  href: string;
-};
-
-type Slide = BannerSlide | OverlaySlide;
 
 const slides: Slide[] = [
   {
-    type: "banner",
-    imageDesktop: "banner desktop/banner-halfzip-hero.png",
-    imageMobile: "Banner Movile/banner-halfzip-hero-mobile.png",
-    href: "/sets/",
+    imageDesktop: "banner desktop/DSCF6201.jpg",
+    imageMobile: "banner desktop/DSCF6203.jpg",
+    href: "/colecciones/camo-set-drop/",
+    overlayRight: {
+      sublabel: "FW26",
+      label: "Camo Drop",
+      cta: "Ver colección",
+    },
   },
   {
-    type: "banner",
-    imageDesktop: "banner desktop/banner web 1.webp",
-    imageMobile: "Banner Movile/2-slide-1775426199856-2293205106-6ebf06ac84175b43435d613cd6e659cc1775426225-1920-1920.webp",
+    imageDesktop: "banner desktop/DSCF6201.jpg",
+    imageMobile: "banner desktop/IMG_0229.jpg",
+    href: "/productos/",
+  },
+  {
+    imageDesktop: "banner desktop/DSCF6201.jpg",
+    imageMobile: "banner desktop/IMG_5593.jpg",
+    href: "/productos/",
+  },
+  {
+    imageDesktop: "banner desktop/DSCF6201.jpg",
+    imageMobile: "banner desktop/IMG_0043.jpg",
     href: "/productos/",
   },
 ];
 
 export default function Hero() {
-  const [current, setCurrent] = useState(0);
-
-  const next = useCallback(() => setCurrent((c) => (c + 1) % slides.length), []);
-  const prev = useCallback(() => setCurrent((c) => (c - 1 + slides.length) % slides.length), []);
+  const [slide, setSlide] = useState<Slide | null>(null);
 
   useEffect(() => {
-    const id = setInterval(next, 5000);
-    return () => clearInterval(id);
-  }, [next]);
+    setSlide(slides[Math.floor(Math.random() * slides.length)]);
+  }, []);
+
+  if (!slide) return (
+    <div className="w-full bg-bg-dark aspect-[4/5] md:aspect-[1580/810]" />
+  );
 
   return (
-    <section
-      className="relative w-full overflow-hidden bg-bg-dark aspect-[4/5] md:aspect-[1580/700]"
-    >
-      {slides.map((s, i) => (
-        <div
-          key={s.imageDesktop}
-          className="absolute inset-0 transition-opacity duration-700"
-          style={{ opacity: i === current ? 1 : 0, pointerEvents: i === current ? "auto" : "none" }}
-        >
-          <a href={s.href} className="block w-full h-full">
-            <div className="relative w-full h-full">
-              {/* Mobile */}
-              <Image
-                src={`/${s.imageMobile}`}
-                alt=""
-                fill
-                priority={i === 0}
-                sizes="100vw"
-                className="object-cover object-center md:hidden"
-              />
-              {/* Desktop */}
-              <Image
-                src={`/${s.imageDesktop}`}
-                alt=""
-                fill
-                priority={i === 0}
-                sizes="100vw"
-                className="object-cover object-center hidden md:block"
-              />
-            </div>
-          </a>
-
-          {s.type === "overlay" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-end pb-20 pointer-events-none">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-white/60 mb-2">{s.sublabel}</p>
-              <h2 className="text-[40px] md:text-[64px] font-bold uppercase text-white leading-none mb-6">
-                {s.label}
-              </h2>
-              <a
-                href={s.href}
-                className="pointer-events-auto px-8 py-3 border border-white text-white text-[12px] uppercase tracking-[0.18em] hover:bg-white hover:text-black transition-colors duration-300"
-              >
-                {s.cta}
-              </a>
-            </div>
-          )}
+    <section className="relative w-full overflow-hidden bg-bg-dark aspect-[4/5] md:aspect-[1580/810]">
+      <a href={slide.href} className="block w-full h-full">
+        <div className="relative w-full h-full">
+          {/* Mobile */}
+          <Image
+            src={`/${slide.imageMobile}`}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover md:hidden"
+            style={{ objectPosition: '50% 80%' }}
+          />
+          {/* Desktop */}
+          <Image
+            src={`/${slide.imageDesktop}`}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center hidden md:block"
+          />
         </div>
-      ))}
+      </a>
 
-      {/* Flechas */}
-      <button
-        onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-white/60 hover:text-white transition-colors z-10"
-        aria-label="Anterior"
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <path d="M13 4L7 10L13 16" />
-        </svg>
-      </button>
-      <button
-        onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-white/60 hover:text-white transition-colors z-10"
-        aria-label="Siguiente"
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <path d="M7 4L13 10L7 16" />
-        </svg>
-      </button>
-
-      {/* Dots */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-        {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            className="transition-all duration-300"
-            aria-label={`Slide ${i + 1}`}
-          >
-            <span
-              className="block rounded-full bg-white transition-all duration-300"
-              style={{
-                width: i === current ? "20px" : "6px",
-                height: "6px",
-                opacity: i === current ? 1 : 0.4,
-              }}
-            />
-          </button>
-        ))}
+      {/* Desktop: gradiente + overlay siempre visible */}
+      <div
+        className="absolute inset-0 hidden md:block pointer-events-none"
+        style={{ background: "linear-gradient(to left, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.25) 42%, transparent 62%)" }}
+      />
+      <div className="absolute inset-0 hidden md:flex flex-col items-end justify-center pr-14 pointer-events-none">
+        <p className="text-[10px] uppercase tracking-[0.22em] text-white/60 mb-3">FW26</p>
+        <h2 className="text-[52px] font-bold uppercase text-white leading-none mb-7">Camo Drop</h2>
+        <a
+          href="/colecciones/camo-set-drop/"
+          className="pointer-events-auto px-7 py-3 bg-white text-black text-[11px] uppercase tracking-[0.18em] font-medium hover:bg-white/85 transition-colors duration-300"
+        >
+          Ver colección
+        </a>
       </div>
     </section>
   );

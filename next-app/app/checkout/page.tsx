@@ -17,13 +17,65 @@ const PROVINCIAS = [
   'Tierra del Fuego', 'Tucumán',
 ];
 
+const COUNTRIES = [
+  { code: 'AR', name: 'Argentina' },
+  { code: '', name: '──────────────' },
+  { code: 'US', name: 'United States' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: '', name: '──────────────' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'CH', name: 'Switzerland' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'NO', name: 'Norway' },
+  { code: 'DK', name: 'Denmark' },
+  { code: 'FI', name: 'Finland' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'PL', name: 'Poland' },
+  { code: 'GR', name: 'Greece' },
+  { code: '', name: '──────────────' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'CO', name: 'Colombia' },
+  { code: 'PE', name: 'Peru' },
+  { code: 'UY', name: 'Uruguay' },
+  { code: 'PY', name: 'Paraguay' },
+  { code: 'BO', name: 'Bolivia' },
+  { code: 'EC', name: 'Ecuador' },
+  { code: '', name: '──────────────' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'KR', name: 'South Korea' },
+  { code: 'SG', name: 'Singapore' },
+  { code: 'HK', name: 'Hong Kong' },
+  { code: 'TW', name: 'Taiwan' },
+  { code: 'IN', name: 'India' },
+  { code: 'CN', name: 'China' },
+  { code: '', name: '──────────────' },
+  { code: 'AE', name: 'United Arab Emirates' },
+  { code: 'SA', name: 'Saudi Arabia' },
+  { code: 'IL', name: 'Israel' },
+  { code: 'ZA', name: 'South Africa' },
+  { code: 'OTHER', name: 'Other country' },
+];
+
+const INTL_RATE = { id: 'dhl_international', label: 'International Shipping — DHL Express', cost: 0 };
 const FREE_SHIPPING_THRESHOLD = 250000;
 
 interface ShippingRate { id: string; label: string; cost: number }
 interface AndBranch { id: string; label: string; direccion: string }
 interface InfoForm {
   email: string; newsletter: boolean; nombre: string; apellido: string; dni: string;
-  direccion: string; depto: string; cp: string; ciudad: string; provincia: string; telefono: string;
+  direccion: string; depto: string; cp: string; ciudad: string; provincia: string; pais: string; telefono: string;
 }
 interface PagoForm { metodo: string; instagram: string }
 
@@ -38,36 +90,46 @@ export default function Checkout() {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [info, setInfo] = useState<InfoForm>({
     email: '', newsletter: false, nombre: '', apellido: '', dni: '',
-    direccion: '', depto: '', cp: '', ciudad: '', provincia: 'Buenos Aires', telefono: '',
+    direccion: '', depto: '', cp: '', ciudad: '', provincia: 'Buenos Aires', pais: 'AR', telefono: '',
   });
   const [pago, setPago] = useState<PagoForm>({ metodo: '', instagram: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Shipping rates state
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
   const [loadingRates, setLoadingRates] = useState(false);
   const [ratesError, setRatesError] = useState<string | null>(null);
 
-  // Andreani branches state
   const [branches, setBranches] = useState<AndBranch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<AndBranch | null>(null);
   const [loadingBranches, setLoadingBranches] = useState(false);
 
-  const isSucursal = selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal');
-  const branchReady = !isSucursal || !!selectedBranch;
+  const isInternational = info.pais !== 'AR';
+  const isSucursal = !isInternational && (selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal'));
+  const branchReady = isInternational || !isSucursal || !!selectedBranch;
 
   const subtotal = total;
-  const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const freeShipping = !isInternational && subtotal >= FREE_SHIPPING_THRESHOLD;
   const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
-  const shippingReady = freeShipping || !!selectedRate;
+  const shippingReady = isInternational ? !!selectedRate : freeShipping || !!selectedRate;
   const descuento = couponData ? (
     couponData.type === 'percent' ? Math.round(subtotal * (couponData.amount / 100)) : couponData.amount
   ) : 0;
   const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
   const totalFinal = subtotal - descuento + envioEnPaso;
   const transferTotal = Math.round(subtotal * 0.90) - descuento + envioEnPaso;
+
+  const handleCountryChange = (pais: string) => {
+    const provincia = pais === 'AR' ? 'Buenos Aires' : '';
+    setInfo(prev => ({ ...prev, pais, provincia }));
+    setSelectedRate(null);
+    setShippingRates([]);
+    setRatesError(null);
+    setBranches([]);
+    setSelectedBranch(null);
+    setPago(prev => ({ ...prev, metodo: '' }));
+  };
 
   const fetchRates = async () => {
     if (!info.cp) return;
@@ -92,6 +154,19 @@ export default function Checkout() {
       setRatesError('No se pudo calcular el envío. Intentá de nuevo.');
     } finally {
       setLoadingRates(false);
+    }
+  };
+
+  const handleInfoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStep('envio');
+    if (isInternational) {
+      setSelectedRate(INTL_RATE);
+      setShippingRates([INTL_RATE]);
+      setLoadingRates(false);
+      setRatesError(null);
+    } else {
+      fetchRates();
     }
   };
 
@@ -122,17 +197,19 @@ export default function Checkout() {
     if (!pago.metodo || submitting) return;
     setSubmitting(true);
     setSubmitError(null);
-    const isTransfer = pago.metodo === 'transferencia';
-    const isPaypal   = pago.metodo === 'paypal';
-    const isMp = pago.metodo === 'mercadopago' || pago.metodo === 'tarjeta';
+    const isTransfer      = pago.metodo === 'transferencia';
+    const isLocalTransfer = isTransfer && !isInternational;
+    const isPaypal        = pago.metodo === 'paypal';
+    const isMp            = pago.metodo === 'mercadopago' || pago.metodo === 'tarjeta';
+    const isGocuotas      = pago.metodo === 'gocuotas';
     try {
       let orderRes;
       try {
         orderRes = await createOrderAndPreference({
           items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image })),
-          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, telefono: info.telefono, instagram: pago.instagram },
+          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
-          discountAmount: (isTransfer ? Math.round(subtotal * 0.10) : 0),
+          discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0),
           couponCode: couponData?.code,
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
@@ -149,11 +226,46 @@ export default function Checkout() {
         wcOrderId: orderRes.wcOrderId, wcOrderNumber: orderRes.wcOrderNumber,
         orderKey: orderRes.orderKey,
         orderNum: orderRes.wcOrderNumber, items,
-        total: isTransfer ? transferTotal : totalFinal,
+        total: isLocalTransfer ? transferTotal : totalFinal,
         metodo: pago.metodo, email: info.email, nombre: info.nombre, apellido: info.apellido,
         direccion: info.direccion, ciudad: info.ciudad, provincia: info.provincia,
-        cp: info.cp, telefono: info.telefono,
+        cp: info.cp, telefono: info.telefono, pais: info.pais,
       }));
+      if (isGocuotas) {
+        let gcRes;
+        try {
+          gcRes = await fetch('/api/gocuotas-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              wcOrderId: orderRes.wcOrderId,
+              total: totalFinal,
+              email: info.email,
+              phone: info.telefono,
+              orderKey: orderRes.orderKey,
+            }),
+          });
+        } catch {
+          setSubmitError('Error de red al conectar con GOcuotas. Intentá de nuevo.');
+          setSubmitting(false);
+          return;
+        }
+        if (!gcRes.ok) {
+          const errData = await gcRes.json().catch(() => ({})) as { error?: string };
+          setSubmitError(`GOcuotas: ${errData.error || 'Error al iniciar el pago'}. Intentá de nuevo.`);
+          setSubmitting(false);
+          return;
+        }
+        const gcData = await gcRes.json() as { urlInit?: string };
+        if (!gcData.urlInit) {
+          setSubmitError('GOcuotas no devolvió un link de pago. Intentá de nuevo.');
+          setSubmitting(false);
+          return;
+        }
+        clear();
+        window.location.href = gcData.urlInit;
+        return;
+      }
       if (isMp && !orderRes.initPoint) {
         setSubmitError('No se pudo iniciar el pago con MercadoPago. Intentá de nuevo o elegí otro método.');
         setSubmitting(false);
@@ -211,6 +323,15 @@ export default function Checkout() {
   const stepLabel = (s: Step) => ({ info: 'Información', envio: 'Envío', pago: 'Pago' }[s]);
   const steps: Step[] = ['info', 'envio', 'pago'];
 
+  const paymentMethods = [
+    !isInternational && { id: 'tarjeta',       label: 'Tarjeta de crédito o débito',       sub: 'Hasta 3 cuotas sin interés' },
+    !isInternational && { id: 'gocuotas',      label: '4 cuotas con débito sin interés',   sub: 'Con tu tarjeta de débito · sin interés' },
+    !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (10% off)` : '' },
+    !isInternational && { id: 'mercadopago',   label: 'Mercado Pago',                       sub: '' },
+                        { id: 'paypal',        label: 'PayPal',                             sub: isInternational ? 'Credit card, debit or PayPal balance' : '' },
+    isInternational  && { id: 'transferencia', label: 'Bank transfer (USD wire)',             sub: 'Lead Bank · USD ACH/Wire · details shown after order' },
+  ].filter(Boolean) as { id: string; label: string; sub: string }[];
+
   return (
     <div className="min-h-screen bg-white">
       <div className="border-b border-border py-5 px-4 text-center">
@@ -228,7 +349,7 @@ export default function Checkout() {
       <div className="max-w-[1100px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12">
         <div>
           {step === 'info' && (
-            <form onSubmit={e => { e.preventDefault(); setStep('envio'); fetchRates(); }} className="space-y-6">
+            <form onSubmit={handleInfoSubmit} className="space-y-6">
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-[15px] font-semibold">Contacto</h2>
@@ -238,32 +359,82 @@ export default function Checkout() {
                   className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                 <label className="flex items-center gap-2 mt-2 cursor-pointer">
                   <input type="checkbox" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })} className="w-4 h-4" />
-                  <span className="text-[12px] text-muted-foreground">Recibir novedades, drops y acceso anticipado</span>
+                  <span className="text-[12px] text-muted-foreground">
+                    {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
+                  </span>
                 </label>
               </div>
+
               <div>
-                <h2 className="text-[15px] font-semibold mb-3">Dirección de envío</h2>
+                <h2 className="text-[15px] font-semibold mb-3">
+                  {isInternational ? 'Shipping address' : 'Dirección de envío'}
+                </h2>
                 <div className="space-y-2">
-                  <select value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })}
-                    className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors bg-white rounded-[10px]">
-                    {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
+
+                  {/* Country selector */}
+                  <select
+                    value={info.pais}
+                    onChange={e => handleCountryChange(e.target.value)}
+                    className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors bg-white rounded-[10px]"
+                  >
+                    {COUNTRIES.map((c, i) =>
+                      c.code === ''
+                        ? <option key={i} value="" disabled>{c.name}</option>
+                        : <option key={c.code} value={c.code}>{c.name}</option>
+                    )}
                   </select>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input placeholder="Nombre" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                    <input placeholder="Apellido" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                  </div>
-                  <input placeholder="DNI" required value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                  <input placeholder="Dirección y número" required value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                  <input placeholder="Departamento / Piso (opcional)" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input placeholder="Código postal" required value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                    <input placeholder="Ciudad" required value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                  </div>
-                  <input placeholder="Teléfono (con código de área)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+
+                  {/* International notice */}
+                  {isInternational && (
+                    <div className="flex items-start gap-2.5 bg-foreground/[0.03] border border-border px-4 py-3 rounded-[10px]">
+                      <span className="text-[14px] mt-0.5">🌍</span>
+                      <p className="text-[12px] text-foreground/70 leading-relaxed">
+                        <span className="font-semibold text-foreground">Worldwide shipping available.</span>
+                        {' '}Place your order and we&apos;ll contact you within 24 hours to confirm your DHL shipping cost and delivery estimate.
+                      </p>
+                    </div>
+                  )}
+
+                  {isInternational ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input placeholder="First name" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                        <input placeholder="Last name" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      </div>
+                      <input placeholder="Address" required value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <input placeholder="Apartment, suite (optional)" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input placeholder="City" required value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                        <input placeholder="State / Province" value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      </div>
+                      <input placeholder="Postal / ZIP code" required value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <input placeholder="Phone (with country code)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                    </>
+                  ) : (
+                    <>
+                      <select value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })}
+                        className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors bg-white rounded-[10px]">
+                        {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input placeholder="Nombre" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                        <input placeholder="Apellido" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      </div>
+                      <input placeholder="DNI" required value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <input placeholder="Dirección y número" required value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <input placeholder="Departamento / Piso (opcional)" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input placeholder="Código postal" required value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                        <input placeholder="Ciudad" required value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      </div>
+                      <input placeholder="Teléfono (con código de área)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                    </>
+                  )}
                 </div>
               </div>
+
               <button type="submit" className="w-full bg-bg-dark text-primary-foreground py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]">
-                Continuar con el envío
+                {isInternational ? 'Continue to shipping' : 'Continuar con el envío'}
               </button>
             </form>
           )}
@@ -272,100 +443,125 @@ export default function Checkout() {
             <form onSubmit={e => { e.preventDefault(); setStep('pago'); if (typeof window !== 'undefined' && window.fbq) { window.fbq('track', 'InitiateCheckout', { value: totalFinal, currency: 'ARS', num_items: items.reduce((s, i) => s + i.quantity, 0) }); } }} className="space-y-6">
               <div className="border border-border divide-y divide-border text-[13px] rounded-[10px] overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">Contacto</span><span>{info.email}</span></div>
-                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">Cambiar</button>
+                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Contact' : 'Contacto'}</span><span>{info.email}</span></div>
+                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">Enviar a</span><span>{info.direccion}, {info.ciudad}, {info.provincia}</span></div>
-                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">Cambiar</button>
+                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Ship to' : 'Enviar a'}</span><span>{info.direccion}, {info.ciudad}{info.provincia ? `, ${info.provincia}` : ''}</span></div>
+                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
                 </div>
               </div>
 
               <div>
-                <h2 className="text-[15px] font-semibold mb-3">Método de envío</h2>
+                <h2 className="text-[15px] font-semibold mb-3">
+                  {isInternational ? 'Shipping method' : 'Método de envío'}
+                </h2>
 
-                {loadingRates && (
-                  <div className="border border-border px-4 py-4 rounded-[10px] flex items-center gap-3">
-                    <svg className="animate-spin w-4 h-4 text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                    </svg>
-                    <p className="text-[13px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
-                  </div>
-                )}
-
-                {ratesError && !loadingRates && (
+                {isInternational ? (
                   <div className="space-y-3">
-                    <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
-                    <button type="button" onClick={fetchRates}
-                      className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
-                      Intentar de nuevo
-                    </button>
-                  </div>
-                )}
-
-                {!loadingRates && shippingRates.length > 0 && (
-                  <div className="space-y-2">
-                    {shippingRates.map(rate => (
-                      <label key={rate.id} className={`flex items-center justify-between border px-4 py-4 cursor-pointer transition-colors rounded-[10px] ${selectedRate?.id === rate.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
-                        <div className="flex items-center gap-3">
-                          <input type="radio" name="envio" checked={selectedRate?.id === rate.id}
-                            onChange={() => handleRateSelect(rate)} className="w-4 h-4 accent-foreground" />
-                          <div>
-                            <p className="text-[13px] font-medium">{rate.label}</p>
-                          </div>
+                    <div className="border border-foreground bg-foreground/[0.03] px-4 py-4 rounded-[10px] flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0">
+                          <div className="w-1.5 h-1.5 rounded-full bg-foreground" />
                         </div>
-                        {freeShipping ? (
-                          <div className="text-right">
-                            <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
-                            <span className="text-[13px] font-semibold text-green-700">Gratis</span>
-                          </div>
-                        ) : (
-                          <span className="text-[13px] font-semibold">{formatPrice(rate.cost)}</span>
-                        )}
-                      </label>
-                    ))}
+                        <div>
+                          <p className="text-[13px] font-medium">International Shipping — DHL Express</p>
+                          <p className="text-[11px] text-muted-foreground">Cost confirmed after purchase · door to door</p>
+                        </div>
+                      </div>
+                      <span className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">TBD</span>
+                    </div>
+                    <div className="bg-foreground/[0.02] border border-border px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
+                      Complete your order now — we&apos;ll email you within 24 h with your DHL shipping quote and estimated delivery time. No charge until you approve the shipping cost.
+                    </div>
                   </div>
-                )}
-
-                {/* Selector de sucursal Andreani */}
-                {isSucursal && (
-                  <div className="mt-4">
-                    <p className="text-[13px] font-semibold mb-2">Elegí tu sucursal Andreani</p>
-                    {loadingBranches && (
-                      <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
-                        <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
-                        Buscando sucursales cerca de CP {info.cp}...
+                ) : (
+                  <>
+                    {loadingRates && (
+                      <div className="border border-border px-4 py-4 rounded-[10px] flex items-center gap-3">
+                        <svg className="animate-spin w-4 h-4 text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                        </svg>
+                        <p className="text-[13px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
                       </div>
                     )}
-                    {!loadingBranches && branches.length > 0 && (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {branches.map(b => (
-                          <label key={b.id} className={`flex items-start gap-3 border px-4 py-3 cursor-pointer transition-colors rounded-[10px] ${selectedBranch?.id === b.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
-                            <input type="radio" name="sucursal" checked={selectedBranch?.id === b.id}
-                              onChange={() => setSelectedBranch(b)} className="w-4 h-4 accent-foreground mt-0.5 flex-shrink-0" />
-                            <div>
-                              <p className="text-[13px] font-medium">{b.label}</p>
-                              {b.direccion && <p className="text-[11px] text-muted-foreground">{b.direccion}</p>}
+
+                    {ratesError && !loadingRates && (
+                      <div className="space-y-3">
+                        <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
+                        <button type="button" onClick={fetchRates}
+                          className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
+                          Intentar de nuevo
+                        </button>
+                      </div>
+                    )}
+
+                    {!loadingRates && shippingRates.length > 0 && (
+                      <div className="space-y-2">
+                        {shippingRates.map(rate => (
+                          <label key={rate.id} className={`flex items-center justify-between border px-4 py-4 cursor-pointer transition-colors rounded-[10px] ${selectedRate?.id === rate.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
+                            <div className="flex items-center gap-3">
+                              <input type="radio" name="envio" checked={selectedRate?.id === rate.id}
+                                onChange={() => handleRateSelect(rate)} className="w-4 h-4 accent-foreground" />
+                              <div>
+                                <p className="text-[13px] font-medium">{rate.label}</p>
+                              </div>
                             </div>
+                            {freeShipping ? (
+                              <div className="text-right">
+                                <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
+                                <span className="text-[13px] font-semibold text-green-700">Gratis</span>
+                              </div>
+                            ) : (
+                              <span className="text-[13px] font-semibold">{formatPrice(rate.cost)}</span>
+                            )}
                           </label>
                         ))}
                       </div>
                     )}
-                    {!loadingBranches && branches.length === 0 && (
-                      <p className="text-[12px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
-                        No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
-                      </p>
+
+                    {isSucursal && (
+                      <div className="mt-4">
+                        <p className="text-[13px] font-semibold mb-2">Elegí tu sucursal Andreani</p>
+                        {loadingBranches && (
+                          <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
+                            <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                            Buscando sucursales cerca de CP {info.cp}...
+                          </div>
+                        )}
+                        {!loadingBranches && branches.length > 0 && (
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {branches.map(b => (
+                              <label key={b.id} className={`flex items-start gap-3 border px-4 py-3 cursor-pointer transition-colors rounded-[10px] ${selectedBranch?.id === b.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
+                                <input type="radio" name="sucursal" checked={selectedBranch?.id === b.id}
+                                  onChange={() => setSelectedBranch(b)} className="w-4 h-4 accent-foreground mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <p className="text-[13px] font-medium">{b.label}</p>
+                                  {b.direccion && <p className="text-[11px] text-muted-foreground">{b.direccion}</p>}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                        {!loadingBranches && branches.length === 0 && (
+                          <p className="text-[12px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
+                            No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
+                          </p>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                <button type="button" onClick={() => setStep('info')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">‹ Volver a información</button>
+                <button type="button" onClick={() => setStep('info')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+                  {isInternational ? '‹ Back to information' : '‹ Volver a información'}
+                </button>
                 <button type="submit" disabled={loadingRates || !shippingReady || !branchReady}
                   className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed">
-                  Continuar con el pago
+                  {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
                 </button>
               </div>
             </form>
@@ -375,56 +571,69 @@ export default function Checkout() {
             <form onSubmit={handlePagoSubmit} className="space-y-6">
               <div className="border border-border divide-y divide-border text-[13px] rounded-[10px] overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">Contacto</span><span>{info.email}</span></div>
-                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">Cambiar</button>
+                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Contact' : 'Contacto'}</span><span>{info.email}</span></div>
+                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">Enviar a</span><span>{info.direccion}, {info.ciudad}</span></div>
-                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">Cambiar</button>
+                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Ship to' : 'Enviar a'}</span><span>{info.direccion}, {info.ciudad}</span></div>
+                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
                 </div>
                 {selectedRate && (
                   <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex gap-2 flex-col">
-                      <div className="flex gap-2"><span className="text-muted-foreground">Envío</span><span>{selectedRate.label}</span></div>
+                      <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Shipping' : 'Envío'}</span><span>{selectedRate.label}</span></div>
                       {selectedBranch && <span className="text-[11px] text-muted-foreground pl-0">{selectedBranch.label} — {selectedBranch.direccion}</span>}
                     </div>
-                    <button type="button" onClick={() => setStep('envio')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px] flex-shrink-0 ml-4">Cambiar</button>
+                    <button type="button" onClick={() => setStep('envio')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px] flex-shrink-0 ml-4">{isInternational ? 'Change' : 'Cambiar'}</button>
                   </div>
                 )}
               </div>
+
+              {isInternational && (
+                <div className="flex items-start gap-2.5 bg-foreground/[0.02] border border-border px-4 py-3 rounded-[10px]">
+                  <span className="text-[13px] mt-0.5">📦</span>
+                  <p className="text-[12px] text-foreground/60 leading-relaxed">
+                    Your DHL shipping cost will be confirmed by email within 24 hours. Your order won&apos;t ship until you approve the quote.
+                  </p>
+                </div>
+              )}
+
               <div>
-                <p className="text-[13px] font-semibold mb-1">Instagram <span className="text-destructive">*</span></p>
+                <p className="text-[13px] font-semibold mb-1">
+                  {isInternational ? 'Instagram (optional)' : <>Instagram <span className="text-destructive">*</span></>}
+                </p>
                 <textarea value={pago.instagram} onChange={e => setPago({ ...pago, instagram: e.target.value })}
-                  placeholder="@tuusuario — para sumarte a Close Friends" rows={2} required
+                  placeholder="@yourusername" rows={2} required={!isInternational}
                   className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors resize-none rounded-[10px]" />
               </div>
+
               <div>
-                <h2 className="text-[14px] font-bold uppercase tracking-wider mb-3">Medio de pago</h2>
+                <h2 className="text-[14px] font-bold uppercase tracking-wider mb-3">
+                  {isInternational ? 'Payment method' : 'Medio de pago'}
+                </h2>
                 <div className="space-y-2">
-                  {[
-                    { id: 'tarjeta', label: 'Tarjeta de crédito o débito', sub: 'Hasta 3 cuotas sin interés' },
-                    { id: 'transferencia', label: 'Transferencia o depósito bancario', sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (10% off)` : '' },
-                    { id: 'mercadopago', label: 'Mercado Pago', sub: '' },
-                    { id: 'paypal', label: 'PayPal', sub: '' },
-                  ].map(m => (
+                  {paymentMethods.map(m => (
                     <label key={m.id} className={`flex items-center gap-3 border px-4 py-3.5 cursor-pointer transition-colors rounded-[10px] ${pago.metodo === m.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
                       <input type="radio" name="metodo" value={m.id} checked={pago.metodo === m.id} onChange={() => setPago({ ...pago, metodo: m.id })} className="w-4 h-4 accent-foreground" />
                       <div className="flex-1">
                         <p className="text-[13px] font-medium">{m.label}</p>
-                        {m.sub && <p className={`text-[11px] ${m.id === 'transferencia' ? 'text-green-700 font-semibold' : 'text-muted-foreground'}`}>{m.sub}</p>}
+                        {m.sub && <p className={`text-[11px] ${m.id === 'transferencia' && !isInternational ? 'text-green-700 font-semibold' : 'text-muted-foreground'}`}>{m.sub}</p>}
                       </div>
                       <span className="text-foreground/30">›</span>
                     </label>
                   ))}
                 </div>
-                {!pago.metodo && <p className="text-[11px] text-destructive mt-1">Seleccioná un medio de pago</p>}
+                {!pago.metodo && <p className="text-[11px] text-destructive mt-1">{isInternational ? 'Select a payment method' : 'Seleccioná un medio de pago'}</p>}
               </div>
+
               {submitError && <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{submitError}</p>}
               <div className="flex items-center justify-between pt-2">
-                <button type="button" onClick={() => setStep('envio')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">‹ Volver al envío</button>
+                <button type="button" onClick={() => setStep('envio')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+                  {isInternational ? '‹ Back to shipping' : '‹ Volver al envío'}
+                </button>
                 <button type="submit" disabled={submitting}
                   className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2">
-                  {submitting ? (<><svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>Procesando...</>) : 'Realizar pedido'}
+                  {submitting ? (<><svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>{isInternational ? 'Processing...' : 'Procesando...'}</>) : (isInternational ? 'Place order' : 'Realizar pedido')}
                 </button>
               </div>
             </form>
@@ -458,7 +667,7 @@ export default function Checkout() {
             </div>
             <div className="space-y-1.5 mb-5">
               <div className="flex gap-2">
-                <input type="text" placeholder="Código de descuento" value={coupon}
+                <input type="text" placeholder={isInternational ? 'Discount code' : 'Código de descuento'} value={coupon}
                   onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponData) setCouponData(null); }}
                   className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                 <button
@@ -482,7 +691,7 @@ export default function Checkout() {
                   }}
                   disabled={couponValidating || !!couponData}
                   className="px-4 py-2.5 border border-border text-[12px] font-medium hover:border-foreground transition-colors rounded-[10px] disabled:opacity-60">
-                  {couponData ? '✓ Aplicado' : couponValidating ? '...' : 'Aplicar'}
+                  {couponData ? '✓ Applied' : couponValidating ? '...' : (isInternational ? 'Apply' : 'Aplicar')}
                 </button>
               </div>
               {couponError && <p className="text-[11px] text-destructive">{couponError}</p>}
@@ -492,10 +701,14 @@ export default function Checkout() {
               <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
               {descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(descuento)}</span></div>}
               <div className="flex justify-between text-[13px]">
-                <span className="text-muted-foreground">Envío</span>
+                <span className="text-muted-foreground">{isInternational ? 'Shipping' : 'Envío'}</span>
                 <span>
                   {step === 'info' ? (
-                    <span className="text-muted-foreground">Se calcula a continuación</span>
+                    <span className="text-muted-foreground text-[11px]">
+                      {isInternational ? 'Calculated after purchase' : 'Se calcula a continuación'}
+                    </span>
+                  ) : isInternational ? (
+                    <span className="text-muted-foreground text-[11px]">DHL — confirmed after order</span>
                   ) : loadingRates ? (
                     <span className="text-muted-foreground">Calculando...</span>
                   ) : freeShipping ? (
@@ -511,8 +724,11 @@ export default function Checkout() {
                 <span>Total</span>
                 <span>{formatPrice(step === 'info' || !shippingReady ? subtotal - descuento : totalFinal)}</span>
               </div>
-              {step === 'pago' && pago.metodo === 'transferencia' && (
+              {step === 'pago' && pago.metodo === 'transferencia' && !isInternational && (
                 <p className="text-[11px] text-green-700 font-semibold mt-1 text-right">Con transferencia pagás {formatPrice(transferTotal)}</p>
+              )}
+              {isInternational && step === 'pago' && (
+                <p className="text-[11px] text-muted-foreground mt-1">* DHL shipping cost added after purchase</p>
               )}
             </div>
           </div>
