@@ -22,8 +22,11 @@ const BEST_SELLERS_SLUGS = [
   'fleece-jacket-v1-negrogris',
   'hoodie-shield-olive',
   'sweatpants-bombe-bordo',
-  'sleeveless-ranglan',
   'knitted-tshirt-sand',
+  'sleeveless-ranglan-white',
+  'sleeveless-ranglan-militar-green',
+  'sleeveless-ranglan-grey',
+  'sleeveless-ranglan-black',
   'raglan-tee-tribal-cross',
   'hypestation-white-tee',
   'hypestation-black-tee',
@@ -34,11 +37,8 @@ const BEST_SELLERS_SLUGS = [
   'mesh-camo-blue-tee',
   'mesh-camo-grey-tee',
   'lettering-pink-jort',
-  'sleeveless-ranglan-white',
-  'sleeveless-ranglan-militar-green',
-  'sleeveless-ranglan-grey',
-  'sleeveless-ranglan-black',
   'hoodie-stay-hustle',
+  'no-love-only-style-tops',
 ];
 
 export default function BackInStock() {
