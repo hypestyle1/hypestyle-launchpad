@@ -326,7 +326,7 @@ export default function Navbar() {
                   <p className="text-[12px] font-semibold flex-shrink-0">{formatPrice(p.price)}</p>
                 </Link>
               )) : (
-                <p className="text-[12px] text-text-light text-center py-4">Sin resultados para "{searchQuery}"</p>
+                <p className="text-[12px] text-text-light text-center py-4">Sin resultados para &ldquo;{searchQuery}&rdquo;</p>
               )}
             </div>
           </div>

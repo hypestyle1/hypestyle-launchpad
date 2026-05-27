@@ -132,7 +132,7 @@ export default function ConfirmacionClient() {
             <div className="mx-auto max-w-[400px] bg-foreground/[0.03] border border-border rounded-[10px] px-5 py-3.5 mb-6 text-left">
               <p className="text-[12px] text-foreground/60 leading-relaxed">
                 <span className="text-foreground font-semibold">Final DHL shipping quote</span>
-                {' '}will be confirmed by email after purchase. Your order won't ship until you approve the quote.
+                {' '}will be confirmed by email after purchase. Your order won&apos;t ship until you approve the quote.
               </p>
             </div>
           )}

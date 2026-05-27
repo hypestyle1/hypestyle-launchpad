@@ -129,7 +129,7 @@ export default function PendientePago() {
                   </div>
 
                   <p className="text-[12px] text-muted-foreground leading-relaxed">
-                    Once we confirm the transfer your order will be approved and we'll contact you to coordinate DHL shipping. Questions? DM us at{' '}
+                    Once we confirm the transfer your order will be approved and we&apos;ll contact you to coordinate DHL shipping. Questions? DM us at{' '}
                     <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">@hypestylearg</a>
                   </p>
                 </>
