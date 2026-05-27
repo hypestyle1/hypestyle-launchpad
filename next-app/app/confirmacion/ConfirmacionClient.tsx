@@ -23,25 +23,6 @@ export default function ConfirmacionClient() {
       setOrder(parsed);
       sessionStorage.removeItem('hype_order');
 
-      fetch('/api/send-confirmation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderNum:      parsed.wcOrderNumber || parsed.orderNum,
-          wcOrderId:     parsed.wcOrderId,
-          orderKey:      parsed.orderKey,
-          items:         parsed.items,
-          total:         parsed.total,
-          email:         parsed.email,
-          nombre:        parsed.nombre,
-          apellido:      parsed.apellido,
-          ciudad:        parsed.ciudad,
-          provincia:     parsed.provincia,
-          paymentMethod: parsed.metodo,
-          pais:          parsed.pais,
-        }),
-      }).catch(() => {});
-
       const purchasePayload = {
         value: parsed.total,
         currency: 'ARS',

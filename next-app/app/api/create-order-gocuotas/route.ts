@@ -100,7 +100,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
     }
 
-    const wcOrder = await res.json() as { id: number; number: string; order_key: string };
+    const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string };
+
+    // Send confirmation email server-side — don't rely on frontend sessionStorage
+    const SITE = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
+    fetch(`${SITE}/api/send-confirmation`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderNum:      String(wcOrder.number),
+        wcOrderId:     wcOrder.id,
+        orderKey:      wcOrder.order_key,
+        items:         (items as any[]).map((i: any) => ({
+          name: i.name, size: i.size, quantity: i.quantity, price: i.price,
+        })),
+        total:         parseFloat(wcOrder.total),
+        email:         customer.email,
+        nombre:        customer.nombre,
+        apellido:      customer.apellido,
+        ciudad:        customer.ciudad,
+        provincia:     customer.provincia,
+        paymentMethod,
+        pais:          'AR',
+      }),
+    }).catch((e) => console.error('[create-order-gocuotas] email error:', e));
+
     return NextResponse.json({
       wcOrderId:     wcOrder.id,
       wcOrderNumber: String(wcOrder.number),
