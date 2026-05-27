@@ -50,11 +50,11 @@ function Digit({ value, label }: { value: number; label: string }) {
 }
 
 export default function EventCountdown() {
+  const { d, h, m, s } = useCountdown(EVENT_END);
   const now = Date.now();
   if (now > EVENT_END.getTime()) return null;
 
   const live = now >= EVENT_START.getTime();
-  const { d, h, m, s } = useCountdown(EVENT_END);
 
   return (
     <div className="bg-[#0a0a0a] text-white py-6 md:py-5 px-6 md:px-10 border-y border-white/8">

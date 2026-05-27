@@ -87,12 +87,12 @@ export default function Nosotros() {
         <section ref={letterRef} className="py-20 md:py-28 px-4 bg-background">
           <div className="max-w-[640px] mx-auto text-center">
             <p className="reveal rd1 text-[18px] font-normal leading-[1.9] text-foreground italic mb-8">
-              "Cada prenda que creamos acá tiene historia, trabajo y sueños detrás.
-              Gracias por confiar y formar parte de esta cultura que estamos construyendo."
+              &ldquo;Cada prenda que creamos acá tiene historia, trabajo y sueños detrás.
+              Gracias por confiar y formar parte de esta cultura que estamos construyendo.&rdquo;
             </p>
             <p className="reveal rd2 text-[18px] font-normal leading-[1.9] text-foreground italic mb-12">
-              "Nos motiva verlos usar Hypestyle, leer sus mensajes, y sentir que estamos
-              creciendo junto a ustedes."
+              &ldquo;Nos motiva verlos usar Hypestyle, leer sus mensajes, y sentir que estamos
+              creciendo junto a ustedes.&rdquo;
             </p>
 
             {/* Signatures */}
