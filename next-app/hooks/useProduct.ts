@@ -70,6 +70,12 @@ const COLOR_HEX: Record<string, string> = {
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', 'Única'];
 
+// Productos con personalización de dorsal (nombre + número).
+// WooCommerce no expone este flag, así que lo mapeamos por slug.
+const CUSTOMIZABLE_SLUGS = new Set<string>([
+  'la-nuestra-jersey-mundial-26',
+]);
+
 const HALF_ZIP_COLORWAYS = [
   { label: 'Navy',    value: '#1a2744', slug: 'half-zip-polo-navy',    image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-6-1.png' },
   { label: 'Melange', value: '#b8b4ae', slug: 'half-zip-polo-melange', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-2-1.png' },
@@ -220,6 +226,7 @@ function fromWPNode(node: any): Product {
   return {
     slug, id: slug, name, category, price, originalPrice,
     description, modelInfo, sizeGuideImage, careItems, fit, sizes, stock,
+    customizable: CUSTOMIZABLE_SLUGS.has(slug),
     colors: COLORWAYS[slug]?.map(c => ({
       label: c.label,
       value: c.value,

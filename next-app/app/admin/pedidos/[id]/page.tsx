@@ -354,7 +354,7 @@ export default function OrderDetailPage() {
             {order.customer_note && (
               <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
                 <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Nota del cliente</h2>
-                <p className="text-[13px] text-gray-600 italic">"{order.customer_note}"</p>
+                <p className="text-[13px] text-gray-600 italic">&quot;{order.customer_note}&quot;</p>
               </div>
             )}
 
