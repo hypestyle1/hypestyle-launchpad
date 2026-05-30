@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import Link from 'next/link';
 
 const WP_SECRET_KEY = 'hype_admin_key';
-const WP_URL = 'https://lightpink-rook-704850.hostingersite.com';
 
 type OrderItem = { name: string; quantity: number; size: string };
 type Customer  = { first_name: string; last_name: string; email: string; phone: string };
@@ -12,6 +12,7 @@ type Order = {
   customer: Customer; items: OrderItem[];
   total: number; shipping_total: number; payment_method_title: string;
   tracking: string; notified: string; order_key: string;
+  customer_note: string;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const FILTERS = ['any','pending','processing','on-hold','enviado','completed','cancelled'];
+const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','cancelled'];
 
 function fmt(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
@@ -48,18 +50,29 @@ function fmtDate(s: string) {
        + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
+function waLink(phone: string, name: string, orderNum: string) {
+  const digits  = phone.replace(/\D/g, '');
+  const clean   = digits.startsWith('0') ? digits.slice(1) : digits;
+  const intl    = clean.startsWith('54') ? clean : '549' + clean;
+  const msg     = encodeURIComponent(`Hola ${name}, te escribimos en relación a tu pedido #${orderNum} en Hypestyle. `);
+  return `https://wa.me/${intl}?text=${msg}`;
+}
+
 export default function PedidosPage() {
-  const [adminKey, setAdminKey]     = useState('');
-  const [authed, setAuthed]         = useState(false);
-  const [keyInput, setKeyInput]     = useState('');
-  const [orders, setOrders]         = useState<Order[]>([]);
-  const [loading, setLoading]       = useState(false);
-  const [filter, setFilter]         = useState('any');
-  const [search, setSearch]         = useState('');
-  const [total, setTotal]           = useState(0);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [trackInputs, setTrackInputs] = useState<Record<number, string>>({});
-  const [trackStatus, setTrackStatus] = useState<Record<number, string>>({});
+  const [adminKey, setAdminKey]       = useState('');
+  const [authed, setAuthed]           = useState(false);
+  const [keyInput, setKeyInput]       = useState('');
+  const [orders, setOrders]           = useState<Order[]>([]);
+  const [loading, setLoading]         = useState(false);
+  const [filter, setFilter]           = useState('any');
+  const [search, setSearch]           = useState('');
+  const [total, setTotal]             = useState(0);
+  const [page, setPage]               = useState(1);
+  const [totalPages, setTotalPages]   = useState(1);
+  const [selected, setSelected]       = useState<Set<number>>(new Set());
+  const [bulkStatus, setBulkStatus]   = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [statusMap, setStatusMap]     = useState<Record<number, string>>({});
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -67,20 +80,20 @@ export default function PedidosPage() {
     if (stored) { setAdminKey(stored); setAuthed(true); }
   }, []);
 
-  const fetchOrders = useCallback(async (key: string, f: string, q: string) => {
+  const fetchOrders = useCallback(async (key: string, f: string, q: string, p: number) => {
     setLoading(true);
+    setSelected(new Set());
     try {
-      const params = new URLSearchParams({ status: f, ...(q && { search: q }) });
-      const res = await fetch(`/api/admin/orders?${params}`, {
-        headers: { 'x-admin-key': key },
-      });
+      const params = new URLSearchParams({ status: f, page: String(p), ...(q && { search: q }) });
+      const res = await fetch(`/api/admin/orders?${params}`, { headers: { 'x-admin-key': key } });
       if (res.status === 403) { setAuthed(false); sessionStorage.removeItem(WP_SECRET_KEY); return; }
       const data = await res.json();
       setOrders(data.orders || []);
       setTotal(data.total || 0);
-      const inputs: Record<number, string> = {};
-      (data.orders || []).forEach((o: Order) => { inputs[o.id] = o.tracking || ''; });
-      setTrackInputs(inputs);
+      setTotalPages(data.totalPages || 1);
+      const smap: Record<number, string> = {};
+      (data.orders || []).forEach((o: Order) => { smap[o.id] = o.status; });
+      setStatusMap(smap);
     } finally {
       setLoading(false);
     }
@@ -89,8 +102,17 @@ export default function PedidosPage() {
   useEffect(() => {
     if (!authed || !adminKey) return;
     if (searchRef.current) clearTimeout(searchRef.current);
-    searchRef.current = setTimeout(() => fetchOrders(adminKey, filter, search), 400);
+    searchRef.current = setTimeout(() => {
+      setPage(1);
+      fetchOrders(adminKey, filter, search, 1);
+    }, 400);
   }, [authed, adminKey, filter, search, fetchOrders]);
+
+  useEffect(() => {
+    if (!authed || !adminKey) return;
+    fetchOrders(adminKey, filter, search, page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   function login() {
     sessionStorage.setItem(WP_SECRET_KEY, keyInput);
@@ -98,37 +120,53 @@ export default function PedidosPage() {
     setAuthed(true);
   }
 
-  async function saveTracking(order: Order) {
-    const tracking = trackInputs[order.id] || '';
-    setTrackStatus(s => ({ ...s, [order.id]: 'Guardando...' }));
-    const res = await fetch('/api/admin/set-tracking', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
-      body: JSON.stringify({ orderId: order.id, trackingNumber: tracking }),
+  function toggleSelect(id: number) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
     });
-    const data = await res.json();
-    if (data.ok) {
-      setTrackStatus(s => ({ ...s, [order.id]: data.notified ? '✓ Guardado · Email enviado' : '✓ Guardado' }));
-      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, tracking, notified: data.notified ? '1' : o.notified } : o));
+  }
+
+  function toggleAll() {
+    if (selected.size === orders.length) {
+      setSelected(new Set());
     } else {
-      setTrackStatus(s => ({ ...s, [order.id]: 'Error: ' + (data.error || 'desconocido') }));
+      setSelected(new Set(orders.map(o => o.id)));
     }
   }
 
-  function exportCSV() {
-    const key = encodeURIComponent(adminKey);
-    window.open(
-      `${WP_URL}/?hype_export=1&key=${key}&since=2026-05-10`,
-      '_blank'
-    );
+  async function changeStatus(orderId: number, status: string) {
+    setStatusMap(s => ({ ...s, [orderId]: status }));
+    await fetch('/api/admin/set-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ orderId, status }),
+    });
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
   }
+
+  async function applyBulk() {
+    if (!bulkStatus || selected.size === 0) return;
+    setBulkLoading(true);
+    await Promise.all([...selected].map(id => changeStatus(id, bulkStatus)));
+    setBulkLoading(false);
+    setSelected(new Set());
+    setBulkStatus('');
+  }
+
+  // Stats from loaded orders
+  const pending    = orders.filter(o => o.status === 'pending').length;
+  const processing = orders.filter(o => o.status === 'processing').length;
+  const onHold     = orders.filter(o => o.status === 'on-hold').length;
+  const revenue    = orders.reduce((s, o) => s + o.total, 0);
 
   if (!authed) {
     return (
       <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Ingresá la clave de administrador</p>
+          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
           <input
             type="password"
             className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
@@ -136,6 +174,7 @@ export default function PedidosPage() {
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
+            autoFocus
           />
           <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
             Entrar
@@ -148,25 +187,31 @@ export default function PedidosPage() {
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" /></a>
-          <span className="text-[13px] text-gray-400">/</span>
-          <span className="text-[13px] font-semibold text-gray-800">Pedidos</span>
-          {total > 0 && <span className="text-[11px] text-gray-400">{total} pedidos</span>}
+      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
+          <span className="text-gray-300">|</span>
+          <span className="text-[14px] font-semibold text-gray-900">Pedidos</span>
+          {total > 0 && <span className="text-[12px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{total}</span>}
         </div>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600 hover:text-black border border-gray-200 rounded-md px-3 py-1.5 hover:border-gray-400 transition-colors"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar Excel
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Stats */}
+          {pending > 0    && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">{pending} pendientes</span>}
+          {processing > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800">{processing} procesando</span>}
+          {onHold > 0     && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{onHold} en espera</span>}
+          <span className="hidden md:inline text-[11px] text-gray-500 font-medium">{fmt(revenue)}</span>
+          <button
+            onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
+            className="text-[11px] text-gray-400 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
+          >
+            Salir
+          </button>
+        </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-4 py-6">
+      <div className="max-w-[1280px] mx-auto px-4 py-5">
         {/* Filters + Search */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <div className="flex gap-1 flex-wrap">
             {FILTERS.map(f => (
               <button
@@ -189,143 +234,174 @@ export default function PedidosPage() {
           />
         </div>
 
-        {/* Orders list */}
+        {/* Bulk action bar */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-3 mb-3 bg-black text-white px-4 py-2.5 rounded-lg">
+            <span className="text-[13px] font-medium">{selected.size} seleccionado{selected.size > 1 ? 's' : ''}</span>
+            <select
+              value={bulkStatus}
+              onChange={e => setBulkStatus(e.target.value)}
+              className="text-[12px] bg-white text-black rounded px-2 py-1 focus:outline-none"
+            >
+              <option value="">Cambiar estado...</option>
+              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+            </select>
+            <button
+              onClick={applyBulk}
+              disabled={!bulkStatus || bulkLoading}
+              className="text-[12px] font-semibold bg-white text-black px-3 py-1 rounded hover:bg-gray-100 disabled:opacity-50"
+            >
+              {bulkLoading ? 'Aplicando...' : 'Aplicar'}
+            </button>
+            <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-gray-400 hover:text-white">
+              Cancelar
+            </button>
+          </div>
+        )}
+
+        {/* Table */}
         {loading ? (
-          <div className="text-center py-16 text-[13px] text-gray-400">Cargando pedidos...</div>
+          <div className="text-center py-20 text-[13px] text-gray-400">Cargando pedidos...</div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-16 text-[13px] text-gray-400">No hay pedidos</div>
+          <div className="text-center py-20 text-[13px] text-gray-400">No hay pedidos</div>
         ) : (
-          <div className="space-y-2">
-            {orders.map(order => (
-              <div key={order.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                {/* Row */}
-                <div
-                  className="px-5 py-4 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
-                >
-                  {/* Order # + status */}
-                  <div className="flex-none w-28">
-                    <div className="text-[13px] font-bold text-black">#{order.number}</div>
-                    <span className={`inline-block mt-0.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>
-                      {STATUS_LABELS[order.status] || order.status}
-                    </span>
-                  </div>
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {/* Table header */}
+            <div className="grid grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selected.size === orders.length && orders.length > 0}
+                  onChange={toggleAll}
+                  className="rounded border-gray-300 cursor-pointer"
+                />
+              </div>
+              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Orden</div>
+              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Cliente</div>
+              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:block">Productos</div>
+              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Total</div>
+              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Estado</div>
+              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Fecha</div>
+            </div>
 
-                  {/* Customer */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-gray-900 truncate">
-                      {order.customer.first_name} {order.customer.last_name}
-                    </div>
-                    <div className="text-[11px] text-gray-400 truncate">{order.customer.email}</div>
-                  </div>
-
-                  {/* Items */}
-                  <div className="hidden md:block flex-1 min-w-0 text-[12px] text-gray-500 truncate">
-                    {order.items.map((it, i) => (
-                      <span key={i}>{i > 0 && ' · '}{it.name}{it.size ? ` ${it.size}` : ''} ×{it.quantity}</span>
-                    ))}
-                  </div>
-
-                  {/* Tracking */}
-                  <div className="hidden lg:block flex-none w-36 text-[11px]">
-                    {order.tracking ? (
-                      <div>
-                        <span className={`font-mono ${order.notified ? 'text-green-600' : 'text-amber-600'}`}>
-                          {order.notified ? '✓ ' : '⏳ '}{order.tracking}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-300">Sin despacho</span>
-                    )}
-                  </div>
-
-                  {/* Total + date */}
-                  <div className="flex-none text-right">
-                    <div className="text-[13px] font-semibold text-gray-900">{fmt(order.total)}</div>
-                    <div className="text-[11px] text-gray-400">{fmtDate(order.date)}</div>
-                  </div>
-
-                  {/* Chevron */}
-                  <svg
-                    className={`flex-none w-4 h-4 text-gray-400 transition-transform ${expandedId === order.id ? 'rotate-180' : ''}`}
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  >
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
+            {/* Rows */}
+            {orders.map((order, idx) => (
+              <div
+                key={order.id}
+                className={`grid grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group ${
+                  selected.has(order.id) ? 'bg-blue-50 hover:bg-blue-50' : ''
+                } ${idx === orders.length - 1 ? 'border-b-0' : ''}`}
+              >
+                {/* Checkbox */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(order.id)}
+                    onChange={() => toggleSelect(order.id)}
+                    className="rounded border-gray-300 cursor-pointer"
+                  />
                 </div>
 
-                {/* Expanded detail */}
-                {expandedId === order.id && (
-                  <div className="border-t border-gray-100 px-5 py-4 bg-[#fafafa] grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Items */}
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-2">Productos</p>
-                      {order.items.map((it, i) => (
-                        <div key={i} className="text-[12px] text-gray-700 py-0.5">
-                          {it.name}{it.size ? ` — Talle ${it.size}` : ''} <span className="text-gray-400">×{it.quantity}</span>
-                        </div>
-                      ))}
-                      <div className="mt-2 pt-2 border-t border-gray-100 text-[11px] text-gray-500">
-                        Envío: {fmt(order.shipping_total)} · {order.payment_method_title}
-                      </div>
+                {/* Order # */}
+                <div>
+                  <Link
+                    href={`/admin/pedidos/${order.id}`}
+                    className="text-[13px] font-bold text-black hover:underline"
+                  >
+                    #{order.number}
+                  </Link>
+                  {order.tracking && (
+                    <div className="text-[10px] text-green-600 font-mono mt-0.5 truncate max-w-[70px]">
+                      ✓ {order.tracking}
                     </div>
+                  )}
+                </div>
 
-                    {/* Customer */}
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-2">Cliente</p>
-                      <div className="text-[12px] text-gray-700 space-y-0.5">
-                        <div className="font-medium">{order.customer.first_name} {order.customer.last_name}</div>
-                        <div className="text-gray-500">{order.customer.email}</div>
-                        <div className="text-gray-500">{order.customer.phone}</div>
-                      </div>
+                {/* Customer */}
+                <div className="min-w-0">
+                  <Link href={`/admin/pedidos/${order.id}`} className="text-[13px] font-medium text-gray-900 hover:underline truncate block">
+                    {order.customer.first_name} {order.customer.last_name}
+                  </Link>
+                  {order.customer_note && (
+                    <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 mt-0.5 truncate max-w-[260px]" title={order.customer_note}>
+                      📝 {order.customer_note}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[11px] text-gray-400 truncate">{order.customer.email}</span>
+                    {order.customer.phone && (
                       <a
-                        href={`${WP_URL}/wp-admin/post.php?post=${order.id}&action=edit`}
+                        href={waLink(order.customer.phone, order.customer.first_name, order.number)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block mt-3 text-[11px] text-blue-600 hover:underline"
+                        onClick={e => e.stopPropagation()}
+                        title={`WhatsApp ${order.customer.phone}`}
+                        className="flex-none opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        Ver en WooCommerce →
+                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-green-500 hover:fill-green-600" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
                       </a>
-                    </div>
-
-                    {/* Tracking */}
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-2">Seguimiento Andreani</p>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          className="flex-1 border border-gray-200 rounded-md px-2 py-1.5 text-[12px] font-mono focus:outline-none focus:border-gray-400"
-                          placeholder="360002987658940"
-                          value={trackInputs[order.id] ?? ''}
-                          onChange={e => setTrackInputs(s => ({ ...s, [order.id]: e.target.value }))}
-                          onKeyDown={e => e.key === 'Enter' && saveTracking(order)}
-                        />
-                        <button
-                          onClick={() => saveTracking(order)}
-                          className="px-3 py-1.5 bg-black text-white rounded-md text-[11px] font-semibold hover:bg-gray-800 whitespace-nowrap"
-                        >
-                          Guardar
-                        </button>
-                      </div>
-                      {trackStatus[order.id] && (
-                        <p className={`mt-1.5 text-[11px] ${trackStatus[order.id].startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>
-                          {trackStatus[order.id]}
-                        </p>
-                      )}
-                      {(trackInputs[order.id] || order.tracking) && (
-                        <a
-                          href={`https://www.andreani.com/envio/${trackInputs[order.id] || order.tracking}`}
-                          target="_blank" rel="noopener noreferrer"
-                          className="inline-block mt-2 text-[11px] text-blue-600 hover:underline"
-                        >
-                          🔗 Rastrear en Andreani →
-                        </a>
-                      )}
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Products */}
+                <div className="hidden lg:block min-w-0 text-[12px] text-gray-500 truncate">
+                  {order.items.map((it, i) => (
+                    <span key={i}>{i > 0 && ' · '}{it.name.replace(/\s*—\s*Talle\s*\S+/i, '')}{it.size ? ` ${it.size}` : ''} ×{it.quantity}</span>
+                  ))}
+                </div>
+
+                {/* Total */}
+                <div className="text-right">
+                  <div className="text-[13px] font-semibold text-gray-900">{fmt(order.total)}</div>
+                  <div className="text-[11px] text-gray-400">{order.payment_method_title.replace('MercadoPago', 'MP')}</div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <select
+                    value={statusMap[order.id] || order.status}
+                    onChange={e => changeStatus(order.id, e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-gray-300 ${
+                      STATUS_COLORS[statusMap[order.id] || order.status] || 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                  </select>
+                </div>
+
+                {/* Date + action */}
+                <div className="text-right">
+                  <Link href={`/admin/pedidos/${order.id}`} className="text-[11px] text-gray-400 hover:text-black block">
+                    {fmtDate(order.date)}
+                  </Link>
+                </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ← Anterior
+            </button>
+            <span className="text-[12px] text-gray-500">Página {page} de {totalPages}</span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Siguiente →
+            </button>
           </div>
         )}
       </div>

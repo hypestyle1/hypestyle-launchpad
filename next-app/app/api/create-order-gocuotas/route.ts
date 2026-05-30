@@ -37,7 +37,7 @@ async function resolveItem(slug: string, size: string): Promise<{ product_id: nu
 export async function POST(req: NextRequest) {
   try {
     const {
-      items, customer, shipping, couponCode,
+      items, customer, shipping, discountAmount, couponCode,
       paymentMethod, shippingMethodId, shippingLabel, shippingBranch,
     } = await req.json();
 
@@ -75,8 +75,11 @@ export async function POST(req: NextRequest) {
       billing,
       shipping:             { ...billing, email: '', phone: '' },
       line_items:           lineItems,
-      shipping_lines:       shipping > 0 && shippingMethodId
+      shipping_lines: shipping > 0 && shippingMethodId
         ? [{ method_id: shippingMethodId, method_title: shippingLabel ?? shippingMethodId, total: String(shipping) }]
+        : [],
+      fee_lines: discountAmount > 0
+        ? [{ name: 'Descuento transferencia (10%)', total: String(-Math.round(discountAmount)), tax_class: '' }]
         : [],
     };
 

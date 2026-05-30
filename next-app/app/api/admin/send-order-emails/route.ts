@@ -177,6 +177,52 @@ function buildTrackingHtml(order: {
 </html>`;
 }
 
+function buildCancellationHtml(order: { orderNum: string; nombre: string }) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:8px;overflow:hidden;">
+        <tr>
+          <td style="background:#0a0a0a;padding:24px 40px;text-align:center;">
+            <img src="${SITE_URL}/logo-hypestyle-2026.png" alt="Hypestyle" width="140" style="height:auto;display:inline-block;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:#999;">Pedido #${order.orderNum}</p>
+            <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#111;">Tu pedido fue cancelado</h1>
+            <p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.6;">
+              Hola ${order.nombre}, te informamos que tu pedido #${order.orderNum} fue cancelado.
+            </p>
+            <p style="margin:0 0 28px;font-size:14px;color:#555;line-height:1.6;">
+              Cuando quieras retomarlo o tengas alguna consulta, acá estamos para ayudarte.
+              Escribinos por Instagram y lo resolvemos juntos.
+            </p>
+            <div style="text-align:center;">
+              <a href="https://instagram.com/hypestylearg"
+                 style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:13px 28px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-radius:2px;">
+                Escribinos por Instagram →
+              </a>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #f0f0f0;">
+            <p style="margin:0;font-size:12px;color:#999;">
+              <a href="https://instagram.com/hypestylearg" style="color:#111;font-weight:600;">@hypestylearg</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
@@ -184,8 +230,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const orderId = searchParams.get('order_id');
-  const action  = searchParams.get('action') || 'both'; // confirmation | tracking | both
+  const orderId    = searchParams.get('order_id');
+  const action     = searchParams.get('action') || 'both'; // confirmation | tracking | both | cancellation
+  const overrideTo = searchParams.get('to') || ''; // optional email override for testing
 
   if (!orderId) {
     return NextResponse.json({ error: 'Missing order_id' }, { status: 400 });
@@ -205,6 +252,8 @@ export async function GET(req: NextRequest) {
     if (!email) {
       return NextResponse.json({ error: 'Order has no billing email' }, { status: 422 });
     }
+
+    const sendTo = overrideTo || email;
 
     // Map line items — size is in name ("Producto — Talle M") or meta_data
     const items: { name: string; size: string; quantity: number; price: number }[] =
@@ -227,14 +276,14 @@ export async function GET(req: NextRequest) {
     const results: Record<string, any> = {
       order_id:     wcOrderId,
       order_number: orderNum,
-      email,
+      email:        sendTo,
       nombre:       `${nombre} ${apellido}`.trim(),
     };
 
     if (action === 'confirmation' || action === 'both') {
       const html = buildConfirmationHtml({ orderNum, wcOrderId, orderKey, items, total, nombre });
       await sendBrevo(
-        { email, name: `${nombre} ${apellido}`.trim() },
+        { email: sendTo, name: `${nombre} ${apellido}`.trim() },
         `Pedido #${orderNum} confirmado — Hypestyle`,
         html,
       );
@@ -244,11 +293,21 @@ export async function GET(req: NextRequest) {
     if (action === 'tracking' || action === 'both') {
       const html = buildTrackingHtml({ orderNum, wcOrderId, orderKey, nombre });
       await sendBrevo(
-        { email, name: `${nombre} ${apellido}`.trim() },
+        { email: sendTo, name: `${nombre} ${apellido}`.trim() },
         `Tu pedido #${orderNum} está en camino — Hypestyle`,
         html,
       );
       results.tracking = 'sent';
+    }
+
+    if (action === 'cancellation') {
+      const html = buildCancellationHtml({ orderNum, nombre });
+      await sendBrevo(
+        { email: sendTo, name: `${nombre} ${apellido}`.trim() },
+        `Tu pedido #${orderNum} fue cancelado — Hypestyle`,
+        html,
+      );
+      results.cancellation = 'sent';
     }
 
     return NextResponse.json({ ok: true, ...results });

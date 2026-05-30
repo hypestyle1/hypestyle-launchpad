@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
     tracking:      (o.meta_data as any[])?.find((m: any) => m.key === '_tracking_number')?.value  || '',
     notified:      (o.meta_data as any[])?.find((m: any) => m.key === '_tracking_notified')?.value || '',
     order_key:     o.order_key,
+    customer_note: o.customer_note || '',
   }));
 
   return NextResponse.json({ orders, total, totalPages, page: parseInt(page) });
