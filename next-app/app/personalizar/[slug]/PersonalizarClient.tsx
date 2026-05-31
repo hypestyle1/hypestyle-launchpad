@@ -62,11 +62,12 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
   const searchParams = useSearchParams();
   const { add, setDrawerOpen } = useCart();
   const { data: product, isLoading } = useProduct(slug || undefined);
-  const selectedSize = searchParams.get('talle');
 
   const [view, setView] = useState<'espalda' | 'frente'>('espalda');
   const [playerName, setPlayerName] = useState('');
   const [playerNumber, setPlayerNumber] = useState('');
+  const [selectedSize, setSelectedSize] = useState<string | null>(searchParams.get('talle'));
+  const [sizeError, setSizeError] = useState(false);
   const [added, setAdded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -76,6 +77,13 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
 
   useEffect(() => { redraw(); }, [redraw]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  // Talle único → autoseleccionar; si el talle del query param ya no existe, limpiarlo.
+  useEffect(() => {
+    if (!product) return;
+    if (product.sizes.length === 1) setSelectedSize(product.sizes[0]);
+    else setSelectedSize(prev => (prev && product.sizes.includes(prev) ? prev : null));
+  }, [product?.slug]);
 
   if (isLoading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -90,6 +98,7 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
   );
 
   const handleAdd = () => {
+    if (!selectedSize) { setSizeError(true); return; }
     add({ id: product.id, name: product.name, price: product.price, image: product.images[0], size: selectedSize, quantity: 1, ...(playerName || playerNumber ? { customization: { playerName, number: playerNumber } } : {}) });
     setAdded(true);
     setTimeout(() => { setDrawerOpen(true); router.push(`/producto/${slug}/`); }, 900);
@@ -148,7 +157,35 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
                 </div>
               </div>
               <div className="border-t border-border mb-6" />
-              {selectedSize && <p className="text-[11px] text-muted-foreground uppercase tracking-[0.15em] mb-6">Talle seleccionado: <span className="text-foreground font-bold">{selectedSize}</span></p>}
+
+              <div className="mb-6">
+                <span className="block text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">
+                  Talle {selectedSize && <span className="text-foreground">— {selectedSize}</span>}
+                </span>
+                {product.sizes.length > 1 ? (
+                  <div className="flex gap-2 flex-wrap">
+                    {product.sizes.map(s => {
+                      const isOut = product.stock[s] === 'out';
+                      return (
+                        <button key={s} type="button" disabled={isOut}
+                          onClick={() => { setSelectedSize(s); setSizeError(false); }}
+                          className={`px-4 py-2 text-[12px] font-semibold uppercase border transition-colors rounded-[10px] ${
+                            isOut
+                              ? 'border-border text-foreground/25 cursor-not-allowed line-through'
+                              : selectedSize === s
+                              ? 'border-foreground bg-foreground text-background'
+                              : 'border-border hover:border-foreground'
+                          }`}>
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-foreground/70">Talle único</p>
+                )}
+                {sizeError && <p className="text-[11px] text-destructive mt-1.5">Seleccioná un talle para continuar</p>}
+              </div>
               {(playerName || playerNumber) && (
                 <div className="border border-border rounded-[10px] px-4 py-3 mb-5 bg-bg-alt">
                   <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Tu personalización</p>

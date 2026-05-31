@@ -402,11 +402,11 @@ export default function ProductoClient({ slug }: { slug: string }) {
 
               {product.customizable && (
                 <button
-                  onClick={() => { if (!selectedSize) { setSizeError(true); return; } router.push(`/personalizar/${product.slug}/?talle=${selectedSize}`); }}
+                  onClick={() => router.push(`/personalizar/${product.slug}/${selectedSize ? `?talle=${selectedSize}` : ''}`)}
                   className="flex items-center justify-between w-full border-2 border-foreground px-5 py-4 mb-3 rounded-[10px] hover:bg-foreground hover:text-background transition-colors group">
                   <div>
                     <p className="text-[13px] font-bold uppercase tracking-[0.08em]">Personalizar tu dorsal</p>
-                    <p className="text-[11px] text-muted-foreground group-hover:text-background/70 transition-colors mt-0.5">Elegí nombre y número — preview en tiempo real</p>
+                    <p className="text-[11px] text-muted-foreground group-hover:text-background/70 transition-colors mt-0.5">Elegí talle, nombre y número — preview en tiempo real</p>
                   </div>
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 9h10M9 4l5 5-5 5" /></svg>
                 </button>
