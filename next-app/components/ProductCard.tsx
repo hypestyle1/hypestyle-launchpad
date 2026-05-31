@@ -71,6 +71,8 @@ export default function ProductCard({
   };
 
   const hasSizes = id && sizes && sizes.length > 0;
+  // Producto totalmente agotado: todos los talles sin stock.
+  const outOfStock = !!sizes && sizes.length > 0 && !!stock && sizes.every(s => stock[s] === "out");
 
   return (
     <a
@@ -104,11 +106,15 @@ export default function ProductCard({
           />
         )}
 
-        {badge && (
+        {outOfStock ? (
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider bg-foreground text-background">
+            Sin stock
+          </span>
+        ) : badge ? (
           <span className={`absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${badgeStyle()}`}>
             {badge}
           </span>
-        )}
+        ) : null}
 
         {/* Wishlist heart */}
         {id && (
