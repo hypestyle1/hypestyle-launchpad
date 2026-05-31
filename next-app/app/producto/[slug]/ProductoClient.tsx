@@ -372,12 +372,10 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   <span className="text-[12px] font-semibold uppercase tracking-wider">
                     {isColorVariant ? 'Color' : 'Talle'} {selectedSize && <span className="font-bold">— {selectedSize}</span>}
                   </span>
-                  {!isColorVariant && (
-                    <button onClick={() => setSizeGuideOpen(true)}
-                      className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
-                      Guía de talles
-                    </button>
-                  )}
+                  <button onClick={() => setSizeGuideOpen(true)}
+                    className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
+                    Guía de talles
+                  </button>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {product.sizes.map(s => {
