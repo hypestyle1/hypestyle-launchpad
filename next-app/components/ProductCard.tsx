@@ -140,10 +140,11 @@ export default function ProductCard({
         <p className="text-[10px] uppercase tracking-[0.15em] text-text-light mb-0.5">{category}</p>
         <p className="text-[13px] font-medium leading-tight">{name}</p>
         <div className="flex items-center gap-2 mt-1">
-          <span suppressHydrationWarning className={`text-[13px] font-semibold ${originalPrice ? "text-destructive" : ""}`}>
-            {formatPrice(price)}
+          {/* Sin stock: ocultamos el precio promocional y mostramos el regular en neutro */}
+          <span suppressHydrationWarning className={`text-[13px] font-semibold ${originalPrice && !outOfStock ? "text-destructive" : ""}`}>
+            {formatPrice(outOfStock && originalPrice ? originalPrice : price)}
           </span>
-          {originalPrice && (
+          {originalPrice && !outOfStock && (
             <span suppressHydrationWarning className="text-[12px] text-text-light line-through">
               {formatPrice(originalPrice)}
             </span>
