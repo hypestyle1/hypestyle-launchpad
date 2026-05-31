@@ -3,12 +3,15 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { fetchAllProducts } from "@/lib/products-server";
+import { BEST_SELLERS_SLUGS } from "@/lib/best-sellers";
 
 export const revalidate = 60;
 
 export default async function SpecialPricesPage() {
   const allProducts = await fetchAllProducts();
-  const products = allProducts.filter(p => p.badge && p.originalPrice);
+  // Promos que NO están en Best Sellers (para no repetir y destacar el resto)
+  const bestSellers = new Set(BEST_SELLERS_SLUGS);
+  const products = allProducts.filter(p => p.badge && p.originalPrice && !bestSellers.has(p.slug));
 
   return (
     <>

@@ -5,46 +5,7 @@ import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
-
-const BEST_SELLERS_SLUGS = [
-  'per-aspera-ad-astra-zippo',
-  'jersey-fileteado-x-alfredo-genovese',
-  'no-service-for-the-faithless-hoodie',
-  'lettering-melange-jort',
-  'no-service-for-the-faithless-white',
-  'no-service-for-the-faithless-black',
-  'no-service-for-the-faithless-grey',
-  'no-service-for-the-faithless-green',
-  'baby-come-back-black',
-  'no-love-only-style-tops',
-  'trucker-cap-baby-come-back',
-  'lettering-pink-jort',
-  'race-tee',
-  'mesh-realtree-pink-tee',
-  'mesh-realtree-tee',
-  'lettering-graphite-hoodie',
-  'lettering-graphite-jort',
-  'jort-cargo-realtree-pink',
-  'jort-cargo-realtree-beige',
-  'fleece-jacket-v1-negrogris',
-  'hoodie-shield-olive',
-  'sweatpants-bombe-bordo',
-  'knitted-tshirt-sand',
-  'sleeveless-ranglan-white',
-  'sleeveless-ranglan-militar-green',
-  'sleeveless-ranglan-grey',
-  'sleeveless-ranglan-black',
-  'raglan-tee-tribal-cross',
-  'hypestation-white-tee',
-  'hypestation-black-tee',
-  'honda-white-tee',
-  'honda-black-tee',
-  'skyline-tee',
-  'aerogrey-tees',
-  'mesh-camo-blue-tee',
-  'mesh-camo-grey-tee',
-  'hoodie-stay-hustle',
-];
+import { BEST_SELLERS_SLUGS } from "@/lib/best-sellers";
 
 export default function BackInStock() {
   const { data: allProducts = [] } = useProducts(0);
