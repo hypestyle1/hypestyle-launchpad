@@ -188,13 +188,16 @@ function fromWPNode(node: any): Product {
   const sizes: string[] = [];
   const stock: Record<string, 'ok' | 'low' | 'out'> = {};
   const variations: any[] = node.variations?.nodes || [];
+  let variantAxis = ''; // nombre del atributo de variación: talle/size o color
 
   if (variations.length) {
     for (const v of variations) {
-      const sizeAttr = v.attributes?.nodes?.find(
-        (a: any) => a.name === 'talle' || a.name === 'Talle' || a.name === 'size',
-      );
-      const sz = sizeAttr?.value?.trim() || 'Única';
+      const attr = v.attributes?.nodes?.find((a: any) => {
+        const n = (a.name || '').toLowerCase();
+        return n === 'talle' || n === 'size' || n === 'pa_talle' || n === 'color' || n === 'pa_color';
+      });
+      if (attr && !variantAxis) variantAxis = (attr.name || '').toLowerCase();
+      const sz = attr?.value?.trim() || 'Única';
       if (!sizes.includes(sz)) {
         sizes.push(sz);
         stock[sz] = stockStatus(v.stockStatus, v.stockQuantity ?? null);
@@ -204,6 +207,8 @@ function fromWPNode(node: any): Product {
     sizes.push('Única');
     stock['Única'] = stockStatus(node.stockStatus || 'IN_STOCK', node.stockQuantity ?? null);
   }
+  // Cuando el eje de variación es el color (talle único), lo tratamos distinto en la UI.
+  const colorVariant = variantAxis.includes('color');
 
   sizes.sort((a, b) => {
     const ai = SIZE_ORDER.indexOf(a);
@@ -227,6 +232,7 @@ function fromWPNode(node: any): Product {
     slug, id: slug, name, category, price, originalPrice,
     description, modelInfo, sizeGuideImage, careItems, fit, sizes, stock,
     customizable: CUSTOMIZABLE_SLUGS.has(slug),
+    colorVariant,
     colors: COLORWAYS[slug]?.map(c => ({
       label: c.label,
       value: c.value,
