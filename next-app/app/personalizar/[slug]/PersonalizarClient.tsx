@@ -12,7 +12,9 @@ const FONT = `"AdidasWorldCup", "Arial Black", Arial, sans-serif`;
 
 function drawArcText(ctx: CanvasRenderingContext2D, text: string, cx: number, cy: number, radius: number, letterSpacing = 0) {
   if (!text) return;
-  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  // textAlign 'center' centra cada glifo en su slot; con 'left' se corría media
+  // letra a la derecha (letras anchas dejaban hueco y angostas se pegaban).
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   const widths = [...text].map(ch => ctx.measureText(ch).width);
   const totalWidth = widths.reduce((a, w) => a + w, 0) + letterSpacing * (text.length - 1);
   const totalAngle = totalWidth / radius;
@@ -24,8 +26,10 @@ function drawArcText(ctx: CanvasRenderingContext2D, text: string, cx: number, cy
   }
 }
 
+// Francia2006.otf es de un único peso (normal). Pedir "bold" no matchea esa
+// cara y el canvas cae al fallback (Arial Black). Cargamos el peso normal.
 function ensureFont(): Promise<void> {
-  return document.fonts.load('bold 60px "AdidasWorldCup"').then(() => {});
+  return document.fonts.load('64px "AdidasWorldCup"').then(() => document.fonts.ready).then(() => {});
 }
 
 async function renderJersey(canvas: HTMLCanvasElement, view: 'espalda' | 'frente', playerName: string, playerNumber: string) {
@@ -41,18 +45,18 @@ async function renderJersey(canvas: HTMLCanvasElement, view: 'espalda' | 'frente
   if (view === 'espalda') {
     if (playerName) {
       const fontSize = playerName.length > 10 ? Math.round(S * 0.056) : playerName.length > 7 ? Math.round(S * 0.066) : Math.round(S * 0.076);
-      ctx.font = `bold ${fontSize}px ${FONT}`; ctx.fillStyle = '#0a0a0a';
+      ctx.font = `${fontSize}px ${FONT}`; ctx.fillStyle = '#0a0a0a';
       drawArcText(ctx, playerName, S / 2, S * 1.54, S * 1.20, Math.round(fontSize * 0.08));
     }
     if (playerNumber) {
       const fontSize = playerNumber.length === 1 ? Math.round(S * 0.33) : Math.round(S * 0.25);
-      ctx.font = `bold ${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#0a0a0a';
+      ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#0a0a0a';
       ctx.fillText(playerNumber, S * 0.5, S * 0.43);
     }
   }
   if (view === 'frente' && playerNumber) {
     const fontSize = Math.round(S * 0.09);
-    ctx.font = `bold ${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#0a0a0a';
+    ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#0a0a0a';
     ctx.fillText(playerNumber, S * 0.50, S * 0.46);
   }
 }
@@ -62,11 +66,12 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
   const searchParams = useSearchParams();
   const { add, setDrawerOpen } = useCart();
   const { data: product, isLoading } = useProduct(slug || undefined);
-  const selectedSize = searchParams.get('talle');
 
   const [view, setView] = useState<'espalda' | 'frente'>('espalda');
   const [playerName, setPlayerName] = useState('');
   const [playerNumber, setPlayerNumber] = useState('');
+  const [selectedSize, setSelectedSize] = useState<string | null>(searchParams.get('talle'));
+  const [sizeError, setSizeError] = useState(false);
   const [added, setAdded] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -76,6 +81,13 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
 
   useEffect(() => { redraw(); }, [redraw]);
   useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  // Talle único → autoseleccionar; si el talle del query param ya no existe, limpiarlo.
+  useEffect(() => {
+    if (!product) return;
+    if (product.sizes.length === 1) setSelectedSize(product.sizes[0]);
+    else setSelectedSize(prev => (prev && product.sizes.includes(prev) ? prev : null));
+  }, [product?.slug]);
 
   if (isLoading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -90,6 +102,7 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
   );
 
   const handleAdd = () => {
+    if (!selectedSize) { setSizeError(true); return; }
     add({ id: product.id, name: product.name, price: product.price, image: product.images[0], size: selectedSize, quantity: 1, ...(playerName || playerNumber ? { customization: { playerName, number: playerNumber } } : {}) });
     setAdded(true);
     setTimeout(() => { setDrawerOpen(true); router.push(`/producto/${slug}/`); }, 900);
@@ -148,11 +161,39 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
                 </div>
               </div>
               <div className="border-t border-border mb-6" />
-              {selectedSize && <p className="text-[11px] text-muted-foreground uppercase tracking-[0.15em] mb-6">Talle seleccionado: <span className="text-foreground font-bold">{selectedSize}</span></p>}
+
+              <div className="mb-6">
+                <span className="block text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">
+                  Talle {selectedSize && <span className="text-foreground">— {selectedSize}</span>}
+                </span>
+                {product.sizes.length > 1 ? (
+                  <div className="flex gap-2 flex-wrap">
+                    {product.sizes.map(s => {
+                      const isOut = product.stock[s] === 'out';
+                      return (
+                        <button key={s} type="button" disabled={isOut}
+                          onClick={() => { setSelectedSize(s); setSizeError(false); }}
+                          className={`px-4 py-2 text-[12px] font-semibold uppercase border transition-colors rounded-[10px] ${
+                            isOut
+                              ? 'border-border text-foreground/25 cursor-not-allowed line-through'
+                              : selectedSize === s
+                              ? 'border-foreground bg-foreground text-background'
+                              : 'border-border hover:border-foreground'
+                          }`}>
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[12px] text-foreground/70">Talle único</p>
+                )}
+                {sizeError && <p className="text-[11px] text-destructive mt-1.5">Seleccioná un talle para continuar</p>}
+              </div>
               {(playerName || playerNumber) && (
                 <div className="border border-border rounded-[10px] px-4 py-3 mb-5 bg-bg-alt">
                   <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Tu personalización</p>
-                  <p className="text-foreground text-[18px] font-bold" style={{ fontFamily: ADIDAS, letterSpacing: '3px' }}>
+                  <p className="text-foreground text-[18px]" style={{ fontFamily: ADIDAS, letterSpacing: '3px' }}>
                     {playerNumber && `#${playerNumber}`}{playerName && ` ${playerName}`}
                   </p>
                 </div>

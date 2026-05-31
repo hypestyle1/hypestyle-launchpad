@@ -33,13 +33,19 @@ function fmtUSD(n: number) {
   return '~USD ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Texto de personalización de dorsal (ej. "#8 CLAUDE"); vacío si no hay.
+function dorsalText(c?: { playerName?: string; number?: string }): string {
+  if (!c || (!c.playerName && !c.number)) return '';
+  return `${c.number ? '#' + c.number : ''}${c.playerName ? ' ' + c.playerName : ''}`.trim();
+}
+
 // ─── DOMESTIC (Spanish / ARS / Andreani) ────────────────────────────────────
 
 function buildHtml(order: {
   orderNum: string | number;
   wcOrderId?: number;
   orderKey?: string;
-  items: { name: string; size: string; quantity: number; price: number; image?: string }[];
+  items: { name: string; size: string; quantity: number; price: number; image?: string; customization?: { playerName?: string; number?: string } }[];
   total: number;
   nombre: string;
   apellido: string;
@@ -51,6 +57,7 @@ function buildHtml(order: {
       <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
         <span style="font-size:13px;color:#111;font-weight:600;">${item.name}</span><br/>
         <span style="font-size:12px;color:#888;">Talle: ${item.size} · Cant: ${item.quantity}</span>
+        ${dorsalText(item.customization) ? `<br/><span style="font-size:12px;color:#888;">Dorsal: ${dorsalText(item.customization)}</span>` : ''}
       </td>
       <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;text-align:right;font-size:13px;color:#111;white-space:nowrap;">
         ${fmtARS(item.price * item.quantity)}
@@ -132,7 +139,7 @@ function buildHtmlIntl(order: {
   orderNum: string | number;
   wcOrderId?: number;
   orderKey?: string;
-  items: { name: string; size: string; quantity: number; price: number }[];
+  items: { name: string; size: string; quantity: number; price: number; customization?: { playerName?: string; number?: string } }[];
   total: number;
   nombre: string;
   apellido: string;
@@ -148,6 +155,7 @@ function buildHtmlIntl(order: {
       <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
         <span style="font-size:13px;color:#111;font-weight:600;">${item.name}</span><br/>
         <span style="font-size:12px;color:#888;">Size: ${item.size} · Qty: ${item.quantity}</span>
+        ${dorsalText(item.customization) ? `<br/><span style="font-size:12px;color:#888;">Name & number: ${dorsalText(item.customization)}</span>` : ''}
       </td>
       <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;text-align:right;font-size:13px;color:#111;white-space:nowrap;">
         ${fmtUSD((item.price * item.quantity) / usdRate)}
@@ -285,7 +293,7 @@ function buildAdminHtml(order: any) {
   const metodo  = METODO_LABEL[order.paymentMethod] || order.paymentMethod || 'No especificado';
   const rows    = (order.items || []).map((item: any) =>
     `<tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eee;font-size:13px;">${item.name} — Talle ${item.size} x${item.quantity}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eee;font-size:13px;">${item.name} — Talle ${item.size} x${item.quantity}${dorsalText(item.customization) ? `<br/><strong style="color:#b45309;">Dorsal: ${dorsalText(item.customization)}</strong>` : ''}</td>
       <td style="padding:8px 0;border-bottom:1px solid #eee;font-size:13px;text-align:right;">${fmtARS(item.price * item.quantity)}</td>
     </tr>`
   ).join('');
