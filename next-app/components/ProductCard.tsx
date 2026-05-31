@@ -154,7 +154,7 @@ export default function ProductCard({
 
         {giftNote && (
           <span className="mt-1.5 inline-block text-[10px] font-bold uppercase tracking-wide bg-green-600/10 text-green-700 px-2 py-0.5 rounded-[4px]">
-            🎁 {giftNote}
+            {giftNote}
           </span>
         )}
 
