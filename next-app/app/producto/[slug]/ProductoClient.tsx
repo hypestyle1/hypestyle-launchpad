@@ -425,7 +425,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
               </button>
 
               <div className="border-b border-border">
-                <Accordion title="Drop Notes">{product.description}</Accordion>
+                <Accordion title="Descripción">{product.description}</Accordion>
                 <Accordion title="Guía de cuidado de ropa">
                   <ul className="space-y-2.5">
                     {product.careItems.map(item => (
