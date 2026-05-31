@@ -56,6 +56,12 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 
 const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
 
+// Productos cuyo atributo de variación "Talle" en realidad son colores (talle único).
+// En estos, el selector se muestra como "Color" y arriba se indica "Talle único".
+const COLOR_VARIANT_SLUGS = new Set<string>([
+  'no-love-only-style-tops',
+]);
+
 function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
@@ -223,6 +229,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
   };
 
   const stockLabel = selectedSize ? product.stock[selectedSize] : null;
+  const isColorVariant = COLOR_VARIANT_SLUGS.has(product.slug);
 
   return (
     <>
@@ -351,6 +358,12 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Fit</span>
                   <span className="text-[11px] font-semibold uppercase tracking-[0.08em] border border-border px-2.5 py-1 rounded-[10px]">{product.fit}</span>
+                  {isColorVariant && (
+                    <>
+                      <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground ml-2">Talle</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] border border-border px-2.5 py-1 rounded-[10px]">Único</span>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -360,12 +373,14 @@ export default function ProductoClient({ slug }: { slug: string }) {
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] font-semibold uppercase tracking-wider">
-                    Talle {selectedSize && <span className="font-bold">— {selectedSize}</span>}
+                    {isColorVariant ? 'Color' : 'Talle'} {selectedSize && <span className="font-bold">— {selectedSize}</span>}
                   </span>
-                  <button onClick={() => setSizeGuideOpen(true)}
-                    className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
-                    Guía de talles
-                  </button>
+                  {!isColorVariant && (
+                    <button onClick={() => setSizeGuideOpen(true)}
+                      className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
+                      Guía de talles
+                    </button>
+                  )}
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {product.sizes.map(s => {
@@ -395,10 +410,10 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   <p className="text-[11px] text-amber-600 font-medium mt-1.5">Últimas unidades disponibles</p>
                 )}
                 {(stockLabel === 'out' || liveOutSizes.has(selectedSize!)) && (
-                  <p className="text-[11px] text-destructive mt-1.5">Talle agotado</p>
+                  <p className="text-[11px] text-destructive mt-1.5">{isColorVariant ? 'Color agotado' : 'Talle agotado'}</p>
                 )}
-                {stockError && <p className="text-[11px] text-destructive mt-1">Este talle ya no tiene stock disponible</p>}
-                {sizeError && !stockError && <p className="text-[11px] text-destructive mt-1">Seleccioná un talle para continuar</p>}
+                {stockError && <p className="text-[11px] text-destructive mt-1">{isColorVariant ? 'Este color ya no tiene stock disponible' : 'Este talle ya no tiene stock disponible'}</p>}
+                {sizeError && !stockError && <p className="text-[11px] text-destructive mt-1">{isColorVariant ? 'Seleccioná un color para continuar' : 'Seleccioná un talle para continuar'}</p>}
               </div>
               )}
 
