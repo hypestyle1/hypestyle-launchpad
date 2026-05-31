@@ -238,6 +238,27 @@ function fromWPNode(node: any): Product {
   };
 }
 
+// Para productos con colorways, la miniatura de cada swatch se toma de la foto
+// destacada real de cada producto hermano en WooCommerce (no de URLs hardcodeadas
+// en COLORWAYS), así siempre coincide con lo cargado en Woo y no se desincroniza.
+async function resolveColorwayImages(product: Product): Promise<void> {
+  const colors = product.colors;
+  if (colors.length < 2 || colors.some(c => !c.slug)) return;
+  const q = `query ColorwayImgs {\n` +
+    colors.map((c, i) =>
+      `s${i}: product(id: "${c.slug}", idType: SLUG) { ... on SimpleProduct { image { sourceUrl } } ... on VariableProduct { image { sourceUrl } } }`
+    ).join('\n') + `\n}`;
+  try {
+    const res = await fetchGraphQL<Record<string, { image?: { sourceUrl?: string } } | null>>(q);
+    product.colors = colors.map((c, i) => {
+      const url = res?.[`s${i}`]?.image?.sourceUrl;
+      return url ? { ...c, image: url } : c;
+    });
+  } catch {
+    // fallback: se mantienen las imágenes de COLORWAYS
+  }
+}
+
 export function useProduct(slug: string | undefined) {
   return useQuery<Product | undefined>({
     queryKey: ['product', slug],
@@ -247,7 +268,9 @@ export function useProduct(slug: string | undefined) {
       if (!slug) return undefined;
       const data = await fetchGraphQL<{ product: any }>(GET_PRODUCT, { slug });
       if (!data?.product) return undefined;
-      return fromWPNode(data.product);
+      const product = fromWPNode(data.product);
+      await resolveColorwayImages(product);
+      return product;
     },
   });
 }
