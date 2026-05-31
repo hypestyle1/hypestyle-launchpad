@@ -12,7 +12,9 @@ const FONT = `"AdidasWorldCup", "Arial Black", Arial, sans-serif`;
 
 function drawArcText(ctx: CanvasRenderingContext2D, text: string, cx: number, cy: number, radius: number, letterSpacing = 0) {
   if (!text) return;
-  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  // textAlign 'center' centra cada glifo en su slot; con 'left' se corría media
+  // letra a la derecha (letras anchas dejaban hueco y angostas se pegaban).
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   const widths = [...text].map(ch => ctx.measureText(ch).width);
   const totalWidth = widths.reduce((a, w) => a + w, 0) + letterSpacing * (text.length - 1);
   const totalAngle = totalWidth / radius;
@@ -24,8 +26,10 @@ function drawArcText(ctx: CanvasRenderingContext2D, text: string, cx: number, cy
   }
 }
 
+// Francia2006.otf es de un único peso (normal). Pedir "bold" no matchea esa
+// cara y el canvas cae al fallback (Arial Black). Cargamos el peso normal.
 function ensureFont(): Promise<void> {
-  return document.fonts.load('bold 60px "AdidasWorldCup"').then(() => {});
+  return document.fonts.load('64px "AdidasWorldCup"').then(() => document.fonts.ready).then(() => {});
 }
 
 async function renderJersey(canvas: HTMLCanvasElement, view: 'espalda' | 'frente', playerName: string, playerNumber: string) {
@@ -41,18 +45,18 @@ async function renderJersey(canvas: HTMLCanvasElement, view: 'espalda' | 'frente
   if (view === 'espalda') {
     if (playerName) {
       const fontSize = playerName.length > 10 ? Math.round(S * 0.056) : playerName.length > 7 ? Math.round(S * 0.066) : Math.round(S * 0.076);
-      ctx.font = `bold ${fontSize}px ${FONT}`; ctx.fillStyle = '#0a0a0a';
+      ctx.font = `${fontSize}px ${FONT}`; ctx.fillStyle = '#0a0a0a';
       drawArcText(ctx, playerName, S / 2, S * 1.54, S * 1.20, Math.round(fontSize * 0.08));
     }
     if (playerNumber) {
       const fontSize = playerNumber.length === 1 ? Math.round(S * 0.33) : Math.round(S * 0.25);
-      ctx.font = `bold ${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#0a0a0a';
+      ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#0a0a0a';
       ctx.fillText(playerNumber, S * 0.5, S * 0.43);
     }
   }
   if (view === 'frente' && playerNumber) {
     const fontSize = Math.round(S * 0.09);
-    ctx.font = `bold ${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#0a0a0a';
+    ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#0a0a0a';
     ctx.fillText(playerNumber, S * 0.50, S * 0.46);
   }
 }
@@ -189,7 +193,7 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
               {(playerName || playerNumber) && (
                 <div className="border border-border rounded-[10px] px-4 py-3 mb-5 bg-bg-alt">
                   <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Tu personalización</p>
-                  <p className="text-foreground text-[18px] font-bold" style={{ fontFamily: ADIDAS, letterSpacing: '3px' }}>
+                  <p className="text-foreground text-[18px]" style={{ fontFamily: ADIDAS, letterSpacing: '3px' }}>
                     {playerNumber && `#${playerNumber}`}{playerName && ` ${playerName}`}
                   </p>
                 </div>
