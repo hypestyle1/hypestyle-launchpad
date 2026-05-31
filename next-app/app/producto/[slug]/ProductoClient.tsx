@@ -47,7 +47,7 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
         <span className="text-lg font-light text-foreground/40 transition-transform duration-200"
           style={{ transform: open ? 'rotate(45deg)' : 'rotate(0deg)' }}>+</span>
       </button>
-      <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: open ? '400px' : '0px' }}>
+      <div className="overflow-hidden transition-all duration-300" style={{ maxHeight: open ? '900px' : '0px' }}>
         <div className="pb-4 text-[13px] text-foreground/65 leading-relaxed whitespace-pre-line">{children}</div>
       </div>
     </div>
@@ -437,10 +437,22 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   </ul>
                 </Accordion>
                 <Accordion title="Envíos y devoluciones">
-                  <p>Envíos a todo el país vía Andreani. El costo se calcula en el checkout.</p>
-                  <p className="mt-2">🌍 <strong>Worldwide shipping available.</strong> International orders ship via DHL Express — final cost coordinated after purchase.</p>
-                  <p className="mt-2">Cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.</p>
-                  <a href="/politicas-de-devolucion/" className="underline text-foreground hover:text-foreground/70 transition-colors mt-2 block">Ver políticas completas →</a>
+                  <p className="font-semibold text-foreground">Procesamiento</p>
+                  <p>Preparamos y despachamos tu pedido una vez confirmado el pago. Los fines de semana y feriados no se cuentan como días hábiles.</p>
+
+                  <p className="font-semibold text-foreground mt-3">Envíos en Argentina</p>
+                  <p>A todo el país vía Andreani; el costo se calcula en el checkout. El tiempo de entrega estimado es de 5 a 10 días hábiles, y en algunos casos puede extenderse hasta 15 días hábiles según la zona y la demanda.</p>
+
+                  <p className="font-semibold text-foreground mt-3">Preventa</p>
+                  <p>Los productos en PREVENTA se despachan según la fecha estimada indicada en la página del producto y pueden demorar algo más de lo estipulado. Si tu compra incluye un producto en preventa, el pedido se envía completo cuando esté disponible.</p>
+
+                  <p className="font-semibold text-foreground mt-3">Envíos internacionales</p>
+                  <p>🌍 Enviamos a todo el mundo vía DHL Express. El costo final se coordina por email después de la compra. Pueden aplicar impuestos o aranceles aduaneros según el país de destino.</p>
+
+                  <p className="font-semibold text-foreground mt-3">Cambios y devoluciones</p>
+                  <p>Aceptamos cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.</p>
+
+                  <a href="/politicas-de-devolucion/" className="underline text-foreground hover:text-foreground/70 transition-colors mt-3 block">Ver políticas completas →</a>
                 </Accordion>
               </div>
             </div>
