@@ -7,31 +7,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
-
-const GROUPS = [
-  {
-    label: 'Half-Zip Polo',
-    slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black'],
-  },
-  {
-    label: 'Pink Set',
-    slugs: ['hoodie-pink', 'zip-hoodie-pink', 'sweatpant-pink'],
-  },
-  {
-    label: 'Camo Drop',
-    slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap', 'beanie-camo'],
-  },
-  {
-    label: 'Remeras',
-    slugs: ['only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra'],
-  },
-  {
-    label: 'Conjunto Gris',
-    slugs: ['hoodie-grey-hstars', 'sweatpant-grey-hstars', 'hoodie-melange', 'sweatpant-melange'],
-  },
-];
-
-const ALL_SLUGS = GROUPS.flatMap(g => g.slugs);
+import { FW26_GROUPS as GROUPS, FW26_SLUGS as ALL_SLUGS } from "@/lib/fw26";
 
 export default function FW26Page() {
   const { data: allProducts = [] } = useProducts(100);

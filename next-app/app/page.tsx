@@ -5,6 +5,7 @@ import Hero from '@/components/Hero';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
 import CollectionBanner from '@/components/CollectionBanner';
+import NewInFW26 from '@/components/NewInFW26';
 import EditorialBanner from '@/components/EditorialBanner';
 import BenefitsStrip from '@/components/BenefitsStrip';
 import VideoSection from '@/components/VideoSection';
@@ -21,9 +22,10 @@ export default function Home() {
         <Hero />
         <EventCountdown />
         <BenefitsStrip />
-        <CollectionBanner />
+        <NewInFW26 />
         <ShopTheLook />
         <VideoSection />
+        <CollectionBanner />
         <BackInStock />
         <EditorialBanner />
       </main>
