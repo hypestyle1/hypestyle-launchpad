@@ -14,29 +14,47 @@ export interface CartItem {
 
 interface CartState { items: CartItem[] }
 
+type Customization = CartItem['customization'];
+
+// Firma única de una personalización: dos ítems del mismo producto/talle pero con
+// distinto dorsal son líneas distintas (no se fusionan ni se editan entre sí).
+function custKey(c?: Customization): string {
+  return c && (c.playerName || c.number) ? `${c.number}|${c.playerName}` : '';
+}
+function matches(i: CartItem, id: string, size: string, cust?: Customization): boolean {
+  return i.id === id && i.size === size && custKey(i.customization) === custKey(cust);
+}
+function sameLine(a: CartItem, b: CartItem): boolean {
+  return matches(a, b.id, b.size, b.customization);
+}
+// Key estable para listas de React (incluye la personalización).
+export function cartLineKey(i: CartItem): string {
+  return `${i.id}-${i.size}-${custKey(i.customization)}`;
+}
+
 type CartAction =
   | { type: 'ADD'; item: CartItem }
-  | { type: 'REMOVE'; id: string; size: string }
-  | { type: 'INCREMENT'; id: string; size: string }
-  | { type: 'DECREMENT'; id: string; size: string }
+  | { type: 'REMOVE'; id: string; size: string; cust?: Customization }
+  | { type: 'INCREMENT'; id: string; size: string; cust?: Customization }
+  | { type: 'DECREMENT'; id: string; size: string; cust?: Customization }
   | { type: 'CLEAR' }
   | { type: 'LOAD'; state: CartState };
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'ADD': {
-      const existing = state.items.find(i => i.id === action.item.id && i.size === action.item.size);
+      const existing = state.items.find(i => sameLine(i, action.item));
       if (existing) {
-        return { items: state.items.map(i => i.id === action.item.id && i.size === action.item.size ? { ...i, quantity: i.quantity + action.item.quantity } : i) };
+        return { items: state.items.map(i => sameLine(i, action.item) ? { ...i, quantity: i.quantity + action.item.quantity } : i) };
       }
       return { items: [...state.items, action.item] };
     }
     case 'REMOVE':
-      return { items: state.items.filter(i => !(i.id === action.id && i.size === action.size)) };
+      return { items: state.items.filter(i => !matches(i, action.id, action.size, action.cust)) };
     case 'INCREMENT':
-      return { items: state.items.map(i => i.id === action.id && i.size === action.size ? { ...i, quantity: i.quantity + 1 } : i) };
+      return { items: state.items.map(i => matches(i, action.id, action.size, action.cust) ? { ...i, quantity: i.quantity + 1 } : i) };
     case 'DECREMENT':
-      return { items: state.items.map(i => i.id === action.id && i.size === action.size && i.quantity > 1 ? { ...i, quantity: i.quantity - 1 } : i) };
+      return { items: state.items.map(i => matches(i, action.id, action.size, action.cust) && i.quantity > 1 ? { ...i, quantity: i.quantity - 1 } : i) };
     case 'CLEAR':
       return { items: [] };
     case 'LOAD':
@@ -49,9 +67,9 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 interface CartContextType {
   items: CartItem[];
   add: (item: CartItem) => void;
-  remove: (id: string, size: string) => void;
-  increment: (id: string, size: string) => void;
-  decrement: (id: string, size: string) => void;
+  remove: (id: string, size: string, cust?: Customization) => void;
+  increment: (id: string, size: string, cust?: Customization) => void;
+  decrement: (id: string, size: string, cust?: Customization) => void;
   clear: () => void;
   total: number;
   count: number;
@@ -86,9 +104,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider value={{
       items: state.items,
       add: (item) => dispatch({ type: 'ADD', item }),
-      remove: (id, size) => dispatch({ type: 'REMOVE', id, size }),
-      increment: (id, size) => dispatch({ type: 'INCREMENT', id, size }),
-      decrement: (id, size) => dispatch({ type: 'DECREMENT', id, size }),
+      remove: (id, size, cust) => dispatch({ type: 'REMOVE', id, size, cust }),
+      increment: (id, size, cust) => dispatch({ type: 'INCREMENT', id, size, cust }),
+      decrement: (id, size, cust) => dispatch({ type: 'DECREMENT', id, size, cust }),
       clear: () => dispatch({ type: 'CLEAR' }),
       total, count, drawerOpen, setDrawerOpen,
     }}>

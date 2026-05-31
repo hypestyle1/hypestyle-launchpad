@@ -44,7 +44,16 @@ export async function POST(req: NextRequest) {
     const lineItems = await Promise.all(
       (items as any[]).map(async (item) => {
         const resolved = await resolveItem(item.id, item.size);
-        return { ...resolved, quantity: item.quantity };
+        const li: Record<string, unknown> = { ...resolved, quantity: item.quantity };
+        // Personalización de dorsal → meta visible en la orden de WooCommerce
+        const c = item.customization;
+        if (c && (c.playerName || c.number)) {
+          const m: { key: string; value: string }[] = [];
+          if (c.number)     m.push({ key: 'Número dorsal', value: String(c.number) });
+          if (c.playerName) m.push({ key: 'Nombre dorsal', value: String(c.playerName) });
+          li.meta_data = m;
+        }
+        return li;
       }),
     );
 
@@ -115,7 +124,7 @@ export async function POST(req: NextRequest) {
         wcOrderId:     wcOrder.id,
         orderKey:      wcOrder.order_key,
         items:         (items as any[]).map((i: any) => ({
-          name: i.name, size: i.size, quantity: i.quantity, price: i.price,
+          name: i.name, size: i.size, quantity: i.quantity, price: i.price, customization: i.customization,
         })),
         total:         parseFloat(wcOrder.total),
         email:         customer.email,

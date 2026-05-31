@@ -10,6 +10,7 @@ export interface OrderItem {
   quantity: number;
   size: string;
   image: string;
+  customization?: { playerName: string; number: string };
 }
 
 export interface OrderCustomer {

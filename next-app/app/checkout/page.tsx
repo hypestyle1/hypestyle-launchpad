@@ -206,7 +206,7 @@ export default function Checkout() {
       let orderRes;
       try {
         orderRes = await createOrderAndPreference({
-          items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image })),
+          items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization })),
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
           discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0),
@@ -645,7 +645,7 @@ export default function Checkout() {
           <div className="sticky top-6">
             <div className="space-y-4 mb-6">
               {items.map(item => (
-                <div key={`${item.id}-${item.size}`} className="flex gap-3 items-center">
+                <div key={`${item.id}-${item.size}-${item.customization?.number ?? ''}-${item.customization?.playerName ?? ''}`} className="flex gap-3 items-center">
                   <div className="relative w-16 h-20 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[10px]">
                     {item.image ? (
                       <img
@@ -660,6 +660,11 @@ export default function Checkout() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-medium leading-tight">{item.name}</p>
                     <p className="text-[11px] text-muted-foreground">Talle: {item.size}</p>
+                    {item.customization && (item.customization.playerName || item.customization.number) && (
+                      <p className="text-[11px] text-foreground/70 font-medium">
+                        Dorsal: {item.customization.number && `#${item.customization.number}`}{item.customization.playerName && ` ${item.customization.playerName}`}
+                      </p>
+                    )}
                   </div>
                   <span className="text-[13px] font-semibold">{formatPrice(item.price * item.quantity)}</span>
                 </div>

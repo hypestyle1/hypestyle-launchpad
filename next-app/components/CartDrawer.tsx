@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from "react";
-import { useCart } from "@/context/CartContext";
+import { useCart, cartLineKey } from "@/context/CartContext";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import { useRouter } from "next/navigation";
@@ -99,7 +99,7 @@ export default function CartDrawer() {
             </div>
           ) : (
             items.map((item) => (
-              <div key={`${item.id}-${item.size}`} className="flex gap-4">
+              <div key={cartLineKey(item)} className="flex gap-4">
                 <div className="w-20 h-24 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[5px]">
                   <img src={imgSrc(item.image)} alt={item.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
@@ -114,20 +114,20 @@ export default function CartDrawer() {
                   <p className="text-[13px] font-semibold mt-1">{formatPrice(item.price)}</p>
                   <div className="flex items-center gap-3 mt-2">
                     <button
-                      onClick={() => decrement(item.id, item.size)}
+                      onClick={() => decrement(item.id, item.size, item.customization)}
                       className="w-6 h-6 border border-border flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
                     >
                       −
                     </button>
                     <span className="text-[13px] tabular-nums">{item.quantity}</span>
                     <button
-                      onClick={() => increment(item.id, item.size)}
+                      onClick={() => increment(item.id, item.size, item.customization)}
                       className="w-6 h-6 border border-border flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
                     >
                       +
                     </button>
                     <button
-                      onClick={() => remove(item.id, item.size)}
+                      onClick={() => remove(item.id, item.size, item.customization)}
                       className="ml-auto text-[11px] text-muted-foreground hover:text-foreground transition-colors underline"
                     >
                       Eliminar
