@@ -7,6 +7,12 @@ import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 import { FW26_GROUPS } from "@/lib/fw26";
 
+// Excepciones: en NEW IN se ocultan los descuentos, salvo estos productos que son
+// promos reales (ej. combos) y sí muestran su badge de descuento.
+const KEEP_DISCOUNT = new Set<string>([
+  'camo-full-set-combo',
+]);
+
 export default function NewInFW26() {
   const { data: allProducts = [] } = useProducts(0);
   const ref = useReveal([allProducts]);
@@ -39,8 +45,10 @@ export default function NewInFW26() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
             {group.items.map(p => (
-              // Productos nuevos: sin descuento ni precio tachado (precio limpio)
-              <ProductCard key={p.slug} {...p} originalPrice={undefined} badge={undefined} />
+              // Productos nuevos: precio limpio (sin descuento), salvo promos/combos.
+              KEEP_DISCOUNT.has(p.slug)
+                ? <ProductCard key={p.slug} {...p} />
+                : <ProductCard key={p.slug} {...p} originalPrice={undefined} badge={undefined} />
             ))}
           </div>
         </div>
