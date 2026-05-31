@@ -25,7 +25,7 @@ const megaMenu = {
     { label: 'New In',         href: '/new-in/',          homeHash: 'best-sellers',   isNew: true  },
     { label: 'Colecciones',    href: '/colecciones/',    homeHash: null,             isNew: false },
     { label: 'Best Sellers',   href: '/best-sellers/',   homeHash: 'back-in-stock',  isNew: false },
-    { label: 'Special Prices', href: '/special-prices/', homeHash: 'special-prices', isNew: false },
+    { label: 'SALE', href: '/special-prices/', homeHash: 'special-prices', isNew: false, isSale: true },
   ],
   categorias: [
     { label: 'Arriba',     href: '/arriba/',     indent: false },
@@ -49,7 +49,7 @@ const mobilePanels = {
       { label: 'Ver todos los productos', href: '/productos/',      homeHash: null,             panel: null },
       { label: 'New In',                   href: '/new-in/',          homeHash: 'best-sellers',   panel: null },
       { label: 'Colecciones',              href: '/colecciones/',    homeHash: null,             panel: null },
-      { label: 'Special Prices',           href: '/special-prices/', homeHash: 'special-prices', panel: null },
+      { label: 'SALE',                     href: '/special-prices/', homeHash: 'special-prices', panel: null, isSale: true },
       { label: 'Arriba',                   href: null,               homeHash: null,             panel: 'arriba' },
       { label: 'Abajo',                    href: null,               homeHash: null,             panel: 'abajo' },
       { label: 'Accesorios',               href: null,               homeHash: null,             panel: 'accesorios' },
@@ -266,7 +266,9 @@ export default function Navbar() {
                 {megaMenu.general.map((l) => (
                   <button key={l.label} onClick={() => handleSmartLink(l.href, l.homeHash)}
                     className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 hover:text-foreground transition-colors mb-2.5 w-full text-left">
-                    {l.label}
+                    {(l as { isSale?: boolean }).isSale
+                      ? <span className="text-[11px] font-bold uppercase tracking-[0.12em] bg-red-600 text-white px-2 py-0.5 rounded-[4px]">{l.label}</span>
+                      : l.label}
                     {l.isNew && <span className="text-[9px] font-bold uppercase tracking-wider bg-foreground text-background px-1.5 py-0.5 rounded-[4px]">NEW</span>}
                   </button>
                 ))}
@@ -394,7 +396,9 @@ export default function Navbar() {
                       <button key={item.label}
                         onClick={() => { handleSmartLink(item.href!, item.homeHash); closeMobile(); }}
                         className="w-full flex items-center justify-between py-2.5 border-b border-foreground/8 last:border-0 text-left">
-                        <span className="text-[22px] font-normal tracking-tight">{item.label}</span>
+                        {(item as { isSale?: boolean }).isSale
+                          ? <span className="bg-red-600 text-white text-[16px] font-bold uppercase tracking-[0.1em] px-3 py-1 rounded-[5px]">{item.label}</span>
+                          : <span className="text-[22px] font-normal tracking-tight">{item.label}</span>}
                       </button>
                     )
                   ))}
