@@ -26,7 +26,7 @@ async function resolveItem(slug: string, size: string): Promise<{ product_id: nu
   const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes`);
   for (const v of variations) {
     const hit = (v.attributes ?? []).find((a: any) =>
-      ['talle', 'talle', 'pa_talle', 'size'].includes((a.name ?? '').toLowerCase()) &&
+      ['talle', 'pa_talle', 'size', 'color', 'pa_color'].includes((a.name ?? '').toLowerCase()) &&
       (a.option ?? '').toLowerCase() === size.toLowerCase(),
     );
     if (hit) return { product_id: productId, variation_id: v.id };

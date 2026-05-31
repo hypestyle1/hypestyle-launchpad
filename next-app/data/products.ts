@@ -18,6 +18,7 @@ export interface Product {
   customPreviewImage?: string;
   modelInfo?: string;
   sizeGuideImage?: string;
+  colorVariant?: boolean; // el eje de variación es color (talle único)
 }
 
 const CARE_APPAREL = [

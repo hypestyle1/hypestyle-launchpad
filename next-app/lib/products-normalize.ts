@@ -64,9 +64,10 @@ export function fromWPNode(node: any): NormalizedProduct {
 
   if (variations.length) {
     for (const v of variations) {
-      const sizeAttr = v.attributes?.nodes?.find(
-        (a: any) => a.name === 'talle' || a.name === 'Talle' || a.name === 'size',
-      );
+      const sizeAttr = v.attributes?.nodes?.find((a: any) => {
+        const n = (a.name || '').toLowerCase();
+        return n === 'talle' || n === 'size' || n === 'pa_talle' || n === 'color' || n === 'pa_color';
+      });
       const sz = sizeAttr?.value?.trim() || 'Única';
       if (!sizes.includes(sz)) {
         sizes.push(sz);
