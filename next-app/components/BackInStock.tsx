@@ -18,6 +18,7 @@ const BEST_SELLERS_SLUGS = [
   'baby-come-back-tees',
   'baby-come-back-black',
   'trucker-cap-baby-come-back',
+  'lettering-pink-jort',
   'race-tee',
   'mesh-realtree-pink-tee',
   'mesh-realtree-tee',
@@ -42,7 +43,6 @@ const BEST_SELLERS_SLUGS = [
   'aerogrey-tees',
   'mesh-camo-blue-tee',
   'mesh-camo-grey-tee',
-  'lettering-pink-jort',
   'hoodie-stay-hustle',
   'no-love-only-style-tops',
 ];
