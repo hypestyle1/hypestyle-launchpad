@@ -15,6 +15,8 @@ const BEST_SELLERS_SLUGS = [
   'no-service-for-the-faithless-black',
   'no-service-for-the-faithless-grey',
   'no-service-for-the-faithless-green',
+  'baby-come-back-tees',
+  'baby-come-back-black',
   'jersey-fileteado-x-alfredo-genovese',
   'race-tee',
   'mesh-realtree-pink-tee',
