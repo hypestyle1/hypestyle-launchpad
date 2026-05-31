@@ -118,7 +118,9 @@ export default function ProductoClient({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (product) {
-      setSelectedColor(product.colors[0].label);
+      // Color del producto actual (no siempre el primero del colorway)
+      const current = product.colors.find(c => c.slug === product.slug) ?? product.colors[0];
+      setSelectedColor(current.label);
       setSelectedImage(0);
       // auto-select if only one size (talle único)
       setSelectedSize(product.sizes.length === 1 ? product.sizes[0] : null);
