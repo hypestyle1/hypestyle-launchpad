@@ -13,6 +13,11 @@ const KEEP_DISCOUNT = new Set<string>([
   'camo-full-set-combo',
 ]);
 
+// Productos con regalo destacado (combos/promos).
+const GIFT_NOTES: Record<string, string> = {
+  'camo-full-set-combo': 'Camo Cap de regalo',
+};
+
 export default function NewInFW26() {
   const { data: allProducts = [] } = useProducts(0);
   const ref = useReveal([allProducts]);
@@ -47,8 +52,8 @@ export default function NewInFW26() {
             {group.items.map(p => (
               // Productos nuevos: precio limpio (sin descuento), salvo promos/combos.
               KEEP_DISCOUNT.has(p.slug)
-                ? <ProductCard key={p.slug} {...p} />
-                : <ProductCard key={p.slug} {...p} originalPrice={undefined} badge={undefined} />
+                ? <ProductCard key={p.slug} {...p} giftNote={GIFT_NOTES[p.slug]} />
+                : <ProductCard key={p.slug} {...p} originalPrice={undefined} badge={undefined} giftNote={GIFT_NOTES[p.slug]} />
             ))}
           </div>
         </div>
