@@ -8,7 +8,7 @@ import { useProducts } from "@/hooks/useProducts";
 
 const BEST_SELLERS_SLUGS = [
   'per-aspera-ad-astra-zippo',
-  'trucker-cap-baby-come-back',
+  'jersey-fileteado-x-alfredo-genovese',
   'no-service-for-the-faithless-hoodie',
   'lettering-melange-jort',
   'no-service-for-the-faithless-white',
@@ -17,7 +17,7 @@ const BEST_SELLERS_SLUGS = [
   'no-service-for-the-faithless-green',
   'baby-come-back-tees',
   'baby-come-back-black',
-  'jersey-fileteado-x-alfredo-genovese',
+  'trucker-cap-baby-come-back',
   'race-tee',
   'mesh-realtree-pink-tee',
   'mesh-realtree-tee',
