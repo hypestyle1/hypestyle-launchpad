@@ -19,6 +19,14 @@ function parsePrice(s?: string | null): number {
   return parseFloat(s.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
 }
 
+const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', 'Única'];
+function sortSizes(sizes: string[]): string[] {
+  return [...sizes].sort((a, b) => {
+    const ai = SIZE_ORDER.indexOf(a), bi = SIZE_ORDER.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+}
+
 const WP_CAT: Record<string, string> = {
   remera:    'Tee',
   hoodie:    'Hoodie',
@@ -88,7 +96,7 @@ export function fromWPNode(node: any): NormalizedProduct {
     image: images[0],
     images,
     href: `/producto/${node.slug}/`,
-    sizes,
+    sizes: sortSizes(sizes),
     stock,
     tags: (node.productTags?.nodes ?? []).map((t: any) => t.slug),
   };
