@@ -20,11 +20,12 @@ interface ProductCardProps {
   href?: string;
   sizes?: string[];
   stock?: Record<string, "ok" | "low" | "out">;
+  giftNote?: string;
 }
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge, image, images,
-  href = "/productos/", sizes, stock,
+  href = "/productos/", sizes, stock, giftNote,
 }: ProductCardProps) {
   const { formatPrice } = useLocale();
   const { add, setDrawerOpen } = useCart();
@@ -150,6 +151,12 @@ export default function ProductCard({
             </span>
           )}
         </div>
+
+        {giftNote && (
+          <span className="mt-1.5 inline-block text-[10px] font-bold uppercase tracking-wide bg-green-600/10 text-green-700 px-2 py-0.5 rounded-[4px]">
+            🎁 {giftNote}
+          </span>
+        )}
 
         {/* Size selector — visible on hover */}
         {hasSizes && (
