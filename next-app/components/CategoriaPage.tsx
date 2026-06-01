@@ -153,7 +153,7 @@ export default function CategoriaPage() {
                   <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
                     <ProductCard id={p.slug} name={p.name} category={p.category} price={p.price}
                       originalPrice={p.originalPrice} badge={p.badge} image={p.image} images={p.images}
-                      sizes={p.sizes} stock={p.stock} href={p.href} />
+                      sizes={p.sizes} stock={p.stock} href={p.href} customizable={p.customizable} />
                   </div>
                 ))}
               </div>

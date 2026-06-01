@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchGraphQL } from '@/lib/graphql-client';
 import { type Product } from '@/data/products';
+import { CUSTOMIZABLE_SLUGS } from '@/lib/customizable';
 
 const GET_PRODUCT = `
   query GetProduct($slug: ID!) {
@@ -69,12 +70,6 @@ const COLOR_HEX: Record<string, string> = {
 };
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', 'Única'];
-
-// Productos con personalización de dorsal (nombre + número).
-// WooCommerce no expone este flag, así que lo mapeamos por slug.
-const CUSTOMIZABLE_SLUGS = new Set<string>([
-  'la-nuestra-jersey-mundial-26',
-]);
 
 const HALF_ZIP_COLORWAYS = [
   { label: 'Navy',    value: '#1a2744', slug: 'half-zip-polo-navy',    image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-6-1.png' },

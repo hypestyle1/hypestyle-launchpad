@@ -1,3 +1,5 @@
+import { CUSTOMIZABLE_SLUGS } from './customizable';
+
 export interface NormalizedProduct {
   id: string;
   name: string;
@@ -12,6 +14,7 @@ export interface NormalizedProduct {
   sizes: string[];
   stock: Record<string, 'ok' | 'low' | 'out'>;
   tags: string[];
+  customizable?: boolean;
 }
 
 function parsePrice(s?: string | null): number {
@@ -100,5 +103,6 @@ export function fromWPNode(node: any): NormalizedProduct {
     sizes: sortSizes(sizes),
     stock,
     tags: (node.productTags?.nodes ?? []).map((t: any) => t.slug),
+    customizable: CUSTOMIZABLE_SLUGS.has(node.slug),
   };
 }

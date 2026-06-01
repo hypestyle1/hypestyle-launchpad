@@ -21,11 +21,12 @@ interface ProductCardProps {
   sizes?: string[];
   stock?: Record<string, "ok" | "low" | "out">;
   giftNote?: string;
+  customizable?: boolean;
 }
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge, image, images,
-  href = "/productos/", sizes, stock, giftNote,
+  href = "/productos/", sizes, stock, giftNote, customizable,
 }: ProductCardProps) {
   const { formatPrice } = useLocale();
   const { add, setDrawerOpen } = useCart();
@@ -133,6 +134,12 @@ export default function ProductCard({
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>
+        )}
+
+        {customizable && (
+          <span className="absolute bottom-2.5 left-2.5 z-10 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] bg-foreground/90 text-background backdrop-blur-sm rounded-[4px]">
+            Personalizable
+          </span>
         )}
       </div>
 
