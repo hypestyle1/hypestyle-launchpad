@@ -422,7 +422,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 <div className="mb-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] font-semibold uppercase tracking-wider">
-                      Talle <span className="font-bold">— Único{product.sizeEquivalent ? ` · equivale a ${product.sizeEquivalent}` : ''}</span>
+                      Talle <span className="font-bold">— Único{product.sizeEquivalent ? ` · equivale a un ${product.sizeEquivalent}` : ''}</span>
                     </span>
                     <button onClick={() => setSizeGuideOpen(true)}
                       className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
@@ -459,6 +459,26 @@ export default function ProductoClient({ slug }: { slug: string }) {
 
               <div className="border-b border-border">
                 <Accordion title="Descripción">{product.description}</Accordion>
+                {product.measurements && (
+                  <Accordion title="Calce y medidas">
+                    <p className="font-semibold text-foreground">Medidas de la prenda</p>
+                    <div className="mt-1.5 space-y-1">
+                      {product.measurements.ancho && <div className="flex justify-between max-w-[220px]"><span>Ancho (axila a axila)</span><span className="font-medium text-foreground">{product.measurements.ancho} cm</span></div>}
+                      {product.measurements.largo && <div className="flex justify-between max-w-[220px]"><span>Largo (hombro a ruedo)</span><span className="font-medium text-foreground">{product.measurements.largo} cm</span></div>}
+                      {product.measurements.manga && <div className="flex justify-between max-w-[220px]"><span>Manga</span><span className="font-medium text-foreground">{product.measurements.manga} cm</span></div>}
+                    </div>
+                    <p className="text-[11px] text-foreground/45 mt-1.5">Medido en plano · puede variar ±2 cm.</p>
+
+                    <p className="font-semibold text-foreground mt-4">Cómo calza según tu altura</p>
+                    <div className="mt-1.5 space-y-1">
+                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,70 m</span><span>fit oversize amplio</span></div>
+                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,80 m</span><span>fit oversize estándar</span></div>
+                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,90 m</span><span>fit regular</span></div>
+                    </div>
+
+                    <p className="text-[12px] mt-4">Tip: compará estas medidas con una remera oversize que ya tengas y te quede como buscás.</p>
+                  </Accordion>
+                )}
                 <Accordion title="Guía de cuidado de ropa">
                   <ul className="space-y-2.5">
                     {product.careItems.map(item => (
