@@ -20,6 +20,7 @@ export interface Product {
   sizeGuideImage?: string;
   colorVariant?: boolean; // el eje de variación es color (talle único)
   sizeEquivalent?: string; // talle equivalente para productos de talle único (ej. "L")
+  measurements?: { ancho?: string; largo?: string; manga?: string }; // medidas en cm (talle único)
 }
 
 const CARE_APPAREL = [

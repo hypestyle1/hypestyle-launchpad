@@ -227,11 +227,18 @@ function fromWPNode(node: any): Product {
     (a: any) => (a.name?.toLowerCase() ?? '').includes('equival')
   );
   const sizeEquivalent = sizeEquivAttr?.options?.[0]?.trim() || undefined;
+
+  // Medidas de la prenda (talle único) — atributos opcionales en Woo: ancho/largo/manga.
+  const attrVal = (name: string) => (node.attributes?.nodes ?? [])
+    .find((a: any) => (a.name?.toLowerCase() ?? '') === name)?.options?.[0]?.trim() || undefined;
+  const m = { ancho: attrVal('ancho'), largo: attrVal('largo'), manga: attrVal('manga') };
+  const measurements = (m.ancho || m.largo || m.manga) ? m : undefined;
+
   const careItems = category === 'Accesorio' ? CARE_ACCESSORY : CARE_APPAREL;
 
   return {
     slug, id: slug, name, category, price, originalPrice,
-    description, modelInfo, sizeGuideImage, sizeEquivalent, careItems, fit, sizes, stock,
+    description, modelInfo, sizeGuideImage, sizeEquivalent, measurements, careItems, fit, sizes, stock,
     customizable: CUSTOMIZABLE_SLUGS.has(slug),
     colorVariant,
     colors: COLORWAYS[slug]?.map(c => ({
