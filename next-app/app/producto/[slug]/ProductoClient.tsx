@@ -150,12 +150,17 @@ export default function ProductoClient({ slug }: { slug: string }) {
     </main><Footer /></>
   );
 
+  // Galería: para productos personalizables sumamos al final muestras del dorsal.
+  const galleryImages = product.customizable
+    ? [...product.images, 'products/argentina-jersey/preview-sample-espalda.png', 'products/argentina-jersey/preview-sample-frente.png']
+    : product.images;
+
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const delta = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(delta) < 40) return;
-    if (delta > 0) setSelectedImage(p => Math.min(p + 1, product.images.length - 1));
+    if (delta > 0) setSelectedImage(p => Math.min(p + 1, galleryImages.length - 1));
     else setSelectedImage(p => Math.max(p - 1, 0));
     touchStartX.current = null;
   };
@@ -189,7 +194,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
     if (touchStartX.current === null) return;
     const delta = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(delta) < 40) { touchStartX.current = null; return; }
-    if (delta > 0) setSelectedImage(p => Math.min(p + 1, product.images.length - 1));
+    if (delta > 0) setSelectedImage(p => Math.min(p + 1, galleryImages.length - 1));
     else setSelectedImage(p => Math.max(p - 1, 0));
     touchStartX.current = null;
   };
@@ -208,7 +213,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
     const result = await checkStock(product.id, selectedSize);
     setStockChecking(false);
     if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, selectedSize])); setStockError(true); return; }
-    add({ id: product.id, name: product.name, price: product.price, image: imgUrl(product.images[0]), size: selectedSize, quantity: 1 });
+    add({ id: product.id, name: product.name, price: product.price, image: imgUrl(galleryImages[0]), size: selectedSize, quantity: 1 });
     setAdded(true);
   };
 
@@ -246,7 +251,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
             {/* Gallery */}
             <div className="flex gap-3">
               <div className="hidden md:flex flex-col gap-2 w-[72px] flex-shrink-0">
-                {product.images.map((img, i) => (
+                {galleryImages.map((img, i) => (
                   <button key={img} onClick={() => setSelectedImage(i)}
                     className={`relative w-full aspect-square overflow-hidden border-[1.5px] transition-colors ${i === selectedImage ? 'border-foreground' : 'border-transparent'}`}>
                     <Image src={imgUrl(img)} alt="" fill sizes="72px" className="object-cover" />
@@ -258,7 +263,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
                   onMouseMove={handleMouseMove} onMouseLeave={() => setZoomPos(null)}
                   onClick={() => { if (window.innerWidth < 1024) setIsGalleryOpen(true); }}>
-                  <Image key={selectedImage} src={imgUrl(product.images[selectedImage])} alt={product.name}
+                  <Image key={selectedImage} src={imgUrl(galleryImages[selectedImage])} alt={product.name}
                     fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
                     style={{ transform: zoomPos ? 'scale(2)' : 'scale(1)', transformOrigin: zoomPos ? `${zoomPos.x}% ${zoomPos.y}%` : 'center', transition: zoomPos ? 'transform 0.1s ease' : 'transform 0.3s ease', animation: 'fadeIn 0.25s ease' }} />
                   {selectedImage > 0 && (
@@ -267,14 +272,14 @@ export default function ProductoClient({ slug }: { slug: string }) {
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 3L5 8l5 5" /></svg>
                     </button>
                   )}
-                  {selectedImage < product.images.length - 1 && (
+                  {selectedImage < galleryImages.length - 1 && (
                     <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p + 1); }}
                       className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm" aria-label="Siguiente">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 3l5 5-5 5" /></svg>
                     </button>
                   )}
                   <span className="md:hidden absolute bottom-3 right-3 bg-black/40 text-white text-[10px] font-medium px-2 py-0.5 backdrop-blur-sm">
-                    {selectedImage + 1} / {product.images.length}
+                    {selectedImage + 1} / {galleryImages.length}
                   </span>
                   {!zoomPos && (
                     <span className="hidden md:block absolute bottom-3 left-3 text-[10px] text-white bg-black/35 backdrop-blur-sm px-2 py-0.5 pointer-events-none">
@@ -286,7 +291,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   </span>
                 </div>
                 <div className="md:hidden flex items-center justify-center gap-1.5">
-                  {product.images.map((_, i) => (
+                  {galleryImages.map((_, i) => (
                     <button key={i} onClick={() => setSelectedImage(i)}
                       className={`transition-all duration-200 rounded-full ${i === selectedImage ? 'w-4 h-1.5 bg-foreground' : 'w-1.5 h-1.5 bg-foreground/25'}`}
                       aria-label={`Imagen ${i + 1}`} />
@@ -415,12 +420,15 @@ export default function ProductoClient({ slug }: { slug: string }) {
               {product.customizable && (
                 <button
                   onClick={() => router.push(`/personalizar/${product.slug}/${selectedSize ? `?talle=${selectedSize}` : ''}`)}
-                  className="flex items-center justify-between w-full border-2 border-foreground px-5 py-4 mb-3 rounded-[10px] hover:bg-foreground hover:text-background transition-colors group">
-                  <div>
-                    <p className="text-[13px] font-bold uppercase tracking-[0.08em]">Personalizar tu dorsal</p>
-                    <p className="text-[11px] text-muted-foreground group-hover:text-background/70 transition-colors mt-0.5">Elegí talle, nombre y número — preview en tiempo real</p>
+                  className="flex items-center gap-4 w-full border-2 border-foreground px-4 py-3 mb-3 rounded-[10px] hover:bg-foreground hover:text-background transition-colors group text-left">
+                  <Image src="/products/argentina-jersey/preview-sample-espalda.png" alt="Ejemplo de dorsal personalizado" width={64} height={64}
+                    className="w-16 h-16 object-cover rounded-[8px] bg-white flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground group-hover:text-background/60 transition-colors">Edición especial</p>
+                    <p className="text-[14px] font-bold uppercase tracking-[0.06em]">Personalizá tu dorsal</p>
+                    <p className="text-[11px] text-muted-foreground group-hover:text-background/70 transition-colors mt-0.5">Tu nombre y número — vista previa en tiempo real</p>
                   </div>
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 9h10M9 4l5 5-5 5" /></svg>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" className="flex-shrink-0"><path d="M4 9h10M9 4l5 5-5 5" /></svg>
                 </button>
               )}
 
@@ -503,7 +511,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
           <div className="bg-white w-full max-w-[480px] shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 p-5 border-b border-border">
               <div className="relative w-14 h-16 bg-bg-alt overflow-hidden flex-shrink-0">
-                <Image src={imgUrl(product.images[0])} alt={product.name} fill sizes="56px" className="object-cover" />
+                <Image src={imgUrl(galleryImages[0])} alt={product.name} fill sizes="56px" className="object-cover" />
               </div>
               <div className="flex-1">
                 <p className="text-[13px] font-semibold">{product.name}</p>
@@ -532,7 +540,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
         <div className="fixed inset-0 z-[300] bg-black flex flex-col animate-in fade-in duration-200 overflow-hidden">
           <div className="flex items-center justify-between p-4 text-white z-10">
             <span className="text-[12px] font-medium uppercase tracking-widest">
-              {selectedImage + 1} / {product.images.length}
+              {selectedImage + 1} / {galleryImages.length}
             </span>
             <button onClick={() => { setIsGalleryOpen(false); setGalleryZoom(1); }} className="p-2 hover:bg-white/10 rounded-full transition-colors">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -551,7 +559,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
             <div className="relative w-full h-full"
                  style={{ transform: `scale(${galleryZoom}) translate(${galleryOffset.x}px, ${galleryOffset.y}px)` }}>
               <Image
-                src={imgUrl(product.images[selectedImage])}
+                src={imgUrl(galleryImages[selectedImage])}
                 alt=""
                 fill
                 className="object-contain"
@@ -571,7 +579,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                     </button>
                   )}
                   <div />
-                  {selectedImage < product.images.length - 1 && (
+                  {selectedImage < galleryImages.length - 1 && (
                     <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p + 1); }}
                       className="pointer-events-auto w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg transition-transform active:scale-95" aria-label="Siguiente">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
