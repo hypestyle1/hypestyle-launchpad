@@ -19,6 +19,7 @@ export interface Product {
   modelInfo?: string;
   sizeGuideImage?: string;
   colorVariant?: boolean; // el eje de variación es color (talle único)
+  sizeEquivalent?: string; // talle equivalente para productos de talle único (ej. "L")
 }
 
 const CARE_APPAREL = [

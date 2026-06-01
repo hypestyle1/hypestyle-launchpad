@@ -221,11 +221,17 @@ function fromWPNode(node: any): Product {
     (a: any) => a.name?.toLowerCase() === 'size-guide' || a.name?.toLowerCase() === 'guia-talles'
   );
   const sizeGuideImage = sizeGuideAttr?.options?.[0]?.trim() || undefined;
+
+  // Talle equivalente para productos de talle único (ej. "L"). Atributo opcional en Woo.
+  const sizeEquivAttr = (node.attributes?.nodes ?? []).find(
+    (a: any) => (a.name?.toLowerCase() ?? '').includes('equival')
+  );
+  const sizeEquivalent = sizeEquivAttr?.options?.[0]?.trim() || undefined;
   const careItems = category === 'Accesorio' ? CARE_ACCESSORY : CARE_APPAREL;
 
   return {
     slug, id: slug, name, category, price, originalPrice,
-    description, modelInfo, sizeGuideImage, careItems, fit, sizes, stock,
+    description, modelInfo, sizeGuideImage, sizeEquivalent, careItems, fit, sizes, stock,
     customizable: CUSTOMIZABLE_SLUGS.has(slug),
     colorVariant,
     colors: COLORWAYS[slug]?.map(c => ({

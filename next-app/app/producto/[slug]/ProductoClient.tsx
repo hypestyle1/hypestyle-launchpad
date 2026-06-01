@@ -417,6 +417,21 @@ export default function ProductoClient({ slug }: { slug: string }) {
               </div>
               )}
 
+              {/* Talle único: muestra la equivalencia y el link a la guía de talles */}
+              {product.sizes.length === 1 && !isColorVariant && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-semibold uppercase tracking-wider">
+                      Talle <span className="font-bold">— Único{product.sizeEquivalent ? ` · equivale a ${product.sizeEquivalent}` : ''}</span>
+                    </span>
+                    <button onClick={() => setSizeGuideOpen(true)}
+                      className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
+                      Guía de talles
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {product.customizable && (
                 <button
                   onClick={() => router.push(`/personalizar/${product.slug}/${selectedSize ? `?talle=${selectedSize}` : ''}`)}
