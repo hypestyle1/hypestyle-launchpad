@@ -25,46 +25,49 @@ const EMPTY: Fields = {
 
 function buildHtml(f: Fields) {
   const paragraphs = f.body.split('\n').filter(Boolean).map(p =>
-    `<p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.6;">${p}</p>`
+    `<p style="margin:0 0 18px;font-size:15px;color:#3a3a3a;line-height:1.7;">${p}</p>`
   ).join('');
 
   const hero = f.image
-    ? `<tr><td style="padding:0;"><img src="${f.image}" alt="" width="560" style="width:100%;height:auto;display:block;" /></td></tr>` : '';
+    ? `<tr><td style="padding:0;font-size:0;line-height:0;"><img src="${f.image}" alt="" width="600" style="width:100%;height:auto;display:block;" /></td></tr>` : '';
 
   const coupon = f.couponCode
-    ? `<tr><td style="padding:0 40px 28px;background:#fff;">
-        <div style="background:#f8f8f8;border:1px dashed #ccc;border-radius:6px;padding:20px 24px;text-align:center;">
-          <p style="margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:#999;">Tu código de descuento</p>
-          <p style="margin:0 0 10px;font-size:28px;font-weight:800;color:#111;letter-spacing:0.06em;">${f.couponCode}</p>
-          ${f.couponDesc ? `<p style="margin:0;font-size:12px;color:#888;">${f.couponDesc}</p>` : ''}
+    ? `<tr><td style="padding:8px 44px 28px;background:#fff;">
+        <div style="background:#0a0a0a;border-radius:10px;padding:22px 24px;text-align:center;">
+          <p style="margin:0 0 8px;font-size:10px;text-transform:uppercase;letter-spacing:0.22em;color:#888;">Código de descuento</p>
+          <p style="margin:0 0 8px;font-size:30px;font-weight:800;color:#fff;letter-spacing:0.08em;">${f.couponCode}</p>
+          ${f.couponDesc ? `<p style="margin:0;font-size:12px;color:#9a9a9a;">${f.couponDesc}</p>` : ''}
         </div>
       </td></tr>` : '';
 
   const cta = f.buttonText && f.buttonLink
-    ? `<tr><td style="padding:0 40px 32px;background:#fff;">
-        <a href="${f.buttonLink}" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:14px 32px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">${f.buttonText}</a>
+    ? `<tr><td style="padding:4px 44px 40px;background:#fff;">
+        <a href="${f.buttonLink}" style="display:block;background:#0a0a0a;color:#fff;text-decoration:none;padding:17px 32px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.16em;text-align:center;border-radius:10px;">${f.buttonText} &nbsp;&rarr;</a>
       </td></tr>` : '';
 
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,-apple-system,BlinkMacSystemFont,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:24px 14px;">
     <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:8px;overflow:hidden;">
-        <tr><td style="background:#0a0a0a;padding:24px 40px;text-align:center;">
-          <img src="${SITE_URL}/logo-hypestyle-2026.png" alt="Hypestyle" width="130" style="height:auto;display:inline-block;" />
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden;">
+        <tr><td style="background:#0a0a0a;padding:26px 44px;text-align:center;">
+          <img src="${SITE_URL}/logo-hypestyle-2026.png" alt="Hypestyle" width="150" style="height:auto;display:inline-block;" />
         </td></tr>
         ${hero}
-        <tr><td style="padding:32px 40px 8px;background:#fff;">
-          ${f.title ? `<h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#111;">${f.title}</h1>` : ''}
+        <tr><td style="padding:38px 44px 6px;background:#fff;">
+          <p style="margin:0 0 14px;font-size:10px;text-transform:uppercase;letter-spacing:0.26em;color:#b0b0b0;">Style &amp; Culture</p>
+          ${f.title ? `<h1 style="margin:0 0 20px;font-size:30px;line-height:1.12;font-weight:800;color:#0a0a0a;letter-spacing:-0.01em;">${f.title}</h1>` : ''}
           ${paragraphs}
         </td></tr>
         ${coupon}
         ${cta}
-        <tr><td style="background:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #f0f0f0;">
-          <p style="margin:0;font-size:12px;color:#999;">Hypestyle · <a href="https://instagram.com/hypestylearg" style="color:#111;font-weight:600;">@hypestylearg</a></p>
+        <tr><td style="background:#0a0a0a;padding:28px 44px;text-align:center;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:800;color:#fff;letter-spacing:0.04em;">HYPESTYLE</p>
+          <p style="margin:0;font-size:12px;color:#8a8a8a;">Seguinos en <a href="https://instagram.com/hypestylearg" style="color:#fff;font-weight:600;text-decoration:none;">@hypestylearg</a></p>
         </td></tr>
       </table>
+      <p style="max-width:600px;margin:16px auto 0;font-size:10px;color:#666;text-align:center;line-height:1.5;">Recibís este mail porque estás suscripto a Hypestyle.</p>
     </td></tr>
   </table>
 </body></html>`;
@@ -80,6 +83,7 @@ export default function NewsletterPage() {
   const [msg, setMsg]           = useState('');
   const [sending, setSending]   = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -127,6 +131,26 @@ export default function NewsletterPage() {
     }
   }
 
+  async function onUpload(file: File | null) {
+    if (!file) return;
+    setUploading(true); setMsg('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/admin/upload-image', { method: 'POST', headers: { 'x-admin-key': adminKey }, body: fd });
+      const data = await res.json();
+      if (data.ok && data.url) {
+        setF(prev => ({ ...prev, image: data.url }));
+      } else {
+        setMsg(`Error al subir: ${data.error || 'desconocido'}`);
+      }
+    } catch (e: any) {
+      setMsg('Error al subir: ' + String(e?.message || e));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
@@ -170,8 +194,16 @@ export default function NewsletterPage() {
               <textarea className={input + ' resize-y'} rows={4} value={f.body} onChange={set('body')} placeholder="Escribí el cuerpo. Cada línea es un párrafo." />
             </div>
             <div>
-              <label className="text-[12px] font-medium text-gray-600">Imagen (URL, opcional)</label>
-              <input className={input} value={f.image} onChange={set('image')} placeholder="https://hypestyle.com.ar/..." />
+              <label className="text-[12px] font-medium text-gray-600">Imagen (opcional)</label>
+              <div className="flex gap-2">
+                <input className={input} value={f.image} onChange={set('image')} placeholder="Pegá una URL o subí un archivo →" />
+                <label className={`px-3 py-2 rounded-lg border text-[12px] font-semibold whitespace-nowrap cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : 'border-gray-300 hover:bg-gray-50'}`}>
+                  {uploading ? 'Subiendo...' : 'Subir'}
+                  <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="hidden"
+                    onChange={e => { onUpload(e.target.files?.[0] || null); e.target.value = ''; }} />
+                </label>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">Tip: subí un <b>GIF</b> para que el mail sea animado. Recomendado ancho ≥ 600px.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
