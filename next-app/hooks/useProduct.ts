@@ -94,6 +94,11 @@ const BABY_COME_BACK_COLORWAYS = [
   { label: 'Black', value: '#1a1a1a', slug: 'baby-come-back-black', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mesa-de-trabajo-3-fbffee6d9870b660fe17714294583297-1024-1024.jpg' },
 ];
 
+const ONLY_GOD_COLORWAYS = [
+  { label: 'Blanca', value: '#f5f5f5', slug: 'only-god-can-judge-me-blanca', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/WHITE.png' },
+  { label: 'Negra',  value: '#1a1a1a', slug: 'only-god-can-judge-me-negra',  image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUP-NEGRO.png' },
+];
+
 const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'half-zip-polo-navy':    HALF_ZIP_COLORWAYS,
   'half-zip-polo-melange': HALF_ZIP_COLORWAYS,
@@ -106,6 +111,8 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'no-service-for-the-faithless-green': NO_SERVICE_COLORWAYS,
   'baby-come-back-tees':  BABY_COME_BACK_COLORWAYS,
   'baby-come-back-black': BABY_COME_BACK_COLORWAYS,
+  'only-god-can-judge-me-blanca': ONLY_GOD_COLORWAYS,
+  'only-god-can-judge-me-negra':  ONLY_GOD_COLORWAYS,
 };
 
 const FIT_KEYWORDS: [string, string][] = [
