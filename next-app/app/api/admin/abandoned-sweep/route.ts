@@ -31,7 +31,10 @@ async function eligible(status: string) {
 }
 
 export async function GET(req: NextRequest) {
-  if ((req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret')) !== SECRET) {
+  // Acepta: ?secret=, header x-cron-secret, o el Bearer que Vercel Cron manda con CRON_SECRET.
+  const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const provided = req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret') || bearer;
+  if (provided !== SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
