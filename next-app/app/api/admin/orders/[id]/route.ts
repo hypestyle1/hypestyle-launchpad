@@ -84,6 +84,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     payment_method:       o.payment_method,
     payment_method_title: o.payment_method_title,
     customer_note:        o.customer_note,
+    adminNote:            getMeta('_hs_admin_note'),
     order_key:            o.order_key,
     tracking:   getMeta('_tracking_number'),
     notified:   getMeta('_tracking_notified'),

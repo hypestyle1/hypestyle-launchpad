@@ -19,6 +19,7 @@ type Order = {
   total: number; shipping_total: number; discount_total: number;
   payment_method: string; payment_method_title: string;
   customer_note: string; order_key: string;
+  adminNote: string;
   tracking: string; notified: string; andreani: string; pedido_id: string;
   notes: Note[];
 };
@@ -75,6 +76,9 @@ export default function OrderDetailPage() {
   const [trackMsg, setTrackMsg] = useState('');
   const [syncingAndreani, setSyncingAndreani] = useState(false);
   const [emailMsg, setEmailMsg] = useState('');
+  const [noteText, setNoteText]     = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteMsg, setNoteMsg]       = useState('');
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -95,6 +99,7 @@ export default function OrderDetailPage() {
         setOrder(data);
         setStatus(data.status);
         setTracking(data.tracking || data.andreani || '');
+        setNoteText(data.adminNote || '');
       })
       .catch(() => setError('Error al cargar el pedido'))
       .finally(() => setLoading(false));
@@ -175,12 +180,26 @@ export default function OrderDetailPage() {
     }
   }
 
-  async function sendEmail(action: 'confirmation' | 'tracking') {
+  async function sendEmail(action: 'confirmation' | 'tracking' | 'abandoned') {
     if (!order) return;
     setEmailMsg('Enviando...');
     const res = await fetch(`/api/admin/send-order-emails?secret=hs2026&order_id=${order.id}&action=${action}`);
     const data = await res.json();
-    setEmailMsg(data.ok ? `✓ Email de ${action === 'confirmation' ? 'confirmación' : 'seguimiento'} enviado` : `Error: ${data.error}`);
+    const labels: Record<string, string> = { confirmation: 'confirmación', tracking: 'seguimiento', abandoned: 'carrito abandonado' };
+    setEmailMsg(data.ok ? `✓ Email de ${labels[action]} enviado` : `Error: ${data.error}`);
+  }
+
+  async function saveNote() {
+    if (!order) return;
+    setNoteSaving(true);
+    setNoteMsg('');
+    const res = await fetch('/api/admin/order-note', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ orderId: order.id, note: noteText }),
+    });
+    setNoteMsg(res.ok ? '✓ Nota guardada' : 'Error al guardar');
+    setNoteSaving(false);
   }
 
   if (!authed) {
@@ -372,6 +391,27 @@ export default function OrderDetailPage() {
                 </div>
               </div>
             )}
+            {/* Nota interna editable */}
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Nota interna</h2>
+              <textarea
+                value={noteText}
+                onChange={e => setNoteText(e.target.value)}
+                rows={3}
+                placeholder="Escribí una nota para el equipo (la podés editar cuando quieras)..."
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400 resize-y"
+              />
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={saveNote}
+                  disabled={noteSaving}
+                  className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {noteSaving ? 'Guardando...' : 'Guardar nota'}
+                </button>
+                {noteMsg && <span className={`text-[11px] ${noteMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>{noteMsg}</span>}
+              </div>
+            </div>
           </div>
 
           {/* RIGHT COLUMN */}
@@ -503,6 +543,14 @@ export default function OrderDetailPage() {
                 >
                   Enviar seguimiento de Andreani
                 </button>
+                {(order.status === 'pending' || order.status === 'failed') && (
+                  <button
+                    onClick={() => sendEmail('abandoned')}
+                    className="w-full text-left px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 hover:border-amber-400 text-[12px] font-medium text-amber-800 transition-colors"
+                  >
+                    Enviar mail de carrito abandonado
+                  </button>
+                )}
               </div>
               {emailMsg && (
                 <p className={`mt-2 text-[11px] ${emailMsg.startsWith('✓') ? 'text-green-600' : emailMsg === 'Enviando...' ? 'text-gray-400' : 'text-red-500'}`}>

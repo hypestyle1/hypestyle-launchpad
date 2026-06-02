@@ -1,0 +1,60 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
+const WC_KEY    = process.env.WC_CONSUMER_KEY    || '';
+const WC_SEC    = process.env.WC_CONSUMER_SECRET || '';
+const SECRET    = process.env.CRON_SECRET || 'hs2026';
+const MAIL_SECRET = 'hs2026';
+
+const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
+
+// Primer mail de la secuencia: pedidos pending/failed con entre MIN y MAX horas de antigüedad,
+// que no se les haya enviado todavía (_hs_abandoned_sent). La ventana evita blastear backlog viejo.
+const MIN_HOURS = 5;
+const MAX_HOURS = 72;
+
+const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString().slice(0, 19);
+
+async function eligible(status: string) {
+  const after  = iso(MAX_HOURS * 3600_000); // no más viejos que MAX
+  const before = iso(MIN_HOURS * 3600_000); // ya pasaron MIN horas
+  const res = await fetch(
+    `${WP_URL}/wp-json/wc/v3/orders?status=${status}&per_page=100&after=${after}&before=${before}&_fields=id,number,billing,meta_data`,
+    { headers: { Authorization: wcAuth() }, cache: 'no-store' }
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as any[];
+  return data.filter(o =>
+    (o.billing?.email || '') &&
+    !(o.meta_data || []).some((m: any) => m.key === '_hs_abandoned_sent' && String(m.value).trim())
+  );
+}
+
+export async function GET(req: NextRequest) {
+  if ((req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret')) !== SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const orders = [...await eligible('pending'), ...await eligible('failed')];
+  const origin = req.nextUrl.origin;
+  const sent: any[] = [];
+
+  for (const o of orders) {
+    try {
+      const mail = await fetch(
+        `${origin}/api/admin/send-order-emails?secret=${MAIL_SECRET}&order_id=${o.id}&action=abandoned`,
+        { cache: 'no-store' }
+      ).then(r => r.json());
+      if (mail?.ok) {
+        await fetch(`${WP_URL}/wp-json/wc/v3/orders/${o.id}`, {
+          method: 'PUT',
+          headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ meta_data: [{ key: '_hs_abandoned_sent', value: new Date().toISOString() }] }),
+        });
+        sent.push({ id: o.id, number: o.number, email: o.billing.email });
+      }
+    } catch { /* sigue con el resto */ }
+  }
+
+  return NextResponse.json({ ok: true, candidatos: orders.length, enviados: sent.length, detalle: sent });
+}
