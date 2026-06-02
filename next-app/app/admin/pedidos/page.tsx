@@ -91,6 +91,10 @@ export default function PedidosPage() {
   const [bulkStatus, setBulkStatus]   = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
   const [statusMap, setStatusMap]     = useState<Record<number, string>>({});
+  const [cancelTarget, setCancelTarget]   = useState<Order | null>(null);
+  const [cancelRestock, setCancelRestock] = useState(true);
+  const [cancelNotify, setCancelNotify]   = useState(true);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -178,6 +182,36 @@ export default function PedidosPage() {
   async function changeStatus(orderId: number, status: string) {
     await postStatus(orderId, status);
     fetchCounts(adminKey);
+  }
+
+  // Al elegir "Cancelado" abrimos el modal (restock + mail); el resto se aplica directo.
+  function onStatusSelect(order: Order, status: string) {
+    if (status === 'cancelled') {
+      setCancelRestock(true);
+      setCancelNotify(!!order.customer.email);
+      setCancelTarget(order);
+    } else {
+      changeStatus(order.id, status);
+    }
+  }
+
+  async function confirmCancel() {
+    if (!cancelTarget) return;
+    setCancelLoading(true);
+    try {
+      const res = await fetch('/api/admin/cancel-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ orderId: cancelTarget.id, restock: cancelRestock, notify: cancelNotify }),
+      });
+      if (!res.ok) { alert('No se pudo cancelar el pedido'); return; }
+      setStatusMap(s => ({ ...s, [cancelTarget.id]: 'cancelled' }));
+      setOrders(prev => prev.map(o => o.id === cancelTarget.id ? { ...o, status: 'cancelled' } : o));
+      fetchCounts(adminKey);
+      setCancelTarget(null);
+    } finally {
+      setCancelLoading(false);
+    }
   }
 
   async function applyBulk() {
@@ -424,7 +458,7 @@ export default function PedidosPage() {
                 <div>
                   <select
                     value={statusMap[order.id] || order.status}
-                    onChange={e => changeStatus(order.id, e.target.value)}
+                    onChange={e => onStatusSelect(order, e.target.value)}
                     onClick={e => e.stopPropagation()}
                     className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-gray-300 ${
                       STATUS_COLORS[statusMap[order.id] || order.status] || 'bg-gray-100 text-gray-600'
@@ -471,6 +505,53 @@ export default function PedidosPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de cancelación */}
+      {cancelTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !cancelLoading && setCancelTarget(null)}
+        >
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-[15px] font-bold text-gray-900">Cancelar pedido #{cancelTarget.number}</h3>
+            <p className="text-[12px] text-gray-500 mt-1">
+              {cancelTarget.customer.first_name} {cancelTarget.customer.last_name} · {fmt(cancelTarget.total)}
+            </p>
+            <div className="mt-4 space-y-3">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input type="checkbox" checked={cancelRestock} onChange={e => setCancelRestock(e.target.checked)} className="mt-0.5 rounded border-gray-300" />
+                <span className="text-[13px] text-gray-800">
+                  Restaurar stock
+                  <span className="block text-[11px] text-gray-400">Devuelve las unidades de cada talle al inventario.</span>
+                </span>
+              </label>
+              <label className={`flex items-start gap-2 ${cancelTarget.customer.email ? 'cursor-pointer' : 'opacity-50'}`}>
+                <input
+                  type="checkbox"
+                  checked={cancelNotify}
+                  disabled={!cancelTarget.customer.email}
+                  onChange={e => setCancelNotify(e.target.checked)}
+                  className="mt-0.5 rounded border-gray-300"
+                />
+                <span className="text-[13px] text-gray-800">
+                  Enviar mail al cliente
+                  <span className="block text-[11px] text-gray-400">
+                    {cancelTarget.customer.email ? `Mail de cancelación a ${cancelTarget.customer.email}` : 'El pedido no tiene email'}
+                  </span>
+                </span>
+              </label>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <button onClick={() => setCancelTarget(null)} disabled={cancelLoading} className="flex-1 text-[13px] font-medium py-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+                Volver
+              </button>
+              <button onClick={confirmCancel} disabled={cancelLoading} className="flex-1 text-[13px] font-semibold py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+                {cancelLoading ? 'Cancelando...' : 'Cancelar pedido'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
