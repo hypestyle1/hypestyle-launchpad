@@ -45,32 +45,42 @@ export async function GET(req: NextRequest) {
   const total      = parseInt(res.headers.get('X-WP-Total')      || '0');
   const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1');
 
-  const orders = raw.map((o) => ({
-    id:            o.id,
-    number:        o.number,
-    date:          o.date_created,
-    status:        o.status,
-    customer:      {
-      first_name: o.billing.first_name,
-      last_name:  o.billing.last_name,
-      email:      o.billing.email,
-      phone:      o.billing.phone,
-    },
-    items: (o.line_items as any[]).map((i) => ({
-      name:     i.name,
-      quantity: i.quantity,
-      size:     (i.meta_data as any[])?.find((m: any) =>
-        ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
-      )?.value || '',
-    })),
-    total:                parseFloat(o.total),
-    shipping_total:       parseFloat(o.shipping_total),
-    payment_method_title: o.payment_method_title,
-    tracking:      (o.meta_data as any[])?.find((m: any) => m.key === '_tracking_number')?.value  || '',
-    notified:      (o.meta_data as any[])?.find((m: any) => m.key === '_tracking_notified')?.value || '',
-    order_key:     o.order_key,
-    customer_note: o.customer_note || '',
-  }));
+  const orders = raw.map((o) => {
+    const meta = (o.meta_data as any[]) || [];
+    const mv = (k: string) => meta.find((m: any) => m.key === k)?.value || '';
+    const tracking = String(mv('_tracking_number')).trim();
+    // Prueba real de despacho: número de tracking o envío Andreani generado (rótulo).
+    const andreani = String(mv('_order_andreani_numero_interno') || mv('_andreani_tracking_number')).trim();
+    return {
+      id:            o.id,
+      number:        o.number,
+      date:          o.date_created,
+      status:        o.status,
+      customer:      {
+        first_name: o.billing.first_name,
+        last_name:  o.billing.last_name,
+        email:      o.billing.email,
+        phone:      o.billing.phone,
+      },
+      items: (o.line_items as any[]).map((i) => ({
+        name:     i.name,
+        quantity: i.quantity,
+        size:     (i.meta_data as any[])?.find((m: any) =>
+          ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
+        )?.value || '',
+      })),
+      total:                parseFloat(o.total),
+      shipping_total:       parseFloat(o.shipping_total),
+      payment_method_title: o.payment_method_title,
+      tracking,
+      andreani,
+      // Despachado de verdad = hay rótulo/tracking, sin importar el estado del pedido.
+      dispatched:    !!(tracking || andreani),
+      notified:      String(mv('_tracking_notified')).trim(),
+      order_key:     o.order_key,
+      customer_note: o.customer_note || '',
+    };
+  });
 
   return NextResponse.json({ orders, total, totalPages, page: parseInt(page) });
 }
