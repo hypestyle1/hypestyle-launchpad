@@ -11,9 +11,12 @@ type Order = {
   id: number; number: string; date: string; status: string;
   customer: Customer; items: OrderItem[];
   total: number; shipping_total: number; payment_method_title: string;
-  tracking: string; notified: string; order_key: string;
+  tracking: string; andreani: string; dispatched: boolean;
+  notified: string; order_key: string;
   customer_note: string;
 };
+
+type Counts = { porDespachar: number; despachadoSinMarcar: number; pendientes: number; despachados: number };
 
 const STATUS_LABELS: Record<string, string> = {
   pending:    'Pendiente',
@@ -37,8 +40,18 @@ const STATUS_COLORS: Record<string, string> = {
   failed:     'bg-red-100 text-red-700',
 };
 
-const FILTERS = ['any','pending','processing','on-hold','enviado','completed','cancelled'];
+const FILTERS = ['por-despachar','despachado-sin-marcar','pending','enviado','completed','cancelled','any'];
+const FILTER_LABELS: Record<string, string> = {
+  'por-despachar':         'Por despachar',
+  'despachado-sin-marcar': 'Despachado sin marcar',
+  any:                     'Todos',
+};
 const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','cancelled'];
+
+// Los tabs 'por-despachar' y 'despachado-sin-marcar' consultan 'processing' en la API
+// y se afinan en el cliente según tengan rótulo (prueba de despacho) o no.
+const apiStatusFor = (f: string) =>
+  (f === 'por-despachar' || f === 'despachado-sin-marcar') ? 'processing' : f;
 
 function fmt(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
@@ -48,6 +61,10 @@ function fmtDate(s: string) {
   const d = new Date(s);
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
        + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function daysSince(s: string) {
+  return Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
 }
 
 function waLink(phone: string, name: string, orderNum: string) {
@@ -64,7 +81,8 @@ export default function PedidosPage() {
   const [keyInput, setKeyInput]       = useState('');
   const [orders, setOrders]           = useState<Order[]>([]);
   const [loading, setLoading]         = useState(false);
-  const [filter, setFilter]           = useState('any');
+  const [filter, setFilter]           = useState('por-despachar');
+  const [counts, setCounts]           = useState<Counts | null>(null);
   const [search, setSearch]           = useState('');
   const [total, setTotal]             = useState(0);
   const [page, setPage]               = useState(1);
@@ -84,7 +102,7 @@ export default function PedidosPage() {
     setLoading(true);
     setSelected(new Set());
     try {
-      const params = new URLSearchParams({ status: f, page: String(p), ...(q && { search: q }) });
+      const params = new URLSearchParams({ status: apiStatusFor(f), page: String(p), ...(q && { search: q }) });
       const res = await fetch(`/api/admin/orders?${params}`, { headers: { 'x-admin-key': key } });
       if (res.status === 403) { setAuthed(false); sessionStorage.removeItem(WP_SECRET_KEY); return; }
       const data = await res.json();
@@ -98,6 +116,17 @@ export default function PedidosPage() {
       setLoading(false);
     }
   }, []);
+
+  const fetchCounts = useCallback(async (key: string) => {
+    try {
+      const res = await fetch('/api/admin/orders/counts', { headers: { 'x-admin-key': key } });
+      if (res.ok) setCounts(await res.json());
+    } catch { /* noop */ }
+  }, []);
+
+  useEffect(() => {
+    if (authed && adminKey) fetchCounts(adminKey);
+  }, [authed, adminKey, fetchCounts]);
 
   useEffect(() => {
     if (!authed || !adminKey) return;
@@ -128,15 +157,15 @@ export default function PedidosPage() {
     });
   }
 
-  function toggleAll() {
-    if (selected.size === orders.length) {
+  function toggleAll(visible: Order[]) {
+    if (selected.size === visible.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(orders.map(o => o.id)));
+      setSelected(new Set(visible.map(o => o.id)));
     }
   }
 
-  async function changeStatus(orderId: number, status: string) {
+  async function postStatus(orderId: number, status: string) {
     setStatusMap(s => ({ ...s, [orderId]: status }));
     await fetch('/api/admin/set-status', {
       method: 'POST',
@@ -146,20 +175,30 @@ export default function PedidosPage() {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
   }
 
+  async function changeStatus(orderId: number, status: string) {
+    await postStatus(orderId, status);
+    fetchCounts(adminKey);
+  }
+
   async function applyBulk() {
     if (!bulkStatus || selected.size === 0) return;
     setBulkLoading(true);
-    await Promise.all([...selected].map(id => changeStatus(id, bulkStatus)));
+    await Promise.all([...selected].map(id => postStatus(id, bulkStatus)));
+    fetchCounts(adminKey);
     setBulkLoading(false);
     setSelected(new Set());
     setBulkStatus('');
   }
 
-  // Stats from loaded orders
-  const pending    = orders.filter(o => o.status === 'pending').length;
-  const processing = orders.filter(o => o.status === 'processing').length;
-  const onHold     = orders.filter(o => o.status === 'on-hold').length;
-  const revenue    = orders.reduce((s, o) => s + o.total, 0);
+  // Vista afinada por rótulo para los tabs de despacho; el resto muestra lo cargado.
+  const visibleOrders = filter === 'por-despachar'
+    ? orders.filter(o => !o.dispatched)
+    : filter === 'despachado-sin-marcar'
+      ? orders.filter(o => o.dispatched)
+      : orders;
+  const revenue = visibleOrders.reduce((s, o) => s + o.total, 0);
+  const headerCount = (filter === 'por-despachar' || filter === 'despachado-sin-marcar')
+    ? visibleOrders.length : total;
 
   if (!authed) {
     return (
@@ -192,13 +231,12 @@ export default function PedidosPage() {
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
           <span className="text-gray-300">|</span>
           <span className="text-[14px] font-semibold text-gray-900">Pedidos</span>
-          {total > 0 && <span className="text-[12px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{total}</span>}
+          {headerCount > 0 && <span className="text-[12px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{headerCount}</span>}
         </div>
         <div className="flex items-center gap-2">
-          {/* Stats */}
-          {pending > 0    && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">{pending} pendientes</span>}
-          {processing > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800">{processing} procesando</span>}
-          {onHold > 0     && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{onHold} en espera</span>}
+          {/* Stats globales reales */}
+          {counts && counts.porDespachar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">{counts.porDespachar} por despachar</span>}
+          {counts && counts.despachadoSinMarcar > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{counts.despachadoSinMarcar} sin marcar</span>}
           <span className="hidden md:inline text-[11px] text-gray-500 font-medium">{fmt(revenue)}</span>
           <button
             onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
@@ -210,6 +248,27 @@ export default function PedidosPage() {
       </div>
 
       <div className="max-w-[1280px] mx-auto px-4 py-5">
+        {/* KPIs — conteos reales globales */}
+        {counts && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            {([
+              { f: 'por-despachar',         n: counts.porDespachar,        label: 'Por despachar',          num: 'text-red-600',    active: 'border-red-400 ring-red-200' },
+              { f: 'despachado-sin-marcar', n: counts.despachadoSinMarcar, label: 'Despachado sin marcar',  num: 'text-orange-600', active: 'border-orange-400 ring-orange-200' },
+              { f: 'pending',               n: counts.pendientes,          label: 'Sin pagar',              num: 'text-yellow-600', active: 'border-yellow-400 ring-yellow-200' },
+              { f: 'enviado',               n: counts.despachados,         label: 'Enviados',               num: 'text-green-600',  active: 'border-green-400 ring-green-200' },
+            ]).map(k => (
+              <button
+                key={k.f}
+                onClick={() => setFilter(k.f)}
+                className={`text-left bg-white rounded-xl border p-3 transition-colors ${filter === k.f ? `${k.active} ring-1` : 'border-gray-200 hover:border-gray-300'}`}
+              >
+                <div className={`text-[22px] font-bold leading-none ${k.num}`}>{k.n}</div>
+                <div className="text-[11px] text-gray-500 mt-1 font-medium">{k.label}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Filters + Search */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <div className="flex gap-1 flex-wrap">
@@ -221,7 +280,7 @@ export default function PedidosPage() {
                   filter === f ? 'bg-black text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-400'
                 }`}
               >
-                {f === 'any' ? 'Todos' : STATUS_LABELS[f] ?? f}
+                {FILTER_LABELS[f] ?? STATUS_LABELS[f] ?? f}
               </button>
             ))}
           </div>
@@ -262,7 +321,7 @@ export default function PedidosPage() {
         {/* Table */}
         {loading ? (
           <div className="text-center py-20 text-[13px] text-gray-400">Cargando pedidos...</div>
-        ) : orders.length === 0 ? (
+        ) : visibleOrders.length === 0 ? (
           <div className="text-center py-20 text-[13px] text-gray-400">No hay pedidos</div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -271,8 +330,8 @@ export default function PedidosPage() {
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={selected.size === orders.length && orders.length > 0}
-                  onChange={toggleAll}
+                  checked={selected.size === visibleOrders.length && visibleOrders.length > 0}
+                  onChange={() => toggleAll(visibleOrders)}
                   className="rounded border-gray-300 cursor-pointer"
                 />
               </div>
@@ -285,12 +344,12 @@ export default function PedidosPage() {
             </div>
 
             {/* Rows */}
-            {orders.map((order, idx) => (
+            {visibleOrders.map((order, idx) => (
               <div
                 key={order.id}
                 className={`grid grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group ${
                   selected.has(order.id) ? 'bg-blue-50 hover:bg-blue-50' : ''
-                } ${idx === orders.length - 1 ? 'border-b-0' : ''}`}
+                } ${idx === visibleOrders.length - 1 ? 'border-b-0' : ''}`}
               >
                 {/* Checkbox */}
                 <div className="flex items-center">
@@ -310,11 +369,13 @@ export default function PedidosPage() {
                   >
                     #{order.number}
                   </Link>
-                  {order.tracking && (
-                    <div className="text-[10px] text-green-600 font-mono mt-0.5 truncate max-w-[70px]">
-                      ✓ {order.tracking}
+                  {order.dispatched ? (
+                    <div className="text-[10px] text-green-600 font-medium mt-0.5 truncate max-w-[80px]" title={order.tracking || order.andreani}>
+                      ✓ Rótulo
                     </div>
-                  )}
+                  ) : order.status === 'processing' ? (
+                    <div className="text-[10px] text-red-600 font-semibold mt-0.5">Sin rótulo</div>
+                  ) : null}
                 </div>
 
                 {/* Customer */}
@@ -373,11 +434,16 @@ export default function PedidosPage() {
                   </select>
                 </div>
 
-                {/* Date + action */}
+                {/* Date + antigüedad */}
                 <div className="text-right">
                   <Link href={`/admin/pedidos/${order.id}`} className="text-[11px] text-gray-400 hover:text-black block">
                     {fmtDate(order.date)}
                   </Link>
+                  {order.status === 'processing' && !order.dispatched && (
+                    <div className={`text-[10px] font-semibold mt-0.5 ${daysSince(order.date) >= 3 ? 'text-red-600' : daysSince(order.date) >= 1 ? 'text-amber-600' : 'text-gray-400'}`}>
+                      hace {daysSince(order.date)}d
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
