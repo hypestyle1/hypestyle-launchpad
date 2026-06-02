@@ -10,6 +10,9 @@ const ADMIN_SECRET  = 'hs2026';
 const SENDER_EMAIL  = 'hypestylearg@gmail.com';
 const SENDER_NAME   = 'Hypestyle';
 
+// Datos de transferencia (mismos que muestra /pendiente-de-pago).
+const TRANSFER = { cvu: '0000003100024686621335', alias: 'hypestyle2', titular: 'Pozzi Valentín', banco: 'MERCADO PAGO' };
+
 function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
 }
@@ -223,6 +226,82 @@ function buildCancellationHtml(order: { orderNum: string; nombre: string }) {
 </html>`;
 }
 
+function buildAbandonedHtml(order: {
+  orderNum: string;
+  nombre: string;
+  total: number;
+  items: { name: string; size: string; quantity: number; price: number }[];
+  isTransfer: boolean;
+}) {
+  const rows = order.items.map(item => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px;color:#111;">
+        ${item.name}${item.size ? ` · Talle ${item.size}` : ''} ×${item.quantity}
+      </td>
+      <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;text-align:right;font-size:13px;color:#111;white-space:nowrap;">
+        ${formatPrice(item.price * item.quantity)}
+      </td>
+    </tr>`).join('');
+
+  const transferBlock = order.isTransfer ? `
+    <div style="margin:24px 0 0;background:#f8f8f8;border-radius:8px;padding:16px 18px;">
+      <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#111;">Datos para la transferencia</p>
+      <p style="margin:0 0 4px;font-size:13px;color:#333;">Alias: <b>${TRANSFER.alias}</b></p>
+      <p style="margin:0 0 4px;font-size:13px;color:#333;">CVU: <b>${TRANSFER.cvu}</b></p>
+      <p style="margin:0 0 4px;font-size:13px;color:#333;">Titular: <b>${TRANSFER.titular}</b> (${TRANSFER.banco})</p>
+      <p style="margin:10px 0 0;font-size:13px;color:#333;">Monto: <b>${formatPrice(order.total)}</b></p>
+      <p style="margin:10px 0 0;font-size:12px;color:#888;">Cuando la hagas, mandanos el comprobante por Instagram y despachamos tu pedido.</p>
+    </div>` : '';
+
+  const intro = order.isTransfer
+    ? 'Vimos que iniciaste tu compra pero todavía no nos llegó la transferencia. Tu pedido sigue reservado — completá el pago así lo preparamos.'
+    : 'Vimos que iniciaste tu compra pero quedó sin completarse. Tus productos te esperan — terminá tu pedido cuando quieras.';
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:8px;overflow:hidden;">
+        <tr>
+          <td style="background:#0a0a0a;padding:24px 40px;text-align:center;">
+            <img src="${SITE_URL}/logo-hypestyle-2026.png" alt="Hypestyle" width="140" style="height:auto;display:inline-block;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:#999;">Pedido #${order.orderNum}</p>
+            <h1 style="margin:0 0 16px;font-size:23px;font-weight:700;color:#111;">Te quedó un pedido sin completar</h1>
+            <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.6;">Hola ${order.nombre}, ${intro}</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f0f0f0;">${rows}</table>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+              <tr>
+                <td style="padding:12px 0;font-size:14px;font-weight:700;color:#111;">Total</td>
+                <td style="padding:12px 0;text-align:right;font-size:16px;font-weight:700;color:#111;">${formatPrice(order.total)}</td>
+              </tr>
+            </table>
+            ${transferBlock}
+            <div style="margin-top:24px;text-align:center;">
+              <a href="https://instagram.com/hypestylearg"
+                 style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:13px 28px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-radius:2px;">
+                ${order.isTransfer ? 'Enviar comprobante →' : 'Completar mi compra →'}
+              </a>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #f0f0f0;">
+            <p style="margin:0;font-size:12px;color:#999;">¿Dudas? <a href="https://instagram.com/hypestylearg" style="color:#111;font-weight:600;">@hypestylearg</a></p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
@@ -248,6 +327,7 @@ export async function GET(req: NextRequest) {
     const nombre    = (wcOrder.billing?.first_name as string) || '';
     const apellido  = (wcOrder.billing?.last_name  as string) || '';
     const total     = parseFloat(wcOrder.total || '0');
+    const paymentMethod = (wcOrder.payment_method as string) || '';
 
     if (!email) {
       return NextResponse.json({ error: 'Order has no billing email' }, { status: 422 });
@@ -308,6 +388,16 @@ export async function GET(req: NextRequest) {
         html,
       );
       results.cancellation = 'sent';
+    }
+
+    if (action === 'abandoned') {
+      const html = buildAbandonedHtml({ orderNum, nombre, total, items, isTransfer: paymentMethod === 'bacs' });
+      await sendBrevo(
+        { email: sendTo, name: `${nombre} ${apellido}`.trim() },
+        `Te quedó un pedido sin completar — Hypestyle`,
+        html,
+      );
+      results.abandoned = 'sent';
     }
 
     return NextResponse.json({ ok: true, ...results });
