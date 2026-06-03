@@ -38,6 +38,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Interruptor: no manda nada hasta que se setee ABANDONED_ENABLED=true en Vercel.
+  // (En pausa hasta arreglar la entregabilidad de Brevo, así no se queman los envíos.)
+  if (process.env.ABANDONED_ENABLED !== 'true') {
+    return NextResponse.json({ ok: true, disabled: true, message: 'Carrito abandonado en pausa (setear ABANDONED_ENABLED=true para activar).' });
+  }
+
   const orders = [...await eligible('pending'), ...await eligible('failed')];
   const origin = req.nextUrl.origin;
   const sent: any[] = [];
