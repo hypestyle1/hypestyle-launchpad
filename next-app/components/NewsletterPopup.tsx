@@ -6,6 +6,7 @@ const SESSION_KEY = "hype_popup_shown";
 
 export default function NewsletterPopup() {
   const [visible, setVisible] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,7 +52,7 @@ export default function NewsletterPopup() {
       await fetch('/api/newsletter-subscribe', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, name }),
       });
     } catch {}
     setLoading(false);
@@ -115,6 +116,14 @@ export default function NewsletterPopup() {
               </p>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-2">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Tu nombre"
+                  required
+                  className="w-full border border-foreground/20 bg-white px-4 py-3 text-[13px] placeholder:text-foreground/35 focus:outline-none focus:border-foreground/50 transition-colors"
+                />
                 <input
                   type="email"
                   value={email}
