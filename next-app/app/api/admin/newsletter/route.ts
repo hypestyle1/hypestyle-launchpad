@@ -28,12 +28,18 @@ export async function POST(req: NextRequest) {
   const { subject, html, test } = await req.json();
   if (!subject || !html) return NextResponse.json({ error: 'subject y html requeridos' }, { status: 400 });
 
+  // Tag de personalización: [nombre] → nombre real de cada suscriptor (Brevo FIRSTNAME).
+  // En la prueba se reemplaza por un nombre de muestra para ver cómo queda.
+  const nameTag = test ? 'Juan' : '{{ contact.FIRSTNAME }}';
+  const subj = String(subject).replace(/\[nombre\]/gi, nameTag);
+  const body = String(html).replace(/\[nombre\]/gi, nameTag);
+
   // Modo prueba: mail transaccional directo al que prueba.
   if (test) {
     const r = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sender: SENDER, to: [{ email: test }], subject: `[PRUEBA] ${subject}`, htmlContent: html }),
+      body: JSON.stringify({ sender: SENDER, to: [{ email: test }], subject: `[PRUEBA] ${subj}`, htmlContent: body }),
     });
     if (!r.ok) return NextResponse.json({ error: 'Brevo (prueba): ' + JSON.stringify(await r.json().catch(() => ({}))) }, { status: 502 });
     return NextResponse.json({ ok: true, mode: 'test', to: test });
@@ -45,10 +51,10 @@ export async function POST(req: NextRequest) {
     headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name:       `Newsletter ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
-      subject,
+      subject:    subj,
       sender:     SENDER,
       type:       'classic',
-      htmlContent: html,
+      htmlContent: body,
       recipients: { listIds: [NEWSLETTER_LIST_ID] },
     }),
   });

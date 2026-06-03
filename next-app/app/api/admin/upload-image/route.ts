@@ -39,5 +39,12 @@ export async function POST(req: NextRequest) {
   if (!res.ok) {
     return NextResponse.json({ error: data?.message || `WP ${res.status}` }, { status: 502 });
   }
-  return NextResponse.json({ ok: true, url: data.source_url });
+  // Devolver una versión redimensionada (mucho más liviana para el mail) en vez del original.
+  // Excepción: los GIF se devuelven enteros para no perder la animación.
+  const sizes = data?.media_details?.sizes || {};
+  const isGif = (data?.mime_type || file.type) === 'image/gif';
+  const url = isGif
+    ? data.source_url
+    : (sizes.large?.source_url || sizes.medium_large?.source_url || data.source_url);
+  return NextResponse.json({ ok: true, url });
 }
