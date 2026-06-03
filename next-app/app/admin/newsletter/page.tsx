@@ -181,6 +181,9 @@ export default function NewsletterPage() {
         {/* Composer */}
         <div className="space-y-3">
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+            <p className="text-[11px] text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+              Tip: escribí <b>[nombre]</b> en el asunto, título o texto y se reemplaza por el nombre de cada suscriptor (ej. &quot;[nombre], llegó tu drop&quot;). En la prueba se ve con un nombre de muestra.
+            </p>
             <div>
               <label className="text-[12px] font-medium text-gray-600">Asunto del email</label>
               <input className={input} value={f.subject} onChange={set('subject')} placeholder="Nuevo drop FW26 ya disponible" />
