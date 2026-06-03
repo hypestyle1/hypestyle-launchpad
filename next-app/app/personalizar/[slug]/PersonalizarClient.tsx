@@ -80,6 +80,11 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
   }, [view, playerName, playerNumber]);
 
   useEffect(() => { redraw(); }, [redraw]);
+
+  // Precargar ambas vistas: el dibujo inicial es inmediato y el flip frente/espalda no demora.
+  useEffect(() => {
+    ['espalda', 'frente'].forEach(v => { const i = new Image(); i.src = `/products/argentina-jersey/preview-${v}.png`; });
+  }, []);
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   // Talle único → autoseleccionar; si el talle del query param ya no existe, limpiarlo.
