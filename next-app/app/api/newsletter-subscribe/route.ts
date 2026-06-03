@@ -4,7 +4,8 @@ const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim
 const NEWSLETTER_LIST_ID = 3;
 const SITE_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 
-function buildWelcomeHtml(email: string) {
+function buildWelcomeHtml(name: string) {
+  const hola = name ? `Hola ${name}! ` : '';
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
@@ -25,7 +26,7 @@ function buildWelcomeHtml(email: string) {
           <td style="padding:32px 40px 24px;background:#fff;">
             <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111;">¡Ya sos parte de Hypestyle!</h1>
             <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.6;">
-              Te regalamos un <strong>10% off</strong> en tu próxima compra. Usá el código al finalizar tu pedido — aplica sobre cualquier medio de pago.
+              ${hola}Te regalamos un <strong>10% off</strong> en tu próxima compra. Usá el código al finalizar tu pedido — aplica sobre cualquier medio de pago.
             </p>
           </td>
         </tr>
@@ -69,16 +70,17 @@ function buildWelcomeHtml(email: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
+    const { email, name } = await req.json();
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
     }
+    const firstName = name ? String(name).trim() : '';
 
-    // Add to Brevo contacts list
+    // Add to Brevo contacts list (con el nombre como FIRSTNAME para personalizar campañas)
     const contactRes = await fetch('https://api.brevo.com/v3/contacts', {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, listIds: [NEWSLETTER_LIST_ID], updateEnabled: true }),
+      body: JSON.stringify({ email, ...(firstName ? { attributes: { FIRSTNAME: firstName } } : {}), listIds: [NEWSLETTER_LIST_ID], updateEnabled: true }),
     });
 
     if (!contactRes.ok) {
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest) {
         sender:      { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
         to:          [{ email }],
         subject:     '¡Tu 10% off te espera — Hypestyle!',
-        htmlContent: buildWelcomeHtml(email),
+        htmlContent: buildWelcomeHtml(firstName),
       }),
     });
 
