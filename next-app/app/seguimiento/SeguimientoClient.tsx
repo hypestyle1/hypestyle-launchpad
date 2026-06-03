@@ -50,6 +50,17 @@ const PAYMENT_STATUS: Record<string, { label: string; dot: string }> = {
   failed:     { label: 'Pago fallido',     dot: 'bg-red-500'    },
 };
 
+// Cartel grande según la FASE real del envío (igual que el timeline), no el estado crudo de Woo.
+const PHASE_MAP: Record<string, { label: string; sub: string; icon: 'box' | 'truck' | 'check' | 'x' }> = {
+  pending:   { label: 'Pedido recibido',      sub: 'Recibimos tu pedido.',                       icon: 'box'   },
+  preparing: { label: 'Preparando tu pedido', sub: 'Estamos armando tu pedido con cuidado.',     icon: 'box'   },
+  packed:    { label: 'Pedido empaquetado',   sub: 'Tu pedido está listo, esperando al correo.', icon: 'box'   },
+  shipped:   { label: 'Pedido enviado',       sub: 'Tu pedido está en camino.',                  icon: 'box'   },
+  delivered: { label: 'Pedido entregado',     sub: 'Tu pedido fue entregado con éxito.',         icon: 'check' },
+};
+// Estados de pago / terminales: muestran su propio cartel, no la fase de envío.
+const STATUS_OVERRIDE = ['pending', 'cancelled', 'refunded', 'failed'];
+
 const PHASE_ORDER = ['pending', 'preparing', 'shipped', 'delivered'];
 
 function getPhase(status: string, tracking: string | null, events: TrackingEvent[]): string {
@@ -128,10 +139,15 @@ function MilestoneItem({
 function TrackingView({ data }: { data: TrackingData }) {
   const [showItems, setShowItems] = useState(false);
 
-  const statusInfo  = STATUS_MAP[data.wc_status] ?? { label: data.wc_status, sub: '', icon: 'box' as const };
-  const paymentInfo = PAYMENT_STATUS[data.wc_status] ?? { label: data.wc_status, dot: 'bg-gray-400' };
   const phase    = getPhase(data.wc_status, data.tracking_number, data.events);
   const phaseIdx = PHASE_ORDER.indexOf(phase);
+  // Título grande alineado con el timeline: usa la fase real del envío (Andreani),
+  // salvo en estados de pago/terminales que muestran su propio cartel.
+  const heroPhase   = phase === 'preparing' && data.tracking_number ? 'packed' : phase;
+  const statusInfo  = STATUS_OVERRIDE.includes(data.wc_status)
+    ? (STATUS_MAP[data.wc_status] ?? { label: data.wc_status, sub: '', icon: 'box' as const })
+    : (PHASE_MAP[heroPhase]       ?? { label: data.wc_status, sub: '', icon: 'box' as const });
+  const paymentInfo = PAYMENT_STATUS[data.wc_status] ?? { label: data.wc_status, dot: 'bg-gray-400' };
   const totalItems = data.items.reduce((s, i) => s + i.quantity, 0);
 
   const iconBg =
