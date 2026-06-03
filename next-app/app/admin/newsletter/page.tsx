@@ -109,17 +109,21 @@ export default function NewsletterPage() {
   const html = buildHtml(f);
   const canSend = f.subject.trim() && f.title.trim() && f.body.trim();
 
-  async function send(test?: string) {
+  async function send(opts: { test?: string; draft?: boolean } = {}) {
     setSending(true); setMsg('');
     try {
       const res = await fetch('/api/admin/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
-        body: JSON.stringify({ subject: f.subject, html, ...(test ? { test } : {}) }),
+        body: JSON.stringify({ subject: f.subject, html, ...(opts.test ? { test: opts.test } : {}), ...(opts.draft ? { draft: true } : {}) }),
       });
       const data = await res.json();
       if (data.ok) {
-        setMsg(test ? `✓ Prueba enviada a ${test}` : `✓ Campaña enviada a la lista (${count ?? '...'} suscriptores)`);
+        setMsg(
+          opts.test  ? `✓ Prueba enviada a ${opts.test}`
+          : opts.draft ? '✓ Borrador guardado en Brevo (no se envió)'
+          : `✓ Campaña enviada a la lista (${count ?? '...'} suscriptores)`
+        );
         setConfirmSend(false);
       } else {
         setMsg(`Error: ${data.error || 'desconocido'}`);
@@ -234,15 +238,21 @@ export default function NewsletterPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
             <div className="flex gap-2">
               <input className={input} value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="tu@email.com (prueba)" />
-              <button onClick={() => send(testEmail)} disabled={!canSend || !testEmail || sending}
+              <button onClick={() => send({ test: testEmail })} disabled={!canSend || !testEmail || sending}
                 className="px-3 py-2 rounded-lg border border-gray-300 text-[12px] font-semibold whitespace-nowrap hover:bg-gray-50 disabled:opacity-50">
                 Enviar prueba
               </button>
             </div>
-            <button onClick={() => setConfirmSend(true)} disabled={!canSend || sending}
-              className="w-full py-2.5 rounded-lg bg-black text-white text-[13px] font-semibold hover:bg-gray-800 disabled:opacity-50">
-              Enviar a todos los suscriptores{count !== null ? ` (${count})` : ''}
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => send({ draft: true })} disabled={!canSend || sending}
+                className="flex-1 py-2.5 rounded-lg border border-gray-300 text-[13px] font-semibold hover:bg-gray-50 disabled:opacity-50">
+                Guardar borrador
+              </button>
+              <button onClick={() => setConfirmSend(true)} disabled={!canSend || sending}
+                className="flex-1 py-2.5 rounded-lg bg-black text-white text-[13px] font-semibold hover:bg-gray-800 disabled:opacity-50">
+                Enviar a todos{count !== null ? ` (${count})` : ''}
+              </button>
+            </div>
             {!canSend && <p className="text-[11px] text-gray-400">Completá asunto, título y texto para habilitar el envío.</p>}
             {msg && <p className={`text-[12px] ${msg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>{msg}</p>}
           </div>

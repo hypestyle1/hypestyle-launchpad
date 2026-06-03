@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   if (!authed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  const { subject, html, test } = await req.json();
+  const { subject, html, test, draft } = await req.json();
   if (!subject || !html) return NextResponse.json({ error: 'subject y html requeridos' }, { status: 400 });
 
   // Tag de personalización: [nombre] → nombre real de cada suscriptor (Brevo FIRSTNAME).
@@ -45,12 +45,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, mode: 'test', to: test });
   }
 
-  // Campaña real: crear + enviar ya.
+  // Crear la campaña (Brevo la crea en borrador). Se envía solo si NO es draft.
   const create = await fetch('https://api.brevo.com/v3/emailCampaigns', {
     method: 'POST',
     headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      name:       `Newsletter ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
+      name:       `${subject} — ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
       subject:    subj,
       sender:     SENDER,
       type:       'classic',
@@ -62,6 +62,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Brevo (crear): ' + JSON.stringify(await create.json().catch(() => ({}))) }, { status: 502 });
   }
   const { id } = await create.json();
+
+  // Borrador: queda creada en Brevo sin enviar.
+  if (draft) {
+    return NextResponse.json({ ok: true, mode: 'draft', campaignId: id });
+  }
 
   const send = await fetch(`https://api.brevo.com/v3/emailCampaigns/${id}/sendNow`, {
     method: 'POST', headers: { 'api-key': BREVO_KEY },
