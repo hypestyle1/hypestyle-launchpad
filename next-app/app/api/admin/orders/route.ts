@@ -68,6 +68,12 @@ export async function GET(req: NextRequest) {
         size:     (i.meta_data as any[])?.find((m: any) =>
           ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
         )?.value || '',
+        dorsalName:   (i.meta_data as any[])?.find((m: any) =>
+          ['nombre dorsal', 'player name'].includes((m.key || '').toLowerCase())
+        )?.value || '',
+        dorsalNumber: (i.meta_data as any[])?.find((m: any) =>
+          ['número dorsal', 'numero dorsal', 'number'].includes((m.key || '').toLowerCase())
+        )?.value || '',
       })),
       total:                parseFloat(o.total),
       shipping_total:       parseFloat(o.shipping_total),

@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 const WP_SECRET_KEY = 'hype_admin_key';
 const SITE_URL = 'https://hypestyle.com.ar';
 
-type Item = { id: number; name: string; quantity: number; price: number; total: number; size: string; image: string };
+type Item = { id: number; name: string; quantity: number; price: number; total: number; size: string; image: string; dorsalName?: string; dorsalNumber?: string };
 type Address = { address_1: string; address_2: string; city: string; state: string; postcode: string };
 type Note = { id: number; note: string; date: string };
 type Order = {
@@ -330,6 +330,13 @@ export default function OrderDetailPage() {
                         {item.name.replace(/\s*—\s*Talle\s*\S+/i, '')}
                       </div>
                       {item.size && <div className="text-[11px] text-gray-400">Talle {item.size}</div>}
+                      {(item.dorsalName || item.dorsalNumber) && (
+                        <div className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                          <span>Dorsal:</span>
+                          {item.dorsalNumber && <span>#{item.dorsalNumber}</span>}
+                          {item.dorsalName && <span>{item.dorsalName}</span>}
+                        </div>
+                      )}
                     </div>
                     <div className="text-right flex-none">
                       <div className="text-[13px] text-gray-700">{fmt(item.price)} × {item.quantity}</div>
