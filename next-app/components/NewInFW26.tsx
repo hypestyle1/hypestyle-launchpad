@@ -95,12 +95,12 @@ export default function NewInFW26() {
     [bySlug],
   );
 
-  // Render de cada tarjeta: badge "New In" + ambos precios (sale + regular tachado).
-  // Excepción: los combos/promos conservan su badge de descuento (−XX%).
+  // Render de cada tarjeta: badge "New In" + ambos precios (promo en negro + regular
+  // tachado). Excepción: los combos/promos conservan su badge de descuento (−XX%).
   const renderCard = (p: (typeof allProducts)[number]) =>
     KEEP_DISCOUNT.has(p.slug)
-      ? <ProductCard key={p.slug} {...p} giftNote={GIFT_NOTES[p.slug]} />
-      : <ProductCard key={p.slug} {...p} badge="New In" giftNote={GIFT_NOTES[p.slug]} />;
+      ? <ProductCard key={p.slug} {...p} mutedPrice giftNote={GIFT_NOTES[p.slug]} />
+      : <ProductCard key={p.slug} {...p} badge="New In" mutedPrice giftNote={GIFT_NOTES[p.slug]} />;
 
   // Mientras cargan los productos, mostramos skeletons (mismo estilo que CollectionBanner).
   if (isLoading) {
