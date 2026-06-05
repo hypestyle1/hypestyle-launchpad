@@ -22,11 +22,13 @@ interface ProductCardProps {
   stock?: Record<string, "ok" | "low" | "out">;
   giftNote?: string;
   customizable?: boolean;
+  /** Muestra el precio promocional en negro (no en rojo). Usado en New In. */
+  mutedPrice?: boolean;
 }
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge, image, images,
-  href = "/productos/", sizes, stock, giftNote, customizable,
+  href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
 }: ProductCardProps) {
   const { formatPrice } = useLocale();
   const { add, setDrawerOpen } = useCart();
@@ -65,7 +67,7 @@ export default function ProductCard({
 
   const badgeStyle = () => {
     if (!badge) return "";
-    if (badge === "New In") return "bg-white text-black border border-black/10";
+    if (badge === "New In") return "bg-white text-black rounded-full";
     if (badge === "New") return "bg-bg-dark text-primary-foreground";
     if (badge === "Best Seller") return "bg-muted-foreground text-primary-foreground";
     if (badge === "Back") return "bg-primary-foreground border border-foreground text-foreground";
@@ -150,7 +152,7 @@ export default function ProductCard({
         <p className="text-[13px] font-medium leading-tight">{name}</p>
         <div className="flex items-center gap-2 mt-1">
           {/* Sin stock: ocultamos el precio promocional y mostramos el regular en neutro */}
-          <span suppressHydrationWarning className={`text-[13px] font-semibold ${originalPrice && !outOfStock ? "text-destructive" : ""}`}>
+          <span suppressHydrationWarning className={`text-[13px] font-semibold ${originalPrice && !outOfStock && !mutedPrice ? "text-destructive" : ""}`}>
             {formatPrice(outOfStock && originalPrice ? originalPrice : price)}
           </span>
           {originalPrice && !outOfStock && (
