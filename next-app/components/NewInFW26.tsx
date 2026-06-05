@@ -23,8 +23,9 @@ const SkeletonCard = () => (
   </div>
 );
 
-// Excepciones: en NEW IN se ocultan los descuentos, salvo estos productos que son
-// promos reales (ej. combos) y sí muestran su badge de descuento.
+// En NEW IN todos los productos llevan el badge "New In" y muestran ambos precios
+// (sale en rojo + regular tachado). Excepción: estos productos son promos reales
+// (ej. combos) y conservan su badge de descuento (−XX%) en lugar del "New In".
 const KEEP_DISCOUNT = new Set<string>([
   'camo-full-set-combo',
 ]);
@@ -94,11 +95,12 @@ export default function NewInFW26() {
     [bySlug],
   );
 
-  // Render de cada tarjeta: precio limpio (sin descuento) salvo promos/combos.
+  // Render de cada tarjeta: badge "New In" + ambos precios (sale + regular tachado).
+  // Excepción: los combos/promos conservan su badge de descuento (−XX%).
   const renderCard = (p: (typeof allProducts)[number]) =>
     KEEP_DISCOUNT.has(p.slug)
       ? <ProductCard key={p.slug} {...p} giftNote={GIFT_NOTES[p.slug]} />
-      : <ProductCard key={p.slug} {...p} originalPrice={undefined} badge={undefined} giftNote={GIFT_NOTES[p.slug]} />;
+      : <ProductCard key={p.slug} {...p} badge="New In" giftNote={GIFT_NOTES[p.slug]} />;
 
   // Mientras cargan los productos, mostramos skeletons (mismo estilo que CollectionBanner).
   if (isLoading) {
