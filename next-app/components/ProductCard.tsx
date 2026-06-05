@@ -65,7 +65,7 @@ export default function ProductCard({
 
   const badgeStyle = () => {
     if (!badge) return "";
-    if (badge === "New") return "bg-bg-dark text-primary-foreground";
+    if (badge === "New" || badge === "New In") return "bg-bg-dark text-primary-foreground";
     if (badge === "Best Seller") return "bg-muted-foreground text-primary-foreground";
     if (badge === "Back") return "bg-primary-foreground border border-foreground text-foreground";
     if (badge.startsWith("−")) return "bg-destructive text-destructive-foreground";
