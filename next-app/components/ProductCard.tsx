@@ -85,7 +85,7 @@ export default function ProductCard({
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-bg-alt">
+      <div className="relative aspect-square overflow-hidden rounded-lg bg-bg-alt">
         {image ? (
           <Image
             src={imgSrc(image)}
