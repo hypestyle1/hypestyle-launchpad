@@ -11,6 +11,7 @@ import BenefitsStrip from '@/components/BenefitsStrip';
 import VideoSection from '@/components/VideoSection';
 import Footer from '@/components/Footer';
 import EventCountdown from '@/components/EventCountdown';
+import PinnedIntro from '@/components/PinnedIntro';
 
 export default function Home() {
   return (
@@ -19,10 +20,14 @@ export default function Home() {
       <Navbar />
       <NewsletterPopup />
       <main className="pt-[var(--offset)]">
-        <Hero />
-        <EventCountdown />
-        <BenefitsStrip />
-        <NewInFW26 />
+        <PinnedIntro>
+          <Hero />
+          <EventCountdown />
+        </PinnedIntro>
+        <div className="relative z-10 bg-background min-h-screen">
+          <BenefitsStrip />
+          <NewInFW26 />
+        </div>
         <ShopTheLook />
         <VideoSection />
         <CollectionBanner />
