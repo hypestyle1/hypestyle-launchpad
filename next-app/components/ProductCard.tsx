@@ -71,7 +71,7 @@ export default function ProductCard({
     if (badge === "New") return "bg-bg-dark text-primary-foreground";
     if (badge === "Best Seller") return "bg-muted-foreground text-primary-foreground";
     if (badge === "Back") return "bg-primary-foreground border border-foreground text-foreground";
-    if (badge.startsWith("−")) return "bg-destructive/45 backdrop-blur-md backdrop-saturate-150 text-destructive-foreground rounded-md border border-white/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]";
+    if (badge.startsWith("−")) return "bg-destructive text-destructive-foreground rounded-md";
     return "bg-bg-dark text-primary-foreground";
   };
 
