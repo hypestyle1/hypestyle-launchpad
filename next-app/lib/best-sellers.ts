@@ -1,7 +1,7 @@
 // Slugs curados que se muestran en la sección "Best Sellers" del home.
 // Compartido entre BackInStock (home) y la página SALE, que excluye estos
 // para no repetir productos y destacar los que no aparecen en el home.
-// Orden pensado para grilla de 4 columnas (desktop): 39 productos = 9 filas + última de 3.
+// Orden pensado para grilla de 4 columnas (desktop): 40 productos = 10 filas justas.
 export const BEST_SELLERS_SLUGS = [
   // — Fila 1 —
   'per-aspera-ad-astra-zippo',
@@ -45,4 +45,5 @@ export const BEST_SELLERS_SLUGS = [
   'skyline-tee',
   'aerogrey-tees',
   'mesh-camo-grey-tee',
+  'per-aspera-ad-astra-black-tee', // cierra la grilla en 40 (10 filas justas)
 ];
