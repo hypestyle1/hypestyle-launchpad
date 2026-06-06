@@ -102,8 +102,14 @@ export default function NewsletterPopup() {
           </svg>
         </button>
 
-        {/* Columna izquierda — deja ver el gif (solo desktop) */}
-        <div className="hidden md:block w-[45%] flex-shrink-0" style={{ minHeight: "520px" }} />
+        {/* Columna izquierda — gif bien encuadrado (solo desktop) */}
+        <div className="hidden md:block relative w-[45%] flex-shrink-0" style={{ minHeight: "520px" }}>
+          <img
+            src="/HYPE - POP UP (2).gif"
+            alt="Hypestyle"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
 
         {/* Panel derecho — liquid glass sobre el gif */}
         <div
@@ -181,6 +187,16 @@ export default function NewsletterPopup() {
             >
               Paso
             </button>
+
+            {/* Logo Style&Culture (negro via invert) */}
+            <div className="flex justify-center mt-4 mb-1">
+              <img
+                src="/STYLE&CULTURE WHITE.png"
+                alt="Style&Culture"
+                className="h-4 w-auto object-contain opacity-80"
+                style={{ filter: "invert(1)" }}
+              />
+            </div>
           </div>
         </div>
       </div>
