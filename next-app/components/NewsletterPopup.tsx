@@ -76,11 +76,12 @@ export default function NewsletterPopup() {
           boxShadow: "0 24px 80px rgba(0,0,0,0.45)",
         }}
       >
-        {/* Fondo: gif a todo el popup (el panel glass lo difumina) */}
+        {/* Fondo: gif a todo el popup, solo desktop (el panel glass lo difumina).
+            En mobile se oculta para que el popup quede como tarjeta glass limpia. */}
         <img
           src="/HYPE - POP UP (2).gif"
           alt="Hypestyle"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="hidden md:block absolute inset-0 w-full h-full object-cover"
           aria-hidden
         />
 
