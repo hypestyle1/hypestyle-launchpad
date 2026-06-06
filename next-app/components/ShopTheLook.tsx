@@ -51,7 +51,7 @@ export default function ShopTheLook() {
           >
             <button
               onClick={() => setActiveLook(look)}
-              className="relative w-full aspect-[3/4] overflow-hidden rounded-lg bg-bg-alt group block text-left"
+              className="relative w-full aspect-[3/4] overflow-hidden rounded-lg border border-border bg-bg-alt group block text-left"
             >
               <img
                 src={imgSrc(look.image)}
