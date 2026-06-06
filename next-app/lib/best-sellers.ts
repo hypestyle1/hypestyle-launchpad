@@ -1,11 +1,19 @@
 // Slugs curados que se muestran en la sección "Best Sellers" del home.
 // Compartido entre BackInStock (home) y la página SALE, que excluye estos
 // para no repetir productos y destacar los que no aparecen en el home.
+// Orden pensado para grilla de 4 columnas (desktop): 40 productos = 10 filas justas.
 export const BEST_SELLERS_SLUGS = [
+  // — Fila 1 —
   'per-aspera-ad-astra-zippo',
   'jersey-fileteado-x-alfredo-genovese',
-  'no-service-for-the-faithless-hoodie',
+  'mesh-camo-blue-tee',            // subido (stock abundante), después del fileteado
   'lettering-melange-jort',
+  // — Fila 2: Stay Hustle subido + 2 nuevos + No Service Hoodie de cierre —
+  'hoodie-stay-hustle',
+  'regular-tees-3-pack-black-white-melange',
+  'crewneck-hyped-up-grey',
+  'no-service-for-the-faithless-hoodie',
+  // — Fila 3 en adelante: orden original (sin los promovidos arriba) —
   'no-service-for-the-faithless-white',
   'no-service-for-the-faithless-black',
   'no-service-for-the-faithless-grey',
@@ -36,7 +44,6 @@ export const BEST_SELLERS_SLUGS = [
   'honda-black-tee',
   'skyline-tee',
   'aerogrey-tees',
-  'mesh-camo-blue-tee',
   'mesh-camo-grey-tee',
-  'hoodie-stay-hustle',
+  'per-aspera-ad-astra-black-tee', // cierra la grilla en 40 (10 filas justas)
 ];
