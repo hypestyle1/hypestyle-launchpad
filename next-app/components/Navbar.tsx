@@ -89,7 +89,7 @@ export default function Navbar() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { count, setDrawerOpen } = useCart();
   const { items: wishlistItems, setDrawerOpen: openWishlist } = useWishlist();
-  const { formatPrice } = useLocale();
+  const { formatPrice, t } = useLocale();
   const { data: allProducts = [] } = useProducts(100);
 
   const searchResults = searchQuery.length >= 2
@@ -160,7 +160,7 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar productos..."
+                placeholder={t('Buscar productos...')}
                 className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-foreground/30"
                 onKeyDown={(e) => e.key === 'Escape' && setSearchOpen(false)}
               />
@@ -176,11 +176,11 @@ export default function Navbar() {
                 {navLinks.map((link) => {
                   const isActive = link.routeMatch && pathname.startsWith(link.routeMatch);
                   return (
-                    <div key={link.label} className="relative flex items-center"
+                    <div key={t(link.label)} className="relative flex items-center"
                       onMouseEnter={() => link.hasDropdown && setShopOpen(true)}>
                       <Link href={link.href}
                         className="relative text-[12px] font-normal tracking-[0.06em] text-foreground flex items-center gap-1 px-3 py-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150">
-                        <span className="whitespace-nowrap">{link.label}</span>
+                        <span className="whitespace-nowrap">{t(link.label)}</span>
                         {link.hasDropdown && (
                           <ChevronDown className="w-3 h-3 transition-transform duration-200" strokeWidth={1.2}
                             style={{ transform: shopOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
@@ -262,32 +262,32 @@ export default function Navbar() {
             onMouseEnter={() => setShopOpen(true)}>
             <div className="max-w-[1400px] mx-auto px-4 py-8 grid grid-cols-[1fr_1fr_1fr_280px] gap-8">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">Explorar</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Explorar')}</p>
                 {megaMenu.general.map((l) => (
-                  <button key={l.label} onClick={() => handleSmartLink(l.href, l.homeHash)}
+                  <button key={t(l.label)} onClick={() => handleSmartLink(l.href, l.homeHash)}
                     className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 hover:text-foreground transition-colors mb-2.5 w-full text-left">
                     {(l as { isSale?: boolean }).isSale
-                      ? <span className="text-[11px] font-bold uppercase tracking-[0.12em] bg-red-600 text-white px-2 py-0.5 rounded-[4px]">{l.label}</span>
-                      : l.label}
+                      ? <span className="text-[11px] font-bold uppercase tracking-[0.12em] bg-red-600 text-white px-2 py-0.5 rounded-[4px]">{t(l.label)}</span>
+                      : t(l.label)}
                     {l.isNew && <span className="text-[9px] font-bold uppercase tracking-wider bg-foreground text-background px-1.5 py-0.5 rounded-[4px]">NEW</span>}
                   </button>
                 ))}
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">Categorías</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Categorías')}</p>
                 {megaMenu.categorias.map((l) => (
-                  <Link key={l.label} href={l.href} onClick={() => setShopOpen(false)}
+                  <Link key={t(l.label)} href={l.href} onClick={() => setShopOpen(false)}
                     className="block text-[13px] font-medium text-foreground/70 hover:text-foreground transition-colors mb-2.5">
-                    {l.label}
+                    {t(l.label)}
                   </Link>
                 ))}
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">Colecciones</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Colecciones')}</p>
                 {megaMenu.colecciones.map((l) => (
-                  <Link key={l.label} href={l.href} onClick={() => setShopOpen(false)}
+                  <Link key={t(l.label)} href={l.href} onClick={() => setShopOpen(false)}
                     className="block text-[13px] text-foreground/70 hover:text-foreground transition-colors mb-2.5">
-                    {l.label}
+                    {t(l.label)}
                   </Link>
                 ))}
               </div>
@@ -296,11 +296,11 @@ export default function Navbar() {
                   className="w-full h-full object-cover" style={{ maxHeight: '220px' }} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-4">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/60 mb-0.5">Colección</p>
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/60 mb-0.5">{t('Colección')}</p>
                     <p className="text-[14px] font-bold text-white leading-tight">Camo Set Drop</p>
                     <Link href="/camo-set-drop/" onClick={() => setShopOpen(false)}
                       className="text-[11px] text-white/70 hover:text-white transition-colors mt-1 block">
-                      Ver colección →
+                      {t('Ver colección →')}
                     </Link>
                   </div>
                 </div>
@@ -328,7 +328,7 @@ export default function Navbar() {
                   <p className="text-[12px] font-semibold flex-shrink-0">{formatPrice(p.price)}</p>
                 </Link>
               )) : (
-                <p className="text-[12px] text-text-light text-center py-4">Sin resultados para &ldquo;{searchQuery}&rdquo;</p>
+                <p className="text-[12px] text-text-light text-center py-4">{t('Sin resultados para')} &ldquo;{searchQuery}&rdquo;</p>
               )}
             </div>
           </div>
@@ -371,11 +371,11 @@ export default function Navbar() {
 
           {mobilePanel !== 'main' && (
             <div className="px-6 pt-6 pb-2">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-foreground/40 mb-1">{'title' in panel ? panel.title : ''}</p>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-foreground/40 mb-1">{'title' in panel ? t(panel.title) : ''}</p>
               {'verTodo' in panel && (
                 <Link href={panel.verTodo} onClick={closeMobile}
                   className="text-[13px] font-semibold underline underline-offset-4 text-foreground/60 hover:text-foreground transition-colors">
-                  Ver todo en {'title' in panel ? panel.title : ''}
+                  {t('Ver todo en')} {'title' in panel ? t(panel.title) : ''}
                 </Link>
               )}
             </div>
@@ -387,28 +387,28 @@ export default function Navbar() {
                 <div className="space-y-1 mb-8">
                   {mobilePanels.main.items.map((item) => (
                     item.panel ? (
-                      <button key={item.label} onClick={() => setMobilePanel(item.panel as any)}
+                      <button key={t(item.label)} onClick={() => setMobilePanel(item.panel as any)}
                         className="w-full flex items-center justify-between py-2.5 border-b border-foreground/8 last:border-0">
-                        <span className="text-[22px] font-normal tracking-tight">{item.label}</span>
+                        <span className="text-[22px] font-normal tracking-tight">{t(item.label)}</span>
                         <ChevronRight className="w-4 h-4 text-foreground/30" strokeWidth={1.5} />
                       </button>
                     ) : (
-                      <button key={item.label}
+                      <button key={t(item.label)}
                         onClick={() => { handleSmartLink(item.href!, item.homeHash); closeMobile(); }}
                         className="w-full flex items-center justify-between py-2.5 border-b border-foreground/8 last:border-0 text-left">
                         {(item as { isSale?: boolean }).isSale
-                          ? <span className="bg-red-600 text-white text-[16px] font-bold uppercase tracking-[0.1em] px-3 py-1 rounded-[5px]">{item.label}</span>
-                          : <span className="text-[22px] font-normal tracking-tight">{item.label}</span>}
+                          ? <span className="bg-red-600 text-white text-[16px] font-bold uppercase tracking-[0.1em] px-3 py-1 rounded-[5px]">{t(item.label)}</span>
+                          : <span className="text-[22px] font-normal tracking-tight">{t(item.label)}</span>}
                       </button>
                     )
                   ))}
                 </div>
                 <div className="mb-6">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-foreground/35 mb-3">Colecciones</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-foreground/35 mb-3">{t('Colecciones')}</p>
                   {mobilePanels.main.collections.map((l) => (
-                    <Link key={l.label} href={l.href} onClick={closeMobile}
+                    <Link key={t(l.label)} href={l.href} onClick={closeMobile}
                       className="block text-[14px] text-foreground/60 hover:text-foreground transition-colors py-1.5">
-                      {l.label}
+                      {t(l.label)}
                     </Link>
                   ))}
                 </div>
@@ -420,9 +420,9 @@ export default function Navbar() {
                     { label: 'Políticas',     href: '/politicas-de-devolucion/' },
                     { label: 'Contacto',      href: '/contacto/' },
                   ].map((l) => (
-                    <Link key={l.label} href={l.href} onClick={closeMobile}
+                    <Link key={t(l.label)} href={l.href} onClick={closeMobile}
                       className="block text-[14px] text-foreground/50 hover:text-foreground transition-colors py-1">
-                      {l.label}
+                      {t(l.label)}
                     </Link>
                   ))}
                 </div>
@@ -431,15 +431,15 @@ export default function Navbar() {
               <div className="space-y-1 mt-4">
                 {'items' in panel && panel.items.map((item) => (
                   item.panel ? (
-                    <button key={item.label} onClick={() => setMobilePanel(item.panel as any)}
+                    <button key={t(item.label)} onClick={() => setMobilePanel(item.panel as any)}
                       className="w-full flex items-center justify-between py-3 border-b border-foreground/8 last:border-0">
-                      <span className="text-[20px] font-normal tracking-tight">{item.label}</span>
+                      <span className="text-[20px] font-normal tracking-tight">{t(item.label)}</span>
                       <ChevronRight className="w-4 h-4 text-foreground/30" strokeWidth={1.5} />
                     </button>
                   ) : (
-                    <Link key={item.label} href={item.href!} onClick={closeMobile}
+                    <Link key={t(item.label)} href={item.href!} onClick={closeMobile}
                       className="flex items-center justify-between py-3 border-b border-foreground/8 last:border-0">
-                      <span className="text-[20px] font-normal tracking-tight">{item.label}</span>
+                      <span className="text-[20px] font-normal tracking-tight">{t(item.label)}</span>
                     </Link>
                   )
                 ))}

@@ -30,7 +30,7 @@ export default function ProductCard({
   id, name, category, price, originalPrice, badge, image, images,
   href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
 }: ProductCardProps) {
-  const { formatPrice } = useLocale();
+  const { formatPrice, t } = useLocale();
   const { add, setDrawerOpen } = useCart();
   const { toggle, has } = useWishlist();
   const [hovered, setHovered] = useState(false);
@@ -113,7 +113,7 @@ export default function ProductCard({
 
         {outOfStock ? (
           <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-foreground text-background">
-            Sin stock
+            {t('Sin stock')}
           </span>
         ) : badge ? (
           <span className={`absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${badgeStyle()}`}>
@@ -141,7 +141,7 @@ export default function ProductCard({
 
         {customizable && (
           <span className="absolute bottom-2.5 left-2.5 z-10 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] bg-foreground/90 text-background backdrop-blur-sm rounded-[4px]">
-            Personalizable
+            {t('Personalizable')}
           </span>
         )}
       </div>
@@ -174,7 +174,7 @@ export default function ProductCard({
             hovered ? "opacity-100 max-h-12" : "opacity-0 max-h-0 overflow-hidden"
           }`}>
             {addedSize ? (
-              <span className="text-[11px] text-foreground/60">✓ agregado</span>
+              <span className="text-[11px] text-foreground/60">{t('✓ agregado')}</span>
             ) : sizes!.length === 1 ? (
               /* Talle único — botón directo sin mostrar el nombre del talle */
               (() => {
@@ -196,7 +196,7 @@ export default function ProductCard({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                       </svg>
-                    ) : isOut ? "Sin stock" : "Agregar"}
+                    ) : isOut ? t('Sin stock') : t('Agregar')}
                   </button>
                 );
               })()

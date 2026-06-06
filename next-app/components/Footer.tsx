@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useReveal } from "@/hooks/useReveal";
+import { useLocale, Language } from "@/context/LocaleContext";
 
 const shopLinks = [
   { label: "Arriba",     href: "/arriba/" },
@@ -33,7 +34,7 @@ const languages = ["ES", "EN", "PT", "DE", "FR", "IT"];
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [activeLang, setActiveLang] = useState("ES");
+  const { language, setLanguage, t } = useLocale();
   const ref = useReveal();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -53,14 +54,14 @@ export default function Footer() {
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Newsletter</p>
             <h3 className="text-[18px] md:text-[22px] font-bold uppercase leading-snug mb-1">
-              Suscribite y obtené un 10% de descuento
+              {t('Suscribite y obtené un 10% de descuento')}
             </h3>
             <p className="text-[11px] text-primary-foreground/35 mb-6">
-              *No es acumulable con otras promociones
+              {t('*No es acumulable con otras promociones')}
             </p>
 
             {submitted ? (
-              <p className="text-[13px] text-primary-foreground/50">✓ ¡Listo! Ya sos parte del círculo.</p>
+              <p className="text-[13px] text-primary-foreground/50">{t('✓ ¡Listo! Ya sos parte del círculo.')}</p>
             ) : (
               <form onSubmit={handleSubmit} className="flex border-b border-primary-foreground/30 focus-within:border-primary-foreground transition-colors max-w-sm">
                 <input
@@ -85,7 +86,7 @@ export default function Footer() {
           <div>
             <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-6 w-auto object-contain object-left mb-3" />
             <p className="text-[12px] text-primary-foreground/50 leading-relaxed">
-              Streetwear desde Buenos Aires. Drops limitados.<br />Envíos a todo el mundo.
+              {t('Streetwear desde Buenos Aires. Drops limitados.')}<br />{t('Envíos a todo el mundo.')}
             </p>
           </div>
         </div>
@@ -98,7 +99,7 @@ export default function Footer() {
             {shopLinks.map((l) => (
               <Link key={l.label} href={l.href}
                 className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
-                {l.label}
+                {t(l.label)}
               </Link>
             ))}
           </div>
@@ -109,18 +110,18 @@ export default function Footer() {
             {infoLinks.map((l) => (
               <Link key={l.label} href={l.href}
                 className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
-                {l.label}
+                {t(l.label)}
               </Link>
             ))}
           </div>
 
           {/* RRSS — única aparición */}
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">RRSS</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">{t('RRSS')}</p>
             {rrssLinks.map((l) => (
               <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
                 className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
-                {l.label}
+                {t(l.label)}
               </a>
             ))}
           </div>
@@ -134,9 +135,9 @@ export default function Footer() {
           {languages.map((lang, i) => (
             <span key={lang} className="flex items-center gap-4">
               <button
-                onClick={() => setActiveLang(lang)}
+                onClick={() => setLanguage(lang as Language)}
                 className={`text-[11px] uppercase tracking-[0.12em] transition-colors ${
-                  activeLang === lang
+                  language === lang
                     ? "text-primary-foreground font-semibold"
                     : "text-primary-foreground/30 hover:text-primary-foreground/60"
                 }`}

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { translate } from '@/lib/i18n';
 
 export type Language = 'ES' | 'EN' | 'PT';
 export type Currency = 'ARS' | 'USD' | 'EUR';
@@ -15,6 +16,8 @@ interface LocaleContextValue {
   currency: Currency;
   setCurrency: (c: Currency) => void;
   formatPrice: (arsAmount: number) => string;
+  /** Traduce un texto de interfaz al idioma activo (cae a español si falta). */
+  t: (text: string) => string;
 }
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -49,8 +52,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     return `${SYMBOLS[currency]} ${converted.toFixed(2)}`;
   }
 
+  function t(text: string): string {
+    return translate(text, language);
+  }
+
   return (
-    <LocaleContext.Provider value={{ language, setLanguage, currency, setCurrency, formatPrice }}>
+    <LocaleContext.Provider value={{ language, setLanguage, currency, setCurrency, formatPrice, t }}>
       {children}
     </LocaleContext.Provider>
   );
