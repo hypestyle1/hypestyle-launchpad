@@ -112,7 +112,7 @@ export default function ProductCard({
         )}
 
         {outOfStock ? (
-          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider bg-foreground text-background">
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-foreground text-background">
             Sin stock
           </span>
         ) : badge ? (
