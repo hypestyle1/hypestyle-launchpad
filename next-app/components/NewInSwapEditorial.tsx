@@ -38,7 +38,7 @@ export default function NewInSwapEditorial({ slides }: { slides: Slide[] }) {
   return (
     <div
       ref={ref}
-      className="relative overflow-hidden rounded-lg border border-border bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-1"
+      className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-1"
     >
       {slides.map((s, i) => (
         <div

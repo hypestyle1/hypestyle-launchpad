@@ -67,11 +67,11 @@ export default function ProductCard({
 
   const badgeStyle = () => {
     if (!badge) return "";
-    if (badge === "New In") return "bg-white/40 backdrop-blur-md backdrop-saturate-150 text-black rounded-md border border-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]";
+    if (badge === "New In") return "bg-white/40 backdrop-blur-md backdrop-saturate-150 text-black rounded-[6px] border border-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]";
     if (badge === "New") return "bg-bg-dark text-primary-foreground";
     if (badge === "Best Seller") return "bg-muted-foreground text-primary-foreground";
     if (badge === "Back") return "bg-primary-foreground border border-foreground text-foreground";
-    if (badge.startsWith("−")) return "bg-destructive text-destructive-foreground rounded-md";
+    if (badge.startsWith("−")) return "bg-destructive text-destructive-foreground rounded-[6px]";
     return "bg-bg-dark text-primary-foreground";
   };
 
@@ -87,7 +87,7 @@ export default function ProductCard({
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image */}
-      <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-bg-alt">
+      <div className="relative aspect-square overflow-hidden rounded-[8px] bg-bg-alt">
         {image ? (
           <Image
             src={imgSrc(image)}

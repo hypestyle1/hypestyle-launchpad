@@ -141,7 +141,7 @@ export default function NewInFW26() {
               // productos arriba y editorial abajo.
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
                 {/* Columna editorial (imagen / video / slider) */}
-                <div className={`relative overflow-hidden rounded-lg border border-border bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 ${editorial.side === 'left' ? 'lg:order-1' : 'lg:order-2'}`}>
+                <div className={`relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 ${editorial.side === 'left' ? 'lg:order-1' : 'lg:order-2'}`}>
                   {editorial.type === 'video' ? (
                     <video
                       className="absolute inset-0 h-full w-full object-cover object-center"
