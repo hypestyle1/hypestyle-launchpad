@@ -30,10 +30,8 @@ const KEEP_DISCOUNT = new Set<string>([
   'camo-full-set-combo',
 ]);
 
-// Productos con regalo destacado (combos/promos).
-const GIFT_NOTES: Record<string, string> = {
-  'camo-full-set-combo': 'Camo Cap de regalo',
-};
+// Productos con regalo destacado (combos/promos). Vacío por ahora.
+const GIFT_NOTES: Record<string, string> = {};
 
 // Editorial por grupo (key = label del grupo en FW26_GROUPS).
 // El grupo con editorial se renderiza en layout split: productos (máx 4) de un
