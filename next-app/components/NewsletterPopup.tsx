@@ -29,7 +29,7 @@ export default function NewsletterPopup() {
       i1.onload = i1.onerror = onDone;
       i2.onload = i2.onerror = onDone;
       i1.src = '/HYPE - POP UP (2).gif';
-      i2.src = '/CUPON.jpg.jpeg';
+      i2.src = '/cupon-popup.png';
     };
 
     if (document.readyState === 'complete') {
@@ -69,60 +69,86 @@ export default function NewsletterPopup() {
       onClick={(e) => { if (e.target === e.currentTarget) close(); }}
     >
       <div
-        className="relative flex w-full max-w-[780px] overflow-hidden shadow-2xl"
-        style={{ maxHeight: "90vh" }}
+        className="relative flex w-full max-w-[820px] overflow-hidden rounded-[24px]"
+        style={{
+          maxHeight: "90vh",
+          border: "1px solid rgba(255,255,255,0.28)",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.45)",
+        }}
       >
-        {/* Botón cerrar */}
+        {/* Fondo: gif a todo el popup (el panel glass lo difumina) */}
+        <img
+          src="/HYPE - POP UP (2).gif"
+          alt="Hypestyle"
+          className="absolute inset-0 w-full h-full object-cover"
+          aria-hidden
+        />
+
+        {/* Botón cerrar — glass */}
         <button
           onClick={close}
-          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center text-foreground/50 hover:text-foreground transition-colors bg-white/80 rounded-sm"
           aria-label="Cerrar"
+          className="absolute top-3.5 right-3.5 z-20 w-8 h-8 flex items-center justify-center text-foreground rounded-full transition-transform hover:scale-105"
+          style={{
+            background: "rgba(245,243,237,0.55)",
+            backdropFilter: "blur(20px) saturate(180%)",
+            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            border: "1px solid rgba(255,255,255,0.5)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+          }}
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M1 1l12 12M13 1L1 13" />
           </svg>
         </button>
 
-        {/* Izquierda — foto editorial */}
-        <div className="hidden md:block w-[45%] flex-shrink-0">
-          <img
-            src="/HYPE - POP UP (2).gif"
-            alt="Hypestyle"
-            className="w-full h-full object-cover"
-            style={{ minHeight: "520px" }}
-          />
-        </div>
+        {/* Columna izquierda — deja ver el gif (solo desktop) */}
+        <div className="hidden md:block w-[45%] flex-shrink-0" style={{ minHeight: "520px" }} />
 
-        {/* Derecha — cupón + form */}
+        {/* Panel derecho — liquid glass sobre el gif */}
         <div
-          className="flex-1 flex flex-col"
-          style={{ backgroundColor: "#F5F5F5" }}
+          className="relative z-10 flex-1 flex flex-col justify-center"
+          style={{
+            background: "rgba(245, 243, 237, 0.72)",
+            backdropFilter: "blur(40px) saturate(180%)",
+            WebkitBackdropFilter: "blur(40px) saturate(180%)",
+            borderLeft: "1px solid rgba(255,255,255,0.45)",
+            boxShadow: "inset 1px 0 0 rgba(255,255,255,0.55)",
+            minHeight: "520px",
+          }}
         >
-          {/* Imagen cupón — con margen */}
-          <div className="flex-1 flex items-center justify-center px-6 pt-6 pb-3">
+          {/* Cupón (PNG transparente) */}
+          <div className="flex items-center justify-center px-7 pt-8 pb-2">
             <img
-              src="/CUPON.jpg.jpeg"
-              alt="10% Off Solo para miembros"
+              src="/cupon-popup.png"
+              alt="10% Off — Solo para miembros"
               className="w-full object-contain"
               style={{ maxHeight: "300px" }}
             />
           </div>
 
           {/* Form */}
-          <div className="px-6 pb-5 pt-1" style={{ backgroundColor: "#F5F5F5" }}>
+          <div className="px-7 pb-8 pt-1">
             {submitted ? (
               <p className="text-center text-[13px] font-semibold uppercase tracking-wider py-4">
                 ¡Listo! Revisá tu email.
               </p>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-2">
+              <form onSubmit={handleSubmit} className="space-y-2.5">
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Tu nombre"
                   required
-                  className="w-full border border-foreground/20 bg-white px-4 py-3 text-[13px] placeholder:text-foreground/35 focus:outline-none focus:border-foreground/50 transition-colors"
+                  className="w-full px-4 py-3 text-[13px] rounded-[12px] placeholder:text-foreground/40 focus:outline-none transition-shadow"
+                  style={{
+                    background: "rgba(255,255,255,0.5)",
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
+                    border: "1px solid rgba(255,255,255,0.65)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                  }}
                 />
                 <input
                   type="email"
@@ -130,12 +156,19 @@ export default function NewsletterPopup() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Tu email"
                   required
-                  className="w-full border border-foreground/20 bg-white px-4 py-3 text-[13px] placeholder:text-foreground/35 focus:outline-none focus:border-foreground/50 transition-colors"
+                  className="w-full px-4 py-3 text-[13px] rounded-[12px] placeholder:text-foreground/40 focus:outline-none transition-shadow"
+                  style={{
+                    background: "rgba(255,255,255,0.5)",
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
+                    border: "1px solid rgba(255,255,255,0.65)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                  }}
                 />
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors disabled:opacity-60"
+                  className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60"
                 >
                   {loading ? "..." : "Unirme"}
                 </button>
@@ -144,20 +177,10 @@ export default function NewsletterPopup() {
 
             <button
               onClick={close}
-              className="w-full text-center text-[12px] text-foreground/40 hover:text-foreground/70 transition-colors mt-3"
+              className="w-full text-center text-[12px] text-foreground/45 hover:text-foreground/75 transition-colors mt-3"
             >
               Paso
             </button>
-
-            {/* Logo negro — white invertido con CSS */}
-            <div className="flex justify-center mt-4 mb-1">
-              <img
-                src="/STYLE&CULTURE WHITE.png"
-                alt="Style&Culture"
-                className="h-4 w-auto object-contain"
-                style={{ filter: "invert(1)" }}
-              />
-            </div>
           </div>
         </div>
       </div>
