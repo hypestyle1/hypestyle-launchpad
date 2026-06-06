@@ -1,5 +1,7 @@
 'use client';
 
+import { useLocale } from "@/context/LocaleContext";
+
 const items = [
   "Envío gratis desde $250.000",
   "Hasta 3 cuotas sin interés",
@@ -8,7 +10,8 @@ const items = [
 ];
 
 export default function AnnouncementBar() {
-  const repeated = [...items, ...items, ...items, ...items];
+  const { t } = useLocale();
+  const repeated = [...items, ...items, ...items, ...items].map(t);
 
   return (
     <div

@@ -20,7 +20,7 @@ function shuffled<T>(arr: T[]): T[] {
 
 export default function CartDrawer() {
   const { items, drawerOpen, setDrawerOpen, remove, increment, decrement, total, count, add } = useCart();
-  const { formatPrice } = useLocale();
+  const { formatPrice, t } = useLocale();
   const router = useRouter();
   const { data: allProducts = [] } = useProducts(100);
   const suggested = useMemo(
@@ -49,7 +49,7 @@ export default function CartDrawer() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border">
           <span className="text-[13px] font-semibold uppercase tracking-wider">
-            Carrito ({count})
+            {t('Carrito')} ({count})
           </span>
           <button
             onClick={() => setDrawerOpen(false)}
@@ -65,16 +65,16 @@ export default function CartDrawer() {
         <div className="px-6 pt-3 pb-2 border-b border-border">
           {freeShipping ? (
             <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
-              ¡Conseguiste envío gratis!
+              {t('¡Conseguiste envío gratis!')}
             </p>
           ) : (
             <p className="text-[11px] text-center text-muted-foreground">
-              Añadí{" "}
+              {t('Añadí')}{" "}
               <span className="font-bold text-foreground">
                 {formatPrice(remaining)}
               </span>{" "}
-              y conseguí{" "}
-              <span className="font-bold uppercase text-foreground">envío gratis</span>
+              {t('y conseguí')}{" "}
+              <span className="font-bold uppercase text-foreground">{t('envío gratis')}</span>
             </p>
           )}
           <div className="mt-2 h-[3px] bg-border rounded-full overflow-hidden">
@@ -89,12 +89,12 @@ export default function CartDrawer() {
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <p className="text-[13px] text-muted-foreground mb-4">Tu carrito está vacío</p>
+              <p className="text-[13px] text-muted-foreground mb-4">{t('Tu carrito está vacío')}</p>
               <button
                 onClick={() => setDrawerOpen(false)}
                 className="text-[12px] underline text-foreground/50 hover:text-foreground transition-colors"
               >
-                Seguir comprando
+                {t('Seguir comprando')}
               </button>
             </div>
           ) : (
@@ -105,10 +105,10 @@ export default function CartDrawer() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium leading-tight">{item.name}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Talle: {item.size}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t('Talle')}: {item.size}</p>
                   {item.customization && (item.customization.playerName || item.customization.number) && (
                     <p className="text-[11px] text-foreground/70 mt-0.5 font-medium">
-                      Dorsal: {item.customization.number && `#${item.customization.number}`}{item.customization.playerName && ` ${item.customization.playerName}`}
+                      {t('Dorsal')}: {item.customization.number && `#${item.customization.number}`}{item.customization.playerName && ` ${item.customization.playerName}`}
                     </p>
                   )}
                   <p className="text-[13px] font-semibold mt-1">{formatPrice(item.price)}</p>
@@ -130,7 +130,7 @@ export default function CartDrawer() {
                       onClick={() => remove(item.id, item.size, item.customization)}
                       className="ml-auto text-[11px] text-muted-foreground hover:text-foreground transition-colors underline"
                     >
-                      Eliminar
+                      {t('Eliminar')}
                     </button>
                   </div>
                 </div>
@@ -141,7 +141,7 @@ export default function CartDrawer() {
           {/* Completa el look */}
           {items.length > 0 && (
             <div className="pt-4 border-t border-border">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3">Completa el look</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3">{t('Completa el look')}</p>
               <div className="grid grid-cols-2 gap-3">
                 {suggested.map((p) => (
                     <div key={p.id}>
@@ -169,14 +169,14 @@ export default function CartDrawer() {
         {items.length > 0 && (
           <div className="px-6 py-5 border-t border-border space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-muted-foreground">Subtotal</span>
+              <span className="text-[13px] text-muted-foreground">{t('Subtotal')}</span>
               <span className="text-[14px] font-semibold">{formatPrice(total)}</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
               {freeShipping ? (
-                <span className="text-green-700 font-semibold">Envío gratis aplicado</span>
+                <span className="text-green-700 font-semibold">{t('Envío gratis aplicado')}</span>
               ) : (
-                "Envío calculado en el checkout"
+                t('Envío calculado en el checkout')
               )}
             </p>
             <p className="text-[11px] text-muted-foreground">
@@ -186,13 +186,13 @@ export default function CartDrawer() {
               onClick={() => { setDrawerOpen(false); router.push("/checkout"); }}
               className="w-full bg-bg-dark text-primary-foreground py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]"
             >
-              Iniciar compra
+              {t('Iniciar compra')}
             </button>
             <button
               onClick={() => setDrawerOpen(false)}
               className="w-full text-center text-[12px] text-foreground/40 hover:text-foreground transition-colors"
             >
-              Seguir comprando
+              {t('Seguir comprando')}
             </button>
           </div>
         )}
