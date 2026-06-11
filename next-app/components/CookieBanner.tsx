@@ -39,7 +39,8 @@ export default function CookieBanner() {
 
         <p className="text-[12px] text-white/50 leading-relaxed mb-4">
           Usamos cookies para mejorar tu experiencia, recordar tu carrito y medir el
-          rendimiento del sitio.{" "}
+          rendimiento del sitio. Al seguir navegando aceptás su uso; podés optar por solo
+          las necesarias cuando quieras.{" "}
           <Link href="/politicas-de-devolucion/" className="underline underline-offset-2 text-white/60 hover:text-white transition-colors">
             Más info
           </Link>
