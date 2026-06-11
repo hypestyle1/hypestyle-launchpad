@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
-type OrderItem = { name: string; quantity: number; size: string };
+type OrderItem = { name: string; quantity: number; size: string; dorsalName?: string; dorsalNumber?: string };
 type Customer  = { first_name: string; last_name: string; email: string; phone: string };
 type Order = {
   id: number; number: string; date: string; status: string;
@@ -445,7 +445,7 @@ export default function PedidosPage() {
                 {/* Products */}
                 <div className="hidden lg:block min-w-0 text-[12px] text-gray-500 truncate">
                   {order.items.map((it, i) => (
-                    <span key={i}>{i > 0 && ' · '}{it.name.replace(/\s*—\s*Talle\s*\S+/i, '')}{it.size ? ` ${it.size}` : ''} ×{it.quantity}</span>
+                    <span key={i}>{i > 0 && ' · '}{it.name.replace(/\s*—\s*Talle\s*\S+/i, '')}{it.size ? ` ${it.size}` : ''}{(it.dorsalNumber || it.dorsalName) ? ` [${it.dorsalNumber ? `#${it.dorsalNumber}` : ''}${it.dorsalName ? ` ${it.dorsalName}` : ''}]` : ''} ×{it.quantity}</span>
                   ))}
                 </div>
 
