@@ -261,8 +261,7 @@ function buildAbandonedHtml(order: {
 
   // El cupón solo aplica cuando pagan online (no en transferencia: ahí el total ya está fijado).
   const couponBlock = order.isTransfer ? '' : `
-    <div style="margin:24px 0 0;background:#0a0a0a;border-radius:8px;padding:18px 20px;text-align:center;">
-      <p style="margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;color:#bbb;">Para que lo cierres tranqui</p>
+    <div style="margin:24px 0 0;background:#0a0a0a;border-radius:8px;padding:20px;text-align:center;">
       <p style="margin:0 0 10px;font-size:15px;color:#fff;line-height:1.5;">Llevate <b>${RECOVERY_DISCOUNT} OFF</b> con el código</p>
       <p style="margin:0;display:inline-block;background:#fff;color:#0a0a0a;font-size:18px;font-weight:800;letter-spacing:0.06em;padding:8px 18px;border-radius:6px;">${RECOVERY_COUPON}</p>
       <p style="margin:12px 0 0;font-size:12px;color:#999;">Aplicalo en el checkout. Vence pronto.</p>
