@@ -49,7 +49,7 @@ async function renderJersey(canvas: HTMLCanvasElement, view: 'espalda' | 'frente
       drawArcText(ctx, playerName, S / 2, S * 1.40, S * 1.20, Math.round(fontSize * 0.08));
     }
     if (playerNumber) {
-      const fontSize = playerNumber.length === 1 ? Math.round(S * 0.44) : Math.round(S * 0.36);
+      const fontSize = playerNumber.length === 1 ? Math.round(S * 0.46) : Math.round(S * 0.38);
       ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#0a0a0a';
       ctx.fillText(playerNumber, S * 0.5, S * 0.37);
     }
