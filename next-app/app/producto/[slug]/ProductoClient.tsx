@@ -104,6 +104,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
   const [sizeGuideOpen, setSizeGuideOpen]   = useState(false);
   const [showSticky, setShowSticky]         = useState(false);
   const [zoomPos, setZoomPos]               = useState<{ x: number; y: number } | null>(null);
+  const [canHover, setCanHover]             = useState(false);
   const [isGalleryOpen, setIsGalleryOpen]   = useState(false);
   const [galleryZoom, setGalleryZoom]       = useState(1);
   const [galleryOffset, setGalleryOffset]   = useState({ x: 0, y: 0 });
@@ -115,6 +116,12 @@ export default function ProductoClient({ slug }: { slug: string }) {
   const { add, setDrawerOpen } = useCart();
 
   useEffect(() => { setMounted(true); }, []);
+
+  // El zoom de hover (scale 2x) es solo para desktop con mouse. En táctiles el navegador
+  // sintetiza un "hover" al tocar y disparaba un zoom que recortaba la foto.
+  useEffect(() => {
+    setCanHover(window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+  }, []);
 
   useEffect(() => {
     if (product) {
@@ -200,6 +207,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!canHover) return; // sin mouse real (táctil) no hay zoom de hover
     const rect = e.currentTarget.getBoundingClientRect();
     setZoomPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
   };
