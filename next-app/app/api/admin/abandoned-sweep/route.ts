@@ -10,7 +10,7 @@ const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('bas
 
 // Primer mail de la secuencia: pedidos pending/failed con entre MIN y MAX horas de antigüedad,
 // que no se les haya enviado todavía (_hs_abandoned_sent). La ventana evita blastear backlog viejo.
-const MIN_HOURS = 5;
+const MIN_HOURS = 3;
 const MAX_HOURS = 72;
 
 const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString().slice(0, 19);
