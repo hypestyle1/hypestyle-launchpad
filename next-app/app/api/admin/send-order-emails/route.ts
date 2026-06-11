@@ -7,9 +7,8 @@ const BREVO_KEY = (process.env.BREVO_API_KEY      || '').replace(/^﻿/, '').tri
 const SITE_URL  = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 
 const ADMIN_SECRET  = 'hs2026';
-// Remitente con dominio propio y autenticado en Brevo (DKIM/DMARC) para no caer en spam.
-// Antes era hypestylearg@gmail.com → no se puede firmar con DKIM y Gmail/Outlook lo rechazan.
-const SENDER_EMAIL  = 'info@hypestyle.com.ar';
+// El remitente (info@hypestyle.com.ar + Reply-To) lo migra el PR #67 — no tocar acá para no chocar.
+const SENDER_EMAIL  = 'hypestylearg@gmail.com';
 const SENDER_NAME   = 'Hypestyle';
 
 // Cupón de recuperación que se muestra en el mail de carrito abandonado (no aplica a transferencia).
