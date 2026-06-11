@@ -14,6 +14,10 @@ const REPLY_TO      = 'hypestylearg@gmail.com';
 // Datos de transferencia (mismos que muestra /pendiente-de-pago).
 const TRANSFER = { cvu: '0000003100024686621335', alias: 'hypestyle2', titular: 'Pozzi Valentín', banco: 'MERCADO PAGO' };
 
+// Cupón de recuperación que se muestra en el mail de carrito abandonado (no aplica a transferencia).
+const RECOVERY_COUPON   = 'HYPEVUELVE10';
+const RECOVERY_DISCOUNT = '10%';
+
 function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
 }
@@ -255,6 +259,15 @@ function buildAbandonedHtml(order: {
       <p style="margin:10px 0 0;font-size:12px;color:#888;">Cuando la hagas, mandanos el comprobante por Instagram y despachamos tu pedido.</p>
     </div>` : '';
 
+  // El cupón solo aplica cuando pagan online (no en transferencia: ahí el total ya está fijado).
+  const couponBlock = order.isTransfer ? '' : `
+    <div style="margin:24px 0 0;background:#0a0a0a;border-radius:8px;padding:18px 20px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;color:#bbb;">Para que lo cierres tranqui</p>
+      <p style="margin:0 0 10px;font-size:15px;color:#fff;line-height:1.5;">Llevate <b>${RECOVERY_DISCOUNT} OFF</b> con el código</p>
+      <p style="margin:0;display:inline-block;background:#fff;color:#0a0a0a;font-size:18px;font-weight:800;letter-spacing:0.06em;padding:8px 18px;border-radius:6px;">${RECOVERY_COUPON}</p>
+      <p style="margin:12px 0 0;font-size:12px;color:#999;">Aplicalo en el checkout. Vence pronto.</p>
+    </div>`;
+
   const intro = order.isTransfer
     ? 'Vimos que iniciaste tu compra pero todavía no nos llegó la transferencia. Tu pedido sigue reservado — completá el pago así lo preparamos.'
     : 'Vimos que iniciaste tu compra pero quedó sin completarse. Tus productos te esperan — terminá tu pedido cuando quieras.';
@@ -284,8 +297,9 @@ function buildAbandonedHtml(order: {
               </tr>
             </table>
             ${transferBlock}
+            ${couponBlock}
             <div style="margin-top:24px;text-align:center;">
-              <a href="https://instagram.com/hypestylearg"
+              <a href="${order.isTransfer ? 'https://instagram.com/hypestylearg' : SITE_URL}"
                  style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:13px 28px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-radius:2px;">
                 ${order.isTransfer ? 'Enviar comprobante →' : 'Completar mi compra →'}
               </a>
