@@ -44,20 +44,20 @@ async function renderJersey(canvas: HTMLCanvasElement, view: 'espalda' | 'frente
   ctx.fillStyle = '#0a0a0a';
   if (view === 'espalda') {
     if (playerName) {
-      const fontSize = playerName.length > 10 ? Math.round(S * 0.056) : playerName.length > 7 ? Math.round(S * 0.066) : Math.round(S * 0.076);
+      const fontSize = playerName.length > 10 ? Math.round(S * 0.063) : playerName.length > 7 ? Math.round(S * 0.074) : Math.round(S * 0.085);
       ctx.font = `${fontSize}px ${FONT}`; ctx.fillStyle = '#0a0a0a';
-      drawArcText(ctx, playerName, S / 2, S * 1.54, S * 1.20, Math.round(fontSize * 0.08));
+      drawArcText(ctx, playerName, S / 2, S * 1.40, S * 1.20, Math.round(fontSize * 0.08));
     }
     if (playerNumber) {
-      const fontSize = playerNumber.length === 1 ? Math.round(S * 0.33) : Math.round(S * 0.25);
+      const fontSize = playerNumber.length === 1 ? Math.round(S * 0.44) : Math.round(S * 0.36);
       ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#0a0a0a';
-      ctx.fillText(playerNumber, S * 0.5, S * 0.43);
+      ctx.fillText(playerNumber, S * 0.5, S * 0.37);
     }
   }
   if (view === 'frente' && playerNumber) {
-    const fontSize = Math.round(S * 0.09);
+    const fontSize = Math.round(S * 0.10);
     ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#0a0a0a';
-    ctx.fillText(playerNumber, S * 0.50, S * 0.46);
+    ctx.fillText(playerNumber, S * 0.50, S * 0.43);
   }
 }
 
