@@ -19,7 +19,7 @@ async function eligible(status: string) {
   const after  = iso(MAX_HOURS * 3600_000); // no más viejos que MAX
   const before = iso(MIN_HOURS * 3600_000); // ya pasaron MIN horas
   const res = await fetch(
-    `${WP_URL}/wp-json/wc/v3/orders?status=${status}&per_page=100&after=${after}&before=${before}&_fields=id,number,billing,meta_data`,
+    `${WP_URL}/wp-json/wc/v3/orders?status=${status}&per_page=100&after=${after}&before=${before}&_fields=id,number,billing,meta_data,date_created`,
     { headers: { Authorization: wcAuth() }, cache: 'no-store' }
   );
   if (!res.ok) return [];
@@ -46,24 +46,39 @@ export async function GET(req: NextRequest) {
 
   const orders = [...await eligible('pending'), ...await eligible('failed')];
   const origin = req.nextUrl.origin;
-  const sent: any[] = [];
 
+  // Dedup POR CLIENTE: un cliente con varios pedidos sin pagar (ej: 5 reintentos) recibe UN solo mail.
+  // Se le manda por el pedido más reciente y se marcan TODOS sus pedidos como enviados.
+  const byEmail = new Map<string, any[]>();
   for (const o of orders) {
+    const email = (o.billing?.email || '').toLowerCase().trim();
+    if (!email) continue;
+    let arr = byEmail.get(email);
+    if (!arr) { arr = []; byEmail.set(email, arr); }
+    arr.push(o);
+  }
+
+  const sent: any[] = [];
+  for (const [email, group] of byEmail) {
+    group.sort((a, b) => String(b.date_created || '').localeCompare(String(a.date_created || '')));
+    const rep = group[0]; // el más reciente representa al cliente
     try {
       const mail = await fetch(
-        `${origin}/api/admin/send-order-emails?secret=${MAIL_SECRET}&order_id=${o.id}&action=abandoned`,
+        `${origin}/api/admin/send-order-emails?secret=${MAIL_SECRET}&order_id=${rep.id}&action=abandoned`,
         { cache: 'no-store' }
       ).then(r => r.json());
       if (mail?.ok) {
-        await fetch(`${WP_URL}/wp-json/wc/v3/orders/${o.id}`, {
-          method: 'PUT',
-          headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ meta_data: [{ key: '_hs_abandoned_sent', value: new Date().toISOString() }] }),
-        });
-        sent.push({ id: o.id, number: o.number, email: o.billing.email });
+        for (const o of group) {
+          await fetch(`${WP_URL}/wp-json/wc/v3/orders/${o.id}`, {
+            method: 'PUT',
+            headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ meta_data: [{ key: '_hs_abandoned_sent', value: new Date().toISOString() }] }),
+          });
+        }
+        sent.push({ email, enviado_por: rep.number, pedidos_marcados: group.map(o => o.number) });
       }
     } catch { /* sigue con el resto */ }
   }
 
-  return NextResponse.json({ ok: true, candidatos: orders.length, enviados: sent.length, detalle: sent });
+  return NextResponse.json({ ok: true, candidatos: orders.length, clientes: byEmail.size, enviados: sent.length, detalle: sent });
 }

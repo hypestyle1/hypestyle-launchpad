@@ -7,16 +7,15 @@ const BREVO_KEY = (process.env.BREVO_API_KEY      || '').replace(/^﻿/, '').tri
 const SITE_URL  = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 
 const ADMIN_SECRET  = 'hs2026';
-// El remitente (info@hypestyle.com.ar + Reply-To) lo migra el PR #67 — no tocar acá para no chocar.
 const SENDER_EMAIL  = 'hypestylearg@gmail.com';
 const SENDER_NAME   = 'Hypestyle';
+
+// Datos de transferencia (mismos que muestra /pendiente-de-pago).
+const TRANSFER = { cvu: '0000003100024686621335', alias: 'hypestyle2', titular: 'Pozzi Valentín', banco: 'MERCADO PAGO' };
 
 // Cupón de recuperación que se muestra en el mail de carrito abandonado (no aplica a transferencia).
 const RECOVERY_COUPON   = 'HYPEVUELVE10';
 const RECOVERY_DISCOUNT = '10%';
-
-// Datos de transferencia (mismos que muestra /pendiente-de-pago).
-const TRANSFER = { cvu: '0000003100024686621335', alias: 'hypestyle2', titular: 'Pozzi Valentín', banco: 'MERCADO PAGO' };
 
 function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
