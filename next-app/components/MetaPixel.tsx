@@ -28,16 +28,26 @@ export default function MetaPixel() {
   const { consent } = useCookieConsent();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (consent !== 'all') return;
-    loadPixel();
-  }, [consent]);
+  // Modelo opt-out: trackeamos por defecto (consentimiento implícito mientras
+  // el usuario no decide). Solo NO cargamos el pixel si eligió explícitamente
+  // "Solo necesarias". Antes era opt-in puro (consent === 'all'), lo que dejaba
+  // sin PageView/AddToCart a casi todo el tráfico (default + quienes rechazan).
+  const trackingAllowed = consent !== 'necessary';
 
   useEffect(() => {
-    if (consent === 'all' && window.fbq) {
+    if (!trackingAllowed) {
+      // Si ya se había cargado y luego el usuario opta por salir, revocamos.
+      if (window.fbq) window.fbq('consent', 'revoke');
+      return;
+    }
+    loadPixel();
+  }, [trackingAllowed]);
+
+  useEffect(() => {
+    if (trackingAllowed && window.fbq) {
       window.fbq('track', 'PageView');
     }
-  }, [pathname, consent]);
+  }, [pathname, trackingAllowed]);
 
   return null;
 }
