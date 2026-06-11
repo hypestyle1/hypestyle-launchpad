@@ -7,8 +7,9 @@ const BREVO_KEY = (process.env.BREVO_API_KEY      || '').replace(/^﻿/, '').tri
 const SITE_URL  = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 
 const ADMIN_SECRET  = 'hs2026';
-const SENDER_EMAIL  = 'hypestylearg@gmail.com';
+const SENDER_EMAIL  = 'info@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
+const REPLY_TO      = 'hypestylearg@gmail.com';
 
 // Datos de transferencia (mismos que muestra /pendiente-de-pago).
 const TRANSFER = { cvu: '0000003100024686621335', alias: 'hypestyle2', titular: 'Pozzi Valentín', banco: 'MERCADO PAGO' };
@@ -39,6 +40,7 @@ async function sendBrevo(to: { email: string; name?: string }, subject: string, 
     headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+      replyTo: { name: SENDER_NAME, email: REPLY_TO },
       to: [to],
       subject,
       htmlContent: html,

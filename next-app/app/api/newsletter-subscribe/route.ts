@@ -95,7 +95,8 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sender:      { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
+        sender:      { name: 'Hypestyle', email: 'info@hypestyle.com.ar' },
+        replyTo:     { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
         to:          [{ email }],
         subject:     '¡Tu 10% off te espera — Hypestyle!',
         htmlContent: buildWelcomeHtml(firstName),

@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const BREVO_KEY    = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const ADMIN_SECRET = process.env.WP_SECRET || '';
 const NEWSLETTER_LIST_ID = 3;
-const SENDER = { name: 'Hypestyle', email: 'hypestylearg@gmail.com' };
+const SENDER = { name: 'Hypestyle', email: 'info@hypestyle.com.ar' };
+const REPLY_TO_EMAIL = 'hypestylearg@gmail.com';
 
 const authed = (req: NextRequest) => {
   const key = req.headers.get('x-admin-key') || '';
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     const r = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sender: SENDER, to: [{ email: test }], subject: `[PRUEBA] ${subj}`, htmlContent: body }),
+      body: JSON.stringify({ sender: SENDER, replyTo: { email: REPLY_TO_EMAIL, name: SENDER.name }, to: [{ email: test }], subject: `[PRUEBA] ${subj}`, htmlContent: body }),
     });
     if (!r.ok) return NextResponse.json({ error: 'Brevo (prueba): ' + JSON.stringify(await r.json().catch(() => ({}))) }, { status: 502 });
     return NextResponse.json({ ok: true, mode: 'test', to: test });
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
       name:       `${subject} — ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
       subject:    subj,
       sender:     SENDER,
+      replyTo:    REPLY_TO_EMAIL,
       type:       'classic',
       htmlContent: body,
       recipients: { listIds: [NEWSLETTER_LIST_ID] },
