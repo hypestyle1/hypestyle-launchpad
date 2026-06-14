@@ -129,8 +129,12 @@ export default function HeroLaNuestra() {
       {/* Widget arriba del contenedor + contenedor (slideshow) con el botón adentro */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 md:gap-6 px-4">
         {/* Widget de partido — arriba, sobre el video (no tapa las fotos) */}
-        <div className="z-20 w-full flex justify-center">
+        <div className="z-20 w-full flex flex-col items-center gap-2.5">
           <MatchWidget />
+          <p className="text-white/85 text-[11px] md:text-[12px] font-medium tracking-[0.03em] text-center
+                        max-w-[340px] px-4 [text-shadow:0_2px_12px_rgba(0,0,0,0.65)]">
+            Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span>
+          </p>
         </div>
 
         {/* Contenedor: slideshow de las 5 fotos del shoot + botón Ver producto */}
