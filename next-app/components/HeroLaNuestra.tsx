@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import MatchWidget from '@/components/MatchWidget';
 
 // Página del producto a la que lleva el botón.
 const PRODUCT_URL = '/producto/la-nuestra-jersey-mundial-26';
@@ -122,11 +123,17 @@ export default function HeroLaNuestra() {
         <div
           ref={cardRef}
           className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
-                     overflow-hidden bg-cover bg-center rounded-[24px]"
+                     overflow-hidden bg-cover bg-center rounded-[24px]
+                     flex items-center justify-center"
           style={{ backgroundImage: `url('${CARD_IMG}')` }}
         >
           {/* oscurecido para contraste */}
           <div className="absolute inset-0 bg-black/25 pointer-events-none" />
+
+          {/* Widget de partido (countdown → resultado en vivo) */}
+          <div className="relative z-10">
+            <MatchWidget />
+          </div>
         </div>
       </div>
 
