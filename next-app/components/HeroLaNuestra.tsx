@@ -126,21 +126,12 @@ export default function HeroLaNuestra() {
         </h1>
       </div>
 
-      {/* Widget arriba del contenedor + contenedor (slideshow) con el botón adentro */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 md:gap-6 px-4">
-        {/* Widget de partido — arriba, sobre el video (no tapa las fotos) */}
-        <div className="z-20 w-full flex flex-col items-center gap-2.5">
-          <MatchWidget />
-          <p className="text-white/85 text-[11px] md:text-[12px] font-medium tracking-[0.03em] text-center
-                        max-w-[340px] px-4 [text-shadow:0_2px_12px_rgba(0,0,0,0.65)]">
-            Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span>
-          </p>
-        </div>
-
+      {/* Contenedor (slideshow) con el botón adentro + widget DEBAJO */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 md:gap-5 px-4">
         {/* Contenedor: slideshow de las 5 fotos del shoot + botón Ver producto */}
         <div
           ref={cardRef}
-          className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
+          className="relative w-full max-w-[767px] aspect-[1/1] md:aspect-[990/503]
                      overflow-hidden rounded-[24px] bg-bg-dark"
         >
           {CARD_IMGS.map((src, i) => (
@@ -167,6 +158,15 @@ export default function HeroLaNuestra() {
               <span className="relative z-10">Ver producto</span>
             </Link>
           </div>
+        </div>
+
+        {/* Widget de partido — DEBAJO del contenedor (no tapa el título) */}
+        <div className="z-20 w-full flex flex-col items-center gap-2.5">
+          <MatchWidget />
+          <p className="text-white/85 text-[11px] md:text-[12px] font-medium tracking-[0.03em] text-center
+                        max-w-[340px] px-4 [text-shadow:0_2px_12px_rgba(0,0,0,0.65)]">
+            Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span>
+          </p>
         </div>
       </div>
     </section>
