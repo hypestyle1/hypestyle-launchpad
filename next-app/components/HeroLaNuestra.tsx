@@ -16,20 +16,22 @@ const CARD_IMG = '/hero/la-nuestra-card.jpg';
 export default function HeroLaNuestra() {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const section = sectionRef.current;
     const card = cardRef.current;
-    if (!section || !card) return;
+    const title = titleRef.current;
+    if (!section || !card || !title) return;
 
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
 
-      // Desktop/tablet: el contenedor crece de 767px → 1220px mientras el hero
-      // queda pineado. Cuando llega a 1220, se mantiene un rato (HOLD) antes de
-      // despinear, para darle tiempo al usuario de ver el contenedor completo.
+      // Desktop/tablet: el contenedor crece 767→1220 y el título (top-left) se
+      // agranda en SINCRO (misma timeline, misma posición 0). Al llegar al máximo,
+      // se mantienen un rato (HOLD) antes de despinear.
       mm.add('(min-width: 768px)', () => {
         const tl = gsap.timeline({
           scrollTrigger: {
@@ -41,11 +43,12 @@ export default function HeroLaNuestra() {
             anticipatePin: 1,
           },
         });
-        tl.fromTo(card, { maxWidth: 767 }, { maxWidth: 1220, ease: 'none', duration: 1 });
-        tl.to({}, { duration: 1 }); // hold: queda en 1220 antes de soltar el scroll
+        tl.fromTo(card, { maxWidth: 767 }, { maxWidth: 1220, ease: 'none', duration: 1 }, 0);
+        tl.fromTo(title, { scale: 1 }, { scale: 1.5, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
+        tl.to({}, { duration: 1 }); // hold
       });
 
-      // Mobile: crece de inset (con márgenes y bordes) a full-bleed, y se mantiene.
+      // Mobile: contenedor inset → full-bleed, título escala en sincro, y hold.
       mm.add('(max-width: 767px)', () => {
         const tl = gsap.timeline({
           scrollTrigger: {
@@ -57,8 +60,9 @@ export default function HeroLaNuestra() {
             anticipatePin: 1,
           },
         });
-        tl.fromTo(card, { width: '84vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 });
-        tl.to({}, { duration: 0.9 }); // hold full-bleed antes de soltar el scroll
+        tl.fromTo(card, { width: '84vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 }, 0);
+        tl.fromTo(title, { scale: 1 }, { scale: 1.28, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
+        tl.to({}, { duration: 0.9 }); // hold
       });
     }, section);
 
@@ -94,47 +98,50 @@ export default function HeroLaNuestra() {
         <source src={VIDEO_SRC} type="video/mp4" />
       </video>
 
-      {/* Velo sutil para legibilidad del contenido */}
+      {/* Velo sutil para legibilidad */}
       <div className="absolute inset-0 bg-black/25 pointer-events-none" />
 
-      {/* Contenedor que crece con el scroll */}
+      {/* Título FUERA del contenedor, top-left — escala con el scroll */}
+      <div
+        ref={titleRef}
+        className="absolute top-6 left-6 md:top-10 md:left-12 z-20 origin-top-left pointer-events-none"
+      >
+        <p className="text-white/75 text-[10px] md:text-[12px] uppercase tracking-[0.32em]
+                      [text-shadow:0_2px_16px_rgba(0,0,0,0.55)]">
+          Mundial 26&apos;
+        </p>
+        <h1 className="text-white font-bold uppercase leading-[0.92] tracking-tight
+                       text-[40px] sm:text-[52px] md:text-[64px]
+                       [text-shadow:0_2px_24px_rgba(0,0,0,0.5)]">
+          LA NUESTRA
+        </h1>
+      </div>
+
+      {/* Contenedor que crece con el scroll (solo el botón adentro) */}
       <div className="absolute inset-0 flex items-center justify-center px-4">
         <div
           ref={cardRef}
           className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
                      overflow-hidden bg-cover bg-center rounded-[24px]
-                     flex flex-col items-center justify-center text-center"
+                     flex items-end justify-center text-center"
           style={{ backgroundImage: `url('${CARD_IMG}')` }}
         >
-          {/* oscurecido para contraste del texto sobre el cielo claro */}
-          <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+          {/* oscurecido para contraste */}
+          <div className="absolute inset-0 bg-black/25 pointer-events-none" />
 
-          <div className="relative flex flex-col items-center gap-7 px-6">
-            <div className="flex flex-col items-center gap-2.5">
-              <p className="text-white/75 text-[11px] md:text-[13px] uppercase tracking-[0.32em]
-                            [text-shadow:0_2px_16px_rgba(0,0,0,0.5)]">
-                Mundial 26&apos;
-              </p>
-              <h1 className="text-white font-bold uppercase leading-[0.95] tracking-tight
-                             text-[44px] sm:text-[64px] md:text-[88px]
-                             [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]">
-                LA NUESTRA
-              </h1>
-            </div>
-            {/* Botón liquid glass (estilo Apple): vidrio esmerilado + borde sutil + redondeado */}
-            <Link
-              href={PRODUCT_URL}
-              className="group relative overflow-hidden rounded-full px-9 py-4
-                         text-white text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.16em]
-                         bg-white/15 backdrop-blur-xl border border-white/30
-                         shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.4)]
-                         transition-all duration-300 hover:bg-white/25 hover:border-white/50"
-            >
-              <span className="relative z-10">Ver producto</span>
-              <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2
-                               bg-gradient-to-b from-white/25 to-transparent" />
-            </Link>
-          </div>
+          {/* Botón liquid glass (estilo Apple) */}
+          <Link
+            href={PRODUCT_URL}
+            className="group relative mb-10 md:mb-12 overflow-hidden rounded-full px-9 py-4
+                       text-white text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.16em]
+                       bg-white/15 backdrop-blur-xl border border-white/30
+                       shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.4)]
+                       transition-all duration-300 hover:bg-white/25 hover:border-white/50"
+          >
+            <span className="relative z-10">Ver producto</span>
+            <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2
+                             bg-gradient-to-b from-white/25 to-transparent" />
+          </Link>
         </div>
       </div>
     </section>
