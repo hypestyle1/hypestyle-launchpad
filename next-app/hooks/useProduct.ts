@@ -171,7 +171,8 @@ function fromWPNode(node: any): Product {
   const slug     = node.slug || '';
   const category = node.productCategories?.nodes?.[0]?.name || 'Remera';
   const description = stripHtml(node.description || '');
-  const modelInfo   = stripHtml(node.shortDescription || '') || undefined;
+  // Se mantiene el HTML (no se stripea): ProductoClient renderiza <strong>/<p> para resaltar.
+  const modelInfo   = (node.shortDescription || '').trim() || undefined;
 
   const regular  = parsePrice(node.regularPrice);
   const explicit = parsePrice(node.salePrice);

@@ -80,6 +80,38 @@ function imgUrl(src: string): string {
   return s.startsWith('http') ? s : `/${s}`;
 }
 
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&nbsp;/g, ' ')
+    .replace(/&oacute;/g, 'ó').replace(/&aacute;/g, 'á').replace(/&eacute;/g, 'é')
+    .replace(/&iacute;/g, 'í').replace(/&uacute;/g, 'ú').replace(/&ntilde;/g, 'ñ');
+}
+
+// Renderiza el modelInfo (HTML simple de Woo): párrafos + <strong> resaltado; ignora el resto.
+function ModelInfo({ html }: { html: string }) {
+  const paras = html.split(/<\/p>/i).map(p => p.replace(/<p[^>]*>/i, '').trim()).filter(Boolean);
+  const blocks = paras.length ? paras : [html];
+  return (
+    <>
+      {blocks.map((para, pi) => {
+        const parts = para.split(/(<strong>[\s\S]*?<\/strong>)/i).filter(Boolean);
+        return (
+          <p key={pi} className={`text-[12px] text-foreground/70 ${pi > 0 ? 'mt-2' : ''}`}>
+            {parts.map((part, i) => {
+              const m = part.match(/^<strong>([\s\S]*?)<\/strong>$/i);
+              const text = decodeEntities((m ? m[1] : part).replace(/<[^>]+>/g, ''));
+              return m
+                ? <strong key={i} className="font-bold text-foreground">{text}</strong>
+                : <span key={i}>{text}</span>;
+            })}
+          </p>
+        );
+      })}
+    </>
+  );
+}
+
 export default function ProductoClient({ slug }: { slug: string }) {
   const router = useRouter();
   const { formatPrice, currency } = useLocale();
@@ -338,7 +370,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
 
               {product.modelInfo && (
                 <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 mb-4 rounded-[10px]">
-                  <p className="text-[12px] text-foreground/70 whitespace-pre-line">{product.modelInfo}</p>
+                  <ModelInfo html={product.modelInfo} />
                 </div>
               )}
 
