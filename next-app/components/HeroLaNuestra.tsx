@@ -28,45 +28,37 @@ export default function HeroLaNuestra() {
       const mm = gsap.matchMedia();
 
       // Desktop/tablet: el contenedor crece de 767px → 1220px mientras el hero
-      // queda pineado. Recién al completar, se despinea y sigue el scroll.
+      // queda pineado. Cuando llega a 1220, se mantiene un rato (HOLD) antes de
+      // despinear, para darle tiempo al usuario de ver el contenedor completo.
       mm.add('(min-width: 768px)', () => {
-        gsap.fromTo(
-          card,
-          { maxWidth: 767 },
-          {
-            maxWidth: 1220,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: section,
-              start: 'top top',
-              end: '+=110%',
-              pin: true,
-              scrub: 0.4,
-              anticipatePin: 1,
-            },
-          }
-        );
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: '+=210%',
+            pin: true,
+            scrub: 0.4,
+            anticipatePin: 1,
+          },
+        });
+        tl.fromTo(card, { maxWidth: 767 }, { maxWidth: 1220, ease: 'none', duration: 1 });
+        tl.to({}, { duration: 1 }); // hold: queda en 1220 antes de soltar el scroll
       });
 
-      // Mobile: el contenedor crece de inset (con márgenes y bordes) a full-bleed.
+      // Mobile: crece de inset (con márgenes y bordes) a full-bleed, y se mantiene.
       mm.add('(max-width: 767px)', () => {
-        gsap.fromTo(
-          card,
-          { width: '84vw', borderRadius: 24 },
-          {
-            width: '100vw',
-            borderRadius: 0,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: section,
-              start: 'top top',
-              end: '+=90%',
-              pin: true,
-              scrub: 0.4,
-              anticipatePin: 1,
-            },
-          }
-        );
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: '+=180%',
+            pin: true,
+            scrub: 0.4,
+            anticipatePin: 1,
+          },
+        });
+        tl.fromTo(card, { width: '84vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 });
+        tl.to({}, { duration: 0.9 }); // hold full-bleed antes de soltar el scroll
       });
     }, section);
 
