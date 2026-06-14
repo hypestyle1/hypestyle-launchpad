@@ -126,8 +126,9 @@ export default function HeroLaNuestra() {
         </h1>
       </div>
 
-      {/* Contenedor (slideshow) centrado solo, con el botón adentro */}
-      <div className="absolute inset-0 flex items-center justify-center px-4">
+      {/* Contenedor (slideshow) — mobile: arriba (deja lugar al widget abajo) · desktop: centrado */}
+      <div className="absolute inset-0 flex items-start md:items-center justify-center px-4
+                      pt-[calc(var(--offset)+5.5rem)] md:pt-0">
         <div
           ref={cardRef}
           className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
