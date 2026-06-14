@@ -1,26 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getArgentinaFixture, hasKey } from '@/lib/argentina-fixture';
 
 // Aplica al producto LA NUESTRA un descuento de 7% por cada gol de Argentina,
 // sobre el precio original, válido 24hs (Woo lo vence solo con date_on_sale_to).
-// Pensado para que lo llame un cron cada ~2 min durante el partido.
+// Solo necesita API_FOOTBALL_KEY: detecta el partido y su estado automáticamente.
+// Pensado para que lo llame un cron cada ~2 min.
 
 const WP = 'https://lightpink-rook-704850.hostingersite.com/wp-json/wc/v3';
 const WC_KEY = (process.env.WC_CONSUMER_KEY || '').trim();
 const WC_SEC = (process.env.WC_CONSUMER_SECRET || '').trim();
-const AF_KEY = (process.env.API_FOOTBALL_KEY || '').trim();
-const FIXTURE_ID = (process.env.API_FOOTBALL_FIXTURE_ID || '').trim();
 const SECRET = process.env.CRON_SECRET || 'hs2026';
 
 const PRODUCT_ID = 1571;       // LA NUESTRA - JERSEY MUNDIAL 26'
 const PER_GOAL = 0.07;         // 7% por gol
 const MAX_DISCOUNT = 0.5;      // tope de seguridad
 const SALE_HOURS = 24;
-const ARG_TEAM_ID = 26;
-
-// Kickoff del partido (mismo valor que usa el widget). Acota la ventana en la que
-// se consulta la API (evita quemar quota cuando el cron corre 24/7).
-const KICKOFF = new Date(process.env.NEXT_PUBLIC_MATCH_KICKOFF || '2026-06-16T22:00:00-03:00').getTime();
-const WINDOW_END = KICKOFF + 26 * 3600 * 1000; // partido + 24h de oferta + margen
 
 export const revalidate = 0;
 
@@ -29,46 +23,31 @@ const wcGet = (p: string) => fetch(`${WP}${p}`, { headers: { Authorization: wcAu
 const wcPut = (p: string, body: any) =>
   fetch(`${WP}${p}`, { method: 'PUT', headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
 
-async function getArgentina() {
-  if (!AF_KEY) return null;
-  const url = FIXTURE_ID ? `/fixtures?id=${FIXTURE_ID}` : `/fixtures?team=${ARG_TEAM_ID}&next=1`;
-  const r = await fetch(`https://v3.football.api-sports.io${url}`, { headers: { 'x-apisports-key': AF_KEY }, cache: 'no-store' }).then(x => x.json());
-  const it = (r.response || [])[0];
-  if (!it) return null;
-  const argHome = /argentin/i.test(it.teams.home.name);
-  const st = it.fixture.status.short as string;
-  return {
-    goals: (argHome ? it.goals.home : it.goals.away) ?? 0,
-    started: !['NS', 'TBD', 'PST', 'CANC'].includes(st),
-    status: st,
-  };
-}
-
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  // Acepta ?secret=, header x-cron-secret, o el Bearer que manda Vercel Cron (CRON_SECRET).
+  // Acepta ?secret=, header x-cron-secret, o el Bearer de Vercel Cron (CRON_SECRET).
   const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   const provided = sp.get('secret') || req.headers.get('x-cron-secret') || bearer;
   if (provided !== SECRET) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Limpiar oferta (reset manual).
+  // Reset manual de la oferta.
   if (sp.get('clear') === '1') {
     await wcPut(`/products/${PRODUCT_ID}`, { sale_price: '', date_on_sale_from: null, date_on_sale_to: null });
     return NextResponse.json({ ok: true, cleared: true });
   }
 
-  // Goles: por parámetro de test, o desde API-Football.
+  // Goles: por parámetro de test, o auto desde API-Football.
   let goals: number;
   const test = sp.get('testGoals');
   if (test != null) {
     goals = Math.max(0, Number(test) || 0);
   } else {
-    const now = Date.now();
-    if (now < KICKOFF || now > WINDOW_END) return NextResponse.json({ ok: true, skip: 'fuera de la ventana del partido' });
-    const arg = await getArgentina();
-    if (!arg) return NextResponse.json({ ok: true, skip: 'sin fixture' });
-    if (!arg.started) return NextResponse.json({ ok: true, skip: 'partido no empezó', status: arg.status });
-    goals = arg.goals;
+    if (!hasKey()) return NextResponse.json({ ok: true, skip: 'sin API key' });
+    const fx = await getArgentinaFixture();
+    if (!fx) return NextResponse.json({ ok: true, skip: 'sin fixture' });
+    // Solo actuar mientras el partido está en juego o terminó hace <24h.
+    if (!fx.live && !fx.finished) return NextResponse.json({ ok: true, skip: 'partido no en curso', status: fx.statusShort });
+    goals = fx.argGoals;
   }
 
   const product = await wcGet(`/products/${PRODUCT_ID}`);
@@ -81,7 +60,7 @@ export async function GET(req: NextRequest) {
   const sale = Math.round(regular * (1 - discount));
   const currentSale = Math.round(Number(product.sale_price || 0));
 
-  // Solo escribir si cambió el precio (evita re-empujar el vencimiento de 24h post-gol).
+  // Solo escribir si cambió el precio (no re-empuja el vencimiento de 24h tras cada gol).
   if (currentSale === sale) return NextResponse.json({ ok: true, goals, sale, note: 'sin cambios' });
 
   const from = new Date().toISOString().slice(0, 19);

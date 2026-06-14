@@ -3,24 +3,26 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
-// Partido: Argentina vs Algeria. Fecha configurable por env (la comparte el endpoint
-// de descuento). Fallback: Martes 16/06/2026 22:00 hora Argentina (UTC-3).
-const KICKOFF = new Date(process.env.NEXT_PUBLIC_MATCH_KICKOFF || '2026-06-16T22:00:00-03:00');
+// Fecha del partido: la trae la API (auto). Si todavía no está cargado el fixture,
+// se usa este fallback editable (no requiere env). Argentina vs Algeria.
+const FALLBACK_KICKOFF = new Date(
+  process.env.NEXT_PUBLIC_MATCH_KICKOFF || '2026-06-16T22:00:00-03:00'
+);
 const DURATION_MS = 2 * 60 * 60 * 1000; // 2 horas
-const POLL_MS = 120000; // 2 minutos
+const POLL_MS = 120000; // 2 minutos (solo durante el partido)
 
-// Test: fuerza el modo "en vivo" para probar contra un partido en curso. En prod: false.
-const TEST_FORCE_LIVE = false;
-
-// Equipos (para los próximos partidos cambiá el rival aquí + el fixture id en env).
-const HOME = { short: 'Arg', flag: '/hero/flag-arg.png' }; // Argentina (siempre)
-const AWAY = { short: 'Alg', flag: '/hero/flag-alg.png' }; // rival (hoy Algeria)
+// Equipos (Argentina siempre; para próximos partidos cambiá el rival/bandera).
+const HOME = { short: 'Arg', flag: '/hero/flag-arg.png' };
+const AWAY = { short: 'Alg', flag: '/hero/flag-alg.png' };
 
 type Match = {
+  date: string | null;
   statusShort: string;
   elapsed: number | null;
-  home: { name: string; goals: number | null };
-  away: { name: string; goals: number | null };
+  argGoals: number;
+  oppGoals: number;
+  live: boolean;
+  finished: boolean;
 };
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -35,37 +37,49 @@ function Cell({ value, label }: { value: number; label: string }) {
 }
 
 export default function MatchWidget() {
-  // now arranca en null: en SSR y primer render del cliente no dependemos del reloj
-  // (evita hydration mismatch). Se setea al montar.
   const [now, setNow] = useState<number | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
 
+  // Reloj (se setea al montar para evitar hydration mismatch).
   useEffect(() => {
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const ko = KICKOFF.getTime();
-  const cur = now ?? ko - 1; // hasta montar: tratamos como 'pre' con countdown ~0
-  const finishedByStatus = !!match && ['FT', 'AET', 'PEN'].includes(match.statusShort);
-  const phase: 'pre' | 'live' | 'post' =
-    TEST_FORCE_LIVE ? 'live'
-    : cur < ko ? 'pre' : cur < ko + DURATION_MS && !finishedByStatus ? 'live' : 'post';
-
-  // Llamados a la API: nada antes del kickoff; durante el partido cada 2 min; al final, una vez.
+  // Carga inicial del partido (para fecha + score). Solo con la API key.
   useEffect(() => {
-    if (phase === 'pre') return;
-    let id: ReturnType<typeof setInterval> | undefined;
+    let cancelled = false;
     const load = async () => {
       try {
         const r = await fetch('/api/match-argentina').then(res => res.json());
-        if (r?.match) setMatch(r.match);
+        if (!cancelled) setMatch(r?.match ?? null);
       } catch { /* ignore */ }
     };
     load();
-    if (phase === 'live') id = setInterval(load, POLL_MS);
-    return () => { if (id) clearInterval(id); };
+    return () => { cancelled = true; };
+  }, []);
+
+  const ko = match?.date ? new Date(match.date).getTime() : FALLBACK_KICKOFF.getTime();
+  const cur = now ?? ko - 1; // hasta montar: 'pre' con countdown ~0
+
+  const phase: 'pre' | 'live' | 'post' =
+    match?.live ? 'live'
+    : match?.finished ? 'post'
+    : cur < ko ? 'pre'
+    : cur < ko + DURATION_MS ? 'live'
+    : 'post';
+
+  // Durante el partido, refrescar el resultado cada 2 min.
+  useEffect(() => {
+    if (phase !== 'live') return;
+    const id = setInterval(async () => {
+      try {
+        const r = await fetch('/api/match-argentina').then(res => res.json());
+        setMatch(r?.match ?? null);
+      } catch { /* ignore */ }
+    }, POLL_MS);
+    return () => clearInterval(id);
   }, [phase]);
 
   const diff = Math.max(0, ko - cur);
@@ -74,10 +88,8 @@ export default function MatchWidget() {
   const m = Math.floor((diff % 3600000) / 60000);
   const s = Math.floor((diff % 60000) / 1000);
 
-  // Goles mapeados por nombre (Argentina puede ser local o visitante en el fixture).
-  const argIsHome = match ? /argentin/i.test(match.home.name) : true;
-  const argGoals = match ? (argIsHome ? match.home.goals : match.away.goals) ?? 0 : 0;
-  const oppGoals = match ? (argIsHome ? match.away.goals : match.home.goals) ?? 0 : 0;
+  const argGoals = match?.argGoals ?? 0;
+  const oppGoals = match?.oppGoals ?? 0;
 
   return (
     <div className="relative w-[300px] md:w-[400px] max-w-[88%] rounded-[20px] overflow-hidden
@@ -110,9 +122,6 @@ export default function MatchWidget() {
             <span className="text-white/25 text-[22px] font-thin">:</span>
             <Cell value={s} label="Seg" />
           </div>
-          <p className="text-center text-[9px] uppercase tracking-[0.18em] text-white/45 mt-3">
-            Martes 22:00 · Argentina
-          </p>
         </>
       )}
 
