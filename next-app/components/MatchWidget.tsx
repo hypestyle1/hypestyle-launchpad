@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
-// Partido: Argentina vs Algeria — Martes 16/06/2026 22:00 hora Argentina (UTC-3).
-// TODO: confirmar fecha/hora exacta del partido.
-const KICKOFF = new Date('2026-06-16T22:00:00-03:00');
+// Partido: Argentina vs Algeria. Fecha configurable por env (la comparte el endpoint
+// de descuento). Fallback: Martes 16/06/2026 22:00 hora Argentina (UTC-3).
+const KICKOFF = new Date(process.env.NEXT_PUBLIC_MATCH_KICKOFF || '2026-06-16T22:00:00-03:00');
 const DURATION_MS = 2 * 60 * 60 * 1000; // 2 horas
 const POLL_MS = 120000; // 2 minutos
 
