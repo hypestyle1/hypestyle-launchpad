@@ -126,18 +126,17 @@ export default function HeroLaNuestra() {
         </h1>
       </div>
 
-      {/* Contenedor (slideshow) con el botón adentro + widget DEBAJO */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 md:gap-5 px-4">
-        {/* Contenedor: slideshow de las 5 fotos del shoot + botón Ver producto */}
+      {/* Contenedor (slideshow) centrado solo, con el botón adentro */}
+      <div className="absolute inset-0 flex items-center justify-center px-4">
         <div
           ref={cardRef}
-          className="relative w-full max-w-[767px] aspect-[1/1] md:aspect-[990/503]
+          className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
                      overflow-hidden rounded-[24px] bg-bg-dark"
         >
           {CARD_IMGS.map((src, i) => (
             <div
               key={src}
-              className="absolute inset-0 bg-cover bg-[center_28%] transition-opacity duration-[1200ms] ease-in-out"
+              className="absolute inset-0 bg-cover bg-[center_22%] transition-opacity duration-[1200ms] ease-in-out"
               style={{ backgroundImage: `url('${src}')`, opacity: i === slide ? 1 : 0 }}
             />
           ))}
@@ -159,15 +158,18 @@ export default function HeroLaNuestra() {
             </Link>
           </div>
         </div>
+      </div>
 
-        {/* Widget de partido — DEBAJO del contenedor (no tapa el título) */}
-        <div className="z-20 w-full flex flex-col items-center gap-2.5">
-          <MatchWidget />
-          <p className="text-white/85 text-[11px] md:text-[12px] font-medium tracking-[0.03em] text-center
-                        max-w-[340px] px-4 [text-shadow:0_2px_12px_rgba(0,0,0,0.65)]">
-            Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span>
-          </p>
-        </div>
+      {/* Widget de partido — mobile: abajo-centro · desktop: a un costado (derecha) */}
+      <div className="absolute z-20 flex flex-col items-center gap-2.5
+                      left-1/2 -translate-x-1/2 bottom-5
+                      md:left-auto md:translate-x-0 md:right-8 lg:right-14
+                      md:top-1/2 md:-translate-y-1/2 md:bottom-auto">
+        <MatchWidget />
+        <p className="text-white/85 text-[11px] md:text-[12px] font-medium tracking-[0.03em] text-center
+                      max-w-[340px] px-4 [text-shadow:0_2px_12px_rgba(0,0,0,0.65)]">
+          Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span>
+        </p>
       </div>
     </section>
   );
