@@ -31,7 +31,7 @@ export default function HeroLaNuestra() {
       {/* Contenedor 1220px con imagen de fondo */}
       <div className="absolute inset-0 flex items-center justify-center px-4">
         <div
-          className="relative w-full max-w-[1220px] aspect-[1220/620] overflow-hidden bg-cover bg-center
+          className="relative w-full max-w-[990px] aspect-[990/503] overflow-hidden bg-cover bg-center
                      rounded-[24px] flex flex-col items-center justify-center text-center"
           style={{ backgroundImage: `url('${CARD_IMG}')` }}
         >
@@ -39,11 +39,17 @@ export default function HeroLaNuestra() {
           <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
           <div className="relative flex flex-col items-center gap-7 px-6">
-            <h1 className="text-white font-bold uppercase leading-[0.95] tracking-tight
-                           text-[44px] sm:text-[64px] md:text-[88px]
-                           [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]">
-              LA NUESTRA
-            </h1>
+            <div className="flex flex-col items-center gap-2.5">
+              <p className="text-white/75 text-[11px] md:text-[13px] uppercase tracking-[0.32em]
+                            [text-shadow:0_2px_16px_rgba(0,0,0,0.5)]">
+                Mundial 26&apos;
+              </p>
+              <h1 className="text-white font-bold uppercase leading-[0.95] tracking-tight
+                             text-[44px] sm:text-[64px] md:text-[88px]
+                             [text-shadow:0_2px_24px_rgba(0,0,0,0.45)]">
+                LA NUESTRA
+              </h1>
+            </div>
             {/* Botón liquid glass (estilo Apple): vidrio esmerilado + borde sutil + redondeado */}
             <Link
               href={PRODUCT_URL}
