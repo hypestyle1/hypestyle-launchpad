@@ -131,7 +131,7 @@ export default function HeroLaNuestra() {
           <div className="absolute inset-0 bg-black/25 pointer-events-none" />
 
           {/* Widget de partido (countdown → resultado en vivo) */}
-          <div className="relative z-10">
+          <div className="relative z-10 w-full flex justify-center">
             <MatchWidget />
           </div>
         </div>
