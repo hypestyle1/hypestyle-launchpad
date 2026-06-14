@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -11,13 +11,21 @@ const PRODUCT_URL = '/producto/la-nuestra-jersey-mundial-26';
 
 // Video de fondo del lanzamiento (optimizado a 1080p para web).
 const VIDEO_SRC = '/hero/la-nuestra-bg.mp4';
-// Imagen del contenedor (analógica de Río, corregida de rotación).
-const CARD_IMG = '/hero/la-nuestra-card.jpg';
+// Slideshow del contenedor: las 5 fotos del shoot Argentina (crossfade).
+const CARD_IMGS = [1, 2, 3, 4, 5].map(n => `/hero/la-nuestra-card-${n}.jpg`);
+const SLIDE_MS = 4000;
 
 export default function HeroLaNuestra() {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
+  const [slide, setSlide] = useState(0);
+
+  // Rotación del slideshow del contenedor (crossfade entre las 5 fotos).
+  useEffect(() => {
+    const id = setInterval(() => setSlide(s => (s + 1) % CARD_IMGS.length), SLIDE_MS);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -123,15 +131,22 @@ export default function HeroLaNuestra() {
         <div
           ref={cardRef}
           className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
-                     overflow-hidden bg-cover bg-center rounded-[24px]
-                     flex items-center justify-center"
-          style={{ backgroundImage: `url('${CARD_IMG}')` }}
+                     overflow-hidden rounded-[24px] bg-bg-dark"
         >
-          {/* oscurecido para contraste */}
-          <div className="absolute inset-0 bg-black/25 pointer-events-none" />
+          {/* Slideshow de las 5 fotos del shoot (crossfade) */}
+          {CARD_IMGS.map((src, i) => (
+            <div
+              key={src}
+              className="absolute inset-0 bg-cover bg-[center_28%] transition-opacity duration-[1200ms] ease-in-out"
+              style={{ backgroundImage: `url('${src}')`, opacity: i === slide ? 1 : 0 }}
+            />
+          ))}
 
-          {/* Widget de partido (countdown → resultado en vivo) */}
-          <div className="relative z-10 w-full flex justify-center">
+          {/* Degradé inferior: deja ver la foto arriba y da contraste al widget abajo */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent pointer-events-none" />
+
+          {/* Widget de partido al fondo del contenedor (no tapa la imagen) */}
+          <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-4 md:pb-5">
             <MatchWidget />
           </div>
         </div>
