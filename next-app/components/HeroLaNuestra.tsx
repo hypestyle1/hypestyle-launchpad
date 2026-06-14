@@ -105,7 +105,7 @@ export default function HeroLaNuestra() {
       {/* Título FUERA del contenedor, top-left — escala con el scroll */}
       <div
         ref={titleRef}
-        className="absolute top-6 left-6 md:top-10 md:left-12 z-20 origin-top-left pointer-events-none"
+        className="absolute top-[calc(var(--offset)+0.75rem)] left-6 md:left-12 z-20 origin-top-left pointer-events-none"
       >
         <p className="text-white/75 text-[10px] md:text-[12px] uppercase tracking-[0.32em]
                       [text-shadow:0_2px_16px_rgba(0,0,0,0.55)]">
@@ -148,8 +148,6 @@ export default function HeroLaNuestra() {
                      transition-all duration-300 hover:bg-white/25 hover:border-white/50"
         >
           <span className="relative z-10">Ver producto</span>
-          <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2
-                           bg-gradient-to-b from-white/25 to-transparent" />
         </Link>
       </div>
     </section>
