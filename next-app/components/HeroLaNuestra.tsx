@@ -127,8 +127,8 @@ export default function HeroLaNuestra() {
       </div>
 
       {/* Contenedor (slideshow) — mobile: arriba (deja lugar al widget abajo) · desktop: centrado */}
-      <div className="absolute inset-0 flex items-start md:items-center justify-center px-4
-                      pt-[calc(var(--offset)+5.5rem)] md:pt-0">
+      <div className="absolute inset-0 flex items-start 2xl:items-center justify-center px-4
+                      pt-[calc(var(--offset)+5.5rem)] 2xl:pt-0">
         <div
           ref={cardRef}
           className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
@@ -161,11 +161,11 @@ export default function HeroLaNuestra() {
         </div>
       </div>
 
-      {/* Widget de partido — mobile: abajo-centro · desktop: a un costado (derecha) */}
+      {/* Widget de partido — mobile/tablet: abajo-centro · desktop ancho (2xl): a un costado (derecha) */}
       <div className="absolute z-20 flex flex-col items-center gap-2.5
                       left-1/2 -translate-x-1/2 bottom-5
-                      md:left-auto md:translate-x-0 md:right-8 lg:right-14
-                      md:top-1/2 md:-translate-y-1/2 md:bottom-auto">
+                      2xl:left-auto 2xl:translate-x-0 2xl:right-14
+                      2xl:top-1/2 2xl:-translate-y-1/2 2xl:bottom-auto">
         <MatchWidget />
         <p className="text-white/85 text-[11px] md:text-[12px] font-medium tracking-[0.03em] text-center
                       max-w-[340px] px-4 [text-shadow:0_2px_12px_rgba(0,0,0,0.65)]">
