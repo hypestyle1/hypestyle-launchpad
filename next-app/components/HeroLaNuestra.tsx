@@ -122,27 +122,28 @@ export default function HeroLaNuestra() {
         <div
           ref={cardRef}
           className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
-                     overflow-hidden bg-cover bg-center rounded-[24px]
-                     flex items-end justify-center text-center"
+                     overflow-hidden bg-cover bg-center rounded-[24px]"
           style={{ backgroundImage: `url('${CARD_IMG}')` }}
         >
           {/* oscurecido para contraste */}
           <div className="absolute inset-0 bg-black/25 pointer-events-none" />
-
-          {/* Botón liquid glass (estilo Apple) */}
-          <Link
-            href={PRODUCT_URL}
-            className="group relative mb-10 md:mb-12 overflow-hidden rounded-full px-9 py-4
-                       text-white text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.16em]
-                       bg-white/15 backdrop-blur-xl border border-white/30
-                       shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.4)]
-                       transition-all duration-300 hover:bg-white/25 hover:border-white/50"
-          >
-            <span className="relative z-10">Ver producto</span>
-            <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2
-                             bg-gradient-to-b from-white/25 to-transparent" />
-          </Link>
         </div>
+      </div>
+
+      {/* Botón estático, debajo y sobre el video (no escala ni crece con el scroll) */}
+      <div className="absolute bottom-10 md:bottom-14 left-1/2 -translate-x-1/2 z-20">
+        <Link
+          href={PRODUCT_URL}
+          className="group relative overflow-hidden rounded-full px-9 py-4
+                     text-white text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.16em]
+                     bg-white/15 backdrop-blur-xl border border-white/30
+                     shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.4)]
+                     transition-all duration-300 hover:bg-white/25 hover:border-white/50"
+        >
+          <span className="relative z-10">Ver producto</span>
+          <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2
+                           bg-gradient-to-b from-white/25 to-transparent" />
+        </Link>
       </div>
     </section>
   );
