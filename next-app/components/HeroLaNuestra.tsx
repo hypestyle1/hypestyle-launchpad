@@ -126,14 +126,19 @@ export default function HeroLaNuestra() {
         </h1>
       </div>
 
-      {/* Contenedor que crece con el scroll (solo el botón adentro) */}
-      <div className="absolute inset-0 flex items-center justify-center px-4">
+      {/* Widget arriba del contenedor + contenedor (slideshow) con el botón adentro */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 md:gap-6 px-4">
+        {/* Widget de partido — arriba, sobre el video (no tapa las fotos) */}
+        <div className="z-20 w-full flex justify-center">
+          <MatchWidget />
+        </div>
+
+        {/* Contenedor: slideshow de las 5 fotos del shoot + botón Ver producto */}
         <div
           ref={cardRef}
           className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
                      overflow-hidden rounded-[24px] bg-bg-dark"
         >
-          {/* Slideshow de las 5 fotos del shoot (crossfade) */}
           {CARD_IMGS.map((src, i) => (
             <div
               key={src}
@@ -142,28 +147,23 @@ export default function HeroLaNuestra() {
             />
           ))}
 
-          {/* Degradé inferior: deja ver la foto arriba y da contraste al widget abajo */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent pointer-events-none" />
+          {/* Degradé inferior solo para que se lea el botón */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent pointer-events-none" />
 
-          {/* Widget de partido al fondo del contenedor (no tapa la imagen) */}
-          <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-4 md:pb-5">
-            <MatchWidget />
+          {/* Botón Ver producto — adentro, abajo (chico, no tapa el producto) */}
+          <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-5 md:pb-6">
+            <Link
+              href={PRODUCT_URL}
+              className="group relative overflow-hidden rounded-full px-8 py-3.5
+                         text-white text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.16em]
+                         bg-white/15 backdrop-blur-xl border border-white/30
+                         shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.4)]
+                         transition-all duration-300 hover:bg-white/25 hover:border-white/50"
+            >
+              <span className="relative z-10">Ver producto</span>
+            </Link>
           </div>
         </div>
-      </div>
-
-      {/* Botón estático, debajo y sobre el video (no escala ni crece con el scroll) */}
-      <div className="absolute bottom-10 md:bottom-14 left-1/2 -translate-x-1/2 z-20">
-        <Link
-          href={PRODUCT_URL}
-          className="group relative overflow-hidden rounded-full px-9 py-4
-                     text-white text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.16em]
-                     bg-white/15 backdrop-blur-xl border border-white/30
-                     shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.4)]
-                     transition-all duration-300 hover:bg-white/25 hover:border-white/50"
-        >
-          <span className="relative z-10">Ver producto</span>
-        </Link>
       </div>
     </section>
   );
