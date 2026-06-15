@@ -499,14 +499,39 @@ export default function ProductoClient({ slug }: { slug: string }) {
 
               <div className="border-b border-border">
                 <Accordion title="Descripción">{product.description}</Accordion>
-                {product.measurements && (
+                {(product.measurementsTable || product.measurements) && (
                   <Accordion title="Calce y medidas">
                     <p className="font-semibold text-foreground">Medidas de la prenda</p>
-                    <div className="mt-1.5 space-y-1">
-                      {product.measurements.ancho && <div className="flex justify-between max-w-[220px]"><span>Ancho (axila a axila)</span><span className="font-medium text-foreground">{product.measurements.ancho} cm</span></div>}
-                      {product.measurements.largo && <div className="flex justify-between max-w-[220px]"><span>Largo (hombro a ruedo)</span><span className="font-medium text-foreground">{product.measurements.largo} cm</span></div>}
-                      {product.measurements.manga && <div className="flex justify-between max-w-[220px]"><span>Manga</span><span className="font-medium text-foreground">{product.measurements.manga} cm</span></div>}
-                    </div>
+                    {product.measurementsTable ? (
+                      <div className="mt-2 overflow-x-auto">
+                        <table className="text-[12px] border-collapse">
+                          <thead>
+                            <tr>
+                              <th className="text-left pr-5 pb-1.5" />
+                              {product.measurementsTable.map(r => (
+                                <th key={r.size} className="px-4 pb-1.5 text-center font-bold text-foreground uppercase">{r.size}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {([['Ancho (axila a axila)', 'ancho'], ['Largo (hombro a ruedo)', 'largo'], ['Manga (raglán)', 'manga']] as const).map(([label, key]) => (
+                              <tr key={key} className="border-t border-border/60">
+                                <td className="pr-5 py-1.5 text-foreground/65">{label}</td>
+                                {product.measurementsTable!.map(r => (
+                                  <td key={r.size} className="px-4 py-1.5 text-center font-medium text-foreground">{r[key] ? `${r[key]} cm` : '—'}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="mt-1.5 space-y-1">
+                        {product.measurements!.ancho && <div className="flex justify-between max-w-[220px]"><span>Ancho (axila a axila)</span><span className="font-medium text-foreground">{product.measurements!.ancho} cm</span></div>}
+                        {product.measurements!.largo && <div className="flex justify-between max-w-[220px]"><span>Largo (hombro a ruedo)</span><span className="font-medium text-foreground">{product.measurements!.largo} cm</span></div>}
+                        {product.measurements!.manga && <div className="flex justify-between max-w-[220px]"><span>Manga (raglán)</span><span className="font-medium text-foreground">{product.measurements!.manga} cm</span></div>}
+                      </div>
+                    )}
                     <p className="text-[11px] text-foreground/45 mt-1.5">Medido en plano · puede variar ±2 cm.</p>
 
                     <p className="font-semibold text-foreground mt-4">Cómo calza según tu altura</p>
