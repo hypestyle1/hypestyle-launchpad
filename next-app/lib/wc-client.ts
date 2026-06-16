@@ -38,6 +38,8 @@ export interface CreateOrderPayload {
   shippingMethodId?: string;
   shippingLabel?: string;
   shippingBranch?: string;
+  fbp?: string;
+  fbc?: string;
 }
 
 export interface CreateOrderResponse {

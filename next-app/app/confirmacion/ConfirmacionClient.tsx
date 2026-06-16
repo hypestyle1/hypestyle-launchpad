@@ -30,9 +30,10 @@ export default function ConfirmacionClient() {
         content_type: 'product',
         order_id: String(parsed.wcOrderNumber || parsed.orderNum),
       };
+      const eventID = String(parsed.wcOrderId ?? parsed.wcOrderNumber ?? parsed.orderNum ?? '');
       const firePurchase = (attempts = 0) => {
         if (window.fbq) {
-          window.fbq('track', 'Purchase', purchasePayload);
+          window.fbq('track', 'Purchase', purchasePayload, eventID ? { eventID } : undefined);
         } else if (attempts < 40) {
           setTimeout(() => firePurchase(attempts + 1), 200);
         }
