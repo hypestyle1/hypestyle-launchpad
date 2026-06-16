@@ -8,6 +8,8 @@ import Navbar from '@/components/Navbar';
 import AnnouncementBar from '@/components/AnnouncementBar';
 
 const S = 600;
+const MOCKUP_SCALE = 0.72; // achica el mockup de la camiseta dentro del canvas (deja margen alrededor)
+const FONT_SCALE = 1.1;    // ajuste del tamaño de fuente del canvas (nombre + número), relativo al mockup
 const FONT = `"AdidasWorldCup", "Arial Black", Arial, sans-serif`;
 
 function drawArcText(ctx: CanvasRenderingContext2D, text: string, cx: number, cy: number, radius: number, letterSpacing = 0) {
@@ -39,25 +41,35 @@ async function renderJersey(canvas: HTMLCanvasElement, view: 'espalda' | 'frente
   const img = new Image();
   img.src = view === 'espalda' ? '/products/argentina-jersey/preview-espalda.png' : '/products/argentina-jersey/preview-frente.png';
   await new Promise<void>(res => { img.onload = () => res(); img.onerror = () => res(); });
-  ctx.drawImage(img, 0, 0, S, S);
   await ensureFont();
+
+  // El mockup se dibuja centrado y achicado (MOCKUP_SCALE); las posiciones y el
+  // tamaño del texto se mapean dentro de esa caja para que sigan calzando.
+  const off = (S * (1 - MOCKUP_SCALE)) / 2;
+  const JS = S * MOCKUP_SCALE;
+  const jx = (f: number) => off + JS * f;
+  const jy = (f: number) => off + JS * f;
+  const fs = (f: number) => Math.round(JS * f * FONT_SCALE);
+
+  ctx.drawImage(img, off, off, JS, JS);
   ctx.fillStyle = '#0a0a0a';
   if (view === 'espalda') {
     if (playerName) {
-      const fontSize = playerName.length > 10 ? Math.round(S * 0.063) : playerName.length > 7 ? Math.round(S * 0.074) : Math.round(S * 0.085);
+      const base = playerName.length > 10 ? 0.063 : playerName.length > 7 ? 0.074 : 0.085;
+      const fontSize = fs(base);
       ctx.font = `${fontSize}px ${FONT}`; ctx.fillStyle = '#0a0a0a';
-      drawArcText(ctx, playerName, S / 2, S * 1.40, S * 1.20, Math.round(fontSize * 0.08));
+      drawArcText(ctx, playerName, jx(0.5), jy(1.40), JS * 1.20, Math.round(fontSize * 0.08));
     }
     if (playerNumber) {
-      const fontSize = playerNumber.length === 1 ? Math.round(S * 0.46) : Math.round(S * 0.38);
+      const fontSize = fs(playerNumber.length === 1 ? 0.46 : 0.38);
       ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#0a0a0a';
-      ctx.fillText(playerNumber, S * 0.5, S * 0.37);
+      ctx.fillText(playerNumber, jx(0.5), jy(0.37));
     }
   }
   if (view === 'frente' && playerNumber) {
-    const fontSize = Math.round(S * 0.10);
+    const fontSize = fs(0.10);
     ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#0a0a0a';
-    ctx.fillText(playerNumber, S * 0.50, S * 0.43);
+    ctx.fillText(playerNumber, jx(0.50), jy(0.43));
   }
 }
 
