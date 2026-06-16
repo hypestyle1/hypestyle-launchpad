@@ -9,6 +9,10 @@
     "start": "npm run start --prefix next-app",
     "lint": "npm run lint --prefix next-app"
   },
-  "dependencies": {},
+  "dependencies": {
+    "next": "14.2.29",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
   "devDependencies": {}
 }
