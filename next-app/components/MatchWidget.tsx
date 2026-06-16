@@ -36,7 +36,7 @@ function Cell({ value, label }: { value: number; label: string }) {
   );
 }
 
-export default function MatchWidget() {
+export default function MatchWidget({ compact = false }: { compact?: boolean }) {
   const [now, setNow] = useState<number | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
 
@@ -91,8 +91,40 @@ export default function MatchWidget() {
   const argGoals = match?.argGoals ?? 0;
   const oppGoals = match?.oppGoals ?? 0;
 
+  // ── Variante COMPACT (socket): barra horizontal para el pie en mobile ──
+  if (compact) {
+    return (
+      <div className="w-full rounded-[14px] bg-black/50 backdrop-blur-xl border border-white/15 text-white
+                      px-4 py-2.5 flex items-center justify-between gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.45)]">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Image src={HOME.flag} alt={HOME.short} width={22} height={22} className="drop-shadow" />
+          <span className="text-[9px] font-bold uppercase">{HOME.short}</span>
+          <span className="text-[9px] text-white/40 mx-0.5">vs</span>
+          <Image src={AWAY.flag} alt={AWAY.short} width={22} height={22} className="drop-shadow" />
+          <span className="text-[9px] font-bold uppercase">{AWAY.short}</span>
+        </div>
+        {phase === 'pre' ? (
+          <div className="flex items-baseline gap-1 font-black tabular-nums text-[19px] leading-none">
+            <span>{pad(d)}</span><span className="text-white/30 text-[13px]">:</span>
+            <span>{pad(h)}</span><span className="text-white/30 text-[13px]">:</span>
+            <span>{pad(m)}</span><span className="text-white/30 text-[13px]">:</span>
+            <span>{pad(s)}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-[22px] font-black tabular-nums leading-none">{argGoals}-{oppGoals}</span>
+            <span className={`text-[9px] font-bold uppercase ${phase === 'live' ? 'text-red-400' : 'text-white/60'}`}>
+              {phase === 'live' ? 'En vivo' : 'Final'}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Variante normal (tarjeta) ──
   return (
-    <div className="relative w-[300px] md:w-[400px] max-w-[88%] rounded-[20px] overflow-hidden
+    <div className="relative w-[300px] max-w-[88%] rounded-[20px] overflow-hidden
                     bg-black/40 backdrop-blur-xl border border-white/20 text-white
                     shadow-[0_10px_40px_rgba(0,0,0,0.4)] px-6 py-5">
       {/* Equipos */}
