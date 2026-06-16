@@ -193,6 +193,16 @@ function fromWPNode(node: any): Product {
   const variations: any[] = node.variations?.nodes || [];
   let variantAxis = ''; // nombre del atributo de variación: talle/size o color
 
+  // Medidas por talle — atributo "medidas" en Woo: "S / 57 / 68 / 49" (talle/ancho/largo/manga).
+  // Separador "/" porque Woo parte las opciones por "|".
+  const medidasAttr = (node.attributes?.nodes ?? []).find((a: any) => (a.name?.toLowerCase() ?? '') === 'medidas');
+  const measurementsTable = (medidasAttr?.options ?? [])
+    .map((o: string) => {
+      const [size, ancho, largo, manga] = o.split('/').map((s: string) => s.trim());
+      return { size, ancho, largo, manga };
+    })
+    .filter((r: any) => r.size);
+
   if (variations.length) {
     for (const v of variations) {
       const attr = v.attributes?.nodes?.find((a: any) => {
@@ -205,6 +215,11 @@ function fromWPNode(node: any): Product {
         sizes.push(sz);
         stock[sz] = stockStatus(v.stockStatus, v.stockQuantity ?? null);
       }
+    }
+  } else if (measurementsTable.length) {
+    // Producto simple con talles definidos por la tabla de medidas (ej. S y L, preventa).
+    for (const r of measurementsTable) {
+      if (!sizes.includes(r.size)) { sizes.push(r.size); stock[r.size] = 'ok'; }
     }
   } else {
     sizes.push('Única');
@@ -246,7 +261,9 @@ function fromWPNode(node: any): Product {
 
   return {
     slug, id: slug, name, category, price, originalPrice,
-    description, modelInfo, sizeGuideImage, sizeEquivalent, measurements, careItems, fit, sizes, stock,
+    description, modelInfo, sizeGuideImage, sizeEquivalent, measurements,
+    measurementsTable: measurementsTable.length ? measurementsTable : undefined,
+    careItems, fit, sizes, stock,
     customizable: CUSTOMIZABLE_SLUGS.has(slug),
     colorVariant,
     colors: COLORWAYS[slug]?.map(c => ({
