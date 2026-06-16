@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
+import { getFbCookies } from '@/lib/fbtracking';
 import { imgSrc } from '@/lib/img';
 
 type Step = 'info' | 'envio' | 'pago';
@@ -215,6 +216,7 @@ export default function Checkout() {
           shippingMethodId: selectedRate?.id,
           shippingLabel: selectedRate?.label,
           shippingBranch: selectedBranch ? `${selectedBranch.label} — ${selectedBranch.direccion}` : undefined,
+          ...getFbCookies(),
         });
       } catch (wcErr) {
         console.error('[checkout] create-order error:', wcErr);

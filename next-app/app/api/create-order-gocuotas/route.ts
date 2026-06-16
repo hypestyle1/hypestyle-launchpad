@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     const {
       items, customer, shipping, discountAmount, couponCode,
       paymentMethod, shippingMethodId, shippingLabel, shippingBranch,
+      fbp, fbc,
     } = await req.json();
 
     const lineItems = await Promise.all(
@@ -98,6 +99,8 @@ export async function POST(req: NextRequest) {
     if (customer.dni)       meta.push({ key: '_billing_dni',    value: customer.dni });
     if (customer.instagram) meta.push({ key: '_instagram',      value: customer.instagram });
     if (shippingBranch)     meta.push({ key: '_shipping_branch', value: shippingBranch });
+    if (fbp)                meta.push({ key: '_fbp',             value: String(fbp) });
+    if (fbc)                meta.push({ key: '_fbc',             value: String(fbc) });
     if (meta.length)        order.meta_data = meta;
 
     const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
