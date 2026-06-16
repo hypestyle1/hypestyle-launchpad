@@ -15,10 +15,15 @@ const VIDEO_SRC = '/hero/la-nuestra-bg.mp4';
 const CARD_IMGS = [1, 2, 3, 4, 5].map(n => `/hero/la-nuestra-card-${n}.jpg`);
 const SLIDE_MS = 4000;
 
+const BTN_CLASS =
+  'group relative overflow-hidden rounded-full px-8 py-3.5 text-white text-[12px] md:text-[13px] ' +
+  'font-semibold uppercase tracking-[0.16em] bg-white/15 backdrop-blur-xl border border-white/30 ' +
+  'shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.4)] ' +
+  'transition-all duration-300 hover:bg-white/25 hover:border-white/50';
+
 export default function HeroLaNuestra() {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLDivElement>(null);
   const [slide, setSlide] = useState(0);
 
   // Rotación del slideshow del contenedor (crossfade entre las 5 fotos).
@@ -30,57 +35,35 @@ export default function HeroLaNuestra() {
   useEffect(() => {
     const section = sectionRef.current;
     const card = cardRef.current;
-    const title = titleRef.current;
-    if (!section || !card || !title) return;
+    if (!section || !card) return;
 
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
 
-      // Desktop/tablet: el contenedor crece 767→1220 y el título (top-left) se
-      // agranda en SINCRO (misma timeline, misma posición 0). Al llegar al máximo,
-      // se mantienen un rato (HOLD) antes de despinear.
+      // Desktop/tablet: el contenedor crece 767→1220 mientras el hero queda pineado,
+      // se mantiene un rato (HOLD) y recién ahí se despinea.
       mm.add('(min-width: 768px)', () => {
         const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: 'top top',
-            end: '+=210%',
-            pin: true,
-            scrub: 0.4,
-            anticipatePin: 1,
-          },
+          scrollTrigger: { trigger: section, start: 'top top', end: '+=200%', pin: true, scrub: 0.4, anticipatePin: 1 },
         });
         tl.fromTo(card, { maxWidth: 767 }, { maxWidth: 1220, ease: 'none', duration: 1 }, 0);
-        tl.fromTo(title, { scale: 1 }, { scale: 1.5, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
         tl.to({}, { duration: 1 }); // hold
       });
 
-      // Mobile: contenedor inset → full-bleed, título escala en sincro, y hold.
+      // Mobile: contenedor inset → full-bleed, y hold.
       mm.add('(max-width: 767px)', () => {
         const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: 'top top',
-            end: '+=180%',
-            pin: true,
-            scrub: 0.4,
-            anticipatePin: 1,
-          },
+          scrollTrigger: { trigger: section, start: 'top top', end: '+=160%', pin: true, scrub: 0.4, anticipatePin: 1 },
         });
-        tl.fromTo(card, { width: '84vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 }, 0);
-        tl.fromTo(title, { scale: 1 }, { scale: 1.28, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
-        tl.to({}, { duration: 0.9 }); // hold
+        tl.fromTo(card, { width: '88vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 }, 0);
+        tl.to({}, { duration: 0.8 }); // hold
       });
     }, section);
 
-    // Recalcular medidas cuando cambia el alto (carga del video, fuentes, etc.).
     let raf = 0;
-    const refresh = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => ScrollTrigger.refresh());
-    };
+    const refresh = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => ScrollTrigger.refresh()); };
     const ro = new ResizeObserver(refresh);
     ro.observe(document.body);
     window.addEventListener('load', refresh);
@@ -94,45 +77,21 @@ export default function HeroLaNuestra() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative w-full h-[100svh] overflow-hidden bg-bg-dark">
+    // -mt-[var(--offset)] sube el hero bajo el navbar → full-screen real y el pin arranca en el primer contacto.
+    <section ref={sectionRef} className="relative w-full h-[100svh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
       {/* Video de fondo full-screen */}
-      <video
-        className="absolute inset-0 w-full h-full object-cover"
-        autoPlay
-        loop
-        muted
-        playsInline
-        aria-hidden
-      >
+      <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline aria-hidden>
         <source src={VIDEO_SRC} type="video/mp4" />
       </video>
 
-      {/* Velo sutil para legibilidad */}
-      <div className="absolute inset-0 bg-black/25 pointer-events-none" />
+      {/* Velo: oscurece arriba (título) y abajo (socket), deja ver la foto en el medio */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/55 pointer-events-none" />
 
-      {/* Título FUERA del contenedor, top-left — escala con el scroll */}
-      <div
-        ref={titleRef}
-        className="absolute top-[calc(var(--offset)+0.75rem)] left-6 md:left-12 z-20 origin-top-left pointer-events-none"
-      >
-        <p className="text-white/75 text-[10px] md:text-[12px] uppercase tracking-[0.32em]
-                      [text-shadow:0_2px_16px_rgba(0,0,0,0.55)]">
-          Mundial 26&apos;
-        </p>
-        <h1 className="text-white font-bold uppercase leading-[0.92] tracking-tight
-                       text-[40px] sm:text-[52px] md:text-[64px]
-                       [text-shadow:0_2px_24px_rgba(0,0,0,0.5)]">
-          LA NUESTRA
-        </h1>
-      </div>
-
-      {/* Contenedor (slideshow) — mobile: arriba (deja lugar al widget abajo) · desktop: centrado */}
-      <div className="absolute inset-0 flex items-start 2xl:items-center justify-center px-4
-                      pt-[calc(var(--offset)+5.5rem)] 2xl:pt-0">
+      {/* Contenedor (slideshow) centrado — crece con el scroll */}
+      <div className="absolute inset-0 flex items-center justify-center px-4">
         <div
           ref={cardRef}
-          className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503]
-                     overflow-hidden rounded-[24px] bg-bg-dark"
+          className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503] overflow-hidden rounded-[24px] bg-bg-dark"
         >
           {CARD_IMGS.map((src, i) => (
             <div
@@ -141,36 +100,39 @@ export default function HeroLaNuestra() {
               style={{ backgroundImage: `url('${src}')`, opacity: i === slide ? 1 : 0 }}
             />
           ))}
-
-          {/* Degradé inferior solo para que se lea el botón */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent pointer-events-none" />
-
-          {/* Botón Ver producto — adentro, abajo (chico, no tapa el producto) */}
-          <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-5 md:pb-6">
-            <Link
-              href={PRODUCT_URL}
-              className="group relative overflow-hidden rounded-full px-8 py-3.5
-                         text-white text-[12px] md:text-[13px] font-semibold uppercase tracking-[0.16em]
-                         bg-white/15 backdrop-blur-xl border border-white/30
-                         shadow-[0_8px_32px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.4)]
-                         transition-all duration-300 hover:bg-white/25 hover:border-white/50"
-            >
-              <span className="relative z-10">Ver producto</span>
-            </Link>
-          </div>
         </div>
       </div>
 
-      {/* Widget de partido — mobile/tablet: abajo-centro · desktop ancho (2xl): a un costado (derecha) */}
-      <div className="absolute z-20 flex flex-col items-center gap-2.5
-                      left-1/2 -translate-x-1/2 bottom-5
-                      2xl:left-auto 2xl:translate-x-0 2xl:right-14
-                      2xl:top-1/2 2xl:-translate-y-1/2 2xl:bottom-auto">
-        <MatchWidget />
-        <p className="text-white/85 text-[11px] md:text-[12px] font-medium tracking-[0.03em] text-center
-                      max-w-[340px] px-4 [text-shadow:0_2px_12px_rgba(0,0,0,0.65)]">
-          Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span>
+      {/* Columna top-left: título + (desktop) widget + botón */}
+      <div className="absolute top-[calc(var(--offset)+0.75rem)] left-6 md:left-12 z-20 max-w-[88vw] md:max-w-[440px]">
+        <p className="text-white/75 text-[10px] md:text-[12px] uppercase tracking-[0.32em] [text-shadow:0_2px_16px_rgba(0,0,0,0.6)]">
+          Mundial 26&apos;
         </p>
+        <h1 className="text-white font-bold uppercase leading-[0.92] tracking-tight
+                       text-[40px] sm:text-[52px] md:text-[64px] [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">
+          LA NUESTRA
+        </h1>
+
+        {/* Desktop: widget del countdown debajo del título */}
+        <div className="hidden md:flex flex-col items-start gap-2.5 mt-6">
+          <MatchWidget />
+          <p className="text-white/85 text-[12px] font-medium tracking-[0.02em] max-w-[300px] [text-shadow:0_2px_12px_rgba(0,0,0,0.7)]">
+            Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span>
+          </p>
+        </div>
+
+        {/* Botón debajo del título (mobile + desktop) */}
+        <Link href={PRODUCT_URL} className={`inline-flex mt-5 md:mt-6 ${BTN_CLASS}`}>
+          <span className="relative z-10">Ver producto</span>
+        </Link>
+      </div>
+
+      {/* Mobile: widget compacto tipo socket en el pie */}
+      <div className="md:hidden absolute inset-x-3 bottom-3 z-20 flex flex-col gap-1.5">
+        <p className="text-center text-[10px] text-white/85 font-medium [text-shadow:0_2px_10px_rgba(0,0,0,0.7)]">
+          Por cada gol de Argentina, <span className="font-bold">7% extra</span>
+        </p>
+        <MatchWidget compact />
       </div>
     </section>
   );
