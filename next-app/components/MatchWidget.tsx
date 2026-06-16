@@ -29,8 +29,8 @@ function pad(n: number) { return String(n).padStart(2, '0'); }
 
 function Cell({ value, label }: { value: number; label: string }) {
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-[26px] md:text-[34px] font-black tabular-nums leading-none">{pad(value)}</span>
+    <div className="flex flex-col items-center min-w-[34px]">
+      <span className="text-[26px] font-black tabular-nums leading-none">{pad(value)}</span>
       <span className="text-[8px] md:text-[9px] uppercase tracking-[0.18em] text-white/55 mt-1">{label}</span>
     </div>
   );
@@ -91,28 +91,36 @@ export default function MatchWidget({ compact = false }: { compact?: boolean }) 
   const argGoals = match?.argGoals ?? 0;
   const oppGoals = match?.oppGoals ?? 0;
 
-  // ── Variante COMPACT (socket): barra horizontal para el pie en mobile ──
+  // ── Variante COMPACT (mobile): tarjeta stackeada y centrada (Arg vs Alg / Faltan / countdown) ──
   if (compact) {
     return (
-      <div className="w-full rounded-[14px] bg-black/50 backdrop-blur-xl border border-white/15 text-white
-                      px-4 py-2.5 flex items-center justify-between gap-3 shadow-[0_8px_30px_rgba(0,0,0,0.45)]">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Image src={HOME.flag} alt={HOME.short} width={22} height={22} className="drop-shadow" />
-          <span className="text-[9px] font-bold uppercase">{HOME.short}</span>
-          <span className="text-[9px] text-white/40 mx-0.5">vs</span>
-          <Image src={AWAY.flag} alt={AWAY.short} width={22} height={22} className="drop-shadow" />
-          <span className="text-[9px] font-bold uppercase">{AWAY.short}</span>
+      <div className="w-auto rounded-[16px] bg-black/55 backdrop-blur-xl border border-white/15
+                      text-white px-3.5 py-2.5 flex flex-col items-center gap-1 shadow-[0_8px_30px_rgba(0,0,0,0.45)]">
+        {/* Arg vs Alg (arriba) */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5">
+            <Image src={HOME.flag} alt={HOME.short} width={24} height={24} className="drop-shadow" />
+            <span className="text-[10px] font-bold uppercase">{HOME.short}</span>
+          </div>
+          <span className="text-[10px] text-white/45 uppercase">vs</span>
+          <div className="flex items-center gap-1.5">
+            <Image src={AWAY.flag} alt={AWAY.short} width={24} height={24} className="drop-shadow" />
+            <span className="text-[10px] font-bold uppercase">{AWAY.short}</span>
+          </div>
         </div>
         {phase === 'pre' ? (
-          <div className="flex items-baseline gap-1 font-black tabular-nums text-[19px] leading-none">
-            <span>{pad(d)}</span><span className="text-white/30 text-[13px]">:</span>
-            <span>{pad(h)}</span><span className="text-white/30 text-[13px]">:</span>
-            <span>{pad(m)}</span><span className="text-white/30 text-[13px]">:</span>
-            <span>{pad(s)}</span>
-          </div>
+          <>
+            <p className="text-[8px] uppercase tracking-[0.22em] text-white/55">Faltan para el partido</p>
+            <div className="flex items-baseline gap-1 font-black tabular-nums text-[24px] leading-none">
+              <span>{pad(d)}</span><span className="text-white/30 text-[15px]">:</span>
+              <span>{pad(h)}</span><span className="text-white/30 text-[15px]">:</span>
+              <span>{pad(m)}</span><span className="text-white/30 text-[15px]">:</span>
+              <span>{pad(s)}</span>
+            </div>
+          </>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-[22px] font-black tabular-nums leading-none">{argGoals}-{oppGoals}</span>
+            <span className="text-[28px] font-black tabular-nums leading-none">{argGoals}-{oppGoals}</span>
             <span className={`text-[9px] font-bold uppercase ${phase === 'live' ? 'text-red-400' : 'text-white/60'}`}>
               {phase === 'live' ? 'En vivo' : 'Final'}
             </span>
@@ -145,13 +153,13 @@ export default function MatchWidget({ compact = false }: { compact?: boolean }) 
           <p className="text-center text-[9px] uppercase tracking-[0.24em] text-white/55 mb-3">
             Faltan para el partido
           </p>
-          <div className="flex items-start justify-center gap-3 md:gap-4">
+          <div className="flex items-start justify-center gap-1.5">
             <Cell value={d} label="Días" />
-            <span className="text-white/25 text-[22px] font-thin">:</span>
+            <span className="text-white/25 text-[18px] font-thin leading-[26px]">:</span>
             <Cell value={h} label="Hs" />
-            <span className="text-white/25 text-[22px] font-thin">:</span>
+            <span className="text-white/25 text-[18px] font-thin leading-[26px]">:</span>
             <Cell value={m} label="Min" />
-            <span className="text-white/25 text-[22px] font-thin">:</span>
+            <span className="text-white/25 text-[18px] font-thin leading-[26px]">:</span>
             <Cell value={s} label="Seg" />
           </div>
         </>
