@@ -58,9 +58,12 @@ const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-c
 
 const GOAL_DISCOUNT_SLUG = 'la-nuestra-jersey-mundial-26';
 
-// Badge del descuento por gol (solo en LA NUESTRA, solo si está activo).
-function GoalDiscountBadge({ slug }: { slug: string }) {
-  const [d, setD] = useState<{ active?: boolean; percent?: number; goals?: number; cap?: number; remaining?: number } | null>(null);
+type GoalDiscount = { active?: boolean; percent?: number; goals?: number; cap?: number; remaining?: number; unitsLeft?: number; expiresAt?: string | null };
+
+// Descuento por gol (solo en LA NUESTRA). Un solo fetch, compartido por el badge
+// de la esquina de la imagen y el recuadro de info bajo el precio.
+function useGoalDiscount(slug: string): GoalDiscount | null {
+  const [d, setD] = useState<GoalDiscount | null>(null);
   useEffect(() => {
     if (slug !== GOAL_DISCOUNT_SLUG) return;
     let alive = true;
@@ -69,20 +72,53 @@ function GoalDiscountBadge({ slug }: { slug: string }) {
     const id = setInterval(load, 60000);
     return () => { alive = false; clearInterval(id); };
   }, [slug]);
+  return d;
+}
+
+// Badge en la esquina del overlay de imágenes: descuento total.
+function GoalDiscountCorner({ d }: { d: GoalDiscount | null }) {
+  if (!d?.active) return null;
+  const pct = Math.round((d.percent || 0) * 100);
+  return (
+    <div className="absolute top-3 left-3 z-10 rounded-full bg-green-600 text-white text-[13px] font-extrabold tracking-wide px-3 py-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.25)]">
+      {pct}% OFF
+    </div>
+  );
+}
+
+// Recuadro de info bajo el precio: explica 7%/gol, escasez y contador regresivo.
+function GoalDiscountInfo({ d }: { d: GoalDiscount | null }) {
+  const [left, setLeft] = useState('');
+  const expiresAt = d?.expiresAt;
+  useEffect(() => {
+    if (!expiresAt) return;
+    const tick = () => {
+      const ms = new Date(expiresAt).getTime() - Date.now();
+      if (ms <= 0) { setLeft(''); return; }
+      const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000), s = Math.floor((ms % 60000) / 1000);
+      setLeft(`${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAt]);
 
   if (!d?.active) return null;
   const pct = Math.round((d.percent || 0) * 100);
   const goals = d.goals || 0;
+  const units = typeof d.unitsLeft === 'number' ? d.unitsLeft : d.remaining;
   return (
     <div className="mt-3 mb-1 rounded-[10px] border border-green-600/30 bg-green-50 px-4 py-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[13px] font-extrabold uppercase tracking-wide text-green-700">{pct}% OFF por gol</span>
-        <span className="text-[11px] text-green-700/80">· Argentina metió {goals} {goals === 1 ? 'gol' : 'goles'}</span>
+        <span className="text-[13px] font-extrabold uppercase tracking-wide text-green-700">{pct}% OFF</span>
+        <span className="text-[11px] text-green-700/80">· 7% por cada gol de Argentina ({goals} {goals === 1 ? 'gol' : 'goles'})</span>
       </div>
-      <p className="text-[11px] text-green-800/80 mt-1">
-        Descuento disponible por 24&nbsp;hs o hasta vender las primeras {d.cap ?? 20} unidades.
-        {typeof d.remaining === 'number' && <> <span className="font-semibold">Quedan {d.remaining} de {d.cap ?? 20}.</span></>}
-      </p>
+      <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px]">
+        {typeof units === 'number' && units > 0 && (
+          <span className="font-bold text-green-800">Últimas {units} disponibles a este precio</span>
+        )}
+        {left && <span className="text-green-800/70">· Termina en {left}</span>}
+      </div>
     </div>
   );
 }
@@ -154,6 +190,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
       .sort(() => Math.random() - 0.5)
       .slice(0, 4);
   }, [allProducts, product?.slug]);
+
+  const goalDiscount = useGoalDiscount(slug);
 
   const [mounted, setMounted]               = useState(false);
   const [selectedImage, setSelectedImage]   = useState(0);
@@ -337,6 +375,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   <Image key={selectedImage} src={imgUrl(galleryImages[selectedImage])} alt={product.name}
                     fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
                     style={{ transform: zoomPos ? 'scale(2)' : 'scale(1)', transformOrigin: zoomPos ? `${zoomPos.x}% ${zoomPos.y}%` : 'center', transition: zoomPos ? 'transform 0.1s ease' : 'transform 0.3s ease', animation: 'fadeIn 0.25s ease' }} />
+                  <GoalDiscountCorner d={goalDiscount} />
                   {selectedImage > 0 && (
                     <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p - 1); }}
                       className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm" aria-label="Anterior">
@@ -399,7 +438,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 )}
               </div>
 
-              <GoalDiscountBadge slug={product.slug} />
+              <GoalDiscountInfo d={goalDiscount} />
 
               {product.modelInfo && (
                 <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 mb-4 rounded-[10px]">
