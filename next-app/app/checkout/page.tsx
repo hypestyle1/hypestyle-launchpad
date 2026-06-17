@@ -86,7 +86,7 @@ export default function Checkout() {
   const { formatPrice, currency } = useLocale();
   const [step, setStep] = useState<Step>('info');
   const [coupon, setCoupon] = useState('');
-  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string } | null>(null);
+  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [info, setInfo] = useState<InfoForm>({
@@ -111,7 +111,9 @@ export default function Checkout() {
   const branchReady = isInternational || !isSucursal || !!selectedBranch;
 
   const subtotal = total;
-  const freeShipping = !isInternational && subtotal >= FREE_SHIPPING_THRESHOLD;
+  // El cupón de envío gratis cero-ea Andreani igual que el umbral de $250.000.
+  const couponFreeShip = !isInternational && !!couponData?.free_shipping;
+  const freeShipping = !isInternational && (subtotal >= FREE_SHIPPING_THRESHOLD || couponFreeShip);
   const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
   const shippingReady = isInternational ? !!selectedRate : freeShipping || !!selectedRate;
   const descuento = couponData ? (
@@ -688,9 +690,9 @@ export default function Checkout() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ code: coupon, total: subtotal }),
                       });
-                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; error?: string };
+                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; error?: string };
                       if (data.valid && data.code && data.type && data.amount !== undefined) {
-                        setCouponData({ code: data.code, type: data.type, amount: data.amount });
+                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping });
                       }
                       else { setCouponError(data.error || 'Código inválido'); }
                     } catch { setCouponError('Error al validar el código'); }
