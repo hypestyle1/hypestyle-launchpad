@@ -195,7 +195,10 @@ export const PRODUCTS: Product[] = [
     colors: [
       { label: "Albiceleste", value: "#74b9e0", image: "products/argentina-jersey/mockup-frente.jpg" },
     ],
-    images: [],
+    images: [
+      "products/argentina-jersey/mockup-frente.jpg",
+      "products/argentina-jersey/mockup-espalda.jpg",
+    ],
     customizable: true,
     customPreviewImage: "products/argentina-jersey/preview-frente.png",
   },
