@@ -56,6 +56,37 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 
 const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
 
+const GOAL_DISCOUNT_SLUG = 'la-nuestra-jersey-mundial-26';
+
+// Badge del descuento por gol (solo en LA NUESTRA, solo si está activo).
+function GoalDiscountBadge({ slug }: { slug: string }) {
+  const [d, setD] = useState<{ active?: boolean; percent?: number; goals?: number; cap?: number; remaining?: number } | null>(null);
+  useEffect(() => {
+    if (slug !== GOAL_DISCOUNT_SLUG) return;
+    let alive = true;
+    const load = () => fetch('/api/goal-discount').then(r => r.json()).then(j => { if (alive) setD(j); }).catch(() => {});
+    load();
+    const id = setInterval(load, 60000);
+    return () => { alive = false; clearInterval(id); };
+  }, [slug]);
+
+  if (!d?.active) return null;
+  const pct = Math.round((d.percent || 0) * 100);
+  const goals = d.goals || 0;
+  return (
+    <div className="mt-3 mb-1 rounded-[10px] border border-green-600/30 bg-green-50 px-4 py-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[13px] font-extrabold uppercase tracking-wide text-green-700">{pct}% OFF por gol</span>
+        <span className="text-[11px] text-green-700/80">· Argentina metió {goals} {goals === 1 ? 'gol' : 'goles'}</span>
+      </div>
+      <p className="text-[11px] text-green-800/80 mt-1">
+        Descuento disponible por 24&nbsp;hs o hasta vender las primeras {d.cap ?? 20} unidades.
+        {typeof d.remaining === 'number' && <> <span className="font-semibold">Quedan {d.remaining} de {d.cap ?? 20}.</span></>}
+      </p>
+    </div>
+  );
+}
+
 function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
@@ -367,6 +398,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   </>
                 )}
               </div>
+
+              <GoalDiscountBadge slug={product.slug} />
 
               {product.modelInfo && (
                 <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 mb-4 rounded-[10px]">
