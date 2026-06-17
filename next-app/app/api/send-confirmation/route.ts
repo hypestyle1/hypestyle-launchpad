@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendSupplierEmail } from '@/lib/supplier-email';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
@@ -388,14 +387,9 @@ export async function POST(req: NextRequest) {
       buildAdminHtml(order),
     ).catch(() => {});
 
-    // Estampa: mail automático al proveedor con la ficha + los archivos (1:1)
-    // de cada ítem personalizado. No bloquea ni rompe la confirmación al cliente.
-    try {
-      const r = await sendSupplierEmail(order);
-      if (!r.ok && !r.skip) console.error('[supplier-email]', r.detail);
-    } catch (e) {
-      console.error('[supplier-email]', e);
-    }
+    // El mail al proveedor de estampas NO se manda acá (el checkout corre antes
+    // del pago). Se dispara cuando la orden pasa a PROCESSING (paga) vía el hook
+    // de WordPress → /api/internal/supplier-estampa.
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
