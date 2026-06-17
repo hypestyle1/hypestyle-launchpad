@@ -147,6 +147,10 @@ function imgUrl(src: string): string {
   return s.startsWith('http') ? s : `/${s}`;
 }
 
+function isVideo(src: string): boolean {
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(src || '');
+}
+
 function decodeEntities(s: string): string {
   return s
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -259,9 +263,13 @@ export default function ProductoClient({ slug }: { slug: string }) {
   );
 
   // Galería: para productos personalizables sumamos al final muestras del dorsal.
-  const galleryImages = product.customizable
+  const baseImages = product.customizable
     ? [...product.images, 'products/argentina-jersey/preview-sample-espalda.png', 'products/argentina-jersey/preview-sample-frente.png']
     : product.images;
+  // Si el producto tiene video (meta WP), va como primer slide de la galería.
+  const galleryImages = product.video ? [product.video, ...baseImages] : baseImages;
+  // Imagen "de portada" (no-video) para carrito y miniaturas fijas.
+  const coverImage = galleryImages.find(g => !isVideo(g)) ?? galleryImages[0];
 
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -322,7 +330,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
     const result = await checkStock(product.id, selectedSize);
     setStockChecking(false);
     if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, selectedSize])); setStockError(true); return; }
-    add({ id: product.id, name: product.name, price: product.price, image: imgUrl(galleryImages[0]), size: selectedSize, quantity: 1 });
+    add({ id: product.id, name: product.name, price: product.price, image: imgUrl(coverImage), size: selectedSize, quantity: 1 });
     setAdded(true);
   };
 
@@ -363,7 +371,9 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 {galleryImages.map((img, i) => (
                   <button key={img} onClick={() => setSelectedImage(i)}
                     className={`relative w-full aspect-square overflow-hidden border-[1.5px] transition-colors ${i === selectedImage ? 'border-foreground' : 'border-transparent'}`}>
-                    <Image src={imgUrl(img)} alt="" fill sizes="72px" className="object-cover" />
+                    {isVideo(img)
+                      ? <video src={imgUrl(img)} muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover" />
+                      : <Image src={imgUrl(img)} alt="" fill sizes="72px" className="object-cover" />}
                   </button>
                 ))}
               </div>
@@ -372,9 +382,12 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
                   onMouseMove={handleMouseMove} onMouseLeave={() => setZoomPos(null)}
                   onClick={() => { if (window.innerWidth < 1024) setIsGalleryOpen(true); }}>
-                  <Image key={selectedImage} src={imgUrl(galleryImages[selectedImage])} alt={product.name}
-                    fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
-                    style={{ transform: zoomPos ? 'scale(2)' : 'scale(1)', transformOrigin: zoomPos ? `${zoomPos.x}% ${zoomPos.y}%` : 'center', transition: zoomPos ? 'transform 0.1s ease' : 'transform 0.3s ease', animation: 'fadeIn 0.25s ease' }} />
+                  {isVideo(galleryImages[selectedImage])
+                    ? <video key={selectedImage} src={imgUrl(galleryImages[selectedImage])} autoPlay muted loop playsInline
+                        className="absolute inset-0 w-full h-full object-cover" style={{ animation: 'fadeIn 0.25s ease' }} />
+                    : <Image key={selectedImage} src={imgUrl(galleryImages[selectedImage])} alt={product.name}
+                        fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
+                        style={{ transform: zoomPos ? 'scale(2)' : 'scale(1)', transformOrigin: zoomPos ? `${zoomPos.x}% ${zoomPos.y}%` : 'center', transition: zoomPos ? 'transform 0.1s ease' : 'transform 0.3s ease', animation: 'fadeIn 0.25s ease' }} />}
                   <GoalDiscountCorner d={goalDiscount} />
                   {selectedImage > 0 && (
                     <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p - 1); }}
@@ -683,7 +696,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
           <div className="bg-white w-full max-w-[480px] shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 p-5 border-b border-border">
               <div className="relative w-14 h-16 bg-bg-alt overflow-hidden flex-shrink-0">
-                <Image src={imgUrl(galleryImages[0])} alt={product.name} fill sizes="56px" className="object-cover" />
+                <Image src={imgUrl(coverImage)} alt={product.name} fill sizes="56px" className="object-cover" />
               </div>
               <div className="flex-1">
                 <p className="text-[13px] font-semibold">{product.name}</p>
@@ -730,14 +743,17 @@ export default function ProductoClient({ slug }: { slug: string }) {
             onClick={toggleGalleryZoom}>
             <div className="relative w-full h-full"
                  style={{ transform: `scale(${galleryZoom}) translate(${galleryOffset.x}px, ${galleryOffset.y}px)` }}>
-              <Image
-                src={imgUrl(galleryImages[selectedImage])}
-                alt=""
-                fill
-                className="object-contain"
-                sizes="100vw"
-                priority
-              />
+              {isVideo(galleryImages[selectedImage])
+                ? <video src={imgUrl(galleryImages[selectedImage])} autoPlay muted loop playsInline controls
+                    className="absolute inset-0 w-full h-full object-contain" />
+                : <Image
+                    src={imgUrl(galleryImages[selectedImage])}
+                    alt=""
+                    fill
+                    className="object-contain"
+                    sizes="100vw"
+                    priority
+                  />}
             </div>
 
             {/* Overlay controls - only show when not zoomed */}
