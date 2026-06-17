@@ -10,7 +10,7 @@ import fontkit from '@pdf-lib/fontkit';
 
 const MM = 72 / 25.4; // mm -> pt
 const R = {
-  BACK_1DIG_H: 450, BACK_2DIG_W: 300, FRONT_H: 100,
+  BACK_H: 300, BACK_MAX_W: 300, FRONT_H: 100,
   NAME_CAP: 80, NAME_MAX_W: 420, MARGIN: 25, GAP: 45, CANESU_R: 1120,
 };
 const BLACK = rgb(0.04, 0.04, 0.04);
@@ -86,11 +86,12 @@ export async function generateEspalda(name: string, number: string): Promise<Uin
   if (nameW > R.NAME_MAX_W * MM) { const k = (R.NAME_MAX_W * MM) / nameW; fsName *= k; ls *= k; nameW = R.NAME_MAX_W * MM; }
   const nameCap = rUpper * fsName;
 
-  // número
-  const oneDig = num.length <= 1;
-  let fsNum: number, numCap: number, numW: number;
-  if (oneDig) { fsNum = (R.BACK_1DIG_H * MM) / rDigit; numCap = R.BACK_1DIG_H * MM; numW = font.widthOfTextAtSize(num, fsNum); }
-  else { const w1 = font.widthOfTextAtSize(num, 1); fsNum = (R.BACK_2DIG_W * MM) / w1; numW = R.BACK_2DIG_W * MM; numCap = rDigit * fsNum; }
+  // número: 30 cm de alto; si el ancho supera 30 cm (dígitos dobles anchos), se
+  // limita a 30 cm de ancho y el alto baja lo necesario.
+  let fsNum = (R.BACK_H * MM) / rDigit;
+  let numCap = R.BACK_H * MM;
+  let numW = font.widthOfTextAtSize(num, fsNum);
+  if (numW > R.BACK_MAX_W * MM) { const k = (R.BACK_MAX_W * MM) / numW; fsNum *= k; numCap *= k; numW = R.BACK_MAX_W * MM; }
 
   const rad = R.CANESU_R * MM;
   const halfAngle = nameW / rad / 2;
@@ -105,7 +106,7 @@ export async function generateEspalda(name: string, number: string): Promise<Uin
   if (N) drawArc(page, font, N, fsName, ls, pageW / 2, apexBaselineY, rad);
   const numBaseline = margin + capH;
   page.drawText(num, { x: (pageW - numW) / 2, y: numBaseline, size: fsNum, font, color: BLACK });
-  caption(page, helv, `LA NUESTRA · ESPALDA · ${oneDig ? 'numero ' + R.BACK_1DIG_H / 10 + ' cm alto' : 'numero ' + R.BACK_2DIG_W / 10 + ' cm ancho'} · nombre ${(nameCap / MM / 10).toFixed(1)} cm · arco vivo r=112cm · imprimir 100%`, pageW);
+  caption(page, helv, `LA NUESTRA · ESPALDA · numero ${(numCap / MM / 10).toFixed(0)} cm alto (max 30x30) · nombre ${(nameCap / MM / 10).toFixed(1)} cm · arco vivo r=112cm · imprimir 100%`, pageW);
 
   return doc.save();
 }
