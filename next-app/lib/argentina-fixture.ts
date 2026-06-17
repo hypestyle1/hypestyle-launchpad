@@ -51,9 +51,25 @@ function mapMatch(m: any): ArgFixture {
   };
 }
 
+// Cache en memoria: football-data free tier = 10 req/min. El fixture cambia poco
+// (en vivo el score; pre/post es casi estático). Esto evita el 429 con tráfico.
+let _cache: { at: number; data: ArgFixture | null } | null = null;
+
 export async function getArgentinaFixture(): Promise<ArgFixture | null> {
   if (!TOKEN) return null;
+  const ttl = _cache?.data?.live ? 45000 : 300000; // en vivo 45s; pre/post 5 min
+  if (_cache && Date.now() - _cache.at < ttl) return _cache.data;
+  try {
+    const data = await fetchFixture();
+    _cache = { at: Date.now(), data };
+    return data;
+  } catch (e) {
+    if (_cache) return _cache.data; // ante 429/errores, servir el último resultado bueno
+    throw e;
+  }
+}
 
+async function fetchFixture(): Promise<ArgFixture | null> {
   if (MATCH_ID) {
     const m = await fd(`/matches/${MATCH_ID}`);
     return m?.id ? mapMatch(m) : null;
