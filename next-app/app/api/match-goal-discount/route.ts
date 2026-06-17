@@ -23,6 +23,18 @@ const wcGet = (p: string) => fetch(`${WP}${p}`, { headers: { Authorization: wcAu
 const wcPut = (p: string, body: any) =>
   fetch(`${WP}${p}`, { method: 'PUT', headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
 
+// Targets de precio: si el producto es variable, cada variación; si no, el simple.
+async function priceTargets(product: any) {
+  if (product?.type === 'variable') {
+    const vars = await wcGet(`/products/${PRODUCT_ID}/variations?per_page=100`);
+    return (Array.isArray(vars) ? vars : [])
+      .map((v: any) => ({ path: `/products/${PRODUCT_ID}/variations/${v.id}`, regular: Math.round(Number(v.regular_price || v.price || 0)), sale: Math.round(Number(v.sale_price || 0)) }))
+      .filter((t: any) => t.regular > 0);
+  }
+  return [{ path: `/products/${PRODUCT_ID}`, regular: Math.round(Number(product?.regular_price || product?.price || 0)), sale: Math.round(Number(product?.sale_price || 0)) }]
+    .filter(t => t.regular > 0);
+}
+
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   // Acepta ?secret=, header x-cron-secret, o el Bearer de Vercel Cron (CRON_SECRET).
@@ -30,13 +42,16 @@ export async function GET(req: NextRequest) {
   const provided = sp.get('secret') || req.headers.get('x-cron-secret') || bearer;
   if (provided !== SECRET) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Reset manual de la oferta.
+  const product = await wcGet(`/products/${PRODUCT_ID}`);
+  const targets = await priceTargets(product);
+
+  // Reset manual de la oferta (en todas las variaciones, o el simple).
   if (sp.get('clear') === '1') {
-    await wcPut(`/products/${PRODUCT_ID}`, { sale_price: '', date_on_sale_from: null, date_on_sale_to: null });
-    return NextResponse.json({ ok: true, cleared: true });
+    for (const t of targets) await wcPut(t.path, { sale_price: '', date_on_sale_from: null, date_on_sale_to: null });
+    return NextResponse.json({ ok: true, cleared: true, targets: targets.length });
   }
 
-  // Goles: por parámetro de test, o auto desde API-Football.
+  // Goles: por parámetro de test, o auto desde football-data.org.
   let goals: number;
   const test = sp.get('testGoals');
   if (test != null) {
@@ -50,22 +65,22 @@ export async function GET(req: NextRequest) {
     goals = fx.argGoals;
   }
 
-  const product = await wcGet(`/products/${PRODUCT_ID}`);
-  const regular = Math.round(Number(product.regular_price || product.price || 0));
-  if (!regular) return NextResponse.json({ error: 'sin regular_price' }, { status: 500 });
-
+  if (!targets.length) return NextResponse.json({ error: 'sin regular_price' }, { status: 500 });
   if (goals <= 0) return NextResponse.json({ ok: true, goals, note: 'sin goles → sin descuento' });
 
   const discount = Math.min(MAX_DISCOUNT, goals * PER_GOAL);
-  const sale = Math.round(regular * (1 - discount));
-  const currentSale = Math.round(Number(product.sale_price || 0));
-
-  // Solo escribir si cambió el precio (no re-empuja el vencimiento de 24h tras cada gol).
-  if (currentSale === sale) return NextResponse.json({ ok: true, goals, sale, note: 'sin cambios' });
-
   const from = new Date().toISOString().slice(0, 19);
   const to = new Date(Date.now() + SALE_HOURS * 3600 * 1000).toISOString().slice(0, 19);
-  await wcPut(`/products/${PRODUCT_ID}`, { sale_price: String(sale), date_on_sale_from: from, date_on_sale_to: to });
 
-  return NextResponse.json({ ok: true, goals, discount: `${Math.round(discount * 100)}%`, regular, sale, date_on_sale_to: to });
+  // Aplica a cada target; si ya tiene ese sale no reescribe (no re-empuja el vencimiento).
+  let changed = 0;
+  const details: any[] = [];
+  for (const t of targets) {
+    const sale = Math.round(t.regular * (1 - discount));
+    if (t.sale === sale) { details.push({ id: t.path.split('/').pop(), note: 'sin cambios' }); continue; }
+    await wcPut(t.path, { sale_price: String(sale), date_on_sale_from: from, date_on_sale_to: to });
+    changed++; details.push({ id: t.path.split('/').pop(), regular: t.regular, sale });
+  }
+
+  return NextResponse.json({ ok: true, goals, discount: `${Math.round(discount * 100)}%`, type: product.type, changed, date_on_sale_to: to, details });
 }
