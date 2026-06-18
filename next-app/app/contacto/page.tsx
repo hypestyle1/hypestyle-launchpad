@@ -5,7 +5,7 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useReveal } from "@/hooks/useReveal";
-import { Instagram, MessageCircle, Mail } from "lucide-react";
+import { MessageCircle, Mail } from "lucide-react";
 
 const channels = [
   {
@@ -13,14 +13,7 @@ const channels = [
     label: "WhatsApp",
     description: "La forma más rápida. Respondemos en minutos.",
     action: "Escribinos",
-    href: "https://wa.me/5491100000000",
-  },
-  {
-    icon: Instagram,
-    label: "Instagram",
-    description: "DM a @hypestylearg para consultas rápidas.",
-    action: "Ir a Instagram",
-    href: "https://instagram.com/hypestylearg",
+    href: "https://wa.me/5491178292430",
   },
   {
     icon: Mail,

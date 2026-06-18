@@ -78,7 +78,7 @@ export default function ConfirmacionClient() {
     body: isIntl
       ? "We've received your order and sent a confirmation to your email. Your DHL shipping cost and estimated delivery time will be confirmed within 24 hours."
       : 'Te enviamos un email con la confirmación y los detalles del pedido. Preparamos tu orden y te avisamos cuando esté en camino.',
-    contact: isIntl ? 'Questions? DM us at ' : 'Ante cualquier duda escribinos por ',
+    contact: isIntl ? 'Questions? Chat with us on ' : 'Ante cualquier duda escribinos por ',
     sectionTitle: isIntl ? 'Order details'   : 'Información del pedido',
     orderNumber:  isIntl ? 'Order number'    : 'Número de pedido',
     date:         isIntl ? 'Date'            : 'Fecha',
@@ -121,8 +121,8 @@ export default function ConfirmacionClient() {
 
           <p className="text-[13px] text-muted-foreground mb-10">
             {t.contact}
-            <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer"
-               className="underline hover:text-foreground transition-colors">@hypestylearg</a>
+            <a href="https://wa.me/5491178292430?text=Hola%20Hype!" target="_blank" rel="noopener noreferrer"
+               className="underline hover:text-foreground transition-colors">WhatsApp</a>
           </p>
 
           <div className="border-t border-border pt-8 mb-8 text-left space-y-2">
