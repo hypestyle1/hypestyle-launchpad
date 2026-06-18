@@ -22,16 +22,16 @@ const wcPut = (p: string, body: any) =>
 const fmt = (d: Date) => d.toISOString().slice(0, 19);          // YYYY-MM-DDTHH:MM:SS
 const parse = (s: string) => new Date(/Z|[+-]\d\d:\d\d$/.test(s) ? s : s + 'Z');
 
-type Target = { path: string; regular: number; sale: number; from: string | null };
+type Target = { path: string; regular: number; sale: number; from: string | null; to: string | null };
 
 async function priceTargets(product: any): Promise<Target[]> {
   if (product?.type === 'variable') {
     const vars = await wcGet(`/products/${PRODUCT_ID}/variations?per_page=100`);
     return (Array.isArray(vars) ? vars : [])
-      .map((v: any) => ({ path: `/products/${PRODUCT_ID}/variations/${v.id}`, regular: Math.round(Number(v.regular_price || v.price || 0)), sale: Math.round(Number(v.sale_price || 0)), from: v.date_on_sale_from || null }))
+      .map((v: any) => ({ path: `/products/${PRODUCT_ID}/variations/${v.id}`, regular: Math.round(Number(v.regular_price || v.price || 0)), sale: Math.round(Number(v.sale_price || 0)), from: v.date_on_sale_from || null, to: v.date_on_sale_to || null }))
       .filter((t: any) => t.regular > 0);
   }
-  return [{ path: `/products/${PRODUCT_ID}`, regular: Math.round(Number(product?.regular_price || product?.price || 0)), sale: Math.round(Number(product?.sale_price || 0)), from: product?.date_on_sale_from || null }]
+  return [{ path: `/products/${PRODUCT_ID}`, regular: Math.round(Number(product?.regular_price || product?.price || 0)), sale: Math.round(Number(product?.sale_price || 0)), from: product?.date_on_sale_from || null, to: product?.date_on_sale_to || null }]
     .filter(t => t.regular > 0);
 }
 
@@ -53,6 +53,7 @@ export type DiscountStatus = {
   remaining: number;
   expiresAt: string | null;
   capped: boolean;
+  unitsLeft?: number;     // chamuyo de escasez: decae en la ventana del descuento
   changed?: number;
 };
 
@@ -111,4 +112,34 @@ export async function syncDiscount(write: boolean, goalsOverride?: number): Prom
   }
 
   return { active: true, goals, percent, sold, cap: UNIT_CAP, remaining: Math.max(0, UNIT_CAP - sold), expiresAt: toStr, capped: false, changed };
+}
+
+// Estado del descuento leído del SALE REAL del producto en Woo (no del partido en vivo).
+// Sirve tanto para el descuento por gol como para una extensión manual del sale.
+// Los goles se deducen del %: 21% / 7% = 3 goles.
+export async function getActiveDiscountStatus(): Promise<DiscountStatus> {
+  const base: DiscountStatus = { active: false, goals: 0, percent: 0, sold: 0, cap: UNIT_CAP, remaining: UNIT_CAP, expiresAt: null, capped: false, unitsLeft: 0 };
+  const product = await wcGet(`/products/${PRODUCT_ID}`);
+  const targets = await priceTargets(product);
+  const onSale = targets.filter(t => t.sale > 0 && t.regular > t.sale);
+  if (!onSale.length) return base;
+
+  const t = onSale[0];
+  const percent = Math.max(0, Math.min(MAX_DISCOUNT, 1 - t.sale / t.regular));
+  const goals = Math.max(1, Math.round(percent / PER_GOAL));
+  const fromStr = t.from || fmt(new Date(Date.now() - SALE_HOURS * 3600 * 1000));
+  const sold = await unitsSoldSince(fromStr);
+  const remaining = Math.max(0, UNIT_CAP - sold);
+
+  let expiresAt: string | null = null;
+  let unitsLeft = remaining;
+  if (t.to) {
+    const end = parse(t.to).getTime();
+    expiresAt = new Date(end).toISOString();
+    const start = t.from ? parse(t.from).getTime() : end - SALE_HOURS * 3600 * 1000;
+    const fracLeft = Math.max(0, Math.min(1, (end - Date.now()) / Math.max(1, end - start)));
+    unitsLeft = Math.max(0, Math.min(remaining, Math.ceil(UNIT_CAP * fracLeft)));
+  }
+
+  return { active: true, goals, percent, sold, cap: UNIT_CAP, remaining, expiresAt, capped: false, unitsLeft };
 }
