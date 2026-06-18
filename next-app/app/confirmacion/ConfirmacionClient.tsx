@@ -52,7 +52,13 @@ export default function ConfirmacionClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payment_id: paymentId, order_id: parseInt(externalRef, 10), status: 'approved' }),
-      }).catch(() => {});
+      })
+        .catch(() => {})
+        // Una vez marcada como paga, dispara el mail de confirmación (idempotente).
+        // El webhook de WP es el respaldo si el cliente no vuelve a esta página.
+        .finally(() => {
+          fetch(`/api/confirm-paid?order=${parseInt(externalRef, 10)}`).catch(() => {});
+        });
     }
 
     const ppToken        = params.get('token');
