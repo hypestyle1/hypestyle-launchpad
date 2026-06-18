@@ -11,9 +11,12 @@ const FALLBACK_KICKOFF = new Date(
 const DURATION_MS = 2 * 60 * 60 * 1000; // 2 horas
 const POLL_MS = 120000; // 2 minutos (solo durante el partido)
 
-// Equipos (Argentina siempre; para próximos partidos cambiá el rival/bandera).
-const HOME = { short: 'Arg', flag: '/hero/flag-arg.png' };
-const AWAY = { short: 'Alg', flag: '/hero/flag-alg.png' };
+// Banderas por código de equipo (3 letras). Argentina siempre local; el rival
+// sale de la API (oppTla). Para un rival nuevo, sumá su PNG en /public/hero.
+const FLAGS: Record<string, string> = {
+  ARG: '/hero/flag-arg.png', ALG: '/hero/flag-alg.png',
+  AUT: '/hero/flag-aut.png', JOR: '/hero/flag-jor.png',
+};
 
 type Match = {
   date: string | null;
@@ -23,6 +26,8 @@ type Match = {
   oppGoals: number;
   live: boolean;
   finished: boolean;
+  argTla?: string;
+  oppTla?: string;
 };
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -90,6 +95,10 @@ export default function MatchWidget({ compact = false }: { compact?: boolean }) 
 
   const argGoals = match?.argGoals ?? 0;
   const oppGoals = match?.oppGoals ?? 0;
+
+  // Equipos dinámicos desde la API (Argentina local; rival = oppTla).
+  const HOME = { short: match?.argTla || 'ARG', flag: FLAGS[match?.argTla || 'ARG'] || '/hero/flag-arg.png' };
+  const AWAY = { short: match?.oppTla || 'ALG', flag: FLAGS[match?.oppTla || 'ALG'] || '/hero/flag-alg.png' };
 
   // ── Variante COMPACT (mobile): tarjeta stackeada y centrada (Arg vs Alg / Faltan / countdown) ──
   if (compact) {
