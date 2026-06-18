@@ -14,6 +14,7 @@ export interface Product {
   stock: Record<string, "ok" | "low" | "out">;
   colors: { label: string; value: string; image: string; slug?: string; href?: string }[];
   images: string[];
+  video?: string; // URL de video de producto (meta WP "product_video_url"); se muestra como 1er slide
   customizable?: boolean;
   customPreviewImage?: string;
   modelInfo?: string;

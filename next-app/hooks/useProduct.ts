@@ -23,6 +23,7 @@ const GET_PRODUCT = `
         galleryImages { nodes { sourceUrl } }
         productCategories { nodes { name } }
         attributes { nodes { name options } }
+        metaData(key: "product_video_url") { value }
       }
       ... on VariableProduct {
         price
@@ -31,6 +32,7 @@ const GET_PRODUCT = `
         galleryImages { nodes { sourceUrl } }
         productCategories { nodes { name } }
         attributes { nodes { name options } }
+        metaData(key: "product_video_url") { value }
         variations(first: 100) {
           nodes {
             stockStatus
@@ -188,6 +190,9 @@ function fromWPNode(node: any): Product {
   });
   if (!allImages.length) allImages.push('');
 
+  // Video de producto (meta "product_video_url" en WP) — se muestra como 1er slide en la galería.
+  const video: string | undefined = node.metaData?.[0]?.value || undefined;
+
   const sizes: string[] = [];
   const stock: Record<string, 'ok' | 'low' | 'out'> = {};
   const variations: any[] = node.variations?.nodes || [];
@@ -274,6 +279,7 @@ function fromWPNode(node: any): Product {
       href: `/producto/${c.slug}/`,
     })) ?? [{ label: color.label, value: color.value, image: allImages[0] }],
     images: allImages,
+    video,
   };
 }
 
