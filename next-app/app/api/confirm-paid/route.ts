@@ -23,7 +23,11 @@ async function run(orderId: string, origin: string) {
 
   if (!order?.id) return { ok: false, reason: 'not-found' };
   if (!['processing', 'completed'].includes(order.status)) return { ok: false, reason: 'not-paid', status: order.status };
-  if (!/mercado/i.test(order.payment_method || '')) return { ok: false, reason: 'not-mp', pm: order.payment_method };
+  // MercadoPago/tarjeta pueden venir como payment_method 'tarjeta', 'mercadopago' o
+  // 'woo-mercado-pago-basic'; el título suele incluir "MercadoPago". Transferencia
+  // (bacs), GOcuotas y PayPal quedan excluidos (ya mandan su propia confirmación).
+  const pm = `${order.payment_method || ''} ${order.payment_method_title || ''}`;
+  if (!/mercado|tarjeta/i.test(pm)) return { ok: false, reason: 'not-mp', pm };
   if ((order.meta_data || []).some((m: any) => m.key === FLAG && m.value)) return { ok: true, reason: 'already-sent' };
 
   // Reusa el endpoint de emails (mismo template que el reenvío del admin).
