@@ -24,7 +24,7 @@ const infoLinks = [
 const rrssLinks = [
   { label: "Instagram", href: "https://instagram.com/hypestylearg" },
   { label: "TikTok", href: "https://tiktok.com/@hypestyle" },
-  { label: "YouTube", href: "https://youtube.com/@hypestyle" },
+  { label: "YouTube", href: "https://www.youtube.com/@hypestylearg" },
   { label: "Facebook", href: "https://facebook.com/hypestylearg" },
   { label: "WhatsApp", href: "https://wa.me/5491178292430" },
 ];
