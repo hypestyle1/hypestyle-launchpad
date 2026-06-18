@@ -16,6 +16,8 @@ export type ArgFixture = {
   elapsed: number | null;
   argName: string;
   oppName: string;
+  argTla: string;
+  oppTla: string;
   argGoals: number;
   oppGoals: number;
   started: boolean;
@@ -43,6 +45,8 @@ function mapMatch(m: any): ArgFixture {
     elapsed: min,
     argName: argHome ? m.homeTeam?.name : m.awayTeam?.name,
     oppName: argHome ? m.awayTeam?.name : m.homeTeam?.name,
+    argTla: (argHome ? m.homeTeam?.tla : m.awayTeam?.tla) || 'ARG',
+    oppTla: (argHome ? m.awayTeam?.tla : m.homeTeam?.tla) || '',
     argGoals: argHome ? homeG : awayG,
     oppGoals: argHome ? awayG : homeG,
     started: !PRE_STATES.includes(st) && st !== 'POSTPONED' && st !== 'CANCELLED',
