@@ -119,7 +119,7 @@ export default function Worldwide() {
           <Globe className="w-8 h-8 mx-auto mb-4 text-muted-foreground/40" />
           <p className="text-[14px] text-muted-foreground mb-6">¿Dudas con tu pedido internacional?</p>
           <a
-            href="https://wa.me/5491100000000"
+            href="https://wa.me/5491178292430"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-bg-dark text-primary-foreground text-[12px] font-semibold uppercase tracking-[0.14em] px-8 py-4 hover:opacity-80 transition-opacity"

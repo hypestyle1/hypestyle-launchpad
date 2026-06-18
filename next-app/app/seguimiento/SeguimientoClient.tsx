@@ -270,8 +270,8 @@ function TrackingView({ data }: { data: TrackingData }) {
           <div className="pt-4 border-t border-border">
             <p className="text-xs text-muted-foreground">
               ¿Dudas?{' '}
-              <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">
-                Escribinos por @hypestylearg
+              <a href="https://wa.me/5491178292430?text=Hola%20Hype!" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                Escribinos por WhatsApp
               </a>
             </p>
           </div>
