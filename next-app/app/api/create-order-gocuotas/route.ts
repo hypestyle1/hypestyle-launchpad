@@ -4,6 +4,10 @@ const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
 const WC_SEC  = process.env.WC_CONSUMER_SECRET  || '';
 
+class OutOfStockError extends Error {
+  constructor(msg: string) { super(msg); this.name = 'OutOfStockError'; }
+}
+
 function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 }
@@ -11,25 +15,36 @@ function wcAuth() {
 async function wcGet(path: string) {
   const res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
     headers: { Authorization: wcAuth() },
+    cache: 'no-store',
   });
   if (!res.ok) throw new Error(`WC ${res.status} on GET ${path}`);
   return res.json();
 }
 
-async function resolveItem(slug: string, size: string): Promise<{ product_id: number; variation_id?: number }> {
-  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type&per_page=1`);
+async function resolveItem(slug: string, size: string, itemName: string): Promise<{ product_id: number; variation_id?: number }> {
+  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type,stock_status&per_page=1`);
   if (!products.length) throw new Error(`Product not found: ${slug}`);
-  const { id: productId, type } = products[0];
+  const { id: productId, type, stock_status } = products[0];
 
-  if (type !== 'variable') return { product_id: productId };
+  if (type !== 'variable') {
+    if (stock_status === 'outofstock') {
+      throw new OutOfStockError(`${itemName} no tiene stock disponible`);
+    }
+    return { product_id: productId };
+  }
 
-  const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes`);
+  const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes,stock_status`);
   for (const v of variations) {
     const hit = (v.attributes ?? []).find((a: any) =>
       ['talle', 'pa_talle', 'size', 'color', 'pa_color'].includes((a.name ?? '').toLowerCase()) &&
       (a.option ?? '').toLowerCase() === size.toLowerCase(),
     );
-    if (hit) return { product_id: productId, variation_id: v.id };
+    if (hit) {
+      if (v.stock_status === 'outofstock') {
+        throw new OutOfStockError(`${itemName} (talle ${size}) no tiene stock disponible`);
+      }
+      return { product_id: productId, variation_id: v.id };
+    }
   }
   return { product_id: productId };
 }
@@ -44,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const lineItems = await Promise.all(
       (items as any[]).map(async (item) => {
-        const resolved = await resolveItem(item.id, item.size);
+        const resolved = await resolveItem(item.id, item.size, item.name ?? item.id);
         const li: Record<string, unknown> = { ...resolved, quantity: item.quantity };
         // Personalización de dorsal → meta visible en la orden de WooCommerce
         const c = item.customization;
@@ -148,6 +163,9 @@ export async function POST(req: NextRequest) {
       paypalUrl:     null,
     });
   } catch (err) {
+    if (err instanceof OutOfStockError) {
+      return NextResponse.json({ message: err.message }, { status: 409 });
+    }
     console.error('[create-order-gocuotas]', err);
     return NextResponse.json({ message: 'Error al crear el pedido' }, { status: 500 });
   }

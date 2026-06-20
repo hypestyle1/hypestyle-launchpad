@@ -222,7 +222,8 @@ export default function Checkout() {
         });
       } catch (wcErr) {
         console.error('[checkout] create-order error:', wcErr);
-        setSubmitError('Error al crear el pedido. Revisá tu conexión e intentá de nuevo.');
+        const wcMsg = wcErr instanceof Error ? wcErr.message : '';
+        setSubmitError(wcMsg || 'Error al crear el pedido. Revisá tu conexión e intentá de nuevo.');
         setSubmitting(false);
         return;
       }
