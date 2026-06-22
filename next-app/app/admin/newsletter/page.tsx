@@ -56,7 +56,6 @@ function buildHtml(f: Fields) {
         </td></tr>
         ${hero}
         <tr><td style="padding:38px 44px 6px;background:#fff;">
-          <img src="${SITE_URL}/style-culture-black.png" alt="Style & Culture" height="16" style="height:16px;width:auto;display:block;margin:0 0 16px;" />
           ${f.title ? `<h1 style="margin:0 0 20px;font-size:30px;line-height:1.12;font-weight:800;color:#0a0a0a;letter-spacing:-0.01em;">${f.title}</h1>` : ''}
           ${paragraphs}
         </td></tr>
