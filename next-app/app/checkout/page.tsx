@@ -7,6 +7,7 @@ import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { getFbCookies } from '@/lib/fbtracking';
 import { imgSrc } from '@/lib/img';
+import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 
 type Step = 'info' | 'envio' | 'pago';
 
@@ -68,6 +69,86 @@ const COUNTRIES = [
   { code: 'ZA', name: 'South Africa' },
   { code: 'OTHER', name: 'Other country' },
 ];
+
+function UpsellCarousel() {
+  const { items, add } = useCart();
+  const { formatPrice } = useLocale();
+  const { data: allProducts = [] } = useProducts(20);
+  const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
+  const [added, setAdded] = useState<Record<string, boolean>>({});
+
+  const cartIds = new Set(items.map(i => i.id));
+  const upsell = allProducts
+    .filter(p => !cartIds.has(p.slug) && Object.values(p.stock).some(s => s !== 'out'))
+    .slice(0, 5);
+
+  if (!upsell.length) return null;
+
+  const handleAdd = (p: NormalizedProduct) => {
+    const available = p.sizes.filter(s => p.stock[s] !== 'out');
+    const size = selectedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
+    if (!size) return;
+    add({ id: p.slug, name: p.name, price: p.price, image: p.image, size, quantity: 1 });
+    setAdded(prev => ({ ...prev, [p.slug]: true }));
+    setTimeout(() => setAdded(prev => ({ ...prev, [p.slug]: false })), 2000);
+  };
+
+  return (
+    <div className="mt-6 pt-5 border-t border-border">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 mb-3">
+        Completá el look
+      </p>
+      <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+        {upsell.map(p => {
+          const available = p.sizes.filter(s => p.stock[s] !== 'out');
+          const size = selectedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
+          const isAdded = !!added[p.slug];
+          return (
+            <div key={p.slug} className="flex-shrink-0 w-[130px] border border-border rounded-[10px] overflow-hidden flex flex-col">
+              <a href={p.href} tabIndex={-1}>
+                <div className="w-full h-[110px] bg-bg-alt overflow-hidden">
+                  {p.image && (
+                    <img src={imgSrc(p.image)} alt={p.name}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                  )}
+                </div>
+              </a>
+              <div className="p-2 flex flex-col gap-1.5 flex-1">
+                <p className="text-[10px] font-medium leading-tight line-clamp-2 text-foreground/80">{p.name}</p>
+                <p className="text-[11px] font-bold">{formatPrice(p.price)}</p>
+                {available.length > 1 && (
+                  <div className="flex flex-wrap gap-1">
+                    {available.map(s => (
+                      <button key={s} type="button"
+                        onClick={() => setSelectedSizes(prev => ({ ...prev, [p.slug]: s }))}
+                        className={`text-[9px] font-semibold px-1.5 py-0.5 border rounded-[4px] transition-colors leading-none ${
+                          size === s
+                            ? 'border-foreground bg-foreground text-white'
+                            : 'border-border text-foreground/60 hover:border-foreground/50'
+                        }`}
+                      >{s}</button>
+                    ))}
+                  </div>
+                )}
+                <button type="button" onClick={() => handleAdd(p)} disabled={isAdded}
+                  className={`mt-auto w-full py-1.5 text-[9px] font-bold uppercase tracking-wider rounded-[6px] transition-colors ${
+                    isAdded
+                      ? 'bg-green-600 text-white'
+                      : size
+                      ? 'bg-foreground text-white hover:bg-foreground/80'
+                      : 'bg-foreground/8 text-foreground/35 cursor-default'
+                  }`}
+                >
+                  {isAdded ? '✓ Agregado' : size ? 'Agregar' : 'Elegí talle'}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const INTL_RATE = { id: 'dhl_international', label: 'International Shipping — DHL Express', cost: 0 };
 const FREE_SHIPPING_THRESHOLD = 250000;
@@ -745,6 +826,7 @@ export default function Checkout() {
                 <p className="text-[11px] text-muted-foreground mt-1">* DHL shipping cost added after purchase</p>
               )}
             </div>
+            <UpsellCarousel />
           </div>
         </div>
       </div>
