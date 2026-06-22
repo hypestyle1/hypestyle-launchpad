@@ -22,6 +22,14 @@ export default function HeroLaNuestra() {
   const cardRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const [slide, setSlide] = useState(0);
+  const [isAustriaPromo, setIsAustriaPromo] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/goal-discount')
+      .then(r => r.json())
+      .then((d: any) => { if (d?.isAustriaPromo) setIsAustriaPromo(true); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => setSlide(s => (s + 1) % CARD_IMGS.length), SLIDE_MS);
@@ -120,7 +128,10 @@ export default function HeroLaNuestra() {
       <div className="hidden md:flex absolute left-6 lg:left-12 top-1/2 -translate-y-1/2 z-20 flex-col items-start gap-2.5 max-w-[320px]">
         <MatchWidget />
         <p className="text-white/85 text-[12px] font-medium tracking-[0.02em] max-w-[300px] [text-shadow:0_2px_12px_rgba(0,0,0,0.7)]">
-          Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span>
+          {isAustriaPromo
+            ? <><span className="font-bold">14% OFF por gol · Tope 42%</span><br /><span className="text-[11px] opacity-75">Promo especial vs Austria</span></>
+            : <>Por cada gol que meta Argentina tenés un <span className="font-bold">7% extra</span></>
+          }
         </p>
       </div>
 
@@ -134,7 +145,10 @@ export default function HeroLaNuestra() {
       {/* Mobile: promo (queda donde estaba) + botón centrado al pie */}
       <div className="md:hidden absolute inset-x-4 bottom-5 z-30 flex flex-col items-center gap-3">
         <p className="text-center text-[10px] text-white/85 font-medium [text-shadow:0_2px_10px_rgba(0,0,0,0.7)]">
-          Por cada gol de Argentina, <span className="font-bold">7% extra</span>
+          {isAustriaPromo
+            ? <span className="font-bold">14% OFF por gol · Tope 42%</span>
+            : <>Por cada gol de Argentina, <span className="font-bold">7% extra</span></>
+          }
         </p>
         <Link href={PRODUCT_URL} className={`inline-flex ${BTN_CLASS}`}>
           <span className="relative z-10">Ver producto</span>
