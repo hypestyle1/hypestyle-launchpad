@@ -1,4 +1,4 @@
-import { fetchGraphQL } from './graphql-client';
+const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
 const CHECK_STOCK = `
   query CheckStock($slug: ID!) {
@@ -32,8 +32,21 @@ export async function checkStock(slug: string, size: string): Promise<'ok' | 'lo
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
-    const data = await fetchGraphQL<{ product: any }>(CHECK_STOCK, { slug }, controller.signal);
+    const res = await fetch(GRAPHQL_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+      body: JSON.stringify({ query: CHECK_STOCK, variables: { slug } }),
+      signal: controller.signal,
+      cache: 'no-store',
+    });
     clearTimeout(timeout);
+    if (!res.ok) throw new Error('GraphQL fetch failed');
+    const { data, errors } = await res.json();
+    if (errors?.length) throw new Error(errors[0].message);
     const p = data?.product;
     if (!p) return 'ok';
 
