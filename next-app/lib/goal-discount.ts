@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { getArgentinaFixture, hasKey } from '@/lib/argentina-fixture';
 
 // Lógica central del descuento por gol de LA NUESTRA.
@@ -168,3 +169,12 @@ export async function getActiveDiscountStatus(): Promise<DiscountStatus> {
 
   return { active: true, goals, percent, perGoal, isAustriaPromo: austria, sold, cap: UNIT_CAP, remaining, expiresAt, capped: false, unitsLeft };
 }
+
+// Versión cacheada compartida entre todas las instancias de Vercel (Data Cache de Next.js).
+// TTL de 15s: suficientemente fresco para un partido en vivo, sin golpear WC en cada request.
+// Usar esta función desde server components para hidratar el precio correcto desde el primer render.
+export const getCachedDiscountStatus = unstable_cache(
+  () => getActiveDiscountStatus(),
+  ['goal-discount-status'],
+  { revalidate: 15 },
+);
