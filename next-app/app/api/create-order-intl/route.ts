@@ -55,7 +55,13 @@ export async function POST(req: NextRequest) {
     const lineItems = await Promise.all(
       (items as any[]).map(async (item) => {
         const resolved = await resolveItem(item.id, item.size);
-        const li: Record<string, unknown> = { ...resolved, quantity: item.quantity };
+        const lineTotal = String(Math.round(Number(item.price) * Number(item.quantity)));
+        const li: Record<string, unknown> = {
+          ...resolved,
+          quantity: item.quantity,
+          subtotal: lineTotal,
+          total: lineTotal,
+        };
         // Personalización de dorsal → meta visible en la orden de WooCommerce
         const c = item.customization;
         if (c && (c.playerName || c.number)) {

@@ -60,7 +60,16 @@ export async function POST(req: NextRequest) {
     const lineItems = await Promise.all(
       (items as any[]).map(async (item) => {
         const resolved = await resolveItem(item.id, item.size, item.name ?? item.id);
-        const li: Record<string, unknown> = { ...resolved, quantity: item.quantity };
+        // Pasar subtotal/total explícitos para que WC use el precio del carrito
+        // (con descuento aplicado) en lugar de recalcular desde el catálogo.
+        // Sin esto, si la ventana de sale_price expiró en WC, cobra precio lleno.
+        const lineTotal = String(Math.round(Number(item.price) * Number(item.quantity)));
+        const li: Record<string, unknown> = {
+          ...resolved,
+          quantity: item.quantity,
+          subtotal: lineTotal,
+          total: lineTotal,
+        };
         // Personalización de dorsal → meta visible en la orden de WooCommerce
         const c = item.customization;
         if (c && (c.playerName || c.number)) {
