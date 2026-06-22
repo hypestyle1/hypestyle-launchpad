@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
@@ -76,18 +76,39 @@ function UpsellCarousel() {
   const { data: allProducts = [] } = useProducts(20);
   const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
   const [added, setAdded] = useState<Record<string, boolean>>({});
+  const [idx, setIdx] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const cartIds = new Set(items.map(i => i.id));
   const upsell = allProducts
     .filter(p => !cartIds.has(p.slug) && Object.values(p.stock).some(s => s !== 'out'))
-    .slice(0, 5);
+    .slice(0, 8);
+  const total = upsell.length;
 
-  if (!upsell.length) return null;
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (!total) return;
+    timerRef.current = setInterval(() => setIdx(c => (c + 1) % total), 3000);
+  }, [total]);
 
-  const handleAdd = (p: NormalizedProduct) => {
-    const available = p.sizes.filter(s => p.stock[s] !== 'out');
-    const size = selectedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
-    if (!size) return;
+  useEffect(() => {
+    startTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [startTimer]);
+
+  if (!total) return null;
+
+  const safeIdx = total > 0 ? idx % total : 0;
+  const p = upsell[safeIdx];
+  const available = p.sizes.filter(s => p.stock[s] !== 'out');
+  const hasManyS = available.length > 5;
+  const size = selectedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
+  const isAdded = !!added[p.slug];
+
+  const go = (n: number) => { setIdx((safeIdx + n + total) % total); startTimer(); };
+
+  const handleAdd = () => {
+    if (!size || isAdded) return;
     add({ id: p.slug, name: p.name, price: p.price, image: p.image, size, quantity: 1 });
     setAdded(prev => ({ ...prev, [p.slug]: true }));
     setTimeout(() => setAdded(prev => ({ ...prev, [p.slug]: false })), 2000);
@@ -98,53 +119,74 @@ function UpsellCarousel() {
       <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 mb-3">
         Completá el look
       </p>
-      <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-        {upsell.map(p => {
-          const available = p.sizes.filter(s => p.stock[s] !== 'out');
-          const size = selectedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
-          const isAdded = !!added[p.slug];
-          return (
-            <div key={p.slug} className="flex-shrink-0 w-[130px] border border-border rounded-[10px] overflow-hidden flex flex-col">
-              <a href={p.href} tabIndex={-1}>
-                <div className="w-full h-[110px] bg-bg-alt overflow-hidden">
-                  {p.image && (
-                    <img src={imgSrc(p.image)} alt={p.name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                  )}
-                </div>
-              </a>
-              <div className="p-2 flex flex-col gap-1.5 flex-1">
-                <p className="text-[10px] font-medium leading-tight line-clamp-2 text-foreground/80">{p.name}</p>
-                <p className="text-[11px] font-bold">{formatPrice(p.price)}</p>
-                {available.length > 1 && (
-                  <div className="flex flex-wrap gap-1">
-                    {available.map(s => (
-                      <button key={s} type="button"
-                        onClick={() => setSelectedSizes(prev => ({ ...prev, [p.slug]: s }))}
-                        className={`text-[9px] font-semibold px-1.5 py-0.5 border rounded-[4px] transition-colors leading-none ${
-                          size === s
-                            ? 'border-foreground bg-foreground text-white'
-                            : 'border-border text-foreground/60 hover:border-foreground/50'
-                        }`}
-                      >{s}</button>
-                    ))}
-                  </div>
-                )}
-                <button type="button" onClick={() => handleAdd(p)} disabled={isAdded}
-                  className={`mt-auto w-full py-1.5 text-[9px] font-bold uppercase tracking-wider rounded-[6px] transition-colors ${
-                    isAdded
-                      ? 'bg-green-600 text-white'
-                      : size
-                      ? 'bg-foreground text-white hover:bg-foreground/80'
-                      : 'bg-foreground/8 text-foreground/35 cursor-default'
-                  }`}
-                >
-                  {isAdded ? '✓ Agregado' : size ? 'Agregar' : 'Elegí talle'}
-                </button>
+
+      <div className="flex items-center gap-2">
+        {/* Flecha izquierda */}
+        <button type="button" onClick={() => go(-1)} aria-label="Anterior"
+          className="flex-shrink-0 w-7 h-7 rounded-full border border-border flex items-center justify-center text-foreground/40 hover:text-foreground hover:border-foreground/40 transition-colors text-[18px] leading-none">
+          ‹
+        </button>
+
+        {/* Tarjeta */}
+        <div className="flex-1 flex gap-3 border border-border rounded-[10px] p-3 items-center min-h-[88px]">
+          <a href={p.href} tabIndex={-1} className="flex-shrink-0 w-[68px] h-[68px] rounded-[8px] overflow-hidden bg-bg-alt block">
+            {p.image && <img src={imgSrc(p.image)} alt={p.name} className="w-full h-full object-cover" />}
+          </a>
+
+          <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <p className="text-[11px] font-medium leading-tight line-clamp-2">{p.name}</p>
+            <p className="text-[12px] font-bold">{formatPrice(p.price)}</p>
+
+            {/* Pills para pocos talles */}
+            {!hasManyS && available.length > 1 && (
+              <div className="flex flex-wrap gap-[3px] mt-0.5">
+                {available.map(s => (
+                  <button key={s} type="button"
+                    onClick={() => setSelectedSizes(prev => ({ ...prev, [p.slug]: s }))}
+                    className={`text-[9px] font-semibold px-1.5 py-[2px] border rounded-[4px] transition-colors leading-none ${
+                      size === s
+                        ? 'border-foreground bg-foreground text-white'
+                        : 'border-border text-foreground/60 hover:border-foreground/50'
+                    }`}>{s}</button>
+                ))}
               </div>
-            </div>
-          );
-        })}
+            )}
+
+            {/* Select para muchos talles (ej: anillos N-11 a N-30) */}
+            {hasManyS && (
+              <select value={size}
+                onChange={e => setSelectedSizes(prev => ({ ...prev, [p.slug]: e.target.value }))}
+                className="mt-0.5 text-[10px] border border-border rounded-[6px] px-2 py-1 bg-white focus:outline-none focus:border-foreground w-full">
+                <option value="">Elegí talle</option>
+                {available.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
+          </div>
+
+          {/* Botón agregar */}
+          <button type="button" onClick={handleAdd} disabled={!size || isAdded}
+            className={`flex-shrink-0 self-center w-8 h-8 rounded-[7px] text-[16px] font-bold flex items-center justify-center transition-colors ${
+              isAdded ? 'bg-green-600 text-white' :
+              size ? 'bg-foreground text-white hover:bg-foreground/80' :
+              'bg-foreground/[0.06] text-foreground/25 cursor-default'
+            }`}>
+            {isAdded ? '✓' : '+'}
+          </button>
+        </div>
+
+        {/* Flecha derecha */}
+        <button type="button" onClick={() => go(1)} aria-label="Siguiente"
+          className="flex-shrink-0 w-7 h-7 rounded-full border border-border flex items-center justify-center text-foreground/40 hover:text-foreground hover:border-foreground/40 transition-colors text-[18px] leading-none">
+          ›
+        </button>
+      </div>
+
+      {/* Dots */}
+      <div className="flex justify-center gap-1 mt-2.5">
+        {upsell.map((_, i) => (
+          <button key={i} type="button" onClick={() => { setIdx(i); startTimer(); }}
+            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === safeIdx ? 'bg-foreground' : 'bg-foreground/20'}`} />
+        ))}
       </div>
     </div>
   );
