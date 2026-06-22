@@ -1,7 +1,8 @@
 import { getArgentinaFixture, hasKey } from '@/lib/argentina-fixture';
 
 // Lógica central del descuento por gol de LA NUESTRA.
-// Regla: 7% por cada gol de Argentina (tope 50%), válido 24h desde el primer gol
+// Regla general: 7% por cada gol de Argentina (tope 50%), válido 24h desde el primer gol.
+// Promo especial: Argentina vs Austria → 14% por gol, tope 42% (ver AUSTRIA_PROMO).
 // O hasta vender las primeras 20 unidades PAGAS, lo que ocurra primero.
 
 const WP = 'https://lightpink-rook-704850.hostingersite.com/wp-json/wc/v3';
@@ -13,6 +14,14 @@ const PER_GOAL = 0.07;
 const MAX_DISCOUNT = 0.5;
 const SALE_HOURS = 24;
 export const UNIT_CAP = 20;
+
+// ── PROMO ESPECIAL Argentina vs Austria — eliminar después del partido ────────
+const AUSTRIA_PROMO = { oppTla: 'AUT', perGoal: 0.14, maxDiscount: 0.42 } as const;
+function isAustriaMatch(fx: { oppTla?: string; oppName?: string } | null): boolean {
+  if (!fx) return false;
+  return fx.oppTla === AUSTRIA_PROMO.oppTla || /austri/i.test(fx.oppName ?? '');
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 const wcGet = (p: string) => fetch(`${WP}${p}`, { headers: { Authorization: wcAuth() }, cache: 'no-store' }).then(r => r.json());
@@ -48,6 +57,8 @@ export type DiscountStatus = {
   active: boolean;
   goals: number;
   percent: number;        // 0..1
+  perGoal: number;        // 0..1 (0.07 normal; 0.14 Austria)
+  isAustriaPromo: boolean;
   sold: number;
   cap: number;
   remaining: number;
@@ -69,16 +80,23 @@ export async function clearDiscount() {
 // Calcula el estado del descuento y, si write=true, lo aplica/limpia en Woo.
 // goalsOverride (opcional) fuerza la cantidad de goles (para test).
 export async function syncDiscount(write: boolean, goalsOverride?: number): Promise<DiscountStatus> {
-  const base: DiscountStatus = { active: false, goals: 0, percent: 0, sold: 0, cap: UNIT_CAP, remaining: UNIT_CAP, expiresAt: null, capped: false };
+  const fx = hasKey() ? await getArgentinaFixture().catch(() => null) : null;
 
   let goals: number;
   if (goalsOverride != null) {
     goals = Math.max(0, goalsOverride);
   } else {
-    const fx = hasKey() ? await getArgentinaFixture().catch(() => null) : null;
     const inWindow = !!fx && (fx.live || fx.finished);
     goals = inWindow ? Math.max(0, fx!.argGoals || 0) : 0;
   }
+
+  // ── PROMO AUSTRIA ──
+  const austria = isAustriaMatch(fx);
+  const perGoal = austria ? AUSTRIA_PROMO.perGoal : PER_GOAL;
+  const maxDiscount = austria ? AUSTRIA_PROMO.maxDiscount : MAX_DISCOUNT;
+  // ──────────────────
+
+  const base: DiscountStatus = { active: false, goals: 0, percent: 0, perGoal, isAustriaPromo: austria, sold: 0, cap: UNIT_CAP, remaining: UNIT_CAP, expiresAt: null, capped: false };
 
   const product = await wcGet(`/products/${PRODUCT_ID}`);
   const targets = await priceTargets(product);
@@ -92,7 +110,7 @@ export async function syncDiscount(write: boolean, goalsOverride?: number): Prom
   const fromStr = existingFrom || fmt(fromDate);
   const toStr = fmt(new Date(fromDate.getTime() + SALE_HOURS * 3600 * 1000));
 
-  const percent = Math.min(MAX_DISCOUNT, goals * PER_GOAL);
+  const percent = Math.min(maxDiscount, goals * perGoal);
   const sold = await unitsSoldSince(fromStr);
 
   // Tope de unidades alcanzado → limpiar.
@@ -111,22 +129,29 @@ export async function syncDiscount(write: boolean, goalsOverride?: number): Prom
     }
   }
 
-  return { active: true, goals, percent, sold, cap: UNIT_CAP, remaining: Math.max(0, UNIT_CAP - sold), expiresAt: toStr, capped: false, changed };
+  return { active: true, goals, percent, perGoal, isAustriaPromo: austria, sold, cap: UNIT_CAP, remaining: Math.max(0, UNIT_CAP - sold), expiresAt: toStr, capped: false, changed };
 }
 
 // Estado del descuento leído del SALE REAL del producto en Woo (no del partido en vivo).
 // Sirve tanto para el descuento por gol como para una extensión manual del sale.
-// Los goles se deducen del %: 21% / 7% = 3 goles.
+// Los goles se deducen del %: para Austria 28%/14%=2; para otros 21%/7%=3.
 export async function getActiveDiscountStatus(): Promise<DiscountStatus> {
-  const base: DiscountStatus = { active: false, goals: 0, percent: 0, sold: 0, cap: UNIT_CAP, remaining: UNIT_CAP, expiresAt: null, capped: false, unitsLeft: 0 };
+  // ── PROMO AUSTRIA ──
+  const fx = hasKey() ? await getArgentinaFixture().catch(() => null) : null;
+  const austria = isAustriaMatch(fx);
+  const perGoal = austria ? AUSTRIA_PROMO.perGoal : PER_GOAL;
+  const maxDiscount = austria ? AUSTRIA_PROMO.maxDiscount : MAX_DISCOUNT;
+  // ──────────────────
+
+  const base: DiscountStatus = { active: false, goals: 0, percent: 0, perGoal, isAustriaPromo: austria, sold: 0, cap: UNIT_CAP, remaining: UNIT_CAP, expiresAt: null, capped: false, unitsLeft: 0 };
   const product = await wcGet(`/products/${PRODUCT_ID}`);
   const targets = await priceTargets(product);
   const onSale = targets.filter(t => t.sale > 0 && t.regular > t.sale);
   if (!onSale.length) return base;
 
   const t = onSale[0];
-  const percent = Math.max(0, Math.min(MAX_DISCOUNT, 1 - t.sale / t.regular));
-  const goals = Math.max(1, Math.round(percent / PER_GOAL));
+  const percent = Math.max(0, Math.min(maxDiscount, 1 - t.sale / t.regular));
+  const goals = Math.max(1, Math.round(percent / perGoal));
   const fromStr = t.from || fmt(new Date(Date.now() - SALE_HOURS * 3600 * 1000));
   const sold = await unitsSoldSince(fromStr);
   const remaining = Math.max(0, UNIT_CAP - sold);
@@ -141,5 +166,5 @@ export async function getActiveDiscountStatus(): Promise<DiscountStatus> {
     unitsLeft = Math.max(0, Math.min(remaining, Math.ceil(UNIT_CAP * fracLeft)));
   }
 
-  return { active: true, goals, percent, sold, cap: UNIT_CAP, remaining, expiresAt, capped: false, unitsLeft };
+  return { active: true, goals, percent, perGoal, isAustriaPromo: austria, sold, cap: UNIT_CAP, remaining, expiresAt, capped: false, unitsLeft };
 }

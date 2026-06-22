@@ -58,7 +58,7 @@ const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-c
 
 const GOAL_DISCOUNT_SLUG = 'la-nuestra-jersey-mundial-26';
 
-type GoalDiscount = { active?: boolean; percent?: number; goals?: number; cap?: number; remaining?: number; unitsLeft?: number; expiresAt?: string | null };
+type GoalDiscount = { active?: boolean; percent?: number; goals?: number; perGoal?: number; isAustriaPromo?: boolean; cap?: number; remaining?: number; unitsLeft?: number; expiresAt?: string | null };
 
 // Descuento por gol (solo en LA NUESTRA). Un solo fetch, compartido por el badge
 // de la esquina de la imagen y el recuadro de info bajo el precio.
@@ -86,7 +86,7 @@ function GoalDiscountCorner({ d }: { d: GoalDiscount | null }) {
   );
 }
 
-// Recuadro de info bajo el precio: explica 7%/gol, escasez y contador regresivo.
+// Recuadro de info bajo el precio: explica %/gol, escasez y contador regresivo.
 function GoalDiscountInfo({ d }: { d: GoalDiscount | null }) {
   const [left, setLeft] = useState('');
   const expiresAt = d?.expiresAt;
@@ -106,13 +106,21 @@ function GoalDiscountInfo({ d }: { d: GoalDiscount | null }) {
   if (!d?.active) return null;
   const pct = Math.round((d.percent || 0) * 100);
   const goals = d.goals || 0;
+  const pctPerGoal = Math.round((d.perGoal || 0.07) * 100);
   const units = typeof d.unitsLeft === 'number' ? d.unitsLeft : d.remaining;
   return (
     <div className="mt-3 mb-1 rounded-[10px] border border-green-600/30 bg-green-50 px-4 py-3">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[13px] font-extrabold uppercase tracking-wide text-green-700">{pct}% OFF</span>
-        <span className="text-[11px] text-green-700/80">· 7% por cada gol de Argentina ({goals} {goals === 1 ? 'gol' : 'goles'})</span>
+        <span className="text-[11px] text-green-700/80">
+          · {pctPerGoal}% por cada gol de Argentina ({goals} {goals === 1 ? 'gol' : 'goles'})
+        </span>
       </div>
+      {d.isAustriaPromo && (
+        <p className="text-[10px] text-green-700/70 mt-0.5">
+          Hasta 42% OFF · Promo especial por el partido vs Austria
+        </p>
+      )}
       <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px]">
         {typeof units === 'number' && units > 0 && (
           <span className="font-bold text-green-800">Últimas {units} disponibles a este precio</span>
