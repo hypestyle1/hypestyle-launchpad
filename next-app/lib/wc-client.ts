@@ -46,6 +46,7 @@ export interface CreateOrderResponse {
   wcOrderId: number;
   wcOrderNumber: string;
   orderKey: string;
+  wcTotal: number;          // total real de WooCommerce (con sale_price y cupones aplicados)
   initPoint: string | null;
   paypalUrl: string | null;
   error?: string;
@@ -74,7 +75,7 @@ export async function createOrderAndPreference(
     throw new Error(err.message || `WC HTTP ${wcRes.status}`);
   }
 
-  const order = await wcRes.json() as { wcOrderId: number; wcOrderNumber: string; orderKey: string; paypalUrl?: string | null };
+  const order = await wcRes.json() as { wcOrderId: number; wcOrderNumber: string; orderKey: string; wcTotal?: number; paypalUrl?: string | null };
 
   // 2 — Crear preferencia MP (Next.js API, token de producción en Vercel)
   let initPoint: string | null = null;
@@ -85,6 +86,7 @@ export async function createOrderAndPreference(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         wcOrderId: order.wcOrderId,
+        wcTotal:   order.wcTotal,   // total real de WC → MP cobra el monto correcto
         items:     payload.items,
         customer:  payload.customer,
         shipping:  payload.shipping,
@@ -103,6 +105,7 @@ export async function createOrderAndPreference(
     wcOrderId:     order.wcOrderId,
     wcOrderNumber: order.wcOrderNumber,
     orderKey:      order.orderKey ?? '',
+    wcTotal:       order.wcTotal ?? 0,
     initPoint,
     paypalUrl:     order.paypalUrl ?? null,
   };

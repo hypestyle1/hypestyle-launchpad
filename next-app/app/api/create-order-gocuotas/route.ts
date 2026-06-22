@@ -159,6 +159,7 @@ export async function POST(req: NextRequest) {
       wcOrderId:     wcOrder.id,
       wcOrderNumber: String(wcOrder.number),
       orderKey:      wcOrder.order_key,
+      wcTotal:       parseFloat(wcOrder.total),  // total real de WC (con sale_price aplicado)
       initPoint:     null,
       paypalUrl:     null,
     });

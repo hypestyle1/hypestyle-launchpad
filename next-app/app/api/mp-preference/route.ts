@@ -6,9 +6,22 @@ const WP_URL     = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704
 
 export async function POST(req: NextRequest) {
   try {
-    const { wcOrderId, items, customer, shipping } = await req.json();
+    const { wcOrderId, wcTotal, items, customer, shipping } = await req.json();
 
-    const mpItems = items.map((item: any) => {
+    // Si wcTotal está disponible, escalar los precios de los ítems proporcionalmente
+    // para que el cobro de MP coincida exactamente con el total de la orden en WooCommerce.
+    // Esto corrige discrepancias por descuentos (ej: promo gol) que no se reflejan en el carrito del frontend.
+    let adjustedItems = items;
+    if (wcTotal && wcTotal > 0) {
+      const frontendItemTotal = items.reduce((s: number, i: any) => s + Number(i.price) * Number(i.quantity), 0);
+      const wcItemTotal = Number(wcTotal) - Number(shipping || 0);
+      if (frontendItemTotal > 0 && Math.abs(wcItemTotal - frontendItemTotal) > 1) {
+        const scale = wcItemTotal / frontendItemTotal;
+        adjustedItems = items.map((i: any) => ({ ...i, price: Math.round(Number(i.price) * scale) }));
+      }
+    }
+
+    const mpItems = adjustedItems.map((item: any) => {
       const title =
         item.size && item.size !== 'U' && item.size !== 'Única'
           ? `${item.name} — Talle ${item.size}`
