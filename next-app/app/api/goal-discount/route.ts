@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { syncDiscount, getActiveDiscountStatus, PRODUCT_ID } from '@/lib/goal-discount';
+import { getArgentinaFixture, hasKey } from '@/lib/argentina-fixture';
 
 // Estado público del descuento del producto (para el badge / píldora verde).
-// 1) syncDiscount aplica/limpia el descuento POR GOL si hay partido en juego.
-// 2) getActiveDiscountStatus lee el SALE REAL aplicado en Woo y devuelve el estado
-//    (sirve también para una extensión manual del descuento, sin partido).
+// syncDiscount(write=true) SOLO corre cuando el partido está en vivo.
+// Para partido terminado o sin partido: solo lee el estado real de Woo.
+// Esto permite que un descuento manual en WC persista sin que syncDiscount lo pise.
 // Throttle 30s para no golpear Woo en cada visita.
 
 export const revalidate = 0;
@@ -15,8 +16,12 @@ const TTL = 30000;
 export async function GET() {
   if (cache && Date.now() - cache.at < TTL) return NextResponse.json(cache.data);
   try {
-    await syncDiscount(true);                       // aplica el descuento por gol si corresponde
-    const status = await getActiveDiscountStatus();  // estado del sale real (gol o manual)
+    // Solo escribir en WC si hay partido en vivo; de lo contrario solo leer.
+    const fx = hasKey() ? await getArgentinaFixture().catch(() => null) : null;
+    if (fx?.live) {
+      await syncDiscount(true);
+    }
+    const status = await getActiveDiscountStatus();
     const data = { ...status, productId: PRODUCT_ID };
     cache = { at: Date.now(), data };
     return NextResponse.json(data);

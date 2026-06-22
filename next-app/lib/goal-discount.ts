@@ -87,7 +87,10 @@ export async function syncDiscount(write: boolean, goalsOverride?: number): Prom
   if (goalsOverride != null) {
     goals = Math.max(0, goalsOverride);
   } else {
-    const inWindow = !!fx && (fx.live || fx.finished);
+    // Solo aplicar durante partido en vivo. Para partido terminado el descuento
+    // se mantiene o se limpia manualmente; no re-calcular desde el fixture
+    // para evitar el ciclo infinito del UNIT_CAP (ver comentario en route.ts).
+    const inWindow = !!fx && fx.live;
     goals = inWindow ? Math.max(0, fx!.argGoals || 0) : 0;
   }
 
