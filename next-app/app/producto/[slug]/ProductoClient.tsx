@@ -329,8 +329,17 @@ export default function ProductoClient({ slug }: { slug: string }) {
     setZoomPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
   };
 
+  // Cuando el descuento por gol está activo, calcula el precio desde el % del API
+  // en vez de confiar en WooGraphQL, que puede servir datos cacheados sin el sale_price.
+  const regularBase     = product.originalPrice || product.price;
+  const goalSalePrice   = goalDiscount?.active && goalDiscount.percent
+    ? Math.round(regularBase * (1 - goalDiscount.percent))
+    : null;
+  const displayPrice    = goalSalePrice ?? product.price;
+  const displayOriginal = goalSalePrice ? regularBase : product.originalPrice;
+
   const transferRate  = 10;
-  const transferPrice = Math.round(product.price * (1 - transferRate / 100));
+  const transferPrice = Math.round(displayPrice * (1 - transferRate / 100));
 
   const handleAdd = async () => {
     if (!selectedSize) { setSizeError(true); return; }
@@ -338,7 +347,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
     const result = await checkStock(product.id, selectedSize);
     setStockChecking(false);
     if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, selectedSize])); setStockError(true); return; }
-    add({ id: product.id, name: product.name, price: product.price, image: imgUrl(coverImage), size: selectedSize, quantity: 1 });
+    add({ id: product.id, name: product.name, price: displayPrice, image: imgUrl(coverImage), size: selectedSize, quantity: 1 });
     setAdded(true);
   };
 
@@ -438,11 +447,11 @@ export default function ProductoClient({ slug }: { slug: string }) {
               <div className="mb-1">
                 <div className="flex items-center gap-3">
                   <span className="text-[22px] font-bold text-foreground">
-                    {mounted ? formatPrice(product.price) : '—'}
+                    {mounted ? formatPrice(displayPrice) : '—'}
                   </span>
-                  {product.originalPrice && mounted && (
+                  {displayOriginal && mounted && (
                     <span className="text-[16px] text-muted-foreground line-through">
-                      {formatPrice(product.originalPrice)}
+                      {formatPrice(displayOriginal)}
                     </span>
                   )}
                 </div>
@@ -453,7 +462,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                       <span className="text-green-700 font-semibold">(+{transferRate}% off)</span>
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      O hasta 3 cuotas sin interés de {formatPrice(Math.round(product.price / 3))}
+                      O hasta 3 cuotas sin interés de {formatPrice(Math.round(displayPrice / 3))}
                     </p>
                   </>
                 )}
@@ -686,7 +695,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
         style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-semibold truncate">{product.name}</p>
-          <p className="text-[11px] text-muted-foreground">{mounted ? formatPrice(product.price) : '—'}{selectedSize && <span> · Talle {selectedSize}</span>}</p>
+          <p className="text-[11px] text-muted-foreground">{mounted ? formatPrice(displayPrice) : '—'}{selectedSize && <span> · Talle {selectedSize}</span>}</p>
         </div>
         <button onClick={handleAdd} disabled={stockChecking}
           className="flex-shrink-0 bg-bg-dark text-primary-foreground px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5">
@@ -708,7 +717,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
               </div>
               <div className="flex-1">
                 <p className="text-[13px] font-semibold">{product.name}</p>
-                <p suppressHydrationWarning className="text-[11px] text-muted-foreground mt-0.5">Talle: {selectedSize} · {formatPrice(product.price)}</p>
+                <p suppressHydrationWarning className="text-[11px] text-muted-foreground mt-0.5">Talle: {selectedSize} · {formatPrice(displayPrice)}</p>
               </div>
               <button onClick={() => setAdded(false)} className="text-foreground/30 hover:text-foreground transition-colors">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 1l12 12M13 1L1 13" /></svg>
