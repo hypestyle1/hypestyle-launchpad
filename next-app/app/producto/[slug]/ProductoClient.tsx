@@ -60,10 +60,11 @@ const GOAL_DISCOUNT_SLUG = 'la-nuestra-jersey-mundial-26';
 
 type GoalDiscount = { active?: boolean; percent?: number; goals?: number; perGoal?: number; isAustriaPromo?: boolean; cap?: number; remaining?: number; unitsLeft?: number; expiresAt?: string | null };
 
-// Descuento por gol (solo en LA NUESTRA). Un solo fetch, compartido por el badge
-// de la esquina de la imagen y el recuadro de info bajo el precio.
-function useGoalDiscount(slug: string): GoalDiscount | null {
-  const [d, setD] = useState<GoalDiscount | null>(null);
+// Descuento por gol (solo en LA NUESTRA). Acepta un valor inicial pre-fetcheado desde el server
+// component para evitar el flash de precio incorrecto en el primer render.
+// Se refresca cada 60s client-side para mantenerse actualizado durante un partido en vivo.
+function useGoalDiscount(slug: string, initial: GoalDiscount | null = null): GoalDiscount | null {
+  const [d, setD] = useState<GoalDiscount | null>(initial);
   useEffect(() => {
     if (slug !== GOAL_DISCOUNT_SLUG) return;
     let alive = true;
@@ -191,7 +192,7 @@ function ModelInfo({ html }: { html: string }) {
   );
 }
 
-export default function ProductoClient({ slug }: { slug: string }) {
+export default function ProductoClient({ slug, initialGoalDiscount = null }: { slug: string; initialGoalDiscount?: GoalDiscount | null }) {
   const router = useRouter();
   const { formatPrice, currency } = useLocale();
   const { data: product, isLoading } = useProduct(slug);
@@ -203,7 +204,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
       .slice(0, 4);
   }, [allProducts, product?.slug]);
 
-  const goalDiscount = useGoalDiscount(slug);
+  const goalDiscount = useGoalDiscount(slug, initialGoalDiscount);
 
   const [mounted, setMounted]               = useState(false);
   const [selectedImage, setSelectedImage]   = useState(0);
