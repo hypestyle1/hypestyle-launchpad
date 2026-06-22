@@ -227,11 +227,15 @@ export default function Checkout() {
         setSubmitting(false);
         return;
       }
+      // Usar el total de WooCommerce como fuente de verdad para los gateways de pago.
+      // wcTotal refleja sale_price, cupones y cualquier descuento aplicado en Woo,
+      // independientemente del precio que haya quedado guardado en el carrito del frontend.
+      const authorizedTotal = orderRes.wcTotal || totalFinal;
       sessionStorage.setItem('hype_order', JSON.stringify({
         wcOrderId: orderRes.wcOrderId, wcOrderNumber: orderRes.wcOrderNumber,
         orderKey: orderRes.orderKey,
         orderNum: orderRes.wcOrderNumber, items,
-        total: isLocalTransfer ? transferTotal : totalFinal,
+        total: authorizedTotal,
         metodo: pago.metodo, email: info.email, nombre: info.nombre, apellido: info.apellido,
         direccion: info.direccion, ciudad: info.ciudad, provincia: info.provincia,
         cp: info.cp, telefono: info.telefono, pais: info.pais,
@@ -244,7 +248,7 @@ export default function Checkout() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               wcOrderId: orderRes.wcOrderId,
-              total: totalFinal,
+              total: authorizedTotal,
               email: info.email,
               phone: info.telefono,
               orderKey: orderRes.orderKey,
@@ -282,7 +286,7 @@ export default function Checkout() {
           ppRes = await fetch('/api/paypal-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ wcOrderId: orderRes.wcOrderId, totalARS: totalFinal }),
+            body: JSON.stringify({ wcOrderId: orderRes.wcOrderId, totalARS: authorizedTotal }),
           });
         } catch (ppErr) {
           console.error('[checkout] paypal-order fetch error:', ppErr);
