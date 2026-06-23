@@ -347,6 +347,11 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   <span className="md:hidden absolute bottom-3 left-3 text-[10px] text-white bg-black/35 backdrop-blur-sm px-2 py-0.5 pointer-events-none">
                     Tocá para ampliar
                   </span>
+                  {displayOriginal && displayOriginal > displayPrice && (
+                    <span className="absolute top-3 right-3 z-10 bg-green-600 text-white text-[11px] font-bold px-2.5 py-1 pointer-events-none">
+                      -{Math.round((1 - displayPrice / displayOriginal) * 100)}% OFF
+                    </span>
+                  )}
                 </div>
                 <div className="md:hidden flex items-center justify-center gap-1.5">
                   {galleryImages.map((_, i) => (
@@ -363,13 +368,18 @@ export default function ProductoClient({ slug }: { slug: string }) {
               <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-1">{product.category}</p>
               <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-tight mb-3">{product.name}</h1>
               <div className="mb-1">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-[22px] font-bold text-foreground">
                     {mounted ? formatPrice(displayPrice) : '—'}
                   </span>
                   {displayOriginal && mounted && (
                     <span className="text-[16px] text-muted-foreground line-through">
                       {formatPrice(displayOriginal)}
+                    </span>
+                  )}
+                  {displayOriginal && displayOriginal > displayPrice && (
+                    <span className="bg-green-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                      -{Math.round((1 - displayPrice / displayOriginal) * 100)}% OFF
                     </span>
                   )}
                 </div>
