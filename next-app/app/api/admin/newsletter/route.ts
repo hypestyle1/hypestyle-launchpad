@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const BREVO_KEY    = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const ADMIN_SECRET = process.env.WP_SECRET || '';
 const NEWSLETTER_LIST_ID = 3;
-const SENDER = { name: 'Hypestyle', email: 'info@hypestyle.com.ar' };
+const SENDER = { name: 'Hypestyle', email: 'hypestylearg@gmail.com' };
 const REPLY_TO_EMAIL = 'hypestylearg@gmail.com';
 
 const authed = (req: NextRequest) => {
