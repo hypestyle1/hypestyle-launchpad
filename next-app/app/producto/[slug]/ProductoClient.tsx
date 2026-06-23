@@ -56,6 +56,76 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 
 const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
 
+const GOAL_DISCOUNT_SLUG = 'la-nuestra-jersey-mundial-26';
+
+type GoalDiscount = { active?: boolean; percent?: number; goals?: number; perGoal?: number; isAustriaPromo?: boolean; cap?: number; remaining?: number; unitsLeft?: number; expiresAt?: string | null };
+
+function useGoalDiscount(slug: string, initial: GoalDiscount | null = null): GoalDiscount | null {
+  const [d, setD] = useState<GoalDiscount | null>(initial);
+  useEffect(() => {
+    if (slug !== GOAL_DISCOUNT_SLUG) return;
+    let alive = true;
+    const load = () => fetch('/api/goal-discount').then(r => r.json()).then(j => { if (alive) setD(j); }).catch(() => {});
+    load();
+    const id = setInterval(load, 60000);
+    return () => { alive = false; clearInterval(id); };
+  }, [slug]);
+  return d;
+}
+
+function GoalDiscountCorner({ d }: { d: GoalDiscount | null }) {
+  if (!d?.active) return null;
+  const pct = Math.round((d.percent || 0) * 100);
+  return (
+    <div className="absolute top-3 left-3 z-10 rounded-full bg-green-600 text-white text-[13px] font-extrabold tracking-wide px-3 py-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.25)]">
+      {pct}% OFF
+    </div>
+  );
+}
+
+function GoalDiscountInfo({ d }: { d: GoalDiscount | null }) {
+  const [left, setLeft] = useState('');
+  const expiresAt = d?.expiresAt;
+  useEffect(() => {
+    if (!expiresAt) return;
+    const tick = () => {
+      const ms = new Date(expiresAt).getTime() - Date.now();
+      if (ms <= 0) { setLeft(''); return; }
+      const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000), s = Math.floor((ms % 60000) / 1000);
+      setLeft(`${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+
+  if (!d?.active) return null;
+  const pct = Math.round((d.percent || 0) * 100);
+  const goals = d.goals || 0;
+  const pctPerGoal = Math.round((d.perGoal || 0.07) * 100);
+  const units = typeof d.unitsLeft === 'number' ? d.unitsLeft : d.remaining;
+  return (
+    <div className="mt-3 mb-1 rounded-[10px] border border-green-600/30 bg-green-50 px-4 py-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[13px] font-extrabold uppercase tracking-wide text-green-700">{pct}% OFF</span>
+        <span className="text-[11px] text-green-700/80">
+          · {pctPerGoal}% por cada gol de Argentina ({goals} {goals === 1 ? 'gol' : 'goles'})
+        </span>
+      </div>
+      {d.isAustriaPromo && (
+        <p className="text-[10px] text-green-700/70 mt-0.5">
+          Hasta 42% OFF · Promo especial por el partido vs Austria
+        </p>
+      )}
+      <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px]">
+        {typeof units === 'number' && units > 0 && (
+          <span className="font-bold text-green-800">Últimas {units} disponibles a este precio</span>
+        )}
+        {left && <span className="text-green-800/70">· Termina en {left}</span>}
+      </div>
+    </div>
+  );
+}
 
 function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string }) {
   return (
@@ -117,7 +187,7 @@ function ModelInfo({ html }: { html: string }) {
   );
 }
 
-export default function ProductoClient({ slug }: { slug: string }) {
+export default function ProductoClient({ slug, initialGoalDiscount = null }: { slug: string; initialGoalDiscount?: GoalDiscount | null }) {
   const router = useRouter();
   const { formatPrice, currency } = useLocale();
   const { data: product, isLoading } = useProduct(slug);
@@ -128,6 +198,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
       .sort(() => Math.random() - 0.5)
       .slice(0, 4);
   }, [allProducts, product?.slug]);
+
+  const goalDiscount = useGoalDiscount(slug, initialGoalDiscount);
 
 
   const [mounted, setMounted]               = useState(false);
@@ -254,8 +326,12 @@ export default function ProductoClient({ slug }: { slug: string }) {
     setZoomPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
   };
 
-  const displayPrice    = product.price;
-  const displayOriginal = product.originalPrice;
+  const regularBase     = product.originalPrice || product.price;
+  const goalSalePrice   = goalDiscount?.active && goalDiscount.percent
+    ? Math.round(regularBase * (1 - goalDiscount.percent))
+    : null;
+  const displayPrice    = goalSalePrice ?? product.price;
+  const displayOriginal = goalSalePrice ? regularBase : product.originalPrice;
 
   const transferRate  = 10;
   const transferPrice = Math.round(displayPrice * (1 - transferRate / 100));
@@ -351,6 +427,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                   <span className="md:hidden absolute bottom-3 left-3 text-[10px] text-white bg-black/35 backdrop-blur-sm px-2 py-0.5 pointer-events-none">
                     Tocá para ampliar
                   </span>
+                  <GoalDiscountCorner d={goalDiscount} />
                 </div>
                 <div className="md:hidden flex items-center justify-center gap-1.5">
                   {galleryImages.map((_, i) => (
@@ -390,6 +467,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
                 )}
               </div>
 
+              <GoalDiscountInfo d={goalDiscount} />
 
               {product.modelInfo && (
                 <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 mb-4 rounded-[10px]">
