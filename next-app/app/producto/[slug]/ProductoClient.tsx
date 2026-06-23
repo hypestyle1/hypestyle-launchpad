@@ -199,8 +199,8 @@ export default function ProductoClient({ slug }: { slug: string }) {
   const baseImages = product.customizable
     ? [...product.images, 'products/argentina-jersey/preview-sample-espalda.png', 'products/argentina-jersey/preview-sample-frente.png']
     : product.images;
-  // Solo la jersey mundial lleva video como primer slide de la galería.
-  const galleryImages = (product.video && slug === GOAL_DISCOUNT_SLUG) ? [product.video, ...baseImages] : baseImages;
+  // Productos con video: el video va como primer slide de la galería.
+  const galleryImages = product.video ? [product.video, ...baseImages] : baseImages;
   // Imagen "de portada" (no-video) para carrito y miniaturas fijas.
   const coverImage = galleryImages.find(g => !isVideo(g)) ?? galleryImages[0];
 
