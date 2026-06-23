@@ -2,10 +2,31 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import NextImage from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useProduct } from '@/hooks/useProduct';
 import Navbar from '@/components/Navbar';
 import AnnouncementBar from '@/components/AnnouncementBar';
+
+const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
+
+function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string }) {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
+      <div className="bg-white w-full max-w-[520px] shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+          <h2 className="text-[14px] font-bold uppercase tracking-wider">Guía de talles</h2>
+          <button onClick={onClose} className="text-foreground/30 hover:text-foreground transition-colors">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 1l12 12M13 1L1 13" /></svg>
+          </button>
+        </div>
+        <div className="relative w-full">
+          <NextImage src={image} alt="Guía de talles" width={520} height={600} className="w-full h-auto" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const S = 600;
 const MOCKUP_SCALE = 0.72; // achica el mockup de la camiseta dentro del canvas (deja margen alrededor)
@@ -85,6 +106,7 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
   const [selectedSize, setSelectedSize] = useState<string | null>(searchParams.get('talle'));
   const [sizeError, setSizeError] = useState(false);
   const [added, setAdded] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const redraw = useCallback(() => {
@@ -180,9 +202,15 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
               <div className="border-t border-border mb-6" />
 
               <div className="mb-6">
-                <span className="block text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground mb-2">
-                  Talle {selectedSize && <span className="text-foreground">— {selectedSize}</span>}
-                </span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                    Talle {selectedSize && <span className="text-foreground">— {selectedSize}</span>}
+                  </span>
+                  <button onClick={() => setSizeGuideOpen(true)}
+                    className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
+                    Guía de talles
+                  </button>
+                </div>
                 {product.sizes.length > 1 ? (
                   <div className="flex gap-2 flex-wrap">
                     {product.sizes.map(s => {
@@ -229,6 +257,7 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
           </div>
         </div>
       </main>
+      {sizeGuideOpen && <SizeGuideModal onClose={() => setSizeGuideOpen(false)} image={product.sizeGuideImage || DEFAULT_SIZE_GUIDE} />}
     </>
   );
 }

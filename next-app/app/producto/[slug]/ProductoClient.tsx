@@ -261,7 +261,11 @@ export default function ProductoClient({ slug }: { slug: string }) {
   const transferPrice = Math.round(displayPrice * (1 - transferRate / 100));
 
   const handleAdd = async () => {
-    if (!selectedSize) { setSizeError(true); return; }
+    if (!selectedSize) {
+      if (product.customizable) { router.push(`/personalizar/${product.slug}/`); return; }
+      setSizeError(true);
+      return;
+    }
     setSizeError(false); setStockError(false); setStockChecking(true);
     const result = await checkStock(product.id, selectedSize);
     setStockChecking(false);
@@ -430,7 +434,7 @@ export default function ProductoClient({ slug }: { slug: string }) {
 
               <div className="border-t border-border mb-4" />
 
-              {product.sizes.length > 1 && (
+              {!product.customizable && product.sizes.length > 1 && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] font-semibold uppercase tracking-wider">
