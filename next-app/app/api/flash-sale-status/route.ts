@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const WP = 'https://lightpink-rook-704850.hostingersite.com/wp-json/wc/v3';
-export const FLASH_SALE_ORDER_LIMIT = 100;
+const FLASH_SALE_ORDER_LIMIT = 100;
 const SALE_AFTER = '2026-06-24T00:00:00';
 
 export async function GET() {
