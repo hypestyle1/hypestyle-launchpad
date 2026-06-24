@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { getFbCookies } from '@/lib/fbtracking';
@@ -481,7 +482,7 @@ export default function Checkout() {
   ].filter(Boolean) as { id: string; label: string; sub: string }[];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-screen bg-white${isFlashSaleActive() ? ' pt-[40px]' : ''}`}>
       <div className="border-b border-border py-5 px-4 text-center">
         <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto object-contain mx-auto" /></a>
         <div className="flex items-center justify-center gap-2 mt-3 text-[12px]">

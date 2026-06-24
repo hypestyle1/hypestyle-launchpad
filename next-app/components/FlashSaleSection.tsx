@@ -57,7 +57,7 @@ export default function FlashSaleSection() {
       } catch {}
     }
     fetchStatus();
-    const poll = setInterval(fetchStatus, 60_000);
+    const poll = setInterval(fetchStatus, 30_000);
 
     return () => { clearInterval(tick); clearInterval(poll); };
   }, []);

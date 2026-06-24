@@ -4,18 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 const PUBLIC_OPEN = new Date('2026-06-24T20:00:00-03:00').getTime();
+const ORDER_LIMIT = 100;
 
 const SLIDES = [
-  '/fw26-hstars-editorial.jpg',
-  '/Banner Movile/stl-look-camo-outdoor.png',
-  '/fw26-camo-editorial.jpg',
-  '/banner-hero (2).jpg',
-  '/editorial-may26.png',
-  '/banner-hero (3).jpg',
-  '/founders-photo.jpg',
-  '/No Love, Only Style banner.webp',
-  '/Banner Movile/2-slide-1770743028998-1812841277-d6e90ca1a8aa16296d47ce6e591779b61770743049-1920-1920.webp',
-  '/Banner Movile/2-slide-1774199985089-7163840392-14dbaf7acdc4aaa8e83700e9e1d4f6b51774199990-1920-1920.webp',
+  '/ad-hypegang-1-grupo.png',
+  '/ad-hypegang-2-duo.png',
+  '/ad-hypegang-4-juanito-walk.png',
+  '/ad-hypegang-7-esquina.png',
 ];
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -32,29 +27,37 @@ function getCountdown() {
 export default function AccesoPage() {
   const router   = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [ready,     setReady]     = useState(false);
-  const [open,      setOpen]      = useState(false);
-  const [slideIdx,  setSlideIdx]  = useState(0);
-  const [time,      setTime]      = useState({ h: 0, m: 0, s: 0 });
-  const [pw,     setPw]     = useState('');
-  const [error,  setError]  = useState('');
-  const [busy,   setBusy]   = useState(false);
+  const [ready,    setReady]    = useState(false);
+  const [slideIdx, setSlideIdx] = useState(0);
+  const [time,     setTime]     = useState({ h: 0, m: 0, s: 0 });
+  const [pw,       setPw]       = useState('');
+  const [error,    setError]    = useState('');
+  const [busy,     setBusy]     = useState(false);
+  const [orders,   setOrders]   = useState<{ count: number; full: boolean } | null>(null);
 
   useEffect(() => {
     if (Date.now() >= PUBLIC_OPEN) { router.replace('/'); return; }
     setReady(true);
     setTime(getCountdown());
 
-    const id = setInterval(() => {
-      if (Date.now() >= PUBLIC_OPEN) { clearInterval(id); router.replace('/'); return; }
+    const tick = setInterval(() => {
+      if (Date.now() >= PUBLIC_OPEN) { clearInterval(tick); router.replace('/'); return; }
       setTime(getCountdown());
     }, 1000);
 
-    const slideId = setInterval(() => {
-      setSlideIdx(i => (i + 1) % SLIDES.length);
-    }, 5000);
+    const slide = setInterval(() => setSlideIdx(i => (i + 1) % SLIDES.length), 5000);
 
-    return () => { clearInterval(id); clearInterval(slideId); };
+    async function fetchOrders() {
+      try {
+        const r = await fetch('/api/flash-sale-status');
+        const d = await r.json();
+        setOrders({ count: d.count, full: d.full });
+      } catch {}
+    }
+    fetchOrders();
+    const poll = setInterval(fetchOrders, 30_000);
+
+    return () => { clearInterval(tick); clearInterval(slide); clearInterval(poll); };
   }, [router]);
 
   useEffect(() => {
@@ -88,6 +91,9 @@ export default function AccesoPage() {
 
   if (!ready) return null;
 
+  const orderCount = orders?.count ?? 0;
+  const orderPct   = Math.min(100, Math.round((orderCount / ORDER_LIMIT) * 100));
+
   return (
     <>
       <style>{`
@@ -104,16 +110,16 @@ export default function AccesoPage() {
 
         .gate-overlay {
           position: absolute; inset: 0; z-index: 1;
-          background: rgba(0,0,0,0.78);
+          background: rgba(0,0,0,0.72);
         }
         .gate-scrim {
           position: absolute; inset: 0; z-index: 2;
           background: linear-gradient(
             to bottom,
-            rgba(0,0,0,0.40) 0%,
+            rgba(0,0,0,0.50) 0%,
             rgba(0,0,0,0.00) 30%,
             rgba(0,0,0,0.00) 60%,
-            rgba(0,0,0,0.60) 100%
+            rgba(0,0,0,0.65) 100%
           );
         }
         .gate-noise {
@@ -124,9 +130,9 @@ export default function AccesoPage() {
         }
         .gate-glow {
           position: absolute; z-index: 3;
-          left: 50%; top: 55%; transform: translate(-50%, -50%);
+          left: 50%; top: 50%; transform: translate(-50%, -50%);
           width: min(700px, 90vw); height: 400px;
-          background: radial-gradient(ellipse at center, rgba(255,20,20,0.18) 0%, transparent 68%);
+          background: radial-gradient(ellipse at center, rgba(255,20,20,0.14) 0%, transparent 68%);
           pointer-events: none;
           animation: glow-breathe 3.5s ease-in-out infinite;
         }
@@ -135,7 +141,7 @@ export default function AccesoPage() {
           50%      { opacity: 1.4; }
         }
 
-        /* ── Logo ── */
+        /* Logo */
         .gate-logo {
           position: absolute; top: clamp(20px, 4vw, 36px); left: clamp(20px, 5vw, 44px);
           z-index: 20;
@@ -146,7 +152,7 @@ export default function AccesoPage() {
           display: block;
         }
 
-        /* ── Badge top-right ── */
+        /* Badge top-right */
         .gate-badge {
           position: absolute; top: clamp(20px, 4vw, 36px); right: clamp(20px, 5vw, 44px);
           z-index: 20;
@@ -166,22 +172,22 @@ export default function AccesoPage() {
         .gate-badge-text {
           font-size: clamp(9px, 1.8vw, 11px); font-weight: 700;
           letter-spacing: 0.22em; text-transform: uppercase;
-          color: rgba(255,255,255,0.45);
-          white-space: nowrap;
+          color: rgba(255,255,255,0.45); white-space: nowrap;
         }
 
-        /* ── Contenido central ── */
+        /* Contenido central */
         .gate-inner {
           position: relative; z-index: 10;
           display: flex; flex-direction: column;
           align-items: center;
           width: 100%; max-width: 480px;
+          gap: 0;
         }
 
         /* eyebrow */
         .gate-eyebrow {
           display: flex; align-items: center; gap: 14px;
-          margin-bottom: clamp(20px, 4vw, 36px);
+          margin-bottom: clamp(16px, 3vw, 28px);
         }
         .gate-eyebrow-line { height: 1px; width: 36px; background: rgba(255,255,255,0.16); }
         .gate-eyebrow-text {
@@ -193,19 +199,19 @@ export default function AccesoPage() {
         /* headline */
         .gate-headline {
           text-align: center;
-          margin-bottom: clamp(12px, 3vw, 24px);
+          margin-bottom: clamp(10px, 2vw, 18px);
           line-height: 0.88;
         }
         .gate-h-50k {
           display: block;
-          font-size: clamp(80px, 22vw, 140px);
+          font-size: clamp(72px, 20vw, 130px);
           font-weight: 900; letter-spacing: -0.05em; color: #fff;
         }
         .gate-h-eq {
           display: block;
-          font-size: clamp(48px, 13vw, 88px);
+          font-size: clamp(44px, 12vw, 80px);
           font-weight: 900; letter-spacing: -0.04em; color: #ff1a1a;
-          margin: clamp(2px, 1vw, 8px) 0;
+          margin: clamp(2px, 0.5vw, 6px) 0;
           animation: eq-blink 2.8s ease-in-out infinite;
           line-height: 1;
         }
@@ -215,88 +221,48 @@ export default function AccesoPage() {
         }
         .gate-h-pct {
           display: block;
-          font-size: clamp(80px, 22vw, 140px);
+          font-size: clamp(72px, 20vw, 130px);
           font-weight: 900; letter-spacing: -0.05em; color: #fff;
         }
         .gate-h-off {
           display: block;
-          font-size: clamp(80px, 22vw, 140px);
+          font-size: clamp(72px, 20vw, 130px);
           font-weight: 900; letter-spacing: -0.05em; color: #ff1a1a;
         }
 
         /* subtítulo */
         .gate-sub {
-          font-size: clamp(10px, 2.4vw, 13px); font-weight: 500;
-          letter-spacing: 0.16em; text-transform: uppercase;
-          color: rgba(255,255,255,0.42); text-align: center; line-height: 1.9;
-          margin-bottom: clamp(20px, 4vw, 36px);
-        }
-        .gate-sub strong { color: rgba(255,255,255,0.80); font-weight: 700; }
-
-        /* divisor */
-        .gate-divider {
-          width: 100%; height: 1px;
-          background: rgba(255,255,255,0.08);
+          font-size: clamp(10px, 2.2vw, 12px); font-weight: 500;
+          letter-spacing: 0.14em; text-transform: uppercase;
+          color: rgba(255,255,255,0.38); text-align: center; line-height: 1.9;
           margin-bottom: clamp(20px, 4vw, 32px);
         }
+        .gate-sub strong { color: rgba(255,255,255,0.75); font-weight: 700; }
 
-        /* countdown */
-        .gate-cd-label {
-          font-size: clamp(9px, 1.8vw, 11px); font-weight: 400;
-          letter-spacing: 0.26em; text-transform: uppercase;
-          color: rgba(255,255,255,0.28); text-align: center;
-          margin-bottom: 14px;
-        }
-        .gate-cd-row {
-          display: flex; align-items: flex-start; justify-content: center;
-          gap: clamp(4px, 1.5vw, 10px);
-          margin-bottom: clamp(24px, 5vw, 40px);
-        }
-        .gate-cd-block {
-          display: flex; flex-direction: column; align-items: center;
-          min-width: clamp(52px, 13vw, 80px);
-        }
-        .gate-cd-num {
-          font-size: clamp(44px, 12vw, 72px);
-          font-weight: 900; line-height: 1;
-          letter-spacing: -0.04em; color: #fff;
-          font-variant-numeric: tabular-nums;
-        }
-        .gate-cd-unit {
-          font-size: clamp(8px, 1.5vw, 10px); font-weight: 400;
-          letter-spacing: 0.22em; text-transform: uppercase;
-          color: rgba(255,255,255,0.26); margin-top: 4px;
-        }
-        .gate-cd-sep {
-          font-size: clamp(32px, 9vw, 52px); font-weight: 900;
-          color: rgba(255,255,255,0.18); line-height: 1;
-          padding-bottom: clamp(6px, 2vw, 12px);
-          align-self: flex-start;
-        }
-
-        /* form */
+        /* form — ahora es el elemento central */
         .gate-form-label {
           font-size: clamp(9px, 1.8vw, 10px); font-weight: 700;
           letter-spacing: 0.26em; text-transform: uppercase;
           color: rgba(255,255,255,0.32); text-align: center;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
         .gate-form {
           width: 100%; display: flex; flex-direction: column; gap: 10px;
+          margin-bottom: clamp(24px, 5vw, 36px);
         }
         .gate-input {
-          width: 100%; padding: clamp(15px, 3vw, 18px) 16px;
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(255,255,255,0.18);
-          color: #fff; font-size: clamp(13px, 3vw, 15px);
+          width: 100%; padding: clamp(16px, 3.5vw, 20px) 16px;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.22);
+          color: #fff; font-size: clamp(14px, 3.2vw, 16px);
           font-weight: 700; letter-spacing: 0.22em;
           text-transform: uppercase; text-align: center;
           font-family: inherit; caret-color: #ff1a1a;
-          outline: none; transition: border-color 0.15s;
+          outline: none; transition: border-color 0.15s, background 0.15s;
           -webkit-appearance: none; appearance: none;
         }
         .gate-input::placeholder { color: rgba(255,255,255,0.22); letter-spacing: 0.12em; }
-        .gate-input:focus { border-color: rgba(255,255,255,0.40); }
+        .gate-input:focus { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.10); }
         .gate-input.error { border-color: #ff1a1a; }
 
         .gate-error {
@@ -305,7 +271,7 @@ export default function AccesoPage() {
           color: #ff1a1a; text-align: center;
         }
         .gate-btn {
-          width: 100%; padding: clamp(15px, 3vw, 18px);
+          width: 100%; padding: clamp(16px, 3.5vw, 20px);
           background: #ff1a1a; border: none; color: #fff;
           font-size: clamp(10px, 2vw, 11px); font-weight: 900;
           letter-spacing: 0.26em; text-transform: uppercase;
@@ -315,6 +281,79 @@ export default function AccesoPage() {
         }
         .gate-btn:not(:disabled):hover { background: #fff; color: #0a0a0a; }
         .gate-btn:disabled { opacity: 0.40; cursor: not-allowed; }
+
+        /* divider */
+        .gate-divider {
+          width: 100%; height: 1px;
+          background: rgba(255,255,255,0.08);
+          margin-bottom: clamp(20px, 4vw, 28px);
+        }
+
+        /* countdown */
+        .gate-cd-label {
+          font-size: clamp(9px, 1.8vw, 10px); font-weight: 400;
+          letter-spacing: 0.26em; text-transform: uppercase;
+          color: rgba(255,255,255,0.26); text-align: center;
+          margin-bottom: 12px;
+        }
+        .gate-cd-row {
+          display: flex; align-items: flex-start; justify-content: center;
+          gap: clamp(4px, 1.5vw, 10px);
+          margin-bottom: clamp(20px, 4vw, 32px);
+        }
+        .gate-cd-block {
+          display: flex; flex-direction: column; align-items: center;
+          min-width: clamp(44px, 11vw, 68px);
+        }
+        .gate-cd-num {
+          font-size: clamp(36px, 10vw, 60px);
+          font-weight: 900; line-height: 1;
+          letter-spacing: -0.04em; color: #fff;
+          font-variant-numeric: tabular-nums;
+        }
+        .gate-cd-unit {
+          font-size: clamp(7px, 1.4vw, 9px); font-weight: 400;
+          letter-spacing: 0.22em; text-transform: uppercase;
+          color: rgba(255,255,255,0.24); margin-top: 4px;
+        }
+        .gate-cd-sep {
+          font-size: clamp(26px, 7vw, 46px); font-weight: 900;
+          color: rgba(255,255,255,0.18); line-height: 1;
+          padding-bottom: clamp(4px, 1.5vw, 10px);
+          align-self: flex-start;
+        }
+
+        /* order counter / FOMO */
+        .gate-fomo {
+          width: 100%; display: flex; flex-direction: column; gap: 8px;
+        }
+        .gate-fomo-top {
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .gate-fomo-label {
+          font-size: clamp(9px, 1.8vw, 10px); font-weight: 500;
+          letter-spacing: 0.20em; text-transform: uppercase;
+          color: rgba(255,255,255,0.36);
+        }
+        .gate-fomo-count {
+          font-size: clamp(11px, 2.2vw, 13px); font-weight: 900;
+          letter-spacing: -0.01em; color: #ff1a1a;
+          font-variant-numeric: tabular-nums;
+        }
+        .gate-fomo-bar-bg {
+          width: 100%; height: 3px;
+          background: rgba(255,255,255,0.10); overflow: hidden;
+        }
+        .gate-fomo-bar-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #ff1a1a 0%, #ff5555 100%);
+          transition: width 0.8s ease;
+        }
+        .gate-fomo-sub {
+          font-size: clamp(8px, 1.6vw, 9px); font-weight: 400;
+          letter-spacing: 0.18em; text-transform: uppercase;
+          color: rgba(255,255,255,0.22); text-align: center;
+        }
 
         /* footer */
         .gate-footer {
@@ -326,13 +365,13 @@ export default function AccesoPage() {
         .gate-footer-text {
           font-size: clamp(9px, 1.8vw, 10px); font-weight: 500;
           letter-spacing: 0.20em; text-transform: lowercase;
-          color: rgba(255,255,255,0.24);
+          color: rgba(255,255,255,0.22);
         }
       `}</style>
 
       <div className="gate-wrap">
 
-        {/* Slideshow de fondo — crossfade cada 5s */}
+        {/* Slideshow */}
         {SLIDES.map((src, i) => (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -370,12 +409,14 @@ export default function AccesoPage() {
         {/* Contenido */}
         <div className="gate-inner">
 
+          {/* Eyebrow */}
           <div className="gate-eyebrow">
             <div className="gate-eyebrow-line" />
             <span className="gate-eyebrow-text">Celebramos juntos</span>
             <div className="gate-eyebrow-line" />
           </div>
 
+          {/* Headline */}
           <div className="gate-headline">
             <span className="gate-h-50k">50K</span>
             <span className="gate-h-eq">=</span>
@@ -383,33 +424,13 @@ export default function AccesoPage() {
             <span className="gate-h-off">OFF</span>
           </div>
 
+          {/* Subtítulo */}
           <div className="gate-sub">
             <strong>En toda la tienda</strong>{' · '}Primeras 100 órdenes o hasta el 25/6 a las 22hs<br />
             Gracias por acompañarnos desde el primer día.
           </div>
 
-          <div className="gate-divider" />
-
-          {/* Countdown a las 20hs */}
-          <div className="gate-cd-label">Apertura general en</div>
-          <div className="gate-cd-row">
-            <div className="gate-cd-block">
-              <span className="gate-cd-num">{pad(time.h)}</span>
-              <span className="gate-cd-unit">Hrs</span>
-            </div>
-            <span className="gate-cd-sep">:</span>
-            <div className="gate-cd-block">
-              <span className="gate-cd-num">{pad(time.m)}</span>
-              <span className="gate-cd-unit">Min</span>
-            </div>
-            <span className="gate-cd-sep">:</span>
-            <div className="gate-cd-block">
-              <span className="gate-cd-num">{pad(time.s)}</span>
-              <span className="gate-cd-unit">Seg</span>
-            </div>
-          </div>
-
-          {/* Form contraseña */}
+          {/* Form — centro de la pantalla */}
           <div className="gate-form-label">Ingresá tu contraseña de acceso</div>
           <form className="gate-form" onSubmit={handleSubmit}>
             <input
@@ -434,6 +455,46 @@ export default function AccesoPage() {
               {busy ? 'Verificando…' : 'Entrar'}
             </button>
           </form>
+
+          <div className="gate-divider" />
+
+          {/* Countdown */}
+          <div className="gate-cd-label">Apertura general en</div>
+          <div className="gate-cd-row">
+            <div className="gate-cd-block">
+              <span className="gate-cd-num">{pad(time.h)}</span>
+              <span className="gate-cd-unit">Hrs</span>
+            </div>
+            <span className="gate-cd-sep">:</span>
+            <div className="gate-cd-block">
+              <span className="gate-cd-num">{pad(time.m)}</span>
+              <span className="gate-cd-unit">Min</span>
+            </div>
+            <span className="gate-cd-sep">:</span>
+            <div className="gate-cd-block">
+              <span className="gate-cd-num">{pad(time.s)}</span>
+              <span className="gate-cd-unit">Seg</span>
+            </div>
+          </div>
+
+          {/* FOMO — contador de pedidos */}
+          <div className="gate-fomo">
+            <div className="gate-fomo-top">
+              <span className="gate-fomo-label">Cupos tomados</span>
+              <span className="gate-fomo-count">
+                {orders ? `${orderCount} / ${ORDER_LIMIT}` : '— / 100'}
+              </span>
+            </div>
+            <div className="gate-fomo-bar-bg">
+              <div
+                className="gate-fomo-bar-fill"
+                style={{ width: orders ? `${orderPct}%` : '0%' }}
+              />
+            </div>
+            <div className="gate-fomo-sub">
+              Primeras 100 órdenes · 50% off en toda la tienda
+            </div>
+          </div>
 
         </div>
 
