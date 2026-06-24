@@ -8,6 +8,7 @@ import CollectionBanner from '@/components/CollectionBanner';
 import NewInFW26 from '@/components/NewInFW26';
 import EditorialBanner from '@/components/EditorialBanner';
 import BenefitsStrip from '@/components/BenefitsStrip';
+import FlashSaleSection from '@/components/FlashSaleSection';
 import VideoSection from '@/components/VideoSection';
 import Footer from '@/components/Footer';
 
@@ -22,6 +23,7 @@ export default function Home() {
       <NewsletterPopup />
       <main className="pt-[var(--offset)]">
         <HeroLaNuestra />
+        <FlashSaleSection />
         <BenefitsStrip />
         <NewInFW26 />
         <ShopTheLook />
