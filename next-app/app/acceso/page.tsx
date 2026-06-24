@@ -5,6 +5,16 @@ import { useRouter } from 'next/navigation';
 
 const PUBLIC_OPEN = new Date('2026-06-24T20:00:00-03:00').getTime();
 
+const SLIDES = [
+  '/fw26-hstars-editorial.jpg',
+  '/banner-hero (1).jpg',
+  '/fw26-camo-editorial.jpg',
+  '/banner-hero (2).jpg',
+  '/stl-halfzip-black.jpg',
+  '/banner-hero (3).jpg',
+  '/stl-halfzip-melange.jpg',
+];
+
 function pad(n: number) { return String(n).padStart(2, '0'); }
 
 function getCountdown() {
@@ -19,9 +29,10 @@ function getCountdown() {
 export default function AccesoPage() {
   const router   = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [ready,  setReady]  = useState(false);
-  const [open,   setOpen]   = useState(false);
-  const [time,   setTime]   = useState({ h: 0, m: 0, s: 0 });
+  const [ready,     setReady]     = useState(false);
+  const [open,      setOpen]      = useState(false);
+  const [slideIdx,  setSlideIdx]  = useState(0);
+  const [time,      setTime]      = useState({ h: 0, m: 0, s: 0 });
   const [pw,     setPw]     = useState('');
   const [error,  setError]  = useState('');
   const [busy,   setBusy]   = useState(false);
@@ -35,7 +46,12 @@ export default function AccesoPage() {
       if (Date.now() >= PUBLIC_OPEN) { clearInterval(id); router.replace('/'); return; }
       setTime(getCountdown());
     }, 1000);
-    return () => clearInterval(id);
+
+    const slideId = setInterval(() => {
+      setSlideIdx(i => (i + 1) % SLIDES.length);
+    }, 5000);
+
+    return () => { clearInterval(id); clearInterval(slideId); };
   }, [router]);
 
   useEffect(() => {
@@ -83,12 +99,6 @@ export default function AccesoPage() {
           padding: 0 24px;
         }
 
-        /* ── Video background ── */
-        .gate-video {
-          position: absolute; inset: 0; z-index: 0;
-          width: 100%; height: 100%;
-          object-fit: cover; object-position: center;
-        }
         .gate-overlay {
           position: absolute; inset: 0; z-index: 1;
           background: rgba(0,0,0,0.78);
@@ -319,13 +329,24 @@ export default function AccesoPage() {
 
       <div className="gate-wrap">
 
-        {/* Video background */}
-        <video
-          className="gate-video"
-          src="/gate-bg.mp4"
-          autoPlay muted loop playsInline
-          poster="/fw26-hstars-editorial.jpg"
-        />
+        {/* Slideshow de fondo — crossfade cada 5s */}
+        {SLIDES.map((src, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={src}
+            src={src}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover', objectPosition: 'center 30%',
+              opacity: i === slideIdx ? 1 : 0,
+              transition: 'opacity 1.2s ease-in-out',
+              zIndex: 0,
+            }}
+          />
+        ))}
         <div className="gate-overlay" />
         <div className="gate-scrim" />
         <div className="gate-noise" />
