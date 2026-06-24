@@ -361,11 +361,6 @@ export default function AccesoPage() {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="g-footer">
-          <span>hypestyle.com.ar</span>
-          <span>@hypestyle.ar</span>
-        </div>
 
       </div>
     </>
