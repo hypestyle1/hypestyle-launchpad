@@ -6,13 +6,16 @@ import { useRouter } from 'next/navigation';
 const PUBLIC_OPEN = new Date('2026-06-24T20:00:00-03:00').getTime();
 
 const SLIDES = [
-  '/banner-mobile-1.webp',
   '/fw26-hstars-editorial.jpg',
-  '/banner-mobile-2.webp',
+  '/Banner Movile/stl-look-camo-outdoor.png',
   '/fw26-camo-editorial.jpg',
-  '/banner-mobile-3.webp',
-  '/banner-hero (1).jpg',
-  '/banner-mobile-4.webp',
+  '/banner-hero (2).jpg',
+  '/editorial-may26.png',
+  '/banner-hero (3).jpg',
+  '/founders-photo.jpg',
+  '/No Love, Only Style banner.webp',
+  '/Banner Movile/2-slide-1770743028998-1812841277-d6e90ca1a8aa16296d47ce6e591779b61770743049-1920-1920.webp',
+  '/Banner Movile/2-slide-1774199985089-7163840392-14dbaf7acdc4aaa8e83700e9e1d4f6b51774199990-1920-1920.webp',
 ];
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
