@@ -7,10 +7,8 @@ const PUBLIC_OPEN = new Date('2026-06-24T20:00:00-03:00').getTime();
 const ORDER_LIMIT = 100;
 
 const SLIDES = [
-  '/ad-hypegang-1-grupo.png',
-  '/ad-hypegang-2-duo.png',
-  '/ad-hypegang-4-juanito-walk.png',
-  '/ad-hypegang-7-esquina.png',
+  '/polo-gate-1.jpeg',
+  '/polo-gate-2.jpeg',
 ];
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -33,7 +31,7 @@ export default function AccesoPage() {
   const [pw,       setPw]       = useState('');
   const [error,    setError]    = useState('');
   const [busy,     setBusy]     = useState(false);
-  const [orders,   setOrders]   = useState<{ count: number; full: boolean } | null>(null);
+  const [orders,   setOrders]   = useState<{ count: number } | null>(null);
 
   useEffect(() => {
     if (Date.now() >= PUBLIC_OPEN) { router.replace('/'); return; }
@@ -51,7 +49,7 @@ export default function AccesoPage() {
       try {
         const r = await fetch('/api/flash-sale-status');
         const d = await r.json();
-        setOrders({ count: d.count, full: d.full });
+        setOrders({ count: d.count });
       } catch {}
     }
     fetchOrders();
@@ -99,343 +97,188 @@ export default function AccesoPage() {
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .gate-wrap {
+        .g-wrap {
           position: fixed; inset: 0; z-index: 9999;
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
           font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
           overflow: hidden;
-          padding: 0 24px;
         }
 
-        .gate-overlay {
-          position: absolute; inset: 0; z-index: 1;
-          background: rgba(0,0,0,0.72);
-        }
-        .gate-scrim {
-          position: absolute; inset: 0; z-index: 2;
-          background: linear-gradient(
-            to bottom,
-            rgba(0,0,0,0.50) 0%,
-            rgba(0,0,0,0.00) 30%,
-            rgba(0,0,0,0.00) 60%,
-            rgba(0,0,0,0.65) 100%
-          );
-        }
-        .gate-noise {
-          position: absolute; inset: 0; z-index: 3;
-          pointer-events: none; opacity: 0.04;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          background-size: 256px;
-        }
-        .gate-glow {
-          position: absolute; z-index: 3;
-          left: 50%; top: 50%; transform: translate(-50%, -50%);
-          width: min(700px, 90vw); height: 400px;
-          background: radial-gradient(ellipse at center, rgba(255,20,20,0.14) 0%, transparent 68%);
-          pointer-events: none;
-          animation: glow-breathe 3.5s ease-in-out infinite;
-        }
-        @keyframes glow-breathe {
-          0%,100% { opacity: 0.8; }
-          50%      { opacity: 1.4; }
+        /* Fondo */
+        .g-bg {
+          position: absolute; inset: 0;
+          background: rgba(0,0,0,0.55);
+          z-index: 1;
         }
 
         /* Logo */
-        .gate-logo {
-          position: absolute; top: clamp(20px, 4vw, 36px); left: clamp(20px, 5vw, 44px);
+        .g-logo {
+          position: absolute; top: clamp(20px,4vw,32px); left: clamp(20px,5vw,40px);
           z-index: 20;
         }
-        .gate-logo img {
-          height: clamp(22px, 4vw, 30px); width: auto;
-          filter: brightness(0) invert(1); opacity: 0.88;
-          display: block;
+        .g-logo img {
+          height: clamp(20px,3.5vw,26px); width: auto;
+          filter: brightness(0) invert(1); opacity: 0.9; display: block;
         }
 
-        /* Badge top-right */
-        .gate-badge {
-          position: absolute; top: clamp(20px, 4vw, 36px); right: clamp(20px, 5vw, 44px);
-          z-index: 20;
-          display: flex; align-items: center; gap: 8px;
+        /* Badge */
+        .g-badge {
+          position: absolute; top: clamp(20px,4vw,32px); right: clamp(20px,5vw,40px);
+          z-index: 20; display: flex; align-items: center; gap: 7px;
         }
-        .gate-badge-dot {
-          width: 7px; height: 7px; border-radius: 50%;
-          background: #ff1a1a;
-          box-shadow: 0 0 10px rgba(255,26,26,0.90);
-          animation: dot-live 2s ease-in-out infinite;
-          flex-shrink: 0;
+        .g-badge-dot {
+          width: 6px; height: 6px; border-radius: 50%; background: #ff1a1a;
+          box-shadow: 0 0 8px rgba(255,26,26,0.9);
+          animation: pulse 2s ease-in-out infinite; flex-shrink: 0;
         }
-        @keyframes dot-live {
-          0%,100% { transform: scale(1); opacity: 1; }
-          50%      { transform: scale(1.7); opacity: 0.4; }
-        }
-        .gate-badge-text {
-          font-size: clamp(9px, 1.8vw, 11px); font-weight: 700;
-          letter-spacing: 0.22em; text-transform: uppercase;
-          color: rgba(255,255,255,0.45); white-space: nowrap;
+        @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.7);opacity:.4} }
+        .g-badge-text {
+          font-size: 10px; font-weight: 700; letter-spacing: .2em;
+          text-transform: uppercase; color: rgba(255,255,255,.4); white-space: nowrap;
         }
 
-        /* Contenido central */
-        .gate-inner {
-          position: relative; z-index: 10;
+        /* Layout principal: columna centrada */
+        .g-center {
+          position: absolute; inset: 0; z-index: 10;
           display: flex; flex-direction: column;
-          align-items: center;
-          width: 100%; max-width: 480px;
-          gap: 0;
+          align-items: center; justify-content: center;
+          padding: 80px 24px 100px;
+          gap: clamp(20px, 4vw, 32px);
         }
 
-        /* eyebrow */
-        .gate-eyebrow {
-          display: flex; align-items: center; gap: 14px;
-          margin-bottom: clamp(16px, 3vw, 28px);
+        /* Headline */
+        .g-headline {
+          text-align: center; line-height: .88; letter-spacing: -.04em;
+          font-weight: 900;
         }
-        .gate-eyebrow-line { height: 1px; width: 36px; background: rgba(255,255,255,0.16); }
-        .gate-eyebrow-text {
-          font-size: clamp(9px, 1.8vw, 11px); font-weight: 500;
-          letter-spacing: 0.28em; text-transform: uppercase;
-          color: rgba(255,255,255,0.38); white-space: nowrap;
-        }
+        .g-h-white { color: #fff; font-size: clamp(72px,18vw,130px); display: block; }
+        .g-h-red   { color: #ff1a1a; font-size: clamp(72px,18vw,130px); display: block;
+                     animation: blink 2.8s ease-in-out infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.45} }
 
-        /* headline */
-        .gate-headline {
-          text-align: center;
-          margin-bottom: clamp(10px, 2vw, 18px);
-          line-height: 0.88;
-        }
-        .gate-h-50k {
-          display: block;
-          font-size: clamp(72px, 20vw, 130px);
-          font-weight: 900; letter-spacing: -0.05em; color: #fff;
-        }
-        .gate-h-eq {
-          display: block;
-          font-size: clamp(44px, 12vw, 80px);
-          font-weight: 900; letter-spacing: -0.04em; color: #ff1a1a;
-          margin: clamp(2px, 0.5vw, 6px) 0;
-          animation: eq-blink 2.8s ease-in-out infinite;
-          line-height: 1;
-        }
-        @keyframes eq-blink {
-          0%,100% { opacity: 1; }
-          50%      { opacity: 0.42; }
-        }
-        .gate-h-pct {
-          display: block;
-          font-size: clamp(72px, 20vw, 130px);
-          font-weight: 900; letter-spacing: -0.05em; color: #fff;
-        }
-        .gate-h-off {
-          display: block;
-          font-size: clamp(72px, 20vw, 130px);
-          font-weight: 900; letter-spacing: -0.05em; color: #ff1a1a;
-        }
-
-        /* subtítulo */
-        .gate-sub {
-          font-size: clamp(10px, 2.2vw, 12px); font-weight: 500;
-          letter-spacing: 0.14em; text-transform: uppercase;
-          color: rgba(255,255,255,0.38); text-align: center; line-height: 1.9;
-          margin-bottom: clamp(20px, 4vw, 32px);
-        }
-        .gate-sub strong { color: rgba(255,255,255,0.75); font-weight: 700; }
-
-        /* form — ahora es el elemento central */
-        .gate-form-label {
-          font-size: clamp(9px, 1.8vw, 10px); font-weight: 700;
-          letter-spacing: 0.26em; text-transform: uppercase;
-          color: rgba(255,255,255,0.32); text-align: center;
-          margin-bottom: 12px;
-        }
-        .gate-form {
-          width: 100%; display: flex; flex-direction: column; gap: 10px;
-          margin-bottom: clamp(24px, 5vw, 36px);
-        }
-        .gate-input {
-          width: 100%; padding: clamp(16px, 3.5vw, 20px) 16px;
-          background: rgba(255,255,255,0.07);
-          border: 1px solid rgba(255,255,255,0.22);
-          color: #fff; font-size: clamp(14px, 3.2vw, 16px);
-          font-weight: 700; letter-spacing: 0.22em;
-          text-transform: uppercase; text-align: center;
-          font-family: inherit; caret-color: #ff1a1a;
-          outline: none; transition: border-color 0.15s, background 0.15s;
+        /* Form */
+        .g-form { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
+        .g-input {
+          width: 100%; padding: clamp(16px,3.5vw,20px) 16px;
+          background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25);
+          color: #fff; font-size: clamp(14px,3vw,16px); font-weight: 700;
+          letter-spacing: .2em; text-transform: uppercase; text-align: center;
+          font-family: inherit; caret-color: #ff1a1a; outline: none;
+          transition: border-color .15s, background .15s;
           -webkit-appearance: none; appearance: none;
         }
-        .gate-input::placeholder { color: rgba(255,255,255,0.22); letter-spacing: 0.12em; }
-        .gate-input:focus { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.10); }
-        .gate-input.error { border-color: #ff1a1a; }
-
-        .gate-error {
-          font-size: clamp(9px, 1.8vw, 10px); font-weight: 700;
-          letter-spacing: 0.16em; text-transform: uppercase;
-          color: #ff1a1a; text-align: center;
+        .g-input::placeholder { color: rgba(255,255,255,.25); letter-spacing: .1em; }
+        .g-input:focus { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.12); }
+        .g-input.err { border-color: #ff1a1a; }
+        .g-error {
+          font-size: 10px; font-weight: 700; letter-spacing: .14em;
+          text-transform: uppercase; color: #ff1a1a; text-align: center;
         }
-        .gate-btn {
-          width: 100%; padding: clamp(16px, 3.5vw, 20px);
+        .g-btn {
+          width: 100%; padding: clamp(16px,3.5vw,20px);
           background: #ff1a1a; border: none; color: #fff;
-          font-size: clamp(10px, 2vw, 11px); font-weight: 900;
-          letter-spacing: 0.26em; text-transform: uppercase;
-          font-family: inherit; cursor: pointer;
-          transition: background 0.15s, color 0.15s;
-          -webkit-appearance: none; appearance: none;
+          font-size: 11px; font-weight: 900; letter-spacing: .24em;
+          text-transform: uppercase; font-family: inherit; cursor: pointer;
+          transition: background .15s, color .15s; -webkit-appearance: none; appearance: none;
         }
-        .gate-btn:not(:disabled):hover { background: #fff; color: #0a0a0a; }
-        .gate-btn:disabled { opacity: 0.40; cursor: not-allowed; }
+        .g-btn:not(:disabled):hover { background: #fff; color: #0a0a0a; }
+        .g-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-        /* divider */
-        .gate-divider {
-          width: 100%; height: 1px;
-          background: rgba(255,255,255,0.08);
-          margin-bottom: clamp(20px, 4vw, 28px);
-        }
-
-        /* countdown */
-        .gate-cd-label {
-          font-size: clamp(9px, 1.8vw, 10px); font-weight: 400;
-          letter-spacing: 0.26em; text-transform: uppercase;
-          color: rgba(255,255,255,0.26); text-align: center;
-          margin-bottom: 12px;
-        }
-        .gate-cd-row {
-          display: flex; align-items: flex-start; justify-content: center;
-          gap: clamp(4px, 1.5vw, 10px);
-          margin-bottom: clamp(20px, 4vw, 32px);
-        }
-        .gate-cd-block {
+        /* Bloque inferior: countdown + cupos */
+        .g-bottom {
+          width: 100%; max-width: 400px;
           display: flex; flex-direction: column; align-items: center;
-          min-width: clamp(44px, 11vw, 68px);
+          gap: clamp(14px,3vw,22px);
         }
-        .gate-cd-num {
-          font-size: clamp(36px, 10vw, 60px);
-          font-weight: 900; line-height: 1;
-          letter-spacing: -0.04em; color: #fff;
-          font-variant-numeric: tabular-nums;
+        .g-sep { width: 100%; height: 1px; background: rgba(255,255,255,.1); }
+
+        /* Countdown */
+        .g-cd { display: flex; align-items: flex-start; justify-content: center; gap: 2px; }
+        .g-cd-block { display: flex; flex-direction: column; align-items: center; min-width: clamp(40px,10vw,60px); }
+        .g-cd-num {
+          font-size: clamp(32px,8vw,52px); font-weight: 900; line-height: 1;
+          letter-spacing: -.03em; color: #fff; font-variant-numeric: tabular-nums;
         }
-        .gate-cd-unit {
-          font-size: clamp(7px, 1.4vw, 9px); font-weight: 400;
-          letter-spacing: 0.22em; text-transform: uppercase;
-          color: rgba(255,255,255,0.24); margin-top: 4px;
+        .g-cd-label {
+          font-size: 8px; font-weight: 400; letter-spacing: .2em;
+          text-transform: uppercase; color: rgba(255,255,255,.3); margin-top: 3px;
         }
-        .gate-cd-sep {
-          font-size: clamp(26px, 7vw, 46px); font-weight: 900;
-          color: rgba(255,255,255,0.18); line-height: 1;
-          padding-bottom: clamp(4px, 1.5vw, 10px);
-          align-self: flex-start;
+        .g-cd-sep {
+          font-size: clamp(24px,6vw,40px); font-weight: 900;
+          color: rgba(255,255,255,.2); line-height: 1;
+          padding-bottom: clamp(4px,1vw,8px); align-self: flex-start;
+          margin: 0 2px;
         }
 
-        /* order counter / FOMO */
-        .gate-fomo {
-          width: 100%; display: flex; flex-direction: column; gap: 8px;
+        /* Barra FOMO */
+        .g-fomo { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+        .g-fomo-row { display: flex; justify-content: space-between; align-items: center; }
+        .g-fomo-tag {
+          font-size: 9px; font-weight: 500; letter-spacing: .18em;
+          text-transform: uppercase; color: rgba(255,255,255,.35);
         }
-        .gate-fomo-top {
-          display: flex; align-items: center; justify-content: space-between;
-        }
-        .gate-fomo-label {
-          font-size: clamp(9px, 1.8vw, 10px); font-weight: 500;
-          letter-spacing: 0.20em; text-transform: uppercase;
-          color: rgba(255,255,255,0.36);
-        }
-        .gate-fomo-count {
-          font-size: clamp(11px, 2.2vw, 13px); font-weight: 900;
-          letter-spacing: -0.01em; color: #ff1a1a;
+        .g-fomo-num {
+          font-size: 12px; font-weight: 900; color: #ff1a1a;
           font-variant-numeric: tabular-nums;
         }
-        .gate-fomo-bar-bg {
-          width: 100%; height: 3px;
-          background: rgba(255,255,255,0.10); overflow: hidden;
-        }
-        .gate-fomo-bar-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #ff1a1a 0%, #ff5555 100%);
-          transition: width 0.8s ease;
-        }
-        .gate-fomo-sub {
-          font-size: clamp(8px, 1.6vw, 9px); font-weight: 400;
-          letter-spacing: 0.18em; text-transform: uppercase;
-          color: rgba(255,255,255,0.22); text-align: center;
+        .g-fomo-bar { width: 100%; height: 2px; background: rgba(255,255,255,.1); }
+        .g-fomo-fill {
+          height: 100%; background: #ff1a1a;
+          transition: width .8s ease;
         }
 
-        /* footer */
-        .gate-footer {
+        /* Footer */
+        .g-footer {
           position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
-          display: flex; align-items: center; justify-content: space-between;
-          padding: clamp(14px, 3vw, 22px) clamp(20px, 5vw, 44px);
-          border-top: 1px solid rgba(255,255,255,0.07);
+          display: flex; justify-content: space-between;
+          padding: clamp(12px,2.5vw,20px) clamp(20px,5vw,40px);
+          border-top: 1px solid rgba(255,255,255,.07);
         }
-        .gate-footer-text {
-          font-size: clamp(9px, 1.8vw, 10px); font-weight: 500;
-          letter-spacing: 0.20em; text-transform: lowercase;
-          color: rgba(255,255,255,0.22);
+        .g-footer span {
+          font-size: 9px; font-weight: 500; letter-spacing: .18em;
+          text-transform: lowercase; color: rgba(255,255,255,.2);
         }
       `}</style>
 
-      <div className="gate-wrap">
+      <div className="g-wrap">
 
         {/* Slideshow */}
         {SLIDES.map((src, i) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={src}
-            src={src}
-            alt=""
-            aria-hidden="true"
-            style={{
-              position: 'absolute', inset: 0,
-              width: '100%', height: '100%',
-              objectFit: 'cover', objectPosition: 'center 30%',
-              opacity: i === slideIdx ? 1 : 0,
-              transition: 'opacity 1.2s ease-in-out',
-              zIndex: 0,
-            }}
-          />
+          <img key={src} src={src} alt="" aria-hidden="true" style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'cover', objectPosition: 'center',
+            opacity: i === slideIdx ? 1 : 0,
+            transition: 'opacity 1.2s ease-in-out', zIndex: 0,
+          }} />
         ))}
-        <div className="gate-overlay" />
-        <div className="gate-scrim" />
-        <div className="gate-noise" />
-        <div className="gate-glow" />
+        <div className="g-bg" />
 
         {/* Logo */}
-        <div className="gate-logo">
+        <div className="g-logo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" />
         </div>
 
         {/* Badge */}
-        <div className="gate-badge">
-          <div className="gate-badge-dot" />
-          <span className="gate-badge-text">Early Access</span>
+        <div className="g-badge">
+          <div className="g-badge-dot" />
+          <span className="g-badge-text">Early Access</span>
         </div>
 
-        {/* Contenido */}
-        <div className="gate-inner">
-
-          {/* Eyebrow */}
-          <div className="gate-eyebrow">
-            <div className="gate-eyebrow-line" />
-            <span className="gate-eyebrow-text">Celebramos juntos</span>
-            <div className="gate-eyebrow-line" />
-          </div>
+        {/* Centro */}
+        <div className="g-center">
 
           {/* Headline */}
-          <div className="gate-headline">
-            <span className="gate-h-50k">50K</span>
-            <span className="gate-h-eq">=</span>
-            <span className="gate-h-pct">50<span style={{ color: '#ff1a1a' }}>%</span></span>
-            <span className="gate-h-off">OFF</span>
+          <div className="g-headline">
+            <span className="g-h-white">50K =</span>
+            <span className="g-h-red">50% OFF</span>
           </div>
 
-          {/* Subtítulo */}
-          <div className="gate-sub">
-            <strong>En toda la tienda</strong>{' · '}Primeras 100 órdenes o hasta el 25/6 a las 22hs<br />
-            Gracias por acompañarnos desde el primer día.
-          </div>
-
-          {/* Form — centro de la pantalla */}
-          <div className="gate-form-label">Ingresá tu contraseña de acceso</div>
-          <form className="gate-form" onSubmit={handleSubmit}>
+          {/* Form */}
+          <form className="g-form" onSubmit={handleSubmit}>
             <input
               ref={inputRef}
-              className={`gate-input${error ? ' error' : ''}`}
+              className={`g-input${error ? ' err' : ''}`}
               type="text"
               inputMode="text"
               value={pw}
@@ -446,62 +289,50 @@ export default function AccesoPage() {
               autoCapitalize="characters"
               spellCheck={false}
             />
-            {error && <div className="gate-error">{error}</div>}
-            <button
-              type="submit"
-              className="gate-btn"
-              disabled={busy || !pw}
-            >
+            {error && <div className="g-error">{error}</div>}
+            <button type="submit" className="g-btn" disabled={busy || !pw}>
               {busy ? 'Verificando…' : 'Entrar'}
             </button>
           </form>
 
-          <div className="gate-divider" />
+          {/* Countdown + FOMO */}
+          <div className="g-bottom">
+            <div className="g-sep" />
 
-          {/* Countdown */}
-          <div className="gate-cd-label">Apertura general en</div>
-          <div className="gate-cd-row">
-            <div className="gate-cd-block">
-              <span className="gate-cd-num">{pad(time.h)}</span>
-              <span className="gate-cd-unit">Hrs</span>
+            <div className="g-cd">
+              <div className="g-cd-block">
+                <span className="g-cd-num">{pad(time.h)}</span>
+                <span className="g-cd-label">Hrs</span>
+              </div>
+              <span className="g-cd-sep">:</span>
+              <div className="g-cd-block">
+                <span className="g-cd-num">{pad(time.m)}</span>
+                <span className="g-cd-label">Min</span>
+              </div>
+              <span className="g-cd-sep">:</span>
+              <div className="g-cd-block">
+                <span className="g-cd-num">{pad(time.s)}</span>
+                <span className="g-cd-label">Seg</span>
+              </div>
             </div>
-            <span className="gate-cd-sep">:</span>
-            <div className="gate-cd-block">
-              <span className="gate-cd-num">{pad(time.m)}</span>
-              <span className="gate-cd-unit">Min</span>
-            </div>
-            <span className="gate-cd-sep">:</span>
-            <div className="gate-cd-block">
-              <span className="gate-cd-num">{pad(time.s)}</span>
-              <span className="gate-cd-unit">Seg</span>
-            </div>
-          </div>
 
-          {/* FOMO — contador de pedidos */}
-          <div className="gate-fomo">
-            <div className="gate-fomo-top">
-              <span className="gate-fomo-label">Cupos tomados</span>
-              <span className="gate-fomo-count">
-                {orders ? `${orderCount} / ${ORDER_LIMIT}` : '— / 100'}
-              </span>
-            </div>
-            <div className="gate-fomo-bar-bg">
-              <div
-                className="gate-fomo-bar-fill"
-                style={{ width: orders ? `${orderPct}%` : '0%' }}
-              />
-            </div>
-            <div className="gate-fomo-sub">
-              Primeras 100 órdenes · 50% off en toda la tienda
+            <div className="g-fomo">
+              <div className="g-fomo-row">
+                <span className="g-fomo-tag">Cupos tomados</span>
+                <span className="g-fomo-num">{orderCount} / {ORDER_LIMIT}</span>
+              </div>
+              <div className="g-fomo-bar">
+                <div className="g-fomo-fill" style={{ width: `${orderPct}%` }} />
+              </div>
             </div>
           </div>
 
         </div>
 
         {/* Footer */}
-        <div className="gate-footer">
-          <span className="gate-footer-text">hypestyle.com.ar</span>
-          <span className="gate-footer-text">@hypestyle.ar</span>
+        <div className="g-footer">
+          <span>hypestyle.com.ar</span>
+          <span>@hypestyle.ar</span>
         </div>
 
       </div>
