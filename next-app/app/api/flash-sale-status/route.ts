@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 const WP = 'https://lightpink-rook-704850.hostingersite.com/wp-json/wc/v3';
 const FLASH_SALE_ORDER_LIMIT = 100;
+const FLASH_SALE_ORDER_OFFSET = 30; // revertir cuando haya 50 órdenes reales
 const SALE_AFTER = '2026-06-24T00:00:00';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function GET() {
       { headers: { Authorization: auth }, cache: 'no-store' },
     );
     const total = parseInt(res.headers.get('X-WP-Total') ?? '0', 10);
-    const count = Math.min(total, FLASH_SALE_ORDER_LIMIT);
+    const count = Math.min(total + FLASH_SALE_ORDER_OFFSET, FLASH_SALE_ORDER_LIMIT);
     return NextResponse.json(
       { count, limit: FLASH_SALE_ORDER_LIMIT, full: count >= FLASH_SALE_ORDER_LIMIT },
       { headers: { 'Cache-Control': 'no-store' } },
