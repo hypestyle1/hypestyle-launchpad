@@ -115,7 +115,7 @@ export default function NewInFW26() {
       key={p.slug}
       {...p}
       badge={flashActive ? '−50%' : (KEEP_DISCOUNT.has(p.slug) ? p.badge : 'New In')}
-      mutedPrice
+      mutedPrice={!flashActive}
       giftNote={GIFT_NOTES[p.slug]}
     />
   );
