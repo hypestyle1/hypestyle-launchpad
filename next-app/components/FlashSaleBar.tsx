@@ -46,11 +46,15 @@ export default function FlashSaleBar() {
           className="text-[10px] font-black tracking-[0.18em] uppercase"
           style={{ color: '#ff2d2d' }}
         >
-          Flash Sale
+          50K en IG
+        </span>
+        <span className="text-white/20 text-[10px]">=</span>
+        <span className="text-[10px] font-black tracking-[0.14em] uppercase text-white">
+          50% OFF
         </span>
         <span className="hidden sm:block text-white/20 text-[10px]">·</span>
-        <span className="hidden sm:block text-[10px] font-medium tracking-[0.12em] uppercase text-white/70">
-          50% OFF en toda la tienda
+        <span className="hidden sm:block text-[10px] font-medium tracking-[0.12em] uppercase text-white/50">
+          toda la tienda · 24hs
         </span>
       </div>
 
