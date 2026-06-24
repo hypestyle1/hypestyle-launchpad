@@ -6,6 +6,7 @@ import ProductCard from "./ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { NormalizedProduct } from "@/lib/products-normalize";
 import { fetchAllProducts } from "@/lib/products-server";
+import { isFlashSaleActive } from "@/lib/flash-sale";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Product = {
@@ -133,6 +134,7 @@ export default function CollectionBanner() {
   };
 
   const col = collections[active];
+  const flashActive = isFlashSaleActive();
 
   const displayProducts = active === 0 ? fw26Products : col.products;
 
@@ -185,7 +187,7 @@ export default function CollectionBanner() {
               </>
             ) : (
               displayProducts.map((p) => (
-                <ProductCard key={p.name} {...p} />
+                <ProductCard key={p.name} {...p} badge={flashActive ? '−50%' : undefined} />
               ))
             )}
           </div>

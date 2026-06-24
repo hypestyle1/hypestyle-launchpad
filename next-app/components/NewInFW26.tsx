@@ -9,6 +9,7 @@ import NewInSwapEditorial from "./NewInSwapEditorial";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 import { FW26_GROUPS } from "@/lib/fw26";
+import { isFlashSaleActive } from "@/lib/flash-sale";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Mismo skeleton que CollectionBanner para mantener consistencia visual.
@@ -105,12 +106,19 @@ export default function NewInFW26() {
     [bySlug],
   );
 
-  // Render de cada tarjeta: badge "New In" + ambos precios (promo en negro + regular
-  // tachado). Excepción: los combos/promos conservan su badge de descuento (−XX%).
-  const renderCard = (p: (typeof allProducts)[number]) =>
-    KEEP_DISCOUNT.has(p.slug)
-      ? <ProductCard key={p.slug} {...p} mutedPrice giftNote={GIFT_NOTES[p.slug]} />
-      : <ProductCard key={p.slug} {...p} badge="New In" mutedPrice giftNote={GIFT_NOTES[p.slug]} />;
+  const flashActive = isFlashSaleActive();
+
+  // Render de cada tarjeta: durante el flash sale → badge "−50%". Si no,
+  // badge "New In" (o el descuento del combo si está en KEEP_DISCOUNT).
+  const renderCard = (p: (typeof allProducts)[number]) => (
+    <ProductCard
+      key={p.slug}
+      {...p}
+      badge={flashActive ? '−50%' : (KEEP_DISCOUNT.has(p.slug) ? p.badge : 'New In')}
+      mutedPrice
+      giftNote={GIFT_NOTES[p.slug]}
+    />
+  );
 
   // Mientras cargan los productos, mostramos skeletons (mismo estilo que CollectionBanner).
   if (isLoading) {
