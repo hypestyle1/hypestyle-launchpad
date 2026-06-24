@@ -12,6 +12,7 @@ import { useLocale } from '@/context/LocaleContext';
 import { useProduct } from '@/hooks/useProduct';
 import { useProducts } from '@/hooks/useProducts';
 import { checkStock } from '@/lib/checkStock';
+import { isFlashSaleActive } from '@/lib/flash-sale';
 
 function CareIcon({ type }: { type: string }) {
   const cls = 'w-[18px] h-[18px] flex-shrink-0 text-foreground/70';
@@ -203,6 +204,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
 
 
   const [mounted, setMounted]               = useState(false);
+  const [flashActive, setFlashActive]       = useState(false);
   const [selectedImage, setSelectedImage]   = useState(0);
   const [selectedColor, setSelectedColor]   = useState('');
   const [selectedSize, setSelectedSize]     = useState<string | null>(null);
@@ -225,7 +227,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
   const addBtnRef    = useRef<HTMLButtonElement>(null);
   const { add, setDrawerOpen } = useCart();
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setMounted(true); setFlashActive(isFlashSaleActive()); }, []);
 
   // El zoom de hover (scale 2x) es solo para desktop con mouse. En táctiles el navegador
   // sintetiza un "hover" al tocar y disparaba un zoom que recortaba la foto.
@@ -427,7 +429,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
                   <span className="md:hidden absolute bottom-3 left-3 text-[10px] text-white bg-black/35 backdrop-blur-sm px-2 py-0.5 pointer-events-none">
                     Tocá para ampliar
                   </span>
-                  <GoalDiscountCorner d={goalDiscount} />
+                  <GoalDiscountCorner d={flashActive ? null : goalDiscount} />
                 </div>
                 <div className="md:hidden flex items-center justify-center gap-1.5">
                   {galleryImages.map((_, i) => (
@@ -467,7 +469,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
                 )}
               </div>
 
-              <GoalDiscountInfo d={goalDiscount} />
+              <GoalDiscountInfo d={flashActive ? null : goalDiscount} />
 
               {product.modelInfo && (
                 <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 mb-4 rounded-[10px]">
