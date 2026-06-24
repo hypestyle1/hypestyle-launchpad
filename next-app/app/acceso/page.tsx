@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation';
 const PUBLIC_OPEN = new Date('2026-06-24T20:00:00-03:00').getTime();
 
 const SLIDES = [
+  '/banner-mobile-1.webp',
   '/fw26-hstars-editorial.jpg',
-  '/banner-hero (1).jpg',
+  '/banner-mobile-2.webp',
   '/fw26-camo-editorial.jpg',
-  '/banner-hero (2).jpg',
-  '/stl-halfzip-black.jpg',
-  '/banner-hero (3).jpg',
-  '/stl-halfzip-melange.jpg',
+  '/banner-mobile-3.webp',
+  '/banner-hero (1).jpg',
+  '/banner-mobile-4.webp',
 ];
 
 function pad(n: number) { return String(n).padStart(2, '0'); }

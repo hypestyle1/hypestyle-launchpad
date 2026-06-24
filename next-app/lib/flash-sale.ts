@@ -1,4 +1,4 @@
-export const FLASH_SALE_START = new Date('2026-06-24T20:00:00-03:00');
+export const FLASH_SALE_START = new Date('2026-06-24T19:00:00-03:00');
 export const FLASH_SALE_END   = new Date('2026-06-25T22:00:00-03:00');
 export const FLASH_DISCOUNT   = 50;
 
