@@ -36,10 +36,12 @@ const GIFT_NOTES: Record<string, string> = {};
 // Editorial por grupo (key = label del grupo en FW26_GROUPS).
 // El grupo con editorial se renderiza en layout split: productos (máx 4) de un
 // lado y la editorial (imagen o video) del otro. `side` = dónde va la editorial.
+type SlideItem = { src: string; type?: 'image' | 'video' };
 type GroupMedia = {
   type: 'image' | 'video' | 'slider';
   src?: string;          // image / video
-  images?: string[];     // slider
+  images?: string[];     // slider solo imágenes (legacy)
+  slides?: SlideItem[];  // slider mixto imagen+video
   alt: string;
   side: 'left' | 'right';
   poster?: string;
@@ -62,7 +64,17 @@ const SWAP_SLIDES = [
 ];
 
 const GROUP_EDITORIAL: Record<string, GroupMedia> = {
-  'Half-Zip Polo': { type: 'image', src: '/newin/half-zip-polo.jpg', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
+  'Half-Zip Polo': {
+    type: 'slider',
+    slides: [
+      { src: '/newin/polo-foto-1.jpg',  type: 'image' },
+      { src: '/newin/polo-video-1.mp4', type: 'video' },
+      { src: '/newin/polo-foto-2.jpg',  type: 'image' },
+      { src: '/newin/polo-video-2.mp4', type: 'video' },
+    ],
+    alt: 'Half-Zip Polo — HypeStyle Department FW26',
+    side: 'right',
+  },
   'Pink Set': { type: 'video', src: '/newin/pink-set.mp4', alt: 'Pink Set FW26', side: 'left', poster: '/newin/pink-set-poster.jpg' },
   'Camo Drop': {
     type: 'slider',
@@ -152,7 +164,7 @@ export default function NewInFW26() {
                       preload="metadata"
                     />
                   ) : editorial.type === 'slider' ? (
-                    <EditorialSlider images={editorial.images ?? []} alt={editorial.alt} />
+                    <EditorialSlider slides={editorial.slides} images={editorial.images} alt={editorial.alt} />
                   ) : (
                     <Image
                       src={editorial.src ?? ''}

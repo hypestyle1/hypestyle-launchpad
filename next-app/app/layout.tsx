@@ -8,6 +8,7 @@ import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import FlashSaleBar from '@/components/FlashSaleBar';
 
 const OG_DESCRIPTION = '© HYPESTYLE 2026 — STYLE&CULTURE. Cultura, identidad y estilo en cada drop. Worldwide Shipping.';
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es">
       <body>
         <Providers>
+          <FlashSaleBar />
           <LoadingScreen />
           <CartDrawer />
           <WishlistDrawer />
