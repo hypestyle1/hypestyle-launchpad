@@ -41,7 +41,7 @@ export default function FlashSaleBar() {
       } catch {}
     }
     fetchStatus();
-    const poll = setInterval(fetchStatus, 60_000);
+    const poll = setInterval(fetchStatus, 30_000);
 
     return () => { clearInterval(tick); clearInterval(poll); };
   }, []);
@@ -82,7 +82,7 @@ export default function FlashSaleBar() {
           </span>
           {!isFull && (
             <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-white/40">
-              lugares
+              cupos
             </span>
           )}
         </div>
