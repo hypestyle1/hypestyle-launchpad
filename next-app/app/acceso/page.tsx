@@ -384,7 +384,8 @@ export default function AccesoPage() {
           </div>
 
           <div className="gate-sub">
-            <strong>En toda la tienda</strong>{' · '}Hoy 20hs hasta mañana 22hs
+            <strong>En toda la tienda</strong>{' · '}Primeras 100 órdenes o hasta el 25/6 a las 22hs<br />
+            Gracias por acompañarnos desde el primer día.
           </div>
 
           <div className="gate-divider" />
