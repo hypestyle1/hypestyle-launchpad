@@ -237,6 +237,8 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const [flashActive, setFlashActive] = useState(false);
+
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
   const [loadingRates, setLoadingRates] = useState(false);
@@ -249,6 +251,8 @@ export default function Checkout() {
   const isInternational = info.pais !== 'AR';
   const isSucursal = !isInternational && (selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal'));
   const branchReady = isInternational || !isSucursal || !!selectedBranch;
+
+  useEffect(() => { setFlashActive(isFlashSaleActive()); }, []);
 
   const subtotal = total;
   // El cupón de envío gratis cero-ea Andreani igual que el umbral de $250.000.
@@ -482,7 +486,7 @@ export default function Checkout() {
   ].filter(Boolean) as { id: string; label: string; sub: string }[];
 
   return (
-    <div className={`min-h-screen bg-white${isFlashSaleActive() ? ' pt-[40px]' : ''}`}>
+    <div className={`min-h-screen bg-white${flashActive ? ' pt-[40px]' : ''}`}>
       <div className="border-b border-border py-5 px-4 text-center">
         <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto object-contain mx-auto" /></a>
         <div className="flex items-center justify-center gap-2 mt-3 text-[12px]">
