@@ -4,11 +4,18 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 const PUBLIC_OPEN = new Date('2026-06-24T20:00:00-03:00').getTime();
-const ORDER_LIMIT = 100;
 
 const SLIDES = [
   '/polo-gate-1.jpeg',
   '/polo-gate-2.jpeg',
+  '/fw26-camo-editorial.jpg',
+  '/banner-hero (2).jpg',
+  '/founders-photo.jpg',
+  '/banner-hero (3).jpg',
+  '/No Love, Only Style banner.webp',
+  '/editorial-may26.png',
+  '/Banner Movile/stl-look-camo-outdoor.png',
+  '/Banner Movile/2-slide-1774199985089-7163840392-14dbaf7acdc4aaa8e83700e9e1d4f6b51774199990-1920-1920.webp',
 ];
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -31,7 +38,6 @@ export default function AccesoPage() {
   const [pw,       setPw]       = useState('');
   const [error,    setError]    = useState('');
   const [busy,     setBusy]     = useState(false);
-  const [orders,   setOrders]   = useState<{ count: number } | null>(null);
 
   useEffect(() => {
     if (Date.now() >= PUBLIC_OPEN) { router.replace('/'); return; }
@@ -45,17 +51,7 @@ export default function AccesoPage() {
 
     const slide = setInterval(() => setSlideIdx(i => (i + 1) % SLIDES.length), 5000);
 
-    async function fetchOrders() {
-      try {
-        const r = await fetch('/api/flash-sale-status');
-        const d = await r.json();
-        setOrders({ count: d.count });
-      } catch {}
-    }
-    fetchOrders();
-    const poll = setInterval(fetchOrders, 30_000);
-
-    return () => { clearInterval(tick); clearInterval(slide); clearInterval(poll); };
+    return () => { clearInterval(tick); clearInterval(slide); };
   }, [router]);
 
   useEffect(() => {
@@ -89,169 +85,204 @@ export default function AccesoPage() {
 
   if (!ready) return null;
 
-  const orderCount = orders?.count ?? 0;
-  const orderPct   = Math.min(100, Math.round((orderCount / ORDER_LIMIT) * 100));
-
   return (
     <>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .g-wrap {
-          position: fixed; inset: 0; z-index: 9999;
-          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-          overflow: hidden;
+        .g { position: fixed; inset: 0; z-index: 9999; overflow: hidden;
+             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+
+        /* ── Fondo con blur ── */
+        .g-slide {
+          position: absolute; inset: -24px; z-index: 0;
+          background-size: cover; background-position: center;
+          filter: blur(18px) brightness(0.45) saturate(1.1);
+          transform: scale(1.08);
+          transition: opacity 1.4s ease-in-out;
         }
 
-        /* Fondo */
-        .g-bg {
-          position: absolute; inset: 0;
-          background: rgba(0,0,0,0.55);
-          z-index: 1;
+        /* ── Scrim gradiente ── */
+        .g-scrim {
+          position: absolute; inset: 0; z-index: 1;
+          background: linear-gradient(
+            160deg,
+            rgba(0,0,0,.35) 0%,
+            rgba(0,0,0,.10) 40%,
+            rgba(0,0,0,.10) 60%,
+            rgba(0,0,0,.50) 100%
+          );
         }
 
-        /* Logo */
+        /* ── Logo ── */
         .g-logo {
-          position: absolute; top: clamp(20px,4vw,32px); left: clamp(20px,5vw,40px);
-          z-index: 20;
+          position: absolute; top: clamp(22px,4vw,34px); left: clamp(22px,4vw,40px);
+          z-index: 30;
         }
         .g-logo img {
-          height: clamp(20px,3.5vw,26px); width: auto;
-          filter: brightness(0) invert(1); opacity: 0.9; display: block;
+          height: clamp(20px,3.2vw,26px); width: auto;
+          filter: brightness(0) invert(1); opacity: .92; display: block;
         }
 
-        /* Badge */
+        /* ── Badge top-right ── */
         .g-badge {
-          position: absolute; top: clamp(20px,4vw,32px); right: clamp(20px,5vw,40px);
-          z-index: 20; display: flex; align-items: center; gap: 7px;
+          position: absolute; top: clamp(22px,4vw,34px); right: clamp(22px,4vw,40px);
+          z-index: 30; display: flex; align-items: center; gap: 7px;
         }
-        .g-badge-dot {
-          width: 6px; height: 6px; border-radius: 50%; background: #ff1a1a;
-          box-shadow: 0 0 8px rgba(255,26,26,0.9);
-          animation: pulse 2s ease-in-out infinite; flex-shrink: 0;
+        .g-dot {
+          width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+          background: #ff2020; box-shadow: 0 0 8px rgba(255,32,32,.9);
+          animation: dot 2s ease-in-out infinite;
         }
-        @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.7);opacity:.4} }
-        .g-badge-text {
+        @keyframes dot { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.8);opacity:.35} }
+        .g-badge span {
           font-size: 10px; font-weight: 700; letter-spacing: .2em;
-          text-transform: uppercase; color: rgba(255,255,255,.4); white-space: nowrap;
+          text-transform: uppercase; color: rgba(255,255,255,.45);
         }
 
-        /* Layout principal: columna centrada */
+        /* ── Contenedor centrado ── */
         .g-center {
-          position: absolute; inset: 0; z-index: 10;
+          position: absolute; inset: 0; z-index: 20;
+          display: flex; align-items: center; justify-content: center;
+          padding: 80px 20px;
+        }
+
+        /* ── Card liquid glass ── */
+        .g-card {
+          width: 100%; max-width: 420px;
+          background: rgba(255,255,255,.09);
+          backdrop-filter: blur(28px) saturate(160%);
+          -webkit-backdrop-filter: blur(28px) saturate(160%);
+          border: 1px solid rgba(255,255,255,.18);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.22),
+            inset 0 -1px 0 rgba(255,255,255,.06),
+            0 20px 60px rgba(0,0,0,.35);
+          padding: clamp(28px,5vw,44px) clamp(24px,4vw,36px);
           display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          padding: 80px 24px 100px;
-          gap: clamp(20px, 4vw, 32px);
+          align-items: center; gap: clamp(20px,3.5vw,28px);
         }
 
-        /* Headline */
-        .g-headline {
-          text-align: center; line-height: .88; letter-spacing: -.04em;
-          font-weight: 900;
+        /* eyebrow */
+        .g-eyebrow {
+          display: flex; align-items: center; gap: 12px; width: 100%;
         }
-        .g-h-white { color: #fff; font-size: clamp(72px,18vw,130px); display: block; }
-        .g-h-red   { color: #ff1a1a; font-size: clamp(72px,18vw,130px); display: block;
-                     animation: blink 2.8s ease-in-out infinite; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.45} }
+        .g-eyebrow-line { flex: 1; height: 1px; background: rgba(255,255,255,.18); }
+        .g-eyebrow-text {
+          font-size: 9px; font-weight: 600; letter-spacing: .26em;
+          text-transform: uppercase; color: rgba(255,255,255,.5); white-space: nowrap;
+        }
 
-        /* Form */
-        .g-form { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; }
+        /* headline */
+        .g-headline { text-align: center; line-height: .88; }
+        .g-h1 {
+          display: block; font-size: clamp(56px,14vw,100px);
+          font-weight: 900; letter-spacing: -.04em; color: #fff;
+        }
+        .g-h2 {
+          display: block; font-size: clamp(56px,14vw,100px);
+          font-weight: 900; letter-spacing: -.04em; color: #ff2020;
+          animation: flicker 3s ease-in-out infinite;
+        }
+        @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+        /* sub */
+        .g-sub {
+          font-size: clamp(9px,2vw,11px); font-weight: 500;
+          letter-spacing: .14em; text-transform: uppercase;
+          color: rgba(255,255,255,.45); text-align: center; line-height: 1.8;
+        }
+
+        /* separador */
+        .g-divider { width: 100%; height: 1px; background: rgba(255,255,255,.12); }
+
+        /* form */
+        .g-form { width: 100%; display: flex; flex-direction: column; gap: 8px; }
         .g-input {
-          width: 100%; padding: clamp(16px,3.5vw,20px) 16px;
-          background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25);
-          color: #fff; font-size: clamp(14px,3vw,16px); font-weight: 700;
+          width: 100%; padding: clamp(15px,3vw,18px) 14px;
+          background: rgba(255,255,255,.06);
+          border: 1px solid rgba(255,255,255,.2);
+          color: #fff; font-size: clamp(13px,2.8vw,15px); font-weight: 700;
           letter-spacing: .2em; text-transform: uppercase; text-align: center;
-          font-family: inherit; caret-color: #ff1a1a; outline: none;
+          font-family: inherit; caret-color: #ff2020; outline: none;
           transition: border-color .15s, background .15s;
           -webkit-appearance: none; appearance: none;
+          backdrop-filter: blur(4px);
         }
-        .g-input::placeholder { color: rgba(255,255,255,.25); letter-spacing: .1em; }
-        .g-input:focus { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.12); }
-        .g-input.err { border-color: #ff1a1a; }
+        .g-input::placeholder { color: rgba(255,255,255,.2); letter-spacing: .1em; }
+        .g-input:focus {
+          border-color: rgba(255,255,255,.45);
+          background: rgba(255,255,255,.10);
+        }
+        .g-input.err { border-color: #ff2020; }
         .g-error {
           font-size: 10px; font-weight: 700; letter-spacing: .14em;
-          text-transform: uppercase; color: #ff1a1a; text-align: center;
+          text-transform: uppercase; color: #ff2020; text-align: center;
         }
         .g-btn {
-          width: 100%; padding: clamp(16px,3.5vw,20px);
-          background: #ff1a1a; border: none; color: #fff;
+          width: 100%; padding: clamp(15px,3vw,18px);
+          background: #ff2020; border: none; color: #fff;
           font-size: 11px; font-weight: 900; letter-spacing: .24em;
           text-transform: uppercase; font-family: inherit; cursor: pointer;
-          transition: background .15s, color .15s; -webkit-appearance: none; appearance: none;
+          transition: background .15s, color .15s;
+          -webkit-appearance: none; appearance: none;
         }
         .g-btn:not(:disabled):hover { background: #fff; color: #0a0a0a; }
-        .g-btn:disabled { opacity: .4; cursor: not-allowed; }
+        .g-btn:disabled { opacity: .38; cursor: not-allowed; }
 
-        /* Bloque inferior: countdown + cupos */
-        .g-bottom {
-          width: 100%; max-width: 400px;
-          display: flex; flex-direction: column; align-items: center;
-          gap: clamp(14px,3vw,22px);
-        }
-        .g-sep { width: 100%; height: 1px; background: rgba(255,255,255,.1); }
-
-        /* Countdown */
-        .g-cd { display: flex; align-items: flex-start; justify-content: center; gap: 2px; }
-        .g-cd-block { display: flex; flex-direction: column; align-items: center; min-width: clamp(40px,10vw,60px); }
-        .g-cd-num {
-          font-size: clamp(32px,8vw,52px); font-weight: 900; line-height: 1;
+        /* countdown */
+        .g-cd { display: flex; align-items: flex-start; justify-content: center; gap: 0; }
+        .g-cd-col { display: flex; flex-direction: column; align-items: center; min-width: clamp(44px,11vw,66px); }
+        .g-cd-n {
+          font-size: clamp(34px,8.5vw,54px); font-weight: 900; line-height: 1;
           letter-spacing: -.03em; color: #fff; font-variant-numeric: tabular-nums;
         }
-        .g-cd-label {
+        .g-cd-u {
           font-size: 8px; font-weight: 400; letter-spacing: .2em;
-          text-transform: uppercase; color: rgba(255,255,255,.3); margin-top: 3px;
+          text-transform: uppercase; color: rgba(255,255,255,.28); margin-top: 3px;
         }
         .g-cd-sep {
-          font-size: clamp(24px,6vw,40px); font-weight: 900;
+          font-size: clamp(26px,6.5vw,42px); font-weight: 900;
           color: rgba(255,255,255,.2); line-height: 1;
-          padding-bottom: clamp(4px,1vw,8px); align-self: flex-start;
-          margin: 0 2px;
+          padding-bottom: clamp(3px,1vw,7px); align-self: flex-start;
+          margin: 0 1px;
         }
 
-        /* Barra FOMO */
-        .g-fomo { width: 100%; display: flex; flex-direction: column; gap: 6px; }
-        .g-fomo-row { display: flex; justify-content: space-between; align-items: center; }
-        .g-fomo-tag {
-          font-size: 9px; font-weight: 500; letter-spacing: .18em;
-          text-transform: uppercase; color: rgba(255,255,255,.35);
+        /* limit note */
+        .g-limit {
+          font-size: clamp(8px,1.6vw,10px); font-weight: 500;
+          letter-spacing: .16em; text-transform: uppercase;
+          color: rgba(255,255,255,.3); text-align: center; line-height: 1.7;
         }
-        .g-fomo-num {
-          font-size: 12px; font-weight: 900; color: #ff1a1a;
-          font-variant-numeric: tabular-nums;
-        }
-        .g-fomo-bar { width: 100%; height: 2px; background: rgba(255,255,255,.1); }
-        .g-fomo-fill {
-          height: 100%; background: #ff1a1a;
-          transition: width .8s ease;
-        }
+        .g-limit strong { color: rgba(255,255,255,.55); font-weight: 700; }
 
-        /* Footer */
+        /* ── Footer ── */
         .g-footer {
-          position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+          position: absolute; bottom: 0; left: 0; right: 0; z-index: 30;
           display: flex; justify-content: space-between;
-          padding: clamp(12px,2.5vw,20px) clamp(20px,5vw,40px);
-          border-top: 1px solid rgba(255,255,255,.07);
+          padding: clamp(12px,2.5vw,18px) clamp(22px,4vw,40px);
+          border-top: 1px solid rgba(255,255,255,.08);
         }
         .g-footer span {
-          font-size: 9px; font-weight: 500; letter-spacing: .18em;
-          text-transform: lowercase; color: rgba(255,255,255,.2);
+          font-size: 9px; font-weight: 400; letter-spacing: .18em;
+          text-transform: lowercase; color: rgba(255,255,255,.22);
         }
       `}</style>
 
-      <div className="g-wrap">
+      <div className="g">
 
-        {/* Slideshow */}
+        {/* Slideshow — blurred */}
         {SLIDES.map((src, i) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img key={src} src={src} alt="" aria-hidden="true" style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'cover', objectPosition: 'center',
-            opacity: i === slideIdx ? 1 : 0,
-            transition: 'opacity 1.2s ease-in-out', zIndex: 0,
-          }} />
+          <div
+            key={src}
+            className="g-slide"
+            style={{
+              backgroundImage: `url('${src}')`,
+              opacity: i === slideIdx ? 1 : 0,
+            }}
+          />
         ))}
-        <div className="g-bg" />
+        <div className="g-scrim" />
 
         {/* Logo */}
         <div className="g-logo">
@@ -261,72 +292,73 @@ export default function AccesoPage() {
 
         {/* Badge */}
         <div className="g-badge">
-          <div className="g-badge-dot" />
-          <span className="g-badge-text">Early Access</span>
+          <div className="g-dot" />
+          <span>Early Access</span>
         </div>
 
-        {/* Centro */}
+        {/* Card centrada */}
         <div className="g-center">
+          <div className="g-card">
 
-          {/* Headline */}
-          <div className="g-headline">
-            <span className="g-h-white">50K =</span>
-            <span className="g-h-red">50% OFF</span>
-          </div>
+            <div className="g-eyebrow">
+              <div className="g-eyebrow-line" />
+              <span className="g-eyebrow-text">50.000 en Instagram</span>
+              <div className="g-eyebrow-line" />
+            </div>
 
-          {/* Form */}
-          <form className="g-form" onSubmit={handleSubmit}>
-            <input
-              ref={inputRef}
-              className={`g-input${error ? ' err' : ''}`}
-              type="text"
-              inputMode="text"
-              value={pw}
-              onChange={e => { setPw(e.target.value.toUpperCase()); setError(''); }}
-              placeholder="CONTRASEÑA"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-            />
-            {error && <div className="g-error">{error}</div>}
-            <button type="submit" className="g-btn" disabled={busy || !pw}>
-              {busy ? 'Verificando…' : 'Entrar'}
-            </button>
-          </form>
+            <div className="g-headline">
+              <span className="g-h1">50K =</span>
+              <span className="g-h2">50% OFF</span>
+            </div>
 
-          {/* Countdown + FOMO */}
-          <div className="g-bottom">
-            <div className="g-sep" />
+            <p className="g-sub">En toda la tienda · Solo hoy</p>
+
+            <div className="g-divider" />
+
+            <form className="g-form" onSubmit={handleSubmit}>
+              <input
+                ref={inputRef}
+                className={`g-input${error ? ' err' : ''}`}
+                type="text"
+                inputMode="text"
+                value={pw}
+                onChange={e => { setPw(e.target.value.toUpperCase()); setError(''); }}
+                placeholder="CONTRASEÑA"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+              />
+              {error && <div className="g-error">{error}</div>}
+              <button type="submit" className="g-btn" disabled={busy || !pw}>
+                {busy ? 'Verificando…' : 'Entrar al early access'}
+              </button>
+            </form>
+
+            <div className="g-divider" />
 
             <div className="g-cd">
-              <div className="g-cd-block">
-                <span className="g-cd-num">{pad(time.h)}</span>
-                <span className="g-cd-label">Hrs</span>
+              <div className="g-cd-col">
+                <span className="g-cd-n">{pad(time.h)}</span>
+                <span className="g-cd-u">Hrs</span>
               </div>
               <span className="g-cd-sep">:</span>
-              <div className="g-cd-block">
-                <span className="g-cd-num">{pad(time.m)}</span>
-                <span className="g-cd-label">Min</span>
+              <div className="g-cd-col">
+                <span className="g-cd-n">{pad(time.m)}</span>
+                <span className="g-cd-u">Min</span>
               </div>
               <span className="g-cd-sep">:</span>
-              <div className="g-cd-block">
-                <span className="g-cd-num">{pad(time.s)}</span>
-                <span className="g-cd-label">Seg</span>
+              <div className="g-cd-col">
+                <span className="g-cd-n">{pad(time.s)}</span>
+                <span className="g-cd-u">Seg</span>
               </div>
             </div>
 
-            <div className="g-fomo">
-              <div className="g-fomo-row">
-                <span className="g-fomo-tag">Cupos tomados</span>
-                <span className="g-fomo-num">{orderCount} / {ORDER_LIMIT}</span>
-              </div>
-              <div className="g-fomo-bar">
-                <div className="g-fomo-fill" style={{ width: `${orderPct}%` }} />
-              </div>
-            </div>
+            <p className="g-limit">
+              <strong>Oferta limitada</strong> · Por 24hs o hasta<br />las primeras 100 órdenes
+            </p>
+
           </div>
-
         </div>
 
         {/* Footer */}
