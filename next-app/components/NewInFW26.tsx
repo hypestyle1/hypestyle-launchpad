@@ -65,17 +65,7 @@ const SWAP_SLIDES = [
 ];
 
 const GROUP_EDITORIAL: Record<string, GroupMedia> = {
-  'Half-Zip Polo': {
-    type: 'slider',
-    slides: [
-      { src: '/newin/polo-foto-1.jpg',  type: 'image' },
-      { src: '/newin/polo-video-1.mp4', type: 'video' },
-      { src: '/newin/polo-foto-2.jpg',  type: 'image' },
-      { src: '/newin/polo-video-2.mp4', type: 'video' },
-    ],
-    alt: 'Half-Zip Polo — HypeStyle Department FW26',
-    side: 'right',
-  },
+  'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
   'Pink Set': { type: 'video', src: '/newin/pink-set.mp4', alt: 'Pink Set FW26', side: 'left', poster: '/newin/pink-set-poster.jpg' },
   'Camo Drop': {
     type: 'slider',
