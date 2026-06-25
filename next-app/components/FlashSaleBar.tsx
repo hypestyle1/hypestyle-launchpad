@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FLASH_SALE_END, isFlashSaleActive } from '@/lib/flash-sale';
 
@@ -20,6 +21,7 @@ function getTimeLeft() {
 interface SaleStatus { count: number; limit: number; full: boolean }
 
 export default function FlashSaleBar() {
+  const pathname = usePathname();
   const [active, setActive] = useState(false);
   const [time, setTime] = useState(getTimeLeft);
   const [status, setStatus] = useState<SaleStatus | null>(null);
@@ -46,7 +48,7 @@ export default function FlashSaleBar() {
     return () => { clearInterval(tick); clearInterval(poll); };
   }, []);
 
-  if (!active || !time) return null;
+  if (!active || !time || pathname?.startsWith('/admin')) return null;
 
   const isFull = status?.full;
   const count  = status?.count ?? 0;
