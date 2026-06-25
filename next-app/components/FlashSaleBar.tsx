@@ -48,7 +48,7 @@ export default function FlashSaleBar() {
     return () => { clearInterval(tick); clearInterval(poll); };
   }, []);
 
-  if (!active || !time || pathname?.startsWith('/admin')) return null;
+  if (!active || !time || pathname !== '/') return null;
 
   const isFull = status?.full;
   const count  = status?.count ?? 0;
