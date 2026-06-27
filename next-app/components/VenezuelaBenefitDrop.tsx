@@ -17,8 +17,13 @@ interface VenezuelaStock {
   soldOut: boolean;
 }
 
-// Venezuela flag — 3 horizontal stripes (yellow / blue / red), subtle, 22×14 px
+// Venezuela flag — 3 stripes (yellow/blue/red) + 8 white stars in arc on blue band
 function VzlaFlag() {
+  // 8 stars in arc: center (11, 6), radius 3, angles 200°→340° (math coords, SVG y-flipped)
+  const stars = [200, 220, 240, 260, 280, 300, 320, 340].map((deg) => {
+    const rad = (deg * Math.PI) / 180;
+    return { cx: 11 + 3 * Math.cos(rad), cy: 6 - 3 * Math.sin(rad) };
+  });
   return (
     <svg
       width="22"
@@ -31,6 +36,9 @@ function VzlaFlag() {
       <rect y="0"    width="22" height="4.67" fill="#FCD116" />
       <rect y="4.67" width="22" height="4.66" fill="#003893" />
       <rect y="9.33" width="22" height="4.67" fill="#CF142B" />
+      {stars.map(({ cx, cy }, i) => (
+        <circle key={i} cx={cx} cy={cy} r="0.7" fill="white" />
+      ))}
     </svg>
   );
 }
@@ -73,12 +81,12 @@ export default function VenezuelaBenefitDrop() {
         Dentro de la col derecha, flex-col-reverse pone info antes que card en mobile.
       */}
       {/* items-stretch: la foto se expande para igualar la altura de la col derecha */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px] items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px] lg:items-stretch">
 
         {/* ── COL IZQUIERDA: foto editorial ─────────────────────────── */}
         {/* aspect-[3/4] en mobile, en desktop ocupa la altura que le da el grid */}
         <div
-          className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-1 lg:self-stretch"
+          className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-1"
         >
           <Image
             src="/newin/venezuela-f1000010.jpg"
