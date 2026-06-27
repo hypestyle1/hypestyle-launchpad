@@ -72,14 +72,15 @@ export default function VenezuelaBenefitDrop() {
         order-* controla la reordenación entre columnas.
         Dentro de la col derecha, flex-col-reverse pone info antes que card en mobile.
       */}
-      {/* items-stretch: la foto se expande para igualar la altura de la col derecha */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px] items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px] lg:items-stretch">
 
         {/* ── COL IZQUIERDA: foto editorial ─────────────────────────── */}
-        {/* aspect-[3/4] en mobile, en desktop ocupa la altura que le da el grid */}
-        <div
-          className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-1 lg:self-stretch"
-        >
+        {/* En mobile usamos padding-top en vez de aspect-ratio de CSS porque
+            Safari no resuelve bien aspect-ratio en grid items con solo contenido
+            position:absolute (Next.js Image fill sin dimensiones intrínsecas).
+            En desktop lg:items-stretch del padre estira la columna. */}
+        <div className="relative overflow-hidden rounded-[8px] bg-bg-alt min-h-[320px] lg:min-h-0 order-2 lg:order-1">
+          <div className="pt-[133.33%] lg:hidden" aria-hidden="true" />
           <Image
             src="/newin/venezuela-f1000010.jpg"
             alt="Stars For Venezuela — Benefit Drop"
