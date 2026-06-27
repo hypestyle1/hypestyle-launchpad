@@ -84,10 +84,13 @@ export default function VenezuelaBenefitDrop() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px] lg:items-stretch">
 
         {/* ── COL IZQUIERDA: foto editorial ─────────────────────────── */}
-        {/* aspect-[3/4] en mobile, en desktop ocupa la altura que le da el grid */}
-        <div
-          className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-1"
-        >
+        {/* En mobile: padding-top hack (aspect 3:4) en vez de CSS aspect-ratio
+            porque Safari no resuelve bien aspect-ratio en grid items con solo
+            contenido absolute (Next.js Image fill). En desktop: lg:items-stretch
+            del padre estira la col para igualar la altura de la col derecha. */}
+        <div className="relative overflow-hidden rounded-[8px] bg-bg-alt min-h-[320px] lg:min-h-0 order-2 lg:order-1">
+          {/* Spacer invisible que fuerza el alto 4:3 en mobile */}
+          <div className="pt-[133.33%] lg:hidden" aria-hidden="true" />
           <Image
             src="/newin/venezuela-f1000010.jpg"
             alt="Stars For Venezuela — Benefit Drop"
