@@ -106,7 +106,7 @@ export default function VenezuelaBenefitDrop() {
             <div>
               <ProductCard
                 {...product}
-                badge="1 BUZO = 10 FÉRULAS"
+                badge="New In"
                 mutedPrice
               />
             </div>
@@ -125,6 +125,9 @@ export default function VenezuelaBenefitDrop() {
                   </h3>
                   <VzlaFlag />
                 </div>
+                <span className="inline-block text-[9px] lg:text-[10px] font-semibold uppercase tracking-[0.16em] bg-foreground text-background px-2 py-0.5 rounded-full">
+                  1 buzo = 10 férulas
+                </span>
                 {/* Mobile: descripción corta */}
                 <p className="text-[11px] leading-snug text-foreground/80 lg:hidden">
                   Cada buzo dona filamento PLA para imprimir férulas ortopédicas
