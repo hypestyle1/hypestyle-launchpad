@@ -11,6 +11,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { FW26_GROUPS } from "@/lib/fw26";
 import { isFlashSaleActive } from "@/lib/flash-sale";
 import { Skeleton } from "@/components/ui/skeleton";
+import VenezuelaBenefitDrop from "./VenezuelaBenefitDrop";
 
 // Mismo skeleton que CollectionBanner para mantener consistencia visual.
 const SkeletonCard = () => (
@@ -132,10 +133,15 @@ export default function NewInFW26() {
         <SectionHeader title="New In [FW26]" link="/colecciones/fw26/" linkLabel="Ver más" />
       </div>
 
+      {/* ── Stars For Venezuela — Benefit Drop ─────────────────────────── */}
+      <div className="reveal rd2">
+        <VenezuelaBenefitDrop />
+      </div>
+
       {groups.map((group, gi) => {
         const editorial = GROUP_EDITORIAL[group.label];
         return (
-          <div key={group.label} className={`reveal rd${Math.min(gi + 2, 8)} ${gi > 0 ? 'mt-10' : ''}`}>
+          <div key={group.label} className={`reveal rd${Math.min(gi + 3, 8)} mt-10`}>
             {/* Subtítulo del drop */}
             <div className="flex items-center gap-4 mb-5">
               <span className="h-px flex-1 bg-border" />
