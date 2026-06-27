@@ -111,11 +111,11 @@ export default function VenezuelaBenefitDrop() {
               />
             </div>
 
-            {/* Info benéfica */}
-            <div className="flex flex-col justify-between py-4 px-4 bg-bg-alt/30">
+            {/* Info benéfica — h-full para igualar la altura de la card */}
+            <div className="flex flex-col justify-between h-full py-4 px-4 bg-bg-alt/30">
 
-              {/* Encabezado */}
-              <div className="space-y-3">
+              {/* BLOQUE 1 — encabezado + descripción */}
+              <div className="space-y-2.5">
                 <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
                   Benefit Drop
                 </p>
@@ -132,8 +132,8 @@ export default function VenezuelaBenefitDrop() {
                 </p>
               </div>
 
-              {/* Contador + barra */}
-              <div className="space-y-2 mt-5">
+              {/* BLOQUE 2 — contador + barra */}
+              <div className="space-y-2">
                 <div className="flex items-baseline justify-between">
                   <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                     {soldOut ? 'Objetivo alcanzado' : 'Férulas proyectadas'}
@@ -153,8 +153,8 @@ export default function VenezuelaBenefitDrop() {
                 </p>
               </div>
 
-              {/* CTA */}
-              <div className="mt-5">
+              {/* BLOQUE 3 — CTA + nota de transparencia */}
+              <div className="space-y-3">
                 <Link
                   href="/producto/stars-for-venezuela-hoodie/"
                   style={{
@@ -166,13 +166,11 @@ export default function VenezuelaBenefitDrop() {
                 >
                   Comprar buzo
                 </Link>
+                <p className="text-[11px] text-muted-foreground border-t border-border pt-2 leading-relaxed">
+                  Al finalizar la acción vamos a compartir el total de férulas
+                  producidas y el avance junto a @kidddstars.
+                </p>
               </div>
-
-              {/* Nota de transparencia */}
-              <p className="text-[11px] text-muted-foreground border-t border-border pt-3 mt-4 leading-relaxed">
-                Al finalizar la acción vamos a compartir el total de férulas
-                producidas y el avance junto a @kidddstars.
-              </p>
 
             </div>
           </div>
