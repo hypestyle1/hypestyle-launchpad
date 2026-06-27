@@ -85,7 +85,7 @@ export default function VenezuelaBenefitDrop() {
             alt="Stars For Venezuela — Benefit Drop"
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover object-top"
+            className="object-cover object-[center_30%]"
             priority={false}
           />
         </div>
@@ -100,7 +100,7 @@ export default function VenezuelaBenefitDrop() {
 
             En mobile se convierte en 1 col y el orden se mantiene por DOM.
           */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[2px]">
+          <div className="grid grid-cols-2 gap-[2px]">
 
             {/* ProductCard */}
             <div>
