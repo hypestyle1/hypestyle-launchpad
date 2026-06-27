@@ -72,24 +72,26 @@ export default function VenezuelaBenefitDrop() {
         order-* controla la reordenación entre columnas.
         Dentro de la col derecha, flex-col-reverse pone info antes que card en mobile.
       */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
+      {/* items-stretch: la foto se expande para igualar la altura de la col derecha */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px] items-stretch">
 
         {/* ── COL IZQUIERDA: foto editorial ─────────────────────────── */}
+        {/* aspect-[3/4] en mobile, en desktop ocupa la altura que le da el grid */}
         <div
-          className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto lg:min-h-[360px] order-2 lg:order-1"
+          className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-1 lg:self-stretch"
         >
           <Image
             src="/newin/venezuela-f1000010.jpg"
             alt="Stars For Venezuela — Benefit Drop"
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover object-center"
+            className="object-cover object-top"
             priority={false}
           />
         </div>
 
         {/* ── COL DERECHA: ProductCard + info benéfica ──────────────── */}
-        <div className="order-1 lg:order-2 flex flex-col gap-[2px]">
+        <div className="order-1 lg:order-2">
 
           {/*
             Sub-grilla 2 cols (igual que la grilla de productos en otras secciones):
@@ -98,7 +100,7 @@ export default function VenezuelaBenefitDrop() {
 
             En mobile se convierte en 1 col y el orden se mantiene por DOM.
           */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[2px] h-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[2px]">
 
             {/* ProductCard */}
             <div>
@@ -126,7 +128,7 @@ export default function VenezuelaBenefitDrop() {
                 <p className="text-[13px] leading-relaxed text-foreground/80">
                   Con cada buzo vendido donamos 1 kg de filamento PLA para producir
                   férulas ortopédicas impresas en 3D junto a{' '}
-                  <span className="font-medium">@kiddstars</span>.
+                  <span className="font-medium">@kidddstars</span>.
                 </p>
               </div>
 
@@ -169,7 +171,7 @@ export default function VenezuelaBenefitDrop() {
               {/* Nota de transparencia */}
               <p className="text-[11px] text-muted-foreground border-t border-border pt-3 mt-4 leading-relaxed">
                 Al finalizar la acción vamos a compartir el total de férulas
-                producidas y el avance junto a @kiddstars.
+                producidas y el avance junto a @kidddstars.
               </p>
 
             </div>
