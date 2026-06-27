@@ -112,20 +112,26 @@ export default function VenezuelaBenefitDrop() {
             </div>
 
             {/* Info benéfica — h-full para igualar la altura de la card */}
-            <div className="flex flex-col justify-between h-full py-4 px-4 bg-bg-alt/30">
+            <div className="flex flex-col justify-between h-full py-3 px-3 lg:py-4 lg:px-4 bg-bg-alt/30">
 
               {/* BLOQUE 1 — encabezado + descripción */}
-              <div className="space-y-2.5">
-                <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
+              <div className="space-y-1.5 lg:space-y-2.5">
+                <p className="text-[9px] lg:text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
                   Benefit Drop
                 </p>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-semibold tracking-tight leading-tight">
+                <div className="flex items-center gap-1.5 lg:gap-2">
+                  <h3 className="text-[12px] lg:text-base font-semibold tracking-tight leading-tight">
                     Stars For Venezuela
                   </h3>
                   <VzlaFlag />
                 </div>
-                <p className="text-[13px] leading-relaxed text-foreground/80">
+                {/* Mobile: descripción corta */}
+                <p className="text-[11px] leading-snug text-foreground/80 lg:hidden">
+                  Cada buzo dona filamento PLA para imprimir férulas ortopédicas
+                  en 3D con <span className="font-medium">@kidddstars</span>.
+                </p>
+                {/* Desktop: descripción completa */}
+                <p className="hidden lg:block text-[13px] leading-relaxed text-foreground/80">
                   Con cada buzo vendido donamos 1 kg de filamento PLA para producir
                   férulas ortopédicas impresas en 3D junto a{' '}
                   <span className="font-medium">@kidddstars</span>.
@@ -133,13 +139,14 @@ export default function VenezuelaBenefitDrop() {
               </div>
 
               {/* BLOQUE 2 — contador + barra */}
-              <div className="space-y-2">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                    {soldOut ? 'Objetivo alcanzado' : 'Férulas proyectadas'}
+              <div className="space-y-1.5 lg:space-y-2">
+                <div className="flex items-baseline justify-between gap-1">
+                  <span className="text-[9px] lg:text-[11px] uppercase tracking-[0.14em] lg:tracking-[0.18em] text-muted-foreground leading-tight">
+                    <span className="lg:hidden">{soldOut ? 'Objetivo' : 'Férulas proy.'}</span>
+                    <span className="hidden lg:inline">{soldOut ? 'Objetivo alcanzado' : 'Férulas proyectadas'}</span>
                   </span>
-                  <span className="text-sm font-medium tabular-nums">
-                    {soldOut ? `${GOAL} / ${GOAL}` : `${splints} / ${GOAL}`}
+                  <span className="text-[11px] lg:text-sm font-medium tabular-nums shrink-0">
+                    {soldOut ? `${GOAL}/${GOAL}` : `${splints}/${GOAL}`}
                   </span>
                 </div>
                 <div className="h-[2px] w-full bg-border overflow-hidden">
@@ -148,13 +155,14 @@ export default function VenezuelaBenefitDrop() {
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                {/* Solo desktop */}
+                <p className="hidden lg:block text-[11px] text-muted-foreground">
                   Cada buzo equivale a aproximadamente 10 férulas.
                 </p>
               </div>
 
               {/* BLOQUE 3 — CTA + nota de transparencia */}
-              <div className="space-y-3">
+              <div className="space-y-2 lg:space-y-3">
                 <Link
                   href="/producto/stars-for-venezuela-hoodie/"
                   style={{
@@ -162,13 +170,16 @@ export default function VenezuelaBenefitDrop() {
                     backdropFilter: 'blur(16px)',
                     WebkitBackdropFilter: 'blur(16px)',
                   }}
-                  className="inline-flex items-center justify-center rounded-full px-8 py-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-80"
+                  className="inline-flex items-center justify-center rounded-full w-full lg:w-auto lg:px-8 py-2 lg:py-2.5 text-[10px] lg:text-[11px] font-semibold uppercase tracking-[0.16em] lg:tracking-[0.18em] text-white transition-opacity hover:opacity-80"
                 >
-                  Comprar buzo
+                  Sumate a la causa
                 </Link>
-                <p className="text-[11px] text-muted-foreground border-t border-border pt-2 leading-relaxed">
-                  Al finalizar la acción vamos a compartir el total de férulas
-                  producidas y el avance junto a @kidddstars.
+                <p className="text-[9px] lg:text-[11px] text-muted-foreground border-t border-border pt-1.5 lg:pt-2 leading-snug lg:leading-relaxed">
+                  <span className="lg:hidden">Al finalizar compartimos el avance con @kidddstars.</span>
+                  <span className="hidden lg:inline">
+                    Al finalizar la acción vamos a compartir el total de férulas
+                    producidas y el avance junto a @kidddstars.
+                  </span>
                 </p>
               </div>
 
