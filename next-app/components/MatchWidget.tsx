@@ -128,8 +128,48 @@ export default function MatchWidget({ compact = false }: { compact?: boolean }) 
     return () => clearInterval(id);
   }, [isLive]);
 
-  // No mostrar nada hasta que responda la API (evita "0-0 Final" ni bandera incorrecta).
-  if (loading) return null;
+  // Skeleton mientras carga la API — tarjeta visible con placeholders animados.
+  if (loading) {
+    if (compact) {
+      return (
+        <div className="w-auto rounded-[16px] bg-black/55 backdrop-blur-xl border border-white/15
+                        text-white px-3.5 py-2.5 flex flex-col items-center gap-1 shadow-[0_8px_30px_rgba(0,0,0,0.45)]">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
+              <Image src="/hero/flag-arg.png" alt="ARG" width={24} height={24} className="drop-shadow" />
+              <span className="text-[10px] font-bold uppercase">ARG</span>
+            </div>
+            <span className="text-[10px] text-white/45 uppercase">vs</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 h-4 rounded-sm bg-white/20 animate-pulse" />
+              <div className="w-7 h-2.5 rounded bg-white/20 animate-pulse" />
+            </div>
+          </div>
+          <div className="w-24 h-4 rounded bg-white/20 animate-pulse mt-0.5" />
+        </div>
+      );
+    }
+    return (
+      <div className="relative w-[300px] max-w-[88%] rounded-[20px] overflow-hidden
+                      bg-black/40 backdrop-blur-xl border border-white/20 text-white
+                      shadow-[0_10px_40px_rgba(0,0,0,0.4)] px-6 py-5">
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="flex flex-col items-center gap-1.5 w-[64px]">
+            <Image src="/hero/flag-arg.png" alt="ARG" width={40} height={40} className="drop-shadow" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em]">ARG</span>
+          </div>
+          <span className="text-[12px] font-semibold text-white/55 uppercase tracking-[0.2em]">vs</span>
+          <div className="flex flex-col items-center gap-1.5 w-[64px]">
+            <div className="w-10 h-7 rounded-sm bg-white/20 animate-pulse" />
+            <div className="w-8 h-2 rounded bg-white/20 animate-pulse" />
+          </div>
+        </div>
+        <div className="flex items-center justify-center">
+          <div className="w-32 h-7 rounded bg-white/20 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
 
   const ko = match?.date ? new Date(match.date).getTime() : FALLBACK_KICKOFF.getTime();
   const cur = now ?? ko - 1;
