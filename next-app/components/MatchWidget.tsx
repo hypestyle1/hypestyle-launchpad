@@ -90,6 +90,7 @@ function Cell({ value, label }: { value: number; label: string }) {
 export default function MatchWidget({ compact = false }: { compact?: boolean }) {
   const [now, setNow] = useState<number | null>(null);
   const [match, setMatch] = useState<Match | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Reloj (se setea al montar para evitar hydration mismatch).
   useEffect(() => {
@@ -105,7 +106,9 @@ export default function MatchWidget({ compact = false }: { compact?: boolean }) 
       try {
         const r = await fetch('/api/match-argentina').then(res => res.json());
         if (!cancelled) setMatch(r?.match ?? null);
-      } catch { /* ignore */ }
+      } catch { /* ignore */ } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
     load();
     return () => { cancelled = true; };
@@ -144,14 +147,14 @@ export default function MatchWidget({ compact = false }: { compact?: boolean }) 
 
   // Equipos dinámicos desde la API (Argentina local; rival = oppTla).
   const HOME = { short: match?.argTla || 'ARG', flag: FLAGS[match?.argTla || 'ARG'] || '/hero/flag-arg.png' };
-  const AWAY = { short: match?.oppTla || 'ALG', flag: FLAGS[match?.oppTla || 'ALG'] || '/hero/flag-alg.png' };
+  const AWAY = { short: match?.oppTla || '', flag: match?.oppTla ? (FLAGS[match.oppTla] || null) : null };
 
   // ── Variante COMPACT (mobile): tarjeta stackeada y centrada (Arg vs Alg / Faltan / countdown) ──
   if (compact) {
     return (
       <div className="w-auto rounded-[16px] bg-black/55 backdrop-blur-xl border border-white/15
                       text-white px-3.5 py-2.5 flex flex-col items-center gap-1 shadow-[0_8px_30px_rgba(0,0,0,0.45)]">
-        {/* Arg vs Alg (arriba) */}
+        {/* Equipos */}
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1.5">
             <Image src={HOME.flag} alt={HOME.short} width={24} height={24} className="drop-shadow" />
@@ -159,8 +162,14 @@ export default function MatchWidget({ compact = false }: { compact?: boolean }) 
           </div>
           <span className="text-[10px] text-white/45 uppercase">vs</span>
           <div className="flex items-center gap-1.5">
-            <Image src={AWAY.flag} alt={AWAY.short} width={24} height={24} className="drop-shadow" />
-            <span className="text-[10px] font-bold uppercase">{AWAY.short}</span>
+            {loading || !AWAY.flag
+              ? <div className="w-6 h-4 rounded-sm bg-white/20 animate-pulse" />
+              : <Image src={AWAY.flag} alt={AWAY.short} width={24} height={24} className="drop-shadow" />
+            }
+            {loading || !AWAY.short
+              ? <div className="w-7 h-2.5 rounded bg-white/20 animate-pulse" />
+              : <span className="text-[10px] font-bold uppercase">{AWAY.short}</span>
+            }
           </div>
         </div>
         {phase === 'pre' ? (
@@ -198,8 +207,14 @@ export default function MatchWidget({ compact = false }: { compact?: boolean }) 
         </div>
         <span className="text-[12px] font-semibold text-white/55 uppercase tracking-[0.2em]">vs</span>
         <div className="flex flex-col items-center gap-1.5 w-[64px]">
-          <Image src={AWAY.flag} alt={AWAY.short} width={40} height={40} className="drop-shadow" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.12em]">{AWAY.short}</span>
+          {loading || !AWAY.flag
+            ? <div className="w-10 h-7 rounded-sm bg-white/20 animate-pulse" />
+            : <Image src={AWAY.flag} alt={AWAY.short} width={40} height={40} className="drop-shadow" />
+          }
+          {loading || !AWAY.short
+            ? <div className="w-8 h-2 rounded bg-white/20 animate-pulse" />
+            : <span className="text-[10px] font-bold uppercase tracking-[0.12em]">{AWAY.short}</span>
+          }
         </div>
       </div>
 
