@@ -6,7 +6,8 @@ const GRAPHQL_URL =
 
 const INITIAL_STOCK = 38;
 const SPLINTS_PER_UNIT = 10.5;
-const SPLINTS_GOAL = 400;
+const SPLINTS_GOAL = 600;
+const FOMO_OFFSET = 240; // unidades comprometidas pre-lanzamiento online
 
 const QUERY = `{
   product(id: "stars-for-venezuela-hoodie", idType: SLUG) {
@@ -41,7 +42,7 @@ export async function GET() {
     const soldUnits = Math.max(0, INITIAL_STOCK - totalStock);
     const projectedSplints = Math.min(
       SPLINTS_GOAL,
-      Math.round(soldUnits * SPLINTS_PER_UNIT),
+      Math.round(soldUnits * SPLINTS_PER_UNIT) + FOMO_OFFSET,
     );
     const progress = Math.min(100, (projectedSplints / SPLINTS_GOAL) * 100);
 
