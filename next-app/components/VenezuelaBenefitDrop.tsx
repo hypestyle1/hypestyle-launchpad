@@ -7,7 +7,7 @@ import ProductCard from './ProductCard';
 import { useProducts } from '@/hooks/useProducts';
 
 const SLUG = 'stars-for-venezuela-hoodie';
-const GOAL = 400;
+const GOAL = 600;
 
 interface VenezuelaStock {
   totalStock: number;
@@ -17,17 +17,10 @@ interface VenezuelaStock {
   soldOut: boolean;
 }
 
-// Venezuela flag — 3 horizontal stripes (yellow / blue / red), subtle, 22×14 px
 function VzlaFlag() {
   return (
-    <svg
-      width="22"
-      height="14"
-      viewBox="0 0 22 14"
-      aria-hidden="true"
-      className="inline-block align-middle shrink-0"
-      style={{ borderRadius: 2 }}
-    >
+    <svg width="26" height="17" viewBox="0 0 22 14" aria-hidden="true"
+      className="inline-block align-middle shrink-0" style={{ borderRadius: 3, overflow: 'hidden' }}>
       <rect y="0"    width="22" height="4.67" fill="#FCD116" />
       <rect y="4.67" width="22" height="4.66" fill="#003893" />
       <rect y="9.33" width="22" height="4.67" fill="#CF142B" />
@@ -54,7 +47,7 @@ export default function VenezuelaBenefitDrop() {
 
   return (
     <div className="mt-10">
-      {/* Section eyebrow divider */}
+      {/* eyebrow */}
       <div className="flex items-center gap-4 mb-5">
         <span className="h-px flex-1 bg-border" />
         <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
@@ -64,133 +57,128 @@ export default function VenezuelaBenefitDrop() {
       </div>
 
       {/*
-        Desktop: 2 columnas
-          Izquierda → foto editorial (F1000010.jpg)
-          Derecha   → sub-grilla 2 cols: [ProductCard | info benéfica]
-
-        Mobile: apilado — ProductCard primero, info, foto al final.
-        order-* controla la reordenación entre columnas.
-        Dentro de la col derecha, flex-col-reverse pone info antes que card en mobile.
+        Mobile:  apilado — [col derecha arriba] · [foto abajo]
+        Desktop: 2 columnas — [foto editorial] · [ProductCard + glass info]
       */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px] lg:items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[10px] lg:items-stretch">
 
-        {/* ── COL IZQUIERDA: foto editorial ─────────────────────────── */}
-        {/* En mobile usamos padding-top en vez de aspect-ratio de CSS porque
-            Safari no resuelve bien aspect-ratio en grid items con solo contenido
-            position:absolute (Next.js Image fill sin dimensiones intrínsecas).
-            En desktop lg:items-stretch del padre estira la columna. */}
-        <div className="relative overflow-hidden rounded-[8px] bg-bg-alt min-h-[320px] lg:min-h-0 order-2 lg:order-1">
-          <div className="pt-[133.33%] lg:hidden" aria-hidden="true" />
+        {/* ── COL IZQUIERDA: foto editorial ── */}
+        <div className="relative overflow-hidden rounded-[12px] bg-bg-alt min-h-[300px] lg:min-h-0 order-2 lg:order-1">
+          <div className="pt-[125%] lg:hidden" aria-hidden />
           <Image
             src="/newin/venezuela-f1000010.jpg"
             alt="Stars For Venezuela — Benefit Drop"
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover object-[center_30%]"
+            className="object-cover object-[58%_25%]"
             priority={false}
           />
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(to bottom, transparent 60%, rgba(0,0,0,.45) 100%)' }} />
         </div>
 
-        {/* ── COL DERECHA: ProductCard + info benéfica ──────────────── */}
-        <div className="order-1 lg:order-2">
+        {/* ── COL DERECHA: ProductCard + glass info ── */}
+        <div className="order-1 lg:order-2 grid grid-cols-2 gap-[10px]">
 
-          {/*
-            Sub-grilla 2 cols (igual que la grilla de productos en otras secciones):
-            - Izq: ProductCard
-            - Der: bloque de información benéfica
+          {/* ProductCard — igual que el resto del home */}
+          <ProductCard
+            {...product}
+            badge="New In"
+            mutedPrice
+          />
 
-            En mobile se convierte en 1 col y el orden se mantiene por DOM.
-          */}
-          <div className="grid grid-cols-2 gap-[2px]">
+          {/* Glass info card */}
+          <div
+            className="relative overflow-hidden rounded-[12px] flex flex-col justify-between"
+            style={{
+              background: 'rgba(10, 10, 13, 0.97)',
+              border: '1px solid rgba(255,255,255,.08)',
+            }}
+          >
+            {/* franja tricolor izquierda */}
+            <div className="absolute top-0 left-0 w-[4px] h-full"
+              style={{ background: 'linear-gradient(to bottom, #FCD116 33.3%, #003893 33.3% 66.6%, #CF142B 66.6%)' }} />
 
-            {/* ProductCard */}
-            <div>
-              <ProductCard
-                {...product}
-                badge="New In"
-                mutedPrice
-              />
-            </div>
+            <div className="pl-5 pr-4 pt-5 pb-5 lg:pl-6 lg:pr-5 lg:pt-6 lg:pb-6 flex flex-col justify-between h-full gap-4 lg:gap-5">
 
-            {/* Info benéfica — h-full para igualar la altura de la card */}
-            <div className="flex flex-col justify-between h-full py-3 px-3 lg:py-4 lg:px-4 bg-bg-alt/30">
-
-              {/* BLOQUE 1 — encabezado + descripción */}
-              <div className="space-y-1.5 lg:space-y-2.5">
-                <p className="text-[9px] lg:text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
+              {/* BLOQUE 1 — título + badge + descripción */}
+              <div className="space-y-2.5 lg:space-y-3">
+                <p className="text-[9px] lg:text-[10px] uppercase tracking-[0.26em] font-medium"
+                  style={{ color: 'rgba(255,255,255,.30)' }}>
                   Benefit Drop
                 </p>
-                <div className="flex items-center gap-1.5 lg:gap-2">
-                  <h3 className="text-[12px] lg:text-base font-semibold tracking-tight leading-tight">
+
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[13px] lg:text-[17px] font-black tracking-tight leading-tight text-white">
                     Stars For Venezuela
                   </h3>
                   <VzlaFlag />
                 </div>
-                <span className="inline-block text-[9px] lg:text-[10px] font-semibold uppercase tracking-[0.16em] bg-foreground text-background px-2 py-0.5 rounded-full">
-                  1 buzo = 10 férulas
+
+                <span
+                  className="inline-block text-[8px] lg:text-[9px] font-bold uppercase tracking-[0.14em] px-2 py-1 rounded-full"
+                  style={{ background: '#FCD116', color: '#0A0A0A' }}
+                >
+                  1 buzo = 1 kg filamento PLA
                 </span>
-                {/* Mobile: descripción corta */}
-                <p className="text-[11px] leading-snug text-foreground/80 lg:hidden">
-                  Cada buzo dona filamento PLA para imprimir férulas ortopédicas
-                  en 3D con <span className="font-medium">@kidddstars</span>.
+
+                <p className="hidden lg:block text-[12px] leading-relaxed italic"
+                  style={{ color: 'rgba(255,255,255,.55)' }}>
+                  Con cada buzo vendido donamos 1 kg de filamento PLA
+                  para imprimir entre{' '}
+                  <strong className="not-italic" style={{ color: 'rgba(255,255,255,.85)' }}>10 y 15 férulas ortopédicas</strong>{' '}
+                  en 3D para los afectados del terremoto del{' '}
+                  <strong className="not-italic" style={{ color: 'rgba(255,255,255,.85)' }}>24 de junio</strong>.
                 </p>
-                {/* Desktop: descripción completa */}
-                <p className="hidden lg:block text-[13px] leading-relaxed text-foreground/80">
-                  Con cada buzo vendido donamos 1 kg de filamento PLA para producir
-                  férulas ortopédicas impresas en 3D junto a{' '}
-                  <span className="font-medium">@kidddstars</span>.
+
+                {/* mobile: desc corta */}
+                <p className="lg:hidden text-[10px] leading-snug italic"
+                  style={{ color: 'rgba(255,255,255,.55)' }}>
+                  1 kg de PLA →{' '}
+                  <strong className="not-italic" style={{ color: 'rgba(255,255,255,.80)' }}>10–15 férulas</strong>{' '}
+                  para los afectados del 24/6.
                 </p>
               </div>
 
-              {/* BLOQUE 2 — contador + barra */}
-              <div className="space-y-1.5 lg:space-y-2">
+              {/* BLOQUE 2 — barra progreso */}
+              <div className="space-y-1.5">
                 <div className="flex items-baseline justify-between gap-1">
-                  <span className="text-[9px] lg:text-[11px] uppercase tracking-[0.14em] lg:tracking-[0.18em] text-muted-foreground leading-tight">
+                  <span className="text-[8px] lg:text-[10px] uppercase tracking-[0.16em] font-medium"
+                    style={{ color: 'rgba(255,255,255,.28)' }}>
                     <span className="lg:hidden">{soldOut ? 'Objetivo' : 'Férulas proy.'}</span>
                     <span className="hidden lg:inline">{soldOut ? 'Objetivo alcanzado' : 'Férulas proyectadas'}</span>
                   </span>
-                  <span className="text-[11px] lg:text-sm font-medium tabular-nums shrink-0">
+                  <span className="text-[10px] lg:text-[11px] font-semibold tabular-nums"
+                    style={{ color: 'rgba(255,255,255,.55)' }}>
                     {soldOut ? `${GOAL}/${GOAL}` : `${splints}/${GOAL}`}
                   </span>
                 </div>
-                <div className="h-[2px] w-full bg-border overflow-hidden">
-                  <div
-                    className="h-full bg-foreground transition-all duration-700 ease-out"
-                    style={{ width: `${progress}%` }}
-                  />
+                <div className="h-[2px] w-full rounded-full overflow-hidden"
+                  style={{ background: 'rgba(255,255,255,.10)' }}>
+                  <div className="h-full transition-all duration-700 ease-out rounded-full"
+                    style={{ width: `${progress}%`, background: '#FCD116' }} />
                 </div>
-                {/* Solo desktop */}
-                <p className="hidden lg:block text-[11px] text-muted-foreground">
-                  Cada buzo equivale a aproximadamente 10 férulas.
-                </p>
               </div>
 
-              {/* BLOQUE 3 — CTA + nota de transparencia */}
-              <div className="space-y-2 lg:space-y-3">
+              {/* BLOQUE 3 — CTA */}
+              <div className="space-y-2">
                 <Link
                   href="/producto/stars-for-venezuela-hoodie/"
-                  style={{
-                    background: 'rgba(20, 20, 20, 0.92)',
-                    backdropFilter: 'blur(16px)',
-                    WebkitBackdropFilter: 'blur(16px)',
-                  }}
-                  className="inline-flex items-center justify-center rounded-full w-full lg:w-auto lg:px-8 py-2 lg:py-2.5 text-[10px] lg:text-[11px] font-semibold uppercase tracking-[0.16em] lg:tracking-[0.18em] text-white transition-opacity hover:opacity-80"
+                  className="inline-flex items-center justify-center rounded-full w-full py-2 lg:py-2.5 text-[9px] lg:text-[10px] font-bold uppercase tracking-[0.16em] bg-white transition-opacity hover:opacity-85"
+                  style={{ color: '#0A0A0A' }}
                 >
                   Sumate a la causa
                 </Link>
-                <p className="text-[9px] lg:text-[11px] text-muted-foreground border-t border-border pt-1.5 lg:pt-2 leading-snug lg:leading-relaxed">
-                  <span className="lg:hidden">Al finalizar compartimos el avance con @kidddstars.</span>
-                  <span className="hidden lg:inline">
-                    Al finalizar la acción vamos a compartir el total de férulas
-                    producidas y el avance junto a @kidddstars.
-                  </span>
+                <p className="hidden lg:block text-[10px] leading-snug"
+                  style={{ color: 'rgba(255,255,255,.25)', borderTop: '1px solid rgba(255,255,255,.07)', paddingTop: 8 }}>
+                  Al finalizar compartimos el total de férulas producidas.
                 </p>
               </div>
 
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );
