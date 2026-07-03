@@ -14,18 +14,20 @@ const hasProof = (meta: any[]) =>
 
 async function statusTotal(status: string, after: string): Promise<number> {
   const res = await fetch(
-    `${WP_URL}/wp-json/wc/v3/orders?status=${status}&per_page=1&after=${after}`,
+    `${WP_URL}/wp-json/wc/v3/orders?status=${status}&per_page=1&after=${after}&_cb=${Date.now()}`,
     { headers: { Authorization: wcAuth() }, next: { revalidate: 0 } }
   );
   return parseInt(res.headers.get('X-WP-Total') || '0');
 }
 
 // Trae todas las órdenes 'processing' (con su meta) para separar las que ya tienen rótulo.
+// _cb evita el caché de LiteSpeed en el server de WP, que puede devolver meta_data vieja
+// (ej. tracking que en realidad ya no está, o que se acaba de cargar).
 async function processingSplit(after: string) {
   let page = 1, conRotulo = 0, sinRotulo = 0;
   for (;;) {
     const res = await fetch(
-      `${WP_URL}/wp-json/wc/v3/orders?status=processing&per_page=100&page=${page}&after=${after}&_fields=id,meta_data`,
+      `${WP_URL}/wp-json/wc/v3/orders?status=processing&per_page=100&page=${page}&after=${after}&_fields=id,meta_data&_cb=${Date.now()}`,
       { headers: { Authorization: wcAuth() }, next: { revalidate: 0 } }
     );
     if (!res.ok) break;

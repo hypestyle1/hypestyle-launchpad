@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
     orderby: 'date',
     order:   'desc',
     after,
+    _cb:     String(Date.now()), // evita el caché de LiteSpeed en el server de WP (devuelve meta_data vieja)
     ...(status !== 'any' && { status }),
     ...(search && { search }),
   });
