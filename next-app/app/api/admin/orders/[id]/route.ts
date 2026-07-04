@@ -15,12 +15,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
+  // _cb evita el caché de LiteSpeed en el server de WP, que puede devolver meta_data vieja.
   const [orderRes, notesRes] = await Promise.all([
-    fetch(`${WP_URL}/wp-json/wc/v3/orders/${params.id}`, {
+    fetch(`${WP_URL}/wp-json/wc/v3/orders/${params.id}?_cb=${Date.now()}`, {
       headers: { Authorization: wcAuth() },
       next: { revalidate: 0 },
     }),
-    fetch(`${WP_URL}/wp-json/wc/v3/orders/${params.id}/notes`, {
+    fetch(`${WP_URL}/wp-json/wc/v3/orders/${params.id}/notes?_cb=${Date.now()}`, {
       headers: { Authorization: wcAuth() },
       next: { revalidate: 0 },
     }),

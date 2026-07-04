@@ -9,8 +9,12 @@ const MAIL_SECRET  = 'hs2026';
 
 const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 
-const wcGet = (path: string) =>
-  fetch(`${WP_URL}/wp-json/wc/v3/${path}`, { headers: { Authorization: wcAuth() }, cache: 'no-store' }).then(r => r.json());
+// _cb evita el caché de LiteSpeed en el server de WP, que puede devolver meta_data/stock viejo
+// (crítico acá: el restock calcula stock_actual + cantidad, así que necesita el valor real).
+const wcGet = (path: string) => {
+  const sep = path.includes('?') ? '&' : '?';
+  return fetch(`${WP_URL}/wp-json/wc/v3/${path}${sep}_cb=${Date.now()}`, { headers: { Authorization: wcAuth() }, cache: 'no-store' }).then(r => r.json());
+};
 
 const wcPut = (path: string, body: any) =>
   fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
