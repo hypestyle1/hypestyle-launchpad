@@ -52,7 +52,7 @@ async function resolveItem(slug: string, size: string, itemName: string): Promis
 export async function POST(req: NextRequest) {
   try {
     const {
-      items, customer, shipping, discountAmount, couponCode,
+      items, customer, shipping, discountAmount, discountLabel, couponCode,
       paymentMethod, shippingMethodId, shippingLabel, shippingBranch,
       fbp, fbc,
     } = await req.json();
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
         ? [{ method_id: shippingMethodId, method_title: shippingLabel ?? shippingMethodId, total: String(shipping) }]
         : [],
       fee_lines: discountAmount > 0
-        ? [{ name: 'Descuento transferencia (10%)', total: String(-Math.round(discountAmount)), tax_class: '' }]
+        ? [{ name: discountLabel || 'Descuento', total: String(-Math.round(discountAmount)), tax_class: '' }]
         : [],
     };
 

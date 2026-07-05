@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { isFlashSaleActive } from '@/lib/flash-sale';
+import { isPromo3x2Active, compute3x2Discount, unitsToNext3x2 } from '@/lib/promo-3x2';
 import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { getFbCookies } from '@/lib/fbtracking';
@@ -252,7 +253,7 @@ export default function Checkout() {
   const isSucursal = !isInternational && (selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal'));
   const branchReady = isInternational || !isSucursal || !!selectedBranch;
 
-  useEffect(() => { setFlashActive(isFlashSaleActive()); }, []);
+  useEffect(() => { setFlashActive(isFlashSaleActive() || isPromo3x2Active()); }, []);
 
   const subtotal = total;
   // El cupón de envío gratis cero-ea Andreani igual que el umbral de $250.000.
@@ -260,9 +261,14 @@ export default function Checkout() {
   const freeShipping = !isInternational && (subtotal >= FREE_SHIPPING_THRESHOLD || couponFreeShip);
   const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
   const shippingReady = isInternational ? !!selectedRate : freeShipping || !!selectedRate;
-  const descuento = couponData ? (
+  const cuponDescuento = couponData ? (
     couponData.type === 'percent' ? Math.round(subtotal * (couponData.amount / 100)) : couponData.amount
   ) : 0;
+  // 3x2 (más barata gratis) hasta el martes — promo local, no aplica a envíos internacionales.
+  const promo3x2Active = isPromo3x2Active() && !isInternational;
+  const promo3x2Descuento = promo3x2Active ? compute3x2Discount(items) : 0;
+  const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(items) : 0;
+  const descuento = cuponDescuento + promo3x2Descuento;
   const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
   const totalFinal = subtotal - descuento + envioEnPaso;
   const transferTotal = Math.round(subtotal * 0.90) - descuento + envioEnPaso;
@@ -356,7 +362,8 @@ export default function Checkout() {
           items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization })),
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
-          discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0),
+          discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0) + promo3x2Descuento,
+          discountLabel: [promo3x2Descuento > 0 ? '3x2' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
           couponCode: couponData?.code,
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
@@ -857,7 +864,13 @@ export default function Checkout() {
             </div>
             <div className="space-y-2 border-t border-border pt-4">
               <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-              {descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(descuento)}</span></div>}
+              {promo3x2Descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>3x2</span><span>−{formatPrice(promo3x2Descuento)}</span></div>}
+              {cuponDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(cuponDescuento)}</span></div>}
+              {promo3x2Active && items.length > 0 && (promo3x2UnidadesFaltan === 1 || promo3x2UnidadesFaltan === 2) && (
+                <p className="text-[11px] text-foreground/70">
+                  Agregá {promo3x2UnidadesFaltan} producto{promo3x2UnidadesFaltan > 1 ? 's' : ''} más y llevate el 3x2
+                </p>
+              )}
               <div className="flex justify-between text-[13px]">
                 <span className="text-muted-foreground">{isInternational ? 'Shipping' : 'Envío'}</span>
                 <span>
