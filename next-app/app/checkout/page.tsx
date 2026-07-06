@@ -483,12 +483,12 @@ export default function Checkout() {
   const stepLabel = (s: Step) => ({ info: 'Información', envio: 'Envío', pago: 'Pago' }[s]);
   const steps: Step[] = ['info', 'envio', 'pago'];
 
+  // Mercado Pago (mercadopago/tarjeta) deshabilitado: la cuenta de MP fue suspendida
+  // (denuncia confirmada, 05/07/2026). GOcuotas y PayPal son gateways separados, no afectados.
   const paymentMethods = [
-    !isInternational && { id: 'tarjeta',       label: 'Tarjeta de crédito o débito',       sub: 'Hasta 3 cuotas sin interés' },
     !isInternational && { id: 'gocuotas',      label: '4 cuotas con débito sin interés',   sub: 'Con tu tarjeta de débito · sin interés' },
     !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (10% off)` : '' },
-    !isInternational && { id: 'mercadopago',   label: 'Mercado Pago',                       sub: '' },
-                        { id: 'paypal',        label: 'PayPal',                             sub: isInternational ? 'Credit card, debit or PayPal balance' : '' },
+                        { id: 'paypal',        label: 'PayPal',                             sub: 'Con tarjeta de crédito, débito o saldo de PayPal' },
     isInternational  && { id: 'transferencia', label: 'Bank transfer (USD wire)',             sub: 'Lead Bank · USD ACH/Wire · details shown after order' },
   ].filter(Boolean) as { id: string; label: string; sub: string }[];
 
