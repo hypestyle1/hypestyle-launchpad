@@ -12,22 +12,24 @@ export interface Promo3x2Line {
   quantity: number;
 }
 
-/**
- * Ordena todas las unidades del carrito (no las líneas) de mayor a menor precio
- * y regala la 3ra de cada grupo completo de 3 — así el "gratis" siempre es
- * la más barata de cada trío, sin dejar tríos sueltos entre las unidades más caras.
- */
+/** Todas las unidades del carrito (no las líneas), de mayor a menor precio. */
 function unitPricesDesc(lines: Promo3x2Line[]): number[] {
   const units: number[] = [];
   for (const l of lines) for (let i = 0; i < l.quantity; i++) units.push(l.price);
   return units.sort((a, b) => b - a);
 }
 
+/**
+ * Por cada 3 unidades, 1 es gratis — y esa gratis siempre es la MÁS BARATA de
+ * todo el carrito (no la más barata de un sub-grupo). Con N unidades, regala
+ * las floor(N/3) más baratas en total.
+ */
 export function compute3x2Discount(lines: Promo3x2Line[]): number {
   const units = unitPricesDesc(lines);
-  let discount = 0;
-  for (let i = 2; i < units.length; i += 3) discount += units[i];
-  return Math.round(discount);
+  const freeCount = Math.floor(units.length / PROMO_3X2_MIN_UNITS);
+  if (freeCount === 0) return 0;
+  const cheapest = units.slice(-freeCount);
+  return Math.round(cheapest.reduce((sum, p) => sum + p, 0));
 }
 
 export function count3x2FreeUnits(lines: Promo3x2Line[]): number {
