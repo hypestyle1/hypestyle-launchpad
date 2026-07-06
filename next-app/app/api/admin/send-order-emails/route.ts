@@ -12,7 +12,7 @@ const SENDER_NAME   = 'Hypestyle';
 const REPLY_TO      = 'hypestylearg@gmail.com';
 
 // Datos de transferencia (mismos que muestra /pendiente-de-pago).
-const TRANSFER = { cvu: '0000003100024686621335', alias: 'hypestyle2', titular: 'Pozzi Valentín', banco: 'MERCADO PAGO' };
+const TRANSFER = { cvu: '0000069707170407909550', titular: 'Valentin Pozzi', banco: 'Garpa S.A.' };
 
 // Cupón de recuperación que se muestra en el mail de carrito abandonado (no aplica a transferencia).
 const RECOVERY_COUPON   = 'HYPEVUELVE10';
@@ -249,14 +249,15 @@ function buildAbandonedHtml(order: {
       </td>
     </tr>`).join('');
 
+  const transferWaText = encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${order.orderNum}`);
   const transferBlock = order.isTransfer ? `
     <div style="margin:24px 0 0;background:#f8f8f8;border-radius:8px;padding:16px 18px;">
       <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#111;">Datos para la transferencia</p>
-      <p style="margin:0 0 4px;font-size:13px;color:#333;">Alias: <b>${TRANSFER.alias}</b></p>
       <p style="margin:0 0 4px;font-size:13px;color:#333;">CVU: <b>${TRANSFER.cvu}</b></p>
       <p style="margin:0 0 4px;font-size:13px;color:#333;">Titular: <b>${TRANSFER.titular}</b> (${TRANSFER.banco})</p>
       <p style="margin:10px 0 0;font-size:13px;color:#333;">Monto: <b>${formatPrice(order.total)}</b></p>
-      <p style="margin:10px 0 0;font-size:12px;color:#888;">Cuando la hagas, mandanos el comprobante por Instagram y despachamos tu pedido.</p>
+      <p style="margin:10px 0 0;font-size:12px;color:#888;">Cuando la hagas, mandanos el comprobante por WhatsApp y despachamos tu pedido.</p>
+      <a href="https://wa.me/5491178292430?text=${transferWaText}" style="display:inline-block;margin-top:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;font-size:12px;padding:10px 18px;border-radius:6px;">Enviar comprobante por WhatsApp</a>
     </div>` : '';
 
   // El cupón solo aplica cuando pagan online (no en transferencia: ahí el total ya está fijado).

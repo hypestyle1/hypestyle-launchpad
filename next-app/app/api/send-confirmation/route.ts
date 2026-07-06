@@ -65,12 +65,14 @@ function buildHtml(order: {
     </tr>
   `).join('');
 
+  const waText = encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${order.orderNum}`);
   const transferNote = order.paymentMethod === 'transferencia' ? `
     <div style="background:#f8f8f8;border-radius:6px;padding:16px;margin:24px 0;font-size:13px;color:#333;">
       <strong>Instrucciones para tu transferencia:</strong><br/><br/>
-      Alias: <strong>hypestyle2</strong><br/>
-      Titular: Pozzi Valentín — Mercado Pago<br/><br/>
-      Una vez realizada, enviá el comprobante por Instagram a <strong>@hypestylearg</strong> con tu número de pedido.
+      CVU: <strong>0000069707170407909550</strong><br/>
+      Titular: Valentin Pozzi — Garpa S.A.<br/><br/>
+      Una vez realizada, mandanos el comprobante por WhatsApp con tu número de pedido.<br/>
+      <a href="https://wa.me/5491178292430?text=${waText}" style="display:inline-block;margin-top:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;font-size:12px;padding:10px 18px;border-radius:6px;">Enviar comprobante por WhatsApp</a>
     </div>
   ` : '';
 
