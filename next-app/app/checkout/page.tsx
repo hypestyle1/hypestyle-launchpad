@@ -484,10 +484,12 @@ export default function Checkout() {
   const steps: Step[] = ['info', 'envio', 'pago'];
 
   // Mercado Pago (mercadopago/tarjeta) deshabilitado: la cuenta de MP fue suspendida
-  // (denuncia confirmada, 05/07/2026). PayPal no se usa para cobrar en Argentina.
+  // (denuncia confirmada, 05/07/2026). En AR, PayPal queda solo para quienes ya
+  // tienen saldo en PayPal — no se ofrece como método para cobrar con tarjeta.
   const paymentMethods = [
     !isInternational && { id: 'gocuotas',      label: '4 cuotas con débito sin interés',   sub: 'Con tu tarjeta de débito · sin interés' },
     !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (10% off)` : '' },
+    !isInternational && { id: 'paypal',        label: 'PayPal',                             sub: 'Solo con saldo disponible en tu cuenta de PayPal' },
     isInternational  && { id: 'paypal',        label: 'PayPal',                             sub: 'Credit card, debit or PayPal balance' },
     isInternational  && { id: 'transferencia', label: 'Bank transfer (USD wire)',             sub: 'Lead Bank · USD ACH/Wire · details shown after order' },
   ].filter(Boolean) as { id: string; label: string; sub: string }[];
