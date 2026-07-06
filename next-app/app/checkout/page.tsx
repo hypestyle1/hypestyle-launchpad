@@ -484,11 +484,11 @@ export default function Checkout() {
   const steps: Step[] = ['info', 'envio', 'pago'];
 
   // Mercado Pago (mercadopago/tarjeta) deshabilitado: la cuenta de MP fue suspendida
-  // (denuncia confirmada, 05/07/2026). GOcuotas y PayPal son gateways separados, no afectados.
+  // (denuncia confirmada, 05/07/2026). PayPal no se usa para cobrar en Argentina.
   const paymentMethods = [
     !isInternational && { id: 'gocuotas',      label: '4 cuotas con débito sin interés',   sub: 'Con tu tarjeta de débito · sin interés' },
     !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (10% off)` : '' },
-                        { id: 'paypal',        label: 'PayPal',                             sub: 'Con tarjeta de crédito, débito o saldo de PayPal' },
+    isInternational  && { id: 'paypal',        label: 'PayPal',                             sub: 'Credit card, debit or PayPal balance' },
     isInternational  && { id: 'transferencia', label: 'Bank transfer (USD wire)',             sub: 'Lead Bank · USD ACH/Wire · details shown after order' },
   ].filter(Boolean) as { id: string; label: string; sub: string }[];
 
