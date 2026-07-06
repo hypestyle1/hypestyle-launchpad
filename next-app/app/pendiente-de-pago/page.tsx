@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from '@/context/LocaleContext';
 import { imgSrc } from '@/lib/img';
 
-const CVU          = '0000003100024686621335';
-const ALIAS        = 'hypestyle2';
-const TITULAR      = 'Pozzi Valentín';
-const BANCO        = 'MERCADO PAGO';
+const CVU          = '0000069707170407909550';
+const TITULAR      = 'Valentin Pozzi';
+const BANCO        = 'Garpa S.A.';
+const WA_NUMBER    = '5491178292430';
 
 
 export default function PendientePago() {
@@ -143,8 +143,6 @@ export default function PendientePago() {
                     <div className="h-px bg-border" />
                     <BankRow label="Titular" value={TITULAR} />
                     <div className="h-px bg-border" />
-                    <BankRow label="Alias" value={ALIAS} />
-                    <div className="h-px bg-border" />
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">CVU</p>
@@ -162,8 +160,17 @@ export default function PendientePago() {
                     </div>
                   </div>
                   <p className="text-[12px] text-muted-foreground leading-relaxed">
-                    Una vez acreditado el pago tu orden se aprueba automáticamente. Si en 48hs no se acredita, la orden se cancela.
+                    Una vez que hagas la transferencia, mandanos el comprobante por WhatsApp con tu número de pedido para que aprobemos y despachemos tu compra. Si en 48hs no llega el comprobante, la orden se cancela.
                   </p>
+                  <a
+                    href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${displayOrderNum}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] text-white rounded-[10px] transition-colors hover:opacity-90"
+                    style={{ background: '#25D366' }}
+                  >
+                    Enviar comprobante por WhatsApp
+                  </a>
                 </>
               )}
 
