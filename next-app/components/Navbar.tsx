@@ -10,6 +10,7 @@ import { useLocale } from '@/context/LocaleContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useProducts } from '@/hooks/useProducts';
 import LocalePopup from '@/components/LocalePopup';
+import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 
 const navLinks = [
   { label: 'Shop',          href: '/productos/',               hasDropdown: true,  routeMatch: '/productos' },
@@ -91,6 +92,8 @@ export default function Navbar() {
   const { items: wishlistItems, setDrawerOpen: openWishlist } = useWishlist();
   const { formatPrice, t } = useLocale();
   const { data: allProducts = [] } = useProducts(100);
+  const { phase: promoPhase } = usePromo3x2Status();
+  const argMode = promoPhase === 'pre' || promoPhase === 'live' || promoPhase === 'won';
 
   const searchResults = searchQuery.length >= 2
     ? allProducts
@@ -141,13 +144,17 @@ export default function Navbar() {
         style={{
           height: navHeight,
           borderRadius: '14px',
-          background: 'rgba(240, 238, 232, 0.62)',
+          background: argMode ? 'rgba(117, 170, 219, 0.30)' : 'rgba(240, 238, 232, 0.62)',
           backdropFilter: 'blur(32px) saturate(200%)',
           WebkitBackdropFilter: 'blur(32px) saturate(200%)',
-          border: scrolled || shopOpen ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.45)',
-          boxShadow: scrolled || shopOpen
-            ? '0 8px 40px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.55)'
-            : '0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.55)',
+          border: argMode
+            ? '1px solid rgba(212, 175, 55, 0.55)'
+            : (scrolled || shopOpen ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.45)'),
+          boxShadow: argMode
+            ? '0 4px 24px rgba(212,175,55,0.22), inset 0 1px 0 rgba(255,255,255,0.4)'
+            : (scrolled || shopOpen
+              ? '0 8px 40px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.55)'
+              : '0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.55)'),
         }}
         onMouseLeave={() => setShopOpen(false)}
       >

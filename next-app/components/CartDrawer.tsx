@@ -6,7 +6,8 @@ import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import { useRouter } from "next/navigation";
 import { useProducts } from "@/hooks/useProducts";
-import { isPromo3x2Active, compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
+import { compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
+import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
 
 const FREE_SHIPPING = 250000;
 
@@ -30,13 +31,14 @@ export default function CartDrawer() {
     [drawerOpen, allProducts.length]
   );
 
+  const { promoActive: promo3x2Active } = usePromo3x2Status();
+
   if (!drawerOpen) return null;
 
   const remaining = Math.max(FREE_SHIPPING - total, 0);
   const progress = Math.min((total / FREE_SHIPPING) * 100, 100);
   const freeShipping = remaining === 0;
 
-  const promo3x2Active = isPromo3x2Active();
   const promo3x2Discount = promo3x2Active ? compute3x2Discount(items) : 0;
   const promo3x2Faltan = promo3x2Active ? unitsToNext3x2(items) : 0;
 

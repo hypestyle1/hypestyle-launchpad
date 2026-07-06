@@ -23,6 +23,12 @@ export type ArgFixture = {
   started: boolean;
   live: boolean;
   finished: boolean;
+  matchId: number | null;
+  stage: string | null;
+  // 'winnerSide'/'argWon' se derivan de m.score.winner (no de los goles): en un cruce
+  // eliminatorio definido por penales el marcador de tiempo puede quedar empatado.
+  winnerSide: 'ARG' | 'OPP' | 'DRAW' | null;
+  argWon: boolean;
 };
 
 async function fd(path: string) {
@@ -39,6 +45,11 @@ function mapMatch(m: any): ArgFixture {
   const homeG = m.score?.fullTime?.home ?? 0;
   const awayG = m.score?.fullTime?.away ?? 0;
   const min = m.minute == null ? null : (parseInt(String(m.minute), 10) || null);
+  const finished = DONE_STATES.includes(st);
+  const winner = m.score?.winner as ('HOME_TEAM' | 'AWAY_TEAM' | 'DRAW' | null) ?? null;
+  const winnerSide: ArgFixture['winnerSide'] = !finished || !winner ? null
+    : winner === 'DRAW' ? 'DRAW'
+    : (winner === 'HOME_TEAM') === argHome ? 'ARG' : 'OPP';
   return {
     date: m.utcDate ?? null,
     statusShort: st,
@@ -51,7 +62,11 @@ function mapMatch(m: any): ArgFixture {
     oppGoals: argHome ? awayG : homeG,
     started: !PRE_STATES.includes(st) && st !== 'POSTPONED' && st !== 'CANCELLED',
     live: LIVE_STATES.includes(st),
-    finished: DONE_STATES.includes(st),
+    finished,
+    matchId: m.id ?? null,
+    stage: m.stage ?? null,
+    winnerSide,
+    argWon: winnerSide === 'ARG',
   };
 }
 
@@ -73,14 +88,17 @@ export async function getArgentinaFixture(): Promise<ArgFixture | null> {
   }
 }
 
-async function fetchFixture(): Promise<ArgFixture | null> {
+async function fetchAllMatches(): Promise<any[]> {
   if (MATCH_ID) {
     const m = await fd(`/matches/${MATCH_ID}`);
-    return m?.id ? mapMatch(m) : null;
+    return m?.id ? [m] : [];
   }
-
   const j = await fd(`/teams/${ARG_TEAM_ID}/matches?competitions=WC`);
-  const ms: any[] = j.matches || [];
+  return j.matches || [];
+}
+
+async function fetchFixture(): Promise<ArgFixture | null> {
+  const ms = await fetchAllMatches();
   if (!ms.length) return null;
   const now = Date.now();
   const t = (m: any) => new Date(m.utcDate).getTime();
@@ -103,4 +121,25 @@ async function fetchFixture(): Promise<ArgFixture | null> {
 
   // Fallback: el más cercano en el tiempo
   return mapMatch(ms.slice().sort((a, b) => Math.abs(t(a) - now) - Math.abs(t(b) - now))[0]);
+}
+
+// Lista completa de partidos de Argentina en el Mundial (sin el corte de 24h de
+// fetchFixture/getArgentinaFixture) — la usa lib/promo-3x2-status.ts para poder
+// sostener una ventana de varios días hasta el próximo partido tras un triunfo.
+// Cache propia, separada de _cache, para no interferir con el hero widget / goal-discount.
+let _matchesCache: { at: number; data: ArgFixture[] } | null = null;
+
+export async function getArgentinaWorldCupFixtures(): Promise<ArgFixture[]> {
+  if (!TOKEN) return [];
+  const ttl = _matchesCache?.data.some(f => f.live) ? 45000 : 300000;
+  if (_matchesCache && Date.now() - _matchesCache.at < ttl) return _matchesCache.data;
+  try {
+    const ms = await fetchAllMatches();
+    const data = ms.map(mapMatch).sort((a, b) => new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime());
+    _matchesCache = { at: Date.now(), data };
+    return data;
+  } catch (e) {
+    if (_matchesCache) return _matchesCache.data;
+    throw e;
+  }
 }
