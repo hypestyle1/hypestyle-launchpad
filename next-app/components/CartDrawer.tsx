@@ -6,6 +6,7 @@ import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import { useRouter } from "next/navigation";
 import { useProducts } from "@/hooks/useProducts";
+import { isPromo3x2Active, compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
 
 const FREE_SHIPPING = 250000;
 
@@ -34,6 +35,10 @@ export default function CartDrawer() {
   const remaining = Math.max(FREE_SHIPPING - total, 0);
   const progress = Math.min((total / FREE_SHIPPING) * 100, 100);
   const freeShipping = remaining === 0;
+
+  const promo3x2Active = isPromo3x2Active();
+  const promo3x2Discount = promo3x2Active ? compute3x2Discount(items) : 0;
+  const promo3x2Faltan = promo3x2Active ? unitsToNext3x2(items) : 0;
 
   return (
     <>
@@ -84,6 +89,22 @@ export default function CartDrawer() {
             />
           </div>
         </div>
+
+        {/* Barra 3x2 */}
+        {promo3x2Active && items.length > 0 && (promo3x2Discount > 0 || promo3x2Faltan < 3) && (
+          <div className="px-6 pt-2 pb-2 border-b border-border">
+            {promo3x2Discount > 0 ? (
+              <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
+                3x2 aplicado — ahorrás {formatPrice(promo3x2Discount)}
+              </p>
+            ) : (
+              <p className="text-[11px] text-center text-muted-foreground">
+                {t('Añadí')} <span className="font-bold text-foreground">{promo3x2Faltan}</span>{' '}
+                {t('más y llevate el')} <span className="font-bold uppercase text-foreground">3x2</span>
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
@@ -172,6 +193,12 @@ export default function CartDrawer() {
               <span className="text-[13px] text-muted-foreground">{t('Subtotal')}</span>
               <span className="text-[14px] font-semibold">{formatPrice(total)}</span>
             </div>
+            {promo3x2Discount > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] text-green-700">3x2</span>
+                <span className="text-[14px] font-semibold text-green-700">−{formatPrice(promo3x2Discount)}</span>
+              </div>
+            )}
             <p className="text-[11px] text-muted-foreground">
               {freeShipping ? (
                 <span className="text-green-700 font-semibold">{t('Envío gratis aplicado')}</span>
