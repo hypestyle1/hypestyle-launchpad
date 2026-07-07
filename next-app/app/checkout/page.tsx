@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { isFlashSaleActive } from '@/lib/flash-sale';
-import { isPromo3x2Active, compute3x2Discount, unitsToNext3x2 } from '@/lib/promo-3x2';
+import { compute3x2Discount, unitsToNext3x2 } from '@/lib/promo-3x2';
+import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { getFbCookies } from '@/lib/fbtracking';
@@ -239,6 +240,7 @@ export default function Checkout() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [flashActive, setFlashActive] = useState(false);
+  const { promoActive: promo3x2Won } = usePromo3x2Status();
 
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
@@ -253,7 +255,7 @@ export default function Checkout() {
   const isSucursal = !isInternational && (selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal'));
   const branchReady = isInternational || !isSucursal || !!selectedBranch;
 
-  useEffect(() => { setFlashActive(isFlashSaleActive() || isPromo3x2Active()); }, []);
+  useEffect(() => { setFlashActive(isFlashSaleActive() || promo3x2Won); }, [promo3x2Won]);
 
   const subtotal = total;
   // El cupón de envío gratis cero-ea Andreani igual que el umbral de $250.000.
@@ -264,8 +266,8 @@ export default function Checkout() {
   const cuponDescuento = couponData ? (
     couponData.type === 'percent' ? Math.round(subtotal * (couponData.amount / 100)) : couponData.amount
   ) : 0;
-  // 3x2 (más barata gratis) hasta el martes — promo local, no aplica a envíos internacionales.
-  const promo3x2Active = isPromo3x2Active() && !isInternational;
+  // 3x2 (más barata gratis) solo si Argentina ganó — promo local, no aplica a envíos internacionales.
+  const promo3x2Active = promo3x2Won && !isInternational;
   const promo3x2Descuento = promo3x2Active ? compute3x2Discount(items) : 0;
   const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(items) : 0;
   const descuento = cuponDescuento + promo3x2Descuento;
