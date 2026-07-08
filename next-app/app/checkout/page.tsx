@@ -392,6 +392,7 @@ export default function Checkout() {
         metodo: pago.metodo, email: info.email, nombre: info.nombre, apellido: info.apellido,
         direccion: info.direccion, ciudad: info.ciudad, provincia: info.provincia,
         cp: info.cp, telefono: info.telefono, pais: info.pais,
+        talo: isLocalTransfer ? orderRes.taloPaymentData : undefined,
       }));
       if (isGocuotas) {
         let gcRes;
@@ -464,14 +465,13 @@ export default function Checkout() {
         window.location.href = ppData.approvalUrl;
         return;
       }
-      if (isLocalTransfer && !orderRes.taloUrl) {
+      if (isLocalTransfer && !orderRes.taloPaymentData?.alias) {
         setSubmitError('No se pudo iniciar el pago con Talo Pay. Intentá de nuevo o elegí otro método.');
         setSubmitting(false);
         return;
       }
       clear();
       if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
-      else if (isLocalTransfer)       { window.location.href = orderRes.taloUrl!; }
       else if (isTransfer)            { router.push('/pendiente-de-pago/'); }
       else                            { router.push('/confirmacion/'); }
     } catch (err) {

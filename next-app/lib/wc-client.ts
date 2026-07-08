@@ -43,6 +43,16 @@ export interface CreateOrderPayload {
   fbc?: string;
 }
 
+export interface TaloPaymentData {
+  alias: string | null;
+  cvu: string | null;
+  amount: number;
+  beneficiario: string | null;
+  cuit: string | null;
+  banco: string | null;
+  expiration: string | null;
+}
+
 export interface CreateOrderResponse {
   wcOrderId: number;
   wcOrderNumber: string;
@@ -50,7 +60,7 @@ export interface CreateOrderResponse {
   wcTotal: number;          // total real de WooCommerce (con sale_price y cupones aplicados)
   initPoint: string | null;
   paypalUrl: string | null;
-  taloUrl: string | null;
+  taloPaymentData: TaloPaymentData | null;
   error?: string;
 }
 
@@ -77,7 +87,7 @@ export async function createOrderAndPreference(
     throw new Error(err.message || `WC HTTP ${wcRes.status}`);
   }
 
-  const order = await wcRes.json() as { wcOrderId: number; wcOrderNumber: string; orderKey: string; wcTotal?: number; paypalUrl?: string | null; taloUrl?: string | null };
+  const order = await wcRes.json() as { wcOrderId: number; wcOrderNumber: string; orderKey: string; wcTotal?: number; paypalUrl?: string | null; taloPaymentData?: TaloPaymentData | null };
 
   // 2 — Crear preferencia MP (Next.js API, token de producción en Vercel)
   let initPoint: string | null = null;
@@ -110,6 +120,6 @@ export async function createOrderAndPreference(
     wcTotal:       order.wcTotal ?? 0,
     initPoint,
     paypalUrl:     order.paypalUrl ?? null,
-    taloUrl:       order.taloUrl ?? null,
+    taloPaymentData: order.taloPaymentData ?? null,
   };
 }
