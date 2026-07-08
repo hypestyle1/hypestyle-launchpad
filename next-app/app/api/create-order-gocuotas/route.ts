@@ -148,24 +148,28 @@ export async function POST(req: NextRequest) {
     const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string };
 
     // Transferencia (Talo Pay): la orden ya quedó creada con el gateway real de Talo vía
-    // wc/v3/orders, pero esa API no calcula la URL nativa de order-pay — se la pedimos al
-    // mu-plugin (get_checkout_payment_url()), que sí tiene acceso al objeto WC_Order.
-    let taloUrl: string | null = null;
+    // wc/v3/orders. Talo genera el alias/CVU/monto de esa orden recién cuando algo visita
+    // su pantalla nativa de order-pay — en vez de mandar ahí al cliente (sin marca, con un
+    // selector de gateways confuso), le pedimos al mu-plugin los datos ya limpios para
+    // mostrarlos en nuestra propia pantalla.
+    let taloPaymentData: {
+      alias: string | null; cvu: string | null; amount: number;
+      beneficiario: string | null; cuit: string | null; banco: string | null; expiration: string | null;
+    } | null = null;
     if (paymentMethod === 'transferencia') {
       try {
-        const payUrlRes = await fetch(`${WP_URL}/wp-json/hypestyle/v1/order-pay-url`, {
+        const taloRes = await fetch(`${WP_URL}/wp-json/hypestyle/v1/talo-payment-data`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Hypestyle-Secret': WP_SECRET, 'Authorization': `Bearer ${WP_SECRET}` },
           body: JSON.stringify({ order_id: wcOrder.id }),
         });
-        if (payUrlRes.ok) {
-          const payUrlData = await payUrlRes.json() as { url?: string };
-          taloUrl = payUrlData.url ?? null;
+        if (taloRes.ok) {
+          taloPaymentData = await taloRes.json();
         } else {
-          console.error('[create-order-gocuotas] order-pay-url error:', await payUrlRes.text());
+          console.error('[create-order-gocuotas] talo-payment-data error:', await taloRes.text());
         }
       } catch (e) {
-        console.error('[create-order-gocuotas] order-pay-url fetch error:', e);
+        console.error('[create-order-gocuotas] talo-payment-data fetch error:', e);
       }
     }
 
@@ -202,7 +206,7 @@ export async function POST(req: NextRequest) {
       wcTotal:       parseFloat(wcOrder.total),  // total real de WC (con sale_price aplicado)
       initPoint:     null,
       paypalUrl:     null,
-      taloUrl,
+      taloPaymentData,
     });
   } catch (err) {
     if (err instanceof OutOfStockError) {

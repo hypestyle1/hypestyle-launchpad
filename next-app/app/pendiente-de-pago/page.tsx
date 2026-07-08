@@ -133,6 +133,66 @@ export default function PendientePago() {
                     <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">@hypestylearg</a>
                   </p>
                 </>
+              ) : order.talo?.alias ? (
+                <>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
+                    Transferí el monto exacto al alias de abajo. Es exclusivo para este pedido — una vez detectada, tu compra se confirma sola.
+                  </p>
+                  <div className="bg-[#f8f8f6] border border-border p-4 space-y-3">
+                    <BankRow label="Banco" value={order.talo.banco === 'CRESIUM' ? 'Cresium S.A.' : (order.talo.banco || '—')} />
+                    <div className="h-px bg-border" />
+                    <BankRow label="Titular" value={order.talo.beneficiario || '—'} />
+                    {order.talo.cuit && (
+                      <>
+                        <div className="h-px bg-border" />
+                        <BankRow label="CUIT" value={order.talo.cuit} mono />
+                      </>
+                    )}
+                    <div className="h-px bg-border" />
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">Alias exclusivo para esta compra</p>
+                        <p className="text-[13px] font-mono font-semibold tracking-wider truncate">{order.talo.alias}</p>
+                      </div>
+                      <button onClick={() => handleCopy(order.talo.alias, 'alias')}
+                        className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider border transition-all flex-shrink-0 ${copied === 'alias' ? 'border-green-600 text-green-600 bg-green-50' : 'border-foreground text-foreground hover:bg-foreground hover:text-white'}`}>
+                        {copied === 'alias' ? '✓ Copiado' : 'Copiar alias'}
+                      </button>
+                    </div>
+                    {order.talo.cvu && (
+                      <>
+                        <div className="h-px bg-border" />
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">CVU</p>
+                            <p className="text-[13px] font-mono font-semibold tracking-wider truncate">{order.talo.cvu}</p>
+                          </div>
+                          <button onClick={() => handleCopy(order.talo.cvu, 'cvu')}
+                            className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider border transition-all flex-shrink-0 ${copied === 'cvu' ? 'border-green-600 text-green-600 bg-green-50' : 'border-foreground text-foreground hover:bg-foreground hover:text-white'}`}>
+                            {copied === 'cvu' ? '✓ Copiado' : 'Copiar CVU'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    <div className="h-px bg-border" />
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Monto exacto a transferir</p>
+                      <p className="text-[15px] font-bold">{formatPrice(order.talo.amount || displayTotal)}</p>
+                    </div>
+                  </div>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">
+                    Tu pedido se confirma automáticamente al detectar la transferencia (podés tardar unos minutos en verlo reflejado). Si preferís avisarnos igual o tenés algún problema, mandanos el comprobante por WhatsApp con tu número de pedido.
+                  </p>
+                  <a
+                    href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${displayOrderNum}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] text-white rounded-[10px] transition-colors hover:opacity-90"
+                    style={{ background: '#25D366' }}
+                  >
+                    Enviar comprobante por WhatsApp
+                  </a>
+                </>
               ) : (
                 <>
                   <p className="text-[13px] text-muted-foreground leading-relaxed">
