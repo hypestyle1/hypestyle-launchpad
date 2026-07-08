@@ -51,6 +51,7 @@ function buildHtml(order: {
   apellido: string;
   email: string;
   paymentMethod?: string;
+  talo?: { alias: string | null; cvu: string | null; beneficiario: string | null; cuit: string | null; banco: string | null } | null;
 }) {
   const rows = order.items.map(item => `
     <tr>
@@ -66,15 +67,28 @@ function buildHtml(order: {
   `).join('');
 
   const waText = encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${order.orderNum}`);
-  const transferNote = order.paymentMethod === 'transferencia' ? `
+  // Los datos bancarios son los que genera Talo por orden (alias/CVU únicos) — nunca
+  // hardcodear una cuenta fija acá, porque Talo no puede detectar automáticamente una
+  // transferencia que no llegue a su alias/CVU generado para esta orden puntual.
+  const transferNote = order.paymentMethod === 'transferencia'
+    ? (order.talo?.alias ? `
     <div style="background:#f8f8f8;border-radius:6px;padding:16px;margin:24px 0;font-size:13px;color:#333;">
       <strong>Instrucciones para tu transferencia:</strong><br/><br/>
-      CVU: <strong>0000069707170407909550</strong><br/>
-      Titular: Valentin Pozzi — Garpa S.A.<br/><br/>
-      Una vez realizada, mandanos el comprobante por WhatsApp con tu número de pedido.<br/>
+      Banco: <strong>${order.talo.banco === 'CRESIUM' ? 'Cresium S.A.' : (order.talo.banco || '')}</strong><br/>
+      Titular: <strong>${order.talo.beneficiario || ''}</strong><br/>
+      Alias: <strong>${order.talo.alias}</strong><br/>
+      ${order.talo.cvu ? `CVU: <strong>${order.talo.cvu}</strong><br/>` : ''}
+      Monto exacto: <strong>${fmtARS(order.total)}</strong><br/><br/>
+      Tu pedido se confirma solo al detectar la transferencia. Si preferís avisarnos igual, mandanos el comprobante por WhatsApp.<br/>
       <a href="https://wa.me/5491178292430?text=${waText}" style="display:inline-block;margin-top:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;font-size:12px;padding:10px 18px;border-radius:6px;">Enviar comprobante por WhatsApp</a>
     </div>
-  ` : '';
+  ` : `
+    <div style="background:#f8f8f8;border-radius:6px;padding:16px;margin:24px 0;font-size:13px;color:#333;">
+      Estamos generando los datos de tu transferencia — entrá a "Seguir mi pedido" abajo en unos minutos para verlos, o escribinos por WhatsApp si no te aparecen.<br/>
+      <a href="https://wa.me/5491178292430?text=${waText}" style="display:inline-block;margin-top:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;font-size:12px;padding:10px 18px;border-radius:6px;">Escribir por WhatsApp</a>
+    </div>
+  `)
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="es">

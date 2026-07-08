@@ -24,25 +24,9 @@ export default function PendientePago() {
     const parsed = JSON.parse(raw);
     setOrder(parsed);
     setFecha(new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }));
-
-    fetch('/api/send-confirmation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        orderNum:      parsed.wcOrderNumber || parsed.orderNum,
-        wcOrderId:     parsed.wcOrderId,
-        orderKey:      parsed.orderKey,
-        items:         parsed.items,
-        total:         parsed.total,
-        email:         parsed.email,
-        nombre:        parsed.nombre,
-        apellido:      parsed.apellido,
-        ciudad:        parsed.ciudad,
-        provincia:     parsed.provincia,
-        paymentMethod: parsed.metodo,
-        pais:          parsed.pais,
-      }),
-    }).catch(() => {});
+    // El mail de confirmación ya lo manda el servidor al crear la orden
+    // (create-order-gocuotas / create-order-intl) — no volver a mandarlo acá,
+    // duplicaba el envío cada vez que se cargaba esta pantalla.
   }, [router]);
 
   const handleCopy = (text: string, key: string) => {
