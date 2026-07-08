@@ -63,7 +63,8 @@ export default function Promo3x2Bar() {
   const pathname = usePathname();
   const { data, phase } = usePromo3x2Status();
 
-  if (!phase || phase === 'lost' || phase === 'none' || pathname?.startsWith('/admin')) return null;
+  const hideOn = ['/admin', '/checkout', '/pendiente-de-pago', '/confirmacion'];
+  if (!phase || phase === 'lost' || phase === 'none' || hideOn.some(p => pathname?.startsWith(p))) return null;
 
   const match = data?.match;
 

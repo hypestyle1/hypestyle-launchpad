@@ -124,8 +124,6 @@ export default function PendientePago() {
                   </p>
                   <div className="bg-[#f8f8f6] border border-border p-4 space-y-3">
                     <BankRow label="Banco" value={order.talo.banco === 'CRESIUM' ? 'Cresium S.A.' : (order.talo.banco || '—')} />
-                    <div className="h-px bg-border" />
-                    <BankRow label="Titular" value={order.talo.beneficiario || '—'} />
                     {order.talo.cuit && (
                       <>
                         <div className="h-px bg-border" />
@@ -143,21 +141,6 @@ export default function PendientePago() {
                         {copied === 'alias' ? '✓ Copiado' : 'Copiar alias'}
                       </button>
                     </div>
-                    {order.talo.cvu && (
-                      <>
-                        <div className="h-px bg-border" />
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="min-w-0">
-                            <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">CVU</p>
-                            <p className="text-[13px] font-mono font-semibold tracking-wider truncate">{order.talo.cvu}</p>
-                          </div>
-                          <button onClick={() => handleCopy(order.talo.cvu, 'cvu')}
-                            className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider border transition-all flex-shrink-0 ${copied === 'cvu' ? 'border-green-600 text-green-600 bg-green-50' : 'border-foreground text-foreground hover:bg-foreground hover:text-white'}`}>
-                            {copied === 'cvu' ? '✓ Copiado' : 'Copiar CVU'}
-                          </button>
-                        </div>
-                      </>
-                    )}
                     <div className="h-px bg-border" />
                     <div className="flex items-center justify-between">
                       <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Monto exacto a transferir</p>

@@ -75,9 +75,8 @@ function buildHtml(order: {
     <div style="background:#f8f8f8;border-radius:6px;padding:16px;margin:24px 0;font-size:13px;color:#333;">
       <strong>Instrucciones para tu transferencia:</strong><br/><br/>
       Banco: <strong>${order.talo.banco === 'CRESIUM' ? 'Cresium S.A.' : (order.talo.banco || '')}</strong><br/>
-      Titular: <strong>${order.talo.beneficiario || ''}</strong><br/>
+      ${order.talo.cuit ? `CUIT: <strong>${order.talo.cuit}</strong><br/>` : ''}
       Alias: <strong>${order.talo.alias}</strong><br/>
-      ${order.talo.cvu ? `CVU: <strong>${order.talo.cvu}</strong><br/>` : ''}
       Monto exacto: <strong>${fmtARS(order.total)}</strong><br/><br/>
       Tu pedido se confirma solo al detectar la transferencia. Si preferís avisarnos igual, mandanos el comprobante por WhatsApp.<br/>
       <a href="https://wa.me/5491178292430?text=${waText}" style="display:inline-block;margin-top:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;font-size:12px;padding:10px 18px;border-radius:6px;">Enviar comprobante por WhatsApp</a>
