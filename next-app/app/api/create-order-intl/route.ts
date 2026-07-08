@@ -143,6 +143,9 @@ export async function POST(req: NextRequest) {
         provincia:     customer.provincia,
         paymentMethod,
         pais:          customer.pais || country,
+        // PayPal recién se confirma cuando el cliente aprueba (paypal-capture /
+        // paypal-webhook) — no mandarle "pago recibido" al crear la orden.
+        paymentPending: paymentMethod === 'paypal',
       }),
     }).catch((e) => console.error('[create-order-intl] email error:', e));
 

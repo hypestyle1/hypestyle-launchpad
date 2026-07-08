@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fulfillPaypalOrder } from '@/lib/paypal-fulfill';
 
 const PAYPAL_API = 'https://api-m.paypal.com';
 const CLIENT_ID  = process.env.PAYPAL_CLIENT_ID!;
 const SECRET     = process.env.PAYPAL_CLIENT_SECRET!;
-const WP_URL     = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
-const WC_KEY     = process.env.WC_CONSUMER_KEY!;
-const WC_SECRET  = process.env.WC_CONSUMER_SECRET!;
 
 async function getAccessToken(): Promise<string> {
   const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
@@ -50,24 +48,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Estado inesperado: ${capture.status}` }, { status: 400 });
     }
 
-    // Mark WC order as processing
-    const wcRes = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${wcOrderId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64')}`,
-      },
-      body: JSON.stringify({
-        status: 'processing',
-        transaction_id: paypalOrderId,
-      }),
-    });
-
-    if (!wcRes.ok) {
-      console.error('[paypal-capture] WC update failed:', await wcRes.text());
+    // Recién acá el pago está confirmado — marca la orden como processing y
+    // manda la confirmación real al cliente (antes de esto, create-order-intl/
+    // create-order-gocuotas NO mandan mail de "pago recibido" para PayPal).
+    const result = await fulfillPaypalOrder(wcOrderId, paypalOrderId);
+    if (!result.ok) {
+      console.error('[paypal-capture] fulfill failed:', result.reason);
     }
 
-    return NextResponse.json({ success: true, paypalOrderId, wcOrderId });
+    return NextResponse.json({ success: true, paypalOrderId, wcOrderId, fulfill: result.reason });
   } catch (err) {
     console.error('[paypal-capture]', err);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
