@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
 const WC_SEC  = process.env.WC_CONSUMER_SECRET  || '';
+const WP_SECRET = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
+
+// Transferencia local se cobra vía Talo Pay (CVU único por orden, confirmación automática).
+const GATEWAY_IDS: Record<string, string> = {
+  transferencia: 'talo-pay-cvu-woo',
+};
 
 class OutOfStockError extends Error {
   constructor(msg: string) { super(msg); this.name = 'OutOfStockError'; }
@@ -99,11 +105,11 @@ export async function POST(req: NextRequest) {
       tarjeta:       'Tarjeta de crédito / débito (MercadoPago)',
       efectivo:      'Efectivo (MercadoPago)',
       gocuotas:      'GOcuotas — Cuotas con débito',
-      transferencia: 'Transferencia bancaria',
+      transferencia: 'Talo Pay (transferencia)',
     };
 
     const order: Record<string, unknown> = {
-      payment_method:       paymentMethod ?? 'gocuotas',
+      payment_method:       GATEWAY_IDS[paymentMethod] ?? paymentMethod ?? 'gocuotas',
       payment_method_title: PAYMENT_TITLES[paymentMethod] ?? paymentMethod,
       set_paid:             false,
       billing,
@@ -141,6 +147,28 @@ export async function POST(req: NextRequest) {
 
     const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string };
 
+    // Transferencia (Talo Pay): la orden ya quedó creada con el gateway real de Talo vía
+    // wc/v3/orders, pero esa API no calcula la URL nativa de order-pay — se la pedimos al
+    // mu-plugin (get_checkout_payment_url()), que sí tiene acceso al objeto WC_Order.
+    let taloUrl: string | null = null;
+    if (paymentMethod === 'transferencia') {
+      try {
+        const payUrlRes = await fetch(`${WP_URL}/wp-json/hypestyle/v1/order-pay-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Hypestyle-Secret': WP_SECRET, 'Authorization': `Bearer ${WP_SECRET}` },
+          body: JSON.stringify({ order_id: wcOrder.id }),
+        });
+        if (payUrlRes.ok) {
+          const payUrlData = await payUrlRes.json() as { url?: string };
+          taloUrl = payUrlData.url ?? null;
+        } else {
+          console.error('[create-order-gocuotas] order-pay-url error:', await payUrlRes.text());
+        }
+      } catch (e) {
+        console.error('[create-order-gocuotas] order-pay-url fetch error:', e);
+      }
+    }
+
     // Send confirmation email server-side — don't rely on frontend sessionStorage
     const SITE = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
     fetch(`${SITE}/api/send-confirmation`, {
@@ -171,6 +199,7 @@ export async function POST(req: NextRequest) {
       wcTotal:       parseFloat(wcOrder.total),  // total real de WC (con sale_price aplicado)
       initPoint:     null,
       paypalUrl:     null,
+      taloUrl,
     });
   } catch (err) {
     if (err instanceof OutOfStockError) {

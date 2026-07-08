@@ -464,8 +464,14 @@ export default function Checkout() {
         window.location.href = ppData.approvalUrl;
         return;
       }
+      if (isLocalTransfer && !orderRes.taloUrl) {
+        setSubmitError('No se pudo iniciar el pago con Talo Pay. Intentá de nuevo o elegí otro método.');
+        setSubmitting(false);
+        return;
+      }
       clear();
       if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
+      else if (isLocalTransfer)       { window.location.href = orderRes.taloUrl!; }
       else if (isTransfer)            { router.push('/pendiente-de-pago/'); }
       else                            { router.push('/confirmacion/'); }
     } catch (err) {
