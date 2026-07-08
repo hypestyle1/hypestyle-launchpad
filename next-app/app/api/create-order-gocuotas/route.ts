@@ -196,6 +196,9 @@ export async function POST(req: NextRequest) {
         // PayPal recién se confirma cuando el cliente aprueba (paypal-capture /
         // paypal-webhook) — no mandarle "pago recibido" al crear la orden.
         paymentPending: paymentMethod === 'paypal',
+        // Datos reales de Talo (alias/CVU por orden) para que el mail no muestre
+        // una cuenta bancaria distinta a la que se ve en /pendiente-de-pago/.
+        talo: taloPaymentData,
       }),
     }).catch((e) => console.error('[create-order-gocuotas] email error:', e));
 
