@@ -1,10 +1,10 @@
 import { generateEspalda, generateFrente } from '@/lib/estampa';
 
-// Envía al proveedor de estampas (Customland) un mail por pedido con la ficha
+// Envía al proveedor de estampas (Newbranderr) un mail por pedido con la ficha
 // técnica + los archivos de estampa (1:1) de cada ítem personalizado.
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
-const SUPPLIER_EMAIL = (process.env.SUPPLIER_EMAIL || 'arte@customland.com.ar').trim();
+const SUPPLIER_EMAIL = (process.env.SUPPLIER_EMAIL || 'newbranderr@gmail.com').trim();
 const ADMIN_CC = 'hypestylearg@gmail.com';
 const SENDER = { name: 'Hypestyle', email: 'info@hypestyle.com.ar' };
 const SITE_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
