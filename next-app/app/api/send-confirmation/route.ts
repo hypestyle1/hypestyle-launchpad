@@ -368,11 +368,13 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [to], subject, htmlContent: html }),
       });
 
-    // PayPal no captura el pago en el momento de crear la orden — recién se
-    // confirma cuando el cliente aprueba en PayPal (paypal-capture / paypal-webhook).
-    // Hasta entonces no le mandamos al cliente nada que suene a "pago recibido";
-    // solo avisamos al admin que hay un intento de pedido en curso.
-    const paymentPending = order.paymentPending === true && order.paymentMethod === 'paypal';
+    // PayPal y GOcuotas no confirman el pago en el momento de crear la orden —
+    // PayPal recién cuando el cliente aprueba (paypal-capture/paypal-webhook),
+    // GOcuotas recién cuando aprueba el crédito (gocuotas-webhook). Hasta entonces
+    // no le mandamos al cliente nada que suene a "pago recibido"; solo avisamos
+    // al admin que hay un intento de pedido en curso.
+    const paymentPending = order.paymentPending === true
+      && (order.paymentMethod === 'paypal' || order.paymentMethod === 'gocuotas');
 
     if (!paymentPending) {
       let customerHtml: string;
@@ -401,7 +403,7 @@ export async function POST(req: NextRequest) {
     }
 
     const adminSubject = paymentPending
-      ? `⏳ PayPal iniciado #${order.orderNum} — esperando aprobación`
+      ? `⏳ ${METODO_LABEL[order.paymentMethod] || order.paymentMethod} iniciado #${order.orderNum} — esperando aprobación`
       : isIntl
         ? `🌍 International order #${order.orderNum} — ${order.pais} — ${METODO_LABEL[order.paymentMethod] || order.paymentMethod || '?'}`
         : `🛍 Nueva venta #${order.orderNum} — ${METODO_LABEL[order.paymentMethod] || order.paymentMethod || 'Sin método'}`;

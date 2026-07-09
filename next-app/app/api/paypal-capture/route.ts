@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fulfillPaypalOrder } from '@/lib/paypal-fulfill';
+import { fulfillOrder } from '@/lib/order-fulfill';
 
 const PAYPAL_API = 'https://api-m.paypal.com';
 const CLIENT_ID  = process.env.PAYPAL_CLIENT_ID!;
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     // Recién acá el pago está confirmado — marca la orden como processing y
     // manda la confirmación real al cliente (antes de esto, create-order-intl/
     // create-order-gocuotas NO mandan mail de "pago recibido" para PayPal).
-    const result = await fulfillPaypalOrder(wcOrderId, paypalOrderId);
+    const result = await fulfillOrder(wcOrderId, 'paypal', paypalOrderId);
     if (!result.ok) {
       console.error('[paypal-capture] fulfill failed:', result.reason);
     }
