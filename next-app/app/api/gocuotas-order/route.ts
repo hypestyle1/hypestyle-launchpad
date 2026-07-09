@@ -17,11 +17,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GOcuotas API key not configured' }, { status: 500 });
     }
 
-    // Normalize phone: GOcuotas requires country code prefix (Argentina = 54)
-    const normalizedPhone = phone
-      ? phone.replace(/\D/g, '').replace(/^0/, '').replace(/^54/, '')
-      : '';
-    const phoneE164 = normalizedPhone ? `54${normalizedPhone}` : '';
+    // Normalizar a formato internacional argentino: 549 + código de área + número.
+    // Los celulares en AR necesitan el "9" después del 54 (mismo criterio que ya
+    // se usa para los links de WhatsApp en admin/pedidos) — sin el 9, el número
+    // queda mal formado y GOcuotas puede rechazar o no poder validar al cliente.
+    const digits = phone ? phone.replace(/\D/g, '') : '';
+    const clean  = digits.startsWith('0') ? digits.slice(1) : digits;
+    const phoneE164 = clean ? (clean.startsWith('54') ? clean : `549${clean}`) : '';
 
     const payload = {
       amount_in_cents:    Math.round(total * 100),

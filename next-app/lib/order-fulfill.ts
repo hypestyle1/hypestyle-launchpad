@@ -8,13 +8,18 @@ function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 }
 
-// Marca la orden de PayPal como pagada y manda la confirmación al cliente,
-// recién ahora que el capture está COMPLETED (nunca antes). La llaman tanto
-// /api/paypal-capture (disparado por el navegador al volver a /confirmacion)
-// como /api/paypal-webhook (respaldo server-side si el cliente no vuelve) —
-// por eso es idempotente vía la meta _hype_confirmation_sent, compartida con
-// el flujo de MercadoPago (ver /api/confirm-paid).
-export async function fulfillPaypalOrder(wcOrderId: number, paypalOrderId: string): Promise<{ ok: boolean; reason: string }> {
+// Marca una orden como pagada y manda la confirmación al cliente, recién cuando
+// el pago está realmente aprobado (nunca antes). La usan los métodos que no
+// confirman el pago en el momento de crear la orden — PayPal (paypal-capture /
+// paypal-webhook) y GOcuotas (gocuotas-webhook) — cada uno pasando su propio
+// paymentMethod para que el mail muestre el texto correcto. Idempotente vía la
+// meta _hype_confirmation_sent, compartida con el flujo de MercadoPago (ver
+// /api/confirm-paid).
+export async function fulfillOrder(
+  wcOrderId: number,
+  paymentMethod: string,
+  transactionId?: string,
+): Promise<{ ok: boolean; reason: string }> {
   const orderRes = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${wcOrderId}`, {
     headers: { Authorization: wcAuth() },
     cache: 'no-store',
@@ -29,7 +34,7 @@ export async function fulfillPaypalOrder(wcOrderId: number, paypalOrderId: strin
     await fetch(`${WP_URL}/wp-json/wc/v3/orders/${wcOrderId}`, {
       method: 'PUT',
       headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'processing', transaction_id: paypalOrderId }),
+      body: JSON.stringify({ status: 'processing', ...(transactionId ? { transaction_id: transactionId } : {}) }),
     }).catch(() => {});
   }
 
@@ -63,7 +68,7 @@ export async function fulfillPaypalOrder(wcOrderId: number, paypalOrderId: strin
       apellido:  order.billing?.last_name,
       ciudad:    order.billing?.city,
       provincia: order.billing?.state,
-      paymentMethod: 'paypal',
+      paymentMethod,
       pais: order.billing?.country || 'AR',
     }),
   }).catch(() => {});

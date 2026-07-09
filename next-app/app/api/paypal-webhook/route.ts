@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fulfillPaypalOrder } from '@/lib/paypal-fulfill';
+import { fulfillOrder } from '@/lib/order-fulfill';
 
 // Respaldo server-side del capture de PayPal. Sin esto, la única forma de marcar
 // una orden como pagada era que el navegador del cliente volviera a /confirmacion
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'no reference_id on paypal order' }, { status: 400 });
     }
 
-    const result = await fulfillPaypalOrder(wcOrderId, paypalOrderId);
+    const result = await fulfillOrder(wcOrderId, 'paypal', paypalOrderId);
     return NextResponse.json({ ok: true, wcOrderId, result: result.reason });
   } catch (err) {
     console.error('[paypal-webhook]', err);
