@@ -7,8 +7,10 @@ interface OrderData {
   wcOrderId?: number; wcOrderNumber?: string; orderKey?: string; orderNum: string | number;
   items: { name: string; price: number; quantity: number; size: string; image: string }[];
   total: number; email: string; nombre: string; apellido: string; ciudad: string; provincia: string;
-  metodo?: string; pais?: string;
+  metodo?: string; pais?: string; telefono?: string;
 }
+
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '412944573148639';
 
 export default function ConfirmacionClient() {
   const searchParams = useSearchParams();
@@ -31,8 +33,21 @@ export default function ConfirmacionClient() {
         order_id: String(parsed.wcOrderNumber || parsed.orderNum),
       };
       const eventID = String(parsed.wcOrderId ?? parsed.wcOrderNumber ?? parsed.orderNum ?? '');
+      // Advanced Matching: en esta pantalla ya conocemos datos reales del comprador
+      // (a diferencia del init genérico en MetaPixel.tsx). Re-inicializar con estos
+      // datos antes del Purchase mejora el match rate del evento server+browser.
+      const advancedMatching = {
+        em: parsed.email || undefined,
+        ph: parsed.telefono ? parsed.telefono.replace(/[^\d]/g, '') : undefined,
+        fn: parsed.nombre || undefined,
+        ln: parsed.apellido || undefined,
+        ct: parsed.ciudad || undefined,
+        st: parsed.provincia || undefined,
+        country: parsed.pais ? parsed.pais.toLowerCase() : undefined,
+      };
       const firePurchase = (attempts = 0) => {
         if (window.fbq) {
+          window.fbq('init', PIXEL_ID, advancedMatching);
           window.fbq('track', 'Purchase', purchasePayload, eventID ? { eventID } : undefined);
         } else if (attempts < 40) {
           setTimeout(() => firePurchase(attempts + 1), 200);
