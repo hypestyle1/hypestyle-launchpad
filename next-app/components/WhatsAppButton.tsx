@@ -1,9 +1,14 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+
 const WA_NUMBER  = '5491178292430';
 const WA_MESSAGE = encodeURIComponent('Hola Hype!');
 
 export default function WhatsAppButton() {
+  const pathname = usePathname();
+  if (pathname?.startsWith('/checkout')) return null;
+
   return (
     <a
       href={`https://wa.me/${WA_NUMBER}?text=${WA_MESSAGE}`}
