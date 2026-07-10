@@ -7,3 +7,13 @@ export const FAITH_DROP_SLUGS: string[] = [
   // — Fila 2 —
   // — Fila 3 —
 ];
+
+type SlideItem = { src: string; type?: 'image' | 'video' };
+export type FaithDropMedia =
+  | { type: 'image'; src: string; alt: string }
+  | { type: 'video'; src: string; alt: string; poster?: string }
+  | { type: 'slider'; images?: string[]; slides?: SlideItem[]; alt: string };
+
+// Imagen o carrusel debajo de la grilla de productos (contenido de la comunidad
+// / UGC del drop). null = sin media todavia -> se muestra un placeholder.
+export const FAITH_DROP_MEDIA: FaithDropMedia | null = null;
