@@ -12,6 +12,7 @@ import { FW26_GROUPS } from "@/lib/fw26";
 import { isFlashSaleActive } from "@/lib/flash-sale";
 import { Skeleton } from "@/components/ui/skeleton";
 import VenezuelaBenefitDrop from "./VenezuelaBenefitDrop";
+import FaithDrop from "./FaithDrop";
 
 // Mismo skeleton que CollectionBanner para mantener consistencia visual.
 const SkeletonCard = () => (
@@ -131,6 +132,11 @@ export default function NewInFW26() {
     <section id="new-in-fw26" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
         <SectionHeader title="New In [FW26]" link="/colecciones/fw26/" linkLabel="Ver más" />
+      </div>
+
+      {/* ── Faith Is The Real Hype — nuevo drop domingo ────────────────── */}
+      <div className="reveal rd2">
+        <FaithDrop />
       </div>
 
       {/* ── Stars For Venezuela — Benefit Drop ─────────────────────────── */}
