@@ -46,27 +46,44 @@ export default function FaithDrop() {
         ))}
       </div>
 
-      {/* Imagen / carrusel de contenido de la comunidad, debajo de la grilla */}
-      <div className="mt-[2px] relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[16/9] lg:aspect-[21/9]">
-        {FAITH_DROP_MEDIA?.type === 'video' ? (
-          <video
-            className="absolute inset-0 h-full w-full object-cover object-center"
-            src={FAITH_DROP_MEDIA.src}
-            poster={FAITH_DROP_MEDIA.poster}
-            autoPlay loop muted playsInline preload="metadata"
-          />
-        ) : FAITH_DROP_MEDIA?.type === 'slider' ? (
-          <EditorialSlider slides={FAITH_DROP_MEDIA.slides} images={FAITH_DROP_MEDIA.images} alt={FAITH_DROP_MEDIA.alt} />
-        ) : FAITH_DROP_MEDIA?.type === 'image' ? (
-          <Image src={FAITH_DROP_MEDIA.src} alt={FAITH_DROP_MEDIA.alt} fill sizes="100vw" className="object-cover object-center" />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-              Contenido próximamente
-            </span>
-          </div>
-        )}
+      {/* Contenido de la comunidad, debajo de la grilla.
+          Desktop: 2 columnas lado a lado. Mobile: se juntan en un solo carrusel. */}
+      <div className="mt-[2px]">
+        <div className="hidden lg:grid grid-cols-2 gap-[2px]">
+          {[0, 1].map(i => (
+            <div key={i} className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[4/5]">
+              {FAITH_DROP_MEDIA[i] ? (
+                FAITH_DROP_MEDIA[i].type === 'video' ? (
+                  <video className="absolute inset-0 h-full w-full object-cover object-center"
+                    src={FAITH_DROP_MEDIA[i].src} autoPlay loop muted playsInline preload="metadata" />
+                ) : (
+                  <Image src={FAITH_DROP_MEDIA[i].src} alt="Faith Is The Real Hype" fill sizes="50vw" className="object-cover object-center" />
+                )
+              ) : (
+                <MediaPlaceholder />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="lg:hidden relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[4/5]">
+          {FAITH_DROP_MEDIA.length > 0 ? (
+            <EditorialSlider slides={FAITH_DROP_MEDIA} alt="Faith Is The Real Hype" />
+          ) : (
+            <MediaPlaceholder />
+          )}
+        </div>
       </div>
+    </div>
+  );
+}
+
+function MediaPlaceholder() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+        Contenido próximamente
+      </span>
     </div>
   );
 }

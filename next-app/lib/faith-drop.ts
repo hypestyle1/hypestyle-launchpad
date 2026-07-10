@@ -8,12 +8,10 @@ export const FAITH_DROP_SLUGS: string[] = [
   // — Fila 3 —
 ];
 
-type SlideItem = { src: string; type?: 'image' | 'video' };
-export type FaithDropMedia =
-  | { type: 'image'; src: string; alt: string }
-  | { type: 'video'; src: string; alt: string; poster?: string }
-  | { type: 'slider'; images?: string[]; slides?: SlideItem[]; alt: string };
+export type FaithDropSlide = { src: string; type?: 'image' | 'video' };
 
-// Imagen o carrusel debajo de la grilla de productos (contenido de la comunidad
-// / UGC del drop). null = sin media todavia -> se muestra un placeholder.
-export const FAITH_DROP_MEDIA: FaithDropMedia | null = null;
+// Contenido de la comunidad debajo de la grilla de productos.
+// Desktop: [0] y [1] se muestran uno al lado del otro (2 columnas).
+// Mobile: se juntan en un solo carrusel (EditorialSlider) con todas las slides.
+// Vacio = sin media todavia -> se muestra un placeholder en cada columna.
+export const FAITH_DROP_MEDIA: FaithDropSlide[] = [];
