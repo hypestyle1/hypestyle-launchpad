@@ -370,43 +370,44 @@ export async function POST(req: NextRequest) {
 
     // PayPal y GOcuotas no confirman el pago en el momento de crear la orden —
     // PayPal recién cuando el cliente aprueba (paypal-capture/paypal-webhook),
-    // GOcuotas recién cuando aprueba el crédito (gocuotas-webhook). Hasta entonces
-    // no le mandamos al cliente nada que suene a "pago recibido"; solo avisamos
-    // al admin que hay un intento de pedido en curso.
+    // GOcuotas recién cuando aprueba el crédito (gocuotas-webhook). Hasta que eso
+    // pase no se manda ningún mail — ni al cliente ni al admin — porque el pedido
+    // todavía no está confirmado. fulfillOrder() manda este mismo endpoint de
+    // nuevo (sin paymentPending) apenas se aprueba, y ahí sí salen los dos.
     const paymentPending = order.paymentPending === true
       && (order.paymentMethod === 'paypal' || order.paymentMethod === 'gocuotas');
 
-    if (!paymentPending) {
-      let customerHtml: string;
-      let subject: string;
-
-      if (isIntl) {
-        const usdRate = await getUsdRate();
-        subject      = `Order #${order.orderNum} confirmed — Hypestyle`;
-        customerHtml = buildHtmlIntl({ ...order, usdRate });
-      } else {
-        subject      = `Pedido #${order.orderNum} confirmado — Hypestyle`;
-        customerHtml = buildHtml(order);
-      }
-
-      const res = await sendEmail(
-        { email: order.email, name: `${order.nombre} ${order.apellido}` },
-        subject,
-        customerHtml,
-      );
-
-      if (!res.ok) {
-        const err = await res.json();
-        console.error('[brevo]', err);
-        return NextResponse.json({ error: 'Brevo error', detail: err }, { status: 500 });
-      }
+    if (paymentPending) {
+      return NextResponse.json({ ok: true, skipped: 'payment-pending' });
     }
 
-    const adminSubject = paymentPending
-      ? `⏳ ${METODO_LABEL[order.paymentMethod] || order.paymentMethod} iniciado #${order.orderNum} — esperando aprobación`
-      : isIntl
-        ? `🌍 International order #${order.orderNum} — ${order.pais} — ${METODO_LABEL[order.paymentMethod] || order.paymentMethod || '?'}`
-        : `🛍 Nueva venta #${order.orderNum} — ${METODO_LABEL[order.paymentMethod] || order.paymentMethod || 'Sin método'}`;
+    let customerHtml: string;
+    let subject: string;
+
+    if (isIntl) {
+      const usdRate = await getUsdRate();
+      subject      = `Order #${order.orderNum} confirmed — Hypestyle`;
+      customerHtml = buildHtmlIntl({ ...order, usdRate });
+    } else {
+      subject      = `Pedido #${order.orderNum} confirmado — Hypestyle`;
+      customerHtml = buildHtml(order);
+    }
+
+    const res = await sendEmail(
+      { email: order.email, name: `${order.nombre} ${order.apellido}` },
+      subject,
+      customerHtml,
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      console.error('[brevo]', err);
+      return NextResponse.json({ error: 'Brevo error', detail: err }, { status: 500 });
+    }
+
+    const adminSubject = isIntl
+      ? `🌍 International order #${order.orderNum} — ${order.pais} — ${METODO_LABEL[order.paymentMethod] || order.paymentMethod || '?'}`
+      : `🛍 Nueva venta #${order.orderNum} — ${METODO_LABEL[order.paymentMethod] || order.paymentMethod || 'Sin método'}`;
 
     sendEmail(
       { email: ADMIN_EMAIL, name: 'Hypestyle Admin' },
