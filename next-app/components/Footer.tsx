@@ -17,6 +17,7 @@ const infoLinks = [
   { label: "Quiénes Somos", href: "/nosotros/" },
   { label: "Envíos internacionales", href: "/worldwide/" },
   { label: "Devoluciones", href: "/politicas-de-devolucion/" },
+  { label: "Privacidad", href: "/politica-de-privacidad/" },
   { label: "FAQs", href: "/faqs/" },
   { label: "Contacto", href: "/contacto/" },
 ];
