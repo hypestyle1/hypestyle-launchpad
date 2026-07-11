@@ -13,6 +13,7 @@ import { useProduct } from '@/hooks/useProduct';
 import { useProducts } from '@/hooks/useProducts';
 import { checkStock } from '@/lib/checkStock';
 import { isFlashSaleActive } from '@/lib/flash-sale';
+import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
 
 function CareIcon({ type }: { type: string }) {
   const cls = 'w-[18px] h-[18px] flex-shrink-0 text-foreground/70';
@@ -56,23 +57,6 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 }
 
 const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
-
-const GOAL_DISCOUNT_SLUG = 'la-nuestra-jersey-mundial-26';
-
-type GoalDiscount = { active?: boolean; percent?: number; goals?: number; perGoal?: number; isAustriaPromo?: boolean; cap?: number; remaining?: number; unitsLeft?: number; expiresAt?: string | null };
-
-function useGoalDiscount(slug: string, initial: GoalDiscount | null = null): GoalDiscount | null {
-  const [d, setD] = useState<GoalDiscount | null>(initial);
-  useEffect(() => {
-    if (slug !== GOAL_DISCOUNT_SLUG) return;
-    let alive = true;
-    const load = () => fetch('/api/goal-discount').then(r => r.json()).then(j => { if (alive) setD(j); }).catch(() => {});
-    load();
-    const id = setInterval(load, 60000);
-    return () => { alive = false; clearInterval(id); };
-  }, [slug]);
-  return d;
-}
 
 function GoalDiscountCorner({ d }: { d: GoalDiscount | null }) {
   if (!d?.active) return null;
@@ -328,12 +312,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
     setZoomPos({ x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 });
   };
 
-  const regularBase     = product.originalPrice || product.price;
-  const goalSalePrice   = goalDiscount?.active && goalDiscount.percent
-    ? Math.round(regularBase * (1 - goalDiscount.percent))
-    : null;
-  const displayPrice    = goalSalePrice ?? product.price;
-  const displayOriginal = goalSalePrice ? regularBase : product.originalPrice;
+  const { displayPrice, displayOriginal } = getGoalDiscountPrice(product, goalDiscount);
 
   const transferRate  = 10;
   const transferPrice = Math.round(displayPrice * (1 - transferRate / 100));

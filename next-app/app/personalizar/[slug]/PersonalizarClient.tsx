@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import NextImage from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useProduct } from '@/hooks/useProduct';
+import { useGoalDiscount, getGoalDiscountPrice, type GoalDiscount } from '@/hooks/useGoalDiscount';
+import { useLocale } from '@/context/LocaleContext';
 import Navbar from '@/components/Navbar';
 import AnnouncementBar from '@/components/AnnouncementBar';
 
@@ -94,11 +96,13 @@ async function renderJersey(canvas: HTMLCanvasElement, view: 'espalda' | 'frente
   }
 }
 
-export default function PersonalizarClient({ slug }: { slug: string }) {
+export default function PersonalizarClient({ slug, initialGoalDiscount = null }: { slug: string; initialGoalDiscount?: GoalDiscount | null }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { add, setDrawerOpen } = useCart();
+  const { formatPrice } = useLocale();
   const { data: product, isLoading } = useProduct(slug || undefined);
+  const goalDiscount = useGoalDiscount(slug, initialGoalDiscount);
 
   const [view, setView] = useState<'espalda' | 'frente'>('espalda');
   const [playerName, setPlayerName] = useState('');
@@ -140,9 +144,11 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
     </div>
   );
 
+  const { displayPrice, displayOriginal } = getGoalDiscountPrice(product, goalDiscount);
+
   const handleAdd = () => {
     if (!selectedSize) { setSizeError(true); return; }
-    add({ id: product.id, name: product.name, price: product.price, image: product.images[0], size: selectedSize, quantity: 1, ...(playerName || playerNumber ? { customization: { playerName, number: playerNumber } } : {}) });
+    add({ id: product.id, name: product.name, price: displayPrice, image: product.images[0], size: selectedSize, quantity: 1, ...(playerName || playerNumber ? { customization: { playerName, number: playerNumber } } : {}) });
     setAdded(true);
     setTimeout(() => { setDrawerOpen(true); router.push(`/producto/${slug}/`); }, 900);
   };
@@ -181,6 +187,16 @@ export default function PersonalizarClient({ slug }: { slug: string }) {
               <div className="mb-6">
                 <p className="text-muted-foreground text-[11px] uppercase tracking-[0.2em] mb-1">Personalización</p>
                 <h1 className="text-foreground text-[20px] font-bold uppercase tracking-tight">{product.name}</h1>
+                <div className="flex items-center gap-2 mt-2">
+                  <span suppressHydrationWarning className={`text-[18px] font-semibold ${displayOriginal ? 'text-destructive' : ''}`}>
+                    {formatPrice(displayPrice)}
+                  </span>
+                  {displayOriginal && (
+                    <span suppressHydrationWarning className="text-[14px] text-text-light line-through">
+                      {formatPrice(displayOriginal)}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="space-y-4 mb-6">
                 <div>
