@@ -23,7 +23,7 @@ export const FAITH_DROP_ITEMS: FaithDropItem[] = [
   // — Fila 2 —
   { slug: 'lion-of-judah-stone-wash-hoodie' },
   { slug: 'christ-reigns-tee' },
-  { slug: 'faith-over-everything-camo-hoodie' },
+  { slug: 'faith-over-everything-camo-hoodie', blurred: true },
   { slug: 'jesus-heart-tee' },
   // — Fila 3 —
   { slug: 'he-died-so-i-could-live-melange-hoodie' },
