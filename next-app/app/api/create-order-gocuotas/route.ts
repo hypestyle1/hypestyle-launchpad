@@ -193,10 +193,12 @@ export async function POST(req: NextRequest) {
         provincia:     customer.provincia,
         paymentMethod,
         pais:          'AR',
-        // PayPal recién se confirma cuando el cliente aprueba (paypal-capture /
-        // paypal-webhook), GOcuotas cuando aprueba el crédito (gocuotas-webhook)
-        // — no mandarle "pago recibido" al crear la orden en ninguno de los dos.
-        paymentPending: paymentMethod === 'paypal' || paymentMethod === 'gocuotas',
+        // Ninguno de estos confirma el pago al crear la orden: PayPal recién cuando
+        // el cliente aprueba (paypal-capture/paypal-webhook), GOcuotas cuando aprueba
+        // el crédito (gocuotas-webhook), Mercado Pago/tarjeta cuando vuelve de pagar
+        // o llega el webhook (confirm-payment + confirm-paid). No mandar nada hasta
+        // entonces.
+        paymentPending: ['paypal', 'gocuotas', 'mercadopago', 'tarjeta'].includes(paymentMethod),
         // Datos reales de Talo (alias/CVU por orden) para que el mail no muestre
         // una cuenta bancaria distinta a la que se ve en /pendiente-de-pago/.
         talo: taloPaymentData,

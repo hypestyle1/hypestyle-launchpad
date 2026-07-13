@@ -368,14 +368,15 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [to], subject, htmlContent: html }),
       });
 
-    // PayPal y GOcuotas no confirman el pago en el momento de crear la orden —
-    // PayPal recién cuando el cliente aprueba (paypal-capture/paypal-webhook),
-    // GOcuotas recién cuando aprueba el crédito (gocuotas-webhook). Hasta que eso
-    // pase no se manda ningún mail — ni al cliente ni al admin — porque el pedido
-    // todavía no está confirmado. fulfillOrder() manda este mismo endpoint de
-    // nuevo (sin paymentPending) apenas se aprueba, y ahí sí salen los dos.
+    // Ninguno de estos confirma el pago en el momento de crear la orden — PayPal
+    // recién cuando el cliente aprueba (paypal-capture/paypal-webhook), GOcuotas
+    // cuando aprueba el crédito (gocuotas-webhook), Mercado Pago/tarjeta cuando
+    // vuelve de pagar o llega el webhook (confirm-payment + confirm-paid). Hasta
+    // que eso pase no se manda ningún mail — ni al cliente ni al admin — porque
+    // el pedido todavía no está confirmado. fulfillOrder() manda este mismo
+    // endpoint de nuevo (sin paymentPending) apenas se aprueba, y ahí sí salen los dos.
     const paymentPending = order.paymentPending === true
-      && (order.paymentMethod === 'paypal' || order.paymentMethod === 'gocuotas');
+      && ['paypal', 'gocuotas', 'mercadopago', 'tarjeta'].includes(order.paymentMethod);
 
     if (paymentPending) {
       return NextResponse.json({ ok: true, skipped: 'payment-pending' });
