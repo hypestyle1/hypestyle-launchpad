@@ -64,7 +64,13 @@ function base(phase: Promo3x2Phase, extra: Partial<Promo3x2Status> = {}): Promo3
   };
 }
 
+// Kill switch manual: PROMO_3X2_DISABLED=true en Vercel apaga el 3x2 (y el rediseño
+// albiceleste) sin depender de resultados de partidos, sin tocar código. Para
+// reactivar: borrar/poner en false esa env var y redeployar — no hace falta un PR.
+const FORCE_DISABLED = (process.env.PROMO_3X2_DISABLED || '').trim().toLowerCase() === 'true';
+
 export async function getPromo3x2Status(): Promise<Promo3x2Status> {
+  if (FORCE_DISABLED) return base('none');
   if (!hasKey()) return base('none');
 
   const allFixtures = await getArgentinaWorldCupFixtures().catch(() => [] as ArgFixture[]);
