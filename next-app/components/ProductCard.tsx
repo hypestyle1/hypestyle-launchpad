@@ -24,11 +24,16 @@ interface ProductCardProps {
   customizable?: boolean;
   /** Muestra el precio promocional en negro (no en rojo). Usado en New In. */
   mutedPrice?: boolean;
+  /** Foto borrosa — para productos recien subidos sin reveal final todavia. */
+  blurred?: boolean;
+  /** Solo vidriera: sin link al producto ni selector de talle/agregar al carrito. Usado en drops pre-lanzamiento. */
+  disableLink?: boolean;
 }
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge, image, images,
   href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
+  blurred, disableLink,
 }: ProductCardProps) {
   const { formatPrice, t } = useLocale();
   const { add, setDrawerOpen } = useCart();
@@ -68,6 +73,7 @@ export default function ProductCard({
   const badgeStyle = () => {
     if (!badge) return "";
     if (badge === "New In") return "bg-white/40 backdrop-blur-md backdrop-saturate-150 text-black rounded-[6px] border border-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]";
+    if (badge === "Próximamente") return "bg-black/70 backdrop-blur-md text-white rounded-[6px]";
     if (badge === "New") return "bg-bg-dark text-primary-foreground";
     if (badge === "Best Seller") return "bg-muted-foreground text-primary-foreground";
     if (badge === "Back") return "bg-primary-foreground border border-foreground text-foreground";
@@ -75,14 +81,15 @@ export default function ProductCard({
     return "bg-bg-dark text-primary-foreground";
   };
 
-  const hasSizes = id && sizes && sizes.length > 0;
+  const hasSizes = !disableLink && id && sizes && sizes.length > 0;
   // Producto totalmente agotado: todos los talles sin stock.
   const outOfStock = !!sizes && sizes.length > 0 && !!stock && sizes.every(s => stock[s] === "out");
 
   return (
     <a
-      href={href}
-      className="group block"
+      href={disableLink ? undefined : href}
+      onClick={(e) => { if (disableLink) e.preventDefault(); }}
+      className={`group block ${disableLink ? "cursor-default" : ""}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -94,7 +101,7 @@ export default function ProductCard({
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            className={`object-cover object-top transition-all duration-500 ${
+            className={`object-cover object-top transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
               hovered && hoverImage ? "opacity-0" : "opacity-100"
             }`}
           />
@@ -105,7 +112,7 @@ export default function ProductCard({
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            className={`object-cover object-top transition-all duration-500 ${
+            className={`object-cover object-top transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
               hovered ? "opacity-100" : "opacity-0"
             }`}
           />

@@ -5,7 +5,7 @@ import Image from "next/image";
 import ProductCard from "./ProductCard";
 import EditorialSlider from "./EditorialSlider";
 import { useProducts } from "@/hooks/useProducts";
-import { FAITH_DROP_SLUGS, FAITH_DROP_MEDIA } from "@/lib/faith-drop";
+import { FAITH_DROP_ITEMS, FAITH_DROP_MEDIA } from "@/lib/faith-drop";
 
 // Placeholder mientras el drop no esta cargado en WP — mismo layout que va a
 // tener con los productos reales (grilla de Best Sellers: 4 col desktop x 3 filas = 12).
@@ -22,12 +22,24 @@ export default function FaithDrop() {
 
   const products = useMemo(() => {
     const bySlug = new Map(allProducts.map(p => [p.slug, p]));
-    return FAITH_DROP_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts;
+    return FAITH_DROP_ITEMS.flatMap(cfg => {
+      const p = bySlug.get(cfg.slug);
+      if (!p) return [];
+      return [{
+        ...p,
+        badge: cfg.live ? "New In" : "Próximamente",
+        blurred: cfg.blurred,
+        // Vidriera hasta el lanzamiento: sin link al producto ni talles/carrito.
+        disableLink: !cfg.live,
+        sizes: cfg.live ? p.sizes : undefined,
+        stock: cfg.live ? p.stock : undefined,
+      }];
+    });
   }, [allProducts]);
 
-  // Mientras no haya slugs reales cargados, mostramos la grilla con placeholders
+  // Mientras no haya productos reales cargados, mostramos la grilla con placeholders
   // para poder previsualizar el layout del drop antes de subir los productos.
-  const items = products.length > 0 ? products.map(p => ({ ...p, badge: "New In" })) : PLACEHOLDERS;
+  const items = products.length > 0 ? products : PLACEHOLDERS;
 
   return (
     <div className="mt-10">
