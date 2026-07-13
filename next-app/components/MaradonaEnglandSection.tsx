@@ -85,7 +85,7 @@ export default function MaradonaEnglandSection() {
           <Star size={12} /><Star size={12} /><Star size={12} />
         </div>
         <span className="text-[10px] font-medium tracking-[0.25em] uppercase text-white/60">
-          1986 · La revancha
+          1986 · La historia se repite
         </span>
       </div>
 
