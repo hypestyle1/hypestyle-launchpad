@@ -54,7 +54,7 @@ export default function FaithDrop() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {items.map((p, i) => (
-          <ProductCard key={('slug' in p && p.slug) || i} {...p} />
+          <ProductCard key={i} {...p} />
         ))}
       </div>
 
