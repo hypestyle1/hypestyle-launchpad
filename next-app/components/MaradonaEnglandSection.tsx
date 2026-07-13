@@ -181,7 +181,7 @@ export default function MaradonaEnglandSection() {
               A LA FINAL
             </h2>
             <p className="font-black uppercase text-white/80" style={{ fontSize: 'clamp(14px, 2.5vw, 24px)', letterSpacing: '0.1em' }}>
-              39 años después, otra vez de Inglaterra
+              40 años después, otra vez de Inglaterra
             </p>
           </div>
         )}
