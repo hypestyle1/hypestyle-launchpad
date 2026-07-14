@@ -115,8 +115,11 @@ export async function POST(req: NextRequest) {
       billing,
       shipping:             { ...billing, email: '', phone: '' },
       line_items:           lineItems,
-      shipping_lines: shipping > 0 && shippingMethodId
-        ? [{ method_id: shippingMethodId, method_title: shippingLabel ?? shippingMethodId, total: String(shipping) }]
+      // Con envío gratis (promo/umbral) "shipping" llega en 0, pero igual hay que
+      // registrar el shipping_line con ese method_id: sin él, Andreani no tiene de
+      // dónde sacar el método de envío y rechaza el pedido al empaquetar.
+      shipping_lines: shippingMethodId
+        ? [{ method_id: shippingMethodId, method_title: shippingLabel ?? shippingMethodId, total: String(shipping ?? 0) }]
         : [],
       fee_lines: discountAmount > 0
         ? [{ name: discountLabel || 'Descuento', total: String(-Math.round(discountAmount)), tax_class: '' }]
