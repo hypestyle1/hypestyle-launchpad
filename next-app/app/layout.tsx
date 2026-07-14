@@ -10,6 +10,7 @@ import MetaPixel from '@/components/MetaPixel';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import FlashSaleBar from '@/components/FlashSaleBar';
 import Promo3x2Bar from '@/components/Promo3x2Bar';
+import MatchWinTakeover from '@/components/MatchWinTakeover';
 
 const OG_DESCRIPTION = '© HYPESTYLE 2026 — STYLE&CULTURE. Cultura, identidad y estilo en cada drop. Worldwide Shipping.';
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <FlashSaleBar />
           <Promo3x2Bar />
           <LoadingScreen />
+          <MatchWinTakeover />
           <CartDrawer />
           <WishlistDrawer />
           <LocaleSuggestion />
