@@ -20,6 +20,7 @@ const infoLinks = [
   { label: "Privacidad", href: "/politica-de-privacidad/" },
   { label: "FAQs", href: "/faqs/" },
   { label: "Contacto", href: "/contacto/" },
+  { label: "Creadores de contenido", href: "https://docs.google.com/forms/d/e/1FAIpQLSeF3f3RsTUvIZmGdD5gmBbhdc4IOTg-nhWyiHpjEjWfGenk9Q/viewform" },
 ];
 
 const rrssLinks = [
@@ -109,10 +110,17 @@ export default function Footer() {
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Info</p>
             {infoLinks.map((l) => (
-              <Link key={l.label} href={l.href}
-                className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
-                {t(l.label)}
-              </Link>
+              l.href.startsWith("http") ? (
+                <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
+                  className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
+                  {t(l.label)}
+                </a>
+              ) : (
+                <Link key={l.label} href={l.href}
+                  className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
+                  {t(l.label)}
+                </Link>
+              )
             ))}
           </div>
 
