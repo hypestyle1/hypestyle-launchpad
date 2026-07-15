@@ -5,7 +5,7 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useReveal } from "@/hooks/useReveal";
-import { MessageCircle, Mail } from "lucide-react";
+import { MessageCircle, Mail, Sparkles } from "lucide-react";
 
 const channels = [
   {
@@ -21,6 +21,13 @@ const channels = [
     description: "Para consultas formales o B2B.",
     action: "hypestylearg@gmail.com",
     href: "mailto:hypestylearg@gmail.com",
+  },
+  {
+    icon: Sparkles,
+    label: "Creadores de contenido",
+    description: "¿Tu estilo va con el universo STYLE&CULTURE? Sumate.",
+    action: "Postulate acá",
+    href: "https://docs.google.com/forms/d/e/1FAIpQLSeF3f3RsTUvIZmGdD5gmBbhdc4IOTg-nhWyiHpjEjWfGenk9Q/viewform",
   },
 ];
 
