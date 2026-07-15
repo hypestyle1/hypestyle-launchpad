@@ -267,6 +267,7 @@ export default function PedidosPage() {
           <span className="text-[14px] font-semibold text-gray-900">Pedidos</span>
           {headerCount > 0 && <span className="text-[12px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{headerCount}</span>}
           <Link href="/admin/newsletter" className="text-[12px] text-gray-400 hover:text-black ml-1">Newsletter →</Link>
+          <Link href="/admin/conversaciones" className="text-[12px] text-gray-400 hover:text-black ml-1">Conversaciones →</Link>
         </div>
         <div className="flex items-center gap-2">
           {/* Stats globales reales */}
