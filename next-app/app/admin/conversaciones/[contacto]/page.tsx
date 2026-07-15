@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const WP_SECRET_KEY = 'hype_admin_key';
@@ -20,8 +20,8 @@ function fmtDateTime(s: string) {
        + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function ConversacionDetallePage({ params }: { params: Promise<{ contacto: string }> }) {
-  const { contacto } = use(params);
+export default function ConversacionDetallePage() {
+  const { contacto } = useParams<{ contacto: string }>();
   const searchParams = useSearchParams();
   const canal = searchParams.get('canal') || '';
 
