@@ -10,9 +10,11 @@ const SITE_URL = 'https://hypestyle.com.ar';
 type Item = { id: number; name: string; quantity: number; price: number; total: number; size: string; image: string; dorsalName?: string; dorsalNumber?: string };
 type Address = { address_1: string; address_2: string; city: string; state: string; postcode: string };
 type Note = { id: number; note: string; date: string };
+type CustomerHistory = { orderCount: number; totalSpent: number; firstOrderDate: string };
 type Order = {
-  id: number; number: string; status: string; date: string;
-  customer: { first_name: string; last_name: string; email: string; phone: string };
+  id: number; number: string; status: string; date: string; datePaid: string;
+  customer: { first_name: string; last_name: string; email: string; phone: string; dni: string };
+  customerHistory: CustomerHistory;
   billing: Address; shipping: Address & { first_name: string; last_name: string };
   items: Item[];
   shipping_lines: { method_title: string; total: number }[];
@@ -425,13 +427,27 @@ export default function OrderDetailPage() {
           <div className="space-y-4">
             {/* Customer */}
             <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-3">Cliente</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[13px] font-semibold text-gray-900">Cliente</h2>
+                {order.customerHistory.orderCount > 0 ? (
+                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                    Recurrente · {order.customerHistory.orderCount} pedido{order.customerHistory.orderCount > 1 ? 's' : ''} más
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                    Primera compra
+                  </span>
+                )}
+              </div>
               <div className="text-[13px] font-medium text-gray-900 mb-0.5">
                 {order.customer.first_name} {order.customer.last_name}
               </div>
               <a href={`mailto:${order.customer.email}`} className="block text-[12px] text-blue-600 hover:underline mb-0.5">
                 {order.customer.email}
               </a>
+              {order.customer.dni && (
+                <div className="text-[12px] text-gray-500 mb-0.5">DNI/CUIT {order.customer.dni}</div>
+              )}
               {order.customer.phone && (
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[12px] text-gray-500">{order.customer.phone}</span>
@@ -448,6 +464,22 @@ export default function OrderDetailPage() {
                   </a>
                 </div>
               )}
+              <div className="mt-3 pt-3 border-t border-gray-100 space-y-0.5">
+                <div className="text-[12px] text-gray-500">
+                  Compró el <span className="text-gray-800 font-medium">{fmtDate(order.date)}</span>
+                </div>
+                {order.datePaid && (
+                  <div className="text-[12px] text-gray-500">
+                    Pagó el <span className="text-gray-800 font-medium">{fmtDate(order.datePaid)}</span>
+                  </div>
+                )}
+                {order.customerHistory.orderCount > 0 && (
+                  <div className="text-[12px] text-gray-500">
+                    Cliente desde <span className="text-gray-800 font-medium">{fmtDate(order.customerHistory.firstOrderDate)}</span>
+                    {' · '}<span className="text-gray-800 font-medium">{fmt(order.customerHistory.totalSpent)}</span> en pedidos anteriores
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Shipping address */}
@@ -459,6 +491,17 @@ export default function OrderDetailPage() {
                 <div>{order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</div>
               </div>
             </div>
+
+            {/* Billing address — solo si difiere del envío */}
+            {order.billing.address_1 && order.billing.address_1 !== order.shipping.address_1 && (
+              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+                <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Dirección de facturación</h2>
+                <div className="text-[12px] text-gray-600 space-y-0.5">
+                  <div>{order.billing.address_1}{order.billing.address_2 ? `, ${order.billing.address_2}` : ''}</div>
+                  <div>{order.billing.city}, {order.billing.state} {order.billing.postcode}</div>
+                </div>
+              </div>
+            )}
 
             {/* Status */}
             <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
