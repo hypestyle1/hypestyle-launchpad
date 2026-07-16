@@ -62,13 +62,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     number:  o.number,
     status:  o.status,
     date:    o.date_created,
-    datePaid: o.date_paid || '',
+    datePaid:     o.date_paid || '',
+    dateModified: o.date_modified || '',
     customer: {
       first_name: o.billing.first_name,
       last_name:  o.billing.last_name,
       email:      o.billing.email,
       phone:      o.billing.phone,
       dni:        getMeta('_billing_dni'),
+      instagram:  getMeta('_instagram'),
     },
     customerHistory,
     billing: {

@@ -12,8 +12,8 @@ type Address = { address_1: string; address_2: string; city: string; state: stri
 type Note = { id: number; note: string; date: string };
 type CustomerHistory = { orderCount: number; totalSpent: number; firstOrderDate: string };
 type Order = {
-  id: number; number: string; status: string; date: string; datePaid: string;
-  customer: { first_name: string; last_name: string; email: string; phone: string; dni: string };
+  id: number; number: string; status: string; date: string; datePaid: string; dateModified: string;
+  customer: { first_name: string; last_name: string; email: string; phone: string; dni: string; instagram: string };
   customerHistory: CustomerHistory;
   billing: Address; shipping: Address & { first_name: string; last_name: string };
   items: Item[];
@@ -245,6 +245,17 @@ export default function OrderDetailPage() {
         </div>
         {order && (
           <div className="flex items-center gap-2">
+            {!['cancelled', 'failed'].includes(order.status) && (
+              order.datePaid ? (
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                  ✓ Pagado
+                </span>
+              ) : (
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+                  Pendiente de pago
+                </span>
+              )
+            )}
             <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>
               {STATUS_LABELS[order.status] || order.status}
             </span>
@@ -314,6 +325,47 @@ export default function OrderDetailPage() {
 
           {/* LEFT COLUMN */}
           <div className="space-y-4">
+            {/* Progreso del pedido */}
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-gray-900 mb-4">Progreso del pedido</h2>
+              {order.status === 'cancelled' || order.status === 'failed' ? (
+                <div className="text-[13px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {order.status === 'cancelled' ? 'Pedido cancelado' : 'Pago fallido'} · {fmtDate(order.date)}
+                </div>
+              ) : (
+                <div className="flex items-start">
+                  {(() => {
+                    const steps = [
+                      { label: 'Creado',      done: true,              date: order.date },
+                      { label: 'Pagado',      done: !!order.datePaid,  date: order.datePaid },
+                      { label: 'Empaquetado', done: !!order.pedido_id, date: '' },
+                      { label: 'Enviado',     done: !!(order.tracking || order.andreani), date: '' },
+                      { label: 'Completado',  done: order.status === 'completed', date: order.status === 'completed' ? order.dateModified : '' },
+                    ];
+                    return steps.map((step, i) => (
+                      <div key={step.label} className="flex-1 flex flex-col items-center">
+                        <div className="flex items-center w-full">
+                          <div className={`flex-1 h-0.5 ${i === 0 ? 'invisible' : steps[i - 1].done ? 'bg-black' : 'bg-gray-100'}`} />
+                          <div className={`w-6 h-6 flex-none rounded-full flex items-center justify-center text-[11px] font-bold ${
+                            step.done ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            {step.done ? '✓' : i + 1}
+                          </div>
+                          <div className={`flex-1 h-0.5 ${i === steps.length - 1 ? 'invisible' : step.done ? 'bg-black' : 'bg-gray-100'}`} />
+                        </div>
+                        <div className={`text-[10.5px] text-center font-medium mt-1.5 ${step.done ? 'text-gray-900' : 'text-gray-400'}`}>
+                          {step.label}
+                        </div>
+                        <div className="text-[9.5px] text-gray-400 text-center leading-tight h-3">
+                          {step.date ? fmtDate(step.date) : ''}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
+
             {/* Items */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="px-5 py-3 border-b border-gray-100">
@@ -447,6 +499,19 @@ export default function OrderDetailPage() {
               </a>
               {order.customer.dni && (
                 <div className="text-[12px] text-gray-500 mb-0.5">DNI/CUIT {order.customer.dni}</div>
+              )}
+              {order.customer.instagram && (
+                <a
+                  href={`https://instagram.com/${order.customer.instagram.replace(/^@/, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[12px] text-pink-600 hover:underline mb-0.5"
+                >
+                  <svg viewBox="0 0 24 24" className="w-3 h-3 fill-pink-600" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM12 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                  </svg>
+                  @{order.customer.instagram.replace(/^@/, '')}
+                </a>
               )}
               {order.customer.phone && (
                 <div className="flex items-center gap-2 mt-1">
