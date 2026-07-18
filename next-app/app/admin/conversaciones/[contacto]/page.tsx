@@ -31,6 +31,9 @@ export default function ConversacionDetallePage() {
   const [nombre, setNombre]     = useState('');
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [loading, setLoading]   = useState(false);
+  const [texto, setTexto]       = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [enviarError, setEnviarError] = useState('');
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -60,6 +63,41 @@ export default function ConversacionDetallePage() {
     sessionStorage.setItem(WP_SECRET_KEY, keyInput);
     setAdminKey(keyInput);
     setAuthed(true);
+  }
+
+  async function enviarMensaje() {
+    const mensaje = texto.trim();
+    if (!mensaje || enviando) return;
+    setEnviando(true);
+    setEnviarError('');
+    try {
+      const res = await fetch(`/api/admin/conversaciones/${encodeURIComponent(contacto)}/responder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ canal, nombre, mensaje }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setEnviarError(data.error || 'No se pudo enviar el mensaje.');
+        return;
+      }
+      setMensajes(prev => [...prev, {
+        canal, rol: 'admin', mensaje, estado: 'respondido',
+        fecha: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      }]);
+      setTexto('');
+      if (data.enviado === false) {
+        setEnviarError(
+          canal === 'whatsapp'
+            ? 'Se guardó, pero no se pudo entregar: WhatsApp todavía no está conectado.'
+            : 'Se guardó, pero no se pudo entregar el mensaje.'
+        );
+      }
+    } catch {
+      setEnviarError('Error de conexión al enviar.');
+    } finally {
+      setEnviando(false);
+    }
   }
 
   if (!authed) {
@@ -124,6 +162,37 @@ export default function ConversacionDetallePage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3">
+        <div className="max-w-[700px] mx-auto">
+          {enviarError && (
+            <div className="text-[12px] text-orange-500 mb-2">{enviarError}</div>
+          )}
+          <div className="flex items-end gap-2">
+            <textarea
+              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-black"
+              rows={2}
+              placeholder="Escribir respuesta..."
+              value={texto}
+              onChange={e => setTexto(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  enviarMensaje();
+                }
+              }}
+              disabled={enviando}
+            />
+            <button
+              onClick={enviarMensaje}
+              disabled={enviando || !texto.trim()}
+              className="bg-black text-white rounded-md px-4 py-2 text-[13px] font-semibold hover:bg-gray-900 disabled:opacity-40 disabled:hover:bg-black"
+            >
+              {enviando ? 'Enviando...' : 'Enviar'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
