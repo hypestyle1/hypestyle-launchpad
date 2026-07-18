@@ -103,7 +103,7 @@ export default function FinalSection() {
               className="font-black uppercase leading-tight tracking-[0.01em]"
               style={{ fontSize: 'clamp(16px, 2.6vw, 26px)', color: GOLD }}
             >
-              Vamos por la tercera
+              Vamos por la cuarta ⭐
             </p>
             <p className="font-bold uppercase text-white/60" style={{ fontSize: 'clamp(11px, 1.6vw, 15px)', letterSpacing: '0.12em' }}>
               Argentina vs {oppName} &middot; Final &middot; Mundial 26&apos;
