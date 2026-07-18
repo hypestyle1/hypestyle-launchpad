@@ -50,8 +50,14 @@ export async function GET(req: NextRequest) {
     const meta = (o.meta_data as any[]) || [];
     const mv = (k: string) => meta.find((m: any) => m.key === k)?.value || '';
     const tracking = String(mv('_tracking_number')).trim();
-    // Prueba real de despacho: número de tracking o envío Andreani generado (rótulo).
     const andreani = String(mv('_order_andreani_numero_interno') || mv('_andreani_tracking_number')).trim();
+    const pedidoId = String(mv('_order_andreani_pedido_id')).trim();
+    // Empaquetado = se generó el rótulo en Andreani (pedidoId/numero interno), pero
+    // Andreani todavía no le asignó guía real — para eso hace falta pagar el envío en
+    // su portal. Enviado = ya tiene guía (_tracking_number), prueba real de que entró
+    // al circuito de despacho. Antes se los trataba como lo mismo ("dispatched").
+    const packaged = !!(pedidoId || andreani);
+    const shipped  = !!tracking;
     return {
       id:            o.id,
       number:        o.number,
@@ -81,8 +87,8 @@ export async function GET(req: NextRequest) {
       payment_method_title: o.payment_method_title,
       tracking,
       andreani,
-      // Despachado de verdad = hay rótulo/tracking, sin importar el estado del pedido.
-      dispatched:    !!(tracking || andreani),
+      packaged,
+      shipped,
       notified:      String(mv('_tracking_notified')).trim(),
       order_key:     o.order_key,
       customer_note: o.customer_note || '',
