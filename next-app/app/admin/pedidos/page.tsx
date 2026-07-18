@@ -11,12 +11,12 @@ type Order = {
   id: number; number: string; date: string; status: string;
   customer: Customer; items: OrderItem[];
   total: number; shipping_total: number; payment_method_title: string;
-  tracking: string; andreani: string; dispatched: boolean;
+  tracking: string; andreani: string; packaged: boolean; shipped: boolean;
   notified: string; order_key: string;
   customer_note: string;
 };
 
-type Counts = { porDespachar: number; despachadoSinMarcar: number; pendientes: number; despachados: number };
+type Counts = { porEmpaquetar: number; empaquetados: number; enviadosSinMarcar: number; pendientes: number; despachados: number };
 
 const STATUS_LABELS: Record<string, string> = {
   pending:    'Pendiente',
@@ -40,18 +40,20 @@ const STATUS_COLORS: Record<string, string> = {
   failed:     'bg-red-100 text-red-700',
 };
 
-const FILTERS = ['por-despachar','despachado-sin-marcar','pending','enviado','completed','cancelled','any'];
+const FILTERS = ['por-empaquetar','empaquetado','enviado-sin-marcar','pending','enviado','completed','cancelled','any'];
 const FILTER_LABELS: Record<string, string> = {
-  'por-despachar':         'Por despachar',
-  'despachado-sin-marcar': 'Despachado sin marcar',
-  any:                     'Todos',
+  'por-empaquetar':     'Por empaquetar',
+  'empaquetado':        'Empaquetado',
+  'enviado-sin-marcar': 'Enviado sin marcar',
+  any:                  'Todos',
 };
 const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','cancelled'];
 
-// Los tabs 'por-despachar' y 'despachado-sin-marcar' consultan 'processing' en la API
-// y se afinan en el cliente según tengan rótulo (prueba de despacho) o no.
+// Los tabs 'por-empaquetar'/'empaquetado'/'enviado-sin-marcar' consultan 'processing' en
+// la API y se afinan en el cliente según tengan rótulo de Andreani y/o guía real.
+const PROCESSING_SPLIT_FILTERS = ['por-empaquetar', 'empaquetado', 'enviado-sin-marcar'];
 const apiStatusFor = (f: string) =>
-  (f === 'por-despachar' || f === 'despachado-sin-marcar') ? 'processing' : f;
+  PROCESSING_SPLIT_FILTERS.includes(f) ? 'processing' : f;
 
 function fmt(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
@@ -81,7 +83,7 @@ export default function PedidosPage() {
   const [keyInput, setKeyInput]       = useState('');
   const [orders, setOrders]           = useState<Order[]>([]);
   const [loading, setLoading]         = useState(false);
-  const [filter, setFilter]           = useState('por-despachar');
+  const [filter, setFilter]           = useState('por-empaquetar');
   const [counts, setCounts]           = useState<Counts | null>(null);
   const [search, setSearch]           = useState('');
   const [total, setTotal]             = useState(0);
@@ -224,15 +226,16 @@ export default function PedidosPage() {
     setBulkStatus('');
   }
 
-  // Vista afinada por rótulo para los tabs de despacho; el resto muestra lo cargado.
-  const visibleOrders = filter === 'por-despachar'
-    ? orders.filter(o => !o.dispatched)
-    : filter === 'despachado-sin-marcar'
-      ? orders.filter(o => o.dispatched)
-      : orders;
+  // Vista afinada por rótulo/guía para los tabs de empaquetado y envío; el resto muestra lo cargado.
+  const visibleOrders = filter === 'por-empaquetar'
+    ? orders.filter(o => !o.packaged)
+    : filter === 'empaquetado'
+      ? orders.filter(o => o.packaged && !o.shipped)
+      : filter === 'enviado-sin-marcar'
+        ? orders.filter(o => o.shipped)
+        : orders;
   const revenue = visibleOrders.reduce((s, o) => s + o.total, 0);
-  const headerCount = (filter === 'por-despachar' || filter === 'despachado-sin-marcar')
-    ? visibleOrders.length : total;
+  const headerCount = PROCESSING_SPLIT_FILTERS.includes(filter) ? visibleOrders.length : total;
 
   if (!authed) {
     return (
@@ -271,8 +274,8 @@ export default function PedidosPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Stats globales reales */}
-          {counts && counts.porDespachar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">{counts.porDespachar} por despachar</span>}
-          {counts && counts.despachadoSinMarcar > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{counts.despachadoSinMarcar} sin marcar</span>}
+          {counts && counts.porEmpaquetar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">{counts.porEmpaquetar} por empaquetar</span>}
+          {counts && counts.empaquetados > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{counts.empaquetados} empaquetados</span>}
           <span className="hidden md:inline text-[11px] text-gray-500 font-medium">{fmt(revenue)}</span>
           <button
             onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
@@ -286,12 +289,13 @@ export default function PedidosPage() {
       <div className="max-w-[1280px] mx-auto px-4 py-5">
         {/* KPIs — conteos reales globales */}
         {counts && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
             {([
-              { f: 'por-despachar',         n: counts.porDespachar,        label: 'Por despachar',          num: 'text-red-600',    active: 'border-red-400 ring-red-200' },
-              { f: 'despachado-sin-marcar', n: counts.despachadoSinMarcar, label: 'Despachado sin marcar',  num: 'text-orange-600', active: 'border-orange-400 ring-orange-200' },
-              { f: 'pending',               n: counts.pendientes,          label: 'Sin pagar',              num: 'text-yellow-600', active: 'border-yellow-400 ring-yellow-200' },
-              { f: 'enviado',               n: counts.despachados,         label: 'Enviados',               num: 'text-green-600',  active: 'border-green-400 ring-green-200' },
+              { f: 'por-empaquetar',     n: counts.porEmpaquetar,     label: 'Por empaquetar',       num: 'text-red-600',    active: 'border-red-400 ring-red-200' },
+              { f: 'empaquetado',        n: counts.empaquetados,      label: 'Empaquetado',          num: 'text-orange-600', active: 'border-orange-400 ring-orange-200' },
+              { f: 'enviado-sin-marcar', n: counts.enviadosSinMarcar, label: 'Enviado (con guía)',   num: 'text-blue-600',   active: 'border-blue-400 ring-blue-200' },
+              { f: 'pending',            n: counts.pendientes,        label: 'Sin pagar',            num: 'text-yellow-600', active: 'border-yellow-400 ring-yellow-200' },
+              { f: 'enviado',            n: counts.despachados,       label: 'Marcados enviados',    num: 'text-green-600',  active: 'border-green-400 ring-green-200' },
             ]).map(k => (
               <button
                 key={k.f}
@@ -405,12 +409,16 @@ export default function PedidosPage() {
                   >
                     #{order.number}
                   </Link>
-                  {order.dispatched ? (
-                    <div className="text-[10px] text-green-600 font-medium mt-0.5 truncate max-w-[80px]" title={order.tracking || order.andreani}>
-                      ✓ Rótulo
+                  {order.shipped ? (
+                    <div className="text-[10px] text-green-600 font-medium mt-0.5 truncate max-w-[80px]" title={order.tracking}>
+                      ✓ Enviado
+                    </div>
+                  ) : order.packaged ? (
+                    <div className="text-[10px] text-orange-600 font-medium mt-0.5 truncate max-w-[80px]" title={order.andreani}>
+                      Empaquetado
                     </div>
                   ) : order.status === 'processing' ? (
-                    <div className="text-[10px] text-red-600 font-semibold mt-0.5">Sin rótulo</div>
+                    <div className="text-[10px] text-red-600 font-semibold mt-0.5">Sin empaquetar</div>
                   ) : null}
                 </div>
 
@@ -475,7 +483,7 @@ export default function PedidosPage() {
                   <Link href={`/admin/pedidos/${order.id}`} className="text-[11px] text-gray-400 hover:text-black block">
                     {fmtDate(order.date)}
                   </Link>
-                  {order.status === 'processing' && !order.dispatched && (
+                  {order.status === 'processing' && !order.shipped && (
                     <div className={`text-[10px] font-semibold mt-0.5 ${daysSince(order.date) >= 3 ? 'text-red-600' : daysSince(order.date) >= 1 ? 'text-amber-600' : 'text-gray-400'}`}>
                       hace {daysSince(order.date)}d
                     </div>
