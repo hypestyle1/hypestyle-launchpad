@@ -37,17 +37,42 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const getMeta = (key: string) =>
     (o.meta_data as any[])?.find((m: any) => m.key === key)?.value || '';
 
+  // Historial del cliente: otros pedidos del mismo email (no hay customer_id, son todos guest checkout).
+  let customerHistory = { orderCount: 0, totalSpent: 0, firstOrderDate: '' };
+  if (o.billing.email) {
+    const histRes = await fetch(
+      `${WP_URL}/wp-json/wc/v3/orders?search=${encodeURIComponent(o.billing.email)}&per_page=50&orderby=date&order=asc&_cb=${Date.now()}`,
+      { headers: { Authorization: wcAuth() }, next: { revalidate: 0 } }
+    );
+    // Solo cuentan pedidos efectivamente pagados — 'pending'/'failed' son carritos abandonados, no compras reales.
+    const PAID_STATUSES = ['processing', 'on-hold', 'enviado', 'completed', 'refunded'];
+    if (histRes.ok) {
+      const histOrders = (await histRes.json() as any[])
+        .filter((h: any) => h.id !== o.id && h.billing.email === o.billing.email && PAID_STATUSES.includes(h.status));
+      customerHistory = {
+        orderCount:     histOrders.length,
+        totalSpent:     histOrders.reduce((s: number, h: any) => s + parseFloat(h.total), 0),
+        firstOrderDate: histOrders[0]?.date_created || '',
+      };
+    }
+  }
+
   return NextResponse.json({
     id:      o.id,
     number:  o.number,
     status:  o.status,
     date:    o.date_created,
+    datePaid:     o.date_paid || '',
+    dateModified: o.date_modified || '',
     customer: {
       first_name: o.billing.first_name,
       last_name:  o.billing.last_name,
       email:      o.billing.email,
       phone:      o.billing.phone,
+      dni:        getMeta('_billing_dni'),
+      instagram:  getMeta('_instagram'),
     },
+    customerHistory,
     billing: {
       address_1: o.billing.address_1,
       address_2: o.billing.address_2,
