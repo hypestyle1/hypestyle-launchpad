@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from "react";
-import Image from "next/image";
 import ProductCard from "./ProductCard";
 import EditorialSlider from "./EditorialSlider";
 import { useProducts } from "@/hooks/useProducts";
@@ -59,18 +58,18 @@ export default function FaithDrop() {
       </div>
 
       {/* Contenido de la comunidad, debajo de la grilla.
-          Desktop: 2 columnas lado a lado. Mobile: se juntan en un solo carrusel. */}
+          Desktop: 2 carruseles lado a lado (misma logica que "Camo Drop" —
+          EditorialSlider con crossfade + dots — repartida en 2 columnas).
+          Mobile: se juntan todas las slides en un solo carrusel, como antes. */}
       <div className="mt-[2px]">
         <div className="hidden lg:grid grid-cols-2 gap-[2px]">
-          {[0, 1].map(i => (
+          {[
+            FAITH_DROP_MEDIA.slice(0, Math.ceil(FAITH_DROP_MEDIA.length / 2)),
+            FAITH_DROP_MEDIA.slice(Math.ceil(FAITH_DROP_MEDIA.length / 2)),
+          ].map((slides, i) => (
             <div key={i} className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[4/5]">
-              {FAITH_DROP_MEDIA[i] ? (
-                FAITH_DROP_MEDIA[i].type === 'video' ? (
-                  <video className="absolute inset-0 h-full w-full object-cover object-center"
-                    src={FAITH_DROP_MEDIA[i].src} autoPlay loop muted playsInline preload="metadata" />
-                ) : (
-                  <Image src={FAITH_DROP_MEDIA[i].src} alt="Faith Is The Real Hype" fill sizes="50vw" className="object-cover object-center" />
-                )
+              {slides.length > 0 ? (
+                <EditorialSlider slides={slides} alt="Faith Is The Real Hype" />
               ) : (
                 <MediaPlaceholder />
               )}
