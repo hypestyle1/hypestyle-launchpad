@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useFinalStatus } from '@/hooks/useFinalStatus';
+import { useFinalPhoto } from '@/hooks/useFinalPhoto';
 
 const GOLD = '#D4AF37';
 const SESSION_KEY = 'hy-champion-takeover-seen';
@@ -20,6 +21,7 @@ function Star({ size = 20 }: { size?: number }) {
 // cualquiera que entre mientras dure el estado "won" de la final.
 export default function ChampionTakeover() {
   const { phase } = useFinalStatus();
+  const photoUrl = useFinalPhoto();
   const [stage, setStage] = useState<'idle' | 'visible' | 'exit' | 'done'>('idle');
 
   useEffect(() => {
@@ -55,7 +57,7 @@ export default function ChampionTakeover() {
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage: "url('/final/messi-final.jpg')",
+          backgroundImage: `url('${photoUrl}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center 15%',
         }}

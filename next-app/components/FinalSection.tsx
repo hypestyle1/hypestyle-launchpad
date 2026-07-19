@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useFinalStatus } from '@/hooks/useFinalStatus';
+import { useFinalPhoto } from '@/hooks/useFinalPhoto';
 
 const GOLD = '#D4AF37';
 
@@ -69,10 +70,9 @@ function Star({ size = 22 }: { size?: number }) {
   );
 }
 
-const IMG_SRC = '/final/messi-final.jpg';
-
 export default function FinalSection() {
   const { data, phase } = useFinalStatus();
+  const IMG_SRC = useFinalPhoto();
 
   if (!phase || phase === 'none') return null;
 
