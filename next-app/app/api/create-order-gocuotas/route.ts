@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getPromo3x2Status } from '@/lib/promo-3x2-status';
+import { compute3x2Discount } from '@/lib/promo-3x2';
+import { getPromoChampionStatus } from '@/lib/promo-champion-status';
+import { computeChampionDiscount } from '@/lib/promo-champion';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -55,13 +59,44 @@ async function resolveItem(slug: string, size: string, itemName: string): Promis
   return { product_id: productId };
 }
 
+// Misma sanitización server-side que /api/create-order: si el cliente manda un
+// discountAmount que dice ser 3x2 o CAMPEON50 pero esa promo ya no está activa
+// (resultado del partido cambió después de que cargó la página), recortamos esa
+// porción antes de armar la orden. No toca cupón ni descuento por transferencia.
+async function sanitizeDiscount(payload: any) {
+  const label = String(payload?.discountLabel || '');
+  if (!label.includes('3x2') && !label.includes('CAMPEON50')) return payload;
+
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  let discountAmount = Number(payload.discountAmount || 0);
+
+  if (label.includes('CAMPEON50')) {
+    const status = await getPromoChampionStatus().catch(() => null);
+    if (!status?.promoActive) {
+      const realChampion = computeChampionDiscount(items.map((it: any) => ({ id: it.id, price: it.price, quantity: it.quantity })));
+      discountAmount = Math.max(0, discountAmount - realChampion);
+    }
+  }
+
+  if (label.includes('3x2')) {
+    const status = await getPromo3x2Status().catch(() => null);
+    if (!status?.promoActive) {
+      const real3x2 = compute3x2Discount(items.map((it: any) => ({ price: it.price, quantity: it.quantity })));
+      discountAmount = Math.max(0, discountAmount - real3x2);
+    }
+  }
+
+  return { ...payload, discountAmount };
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const rawPayload = await req.json();
     const {
       items, customer, shipping, discountAmount, discountLabel, couponCode,
       paymentMethod, shippingMethodId, shippingLabel, shippingBranch,
       fbp, fbc,
-    } = await req.json();
+    } = await sanitizeDiscount(rawPayload);
 
     const lineItems = await Promise.all(
       (items as any[]).map(async (item) => {

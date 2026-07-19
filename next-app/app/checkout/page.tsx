@@ -6,6 +6,8 @@ import { useCart } from '@/context/CartContext';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { compute3x2Discount, unitsToNext3x2 } from '@/lib/promo-3x2';
 import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
+import { computeChampionDiscount } from '@/lib/promo-champion';
+import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
 import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { getFbCookies } from '@/lib/fbtracking';
@@ -241,6 +243,7 @@ export default function Checkout() {
 
   const [flashActive, setFlashActive] = useState(false);
   const { promoActive: promo3x2Won } = usePromo3x2Status();
+  const { promoActive: championWon } = usePromoChampionStatus();
 
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
@@ -255,7 +258,7 @@ export default function Checkout() {
   const isSucursal = !isInternational && (selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal'));
   const branchReady = isInternational || !isSucursal || !!selectedBranch;
 
-  useEffect(() => { setFlashActive(isFlashSaleActive() || promo3x2Won); }, [promo3x2Won]);
+  useEffect(() => { setFlashActive(isFlashSaleActive() || promo3x2Won || championWon); }, [promo3x2Won, championWon]);
 
   const subtotal = total;
   // El cupón de envío gratis cero-ea Andreani igual que el umbral de $250.000.
@@ -266,11 +269,15 @@ export default function Checkout() {
   const cuponDescuento = couponData ? (
     couponData.type === 'percent' ? Math.round(subtotal * (couponData.amount / 100)) : couponData.amount
   ) : 0;
+  // 50% off "campeones del mundo" tiene prioridad sobre el 3x2 — no deberían solaparse
+  // (si por algún motivo ambos estados dieran 'won' a la vez, no se suman).
+  const championActive = championWon && !isInternational;
+  const championDescuento = championActive ? computeChampionDiscount(items) : 0;
   // 3x2 (más barata gratis) solo si Argentina ganó — promo local, no aplica a envíos internacionales.
-  const promo3x2Active = promo3x2Won && !isInternational;
+  const promo3x2Active = promo3x2Won && !isInternational && !championActive;
   const promo3x2Descuento = promo3x2Active ? compute3x2Discount(items) : 0;
   const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(items) : 0;
-  const descuento = cuponDescuento + promo3x2Descuento;
+  const descuento = cuponDescuento + promo3x2Descuento + championDescuento;
   const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
   const totalFinal = subtotal - descuento + envioEnPaso;
   const transferTotal = Math.round(subtotal * 0.90) - descuento + envioEnPaso;
@@ -364,8 +371,8 @@ export default function Checkout() {
           items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization })),
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
-          discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0) + promo3x2Descuento,
-          discountLabel: [promo3x2Descuento > 0 ? '3x2' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
+          discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0) + promo3x2Descuento + championDescuento,
+          discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
           couponCode: couponData?.code,
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
@@ -876,6 +883,7 @@ export default function Checkout() {
             </div>
             <div className="space-y-2 border-t border-border pt-4">
               <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+              {championDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Campeones del mundo · 50%</span><span>−{formatPrice(championDescuento)}</span></div>}
               {promo3x2Descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>3x2</span><span>−{formatPrice(promo3x2Descuento)}</span></div>}
               {cuponDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(cuponDescuento)}</span></div>}
               {promo3x2Active && items.length > 0 && (promo3x2UnidadesFaltan === 1 || promo3x2UnidadesFaltan === 2) && (
