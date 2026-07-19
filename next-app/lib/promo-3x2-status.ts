@@ -79,7 +79,12 @@ export async function getPromo3x2Status(): Promise<Promo3x2Status> {
   const anchorIndex = allFixtures.findIndex(f => f.matchId === ANCHOR_MATCH_ID);
   if (anchorIndex === -1) return base('none'); // partido ancla no encontrado: no arriesgar
 
-  const fixtures = allFixtures.slice(anchorIndex);
+  // La final (y el tercer puesto) quedan fuera del 3x2 — ese resultado lo maneja
+  // exclusivamente el 50% off "campeones" (lib/promo-champion-status.ts). Sin este
+  // filtro, ganar la final pasaría a ser "el último partido ganado" acá también y
+  // el 3x2 se reactivaría solo al mismo tiempo que el 50% off, mostrando dos promos
+  // contradictorias a la vez.
+  const fixtures = allFixtures.slice(anchorIndex).filter(f => f.stage !== 'FINAL' && f.stage !== 'THIRD_PLACE');
 
   const live = fixtures.find(f => f.live);
   if (live) return base('live', { match: toMatchInfo(live) });
