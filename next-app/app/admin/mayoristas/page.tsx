@@ -7,7 +7,7 @@ const WP_SECRET_KEY = 'hype_admin_key';
 
 const EMPTY = {
   email: '', password: '', first_name: '', last_name: '', company: '',
-  address_1: '', city: '', state: '', postcode: '', phone: '',
+  address_1: '', city: '', state: '', postcode: '', phone: '', min_order: '',
 };
 
 function randomPassword() {
@@ -22,6 +22,9 @@ export default function MayoristasAdminPage() {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [created, setCreated]   = useState<{ email: string; password: string } | null>(null);
+  const [globalMin, setGlobalMin]         = useState<number | null>(null);
+  const [globalMinInput, setGlobalMinInput] = useState('');
+  const [savingMin, setSavingMin]         = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -31,6 +34,35 @@ export default function MayoristasAdminPage() {
   useEffect(() => {
     setForm(f => f.password ? f : { ...f, password: randomPassword() });
   }, []);
+
+  useEffect(() => {
+    if (!authed || !adminKey) return;
+    fetch('/api/admin/mayorista-settings', { headers: { 'x-admin-key': adminKey } })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (typeof data?.minOrder === 'number') {
+          setGlobalMin(data.minOrder);
+          setGlobalMinInput(String(data.minOrder));
+        }
+      })
+      .catch(() => {});
+  }, [authed, adminKey]);
+
+  async function saveGlobalMin() {
+    const value = Number(globalMinInput);
+    if (!Number.isFinite(value) || value < 0) return;
+    setSavingMin(true);
+    try {
+      const res = await fetch('/api/admin/mayorista-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ minOrder: value }),
+      });
+      if (res.ok) setGlobalMin(value);
+    } finally {
+      setSavingMin(false);
+    }
+  }
 
   function login() {
     sessionStorage.setItem(WP_SECRET_KEY, keyInput);
@@ -101,6 +133,28 @@ export default function MayoristasAdminPage() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+          <p className="text-[13px] font-semibold text-gray-900">Pedido mínimo general</p>
+          <p className="text-[12px] text-gray-500 mt-0.5">Se aplica a todos los clientes salvo que tengan un mínimo propio cargado al crearlos.</p>
+          <div className="flex gap-2 mt-3">
+            <input
+              type="number"
+              min={0}
+              value={globalMinInput}
+              onChange={e => setGlobalMinInput(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black"
+            />
+            <button
+              onClick={saveGlobalMin}
+              disabled={savingMin || globalMinInput === String(globalMin)}
+              className="text-[12px] font-semibold bg-black text-white px-4 rounded-md hover:bg-gray-900 disabled:opacity-40"
+            >
+              {savingMin ? 'Guardando…' : 'Guardar'}
+            </button>
+          </div>
+          {globalMin != null && <p className="text-[11px] text-gray-400 mt-2">Actual: ${globalMin.toLocaleString('es-AR')}</p>}
+        </div>
+
         {created && (
           <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-[13px]">
             <p className="font-semibold text-green-800">Cliente creado ✓</p>
@@ -156,6 +210,10 @@ export default function MayoristasAdminPage() {
             <label className="text-[11px] font-medium text-gray-500">
               Teléfono
               <input required {...field('phone')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+            </label>
+            <label className="col-span-2 text-[11px] font-medium text-gray-500">
+              Mínimo de pedido para este cliente (opcional)
+              <input type="number" min={0} placeholder={globalMin != null ? `Vacío = usa el general ($${globalMin.toLocaleString('es-AR')})` : 'Vacío = usa el general'} {...field('min_order')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
             </label>
           </div>
 

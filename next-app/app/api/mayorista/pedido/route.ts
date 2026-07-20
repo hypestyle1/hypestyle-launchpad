@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
+import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -109,6 +110,13 @@ export async function POST(req: NextRequest) {
     }));
 
     const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+    const customer = await wcGet(`customers/${customerId}?_fields=meta_data`);
+    const minOrder = customerMinOrderOverride(customer.meta_data) ?? await getGlobalMinOrder();
+    if (total < minOrder) {
+      return NextResponse.json({ message: `El pedido mínimo es ${formatArs(minOrder)}` }, { status: 400 });
+    }
+
     const label = shipping.company || `${shipping.first_name} ${shipping.last_name}`.trim();
 
     const billing = {

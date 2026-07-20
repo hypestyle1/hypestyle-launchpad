@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
+import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -20,9 +21,12 @@ export async function GET(req: NextRequest) {
   if (!res.ok) return NextResponse.json({ message: 'No se pudo cargar el perfil' }, { status: 502 });
 
   const customer = await res.json();
+  const minOrder = customerMinOrderOverride(customer.meta_data) ?? await getGlobalMinOrder();
+
   return NextResponse.json({
     email: customer.email,
     billing: customer.billing,
     shipping: customer.shipping,
+    minOrder,
   });
 }

@@ -23,12 +23,15 @@ export default function MayoristaCartPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [confirmedOrder, setConfirmedOrder] = useState<string | null>(null);
+  const [minOrder, setMinOrder] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/mayorista/perfil')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (!data?.billing) return;
+        if (!data) return;
+        if (typeof data.minOrder === 'number') setMinOrder(data.minOrder);
+        if (!data.billing) return;
         const b = data.billing;
         setShipping(s => ({
           ...s,
@@ -44,6 +47,8 @@ export default function MayoristaCartPage() {
       })
       .catch(() => {});
   }, []);
+
+  const belowMin = minOrder != null && total < minOrder;
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -184,9 +189,16 @@ export default function MayoristaCartPage() {
         <span className="text-xl font-bold">{formatArs(total)}</span>
       </div>
 
+      {belowMin && (
+        <p className="mt-3 text-[12px] text-orange-300">
+          Pedido mínimo {formatArs(minOrder!)} — te faltan {formatArs(minOrder! - total)}.
+        </p>
+      )}
+
       <button
         onClick={() => setStep('shipping')}
-        className="mt-6 w-full bg-white text-black py-3 text-[12px] font-semibold uppercase tracking-wide hover:bg-white/90 transition-colors"
+        disabled={belowMin}
+        className="mt-6 w-full bg-white text-black py-3 text-[12px] font-semibold uppercase tracking-wide hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         Continuar
       </button>

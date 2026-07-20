@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { email, password, first_name, last_name, company, address_1, city, state, postcode, phone } = body;
+  const { email, password, first_name, last_name, company, address_1, city, state, postcode, phone, min_order } = body;
 
   if (!email || !password || !first_name || !address_1 || !city || !phone) {
     return NextResponse.json({ message: 'Faltan datos obligatorios' }, { status: 400 });
@@ -27,6 +27,14 @@ export async function POST(req: NextRequest) {
     address_1, city, state: state || '', postcode: postcode || '', country: 'AR', phone, email,
   };
 
+  // Sin guión bajo: WC descarta en silencio los meta "protegidos" al crear
+  // un customer por REST (a diferencia de las órdenes, donde sí se graban).
+  const metaData = [{ key: 'es_mayorista', value: 'yes' }];
+  const minOrderNum = Number(min_order);
+  if (min_order !== '' && min_order != null && Number.isFinite(minOrderNum) && minOrderNum >= 0) {
+    metaData.push({ key: 'mayorista_min_order', value: String(minOrderNum) });
+  }
+
   const customer = {
     email,
     password,
@@ -34,9 +42,7 @@ export async function POST(req: NextRequest) {
     last_name: last_name || '',
     billing,
     shipping: { ...billing, phone: undefined },
-    // Sin guión bajo: WC descarta en silencio los meta "protegidos" al crear
-    // un customer por REST (a diferencia de las órdenes, donde sí se graban).
-    meta_data: [{ key: 'es_mayorista', value: 'yes' }],
+    meta_data: metaData,
   };
 
   const res = await fetch(`${WP_URL}/wp-json/wc/v3/customers`, {
