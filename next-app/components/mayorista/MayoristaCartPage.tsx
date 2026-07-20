@@ -10,10 +10,12 @@ import { useMayoristaCart, MayoristaCartItem } from '@/context/MayoristaCartCont
 interface ShippingForm {
   first_name: string; last_name: string; company: string;
   address_1: string; city: string; state: string; postcode: string; phone: string;
+  dni: string; via_cargo_sucursal: string;
 }
 
 const EMPTY_SHIPPING: ShippingForm = {
   first_name: '', last_name: '', company: '', address_1: '', city: '', state: '', postcode: '', phone: '',
+  dni: '', via_cargo_sucursal: '',
 };
 
 export default function MayoristaCartPage() {
@@ -33,18 +35,19 @@ export default function MayoristaCartPage() {
         if (!data) return;
         if (typeof data.minOrder === 'number') setMinOrder(data.minOrder);
         if (data.email) setEmail(data.email);
-        if (!data.billing) return;
         const b = data.billing;
         setShipping(s => ({
           ...s,
-          first_name: b.first_name || s.first_name,
-          last_name:  b.last_name  || s.last_name,
-          company:    b.company    || s.company,
-          address_1:  b.address_1  || s.address_1,
-          city:       b.city       || s.city,
-          state:      b.state      || s.state,
-          postcode:   b.postcode   || s.postcode,
-          phone:      b.phone      || s.phone,
+          first_name: b?.first_name || s.first_name,
+          last_name:  b?.last_name  || s.last_name,
+          company:    b?.company    || s.company,
+          address_1:  b?.address_1  || s.address_1,
+          city:       b?.city       || s.city,
+          state:      b?.state      || s.state,
+          postcode:   b?.postcode   || s.postcode,
+          phone:      b?.phone      || s.phone,
+          dni:              data.dni              || s.dni,
+          via_cargo_sucursal: data.viaCargoSucursal || s.via_cargo_sucursal,
         }));
       })
       .catch(() => {});
@@ -144,6 +147,14 @@ export default function MayoristaCartPage() {
             Apellido
             <input required {...field('last_name')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
           </label>
+          <label className="col-span-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+            DNI
+            <input required {...field('dni')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
+          </label>
+          <label className="col-span-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+            Teléfono
+            <input required {...field('phone')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
+          </label>
           <label className="col-span-2 text-[11px] uppercase tracking-wide text-muted-foreground">
             Local / empresa
             <input {...field('company')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
@@ -153,7 +164,7 @@ export default function MayoristaCartPage() {
             <input required {...field('address_1')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
           </label>
           <label className="col-span-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-            Ciudad
+            Localidad
             <input required {...field('city')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
           </label>
           <label className="col-span-1 text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -164,9 +175,9 @@ export default function MayoristaCartPage() {
             CP
             <input {...field('postcode')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
           </label>
-          <label className="col-span-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-            Teléfono
-            <input required {...field('phone')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
+          <label className="col-span-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+            Sucursal de Via Cargo donde querés que lo despachemos
+            <input required {...field('via_cargo_sucursal')} placeholder="Ej: Via Cargo Comodoro Rivadavia centro" className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
           </label>
         </div>
 
