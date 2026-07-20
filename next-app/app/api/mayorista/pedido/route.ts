@@ -1,0 +1,140 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { MAYORISTA_COOKIE, verifySessionToken, getMayoristaUsers } from '@/lib/mayorista-auth';
+import { formatArs } from '@/lib/mayorista-format';
+
+const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
+const WC_KEY = process.env.WC_CONSUMER_KEY || '';
+const WC_SEC = process.env.WC_CONSUMER_SECRET || '';
+const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
+const ADMIN_EMAIL = 'hypestylearg@gmail.com';
+const SENDER = { name: 'Hypestyle Mayoristas', email: 'info@hypestyle.com.ar' };
+
+interface PedidoItem {
+  slug: string;
+  name: string;
+  price: number;
+  size: string;
+  quantity: number;
+}
+
+function wcAuth() {
+  return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
+}
+
+async function wcGet(path: string) {
+  const res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
+    headers: { Authorization: wcAuth() },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`WC ${res.status} on GET ${path}`);
+  return res.json();
+}
+
+async function resolveItem(slug: string, size: string): Promise<{ product_id: number; variation_id?: number }> {
+  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type&per_page=1`);
+  if (!products.length) throw new Error(`Producto no encontrado: ${slug}`);
+  const { id: productId, type } = products[0];
+
+  if (type !== 'variable') return { product_id: productId };
+
+  const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes`);
+  const needle = size.toLowerCase().trim();
+  const hit = variations.find((v: any) =>
+    (v.attributes ?? []).some((a: any) => (a.option ?? '').toLowerCase().trim() === needle),
+  );
+  return hit ? { product_id: productId, variation_id: hit.id } : { product_id: productId };
+}
+
+async function sendAdminEmail(username: string, label: string, items: PedidoItem[], total: number, orderNumber: string) {
+  if (!BREVO_API_KEY) return;
+  const rows = items.map(it => `<tr>
+    <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${it.size}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${formatArs(it.price)}</td>
+  </tr>`).join('');
+
+  const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
+    <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Pedido mayorista — Hype.</h2>
+    <p style="font-size:13px">Cliente: <b>${label}</b> (usuario ${username})</p>
+    <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
+      <thead><tr style="background:#f2f2f2">
+        <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
+        <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Talle</th>
+        <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Cant.</th>
+        <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Precio</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:13px;margin-top:10px">Total: <b>${formatArs(total)}</b></p>
+    <p style="font-size:12px;color:#888">Orden WooCommerce #${orderNumber} (on-hold).</p>
+  </div>`;
+
+  await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sender: SENDER,
+      to: [{ email: ADMIN_EMAIL, name: 'Hypestyle' }],
+      subject: `Pedido mayorista #${orderNumber} — ${label}`,
+      htmlContent: html,
+    }),
+  }).catch((e) => console.error('[mayorista/pedido] email error:', e));
+}
+
+export async function POST(req: NextRequest) {
+  const username = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
+  if (!username) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
+
+  const found = getMayoristaUsers().find(u => u.user === username);
+  const label = found?.label || username;
+
+  try {
+    const { items } = await req.json() as { items: PedidoItem[] };
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
+    }
+
+    const lineItems = await Promise.all(items.map(async (item) => {
+      const resolved = await resolveItem(item.slug, item.size);
+      const lineTotal = String(Math.round(item.price * item.quantity));
+      return { ...resolved, quantity: item.quantity, subtotal: lineTotal, total: lineTotal };
+    }));
+
+    const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+    const order = {
+      status: 'on-hold',
+      payment_method: 'mayorista',
+      payment_method_title: 'Pedido mayorista',
+      set_paid: false,
+      billing: { first_name: label, last_name: '', email: '', phone: '', country: 'AR' },
+      line_items: lineItems,
+      meta_data: [
+        { key: '_es_mayorista', value: 'true' },
+        { key: '_mayorista_user', value: username },
+      ],
+    };
+
+    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+      body: JSON.stringify(order),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      console.error('[mayorista/pedido] WC error:', res.status, txt);
+      return NextResponse.json({ message: `Error de WooCommerce (${res.status})` }, { status: 502 });
+    }
+
+    const wcOrder = await res.json() as { id: number; number: string };
+
+    await sendAdminEmail(username, label, items, total, String(wcOrder.number));
+
+    return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number) });
+  } catch (err) {
+    console.error('[mayorista/pedido]', err);
+    return NextResponse.json({ message: 'Error al crear el pedido' }, { status: 500 });
+  }
+}
