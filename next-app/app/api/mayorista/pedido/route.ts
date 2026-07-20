@@ -90,6 +90,45 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
   }).catch((e) => console.error('[mayorista/pedido] email error:', e));
 }
 
+// Copia del resumen para el cliente — así queda guardado en su propio mail
+// (el carrito no persiste después de confirmar, y no hay checkout/pago para
+// que quede un comprobante de esa instancia).
+async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, orderNumber: string) {
+  if (!BREVO_API_KEY || !toEmail) return;
+  const rows = items.map(it => `<tr>
+    <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${it.size}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${formatArs(it.price)}</td>
+  </tr>`).join('');
+
+  const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
+    <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Hype. — Resumen de tu pedido</h2>
+    <p style="font-size:13px">Recibimos tu pedido <b>#${orderNumber}</b>. Te contactamos para coordinar preparación y entrega.</p>
+    <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
+      <thead><tr style="background:#f2f2f2">
+        <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
+        <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Talle</th>
+        <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Cant.</th>
+        <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Precio</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:13px;margin-top:10px">Total: <b>${formatArs(total)}</b></p>
+  </div>`;
+
+  await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      sender: SENDER,
+      to: [{ email: toEmail }],
+      subject: `Tu pedido #${orderNumber} — Hype.`,
+      htmlContent: html,
+    }),
+  }).catch((e) => console.error('[mayorista/pedido] customer email error:', e));
+}
+
 export async function POST(req: NextRequest) {
   const customerId = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
   if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
@@ -111,7 +150,7 @@ export async function POST(req: NextRequest) {
 
     const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-    const customer = await wcGet(`customers/${customerId}?_fields=meta_data`);
+    const customer = await wcGet(`customers/${customerId}?_fields=meta_data,email`);
     const minOrder = customerMinOrderOverride(customer.meta_data) ?? await getGlobalMinOrder();
     if (total < minOrder) {
       return NextResponse.json({ message: `El pedido mínimo es ${formatArs(minOrder)}` }, { status: 400 });
@@ -160,7 +199,10 @@ export async function POST(req: NextRequest) {
 
     const wcOrder = await res.json() as { id: number; number: string };
 
-    await sendAdminEmail(label, shipping, items, total, String(wcOrder.number));
+    await Promise.all([
+      sendAdminEmail(label, shipping, items, total, String(wcOrder.number)),
+      sendCustomerEmail(customer.email, items, total, String(wcOrder.number)),
+    ]);
 
     return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number) });
   } catch (err) {
