@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
       number:        o.number,
       date:          o.date_created,
       status:        o.status,
+      isMayorista:   mv('_es_mayorista') === 'true',
       customer:      {
         first_name: o.billing.first_name,
         last_name:  o.billing.last_name,
