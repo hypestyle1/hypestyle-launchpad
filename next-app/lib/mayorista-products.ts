@@ -5,8 +5,9 @@ const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-ro
 const WHOLESALE_FACTOR = 0.5;
 
 const GET_PRODUCTS = `
-  query GetProductsMayorista($first: Int) {
-    products(first: $first, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
+  query GetProductsMayorista($first: Int, $after: String) {
+    products(first: $first, after: $after, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
+      pageInfo { hasNextPage endCursor }
       nodes {
         id name slug
         ... on SimpleProduct {
@@ -111,15 +112,29 @@ function fromNode(node: any): MayoristaProduct {
 }
 
 export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
-  const res = await fetch(GRAPHQL_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100 } }),
-    next: { revalidate: 60 },
-  });
-  if (!res.ok) return [];
-  const { data } = await res.json();
-  return (data?.products?.nodes ?? [])
+  const allNodes: any[] = [];
+  let after: string | null = null;
+
+  // Paginado por cursor: el catálogo mayorista tiene que mostrar TODO lo
+  // publicado, no un tope fijo — con "first: 100" a secas, el producto 101
+  // (o el que sea que WPGraphQL ordene después) quedaba afuera sin aviso.
+  for (let i = 0; i < 20; i++) {
+    const res = await fetch(GRAPHQL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100, after } }),
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) break;
+    const { data } = await res.json();
+    const page = data?.products;
+    if (!page) break;
+    allNodes.push(...page.nodes);
+    if (!page.pageInfo?.hasNextPage) break;
+    after = page.pageInfo.endCursor;
+  }
+
+  return allNodes
     .map(fromNode)
     .filter((p: MayoristaProduct) => p.regularPrice > 0);
 }
