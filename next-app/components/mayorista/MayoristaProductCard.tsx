@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { imgSrc } from '@/lib/img';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
@@ -11,8 +12,11 @@ import type { MayoristaProduct } from '@/lib/mayorista-products';
 export default function MayoristaProductCard({ product }: { product: MayoristaProduct }) {
   const { add } = useMayoristaCart();
   const [added, setAdded] = useState<string | null>(null);
+  const [imgIndex, setImgIndex] = useState(0);
 
   const outOfStock = product.sizes.every(s => product.stock[s] === 'out');
+  const images = product.images.length ? product.images : [product.image];
+  const hasMultiple = images.length > 1;
 
   function handleAdd(size: string, e: React.MouseEvent) {
     e.preventDefault();
@@ -22,12 +26,24 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
     setTimeout(() => setAdded(null), 1500);
   }
 
+  function prevImg(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setImgIndex(i => (i - 1 + images.length) % images.length);
+  }
+
+  function nextImg(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setImgIndex(i => (i + 1) % images.length);
+  }
+
   return (
     <Link href={`/mayoristas/producto/${product.slug}`} className="group block">
       <div className="relative aspect-square rounded-[8px] overflow-hidden bg-bg-alt">
-        {product.image && (
+        {images[imgIndex] && (
           <Image
-            src={imgSrc(product.image)}
+            src={imgSrc(images[imgIndex])}
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
@@ -38,6 +54,30 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
           <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-foreground text-background">
             Sin stock
           </span>
+        )}
+
+        {hasMultiple && (
+          <>
+            <button
+              onClick={prevImg}
+              aria-label="Foto anterior"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 text-foreground transition-colors hover:bg-white"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={nextImg}
+              aria-label="Foto siguiente"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 text-foreground transition-colors hover:bg-white"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+              {images.map((_, i) => (
+                <span key={i} className={`w-1 h-1 rounded-full transition-colors ${i === imgIndex ? 'bg-white' : 'bg-white/50'}`} />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
