@@ -1,28 +1,38 @@
-// Auth de acceso mayorista: usuarios fijos por env var (sin cuenta WP), cookie
-// firmada con HMAC via Web Crypto (compatible con Edge middleware y route handlers).
+// Auth de acceso mayorista: clientes reales de WooCommerce (flag _es_mayorista
+// en su perfil), validados server-to-server contra WP (ver /mayorista-login en
+// PHP/hypestyle-api.php). La cookie de sesión guarda el customerId, firmada con
+// HMAC via Web Crypto (compatible con Edge middleware y route handlers).
 
 export const MAYORISTA_COOKIE = 'hype_mayorista_session';
 const SESSION_SECRET = process.env.MAYORISTA_SESSION_SECRET || 'hype-mayorista-dev-secret';
 const SESSION_DAYS = 30;
 
-export interface MayoristaUser {
-  user: string;
-  pass: string;
-  label?: string;
+const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
+const WP_SECRET = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
+
+export interface MayoristaBilling {
+  first_name: string; last_name: string; company: string;
+  address_1: string; address_2: string; city: string; state: string;
+  postcode: string; country: string; phone: string;
 }
 
-export function getMayoristaUsers(): MayoristaUser[] {
-  try {
-    const parsed = JSON.parse(process.env.MAYORISTA_USERS || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+export interface MayoristaLoginResult {
+  customerId: number;
+  email: string;
+  label: string;
+  billing: MayoristaBilling;
 }
 
-export function findMayoristaUser(username: string, password: string): MayoristaUser | null {
-  const users = getMayoristaUsers();
-  return users.find(u => u.user === username && u.pass === password) ?? null;
+export async function authenticateMayoristaCustomer(username: string, password: string): Promise<MayoristaLoginResult | { error: string } | null> {
+  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/mayorista-login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${WP_SECRET}` },
+    body: JSON.stringify({ username, password }),
+  });
+  if (res.status === 401 || res.status === 403) return null;
+  if (!res.ok) return { error: `WP ${res.status}` };
+  const data = await res.json();
+  return { customerId: data.customerId, email: data.email, label: data.label, billing: data.billing };
 }
 
 function bufToBase64Url(buf: ArrayBuffer): string {
@@ -44,21 +54,23 @@ async function hmac(data: string): Promise<string> {
   return bufToBase64Url(sig);
 }
 
-export async function createSessionToken(username: string): Promise<string> {
+export async function createSessionToken(customerId: number): Promise<string> {
   const exp = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
-  const payload = `${username}.${exp}`;
+  const payload = `${customerId}.${exp}`;
   const sig = await hmac(payload);
   return `${payload}.${sig}`;
 }
 
-export async function verifySessionToken(token: string | undefined | null): Promise<string | null> {
+// Devuelve el customerId (como número) o null si la cookie falta/expiró/no valida.
+export async function verifySessionToken(token: string | undefined | null): Promise<number | null> {
   if (!token) return null;
   const parts = token.split('.');
   if (parts.length !== 3) return null;
-  const [username, expStr, sig] = parts;
+  const [customerIdStr, expStr, sig] = parts;
+  const customerId = Number(customerIdStr);
   const exp = Number(expStr);
-  if (!username || !exp || Number.isNaN(exp) || Date.now() > exp) return null;
-  const expected = await hmac(`${username}.${exp}`);
+  if (!customerId || !exp || Number.isNaN(exp) || Date.now() > exp) return null;
+  const expected = await hmac(`${customerIdStr}.${exp}`);
   if (expected !== sig) return null;
-  return username;
+  return customerId;
 }
