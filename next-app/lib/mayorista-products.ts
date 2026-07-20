@@ -13,12 +13,14 @@ const GET_PRODUCTS = `
         ... on SimpleProduct {
           regularPrice stockStatus stockQuantity
           image { sourceUrl }
-          productCategories { nodes { name } }
+          galleryImages { nodes { sourceUrl } }
+          productCategories { nodes { name slug } }
         }
         ... on VariableProduct {
           regularPrice
           image { sourceUrl }
-          productCategories { nodes { name } }
+          galleryImages { nodes { sourceUrl } }
+          productCategories { nodes { name slug } }
           variations(first: 20) {
             nodes {
               stockStatus stockQuantity
@@ -66,11 +68,24 @@ function stockLevel(status: string, qty: number | null): 'ok' | 'low' | 'out' {
   return 'ok';
 }
 
+// Combos/packs (ej. "Regular Tees 3 PACK", "CAMO FULL SET - COMBO") son
+// promos armadas para el minorista — no tienen sentido en mayorista, donde
+// el cliente ya compra por volumen los productos individuales.
+const EXCLUDED_CATEGORY_SLUGS = new Set(['pack', 'set']);
+function isCombo(node: any): boolean {
+  const slugs: string[] = (node.productCategories?.nodes ?? []).map((c: any) => c.slug);
+  return slugs.some((s) => EXCLUDED_CATEGORY_SLUGS.has(s));
+}
+
 function fromNode(node: any): MayoristaProduct {
   const regularPrice = parsePrice(node.regularPrice);
   const wholesalePrice = Math.round(regularPrice * WHOLESALE_FACTOR);
 
-  const images: string[] = node.image?.sourceUrl ? [node.image.sourceUrl] : [];
+  const images: string[] = [];
+  if (node.image?.sourceUrl) images.push(node.image.sourceUrl);
+  (node.galleryImages?.nodes ?? []).forEach((g: any) => {
+    if (g.sourceUrl && !images.includes(g.sourceUrl)) images.push(g.sourceUrl);
+  });
 
   const sizes: string[] = [];
   const stock: Record<string, 'ok' | 'low' | 'out'> = {};
@@ -135,6 +150,7 @@ export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
   }
 
   return allNodes
+    .filter((n: any) => !isCombo(n))
     .map(fromNode)
     .filter((p: MayoristaProduct) => p.regularPrice > 0);
 }
