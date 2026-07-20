@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function MayoristasLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-black text-white font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans">
       <MayoristaCartProvider>
         {children}
       </MayoristaCartProvider>

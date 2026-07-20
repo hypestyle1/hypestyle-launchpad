@@ -23,7 +23,7 @@ export default function MayoristaCatalog({ products }: { products: MayoristaProd
     <div className="px-5 sm:px-8 py-6">
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Precio mayorista</h1>
-        <p className="text-[13px] text-white/50 mt-1">50% off del precio de lista. Pedís hoy, coordinamos el retiro/envío.</p>
+        <p className="text-[13px] text-muted-foreground mt-1">50% off del precio de lista. Pedís hoy, coordinamos el retiro/envío.</p>
       </div>
 
       <input
@@ -31,7 +31,7 @@ export default function MayoristaCatalog({ products }: { products: MayoristaProd
         placeholder="Buscar producto…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full bg-transparent border border-white/20 px-3 py-2.5 text-sm focus:border-white outline-none transition-colors mb-4"
+        className="w-full bg-transparent border-b border-border px-1 py-2.5 text-sm focus:outline-none focus:border-foreground transition-colors mb-4"
       />
 
       <div className="flex flex-wrap gap-2 mb-6">
@@ -39,8 +39,8 @@ export default function MayoristaCatalog({ products }: { products: MayoristaProd
           <button
             key={c}
             onClick={() => setCategory(c)}
-            className={`px-3 py-1.5 text-[11px] uppercase tracking-wide border transition-colors ${
-              category === c ? 'bg-white text-black border-white' : 'border-white/20 text-white/60 hover:border-white/50'
+            className={`px-3 py-1.5 text-[11px] uppercase tracking-wide rounded-full border transition-colors ${
+              category === c ? 'bg-bg-dark text-primary-foreground border-bg-dark' : 'border-border text-muted-foreground hover:border-foreground/40'
             }`}
           >
             {c}
@@ -49,7 +49,7 @@ export default function MayoristaCatalog({ products }: { products: MayoristaProd
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-white/40 text-sm py-12 text-center">No hay productos que coincidan con la búsqueda.</p>
+        <p className="text-muted-foreground text-sm py-12 text-center">No hay productos que coincidan con la búsqueda.</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {filtered.map((p) => (

@@ -3,6 +3,22 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const glassCard = {
+  background: 'rgba(245, 243, 237, 0.72)',
+  backdropFilter: 'blur(40px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+  border: '1px solid rgba(255,255,255,0.45)',
+  boxShadow: '0 24px 80px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.55)',
+} as React.CSSProperties;
+
+const glassInput = {
+  background: 'rgba(255,255,255,0.5)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  border: '1px solid rgba(255,255,255,0.65)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
+} as React.CSSProperties;
+
 export default function MayoristaLoginPage() {
   const router = useRouter();
   const [user, setUser] = useState('');
@@ -30,45 +46,51 @@ export default function MayoristaLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm border border-white/15 p-8">
-        <h1 className="text-2xl font-bold tracking-tight">Hype<span className="text-white/40">.</span></h1>
-        <p className="text-[11px] uppercase tracking-[0.2em] text-white/40 mt-1">Acceso mayorista</p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-[380px] rounded-[24px] overflow-hidden" style={glassCard}>
+        <div className="px-8 pt-9 pb-8">
+          <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto mx-auto" />
+          <p className="text-center text-[10px] uppercase tracking-[0.3em] text-foreground/45 mt-4">
+            Catálogo mayorista
+          </p>
 
-        <div className="mt-8 space-y-4">
-          <div>
-            <label className="block text-[11px] uppercase tracking-wide text-white/50 mb-1">Usuario</label>
+          <form onSubmit={handleSubmit} className="mt-8 space-y-2.5">
             <input
               type="text"
               value={user}
               onChange={(e) => setUser(e.target.value)}
+              placeholder="Tu usuario"
               autoFocus
               required
-              className="w-full bg-transparent border border-white/20 px-3 py-2.5 text-sm focus:border-white outline-none transition-colors"
+              className="w-full px-4 py-3 text-[13px] rounded-[12px] placeholder:text-foreground/40 focus:outline-none transition-shadow"
+              style={glassInput}
             />
-          </div>
-          <div>
-            <label className="block text-[11px] uppercase tracking-wide text-white/50 mb-1">Contraseña</label>
             <input
               type="password"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
+              placeholder="Tu contraseña"
               required
-              className="w-full bg-transparent border border-white/20 px-3 py-2.5 text-sm focus:border-white outline-none transition-colors"
+              className="w-full px-4 py-3 text-[13px] rounded-[12px] placeholder:text-foreground/40 focus:outline-none transition-shadow"
+              style={glassInput}
             />
+
+            {error && <p className="text-[12px] text-destructive text-center pt-1">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60 !mt-6"
+            >
+              {loading ? '...' : 'Ingresar'}
+            </button>
+          </form>
+
+          <div className="flex justify-center mt-6">
+            <img src="/STYLE&CULTURE BLACK.png" alt="Style&Culture" className="h-4 w-auto object-contain opacity-70" />
           </div>
         </div>
-
-        {error && <p className="mt-4 text-[12px] text-red-400">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-8 w-full bg-white text-black py-3 text-[12px] font-semibold uppercase tracking-wide hover:bg-white/90 transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Ingresando…' : 'Ingresar'}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
