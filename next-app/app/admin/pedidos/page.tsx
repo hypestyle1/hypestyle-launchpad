@@ -14,6 +14,7 @@ type Order = {
   tracking: string; andreani: string; packaged: boolean; shipped: boolean;
   notified: string; order_key: string;
   customer_note: string;
+  isMayorista: boolean;
 };
 
 type Counts = { porEmpaquetar: number; empaquetados: number; enviadosSinMarcar: number; pendientes: number; despachados: number };
@@ -40,11 +41,12 @@ const STATUS_COLORS: Record<string, string> = {
   failed:     'bg-red-100 text-red-700',
 };
 
-const FILTERS = ['por-empaquetar','empaquetado','enviado-sin-marcar','pending','enviado','completed','cancelled','any'];
+const FILTERS = ['por-empaquetar','empaquetado','enviado-sin-marcar','mayorista','pending','enviado','completed','cancelled','any'];
 const FILTER_LABELS: Record<string, string> = {
   'por-empaquetar':     'Por empaquetar',
   'empaquetado':        'Empaquetado',
   'enviado-sin-marcar': 'Enviado sin marcar',
+  mayorista:            'Mayoristas',
   any:                  'Todos',
 };
 const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','cancelled'];
@@ -52,8 +54,11 @@ const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','
 // Los tabs 'por-empaquetar'/'empaquetado'/'enviado-sin-marcar' consultan 'processing' en
 // la API y se afinan en el cliente según tengan rótulo de Andreani y/o guía real.
 const PROCESSING_SPLIT_FILTERS = ['por-empaquetar', 'empaquetado', 'enviado-sin-marcar'];
+// 'mayorista' se afina en el cliente por meta _es_mayorista (no por status: el pedido
+// puede pasar de on-hold a processing/completed una vez coordinado el pago).
+const CLIENT_REFINED_FILTERS = [...PROCESSING_SPLIT_FILTERS, 'mayorista'];
 const apiStatusFor = (f: string) =>
-  PROCESSING_SPLIT_FILTERS.includes(f) ? 'processing' : f;
+  PROCESSING_SPLIT_FILTERS.includes(f) ? 'processing' : f === 'mayorista' ? 'any' : f;
 
 function fmt(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
@@ -233,9 +238,11 @@ export default function PedidosPage() {
       ? orders.filter(o => o.packaged && !o.shipped)
       : filter === 'enviado-sin-marcar'
         ? orders.filter(o => o.shipped)
-        : orders;
+        : filter === 'mayorista'
+          ? orders.filter(o => o.isMayorista)
+          : orders;
   const revenue = visibleOrders.reduce((s, o) => s + o.total, 0);
-  const headerCount = PROCESSING_SPLIT_FILTERS.includes(filter) ? visibleOrders.length : total;
+  const headerCount = CLIENT_REFINED_FILTERS.includes(filter) ? visibleOrders.length : total;
 
   if (!authed) {
     return (
@@ -410,6 +417,11 @@ export default function PedidosPage() {
                   >
                     #{order.number}
                   </Link>
+                  {order.isMayorista && (
+                    <div className="text-[9px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 rounded px-1 inline-block mt-0.5">
+                      Mayorista
+                    </div>
+                  )}
                   {order.shipped ? (
                     <div className="text-[10px] text-green-600 font-medium mt-0.5 truncate max-w-[80px]" title={order.tracking}>
                       ✓ Enviado
