@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MAYORISTA_COOKIE, createSessionToken, findMayoristaUser } from '@/lib/mayorista-auth';
+import { MAYORISTA_COOKIE, createSessionToken, authenticateMayoristaCustomer } from '@/lib/mayorista-auth';
 
 export async function POST(req: NextRequest) {
   const { user, pass } = await req.json();
@@ -7,13 +7,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  const found = findMayoristaUser(user, pass);
-  if (!found) {
+  const result = await authenticateMayoristaCustomer(user, pass);
+  if (!result) {
     return NextResponse.json({ ok: false, message: 'Usuario o contraseña incorrectos' }, { status: 401 });
   }
+  if ('error' in result) {
+    console.error('[mayorista/login] WP error:', result.error);
+    return NextResponse.json({ ok: false, message: 'Error de conexión, probá de nuevo' }, { status: 502 });
+  }
 
-  const token = await createSessionToken(found.user);
-  const res = NextResponse.json({ ok: true, label: found.label || found.user });
+  const token = await createSessionToken(result.customerId);
+  const res = NextResponse.json({ ok: true, label: result.label });
   res.cookies.set(MAYORISTA_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',

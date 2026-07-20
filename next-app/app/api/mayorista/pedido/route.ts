@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MAYORISTA_COOKIE, verifySessionToken, getMayoristaUsers } from '@/lib/mayorista-auth';
+import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
@@ -15,6 +15,12 @@ interface PedidoItem {
   price: number;
   size: string;
   quantity: number;
+}
+
+interface ShippingInfo {
+  first_name: string; last_name: string; company?: string;
+  address_1: string; address_2?: string; city: string; state?: string;
+  postcode?: string; country?: string; phone: string;
 }
 
 function wcAuth() {
@@ -45,7 +51,7 @@ async function resolveItem(slug: string, size: string): Promise<{ product_id: nu
   return hit ? { product_id: productId, variation_id: hit.id } : { product_id: productId };
 }
 
-async function sendAdminEmail(username: string, label: string, items: PedidoItem[], total: number, orderNumber: string) {
+async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, orderNumber: string) {
   if (!BREVO_API_KEY) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
@@ -56,7 +62,8 @@ async function sendAdminEmail(username: string, label: string, items: PedidoItem
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Pedido mayorista — Hype.</h2>
-    <p style="font-size:13px">Cliente: <b>${label}</b> (usuario ${username})</p>
+    <p style="font-size:13px">Cliente: <b>${label}</b></p>
+    <p style="font-size:12px;color:#444">${shipping.address_1}, ${shipping.city} ${shipping.state ?? ''} — ${shipping.phone}</p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
         <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
@@ -83,16 +90,16 @@ async function sendAdminEmail(username: string, label: string, items: PedidoItem
 }
 
 export async function POST(req: NextRequest) {
-  const username = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
-  if (!username) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
-
-  const found = getMayoristaUsers().find(u => u.user === username);
-  const label = found?.label || username;
+  const customerId = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
+  if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
 
   try {
-    const { items } = await req.json() as { items: PedidoItem[] };
+    const { items, shipping } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo };
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
+    }
+    if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone) {
+      return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
     }
 
     const lineItems = await Promise.all(items.map(async (item) => {
@@ -102,17 +109,32 @@ export async function POST(req: NextRequest) {
     }));
 
     const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const label = shipping.company || `${shipping.first_name} ${shipping.last_name}`.trim();
+
+    const billing = {
+      first_name: shipping.first_name,
+      last_name:  shipping.last_name,
+      company:    shipping.company ?? '',
+      address_1:  shipping.address_1,
+      address_2:  shipping.address_2 ?? '',
+      city:       shipping.city,
+      state:      shipping.state ?? '',
+      postcode:   shipping.postcode ?? '',
+      country:    shipping.country ?? 'AR',
+      phone:      shipping.phone,
+    };
 
     const order = {
-      status: 'on-hold',
-      payment_method: 'mayorista',
-      payment_method_title: 'Pedido mayorista',
-      set_paid: false,
-      billing: { first_name: label, last_name: '', email: '', phone: '', country: 'AR' },
-      line_items: lineItems,
+      customer_id:          customerId,
+      status:                'on-hold',
+      payment_method:        'mayorista',
+      payment_method_title:  'Pedido mayorista',
+      set_paid:              false,
+      billing,
+      shipping:              { ...billing, phone: undefined },
+      line_items:            lineItems,
       meta_data: [
         { key: '_es_mayorista', value: 'true' },
-        { key: '_mayorista_user', value: username },
       ],
     };
 
@@ -130,7 +152,7 @@ export async function POST(req: NextRequest) {
 
     const wcOrder = await res.json() as { id: number; number: string };
 
-    await sendAdminEmail(username, label, items, total, String(wcOrder.number));
+    await sendAdminEmail(label, shipping, items, total, String(wcOrder.number));
 
     return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number) });
   } catch (err) {
