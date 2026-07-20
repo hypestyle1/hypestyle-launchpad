@@ -22,6 +22,7 @@ interface ShippingInfo {
   first_name: string; last_name: string; company?: string;
   address_1: string; address_2?: string; city: string; state?: string;
   postcode?: string; country?: string; phone: string;
+  dni: string; via_cargo_sucursal: string;
 }
 
 function wcAuth() {
@@ -35,6 +36,28 @@ async function wcGet(path: string) {
   });
   if (!res.ok) throw new Error(`WC ${res.status} on GET ${path}`);
   return res.json();
+}
+
+// Guarda la dirección/DNI/sucursal cargados en este pedido como perfil del
+// cliente, para que /api/mayorista/perfil los precargue de ahí en adelante
+// — así los tiene que tipear una vez por cuenta (y puede corregirlos en
+// cualquier pedido posterior, el formulario sigue editable). dni/sucursal
+// van sin guión bajo en meta_data: WC descarta en silencio los meta
+// "protegidos" al actualizar un customer por REST.
+async function saveCustomerProfile(customerId: number, billing: Record<string, unknown>, dni: string, viaCargoSucursal: string) {
+  const res = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${customerId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+    body: JSON.stringify({
+      billing,
+      shipping: { ...billing, phone: undefined },
+      meta_data: [
+        { key: 'dni', value: dni },
+        { key: 'via_cargo_sucursal', value: viaCargoSucursal },
+      ],
+    }),
+  });
+  if (!res.ok) console.error('[mayorista/pedido] no se pudo guardar el perfil del cliente:', res.status);
 }
 
 async function resolveItem(slug: string, size: string): Promise<{ product_id: number; variation_id?: number }> {
@@ -63,8 +86,9 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Pedido mayorista — Hype.</h2>
-    <p style="font-size:13px">Cliente: <b>${label}</b></p>
+    <p style="font-size:13px">Cliente: <b>${label}</b> — DNI ${shipping.dni}</p>
     <p style="font-size:12px;color:#444">${shipping.address_1}, ${shipping.city} ${shipping.state ?? ''} — ${shipping.phone}</p>
+    <p style="font-size:12px;color:#444">Sucursal Via Cargo: <b>${shipping.via_cargo_sucursal}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
         <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
@@ -138,7 +162,7 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
     }
-    if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone) {
+    if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone || !shipping?.dni || !shipping?.via_cargo_sucursal) {
       return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
     }
 
@@ -182,6 +206,8 @@ export async function POST(req: NextRequest) {
       line_items:            lineItems,
       meta_data: [
         { key: '_es_mayorista', value: 'true' },
+        { key: '_billing_dni', value: shipping.dni },
+        { key: '_via_cargo_sucursal', value: shipping.via_cargo_sucursal },
       ],
     };
 
@@ -202,6 +228,7 @@ export async function POST(req: NextRequest) {
     await Promise.all([
       sendAdminEmail(label, shipping, items, total, String(wcOrder.number)),
       sendCustomerEmail(customer.email, items, total, String(wcOrder.number)),
+      saveCustomerProfile(customerId, billing, shipping.dni, shipping.via_cargo_sucursal),
     ]);
 
     return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number) });

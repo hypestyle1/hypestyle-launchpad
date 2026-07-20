@@ -18,13 +18,16 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { email, password, first_name, last_name, company, address_1, city, state, postcode, phone, min_order } = body;
 
-  if (!email || !password || !first_name || !address_1 || !city || !phone) {
+  // Dirección/ciudad NO son obligatorias acá: se las pide el sitio al
+  // cliente en su primer pedido (ver /api/mayorista/pedido) y quedan
+  // guardadas en su perfil desde ahí en adelante.
+  if (!email || !password || !first_name || !phone) {
     return NextResponse.json({ message: 'Faltan datos obligatorios' }, { status: 400 });
   }
 
   const billing = {
     first_name, last_name: last_name || '', company: company || '',
-    address_1, city, state: state || '', postcode: postcode || '', country: 'AR', phone, email,
+    address_1: address_1 || '', city: city || '', state: state || '', postcode: postcode || '', country: 'AR', phone, email,
   };
 
   // Sin guión bajo: WC descarta en silencio los meta "protegidos" al crear

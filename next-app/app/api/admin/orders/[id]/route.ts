@@ -118,6 +118,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     customer_note:        o.customer_note,
     adminNote:            getMeta('_hs_admin_note'),
     order_key:            o.order_key,
+    viaCargoSucursal: getMeta('_via_cargo_sucursal'),
     tracking:   getMeta('_tracking_number'),
     notified:   getMeta('_tracking_notified'),
     andreani:   getMeta('_andreani_numero_de_envio') || getMeta('_andreani_remito'),

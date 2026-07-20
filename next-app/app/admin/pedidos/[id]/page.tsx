@@ -22,6 +22,7 @@ type Order = {
   payment_method: string; payment_method_title: string;
   customer_note: string; order_key: string;
   adminNote: string;
+  viaCargoSucursal: string;
   tracking: string; notified: string; andreani: string; pedido_id: string;
   notes: Note[];
 };
@@ -555,6 +556,12 @@ export default function OrderDetailPage() {
                 <div>{order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}</div>
                 <div>{order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</div>
               </div>
+              {order.viaCargoSucursal && (
+                <div className="mt-2 pt-2 border-t border-gray-100 text-[12px]">
+                  <span className="text-gray-400">Sucursal Via Cargo:</span>{' '}
+                  <span className="font-medium text-gray-900">{order.viaCargoSucursal}</span>
+                </div>
+              )}
             </div>
 
             {/* Billing address — solo si difiere del envío */}

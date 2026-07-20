@@ -257,12 +257,12 @@ export default function MayoristasAdminPage() {
                   <input {...field('company')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
                 </label>
                 <label className="col-span-2 text-[11px] font-medium text-gray-500">
-                  Dirección
-                  <input required {...field('address_1')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  Dirección <span className="normal-case text-gray-400">(opcional — se la pide el sitio al cliente en su primer pedido)</span>
+                  <input {...field('address_1')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
                 </label>
                 <label className="text-[11px] font-medium text-gray-500">
                   Ciudad
-                  <input required {...field('city')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input {...field('city')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
                 </label>
                 <label className="text-[11px] font-medium text-gray-500">
                   Provincia

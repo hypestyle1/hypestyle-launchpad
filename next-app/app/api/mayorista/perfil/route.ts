@@ -22,11 +22,15 @@ export async function GET(req: NextRequest) {
 
   const customer = await res.json();
   const minOrder = customerMinOrderOverride(customer.meta_data) ?? await getGlobalMinOrder();
+  const meta = (customer.meta_data ?? []) as { key: string; value: string }[];
+  const metaVal = (key: string) => meta.find((m) => m.key === key)?.value ?? '';
 
   return NextResponse.json({
     email: customer.email,
     billing: customer.billing,
     shipping: customer.shipping,
     minOrder,
+    dni: metaVal('dni'),
+    viaCargoSucursal: metaVal('via_cargo_sucursal'),
   });
 }
