@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
     last_name: last_name || '',
     billing,
     shipping: { ...billing, phone: undefined },
-    meta_data: [{ key: '_es_mayorista', value: 'yes' }],
+    // Sin guión bajo: WC descarta en silencio los meta "protegidos" al crear
+    // un customer por REST (a diferencia de las órdenes, donde sí se graban).
+    meta_data: [{ key: 'es_mayorista', value: 'yes' }],
   };
 
   const res = await fetch(`${WP_URL}/wp-json/wc/v3/customers`, {
