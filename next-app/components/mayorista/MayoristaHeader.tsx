@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
@@ -15,6 +16,18 @@ const glassBar = {
 export default function MayoristaHeader() {
   const router = useRouter();
   const { count } = useMayoristaCart();
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    fetch('/api/mayorista/perfil')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const b = data?.billing;
+        if (!b) return;
+        setName(b.company || `${b.first_name} ${b.last_name}`.trim());
+      })
+      .catch(() => {});
+  }, []);
 
   async function logout() {
     await fetch('/api/mayorista/logout', { method: 'POST' });
@@ -29,6 +42,10 @@ export default function MayoristaHeader() {
         <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/40 hidden sm:inline">Mayoristas</span>
       </Link>
       <nav className="flex items-center gap-5 text-[12px] uppercase tracking-wide">
+        {name && <span className="text-foreground/50 normal-case tracking-normal hidden sm:inline">{name}</span>}
+        <Link href="/mayoristas/pedidos" className="text-foreground/70 hover:text-foreground transition-colors">
+          Mis pedidos
+        </Link>
         <Link href="/mayoristas/carrito" className="text-foreground/70 hover:text-foreground transition-colors">
           Pedido{count > 0 ? ` (${count})` : ''}
         </Link>
