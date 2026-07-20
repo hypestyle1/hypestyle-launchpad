@@ -37,6 +37,19 @@ async function wcGet(path: string) {
   return res.json();
 }
 
+// Guarda la dirección cargada en este pedido como perfil del cliente, para
+// que /api/mayorista/perfil la precargue de ahí en adelante — así solo la
+// tiene que tipear una vez por cuenta (y puede corregirla en cualquier
+// pedido posterior, el formulario sigue editable).
+async function saveCustomerAddress(customerId: number, billing: Record<string, unknown>) {
+  const res = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${customerId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+    body: JSON.stringify({ billing, shipping: { ...billing, phone: undefined } }),
+  });
+  if (!res.ok) console.error('[mayorista/pedido] no se pudo guardar la dirección del cliente:', res.status);
+}
+
 async function resolveItem(slug: string, size: string): Promise<{ product_id: number; variation_id?: number }> {
   const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type&per_page=1`);
   if (!products.length) throw new Error(`Producto no encontrado: ${slug}`);
@@ -202,6 +215,7 @@ export async function POST(req: NextRequest) {
     await Promise.all([
       sendAdminEmail(label, shipping, items, total, String(wcOrder.number)),
       sendCustomerEmail(customer.email, items, total, String(wcOrder.number)),
+      saveCustomerAddress(customerId, billing),
     ]);
 
     return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number) });
