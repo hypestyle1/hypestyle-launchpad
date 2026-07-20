@@ -418,6 +418,16 @@ export default function PedidosPage() {
                   >
                     #{order.number}
                   </Link>
+                  <a
+                    href={`/admin/pedidos/${order.id}/rotulo`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    title="Imprimir rótulo de envío"
+                    className="ml-1.5 text-[11px] text-gray-300 hover:text-black opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    🖨
+                  </a>
                   {order.isMayorista && (
                     <div className="text-[9px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 rounded px-1 inline-block mt-0.5">
                       Mayorista

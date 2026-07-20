@@ -681,6 +681,16 @@ export default function OrderDetailPage() {
               )}
             </div>
 
+            {/* Rótulo de envío */}
+            <a
+              href={`/admin/pedidos/${order.id}/rotulo`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center text-[13px] font-semibold text-white py-2.5 rounded-xl bg-black hover:bg-gray-800 transition-colors"
+            >
+              🖨 Imprimir rótulo de envío
+            </a>
+
             {/* WooCommerce link */}
             <a
               href={`https://lightpink-rook-704850.hostingersite.com/wp-admin/post.php?post=${order.id}&action=edit`}
