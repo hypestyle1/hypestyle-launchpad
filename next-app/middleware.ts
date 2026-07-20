@@ -5,11 +5,18 @@ import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 const EARLY_START = new Date('2026-06-24T19:00:00-03:00').getTime();
 const PUBLIC_OPEN  = new Date('2026-06-24T20:00:00-03:00').getTime();
 
+// startsWith suelto matchea de más (ej. "/api/mayorista-lead-notify" quedaba
+// atrapado por "/api/mayorista" y nunca llegaba a su propio handler) — estas
+// dos exigen que después del prefijo venga "/" o termine ahí.
+function isUnder(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(prefix + '/');
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Área mayorista: gate propio, independiente del early-access del sitio público.
-  if (pathname.startsWith('/mayoristas') || pathname.startsWith('/api/mayorista')) {
+  if (isUnder(pathname, '/mayoristas') || isUnder(pathname, '/api/mayorista')) {
     if (
       pathname.startsWith('/mayoristas/login') ||
       pathname.startsWith('/api/mayorista/login') ||
@@ -19,7 +26,7 @@ export async function middleware(request: NextRequest) {
     }
     const username = await verifySessionToken(request.cookies.get(MAYORISTA_COOKIE)?.value);
     if (!username) {
-      if (pathname.startsWith('/api/mayorista')) {
+      if (isUnder(pathname, '/api/mayorista')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
       const url = request.nextUrl.clone();
