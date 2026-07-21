@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 const WP_SECRET_KEY = 'hype_admin_key';
@@ -49,6 +49,61 @@ function waLink(phone: string, name: string) {
   return `https://wa.me/${intl}?text=${msg}`;
 }
 
+type FilterMode = 'all' | 'never-ordered' | 'never-logged-in';
+const FILTER_LABELS: Record<FilterMode, string> = {
+  all: 'Todos',
+  'never-ordered': 'Nunca compró',
+  'never-logged-in': 'Nunca entró',
+};
+
+type SortKey = 'name' | 'orderCount' | 'totalSpent' | 'lastOrderAt' | 'lastLogin';
+const SORT_LABELS: Record<SortKey, string> = {
+  name: 'Cliente',
+  orderCount: 'Pedidos',
+  totalSpent: 'Total',
+  lastOrderAt: 'Último pedido',
+  lastLogin: 'Último ingreso',
+};
+
+function csvEscape(value: string | number): string {
+  const s = String(value ?? '');
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function downloadCsv(rows: Mayorista[]) {
+  const headers = ['Cliente', 'Empresa', 'Email', 'Teléfono', 'Ciudad', 'Pedidos', 'Total gastado', 'Último pedido', 'Último ingreso', 'Veces ingresó', 'Mínimo propio', 'Estado', 'Cliente desde'];
+  const lines = [headers.join(',')];
+  for (const m of rows) {
+    lines.push([
+      m.name, m.company, m.email, m.phone, m.city,
+      m.orderCount, m.totalSpent, m.lastOrderAt ?? '', m.lastLogin ?? '', m.loginCount,
+      m.minOrderOverride ?? '', m.active ? 'Activo' : 'Revocado', m.createdAt,
+    ].map(csvEscape).join(','));
+  }
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `mayoristas-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function SortableTh({ label, sortKey, current, dir, onClick, align = 'left' }: {
+  label: string; sortKey: SortKey; current: SortKey; dir: 'asc' | 'desc';
+  onClick: (key: SortKey) => void; align?: 'left' | 'right';
+}) {
+  const active = current === sortKey;
+  return (
+    <th className={`px-4 py-2.5 ${align === 'right' ? 'text-right' : 'text-left'}`}>
+      <button onClick={() => onClick(sortKey)} className={`inline-flex items-center gap-0.5 hover:text-black transition-colors ${active ? 'text-black' : ''}`}>
+        {label}
+        <span className="text-[9px]">{active ? (dir === 'desc' ? '▼' : '▲') : ''}</span>
+      </button>
+    </th>
+  );
+}
+
 export default function MayoristasAdminPage() {
   const [adminKey, setAdminKey] = useState('');
   const [authed, setAuthed]     = useState(false);
@@ -66,6 +121,33 @@ export default function MayoristasAdminPage() {
   const [togglingId, setTogglingId]   = useState<number | null>(null);
   const [minInputs, setMinInputs]     = useState<Record<number, string>>({});
   const [savingMinId, setSavingMinId] = useState<number | null>(null);
+  const [filterMode, setFilterMode] = useState<FilterMode>('all');
+  const [sortKey, setSortKey]       = useState<SortKey>('totalSpent');
+  const [sortDir, setSortDir]       = useState<'asc' | 'desc'>('desc');
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir(d => (d === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  }
+
+  const visibleMayoristas = useMemo(() => {
+    const filtered = mayoristas.filter(m => {
+      if (filterMode === 'never-ordered') return m.orderCount === 0;
+      if (filterMode === 'never-logged-in') return m.loginCount === 0;
+      return true;
+    });
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      if (sortKey === 'name') return dir * (a.company || a.name).localeCompare(b.company || b.name);
+      if (sortKey === 'lastOrderAt') return dir * (new Date(a.lastOrderAt || 0).getTime() - new Date(b.lastOrderAt || 0).getTime());
+      if (sortKey === 'lastLogin') return dir * (new Date(a.lastLogin || 0).getTime() - new Date(b.lastLogin || 0).getTime());
+      return dir * ((a[sortKey] as number) - (b[sortKey] as number));
+    });
+  }, [mayoristas, filterMode, sortKey, sortDir]);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -332,31 +414,57 @@ export default function MayoristasAdminPage() {
         )}
 
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-[13px] font-semibold text-gray-900">{mayoristas.length} cliente{mayoristas.length !== 1 ? 's' : ''}</p>
-            {loadingList && <span className="text-[11px] text-gray-400">Actualizando…</span>}
+          <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <p className="text-[13px] font-semibold text-gray-900">{visibleMayoristas.length} cliente{visibleMayoristas.length !== 1 ? 's' : ''}</p>
+              {loadingList && <span className="text-[11px] text-gray-400">Actualizando…</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                {(Object.keys(FILTER_LABELS) as FilterMode[]).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilterMode(f)}
+                    className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                      filterMode === f ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                    }`}
+                  >
+                    {FILTER_LABELS[f]}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => downloadCsv(visibleMayoristas)}
+                disabled={visibleMayoristas.length === 0}
+                className="text-[11px] font-semibold text-gray-600 hover:text-black px-2.5 py-1 border border-gray-300 rounded-full disabled:opacity-30"
+              >
+                ⬇ Exportar CSV
+              </button>
+            </div>
           </div>
 
-          {mayoristas.length === 0 && !loadingList ? (
-            <p className="text-center py-12 text-[13px] text-gray-400">Todavía no creaste ningún cliente.</p>
+          {visibleMayoristas.length === 0 && !loadingList ? (
+            <p className="text-center py-12 text-[13px] text-gray-400">
+              {mayoristas.length === 0 ? 'Todavía no creaste ningún cliente.' : 'Nadie coincide con este filtro.'}
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                    <th className="text-left px-4 py-2.5">Cliente</th>
+                    <SortableTh label="Cliente" sortKey="name" current={sortKey} dir={sortDir} onClick={toggleSort} />
                     <th className="text-left px-4 py-2.5">Contacto</th>
                     <th className="text-left px-4 py-2.5">Ciudad</th>
-                    <th className="text-right px-4 py-2.5">Pedidos</th>
-                    <th className="text-right px-4 py-2.5">Total</th>
-                    <th className="text-left px-4 py-2.5">Actividad</th>
+                    <SortableTh label="Pedidos" sortKey="orderCount" current={sortKey} dir={sortDir} onClick={toggleSort} align="right" />
+                    <SortableTh label="Total" sortKey="totalSpent" current={sortKey} dir={sortDir} onClick={toggleSort} align="right" />
+                    <SortableTh label="Último ingreso" sortKey="lastLogin" current={sortKey} dir={sortDir} onClick={toggleSort} />
                     <th className="text-left px-4 py-2.5">Mínimo propio</th>
                     <th className="text-left px-4 py-2.5">Estado</th>
                     <th className="text-right px-4 py-2.5">Acción</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {mayoristas.map((m) => (
+                  {visibleMayoristas.map((m) => (
                     <tr key={m.id} className="border-t border-gray-50">
                       <td className="px-4 py-3">
                         <p className="font-medium text-gray-900">{m.company || m.name}</p>
