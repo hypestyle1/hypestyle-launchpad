@@ -113,6 +113,7 @@ export async function POST(req: NextRequest) {
         to:          [{ email }],
         subject:     '¡Tu 10% off te espera — Hypestyle!',
         htmlContent: buildWelcomeHtml(firstName),
+        tags:        ['welcome-step-1'],
       }),
     });
 

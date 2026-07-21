@@ -38,7 +38,7 @@ async function fetchOrder(orderId: string) {
   return res.json();
 }
 
-async function sendBrevo(to: { email: string; name?: string }, subject: string, html: string) {
+async function sendBrevo(to: { email: string; name?: string }, subject: string, html: string, tags?: string[]) {
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
@@ -48,6 +48,7 @@ async function sendBrevo(to: { email: string; name?: string }, subject: string, 
       to: [to],
       subject,
       htmlContent: html,
+      ...(tags?.length ? { tags } : {}),
     }),
   });
   if (!res.ok) {
@@ -409,6 +410,7 @@ export async function GET(req: NextRequest) {
         { email: sendTo, name: `${nombre} ${apellido}`.trim() },
         `Pedido #${orderNum} confirmado — Hypestyle`,
         html,
+        ['order-confirmation'],
       );
       results.confirmation = 'sent';
     }
@@ -419,6 +421,7 @@ export async function GET(req: NextRequest) {
         { email: sendTo, name: `${nombre} ${apellido}`.trim() },
         `Tu pedido #${orderNum} está en camino — Hypestyle`,
         html,
+        ['order-tracking'],
       );
       results.tracking = 'sent';
     }
@@ -429,6 +432,7 @@ export async function GET(req: NextRequest) {
         { email: sendTo, name: `${nombre} ${apellido}`.trim() },
         `Tu pedido #${orderNum} fue cancelado — Hypestyle`,
         html,
+        ['order-cancellation'],
       );
       results.cancellation = 'sent';
     }
@@ -443,6 +447,7 @@ export async function GET(req: NextRequest) {
         { email: sendTo, name: `${nombre} ${apellido}`.trim() },
         subject,
         html,
+        [`abandoned-step-${step}`],
       );
       results.abandoned = 'sent';
       results.step = step;

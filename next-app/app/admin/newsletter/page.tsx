@@ -177,6 +177,7 @@ export default function NewsletterPage() {
         <span className="text-gray-300">|</span>
         <span className="text-[14px] font-semibold text-gray-900">Newsletter</span>
         <Link href="/admin/pedidos" className="text-[12px] text-gray-400 hover:text-black ml-2">Pedidos →</Link>
+        <Link href="/admin/email-metrics" className="text-[12px] text-gray-400 hover:text-black">Métricas email →</Link>
         {count !== null && <span className="ml-auto text-[12px] text-gray-500">{count} suscriptores</span>}
       </div>
 

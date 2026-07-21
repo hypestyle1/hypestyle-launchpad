@@ -280,6 +280,7 @@ export default function PedidosPage() {
           <Link href="/admin/conversaciones" className="text-[12px] text-gray-400 hover:text-black ml-1">Conversaciones →</Link>
           <Link href="/admin/costos" className="text-[12px] text-gray-400 hover:text-black ml-1">Costos →</Link>
           <Link href="/admin/mayoristas" className="text-[12px] text-gray-400 hover:text-black ml-1">+ Cliente mayorista →</Link>
+          <Link href="/admin/email-metrics" className="text-[12px] text-gray-400 hover:text-black ml-1">Métricas email →</Link>
         </div>
         <div className="flex items-center gap-2">
           {/* Stats globales reales */}
