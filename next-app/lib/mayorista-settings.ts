@@ -31,7 +31,10 @@ export async function setGlobalMinOrder(minOrder: number): Promise<boolean> {
 }
 
 export function customerMinOrderOverride(customerMeta: { key: string; value: string }[] | undefined): number | null {
-  const found = customerMeta?.find(m => m.key === 'mayorista_min_order');
-  const n = found ? Number(found.value) : NaN;
+  const raw = customerMeta?.find(m => m.key === 'mayorista_min_order')?.value?.trim();
+  // Ojo: Number('') es 0 (no NaN) — sin el chequeo de string vacío, borrar el
+  // override (guardarlo como '') se leería como "mínimo = $0" en vez de "sin override".
+  if (!raw) return null;
+  const n = Number(raw);
   return Number.isFinite(n) && n >= 0 ? n : null;
 }

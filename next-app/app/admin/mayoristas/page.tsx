@@ -51,6 +51,8 @@ export default function MayoristasAdminPage() {
   const [mayoristas, setMayoristas]   = useState<Mayorista[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [togglingId, setTogglingId]   = useState<number | null>(null);
+  const [minInputs, setMinInputs]     = useState<Record<number, string>>({});
+  const [savingMinId, setSavingMinId] = useState<number | null>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -67,12 +69,33 @@ export default function MayoristasAdminPage() {
       const res = await fetch('/api/admin/mayoristas', { headers: { 'x-admin-key': key } });
       if (res.ok) {
         const data = await res.json();
-        setMayoristas(data.mayoristas || []);
+        const list: Mayorista[] = data.mayoristas || [];
+        setMayoristas(list);
+        setMinInputs(Object.fromEntries(list.map(m => [m.id, m.minOrderOverride ?? ''])));
       }
     } finally {
       setLoadingList(false);
     }
   }, []);
+
+  async function saveClientMin(m: Mayorista) {
+    const raw = (minInputs[m.id] ?? '').trim();
+    const minOrder = raw === '' ? null : Number(raw);
+    if (minOrder !== null && (!Number.isFinite(minOrder) || minOrder < 0)) return;
+    setSavingMinId(m.id);
+    try {
+      const res = await fetch(`/api/admin/mayoristas/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ minOrder }),
+      });
+      if (res.ok) {
+        setMayoristas(prev => prev.map(x => x.id === m.id ? { ...x, minOrderOverride: minOrder === null ? null : String(minOrder) } : x));
+      }
+    } finally {
+      setSavingMinId(null);
+    }
+  }
 
   useEffect(() => {
     if (!authed || !adminKey) return;
@@ -313,6 +336,7 @@ export default function MayoristasAdminPage() {
                     <th className="text-left px-4 py-2.5">Ciudad</th>
                     <th className="text-right px-4 py-2.5">Pedidos</th>
                     <th className="text-right px-4 py-2.5">Total</th>
+                    <th className="text-left px-4 py-2.5">Mínimo propio</th>
                     <th className="text-left px-4 py-2.5">Estado</th>
                     <th className="text-right px-4 py-2.5">Acción</th>
                   </tr>
@@ -337,10 +361,28 @@ export default function MayoristasAdminPage() {
                       <td className="px-4 py-3 text-right font-medium">{m.orderCount}</td>
                       <td className="px-4 py-3 text-right font-medium">{fmt(m.totalSpent)}</td>
                       <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min={0}
+                            value={minInputs[m.id] ?? ''}
+                            onChange={e => setMinInputs(prev => ({ ...prev, [m.id]: e.target.value }))}
+                            placeholder={globalMin != null ? `general ($${globalMin.toLocaleString('es-AR')})` : 'general'}
+                            className="w-32 border border-gray-300 rounded-md px-2 py-1 text-[12px] focus:outline-none focus:border-black"
+                          />
+                          <button
+                            onClick={() => saveClientMin(m)}
+                            disabled={savingMinId === m.id || (minInputs[m.id] ?? '') === (m.minOrderOverride ?? '')}
+                            className="text-[11px] font-semibold text-gray-500 hover:text-black px-2 py-1 border border-gray-300 rounded-md disabled:opacity-30"
+                          >
+                            {savingMinId === m.id ? '...' : 'Guardar'}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${m.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {m.active ? 'Activo' : 'Revocado'}
                         </span>
-                        {m.minOrderOverride && <p className="text-[10px] text-gray-400 mt-1">mín. propio: ${Number(m.minOrderOverride).toLocaleString('es-AR')}</p>}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
