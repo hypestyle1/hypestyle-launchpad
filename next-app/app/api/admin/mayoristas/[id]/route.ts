@@ -15,19 +15,26 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
-  const { active } = await req.json();
-  if (typeof active !== 'boolean') {
-    return NextResponse.json({ message: 'active debe ser boolean' }, { status: 400 });
+  const body = await req.json();
+  const { active, minOrder } = body as { active?: boolean; minOrder?: number | null };
+
+  if (active === undefined && minOrder === undefined) {
+    return NextResponse.json({ message: 'Nada para actualizar' }, { status: 400 });
   }
+  if (minOrder !== undefined && minOrder !== null && (typeof minOrder !== 'number' || !Number.isFinite(minOrder) || minOrder < 0)) {
+    return NextResponse.json({ message: 'minOrder inválido' }, { status: 400 });
+  }
+
+  // Sin guión bajo: WC descarta en silencio los meta "protegidos" al
+  // actualizar un customer por REST (mismo motivo que en la creación).
+  const metaData: { key: string; value: string }[] = [];
+  if (active !== undefined) metaData.push({ key: 'es_mayorista', value: active ? 'yes' : 'no' });
+  if (minOrder !== undefined) metaData.push({ key: 'mayorista_min_order', value: minOrder === null ? '' : String(minOrder) });
 
   const res = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${params.id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-    body: JSON.stringify({
-      // Sin guión bajo: WC descarta en silencio los meta "protegidos" al
-      // actualizar un customer por REST (mismo motivo que en la creación).
-      meta_data: [{ key: 'es_mayorista', value: active ? 'yes' : 'no' }],
-    }),
+    body: JSON.stringify({ meta_data: metaData }),
   });
 
   if (!res.ok) {
@@ -36,5 +43,5 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ message: `Error de WooCommerce (${res.status})` }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, active });
+  return NextResponse.json({ ok: true, active, minOrder });
 }
