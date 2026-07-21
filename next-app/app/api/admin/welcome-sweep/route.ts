@@ -209,8 +209,13 @@ export async function GET(req: NextRequest) {
       if (res.ok) {
         if (!overrideTo) await updateWelcomeStep(c.email, step);
         sent.push({ email: c.email, step, to: sendTo });
+      } else if (forceEmail) {
+        const err = await res.json().catch(() => ({}));
+        sent.push({ email: c.email, step, to: sendTo, error: err });
       }
-    } catch { /* sigue con el resto */ }
+    } catch (e: any) {
+      if (forceEmail) sent.push({ email: c.email, step, to: sendTo, error: String(e?.message || e) });
+    }
   }
 
   return NextResponse.json({ ok: true, contactos: contacts.length, enviados: sent.length, detalle: sent });
