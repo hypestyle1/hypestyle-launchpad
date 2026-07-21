@@ -46,12 +46,14 @@ export async function GET(req: NextRequest) {
     const meta = c.meta_data ?? [];
     let orderCount = 0;
     let totalSpent = 0;
+    let lastOrderAt: string | null = null;
     try {
-      const ordRes = await wcFetch(`orders?customer=${c.id}&status=any&per_page=100&_fields=id,status,total`);
+      const ordRes = await wcFetch(`orders?customer=${c.id}&status=any&per_page=100&orderby=date&order=desc&_fields=id,status,total,date_created`);
       if (ordRes.ok) {
         const orders = (await ordRes.json() as any[]).filter(o => !EXCLUDED_STATUSES.has(o.status));
         orderCount = orders.length;
         totalSpent = orders.reduce((sum, o) => sum + parseFloat(o.total || '0'), 0);
+        lastOrderAt = orders[0]?.date_created ?? null;
       }
     } catch {}
 
@@ -67,6 +69,9 @@ export async function GET(req: NextRequest) {
       createdAt: c.date_created,
       orderCount,
       totalSpent,
+      lastOrderAt,
+      lastLogin: metaVal(meta, 'mayorista_last_login') || null,
+      loginCount: Number(metaVal(meta, 'mayorista_login_count')) || 0,
     };
   }));
 
