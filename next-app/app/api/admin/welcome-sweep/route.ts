@@ -48,7 +48,7 @@ async function fetchAllContacts(): Promise<any[]> {
   return all;
 }
 
-async function sendBrevo(to: { email: string; name?: string }, subject: string, html: string) {
+async function sendBrevo(to: { email: string; name?: string }, subject: string, html: string, tags?: string[]) {
   return fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
@@ -58,6 +58,7 @@ async function sendBrevo(to: { email: string; name?: string }, subject: string, 
       to:      [to],
       subject,
       htmlContent: html,
+      ...(tags?.length ? { tags } : {}),
     }),
   });
 }
@@ -194,7 +195,7 @@ export async function GET(req: NextRequest) {
     const sendTo = overrideTo || c.email;
 
     try {
-      const res = await sendBrevo({ email: sendTo, name }, subject, html);
+      const res = await sendBrevo({ email: sendTo, name }, subject, html, [`welcome-step-${step}`]);
       if (res.ok) {
         if (!overrideTo) await updateWelcomeStep(c.email, step);
         sent.push({ email: c.email, step, to: sendTo });
