@@ -60,9 +60,9 @@ const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-c
 
 function ThankYouMessage() {
   return (
-    <div className="mt-3 mb-1 rounded-[10px] border border-border bg-[#f8f8f6] px-4 py-3">
-      <p className="text-[13px] text-foreground/80">
-        Gracias por bancar a la Selección hasta el final. La Nuestra queda con <span className="font-bold">50% OFF</span>.
+    <div className="mt-3 mb-1 rounded-[10px] border border-[#9cc7e8] bg-[#eaf5fd] px-4 py-3">
+      <p className="text-[13px] text-[#1c4f7a]">
+        Gracias por bancar a la Selección hasta el final. La Nuestra queda con <span className="font-bold text-[#0f3a5f]">50% OFF</span>.
       </p>
     </div>
   );
@@ -72,7 +72,7 @@ function GoalDiscountCorner({ d }: { d: GoalDiscount | null }) {
   if (!d?.active) return null;
   const pct = Math.round((d.percent || 0) * 100);
   return (
-    <div className="absolute top-3 left-3 z-10 rounded-full bg-green-600 text-white text-[13px] font-extrabold tracking-wide px-3 py-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.25)]">
+    <div className="absolute top-3 left-3 z-10 rounded-full bg-[#4a90c2] text-white text-[13px] font-extrabold tracking-wide px-3 py-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.25)]">
       {pct}% OFF
     </div>
   );
@@ -151,6 +151,10 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
   }, [allProducts, product?.slug]);
 
   const goalDiscount = useGoalDiscount(slug, initialGoalDiscount);
+  const isLaNuestra = slug === GOAL_DISCOUNT_SLUG;
+  const primaryBtnClass = isLaNuestra
+    ? 'bg-[#4a90c2] hover:bg-[#3d7aa8]'
+    : 'bg-bg-dark hover:bg-bg-dark/85';
 
 
   const [mounted, setMounted]               = useState(false);
@@ -224,7 +228,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
     ? [...product.images, 'products/argentina-jersey/preview-sample-espalda.png', 'products/argentina-jersey/preview-sample-frente.png']
     : product.images;
   // Productos con video: el video va como primer slide de la galería.
-  const galleryImages = (product.video && slug === GOAL_DISCOUNT_SLUG) ? [product.video, ...baseImages] : baseImages;
+  const galleryImages = (product.video && isLaNuestra) ? [product.video, ...baseImages] : baseImages;
   // Imagen "de portada" (no-video) para carrito y miniaturas fijas.
   const coverImage = galleryImages.find(g => !isVideo(g)) ?? galleryImages[0];
 
@@ -314,7 +318,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
     <>
       <AnnouncementBar />
       <Navbar />
-      <main className="pt-[var(--offset)]">
+      <main className={`pt-[var(--offset)] ${isLaNuestra ? 'bg-gradient-to-b from-[#eaf5fd] via-white to-white' : ''}`}>
         <div className="max-w-[1400px] mx-auto px-4 py-3">
           <p className="text-[11px] text-muted-foreground">
             <a href="/" className="hover:text-foreground transition-colors">Inicio</a>
@@ -414,7 +418,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
                 )}
               </div>
 
-              {!flashActive && slug === GOAL_DISCOUNT_SLUG && <ThankYouMessage />}
+              {!flashActive && isLaNuestra && <ThankYouMessage />}
 
               {product.modelInfo && (
                 <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 mb-4 rounded-[10px]">
@@ -536,7 +540,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
               )}
 
               <button ref={addBtnRef} onClick={handleAdd} disabled={stockChecking}
-                className="w-full bg-bg-dark text-primary-foreground py-4 text-[13px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors mb-4 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                className={`w-full ${primaryBtnClass} text-primary-foreground py-4 text-[13px] font-bold uppercase tracking-[0.1em] transition-colors mb-4 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2`}>
                 {stockChecking ? (
                   <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -644,7 +648,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
           <p className="text-[11px] text-muted-foreground">{mounted ? formatPrice(displayPrice) : '—'}{selectedSize && <span> · Talle {selectedSize}</span>}</p>
         </div>
         <button onClick={handleAdd} disabled={stockChecking}
-          className="flex-shrink-0 bg-bg-dark text-primary-foreground px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5">
+          className={`flex-shrink-0 ${primaryBtnClass} text-primary-foreground px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5`}>
           {stockChecking && <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>}
           Agregar
         </button>
@@ -671,7 +675,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
             </div>
             <div className="p-5 space-y-2">
               <button onClick={() => { setAdded(false); setDrawerOpen(true); }}
-                className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-bg-dark/85 transition-colors rounded-[10px]">
+                className={`w-full ${primaryBtnClass} text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.08em] transition-colors rounded-[10px]`}>
                 Ver carrito
               </button>
               <button onClick={() => setAdded(false)}
