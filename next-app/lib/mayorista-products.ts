@@ -9,7 +9,7 @@ const GET_PRODUCTS = `
     products(first: $first, after: $after, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        id name slug
+        id name slug shortDescription
         ... on SimpleProduct {
           regularPrice stockStatus stockQuantity
           image { sourceUrl }
@@ -38,6 +38,7 @@ export interface MayoristaProduct {
   name: string;
   slug: string;
   category: string;
+  shortDescription: string;
   wholesalePrice: number;
   regularPrice: number;
   image: string;
@@ -45,6 +46,18 @@ export interface MayoristaProduct {
   sizes: string[];
   stock: Record<string, 'ok' | 'low' | 'out'>;
   stockQty: Record<string, number | null>;
+}
+
+// La descripción corta de WP viene con HTML (<p>, &nbsp;, etc.) — acá solo
+// se muestra como una línea de texto plano bajo el nombre del producto.
+function stripHtml(html?: string | null): string {
+  return (html || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&oacute;/g, 'ó').replace(/&aacute;/g, 'á').replace(/&eacute;/g, 'é')
+    .replace(/&iacute;/g, 'í').replace(/&uacute;/g, 'ú').replace(/&ntilde;/g, 'ñ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function parsePrice(s?: string | null): number {
@@ -75,6 +88,21 @@ const EXCLUDED_CATEGORY_SLUGS = new Set(['pack', 'set']);
 function isCombo(node: any): boolean {
   const slugs: string[] = (node.productCategories?.nodes ?? []).map((c: any) => c.slug);
   return slugs.some((s) => EXCLUDED_CATEGORY_SLUGS.has(s));
+}
+
+// Productos puntuales que el negocio decidió no ofrecer a mayoristas
+// (a mano, no hay una regla automática detrás — pedido explícito).
+const EXCLUDED_SLUGS = new Set(['hs-ring-silver-925', 'zip-hoodie-pink']);
+
+// Con cuántas unidades "de esfuerzo de stock" carga un producto: 2 por talle
+// agotado, 1 por talle con poco stock, 0 si está todo ok. Se usa para orden
+// (más bajo = más disponible = va primero) y para sacar del todo los que no
+// tienen ningún talle disponible.
+function stockScore(p: MayoristaProduct): number {
+  return p.sizes.reduce((sum, s) => sum + (p.stock[s] === 'out' ? 2 : p.stock[s] === 'low' ? 1 : 0), 0);
+}
+function isFullyOut(p: MayoristaProduct): boolean {
+  return p.sizes.length > 0 && p.sizes.every((s) => p.stock[s] === 'out');
 }
 
 function fromNode(node: any): MayoristaProduct {
@@ -116,6 +144,7 @@ function fromNode(node: any): MayoristaProduct {
     name: node.name,
     slug: node.slug,
     category: node.productCategories?.nodes?.[0]?.name ?? '',
+    shortDescription: stripHtml(node.shortDescription),
     wholesalePrice,
     regularPrice,
     image: images[0] ?? '',
@@ -149,10 +178,17 @@ export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
     after = page.pageInfo.endCursor;
   }
 
-  return allNodes
-    .filter((n: any) => !isCombo(n))
+  const products = allNodes
+    .filter((n: any) => !isCombo(n) && !EXCLUDED_SLUGS.has(n.slug))
     .map(fromNode)
-    .filter((p: MayoristaProduct) => p.regularPrice > 0);
+    .filter((p: MayoristaProduct) => p.regularPrice > 0 && !isFullyOut(p));
+
+  // Estable: entre productos con el mismo puntaje de stock, se mantiene el
+  // orden que ya traían (menu_order del sitio).
+  return products
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => stockScore(a.p) - stockScore(b.p) || a.i - b.i)
+    .map(({ p }) => p);
 }
 
 export async function fetchMayoristaProduct(slug: string): Promise<MayoristaProduct | null> {
