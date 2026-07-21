@@ -153,18 +153,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (process.env.WELCOME_SEQUENCE_ENABLED !== 'true') {
-    return NextResponse.json({ ok: true, disabled: true, message: 'Secuencia de bienvenida en pausa (setear WELCOME_SEQUENCE_ENABLED=true para activar).' });
-  }
-
-  await ensureWelcomeAttributes(BREVO_API_KEY);
-
   const overrideTo = req.nextUrl.searchParams.get('to') || ''; // solo para pruebas manuales
   const forceEmail = req.nextUrl.searchParams.get('force_email') || ''; // procesar un solo contacto puntual
   // Con force_email + force_step se ignora el gate de antigüedad, solo para poder
   // ver el diseño de un paso puntual sin esperar 2/5 días reales (no toca WELCOME_STEP
   // si sendTo viene de &to=, para no romper la secuencia real del contacto).
   const forceStep = parseInt(req.nextUrl.searchParams.get('force_step') || '', 10);
+
+  // El interruptor de producción solo bloquea la sweep real (todos los contactos);
+  // un test puntual con force_email pasa igual para poder validar el copy sin
+  // prender el cron para toda la lista.
+  if (!forceEmail && process.env.WELCOME_SEQUENCE_ENABLED !== 'true') {
+    return NextResponse.json({ ok: true, disabled: true, message: 'Secuencia de bienvenida en pausa (setear WELCOME_SEQUENCE_ENABLED=true para activar).' });
+  }
+
+  await ensureWelcomeAttributes(BREVO_API_KEY);
 
   const contacts = await fetchAllContacts();
   const sent: any[] = [];
