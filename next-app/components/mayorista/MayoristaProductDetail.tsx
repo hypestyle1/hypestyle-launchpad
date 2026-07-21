@@ -40,6 +40,9 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-text-light">{product.category}</p>
           <h1 className="text-2xl font-bold tracking-tight mt-1">{product.name}</h1>
+          {product.shortDescription && (
+            <p className="text-[13px] text-text-light mt-1">{product.shortDescription}</p>
+          )}
 
           <div className="mt-4">
             <p className="text-[24px] font-semibold">{formatArs(product.wholesalePrice)}</p>
@@ -72,7 +75,9 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
               })}
             </div>
             {size && selectedStock === 'low' && selectedQty != null && (
-              <p className="mt-2 text-[12px] text-orange-600">Últimas {selectedQty} unidades en talle {size}.</p>
+              <p className="mt-2 text-[12px] font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-[6px] px-2.5 py-1.5 inline-block">
+                ⚠ Últimas {selectedQty} unidades en talle {size}
+              </p>
             )}
           </div>
 

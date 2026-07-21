@@ -17,6 +17,9 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
   const outOfStock = product.sizes.every(s => product.stock[s] === 'out');
   const images = product.images.length ? product.images : [product.image];
   const hasMultiple = images.length > 1;
+  const singleSize = product.sizes.length === 1;
+  const singleSizeLow = singleSize && product.stock[product.sizes[0]] === 'low';
+  const singleSizeQty = singleSize ? product.stockQty[product.sizes[0]] : null;
 
   function handleAdd(size: string, e: React.MouseEvent) {
     e.preventDefault();
@@ -84,34 +87,59 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
       <div className="mt-3 px-0.5">
         <p className="text-[10px] uppercase tracking-[0.15em] text-text-light">{product.category}</p>
         <p className="text-[13px] font-medium leading-tight mt-0.5">{product.name}</p>
+        {product.shortDescription && (
+          <p className="text-[11px] text-text-light leading-tight mt-0.5">{product.shortDescription}</p>
+        )}
         <div className="flex items-center gap-2 mt-1">
           <span className="text-[13px] font-semibold">{formatArs(product.wholesalePrice)}</span>
           <span className="text-[12px] text-text-light line-through">{formatArs(product.regularPrice)}</span>
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {product.sizes.map((size) => {
-            const isOut = product.stock[size] === 'out';
-            const isLow = product.stock[size] === 'low';
-            const qty = product.stockQty[size];
-            return (
-              <button
-                key={size}
-                onClick={(e) => handleAdd(size, e)}
-                disabled={isOut}
-                title={isLow && qty != null ? `Últimas ${qty} unidades` : undefined}
-                className={`min-w-[28px] px-1.5 py-1 text-[11px] rounded-[6px] border transition-colors ${
-                  isOut ? 'border-border text-text-light/60 line-through cursor-not-allowed' :
-                  added === size ? 'border-bg-dark bg-bg-dark text-primary-foreground' :
-                  isLow ? 'border-orange-400/60 text-orange-600 hover:border-orange-500' :
-                  'border-border-mid text-foreground/70 hover:border-foreground'
-                }`}
-              >
-                {added === size ? '✓' : size}
-              </button>
-            );
-          })}
-        </div>
+        {/* Talle único (accesorios): banner de últimas unidades + un solo botón, sin pills */}
+        {singleSize ? (
+          <>
+            {singleSizeLow && singleSizeQty != null && (
+              <p className="mt-2 text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-[6px] px-2 py-1">
+                ⚠ Últimas {singleSizeQty} unidades
+              </p>
+            )}
+            <button
+              onClick={(e) => handleAdd(product.sizes[0], e)}
+              disabled={outOfStock}
+              className={`mt-2 w-full py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] transition-colors ${
+                outOfStock ? 'bg-bg-alt text-text-light/60 cursor-not-allowed' :
+                added === product.sizes[0] ? 'bg-bg-dark text-primary-foreground' :
+                'bg-bg-dark text-primary-foreground hover:bg-bg-dark/85'
+              }`}
+            >
+              {added === product.sizes[0] ? '✓ Agregado' : outOfStock ? 'Sin stock' : '+ Agregar'}
+            </button>
+          </>
+        ) : (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {product.sizes.map((size) => {
+              const isOut = product.stock[size] === 'out';
+              const isLow = product.stock[size] === 'low';
+              const qty = product.stockQty[size];
+              return (
+                <button
+                  key={size}
+                  onClick={(e) => handleAdd(size, e)}
+                  disabled={isOut}
+                  className={`min-w-[28px] px-1.5 py-1 text-[11px] rounded-[6px] border transition-colors flex flex-col items-center leading-tight ${
+                    isOut ? 'border-border text-text-light/60 line-through cursor-not-allowed' :
+                    added === size ? 'border-bg-dark bg-bg-dark text-primary-foreground' :
+                    isLow ? 'border-orange-400/60 text-orange-600 hover:border-orange-500' :
+                    'border-border-mid text-foreground/70 hover:border-foreground'
+                  }`}
+                >
+                  {added === size ? '✓' : size}
+                  {isLow && qty != null && added !== size && <span className="text-[8px] leading-tight">¡{qty}!</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </Link>
   );
