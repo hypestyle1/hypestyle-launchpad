@@ -178,6 +178,16 @@ export async function GET(req: NextRequest) {
   const contacts = await fetchAllContacts();
   const sent: any[] = [];
 
+  if (forceEmail && req.nextUrl.searchParams.get('debug') === '1') {
+    const match = contacts.find(c => c.email?.toLowerCase() === forceEmail.toLowerCase());
+    return NextResponse.json({
+      ok: true,
+      contactos: contacts.length,
+      found: !!match,
+      contact: match ? { email: match.email, emailBlacklisted: match.emailBlacklisted, attributes: match.attributes } : null,
+    });
+  }
+
   for (const c of contacts) {
     if (forceEmail && c.email?.toLowerCase() !== forceEmail.toLowerCase()) continue;
     if (c.emailBlacklisted) continue;
