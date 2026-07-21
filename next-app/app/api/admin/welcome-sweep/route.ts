@@ -49,13 +49,16 @@ async function fetchAllContacts(): Promise<any[]> {
 }
 
 async function sendBrevo(to: { email: string; name?: string }, subject: string, html: string, tags?: string[]) {
+  // Brevo rechaza el envío si "name" viene como string vacío (contactos sin
+  // FIRSTNAME cargado) — hay que omitir la clave del todo, no mandarla en "".
+  const recipient = to.name?.trim() ? { email: to.email, name: to.name } : { email: to.email };
   return fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sender:  { name: 'Hypestyle', email: 'info@hypestyle.com.ar' },
       replyTo: { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
-      to:      [to],
+      to:      [recipient],
       subject,
       htmlContent: html,
       ...(tags?.length ? { tags } : {}),
