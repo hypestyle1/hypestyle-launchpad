@@ -232,13 +232,39 @@ function buildCancellationHtml(order: { orderNum: string; nombre: string }) {
 </html>`;
 }
 
+const ABANDONED_STEP_COPY: Record<number, { eyebrow: string; title: string; intro: (isTransfer: boolean) => string }> = {
+  1: {
+    eyebrow: 'Pedido sin completar',
+    title: 'Te quedó un pedido sin completar',
+    intro: (isTransfer) => isTransfer
+      ? 'Vimos que iniciaste tu compra pero todavía no nos llegó la transferencia. Tu pedido sigue reservado — completá el pago así lo preparamos.'
+      : 'Vimos que iniciaste tu compra pero quedó sin completarse. Tus productos te esperan — terminá tu pedido cuando quieras.',
+  },
+  2: {
+    eyebrow: '¿Seguís interesado?',
+    title: 'Tu pedido te sigue esperando',
+    intro: (isTransfer) => isTransfer
+      ? 'Todavía no nos llegó tu transferencia y tu pedido sigue reservado, pero no por mucho más tiempo. Si ya la hiciste, mandanos el comprobante y lo despachamos.'
+      : 'Tu carrito sigue esperando, pero el stock de estos productos es limitado y se puede agotar. Terminá tu compra antes de que se acabe.',
+  },
+  3: {
+    eyebrow: 'Último aviso',
+    title: 'Tu pedido y tu descuento vencen pronto',
+    intro: (isTransfer) => isTransfer
+      ? 'Última oportunidad: si no nos llega la transferencia pronto, vamos a liberar la reserva de tu pedido. Mandanos el comprobante ahora para asegurarlo.'
+      : 'Esta es la última vez que te avisamos: tu carrito y tu código de descuento están por vencer. Después de esto no lo volvemos a reservar.',
+  },
+};
+
 function buildAbandonedHtml(order: {
   orderNum: string;
   nombre: string;
   total: number;
   items: { name: string; size: string; quantity: number; price: number }[];
   isTransfer: boolean;
+  step: number;
 }) {
+  const copy = ABANDONED_STEP_COPY[order.step] || ABANDONED_STEP_COPY[1];
   const rows = order.items.map(item => `
     <tr>
       <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px;color:#111;">
@@ -261,16 +287,13 @@ function buildAbandonedHtml(order: {
     </div>` : '';
 
   // El cupón solo aplica cuando pagan online (no en transferencia: ahí el total ya está fijado).
+  const couponUrgency = order.step >= 3 ? 'Vence muy pronto — es tu última chance de usarlo.' : 'Aplicalo en el checkout. Vence pronto.';
   const couponBlock = order.isTransfer ? '' : `
     <div style="margin:24px 0 0;background:#0a0a0a;border-radius:8px;padding:20px;text-align:center;">
       <p style="margin:0 0 10px;font-size:15px;color:#fff;line-height:1.5;">Llevate <b>${RECOVERY_DISCOUNT} OFF</b> con el código</p>
       <p style="margin:0;display:inline-block;background:#fff;color:#0a0a0a;font-size:18px;font-weight:800;letter-spacing:0.06em;padding:8px 18px;border-radius:6px;">${RECOVERY_COUPON}</p>
-      <p style="margin:12px 0 0;font-size:12px;color:#999;">Aplicalo en el checkout. Vence pronto.</p>
+      <p style="margin:12px 0 0;font-size:12px;color:#999;">${couponUrgency}</p>
     </div>`;
-
-  const intro = order.isTransfer
-    ? 'Vimos que iniciaste tu compra pero todavía no nos llegó la transferencia. Tu pedido sigue reservado — completá el pago así lo preparamos.'
-    : 'Vimos que iniciaste tu compra pero quedó sin completarse. Tus productos te esperan — terminá tu pedido cuando quieras.';
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -286,9 +309,9 @@ function buildAbandonedHtml(order: {
         </tr>
         <tr>
           <td style="padding:36px 40px 28px;">
-            <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:#999;">Pedido #${order.orderNum}</p>
-            <h1 style="margin:0 0 16px;font-size:23px;font-weight:700;color:#111;">Te quedó un pedido sin completar</h1>
-            <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.6;">Hola ${order.nombre}, ${intro}</p>
+            <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:#999;">${copy.eyebrow} · Pedido #${order.orderNum}</p>
+            <h1 style="margin:0 0 16px;font-size:23px;font-weight:700;color:#111;">${copy.title}</h1>
+            <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.6;">Hola ${order.nombre}, ${copy.intro(order.isTransfer)}</p>
             <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f0f0f0;">${rows}</table>
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
               <tr>
@@ -407,13 +430,18 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === 'abandoned') {
-      const html = buildAbandonedHtml({ orderNum, nombre, total, items, isTransfer: paymentMethod === 'bacs' });
+      const step = Math.min(3, Math.max(1, parseInt(searchParams.get('step') || '1', 10) || 1));
+      const html = buildAbandonedHtml({ orderNum, nombre, total, items, isTransfer: paymentMethod === 'bacs', step });
+      const subject = step === 1 ? 'Te quedó un pedido sin completar — Hypestyle'
+        : step === 2 ? 'Tu pedido te sigue esperando — Hypestyle'
+        : 'Último aviso: tu pedido y tu descuento vencen pronto — Hypestyle';
       await sendBrevo(
         { email: sendTo, name: `${nombre} ${apellido}`.trim() },
-        `Te quedó un pedido sin completar — Hypestyle`,
+        subject,
         html,
       );
       results.abandoned = 'sent';
+      results.step = step;
     }
 
     return NextResponse.json({ ok: true, ...results });

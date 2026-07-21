@@ -8,10 +8,12 @@ const MAIL_SECRET = 'hs2026';
 
 const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 
-// Primer mail de la secuencia: pedidos pending/failed con entre MIN y MAX horas de antigüedad,
-// que no se les haya enviado todavía (_hs_abandoned_sent). La ventana evita blastear backlog viejo.
+// Secuencia de 3 mails: 3h (aviso original), 24h (recordatorio), 72h (último aviso).
+// La ventana MIN-MAX evita blastear backlog viejo al traer los pedidos elegibles;
+// qué paso corresponde mandarle a cada uno se decide en JS con STEP_HOURS.
 const MIN_HOURS = 3;
-const MAX_HOURS = 72;
+const MAX_HOURS = 96; // margen sobre el último paso (72h) para no perder pedidos por el desfasaje del cron horario
+const STEP_HOURS = [3, 24, 72]; // horas de antigüedad requeridas para step 1, 2, 3
 
 const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString().slice(0, 19);
 
@@ -24,10 +26,26 @@ async function eligible(status: string) {
   );
   if (!res.ok) return [];
   const data = (await res.json()) as any[];
-  return data.filter(o =>
-    (o.billing?.email || '') &&
-    !(o.meta_data || []).some((m: any) => m.key === '_hs_abandoned_sent' && String(m.value).trim())
-  );
+  return data.filter(o => (o.billing?.email || ''));
+}
+
+// Step ya mandado para este pedido. Compatibilidad con el flag viejo _hs_abandoned_sent
+// (mails mandados antes de que existiera la secuencia): cuenta como step 1 ya enviado.
+function lastStepSent(order: any): number {
+  const meta = order.meta_data || [];
+  const stepMeta = meta.find((m: any) => m.key === '_hs_abandoned_step');
+  if (stepMeta) return parseInt(String(stepMeta.value), 10) || 0;
+  const legacySent = meta.some((m: any) => m.key === '_hs_abandoned_sent' && String(m.value).trim());
+  return legacySent ? 1 : 0;
+}
+
+// Próximo paso a mandar (nunca salta pasos), o null si todavía no toca o ya se mandaron los 3.
+function dueStep(order: any): number | null {
+  const last = lastStepSent(order);
+  if (last >= 3) return null;
+  const next = last + 1;
+  const ageHours = (Date.now() - new Date(order.date_created).getTime()) / 3600_000;
+  return ageHours >= STEP_HOURS[next - 1] ? next : null;
 }
 
 export async function GET(req: NextRequest) {
@@ -62,9 +80,11 @@ export async function GET(req: NextRequest) {
   for (const [email, group] of byEmail) {
     group.sort((a, b) => String(b.date_created || '').localeCompare(String(a.date_created || '')));
     const rep = group[0]; // el más reciente representa al cliente
+    const step = dueStep(rep);
+    if (step === null) continue; // todavía no toca el próximo paso (o ya se mandaron los 3)
     try {
       const mail = await fetch(
-        `${origin}/api/admin/send-order-emails?secret=${MAIL_SECRET}&order_id=${rep.id}&action=abandoned`,
+        `${origin}/api/admin/send-order-emails?secret=${MAIL_SECRET}&order_id=${rep.id}&action=abandoned&step=${step}`,
         { cache: 'no-store' }
       ).then(r => r.json());
       if (mail?.ok) {
@@ -72,10 +92,13 @@ export async function GET(req: NextRequest) {
           await fetch(`${WP_URL}/wp-json/wc/v3/orders/${o.id}`, {
             method: 'PUT',
             headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ meta_data: [{ key: '_hs_abandoned_sent', value: new Date().toISOString() }] }),
+            body: JSON.stringify({ meta_data: [
+              { key: '_hs_abandoned_step', value: String(step) },
+              { key: '_hs_abandoned_sent', value: new Date().toISOString() },
+            ] }),
           });
         }
-        sent.push({ email, enviado_por: rep.number, pedidos_marcados: group.map(o => o.number) });
+        sent.push({ email, step, enviado_por: rep.number, pedidos_marcados: group.map(o => o.number) });
       }
     } catch { /* sigue con el resto */ }
   }
