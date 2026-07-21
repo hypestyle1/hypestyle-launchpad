@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureWelcomeAttributes } from '@/lib/brevo-attributes';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const NEWSLETTER_LIST_ID = 3;
@@ -76,11 +77,23 @@ export async function POST(req: NextRequest) {
     }
     const firstName = name ? String(name).trim() : '';
 
-    // Add to Brevo contacts list (con el nombre como FIRSTNAME para personalizar campañas)
+    await ensureWelcomeAttributes(BREVO_API_KEY);
+
+    // Add to Brevo contacts list (FIRSTNAME para personalizar campañas, SIGNUP_DATE/WELCOME_STEP
+    // para que welcome-sweep sepa cuándo mandar los siguientes pasos de la secuencia).
     const contactRes = await fetch('https://api.brevo.com/v3/contacts', {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, ...(firstName ? { attributes: { FIRSTNAME: firstName } } : {}), listIds: [NEWSLETTER_LIST_ID], updateEnabled: true }),
+      body: JSON.stringify({
+        email,
+        attributes: {
+          ...(firstName ? { FIRSTNAME: firstName } : {}),
+          SIGNUP_DATE: new Date().toISOString(),
+          WELCOME_STEP: 1,
+        },
+        listIds: [NEWSLETTER_LIST_ID],
+        updateEnabled: true,
+      }),
     });
 
     if (!contactRes.ok) {

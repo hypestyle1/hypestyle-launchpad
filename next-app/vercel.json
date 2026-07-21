@@ -2,6 +2,7 @@
   "framework": "nextjs",
   "crons": [
     { "path": "/api/admin/abandoned-sweep", "schedule": "0 * * * *" },
+    { "path": "/api/admin/welcome-sweep", "schedule": "0 */6 * * *" },
     { "path": "/api/match-goal-discount", "schedule": "*/2 * * * *" }
   ]
 }
