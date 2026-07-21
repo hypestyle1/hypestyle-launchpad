@@ -14,6 +14,7 @@ type Mayorista = {
   id: number; email: string; name: string; company: string; phone: string; city: string;
   minOrderOverride: string | null; active: boolean; createdAt: string;
   orderCount: number; totalSpent: number;
+  lastOrderAt: string | null; lastLogin: string | null; loginCount: number;
 };
 
 function randomPassword() {
@@ -26,6 +27,18 @@ function fmt(n: number) {
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+function fmtRelative(s: string | null) {
+  if (!s) return null;
+  const diffMs = Date.now() - new Date(s).getTime();
+  const days = Math.floor(diffMs / 86_400_000);
+  if (days <= 0) return 'hoy';
+  if (days === 1) return 'ayer';
+  if (days < 30) return `hace ${days}d`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `hace ${months}m`;
+  return `hace ${Math.floor(months / 12)}a`;
 }
 
 function waLink(phone: string, name: string) {
@@ -336,6 +349,7 @@ export default function MayoristasAdminPage() {
                     <th className="text-left px-4 py-2.5">Ciudad</th>
                     <th className="text-right px-4 py-2.5">Pedidos</th>
                     <th className="text-right px-4 py-2.5">Total</th>
+                    <th className="text-left px-4 py-2.5">Actividad</th>
                     <th className="text-left px-4 py-2.5">Mínimo propio</th>
                     <th className="text-left px-4 py-2.5">Estado</th>
                     <th className="text-right px-4 py-2.5">Acción</th>
@@ -358,8 +372,21 @@ export default function MayoristasAdminPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-gray-600">{m.city}</td>
-                      <td className="px-4 py-3 text-right font-medium">{m.orderCount}</td>
+                      <td className="px-4 py-3 text-right font-medium">
+                        {m.orderCount}
+                        {m.lastOrderAt && <p className="text-[10px] text-gray-400 font-normal">{fmtRelative(m.lastOrderAt)}</p>}
+                      </td>
                       <td className="px-4 py-3 text-right font-medium">{fmt(m.totalSpent)}</td>
+                      <td className="px-4 py-3">
+                        {m.loginCount > 0 ? (
+                          <>
+                            <p className="text-gray-700">{fmtRelative(m.lastLogin)}</p>
+                            <p className="text-[10px] text-gray-400">{m.loginCount} ingreso{m.loginCount !== 1 ? 's' : ''}</p>
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-gray-400">nunca entró</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
                           <input
