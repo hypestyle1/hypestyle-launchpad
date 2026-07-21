@@ -4,6 +4,11 @@ import { ensureWelcomeAttributes } from '@/lib/brevo-attributes';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const SITE_URL       = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 const SECRET         = process.env.CRON_SECRET || 'hs2026';
+// CRON_SECRET en Vercel está marcado "Sensitive" (no se puede leer de vuelta ni por
+// API/CLI) — el cron real de Vercel sigue autenticando con eso vía Bearer, pero para
+// pruebas manuales con &secret= aceptamos también el mismo secret hardcodeado que
+// usa el resto del panel admin (send-order-emails, etc.).
+const MANUAL_TEST_SECRET = 'hs2026';
 const NEWSLETTER_LIST_ID = 3;
 
 // Step 1 (bienvenida + HYPE10) se manda al toque en newsletter-subscribe, con
@@ -149,7 +154,7 @@ function buildWelcomeStep3Html(name: string) {
 export async function GET(req: NextRequest) {
   const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   const provided = req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret') || bearer;
-  if (provided !== SECRET) {
+  if (provided !== SECRET && provided !== MANUAL_TEST_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
