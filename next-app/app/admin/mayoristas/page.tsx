@@ -313,7 +313,7 @@ export default function MayoristasAdminPage() {
         </button>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-[1400px] mx-auto px-4 py-8">
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
           <p className="text-[13px] font-semibold text-gray-900">Pedido mínimo general</p>
           <p className="text-[12px] text-gray-500 mt-0.5">Se aplica a todos los clientes salvo que tengan un mínimo propio cargado al crearlos.</p>
