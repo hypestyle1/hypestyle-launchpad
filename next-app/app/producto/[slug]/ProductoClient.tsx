@@ -60,9 +60,9 @@ const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-c
 
 function ThankYouMessage() {
   return (
-    <div className="mt-3 mb-1 rounded-[10px] border border-[#9cc7e8] bg-[#eaf5fd] px-4 py-3">
+    <div className="mt-3 mb-1 rounded-[10px] border border-[#9cc7e8] border-t-[3px] border-t-[#c9a227] bg-[#eaf5fd] px-4 py-3">
       <p className="text-[13px] text-[#1c4f7a]">
-        Gracias por bancar a la Selección hasta el final. La Nuestra queda con <span className="font-bold text-[#0f3a5f]">50% OFF</span>.
+        Gracias por bancar a la Selección hasta el final. La Nuestra queda con <span className="font-bold text-[#96731a]">50% OFF</span>.
       </p>
     </div>
   );
@@ -72,7 +72,7 @@ function GoalDiscountCorner({ d }: { d: GoalDiscount | null }) {
   if (!d?.active) return null;
   const pct = Math.round((d.percent || 0) * 100);
   return (
-    <div className="absolute top-3 left-3 z-10 rounded-full bg-[#4a90c2] text-white text-[13px] font-extrabold tracking-wide px-3 py-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.25)]">
+    <div className="absolute top-3 left-3 z-10 rounded-full bg-[#4a90c2] border-[1.5px] border-[#c9a227] text-white text-[13px] font-extrabold tracking-wide px-3 py-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.25)]">
       {pct}% OFF
     </div>
   );
@@ -153,7 +153,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
   const goalDiscount = useGoalDiscount(slug, initialGoalDiscount);
   const isLaNuestra = slug === GOAL_DISCOUNT_SLUG;
   const primaryBtnClass = isLaNuestra
-    ? 'bg-[#4a90c2] hover:bg-[#3d7aa8]'
+    ? 'bg-[#4a90c2] hover:bg-[#3d7aa8] border border-[#c9a227]'
     : 'bg-bg-dark hover:bg-bg-dark/85';
 
 
@@ -345,7 +345,7 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
                 ))}
               </div>
               <div className="flex-1 flex flex-col gap-3">
-                <div className="relative aspect-square overflow-hidden bg-bg-alt select-none cursor-crosshair"
+                <div className={`relative aspect-square overflow-hidden bg-bg-alt select-none cursor-crosshair ${isLaNuestra ? 'border-2 border-[#c9a227]' : ''}`}
                   onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
                   onMouseMove={handleMouseMove} onMouseLeave={() => setZoomPos(null)}
                   onClick={() => { if (window.innerWidth < 1024) setIsGalleryOpen(true); }}>
