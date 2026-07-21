@@ -260,13 +260,16 @@ function buildAbandonedHtml(order: {
   orderNum: string;
   nombre: string;
   total: number;
-  items: { name: string; size: string; quantity: number; price: number }[];
+  items: { name: string; size: string; quantity: number; price: number; image?: string }[];
   isTransfer: boolean;
   step: number;
 }) {
   const copy = ABANDONED_STEP_COPY[order.step] || ABANDONED_STEP_COPY[1];
   const rows = order.items.map(item => `
     <tr>
+      <td style="padding:10px 8px 10px 0;border-bottom:1px solid #f0f0f0;width:56px;">
+        ${item.image ? `<img src="${item.image}" alt="" width="48" height="48" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #eee;display:block;" />` : ''}
+      </td>
       <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px;color:#111;">
         ${item.name}${item.size ? ` · Talle ${item.size}` : ''} ×${item.quantity}
       </td>
@@ -375,7 +378,7 @@ export async function GET(req: NextRequest) {
     const sendTo = overrideTo || email;
 
     // Map line items — size is in name ("Producto — Talle M") or meta_data
-    const items: { name: string; size: string; quantity: number; price: number }[] =
+    const items: { name: string; size: string; quantity: number; price: number; image?: string }[] =
       (wcOrder.line_items || []).map((item: any) => {
         const rawName  = (item.name as string) || 'Producto';
         const sizeMatch = rawName.match(/[—\-–]\s*Talle\s*(\S+)/i);
@@ -389,7 +392,8 @@ export async function GET(req: NextRequest) {
         const cleanName = rawName.replace(/\s*[—\-–]\s*Talle\s*\S+/i, '').trim();
         const qty       = (item.quantity as number) || 1;
         const price     = parseFloat(item.total || '0') / qty;
-        return { name: cleanName, size, quantity: qty, price };
+        const image     = item.image?.src as string | undefined;
+        return { name: cleanName, size, quantity: qty, price, image };
       });
 
     const results: Record<string, any> = {
