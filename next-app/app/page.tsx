@@ -24,15 +24,21 @@ export default function Home() {
       <NewsletterPopup />
       <main className="pt-[var(--offset)]">
         <HeroHannaDrop />
-        <Promo3x2Section />
-        <FlashSaleSection />
-        <BenefitsStrip />
-        <NewInFW26 />
-        <ShopTheLook />
-        <VideoSection />
-        <CollectionBanner />
-        <BackInStock />
-        <EditorialBanner />
+        {/* z-10 + relative + bg-white: efecto cortina, esta sección sube y tapa el hero
+            pineado (ver HeroHannaDrop). El fondo opaco es necesario acá (no alcanza con
+            el de cada sección individual) para que no se vea el hero de fondo en los
+            huecos entre secciones (ej. NewInFW26, que no trae fondo propio). */}
+        <div className="relative z-10 bg-white">
+          <Promo3x2Section />
+          <FlashSaleSection />
+          <BenefitsStrip />
+          <NewInFW26 />
+          <ShopTheLook />
+          <VideoSection />
+          <CollectionBanner />
+          <BackInStock />
+          <EditorialBanner />
+        </div>
       </main>
       <Footer />
     </>
