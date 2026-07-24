@@ -14,6 +14,7 @@ type Order = {
   shipping_lines: { method_title: string; total: number }[];
   total: number; shipping_total: number; discount_total: number;
   feeLines: { id: number; name: string; total: number }[];
+  isGift: boolean;
   payment_method: string; payment_method_title: string;
   viaCargoSucursal: string;
   customer_note: string;
@@ -110,6 +111,9 @@ export default function DetallePedidoPage() {
               <div className="text-[24px] font-bold leading-none">#{order.number}</div>
               <div className="text-[12px] text-gray-500 mt-1">{fmtDate(order.date)}</div>
               <div className="text-[11px] font-semibold text-gray-700 mt-1">{STATUS_LABELS[order.status] || order.status}</div>
+              {order.isGift && (
+                <div className="text-[11px] font-bold text-pink-600 mt-1">🎁 REGALO — NO FACTURA</div>
+              )}
             </div>
           </div>
 

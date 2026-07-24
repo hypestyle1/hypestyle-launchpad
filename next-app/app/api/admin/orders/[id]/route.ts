@@ -115,6 +115,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     discount_total:       parseFloat(o.discount_total),
     feeLines: (o.fee_lines as any[])?.map((f: any) => ({ id: f.id, name: f.name, total: parseFloat(f.total) })) || [],
     isMayorista: getMeta('_es_mayorista') === 'true',
+    isGift: getMeta('_es_regalo') === 'true',
     payment_method:       o.payment_method,
     payment_method_title: o.payment_method_title,
     customer_note:        o.customer_note,

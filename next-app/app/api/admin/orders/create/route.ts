@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json() as {
     isMayorista: boolean;
+    isGift?: boolean;
     customerId?: number;
     billing: Billing;
     dni?: string;
@@ -42,11 +43,11 @@ export async function POST(req: NextRequest) {
     note?: string;
   };
 
-  const { isMayorista, customerId, billing, dni, viaCargoSucursal, instagram, items = [], shippingTotal = 0, status, note } = body;
+  const { isMayorista, isGift = false, customerId, billing = {} as Billing, dni, viaCargoSucursal, instagram, items = [], status, note } = body;
+  // Un pedido 100% regalo no cobra nada — ni productos ni envío — para que la plata que
+  // nunca entró no infle ningún total de facturación (esos totales solo suman order.total).
+  const shippingTotal = isGift ? 0 : (body.shippingTotal || 0);
 
-  if (!billing?.first_name || !billing?.last_name) {
-    return NextResponse.json({ error: 'Faltan nombre y apellido del cliente' }, { status: 400 });
-  }
   if (!items.length) {
     return NextResponse.json({ error: 'El pedido no tiene productos' }, { status: 400 });
   }
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
     const target = item.variationId ? `products/${item.productId}/variations/${item.variationId}` : `products/${item.productId}`;
     const prod = await wcGet(`${target}?_fields=id,name,attributes,regular_price,price,manage_stock,stock_quantity`);
     const basePrice = parseFloat(prod.regular_price || prod.price || '0');
-    const unitPrice = isMayorista ? Math.round(basePrice * 0.5) : parseFloat(prod.price || prod.regular_price || '0');
+    const unitPrice = isGift ? 0 : (isMayorista ? Math.round(basePrice * 0.5) : parseFloat(prod.price || prod.regular_price || '0'));
     const size = (prod.attributes || []).map((a: any) => a.option).filter(Boolean).join(' / ');
 
     lineItems.push({
@@ -89,10 +90,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ningún ítem válido para agregar' }, { status: 400 });
   }
 
-  const billingFull = {
-    first_name: billing.first_name,
-    last_name:  billing.last_name,
-    email:      billing.email || '',
+  const billingFull: Record<string, string> = {
+    first_name: billing.first_name || '',
+    last_name:  billing.last_name || '',
     phone:      billing.phone || '',
     company:    billing.company || '',
     address_1:  billing.address_1 || '',
@@ -102,9 +102,13 @@ export async function POST(req: NextRequest) {
     postcode:   billing.postcode || '',
     country:    'AR',
   };
+  // WC valida formato de email si el campo viene presente — con string vacío rechaza el
+  // pedido entero ("Invalid parameter(s): billing"), así que directamente no lo mandamos.
+  if (billing.email) billingFull.email = billing.email;
 
   const metaData: { key: string; value: string }[] = [];
   if (isMayorista) metaData.push({ key: '_es_mayorista', value: 'true' });
+  if (isGift) metaData.push({ key: '_es_regalo', value: 'true' });
   if (dni) metaData.push({ key: '_billing_dni', value: dni });
   if (viaCargoSucursal) metaData.push({ key: '_via_cargo_sucursal', value: viaCargoSucursal });
   if (instagram) metaData.push({ key: '_instagram', value: instagram });
@@ -121,7 +125,8 @@ export async function POST(req: NextRequest) {
   };
   if (customerId) orderPayload.customer_id = customerId;
   if (shippingTotal > 0) orderPayload.shipping_lines = [{ method_id: 'admin_manual', method_title: 'Envío', total: shippingTotal.toFixed(2) }];
-  if (note) orderPayload.customer_note = note;
+  const fullNote = [isGift ? 'Regalo 100% — no cobra nada.' : '', note || ''].filter(Boolean).join(' ');
+  if (fullNote) orderPayload.customer_note = fullNote;
 
   const created = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
     method: 'POST',
