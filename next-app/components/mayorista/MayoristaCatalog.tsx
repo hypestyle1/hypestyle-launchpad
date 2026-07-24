@@ -1,8 +1,61 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import MayoristaProductCard from './MayoristaProductCard';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
+
+const HELP_DISMISSED_KEY = 'hype_mayorista_help_dismissed';
+
+const STEPS = [
+  { title: 'Elegí tus productos', text: 'Buscá o filtrá por categoría y sumá cada talle que necesites al pedido.' },
+  { title: 'Revisá tu pedido', text: 'Arriba a la derecha, en "Pedido", ajustás cantidades o sacás productos antes de confirmar.' },
+  { title: 'Cargá los datos de envío', text: 'Nombre, DNI y la sucursal de Via Cargo donde lo recibís — solo hace falta la primera vez, después queda guardado.' },
+  { title: 'Confirmá', text: 'Te contactamos para coordinar preparación y entrega. Podés descargar el resumen en PDF o Excel.' },
+];
+
+function HowItWorks() {
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    setShow(!localStorage.getItem(HELP_DISMISSED_KEY));
+  }, []);
+
+  function dismiss() {
+    localStorage.setItem(HELP_DISMISSED_KEY, '1');
+    setShow(false);
+  }
+
+  if (!show) {
+    return (
+      <button
+        onClick={() => setShow(true)}
+        className="text-[11px] uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors mb-4"
+      >
+        ¿Cómo funciona? →
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-[16px] border border-border bg-bg-alt/50 p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] uppercase tracking-wide font-semibold text-foreground/70">Cómo pedir</p>
+        <button onClick={dismiss} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+          Entendido, no mostrar más
+        </button>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {STEPS.map((step, i) => (
+          <div key={step.title}>
+            <div className="text-[11px] font-bold text-foreground/40 mb-1">{i + 1}</div>
+            <div className="text-[13px] font-semibold mb-0.5">{step.title}</div>
+            <div className="text-[12px] text-muted-foreground leading-snug">{step.text}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function MayoristaCatalog({ products }: { products: MayoristaProduct[] }) {
   const [search, setSearch] = useState('');
@@ -25,6 +78,8 @@ export default function MayoristaCatalog({ products }: { products: MayoristaProd
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Precio mayorista</h1>
         <p className="text-[13px] text-muted-foreground mt-1">50% off del precio de lista. Pedís hoy, lo preparamos esta semana.</p>
       </div>
+
+      <HowItWorks />
 
       <input
         type="text"
