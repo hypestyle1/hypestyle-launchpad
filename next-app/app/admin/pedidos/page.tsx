@@ -221,10 +221,35 @@ export default function PedidosPage() {
     }
   }
 
+  // Cancelar en bloque tiene que pasar por /api/admin/cancel-order (restaura stock),
+  // no por postStatus/set-status (solo cambia el estado) — si no, queda stock fantasma
+  // reservado como pasó con el pedido #2244.
+  async function bulkCancel(ids: number[]) {
+    await Promise.all(ids.map(id =>
+      fetch('/api/admin/cancel-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ orderId: id, restock: true, notify: false }),
+      }).then(() => {
+        setStatusMap(s => ({ ...s, [id]: 'cancelled' }));
+        setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'cancelled' } : o));
+      })
+    ));
+  }
+
   async function applyBulk() {
     if (!bulkStatus || selected.size === 0) return;
+    const ids = [...selected];
+    if (bulkStatus === 'cancelled') {
+      const ok = window.confirm(`¿Cancelar ${ids.length} pedido${ids.length > 1 ? 's' : ''} y restaurar su stock?`);
+      if (!ok) return;
+    }
     setBulkLoading(true);
-    await Promise.all([...selected].map(id => postStatus(id, bulkStatus)));
+    if (bulkStatus === 'cancelled') {
+      await bulkCancel(ids);
+    } else {
+      await Promise.all(ids.map(id => postStatus(id, bulkStatus)));
+    }
     fetchCounts(adminKey);
     setBulkLoading(false);
     setSelected(new Set());
