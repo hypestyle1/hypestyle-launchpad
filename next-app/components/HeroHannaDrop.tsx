@@ -63,31 +63,37 @@ export default function HeroHannaDrop() {
     if (!section || !card || !title) return;
 
     gsap.registerPlugin(ScrollTrigger);
-    // En mobile, el address bar de Safari se esconde/muestra al scrollear y dispara un
-    // "resize" que ScrollTrigger toma como real, dejando un hueco blanco al despinear.
-    ScrollTrigger.config({ ignoreMobileResize: true });
 
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
 
+      // Cortina: pin sin pinSpacing (evita el spacer de GSAP, que es lo que se
+      // desincroniza con el resize del address bar en mobile). El "hueco" que
+      // reservaba ese spacer ahora es un <div> fijo (SPACER_VH) después de la
+      // sección: mientras se scrollea esa franja, el hero queda fijo en pantalla
+      // (nada lo tapa todavía) y el título/card terminan de crecer. Recién
+      // después, la sección siguiente (con fondo opaco, ver page.tsx) sube y
+      // tapa el hero — por eso el timeline es grow(duration:1) + hold(duration:1)
+      // sobre el mismo rango total (spacer + 1 alto de sección = el "end").
+
       // Desktop: contenedor crece 767→1220 y el título escala en sincro; luego HOLD.
       mm.add('(min-width: 768px)', () => {
         const tl = gsap.timeline({
-          scrollTrigger: { trigger: section, start: 'top top', end: '+=200%', pin: true, scrub: 0.4, anticipatePin: 1 },
+          scrollTrigger: { trigger: section, start: 'top top', end: '+=200%', pin: true, pinSpacing: false, scrub: 0.4, anticipatePin: 1 },
         });
         tl.fromTo(card, { maxWidth: 767 }, { maxWidth: 1220, ease: 'none', duration: 1 }, 0);
         tl.fromTo(title, { scale: 1 }, { scale: 2.1, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
         tl.to({}, { duration: 1 });
       });
 
-      // Mobile: contenedor inset → full-bleed, título escala en sincro; HOLD.
+      // Mobile: contenedor inset → full-bleed, título escala en sincro; luego HOLD.
       mm.add('(max-width: 767px)', () => {
         const tl = gsap.timeline({
-          scrollTrigger: { trigger: section, start: 'top top', end: '+=160%', pin: true, scrub: 0.4, anticipatePin: 1 },
+          scrollTrigger: { trigger: section, start: 'top top', end: '+=200%', pin: true, pinSpacing: false, scrub: 0.4, anticipatePin: 1 },
         });
         tl.fromTo(card, { width: '88vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 }, 0);
         tl.fromTo(title, { scale: 1 }, { scale: 1.7, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
-        tl.to({}, { duration: 0.8 });
+        tl.to({}, { duration: 1 });
       });
     }, section);
 
@@ -108,6 +114,7 @@ export default function HeroHannaDrop() {
   const current = slides[slide];
 
   return (
+    <>
     <section ref={sectionRef} className="relative w-full h-[100svh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
       <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline aria-hidden>
         <source src={VIDEO_SRC} type="video/mp4" />
@@ -173,5 +180,11 @@ export default function HeroHannaDrop() {
         </div>
       </div>
     </section>
+    {/* Spacer manual (reemplaza el pinSpacing automático de GSAP): aunque esté fija,
+        la sección pineada sigue reservando su propio alto (100svh) en el flujo; este
+        spacer agrega OTRO 100svh más, así la siguiente sección recién empieza a
+        entrar en pantalla (y taparla) cuando termina el HOLD, no antes. */}
+    <div className="h-[100svh]" aria-hidden />
+    </>
   );
 }
