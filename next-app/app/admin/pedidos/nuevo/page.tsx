@@ -156,7 +156,7 @@ export default function NuevoPedidoPage() {
   const total = subtotal + shippingNum;
 
   async function submit() {
-    if (!billing.first_name || !billing.last_name || cart.length === 0) return;
+    if (cart.length === 0) return;
     setSubmitting(true);
     setSubmitError('');
     try {
@@ -444,7 +444,7 @@ export default function NuevoPedidoPage() {
 
           <button
             onClick={submit}
-            disabled={submitting || !billing.first_name || !billing.last_name || cart.length === 0}
+            disabled={submitting || cart.length === 0}
             className="w-full mt-4 bg-black text-white rounded-lg py-3 text-[13px] font-semibold hover:bg-gray-800 disabled:opacity-40"
           >
             {submitting ? 'Creando pedido...' : 'Crear pedido'}

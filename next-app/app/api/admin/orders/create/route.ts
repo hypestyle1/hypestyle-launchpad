@@ -43,14 +43,11 @@ export async function POST(req: NextRequest) {
     note?: string;
   };
 
-  const { isMayorista, isGift = false, customerId, billing, dni, viaCargoSucursal, instagram, items = [], status, note } = body;
+  const { isMayorista, isGift = false, customerId, billing = {} as Billing, dni, viaCargoSucursal, instagram, items = [], status, note } = body;
   // Un pedido 100% regalo no cobra nada — ni productos ni envío — para que la plata que
   // nunca entró no infle ningún total de facturación (esos totales solo suman order.total).
   const shippingTotal = isGift ? 0 : (body.shippingTotal || 0);
 
-  if (!billing?.first_name || !billing?.last_name) {
-    return NextResponse.json({ error: 'Faltan nombre y apellido del cliente' }, { status: 400 });
-  }
   if (!items.length) {
     return NextResponse.json({ error: 'El pedido no tiene productos' }, { status: 400 });
   }
@@ -93,10 +90,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ningún ítem válido para agregar' }, { status: 400 });
   }
 
-  const billingFull = {
-    first_name: billing.first_name,
-    last_name:  billing.last_name,
-    email:      billing.email || '',
+  const billingFull: Record<string, string> = {
+    first_name: billing.first_name || '',
+    last_name:  billing.last_name || '',
     phone:      billing.phone || '',
     company:    billing.company || '',
     address_1:  billing.address_1 || '',
@@ -106,6 +102,9 @@ export async function POST(req: NextRequest) {
     postcode:   billing.postcode || '',
     country:    'AR',
   };
+  // WC valida formato de email si el campo viene presente — con string vacío rechaza el
+  // pedido entero ("Invalid parameter(s): billing"), así que directamente no lo mandamos.
+  if (billing.email) billingFull.email = billing.email;
 
   const metaData: { key: string; value: string }[] = [];
   if (isMayorista) metaData.push({ key: '_es_mayorista', value: 'true' });
