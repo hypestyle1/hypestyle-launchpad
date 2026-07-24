@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-const VIDEO_SRC = '/hero/hanna-drop-bg.mp4';
+const VIDEO_SRC = '/hero/hanna-drop-bg-2-hoodie.mp4';
 const SLIDE_MS = 4500;
 
 const SLIDES = [
