@@ -3,9 +3,91 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { imgSrc } from '@/lib/img';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart, MayoristaCartItem } from '@/context/MayoristaCartContext';
+
+function csvEscape(value: string | number): string {
+  const s = String(value ?? '');
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function downloadOrderCsv(orderNumber: string, items: MayoristaCartItem[], total: number) {
+  const lines = [['Producto', 'Talle', 'Cantidad', 'Precio unitario', 'Subtotal'].join(',')];
+  for (const item of items) {
+    lines.push([item.name, item.size, item.quantity, item.price, item.price * item.quantity].map(csvEscape).join(','));
+  }
+  lines.push(['', '', '', 'Total', total].map(csvEscape).join(','));
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pedido-${orderNumber}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadOrderPdf(orderNumber: string, clientName: string, email: string, items: MayoristaCartItem[], total: number) {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const pageSize: [number, number] = [595.28, 841.89]; // A4
+  const marginX = 40;
+  const colTalle = 340, colCant = 400, colSubtotal = 460;
+  const gray = rgb(0.45, 0.45, 0.45);
+
+  let page = doc.addPage(pageSize);
+  let y = pageSize[1] - 60;
+
+  function drawHeader() {
+    page.drawText('Hype.', { x: marginX, y, size: 20, font: bold });
+    page.drawText('MAYORISTAS', { x: marginX + 55, y: y + 6, size: 8, font, color: gray });
+    y -= 30;
+    page.drawText(`Pedido #${orderNumber}`, { x: marginX, y, size: 14, font: bold });
+    y -= 18;
+    if (clientName) { page.drawText(clientName, { x: marginX, y, size: 10, font }); y -= 14; }
+    if (email) { page.drawText(email, { x: marginX, y, size: 10, font, color: gray }); y -= 14; }
+    y -= 10;
+    page.drawText('Producto', { x: marginX, y, size: 9, font: bold });
+    page.drawText('Talle', { x: colTalle, y, size: 9, font: bold });
+    page.drawText('Cant.', { x: colCant, y, size: 9, font: bold });
+    page.drawText('Subtotal', { x: colSubtotal, y, size: 9, font: bold });
+    y -= 6;
+    page.drawLine({ start: { x: marginX, y }, end: { x: 555, y }, thickness: 0.5, color: rgb(0.8, 0.8, 0.8) });
+    y -= 14;
+  }
+
+  drawHeader();
+
+  for (const item of items) {
+    if (y < 80) {
+      page = doc.addPage(pageSize);
+      y = pageSize[1] - 60;
+      drawHeader();
+    }
+    page.drawText(item.name.slice(0, 40), { x: marginX, y, size: 9, font });
+    page.drawText(item.size, { x: colTalle, y, size: 9, font });
+    page.drawText(String(item.quantity), { x: colCant, y, size: 9, font });
+    page.drawText(formatArs(item.price * item.quantity), { x: colSubtotal, y, size: 9, font });
+    y -= 16;
+  }
+
+  y -= 10;
+  page.drawLine({ start: { x: marginX, y }, end: { x: 555, y }, thickness: 0.8, color: rgb(0, 0, 0) });
+  y -= 20;
+  page.drawText('TOTAL', { x: colCant, y, size: 12, font: bold });
+  page.drawText(formatArs(total), { x: colSubtotal, y, size: 12, font: bold });
+
+  const bytes = await doc.save();
+  const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pedido-${orderNumber}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 interface ShippingForm {
   first_name: string; last_name: string; company: string;
@@ -111,7 +193,22 @@ export default function MayoristaCartPage() {
           </div>
         </div>
 
-        <Link href="/mayoristas" className="block text-center mt-8 bg-bg-dark text-primary-foreground px-6 py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors">
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <button
+            onClick={() => downloadOrderPdf(confirmed.orderNumber, `${shipping.first_name} ${shipping.last_name}`.trim(), email, confirmed.items, confirmed.total)}
+            className="text-[12px] font-semibold uppercase tracking-wide py-2.5 rounded-full border border-border hover:border-foreground transition-colors"
+          >
+            Descargar PDF
+          </button>
+          <button
+            onClick={() => downloadOrderCsv(confirmed.orderNumber, confirmed.items, confirmed.total)}
+            className="text-[12px] font-semibold uppercase tracking-wide py-2.5 rounded-full border border-border hover:border-foreground transition-colors"
+          >
+            Descargar Excel
+          </button>
+        </div>
+
+        <Link href="/mayoristas" className="block text-center mt-3 bg-bg-dark text-primary-foreground px-6 py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors">
           Volver al catálogo
         </Link>
       </div>
