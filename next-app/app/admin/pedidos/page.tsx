@@ -312,6 +312,12 @@ export default function PedidosPage() {
           {counts && counts.porEmpaquetar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">{counts.porEmpaquetar} por empaquetar</span>}
           {counts && counts.empaquetados > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{counts.empaquetados} empaquetados</span>}
           <span className="hidden md:inline text-[11px] text-gray-500 font-medium">{fmt(revenue)}</span>
+          <Link
+            href="/admin/pedidos/nuevo"
+            className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-black text-white hover:bg-gray-800 transition-colors"
+          >
+            + Cargar pedido
+          </Link>
           <button
             onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
             className="text-[11px] text-gray-400 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
