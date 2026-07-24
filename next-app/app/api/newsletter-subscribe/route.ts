@@ -45,7 +45,7 @@ function buildWelcomeHtml(name: string) {
 
         <!-- CTA -->
         <tr>
-          <td style="padding:0 40px 32px;background:#fff;">
+          <td style="padding:0 40px 32px;background:#fff;text-align:center;">
             <a href="${SITE_URL}" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:14px 32px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">
               Ver la tienda
             </a>
