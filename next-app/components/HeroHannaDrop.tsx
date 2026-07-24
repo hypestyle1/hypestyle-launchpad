@@ -115,7 +115,13 @@ export default function HeroHannaDrop() {
 
   return (
     <>
-    <section ref={sectionRef} className="relative w-full h-[100svh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
+    {/* 100dvh (no svh): la sección queda "position:fixed" mientras está pineada, y con
+        svh (altura fija, la mínima) no crece cuando el navegador esconde la barra de
+        direcciones al scrollear en mobile — deja un hueco blanco abajo. dvh se
+        actualiza en vivo con el alto real de la ventana. El spacer manual (más abajo)
+        se deja en svh a propósito: solo necesita ser estable para el cálculo de
+        scroll, no visible. */}
+    <section ref={sectionRef} className="relative w-full h-[100dvh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
       <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline aria-hidden>
         <source src={VIDEO_SRC} type="video/mp4" />
       </video>
