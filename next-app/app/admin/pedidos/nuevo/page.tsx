@@ -34,6 +34,7 @@ export default function NuevoPedidoPage() {
 
   const [isMayorista, setIsMayorista] = useState(false);
   const [status, setStatus] = useState<'processing' | 'on-hold'>('processing');
+  const [isGift, setIsGift] = useState(false);
 
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerQuery, setCustomerQuery] = useState('');
@@ -142,6 +143,7 @@ export default function NuevoPedidoPage() {
   }
 
   function unitPriceFor(item: CartItem) {
+    if (isGift) return 0;
     return isMayorista ? Math.round(item.regularPrice * 0.5) : item.retailPrice;
   }
 
@@ -150,7 +152,7 @@ export default function NuevoPedidoPage() {
     : [];
 
   const subtotal = cart.reduce((s, i) => s + unitPriceFor(i) * i.quantity, 0);
-  const shippingNum = Number(shippingTotal) || 0;
+  const shippingNum = isGift ? 0 : (Number(shippingTotal) || 0);
   const total = subtotal + shippingNum;
 
   async function submit() {
@@ -163,6 +165,7 @@ export default function NuevoPedidoPage() {
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({
           isMayorista,
+          isGift,
           customerId: customerId || undefined,
           billing,
           dni: dni || undefined,
@@ -266,6 +269,19 @@ export default function NuevoPedidoPage() {
             ))}
           </div>
           {isMayorista && <p className="text-[11px] text-gray-400 mt-2">Los productos se cargan al 50% del precio de lista.</p>}
+
+          <label className="flex items-start gap-2 mt-4 pt-4 border-t border-gray-100 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isGift}
+              onChange={e => setIsGift(e.target.checked)}
+              className="mt-0.5 rounded border-gray-300"
+            />
+            <div>
+              <div className="text-[13px] font-medium text-gray-900">Es un regalo (100%)</div>
+              <div className="text-[11px] text-gray-400">Productos y envío quedan en $0 — no afecta la facturación, la plata nunca entró.</div>
+            </div>
+          </label>
         </div>
 
         {/* Cliente */}
@@ -388,7 +404,14 @@ export default function NuevoPedidoPage() {
         <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 space-y-3">
           <div className="flex items-center gap-3">
             <label className="text-[12px] text-gray-500 w-24">Envío</label>
-            <input type="number" min={0} value={shippingTotal} onChange={e => setShippingTotal(e.target.value)} placeholder="0" className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
+            <input
+              type="number" min={0}
+              value={isGift ? '' : shippingTotal}
+              onChange={e => setShippingTotal(e.target.value)}
+              disabled={isGift}
+              placeholder={isGift ? 'Gratis (regalo)' : '0'}
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
+            />
           </div>
           <div className="flex items-center gap-3">
             <label className="text-[12px] text-gray-500 w-24">Estado</label>

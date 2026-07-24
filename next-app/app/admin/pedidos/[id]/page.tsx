@@ -21,6 +21,7 @@ type Order = {
   total: number; shipping_total: number; discount_total: number;
   feeLines: { id: number; name: string; total: number }[];
   isMayorista: boolean;
+  isGift: boolean;
   payment_method: string; payment_method_title: string;
   customer_note: string; order_key: string;
   adminNote: string;
@@ -338,6 +339,11 @@ export default function OrderDetailPage() {
         </div>
         {order && (
           <div className="flex items-center gap-2">
+            {order.isGift && (
+              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-pink-100 text-pink-700">
+                🎁 Regalo — no factura
+              </span>
+            )}
             {!['cancelled', 'failed'].includes(order.status) && (
               order.datePaid ? (
                 <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
