@@ -19,6 +19,8 @@ type Order = {
   items: Item[];
   shipping_lines: { method_title: string; total: number }[];
   total: number; shipping_total: number; discount_total: number;
+  feeLines: { id: number; name: string; total: number }[];
+  isMayorista: boolean;
   payment_method: string; payment_method_title: string;
   customer_note: string; order_key: string;
   adminNote: string;
@@ -82,6 +84,20 @@ export default function OrderDetailPage() {
   const [noteText, setNoteText]     = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteMsg, setNoteMsg]       = useState('');
+
+  // Agregar producto / aplicar descuento sin cancelar el pedido
+  const [productCatalog, setProductCatalog] = useState<{ id: number; name: string; image: string }[]>([]);
+  const [productQuery, setProductQuery]     = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<{ id: number; name: string } | null>(null);
+  const [variations, setVariations] = useState<{ id: number | null; size: string; price: number }[]>([]);
+  const [selectedVariationId, setSelectedVariationId] = useState<number | null | 'none'>('none');
+  const [addQty, setAddQty]       = useState(1);
+  const [addingItem, setAddingItem] = useState(false);
+  const [addItemMsg, setAddItemMsg] = useState('');
+  const [discountName, setDiscountName]     = useState('');
+  const [discountAmount, setDiscountAmount] = useState('');
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+  const [discountMsg, setDiscountMsg] = useState('');
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -191,6 +207,82 @@ export default function OrderDetailPage() {
     const labels: Record<string, string> = { confirmation: 'confirmación', tracking: 'seguimiento', abandoned: 'carrito abandonado' };
     setEmailMsg(data.ok ? `✓ Email de ${labels[action]} enviado` : `Error: ${data.error}`);
   }
+
+  useEffect(() => {
+    if (!authed || !adminKey) return;
+    fetch('/api/admin/product-costs', { headers: { 'x-admin-key': adminKey } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setProductCatalog(data.products || []); })
+      .catch(() => {});
+  }, [authed, adminKey]);
+
+  function selectProduct(p: { id: number; name: string }) {
+    setSelectedProduct(p);
+    setProductQuery(p.name);
+    setVariations([]);
+    setSelectedVariationId('none');
+    fetch(`/api/admin/products/${p.id}/variations`, { headers: { 'x-admin-key': adminKey } })
+      .then(r => r.json())
+      .then(data => {
+        const vs = data.variations || [];
+        setVariations(vs);
+        if (vs.length === 1 && !vs[0].size) setSelectedVariationId(vs[0].id);
+      });
+  }
+
+  async function reloadOrder() {
+    const r = await fetch(`/api/admin/orders/${id}`, { headers: { 'x-admin-key': adminKey } });
+    const data = await r.json();
+    if (data && !data.error) setOrder(data);
+  }
+
+  async function addItem() {
+    if (!order || !selectedProduct || selectedVariationId === 'none' || addQty < 1) return;
+    setAddingItem(true);
+    setAddItemMsg('');
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/add-items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({
+          items: [{ productId: selectedProduct.id, variationId: selectedVariationId, quantity: addQty }],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAddItemMsg(data.error || 'Error al agregar'); return; }
+      setAddItemMsg('✓ Agregado');
+      setSelectedProduct(null); setProductQuery(''); setVariations([]); setSelectedVariationId('none'); setAddQty(1);
+      await reloadOrder();
+    } finally {
+      setAddingItem(false);
+    }
+  }
+
+  async function applyDiscount() {
+    if (!order) return;
+    const amount = Number(discountAmount);
+    if (!amount || amount <= 0) return;
+    setApplyingDiscount(true);
+    setDiscountMsg('');
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/add-items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ items: [], discountName: discountName || 'Descuento', discountAmount: amount }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setDiscountMsg(data.error || 'Error al aplicar el descuento'); return; }
+      setDiscountMsg('✓ Aplicado');
+      setDiscountName(''); setDiscountAmount('');
+      await reloadOrder();
+    } finally {
+      setApplyingDiscount(false);
+    }
+  }
+
+  const filteredProducts = productQuery.length > 1
+    ? productCatalog.filter(p => p.name.toLowerCase().includes(productQuery.toLowerCase())).slice(0, 8)
+    : [];
 
   async function saveNote() {
     if (!order) return;
@@ -418,11 +510,114 @@ export default function OrderDetailPage() {
                     <span>-{fmt(order.discount_total)}</span>
                   </div>
                 )}
+                {order.feeLines.map(f => (
+                  <div key={f.id} className={`flex justify-between text-[12px] ${f.total < 0 ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span>{f.name}</span>
+                    <span>{f.total < 0 ? '-' : ''}{fmt(Math.abs(f.total))}</span>
+                  </div>
+                ))}
                 <div className="flex justify-between text-[14px] font-bold text-gray-900 pt-1 border-t border-gray-200">
                   <span>Total</span>
                   <span>{fmt(order.total)}</span>
                 </div>
               </div>
+
+              {/* Agregar producto / aplicar descuento — sin cancelar el pedido */}
+              {!['cancelled', 'failed', 'refunded'].includes(order.status) && (
+                <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+                  <div>
+                    <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Agregar producto</div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={productQuery}
+                        onChange={e => { setProductQuery(e.target.value); setSelectedProduct(null); }}
+                        placeholder="Buscar producto por nombre..."
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-gray-400"
+                      />
+                      {filteredProducts.length > 0 && !selectedProduct && (
+                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                          {filteredProducts.map(p => (
+                            <button
+                              key={p.id}
+                              onClick={() => selectProduct(p)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] hover:bg-gray-50"
+                            >
+                              {p.image && <img src={p.image} alt="" className="w-6 h-6 rounded object-cover flex-none" />}
+                              <span className="truncate">{p.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedProduct && (
+                      <div className="flex items-center gap-2 mt-2">
+                        {variations.length > 1 || (variations.length === 1 && variations[0].size) ? (
+                          <select
+                            value={selectedVariationId === 'none' ? '' : String(selectedVariationId)}
+                            onChange={e => setSelectedVariationId(e.target.value ? Number(e.target.value) : 'none')}
+                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                          >
+                            <option value="">Talle...</option>
+                            {variations.map(v => (
+                              <option key={v.id} value={v.id ?? ''}>{v.size} — {fmt(v.price)}</option>
+                            ))}
+                          </select>
+                        ) : null}
+                        <input
+                          type="number"
+                          min={1}
+                          value={addQty}
+                          onChange={e => setAddQty(Math.max(1, Number(e.target.value)))}
+                          className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                        />
+                        <button
+                          onClick={addItem}
+                          disabled={addingItem || selectedVariationId === 'none'}
+                          className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-40 whitespace-nowrap"
+                        >
+                          {addingItem ? '...' : 'Agregar'}
+                        </button>
+                      </div>
+                    )}
+                    {addItemMsg && (
+                      <p className={`mt-1.5 text-[11px] ${addItemMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>{addItemMsg}</p>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Aplicar descuento manual</div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={discountName}
+                        onChange={e => setDiscountName(e.target.value)}
+                        placeholder="Motivo (ej: 2 remeras bonificadas)"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        value={discountAmount}
+                        onChange={e => setDiscountAmount(e.target.value)}
+                        placeholder="Monto"
+                        className="w-28 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                      />
+                      <button
+                        onClick={applyDiscount}
+                        disabled={applyingDiscount || !discountAmount}
+                        className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-40 whitespace-nowrap"
+                      >
+                        {applyingDiscount ? '...' : 'Aplicar'}
+                      </button>
+                    </div>
+                    {discountMsg && (
+                      <p className={`mt-1.5 text-[11px] ${discountMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>{discountMsg}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Payment */}

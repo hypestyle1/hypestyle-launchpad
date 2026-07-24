@@ -113,6 +113,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     total:                parseFloat(o.total),
     shipping_total:       parseFloat(o.shipping_total),
     discount_total:       parseFloat(o.discount_total),
+    feeLines: (o.fee_lines as any[])?.map((f: any) => ({ id: f.id, name: f.name, total: parseFloat(f.total) })) || [],
+    isMayorista: getMeta('_es_mayorista') === 'true',
     payment_method:       o.payment_method,
     payment_method_title: o.payment_method_title,
     customer_note:        o.customer_note,
