@@ -10,7 +10,6 @@ import EditorialBanner from '@/components/EditorialBanner';
 import BenefitsStrip from '@/components/BenefitsStrip';
 import FlashSaleSection from '@/components/FlashSaleSection';
 import Promo3x2Section from '@/components/Promo3x2Section';
-import FinalSection from '@/components/FinalSection';
 import VideoSection from '@/components/VideoSection';
 import Footer from '@/components/Footer';
 
@@ -25,7 +24,6 @@ export default function Home() {
       <NewsletterPopup />
       <main className="pt-[var(--offset)]">
         <HeroHannaDrop />
-        <FinalSection />
         <Promo3x2Section />
         <FlashSaleSection />
         <BenefitsStrip />
