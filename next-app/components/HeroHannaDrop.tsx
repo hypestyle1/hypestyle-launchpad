@@ -63,6 +63,9 @@ export default function HeroHannaDrop() {
     if (!section || !card || !title) return;
 
     gsap.registerPlugin(ScrollTrigger);
+    // En mobile, el address bar de Safari se esconde/muestra al scrollear y dispara un
+    // "resize" que ScrollTrigger toma como real, dejando un hueco blanco al despinear.
+    ScrollTrigger.config({ ignoreMobileResize: true });
 
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
@@ -157,7 +160,7 @@ export default function HeroHannaDrop() {
       </div>
 
       {/* Logo STYLE&CULTURE top-left (escala con el scroll) */}
-      <div className="absolute top-[calc(var(--offset)+5rem)] left-6 md:left-12 z-20 max-w-[52vw] md:max-w-[300px]">
+      <div className="absolute top-[calc(var(--offset)+0.75rem)] md:top-[calc(var(--offset)+5rem)] left-6 md:left-12 z-20 max-w-[52vw] md:max-w-[300px]">
         <div ref={titleRef} className="origin-top-left">
           <Image
             src="/STYLE&CULTURE WHITE.png"
