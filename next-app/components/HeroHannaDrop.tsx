@@ -13,7 +13,7 @@ const SLIDES = [
   { img: '/hero/hanna-drop-1.jpg', name1: 'Stars For Venezuela', name2: 'Hoodie', slug: 'stars-for-venezuela-hoodie' },
   { img: '/hero/hanna-drop-2.jpg', name1: 'Half-Zip Polo', name2: 'Melange', slug: 'half-zip-polo-melange' },
   { img: '/hero/hanna-drop-3.jpg', name1: 'Lion Of Judah', name2: 'Stone Wash', slug: 'lion-of-judah-stone-wash-hoodie' },
-  { img: '/hero/hanna-drop-4.jpg', name1: 'Zip Hoodie', name2: 'Pink', slug: 'zip-hoodie-pink' },
+  { img: '/hero/hanna-drop-4.jpg', name1: 'Hoodie', name2: 'Pink', slug: 'hoodie-pink' },
   { img: '/hero/hanna-drop-5.jpg', name1: 'God Gave Me Style', name2: 'Waffle', slug: 'longsleeve-waffle-god-gave-me-style' },
 ];
 
@@ -63,6 +63,9 @@ export default function HeroHannaDrop() {
     if (!section || !card || !title) return;
 
     gsap.registerPlugin(ScrollTrigger);
+    // En mobile, el address bar de Safari se esconde/muestra al scrollear y dispara un
+    // "resize" que ScrollTrigger toma como real, dejando un hueco blanco al despinear.
+    ScrollTrigger.config({ ignoreMobileResize: true });
 
     const ctx = gsap.context(() => {
       const mm = gsap.matchMedia();
@@ -157,7 +160,7 @@ export default function HeroHannaDrop() {
       </div>
 
       {/* Logo STYLE&CULTURE top-left (escala con el scroll) */}
-      <div className="absolute top-[calc(var(--offset)+5rem)] left-6 md:left-12 z-20 max-w-[52vw] md:max-w-[300px]">
+      <div className="absolute top-[calc(var(--offset)+0.75rem)] md:top-[calc(var(--offset)+5rem)] left-6 md:left-12 z-20 max-w-[52vw] md:max-w-[300px]">
         <div ref={titleRef} className="origin-top-left">
           <Image
             src="/STYLE&CULTURE WHITE.png"
