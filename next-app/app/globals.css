@@ -56,14 +56,18 @@
     --offset: 90px;
 
     /* Purchase Gift — barra de progreso (GiftProgressBar.tsx). Centralizado
-       acá para poder ajustar el diseño sin tocar el componente. */
-    --hpg-track-bg: hsl(var(--border));
-    --hpg-fill-bg: hsl(var(--foreground));
+       acá para poder ajustar el diseño sin tocar el componente. Verde (no
+       negro) a propósito: para que se distinga a simple vista de la barra
+       de envío gratis, que sí usa --foreground. */
+    --hpg-track-bg: hsl(142 30% 90%);
+    --hpg-fill-bg: hsl(142 71% 32%);
     --hpg-tick-bg: hsl(var(--background));
-    --hpg-tick-border: hsl(var(--border-mid));
-    --hpg-tick-border-reached: hsl(var(--foreground));
+    --hpg-tick-border: hsl(142 20% 70%);
+    --hpg-tick-border-reached: hsl(142 71% 32%);
     --hpg-text: hsl(var(--foreground));
     --hpg-text-muted: hsl(var(--muted-foreground));
+    --hpg-card-bg: hsl(142 45% 96%);
+    --hpg-card-border: hsl(142 30% 88%);
   }
 }
 

@@ -829,7 +829,10 @@ export default function Checkout() {
           <div className="sticky top-6">
             <div className="space-y-4 mb-6">
               {items.map(item => (
-                <div key={`${item.id}-${item.size}-${item.customization?.number ?? ''}-${item.customization?.playerName ?? ''}`} className="flex gap-3 items-center">
+                <div
+                  key={`${item.id}-${item.size}-${item.customization?.number ?? ''}-${item.customization?.playerName ?? ''}`}
+                  className={`flex gap-3 items-center ${item.isGift ? 'bg-green-50/60 border border-green-100 rounded-[8px] p-2 -mx-2' : ''}`}
+                >
                   <div className="relative w-16 h-20 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[10px]">
                     {item.image ? (
                       <img
