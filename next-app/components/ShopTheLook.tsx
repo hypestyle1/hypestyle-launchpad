@@ -45,9 +45,13 @@ export default function ShopTheLook() {
         className="reveal rd2 flex gap-[2px] overflow-x-auto no-scrollbar snap-x snap-mandatory cursor-grab select-none px-[10vw] md:px-0"
       >
         {visibleLooks.map((look) => (
+          // hover:scale/z-10 solo desde md: en mobile no hay hover real y el estado
+          // puede quedar "pegado" en la tarjeta anterior tras tocarla; con el carrusel
+          // por snap, esa tarjeta agrandada y elevada tapaba el borde de la tarjeta
+          // siguiente y el tap terminaba abriendo el look equivocado.
           <div
             key={look.id}
-            className="flex-none w-[80vw] md:flex-1 snap-center transition-transform duration-300 ease-out hover:scale-[1.02] hover:z-10 relative"
+            className="flex-none w-[80vw] md:flex-1 snap-center transition-transform duration-300 ease-out md:hover:scale-[1.02] md:hover:z-10 relative"
           >
             <button
               onClick={() => setActiveLook(look)}
