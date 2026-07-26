@@ -13,6 +13,7 @@ import { createOrderAndPreference } from '@/lib/wc-client';
 import { getFbCookies } from '@/lib/fbtracking';
 import { imgSrc } from '@/lib/img';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
+import GiftProgressBar from '@/components/GiftProgressBar';
 
 type Step = 'info' | 'envio' | 'pago';
 
@@ -849,6 +850,9 @@ export default function Checkout() {
                 </div>
               ))}
             </div>
+
+            <GiftProgressBar discountAmount={descuento} className="pb-4 mb-1 border-b border-border" />
+
             <div className="space-y-1.5 mb-5">
               <div className="flex gap-2">
                 <input type="text" placeholder={isInternational ? 'Discount code' : 'Código de descuento'} value={coupon}

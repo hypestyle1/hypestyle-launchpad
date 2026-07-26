@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useProducts } from "@/hooks/useProducts";
 import { compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
 import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
+import GiftProgressBar from "@/components/GiftProgressBar";
 
 const FREE_SHIPPING = 250000;
 
@@ -107,6 +108,9 @@ export default function CartDrawer() {
             )}
           </div>
         )}
+
+        {/* Barra Purchase Gift (regalo por monto) */}
+        {items.length > 0 && <GiftProgressBar />}
 
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">

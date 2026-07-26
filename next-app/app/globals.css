@@ -54,6 +54,16 @@
     --announce-h: 42px;
     --nav-h: 48px;
     --offset: 90px;
+
+    /* Purchase Gift — barra de progreso (GiftProgressBar.tsx). Centralizado
+       acá para poder ajustar el diseño sin tocar el componente. */
+    --hpg-track-bg: hsl(var(--border));
+    --hpg-fill-bg: hsl(var(--foreground));
+    --hpg-tick-bg: hsl(var(--background));
+    --hpg-tick-border: hsl(var(--border-mid));
+    --hpg-tick-border-reached: hsl(var(--foreground));
+    --hpg-text: hsl(var(--foreground));
+    --hpg-text-muted: hsl(var(--muted-foreground));
   }
 }
 
