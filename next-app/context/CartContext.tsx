@@ -10,6 +10,12 @@ export interface CartItem {
   size: string;
   quantity: number;
   customization?: { playerName: string; number: string };
+  /** Línea de regalo por compra (Purchase Gift) — solo informativo del lado del
+   * cliente, nunca se confía en esto server-side. Siempre id=`purchase-gift:<levelId>`,
+   * price=0, quantity=1, locked=true. Ver hooks/useGiftProgress.ts. */
+  isGift?: boolean;
+  locked?: boolean;
+  giftLevelId?: string;
 }
 
 interface CartState { items: CartItem[] }
@@ -38,7 +44,9 @@ type CartAction =
   | { type: 'INCREMENT'; id: string; size: string; cust?: Customization }
   | { type: 'DECREMENT'; id: string; size: string; cust?: Customization }
   | { type: 'CLEAR' }
-  | { type: 'LOAD'; state: CartState };
+  | { type: 'LOAD'; state: CartState }
+  | { type: 'SET_GIFT'; item: CartItem }
+  | { type: 'CLEAR_GIFT' };
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
@@ -59,6 +67,15 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return { items: [] };
     case 'LOAD':
       return action.state;
+    case 'SET_GIFT': {
+      // Solo puede existir UNA línea de regalo a la vez — reemplaza cualquier
+      // otra que hubiera (cambio de nivel, cambio de alternativo, etc.) en una
+      // sola operación idempotente.
+      const withoutGift = state.items.filter(i => !i.isGift);
+      return { items: [...withoutGift, action.item] };
+    }
+    case 'CLEAR_GIFT':
+      return { items: state.items.filter(i => !i.isGift) };
     default:
       return state;
   }
@@ -71,6 +88,9 @@ interface CartContextType {
   increment: (id: string, size: string, cust?: Customization) => void;
   decrement: (id: string, size: string, cust?: Customization) => void;
   clear: () => void;
+  /** Uso exclusivo de useGiftProgress — agrega o reemplaza la única línea de regalo. */
+  setGift: (item: CartItem) => void;
+  clearGift: () => void;
   total: number;
   count: number;
   drawerOpen: boolean;
@@ -98,7 +118,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [state, hydrated]);
 
   const total = state.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const count = state.items.reduce((sum, i) => sum + i.quantity, 0);
+  // El regalo no es algo que el cliente "compró" — no cuenta en el badge de cantidad.
+  const count = state.items.reduce((sum, i) => sum + (i.isGift ? 0 : i.quantity), 0);
 
   return (
     <CartContext.Provider value={{
@@ -108,6 +129,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       increment: (id, size, cust) => dispatch({ type: 'INCREMENT', id, size, cust }),
       decrement: (id, size, cust) => dispatch({ type: 'DECREMENT', id, size, cust }),
       clear: () => dispatch({ type: 'CLEAR' }),
+      setGift: (item) => dispatch({ type: 'SET_GIFT', item }),
+      clearGift: () => dispatch({ type: 'CLEAR_GIFT' }),
       total, count, drawerOpen, setDrawerOpen,
     }}>
       {children}

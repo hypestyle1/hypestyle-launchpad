@@ -36,12 +36,15 @@ export default function CartDrawer() {
 
   if (!drawerOpen) return null;
 
+  // El regalo por compra no es un producto pago: no cuenta para el 3x2.
+  const purchasableItems = items.filter(item => !item.isGift);
+
   const remaining = Math.max(FREE_SHIPPING - total, 0);
   const progress = Math.min((total / FREE_SHIPPING) * 100, 100);
   const freeShipping = remaining === 0;
 
-  const promo3x2Discount = promo3x2Active ? compute3x2Discount(items) : 0;
-  const promo3x2Faltan = promo3x2Active ? unitsToNext3x2(items) : 0;
+  const promo3x2Discount = promo3x2Active ? compute3x2Discount(purchasableItems) : 0;
+  const promo3x2Faltan = promo3x2Active ? unitsToNext3x2(purchasableItems) : 0;
 
   return (
     <>
@@ -93,6 +96,11 @@ export default function CartDrawer() {
           </div>
         </div>
 
+        {/* Barra regalo por compra */}
+        {items.length > 0 && (
+          <GiftProgressBar className="px-6 pt-2 pb-2 border-b border-border" />
+        )}
+
         {/* Barra 3x2 */}
         {promo3x2Active && items.length > 0 && (promo3x2Discount > 0 || promo3x2Faltan < 3) && (
           <div className="px-6 pt-2 pb-2 border-b border-border">
@@ -108,9 +116,6 @@ export default function CartDrawer() {
             )}
           </div>
         )}
-
-        {/* Barra Purchase Gift (regalo por monto) */}
-        {items.length > 0 && <GiftProgressBar />}
 
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
@@ -132,34 +137,42 @@ export default function CartDrawer() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium leading-tight">{item.name}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{t('Talle')}: {item.size}</p>
+                  {!item.isGift && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{t('Talle')}: {item.size}</p>
+                  )}
                   {item.customization && (item.customization.playerName || item.customization.number) && (
                     <p className="text-[11px] text-foreground/70 mt-0.5 font-medium">
                       {t('Dorsal')}: {item.customization.number && `#${item.customization.number}`}{item.customization.playerName && ` ${item.customization.playerName}`}
                     </p>
                   )}
                   <p className="text-[13px] font-semibold mt-1">{formatPrice(item.price)}</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <button
-                      onClick={() => decrement(item.id, item.size, item.customization)}
-                      className="w-6 h-6 border border-border flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
-                    >
-                      −
-                    </button>
-                    <span className="text-[13px] tabular-nums">{item.quantity}</span>
-                    <button
-                      onClick={() => increment(item.id, item.size, item.customization)}
-                      className="w-6 h-6 border border-border flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
-                    >
-                      +
-                    </button>
-                    <button
-                      onClick={() => remove(item.id, item.size, item.customization)}
-                      className="ml-auto text-[11px] text-muted-foreground hover:text-foreground transition-colors underline"
-                    >
-                      {t('Eliminar')}
-                    </button>
-                  </div>
+                  {item.isGift ? (
+                    <p className="mt-2 inline-block text-[10px] font-bold uppercase tracking-[0.1em] text-green-700 border border-green-700/30 rounded-[5px] px-2 py-1">
+                      {t('Regalo por compra')}
+                    </p>
+                  ) : (
+                    <div className="flex items-center gap-3 mt-2">
+                      <button
+                        onClick={() => decrement(item.id, item.size, item.customization)}
+                        className="w-6 h-6 border border-border flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
+                      >
+                        −
+                      </button>
+                      <span className="text-[13px] tabular-nums">{item.quantity}</span>
+                      <button
+                        onClick={() => increment(item.id, item.size, item.customization)}
+                        className="w-6 h-6 border border-border flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
+                      >
+                        +
+                      </button>
+                      <button
+                        onClick={() => remove(item.id, item.size, item.customization)}
+                        className="ml-auto text-[11px] text-muted-foreground hover:text-foreground transition-colors underline"
+                      >
+                        {t('Eliminar')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))

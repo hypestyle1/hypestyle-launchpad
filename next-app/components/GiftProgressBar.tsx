@@ -1,35 +1,35 @@
 'use client';
 
-import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
-import { useGiftProgress, GiftProgress } from '@/hooks/useGiftProgress';
+import { useGiftProgress, type GiftProgressResponse } from '@/hooks/useGiftProgress';
+
+interface GiftProgressBarProps {
+  email?: string;
+  couponCode?: string;
+  className?: string;
+}
 
 /**
- * Barra de progreso de Purchase Gift. 100% informativa — el plugin de
- * WordPress decide de verdad qué regalo corresponde recién al crear la
- * orden (ver docs/purchase-gift-audit.md). Estética sobria: blanco/negro,
- * sin emojis, sin gradientes, variables CSS centralizadas en globals.css
- * (--hpg-*) para poder ajustar el diseño sin tocar este archivo.
+ * Barra de progreso de Purchase Gift. Sincroniza automáticamente la línea de
+ * regalo en el carrito (vía useGiftProgress) y muestra el estado — todos los
+ * niveles como "ticks" sobre la barra, no solo el próximo. Estética sobria:
+ * blanco/negro, sin emojis, variables CSS centralizadas en globals.css
+ * (--hpg-*) para poder ajustar el diseño sin tocar este archivo. El regalo
+ * mostrado acá nunca es una garantía — se vuelve a calcular server-side al
+ * crear la orden.
  */
-export default function GiftProgressBar({
-  discountAmount = 0,
-  className = 'px-6 pt-3 pb-3 border-b border-border',
-}: {
-  discountAmount?: number;
-  className?: string;
-}) {
-  const { items } = useCart();
+export default function GiftProgressBar({ email, couponCode, className = 'px-6 pt-3 pb-3 border-b border-border' }: GiftProgressBarProps) {
   const { formatPrice } = useLocale();
-  const progress = useGiftProgress(items, discountAmount);
+  const { data } = useGiftProgress({ email, couponCode });
 
-  if (!progress || !progress.active || progress.excluded) return null;
-  if (!progress.milestones || progress.milestones.length === 0) return null;
+  if (!data || !data.active || data.excluded) return null;
+  if (!data.milestones || data.milestones.length === 0) return null;
 
-  const messages = buildMessages(progress, formatPrice);
+  const messages = buildMessages(data, formatPrice);
   if (messages.length === 0) return null;
 
-  const pct = progress.progress_pct ?? 0;
-  const maxAmount = progress.max_amount ?? 0;
+  const pct = data.progress?.percentage ?? 0;
+  const maxAmount = data.progress?.maximum_threshold ?? 0;
 
   return (
     <div className={className}>
@@ -38,14 +38,12 @@ export default function GiftProgressBar({
           <p
             key={i}
             className="text-[11px] text-center leading-snug"
-            style={{ color: i === 0 && progress.max_reached ? undefined : 'var(--hpg-text)' }}
+            style={{ color: i === 0 && data.max_reached ? undefined : 'var(--hpg-text)' }}
           >
-            {i === 0 && (progress.max_reached || hasJustReached(progress)) ? (
+            {i === 0 && (data.max_reached || hasJustReached(data)) ? (
               <span className="font-bold uppercase tracking-[0.06em]" style={{ color: 'var(--hpg-text)' }}>{msg}</span>
             ) : (
-              <>
-                <span style={{ color: 'var(--hpg-text-muted)' }}>{msg}</span>
-              </>
+              <span style={{ color: 'var(--hpg-text-muted)' }}>{msg}</span>
             )}
           </p>
         ))}
@@ -64,7 +62,7 @@ export default function GiftProgressBar({
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${pct}%`, background: 'var(--hpg-fill-bg)' }}
         />
-        {maxAmount > 0 && progress.milestones.map(m => (
+        {maxAmount > 0 && data.milestones.map((m) => (
           <span
             key={m.id}
             title={`${m.name} — ${formatPrice(m.amount)}`}
@@ -81,46 +79,39 @@ export default function GiftProgressBar({
   );
 }
 
-/**
- * @param progress
- * @returns true si el último milestone se acaba de alcanzar (para resaltar
- * el mensaje de confirmación con más énfasis tipográfico).
- */
-function hasJustReached(progress: GiftProgress): boolean {
-  const reached = (progress.milestones || []).filter(m => m.reached);
-  return reached.length > 0;
+/** true si al menos un milestone ya está alcanzado (para resaltar el mensaje). */
+function hasJustReached(data: GiftProgressResponse): boolean {
+  return (data.milestones || []).some((m) => m.reached);
 }
 
 /**
  * Arma hasta 2 líneas de mensaje: confirmación del último nivel alcanzado
  * (si hay uno) + el próximo nivel pendiente, o el mensaje de regalo máximo.
- *
- * @param progress
- * @param formatPrice
  */
-function buildMessages(progress: GiftProgress, formatPrice: (n: number) => string): string[] {
+function buildMessages(data: GiftProgressResponse, formatPrice: (n: number) => string): string[] {
   const messages: string[] = [];
-  const milestones = progress.milestones || [];
-  const reached = milestones.filter(m => m.reached);
+  const milestones = data.milestones || [];
+  const reached = milestones.filter((m) => m.reached);
   const lastReached = reached[reached.length - 1];
 
   if (lastReached) {
     messages.push(`Desbloqueaste tu ${lastReached.name} de regalo.`);
   }
 
-  if (progress.max_reached) {
+  if (data.max_reached) {
     if (!lastReached) {
       messages.push('Desbloqueaste el regalo máximo.');
     }
-  } else if (progress.next) {
-    const next = progress.next;
-    const template = next.customer_text && next.customer_text.trim()
-      ? next.customer_text
+  } else if (data.next_level) {
+    const next = data.next_level;
+    const nextMilestone = milestones.find((m) => m.id === next.id);
+    const template = nextMilestone?.customer_text && nextMilestone.customer_text.trim()
+      ? nextMilestone.customer_text
       : 'Sumá {remaining} más y llevate {gift} de regalo.';
     messages.push(
       template
         .replace('{remaining}', formatPrice(next.remaining))
-        .replace('{gift}', next.name)
+        .replace('{gift}', nextMilestone?.name ?? '')
     );
   }
 

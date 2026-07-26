@@ -1,93 +1,70 @@
-# Auditoría técnica — Hypestyle Purchase Gift
+# Purchase Gift — auditoría de arquitectura
 
-Fecha: 26/07/2026. Alcance: determinar la arquitectura real de la tienda antes de diseñar el plugin `hypestyle-purchase-gift`.
+## 1. Contexto
 
-## Resumen ejecutivo (leer primero)
+Hypestyle es 100% headless: el comprador nunca ve el carrito ni el checkout nativo de WooCommerce. El carrito vive en `next-app/context/CartContext.tsx` — un `useReducer` con persistencia en `localStorage` (`hy_cart`). No hay sesión de WooCommerce, no hay `wc_session`, no hay Store API consumida por el navegador.
 
-**Hypestyle NO usa el carrito ni el checkout nativo de WooCommerce.** El storefront real es la app Next.js (`hypestyle-launchpad`), que mantiene su propio carrito 100% client-side (`localStorage`, sin sesión de WooCommerce) y crea las órdenes contra WordPress a través de **tres endpoints REST distintos**, no de `WC()->cart` ni de Cart/Checkout Blocks. Esto invalida buena parte de las secciones del brief que asumen una tienda WooCommerce "estándar" (fragments de carrito, Store API del lado del cliente navegando, checkout de bloques visible al comprador, etc.) y obliga a un diseño distinto, explicado en la sección 6.
+Existen **tres flujos distintos** de creación de orden en producción:
 
-Esto **no es una limitación del plugin**: es cómo funciona el sitio hoy, y ya lo sabíamos de sesiones anteriores de este mismo proyecto (checkout headless, pagos MP/PayPal/GoCuotas/Talo, ver `PHP/README.md`).
+1. **`create-order`** (`next-app/app/api/create-order/route.ts`) → proxy hacia el mu-plugin (`PHP/hypestyle-api.php`, función `hypestyle_create_order()`), que arma la orden manualmente con `wc_create_order()` + `add_product()`/`WC_Order_Item_Product` a mano.
+2. **`create-order-gocuotas`** (`next-app/app/api/create-order-gocuotas/route.ts`) → `POST /wp-json/wc/v3/orders` directo (REST API real de WooCommerce).
+3. **`create-order-intl`** (`next-app/app/api/create-order-intl/route.ts`) → mismo `POST /wp-json/wc/v3/orders`, para pedidos internacionales.
 
-## 1. WordPress / WooCommerce
+Ninguno de los tres pasa por Cart/Checkout Blocks ni por el checkout clásico de WooCommerce — esos hooks nunca se disparan en este sitio.
 
-Consultado en vivo vía `GET /wp-json/wc/v3/system_status` (credenciales ya cargadas en `next-app/.env.local`):
+## 2. Historia: por qué NO se usa `woocommerce_new_order`
 
-| Campo | Valor |
-|---|---|
-| WooCommerce | **10.7.0** |
-| WordPress | **6.9.5** |
-| PHP | **8.3.30** |
-| Tema activo | **Twenty Twenty-Five** (tema por defecto de WP, bloque, **no es child theme**, `has_woocommerce_support: false`) |
-| HPOS (`custom_order_tables`) | **Activado** (`HPOS_enabled: true`, `order_datastore: OrdersTableDataStore`, `HPOS_sync_enabled: false` — **la sync a `wp_posts` está apagada**, así que las órdenes viven únicamente en las tablas HPOS) |
-| Impuestos | **Desactivados** (`woocommerce_calc_taxes = no`) — no hay que lidiar con precios con/sin IVA |
-| Moneda | ARS, sin geolocalización, sin conexión a WooCommerce.com Marketplace más allá del connect básico |
+La primera versión de este plugin enganchaba `woocommerce_new_order` como único punto de integración, asumiendo que "dispara siempre que se guarda un pedido nuevo, sin importar el flujo". Se verificó contra el **código real de WooCommerce 10.7.0** (no por asunción) y esa premisa era falsa para los tres flujos:
 
-**Por qué importa:** el tema es irrelevante para el comprador (nunca lo ve — no tiene soporte WooCommerce declarado). `HPOS_sync_enabled: false` significa que **cualquier código que lea/escriba órdenes por `postmeta` directo no vería nada** — hay que usar `wc_get_order()` / `WC_Order` sí o sí, tal como pide el brief.
+- **Flujo 1 (mu-plugin)**: `hypestyle_create_order()` llama `wc_create_order()` (que internamente hace `new WC_Order(0)` + `$order->save()`, `wc-core-functions.php` líneas 100 y 136) **antes** de agregar un solo producto, envío, descuento o dirección. Ese `save()` dispara `OrdersTableDataStore::create()` (HPOS), que en su línea final ejecuta `do_action('woocommerce_new_order', $order->get_id(), $order)` — con la orden completamente vacía (0 line items, total 0, status `''`). El hook corría minutos-de-código antes de que el mu-plugin agregara cualquier dato real.
+- **Flujos 2 y 3 (REST)**: `WC_REST_Orders_Controller::save_object()` sí puebla el objeto en memoria (billing/shipping/line_items/fees/cupones) antes del primer `->save()`. Pero la implementación original hacía `wc_get_order($order_id)` dentro del handler de `woocommerce_new_order` — y `WC_Order_Factory::get_order()` siempre construye una instancia **nueva**, leyendo de la base de datos. Como `save_items()` (que persiste los ítems a las tablas reales) corre recién **después** de que `create()` dispare el hook (`abstract-wc-order.php`, `save()`: `create()` en la línea 225, `save_items()` en la 228, ambas dentro de la misma llamada síncrona), esa relectura llegaba antes de que los ítems existieran en la base — el resultado era el mismo pedido vacío que en el flujo 1.
 
-## 2. Carrito y checkout: NINGUNO de los escenarios esperados
+**Conclusión verificada**: la integración vía `woocommerce_new_order` no funcionaba en ninguno de los tres flujos.
 
-El brief pregunta si se usa Cart/Checkout Blocks, checkout clásico por shortcode, o "frontend desacoplado/headless". La respuesta es la tercera, pero de forma más radical de lo habitual:
+## 3. Arquitectura actual (corregida)
 
-- El carrito vive en `next-app/context/CartContext.tsx`: un `useReducer` con persistencia en `localStorage` (`hy_cart`). No hay sesión de WooCommerce, no hay `wc_session`, no hay Store API consumida por el navegador.
-- El checkout es una página propia de Next.js (`/checkout`), no `/carrito` ni `/finalizar-compra` de WordPress.
-- La creación de la orden pasa por **tres rutas Next.js** distintas, cada una golpeando un backend distinto en WordPress:
+Un único motor, `HPG_Gift_Engine` (`PHP/hypestyle-purchase-gift/includes/class-hpg-gift-engine.php`), con dos métodos:
 
-| Ruta Next.js | Backend WP que llama | Cómo arma la orden |
-|---|---|---|
-| `app/api/create-order` | `POST /wp-json/hypestyle/v1/create-order` (función `hypestyle_create_order()` en el mu-plugin `hypestyle-api.php`) | Arma la orden a mano: `wc_create_order()` + `add_product()`/`WC_Order_Item_Product` manual por cada línea, shipping como `WC_Order_Item_Shipping`, el descuento/cupón como una **`WC_Order_Item_Fee` negativa** (NO como `WC_Coupon` real aplicado). Pago: MercadoPago / PayPal / Transferencia. Llama `wc_reduce_stock_levels()` **inmediatamente** tras crear la orden (antes de que se confirme el pago). |
-| `app/api/create-order-gocuotas` | `POST /wp-json/wc/v3/orders` (**API REST estándar de WooCommerce**) | Arma el payload estándar (`line_items`, `shipping_lines`, `fee_lines`, **`coupon_lines` con el código real** — acá sí se aplica un `WC_Coupon` de verdad). Sin `status` explícito → queda `pending`. |
-| `app/api/create-order-intl` | `POST /wp-json/wc/v3/orders` (idem, para compras internacionales) | Mismo patrón que GoCuotas. |
+- `evaluate(float $eligible_amount): array` — cálculo puro, no toca ningún `WC_Order`. Usado por el endpoint de preview.
+- `apply_to_order(WC_Order $order): array` — muta la orden (agrega/reemplaza/quita líneas de regalo), idempotente, devuelve un resultado estructurado con un código de entre 14 posibles (`gift_applied`, `gift_already_correct`, `gift_replaced`, `gift_removed`, `all_gifts_out_of_stock`, `campaign_inactive`, etc.)
 
-**Consecuencia directa para el plugin:** no existe un único punto de "checkout" al que engancharse con los hooks típicos de WooCommerce (`woocommerce_checkout_order_processed`, filtros de Cart/Checkout Blocks, fragments de `wc_ajax`). Esos hooks **no disparan nunca** en este sitio porque nadie pasa por el checkout nativo. Ver la decisión técnica en la sección 6.
+Tres adaptadores delgados llaman al mismo motor, ninguno reimplementa lógica comercial:
 
-## 3. Plugins activos que tocan carrito / pagos / precios / checkout
+1. **Flujo mu-plugin**: llamada explícita `HPG_Gift_Engine::apply_to_order($order)` dentro de `hypestyle_create_order()` (`PHP/hypestyle-api.php`), justo después de agregar productos y descuentos, antes de `calculate_totals()`/`save()`/iniciar el pago. Envuelta en `try/catch`: si el motor devuelve un error bloqueante (`calculation_failed`/`invalid_order`/`invalid_product`), la orden recién creada se borra (`$order->delete(true)`) y no se reduce stock ni se inicia el pago.
+2. **Flujos REST (2 y 3)**: como ambos pegan al mismo endpoint WooCommerce `POST /wc/v3/orders`, un único enganche los cubre — `HPG_Order_Integration` (`class-hpg-order-integration.php`) usa el filtro `woocommerce_rest_pre_insert_shop_order_object`. Verificado que este filtro se dispara **dentro de** `prepare_object_for_database()`, **antes** de cualquier `->save()`, y recibe como segundo argumento el objeto `WC_Order` YA poblado (billing, shipping, line_items, shipping_lines, fee_lines, coupon_lines — todo excepto `status`). El callback muta ese mismo objeto directamente y lo retorna — sin relectura, sin `wc_get_order()`. Un error bloqueante se propaga como `WC_REST_Exception`, que el propio `save_object()` de WooCommerce convierte en un `WP_Error` HTTP 500 antes del primer `->save()` — el pedido nunca llega a crearse.
+   - El filtro también se dispara en actualizaciones administrativas por REST (`$creating = false`) — el callback lo ignora explícitamente para no reprocesar un pedido ya existente.
 
-Vía `system_status.active_plugins`:
+## 4. El regalo SÍ vive en el carrito headless
 
-- **Mercado Pago** (`woo-mercado-pago-basic`), **WooCommerce PayPal Payments** (`ppcp-gateway`), **Talo Pay** (`talo-pay-cvu-woo`), **GoCuotas** — gateways de pago activos, ninguno modifica el carrito en sí.
-- **Andreani WooCommerce** — método de envío; depende de meta `_chosen_shipping` seteado a mano por el mu-plugin (ver `PHP/README.md` v1.15.1) porque, al no pasar por el checkout nativo, WooCommerce nunca lo setea solo.
-- **Meta for WooCommerce**, **Google for WooCommerce**, **Reddit for WooCommerce**, **Snapchat for WooCommerce** — catálogos/pixels, no tocan precios de carrito.
-- **WPGraphQL** + **WPGraphQL WooCommerce (WooGraphQL)** + **WPGraphQL CORS** — el camino de **lectura** de catálogo que usa el frontend (`/api/products`, ver `app/api/products/route.ts`). CORS solo permite el origen `hypestyle.com.ar` (ya documentado en memoria del proyecto).
-- **Advanced Custom Fields**, **Klaviyo**, **Jetpack**, **LiteSpeed Cache**, **WP Mail SMTP**, **Hostinger AI/Reach**, **Duplicator**, **Visa Acceptance Solutions**, **WooCommerce.com Update Manager** — no relevantes para carrito/precio.
-- **No hay ningún plugin de "regalo por compra", loyalty, ni gift-with-purchase instalado.**
+A diferencia del diseño original, el regalo se sincroniza automáticamente como línea real y visible en `CartContext` (Next.js), no solo en la orden de WooCommerce:
 
-No aparece en esta lista `hype-wally-coupons` (el plugin propio que genera cupones "$20.000 OFF" — ver `PHP/README.md`), probablemente porque `system_status.active_plugins` no lista todos los custom sin actualizador; se confirmó su existencia por el propio README de la fuente de verdad del PHP. **Es la referencia directa a seguir**: es un plugin normal en `wp-content/plugins/`, con página propia en el admin, que usa únicamente `WC_Coupon` (API oficial), sin SQL directo — exactamente el patrón que debe seguir `hypestyle-purchase-gift`.
+- `next-app/hooks/useGiftProgress.ts` llama a `POST /api/gift-progress` (proxy server-side con `HPG_SECRET`, nunca expuesto al navegador) → `POST /wp-json/hypestyle-gift/v1/evaluate` en WordPress.
+- El endpoint de preview NUNCA confía en precio/subtotal/monto elegible/nivel/IDs de regalo mandados por el cliente — resuelve cada producto/variación real vía WooCommerce, calcula el precio vigente (`get_price()`, incluye promociones), valida cupones reales, y recién ahí llama a `HPG_Gift_Engine::evaluate()`.
+- El hook agrega/reemplaza/quita automáticamente una única línea `isGift:true, locked:true` en el carrito (acción `SET_GIFT`/`CLEAR_GIFT` del reducer) — sin que el usuario tenga que hacer nada. Esa línea no puede editarse (cantidad fija 1, sin botones de +/−/eliminar en `CartDrawer.tsx`), y no cuenta para el badge de cantidad del carrito ni para otras promos (3x2/CAMPEON50 la excluyen explícitamente).
+- **Este preview nunca garantiza el regalo.** Al crear la orden, las 3 rutas de Next.js (`create-order`, `create-order-gocuotas`, `create-order-intl`) filtran cualquier línea `isGift===true` del payload antes de enviarlo a WordPress — y aunque no lo hicieran, el backend ignora cualquier dato de regalo que llegara desde el navegador: `HPG_Gift_Engine::apply_to_order()` es la única fuente de verdad, y se re-ejecuta de forma autoritativa en el momento de crear la orden real.
 
-## 4. Cupones y descuentos
+## 5. Estados de campaña
 
-- `GET /wc/v3/settings/general` → `woocommerce_calc_taxes = no`.
-- Cupones existentes: todos `discount_type: fixed_cart` (probado con 5 códigos reales de la tienda).
-- La validación de reglas de cupón (vencimiento, mínimo/máximo, usos) usa `WC_Coupon` real vía el endpoint propio `/hypestyle/v1/validate-coupon` — pero luego el **descuento se aplica como número plano** (`discountAmount`) en el flujo `create-order` (fee negativa), o como cupón real en los flujos `create-order-gocuotas`/`create-order-intl` (`coupon_lines`). Es decir: **según qué endpoint procesó la orden, el descuento puede o no ser un objeto `WC_Coupon` real adjunto a la orden.** El cálculo de "monto elegible" del plugin no puede asumir ninguna de las dos formas — tiene que trabajar sobre los **totales ya resueltos de la orden** (`$order->get_items()` + fees), no sobre cupones.
+`HPG_Settings::campaign_state`: `disabled` | `shadow` | `test` | `live`.
 
-## 5. Sistema de costo interno (COGS) existente
+- **Shadow**: el motor evalúa y loguea (`HPG_Logger`) qué habría pasado en los tres flujos, sin agregar líneas, sin tocar stock, sin mostrarse al público. Pensado para validar en producción antes de exponerlo.
+- **Test**: solo aplica a una allowlist de emails (`test_mode_allowlist`). La validación es siempre server-side (el endpoint de preview y el motor chequean el email real, nunca un parámetro público tipo `?test=1`).
+- **Live**: pública.
 
-Sí existe, pero **no aplica directo a los regalos**: `hs_cost_profiles` (WP option, endpoint `/hypestyle/v1/cost-profiles`) son perfiles de costo de **fabricación por tela/construcción** (ej. "Jersey 20/1 TEE"), asignados a cada producto de indumentaria vía meta `_hs_cost_profile_id`. Sirve para remeras/hoodies/pantalones hechos a medida, no para accesorios comprados a un proveedor externo (una chain, un pack de medias, un Zippo tienen un costo de compra, no un costo de fabricación por perfil de tela).
+## 6. Metadata
 
-**Decisión:** el campo "costo interno" de cada nivel de Purchase Gift es un número manual (como pide el brief como fallback). Si el producto de regalo ya tiene un `_hs_cost_profile_id` asignado, el panel ofrece un botón para *sugerir* ese costo como punto de partida, pero no fuerza a usarlo — sigue siendo editable.
+Ítem de regalo (`WC_Order_Item_Product` real, sin tocar `_price`/`_regular_price`/`_sale_price` del producto): `_hypestyle_purchase_gift`, `_hypestyle_gift_campaign_id`, `_hypestyle_gift_campaign_name`, `_hypestyle_gift_level_id`, `_hypestyle_gift_level_name`, `_hypestyle_gift_threshold`, `_hypestyle_gift_eligible_amount`, `_hypestyle_gift_original_product_id`, `_hypestyle_gift_original_variation_id`, `_hypestyle_gift_alternative_used`, `_hypestyle_gift_internal_cost` (solo métricas admin, nunca en emails ni al frontend), `_hypestyle_gift_engine_version`.
 
-## 6. Decisión de arquitectura resultante
+Orden: `_hypestyle_purchase_gift_applied`, `_hypestyle_purchase_gift_campaign_id`, `_hypestyle_purchase_gift_level_id`, `_hypestyle_purchase_gift_eligible_amount`, `_hypestyle_purchase_gift_mode`.
 
-Dado el punto 2, dos partes del brief tienen que adaptarse (documentado también en el resumen final del chat):
+## 7. Idempotencia
 
-1. **No hay Cart/Checkout Blocks ni checkout clásico que extender.** No se va a escribir ninguna integración de Store API del lado del navegador, ningún `Fragments`, ningún filtro de bloques — no hay a qué engancharse porque el comprador nunca renderiza esas pantallas.
-2. **La barra de progreso vive en Next.js, no en WordPress.** Se muestra en el drawer del carrito y en `/checkout` (React), consumiendo un endpoint REST propio del plugin (`GET /wp-json/hypestyle-gift/v1/progress`, ver README del plugin) al que se le mandan los ítems del carrito local; el plugin devuelve el progreso, el próximo nivel y el mensaje — usando **la misma función central de cálculo** que se usa para decidir el regalo real en el servidor.
-3. **El regalo NUNCA se agrega al carrito de Next.js.** No existe un carrito de WooCommerce al que agregarlo durante la navegación (no hay sesión). El regalo se adjunta **una sola vez, en el servidor, en el momento exacto en que la orden se guarda por primera vez** — sin importar cuál de los tres endpoints la creó.
-4. **Punto de enganche elegido: el hook nativo `woocommerce_new_order`**, no un hook propio agregado al mu-plugin. Este hook de WooCommerce dispara siempre que se guarda una orden nueva vía `WC_Order::save()` — y los **tres** caminos de creación de orden (la función manual del mu-plugin y los dos que pegan directo a `POST /wc/v3/orders`) terminan ahí, porque todos usan la API de objetos de WooCommerce (`wc_create_order()` o el controlador REST de órdenes), nunca SQL directo. Es la única integración que cubre los tres flujos sin tocar `hypestyle-api.php` ni el resto del código existente — cumple con "plugin independiente" y con la cláusula del brief que permite apartarse del enfoque genérico cuando la arquitectura real lo exige.
-   - Se valida en el propio plugin, con logging, que el hook efectivamente dispara en los tres flujos (ver plan de pruebas).
-   - Ventaja adicional: como el mu-plugin de `create-order` llama a `wc_reduce_stock_levels()` **después** de guardar la orden, si el regalo ya fue agregado y guardado dentro del hook `woocommerce_new_order` (que dispara *durante* ese mismo `save()`), su stock se descuenta gratis, sin código extra, igual que cualquier producto real de esa orden.
-5. **La barra de progreso NO debe validar nada por sí sola.** Es 100% informativa; sirve para mostrarle al cliente cuánto le falta. La única fuente de verdad de si corresponde o no un regalo es el cálculo server-side en el momento de crear la orden.
+`apply_to_order()` identifica las líneas de regalo ya presentes por **campaña+nivel** (no solo por `product_id`, porque dos niveles pueden compartir el mismo producto de regalo). Llamarlo dos veces seguidas sobre la misma orden no duplica nada — compara contra lo que ya está y hace el mínimo cambio necesario (no-op / reemplazo / remoción).
 
-## 7. Deploys y entornos
+## 8. Pendiente antes de producción
 
-- **Sin staging.** Es un solo sitio WordPress en Hostinger (compartido); no hay evidencia de un clon de staging ni de un mecanismo para crearlo desde este entorno. El plugin se sube manualmente vía File Manager/FTP de Hostinger, igual que el resto del PHP (ver `PHP/README.md`).
-- El frontend (`hypestyle-launchpad`) deploya solo en Vercel al mergear a `main` — no hay deploy manual, y esta tarea no lo toca hasta que el usuario decida mergear el PR.
-- **No hay ningún framework de testing instalado** (ni PHPUnit en el lado WP, ni Jest/Vitest en el Next.js). Por eso el plan de pruebas de esta tarea es manual y documentado (`docs/purchase-gift-test-plan.md`), tal como el brief permite explícitamente cuando la estructura del proyecto no tiene tests automatizados.
-
-## 8. Convención de nombres / prefijos elegida
-
-Para evitar cualquier colisión con el resto del código (mu-plugin `hypestyle_*`, tema, otros plugins):
-
-- Prefijo de funciones/constantes/clases PHP: `hpg_` / `HPG_` (Hypestyle Purchase Gift) — mismo patrón que `hype-wally-coupons` (clases `HWC_*`), no se introducen namespaces de PHP para no romper la convención ya establecida en el proyecto.
-- Text domain: `hypestyle-purchase-gift`.
-- REST namespace propio: `hypestyle-gift/v1` (separado de `hypestyle/v1`, que es del mu-plugin existente — no se toca ese archivo).
-- Opciones de WordPress: `hpg_settings`, `hpg_levels`, `hpg_metrics` (prefijo propio, sin chocar con `hs_cost_profiles` / `hs_mayorista_min_order` del resto del proyecto).
+- Subir el plugin actualizado (`PHP/hypestyle-purchase-gift/`) y la nueva versión del mu-plugin (`PHP/hypestyle-api.php`) al servidor — no hay staging, esto requiere FTP/File Manager manual.
+- Cargar `HPG_SECRET` en Vercel (si no está ya).
+- Cargar niveles reales y costos internos desde el panel de admin.
+- Validar en Shadow, después en Test, recién después pasar a Live.
+- Ejecutar el plan de pruebas manual completo (`docs/purchase-gift-test-plan.md`) contra el sitio real antes de mergear el PR.

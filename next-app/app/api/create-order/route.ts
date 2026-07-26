@@ -41,7 +41,12 @@ async function sanitizeDiscount(payload: any) {
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await sanitizeDiscount(await req.json());
+    const rawBody = await req.json();
+    // Nunca confiar en el navegador: cualquier línea marcada como regalo (o
+    // manipulada para simularlo) se descarta acá, no solo en el cliente. El
+    // mu-plugin/Gift Engine recalcula y agrega el regalo oficial por su cuenta.
+    const items = Array.isArray(rawBody.items) ? rawBody.items.filter((it: any) => it?.isGift !== true) : [];
+    const payload = await sanitizeDiscount({ ...rawBody, items });
     const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/create-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Hypestyle-Secret': WP_SECRET, 'Authorization': `Bearer ${WP_SECRET}` },

@@ -3,14 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 const WP_URL     = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const HPG_SECRET = (process.env.HPG_SECRET || '').trim();
 
-// Proxy server-side hacia el plugin Hypestyle Purchase Gift (namespace REST
-// propio hypestyle-gift/v1, separado del resto de la API headless). El
-// navegador nunca pega directo a WordPress ni conoce el secreto — mismo
-// patrón que /api/validate-coupon y el resto de las rutas de este proyecto.
+// Proxy server-side al plugin Purchase Gift (mismo patrón que /api/create-order
+// con WP_SECRET: secreto solo del lado del servidor, nunca NEXT_PUBLIC_*). El
+// navegador nunca ve HPG_SECRET ni pega directo a WordPress.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const res = await fetch(`${WP_URL}/wp-json/hypestyle-gift/v1/progress`, {
+    const res = await fetch(`${WP_URL}/wp-json/hypestyle-gift/v1/evaluate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -22,15 +21,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
+      // Fail-open: si el plugin no está instalado/activo todavía, o WP está caído,
+      // la barra simplemente no se muestra — nunca debe romper el carrito.
       return NextResponse.json({ active: false }, { status: 200 });
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status: 200 });
   } catch (err) {
     console.error('[gift-progress proxy]', err);
-    // Fallar en silencio: la barra de progreso es informativa, nunca debe
-    // romper el carrito/checkout si el plugin no responde.
     return NextResponse.json({ active: false }, { status: 200 });
   }
 }

@@ -227,6 +227,10 @@ interface PagoForm { metodo: string; instagram: string }
 
 export default function Checkout() {
   const { items, total, clear } = useCart();
+  // El regalo por compra nunca es un producto pago: no debe contarse para 3x2,
+  // CAMPEON50, ni mandarse al backend como línea comercial — el servidor lo
+  // recalcula y agrega por su cuenta (HPG_Gift_Engine).
+  const purchasableItems = items.filter(item => !item.isGift);
   const router = useRouter();
   const { formatPrice, currency } = useLocale();
   const [step, setStep] = useState<Step>('info');
@@ -273,11 +277,11 @@ export default function Checkout() {
   // 50% off "campeones del mundo" tiene prioridad sobre el 3x2 — no deberían solaparse
   // (si por algún motivo ambos estados dieran 'won' a la vez, no se suman).
   const championActive = championWon && !isInternational;
-  const championDescuento = championActive ? computeChampionDiscount(items) : 0;
+  const championDescuento = championActive ? computeChampionDiscount(purchasableItems) : 0;
   // 3x2 (más barata gratis) solo si Argentina ganó — promo local, no aplica a envíos internacionales.
   const promo3x2Active = promo3x2Won && !isInternational && !championActive;
-  const promo3x2Descuento = promo3x2Active ? compute3x2Discount(items) : 0;
-  const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(items) : 0;
+  const promo3x2Descuento = promo3x2Active ? compute3x2Discount(purchasableItems) : 0;
+  const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(purchasableItems) : 0;
   const descuento = cuponDescuento + promo3x2Descuento + championDescuento;
   const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
   const totalFinal = subtotal - descuento + envioEnPaso;
@@ -369,7 +373,7 @@ export default function Checkout() {
       let orderRes;
       try {
         orderRes = await createOrderAndPreference({
-          items: items.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization })),
+          items: purchasableItems.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization })),
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
           discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0) + promo3x2Descuento + championDescuento,
@@ -839,7 +843,11 @@ export default function Checkout() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-medium leading-tight">{item.name}</p>
-                    <p className="text-[11px] text-muted-foreground">Talle: {item.size}</p>
+                    {item.isGift ? (
+                      <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-green-700">Regalo por compra</p>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">Talle: {item.size}</p>
+                    )}
                     {item.customization && (item.customization.playerName || item.customization.number) && (
                       <p className="text-[11px] text-foreground/70 font-medium">
                         Dorsal: {item.customization.number && `#${item.customization.number}`}{item.customization.playerName && ` ${item.customization.playerName}`}
@@ -850,9 +858,7 @@ export default function Checkout() {
                 </div>
               ))}
             </div>
-
-            <GiftProgressBar discountAmount={descuento} className="pb-4 mb-1 border-b border-border" />
-
+            <GiftProgressBar email={info.email} couponCode={couponData?.code} className="pb-4 mb-4 border-b border-border" />
             <div className="space-y-1.5 mb-5">
               <div className="flex gap-2">
                 <input type="text" placeholder={isInternational ? 'Discount code' : 'Código de descuento'} value={coupon}

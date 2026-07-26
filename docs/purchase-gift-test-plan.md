@@ -1,44 +1,67 @@
-# Plan de pruebas — Hypestyle Purchase Gift
+# Purchase Gift — plan de pruebas manual
 
-No hay ningún framework de testing instalado en este proyecto (ni PHPUnit del lado de WordPress, ni Jest/Vitest del lado de Next.js — verificado en la auditoría, `docs/purchase-gift-audit.md` §7). El brief permite explícitamente un plan de pruebas manual documentado en este caso. Cada escenario indica **qué mirar** y **dónde** (log del plugin, meta de la orden, pantalla de admin).
+No hay framework de tests automatizados para este flujo (headless + WooCommerce real, sin staging). Todo esto es manual, contra el sitio real, en `campaign_state = shadow` o `test` antes de pasar a `live`. Marcar cada casillero al ejecutarlo.
 
-Dónde mirar en cada prueba:
-- **Log del plugin**: `wp-content/hypestyle-purchase-gift-debug.log` (solo se escribe con `WP_DEBUG` activo o "Modo debug" tildado en Ajustes).
-- **Meta de la orden**: WooCommerce → Pedidos → [pedido] → bloque "Purchase Gift" que agrega el plugin debajo de los datos del pedido.
-- **Panel**: WooCommerce → Purchase Gift (niveles/ajustes), → Análisis de costos, → Métricas.
+## Frontend
 
-## Configuración sugerida para probar
+- [ ] Debajo del primer nivel — no aparece ninguna línea de regalo.
+- [ ] Exactamente en el nivel — aparece automáticamente, sin click del usuario.
+- [ ] Entre niveles — se mantiene el regalo del nivel alcanzado, la barra muestra el progreso al siguiente.
+- [ ] Cambio a nivel superior — la línea vieja se reemplaza por la nueva (no quedan las dos).
+- [ ] Regreso a nivel inferior (se saca un producto pago) — el regalo se reemplaza por el del nivel inferior, o se elimina si no queda ninguno.
+- [ ] Regalo agregado automáticamente — confirmar que no depende de ningún botón.
+- [ ] Regalo eliminado automáticamente al bajar del primer umbral.
+- [ ] Refresh de la página con el umbral ya alcanzado — la barra y el regalo se recalculan igual.
+- [ ] Recuperación desde `localStorage` (cerrar pestaña, volver a abrir) — el regalo persistido se corrige (o se confirma) apenas `useGiftProgress` vuelve a evaluar.
+- [ ] Carrito abierto en dos pestañas — cambios en una no rompen la otra al volver a foco (cada pestaña reevalúa contra su propio estado).
+- [ ] Un request viejo no pisa un resultado nuevo (cambiar de nivel rápido, ej. agregar y sacar un producto seguido) — confirmar que la barra queda en el estado correcto final, no en uno intermedio.
+- [ ] Endpoint temporalmente caído (simular WP apagado o `HPG_SECRET` mal cargado) — la barra desaparece (`active:false`), el carrito sigue funcionando normal, no hay error visible.
+- [ ] Campaña desactivada (`campaign_state=disabled`) — no aparece nada, sin excepción.
+- [ ] Producto de regalo sin stock — usa el alternativo si existe, o muestra `available:false` sin agregar la línea.
+- [ ] Regalo alternativo — confirmar que se muestra el alternativo, no el principal agotado.
+- [ ] Línea bloqueada — sin botones de +/−/eliminar en `CartDrawer.tsx`.
+- [ ] Regalo excluido del total visual y del contador de ítems del carrito (badge).
+- [ ] El regalo no cuenta para el 3x2 ni para CAMPEON50 (agregar productos + regalo, confirmar que las unidades gratis del 3x2 no incluyen la línea de regalo).
 
-Crear 2 o 3 niveles de prueba con montos bajos (ej. $1.000 / $2.000 / $3.000) sobre productos reales con stock, para no tener que armar carritos grandes. **Hacerlo con la campaña en un nombre de campaña de prueba claramente distinguible**, y desactivarla antes de irse de la sesión de pruebas si el sitio está en producción real (no hay staging — ver auditoría §7).
+## Backend
 
-## Escenarios
+- [ ] Mu-plugin (`create-order`) — orden real creada con la línea de regalo, metadata completa, total $0 en esa línea.
+- [ ] GoCuotas (`create-order-gocuotas`) — ídem, vía `POST /wc/v3/orders`.
+- [ ] Internacional (`create-order-intl`) — ídem.
+- [ ] Cupón válido — se aplica, el monto elegible lo refleja.
+- [ ] Cupón inválido/inexistente — se ignora sin romper la creación de la orden.
+- [ ] Descuento fijo (fee negativo, flujo mu-plugin) — el monto elegible lo resta correctamente.
+- [ ] Descuento porcentual (cupón `percent`) — ídem.
+- [ ] Precio promocional (`sale_price` vigente) — el monto elegible usa el precio real, no uno viejo.
+- [ ] Producto excluido (`excluded_product_ids`) — no suma al monto elegible.
+- [ ] Categoría excluida (`excluded_category_ids`) — ídem.
+- [ ] Regalo sin stock — no bloquea la orden, sigue sin ese regalo (o con alternativo).
+- [ ] Alternativo — se agrega el alternativo cuando el principal no tiene stock.
+- [ ] Doble ejecución del motor (`apply_to_order()` llamado dos veces sobre la misma orden, en un script aislado) — no duplica líneas.
+- [ ] Orden cancelada — el stock del regalo se restaura igual que un producto normal (comportamiento nativo de WooCommerce, confirmar que nada lo interfiere).
+- [ ] Reembolso — ídem.
+- [ ] Payload con precio manipulado (mandar `price` distinto al real en `items`) — el backend ignora ese valor, usa el real de WooCommerce.
+- [ ] Payload con regalo falso (`isGift:true`, `giftProductId`, etc. en el body) — se descarta antes de llegar a WordPress; aunque llegara, el backend nunca lo lee para decidir el regalo.
+- [ ] Product ID inválido en el carrito — se ignora esa línea sin romper el cálculo.
+- [ ] Variación inválida (no pertenece al producto padre) — se ignora esa línea.
 
-1. **Carrito debajo del primer nivel.** Agregar productos por menos del monto del nivel 1. Esperado: barra visible en carrito/checkout mostrando "Sumá $X más...", sin ningún regalo al finalizar la compra (verificar en la orden creada: no aparece meta `_hpg_processed=yes` con líneas de regalo, o si aparece, `_hpg_levels_unlocked` vacío).
-2. **Carrito exactamente en el primer nivel.** Mismo monto exacto del nivel 1. Esperado: barra marca el nivel 1 como alcanzado; la orden creada tiene una línea de producto a $0 con el nombre "— Regalo por compra".
-3. **Carrito entre el primer y segundo nivel.** Esperado: en modo "nivel más alto" (default), el regalo entregado sigue siendo el del nivel 1; el mensaje de la barra apunta al nivel 2 con el remanente correcto.
-4. **Carrito exactamente en el segundo nivel.** Esperado: en modo "nivel más alto", solo el regalo del nivel 2 (no el del 1 también). Cambiar a modo "acumulativo" y repetir: ahora deben aparecer DOS líneas de regalo (nivel 1 y nivel 2).
-5. **Carrito por encima del último nivel.** Esperado: barra muestra "Desbloqueaste el regalo máximo"; se entrega el regalo de mayor monto (o todos, en acumulativo).
-6. **Aplicar un cupón y perder el nivel.** Con el carrito justo en un nivel, aplicar un cupón que baje el monto elegible por debajo. Probar en los dos flujos de cupón del sitio (ver auditoría §4): (a) cupón aplicado como fee negativa en el flujo `create-order` normal (MP/PayPal/transferencia), y (b) cupón real (`coupon_lines`) en el flujo `create-order-gocuotas`. Esperado en ambos: el monto elegible baja correctamente y no se entrega el regalo si queda por debajo.
-7. **Eliminar un cupón y recuperar el nivel.** Sacar el cupón antes de confirmar y volver a calificar. Esperado: la barra vuelve a mostrar el nivel alcanzado (esto solo se puede validar en la barra, ya que el "carrito" real de WooCommerce no existe hasta crear la orden — ver auditoría §2).
-8. **Eliminar productos del carrito.** Sacar ítems hasta caer por debajo de un nivel ya mostrado como alcanzado en la barra. Esperado: la barra se actualiza sin necesidad de recargar toda la página (el hook `useGiftProgress` refetchea solo cuando cambia el contenido del carrito).
-9. **Aumentar y reducir cantidades.** Igual que el punto anterior pero con +/- de cantidad en vez de eliminar la línea completa.
-10. **Regalo principal sin stock.** Bajar el stock del producto de regalo del nivel más alto alcanzado a 0 (o marcarlo "Sin stock" en Woo) y crear una orden que califique. Esperado: si hay producto alternativo configurado y con stock, se entrega ese (verificar meta `_hpg_used_alternative=yes` en la línea del pedido). Revisar el log: debe quedar la entrada "Regalo principal sin stock, se usa alternativo".
-11. **Producto alternativo disponible.** Confirmar en el punto anterior que el alternativo efectivamente aparece como línea real del pedido, a $0, con el nombre correcto.
-12. **Todos los regalos sin stock.** Sacar el stock también del alternativo. Con `out_of_stock_behavior = fallback_to_lower_level` (default): debe entregarse el regalo de un nivel inferior que sí tenga stock. Con `no_gift`: no debe entregarse nada, y la orden debe quedar con una nota visible ("el cliente calificó... no había stock disponible") — revisar en WooCommerce → Pedidos → [pedido] → notas del pedido.
-13. **Sesión restaurada.** Agregar productos, cerrar la pestaña, volver a abrir el sitio (el carrito persiste en `localStorage`, ver `CartContext.tsx`). Esperado: la barra vuelve a calcular el progreso correctamente sin duplicar nada (no hay nada que duplicar del lado del cliente, ya que el regalo nunca se agrega ahí — ver auditoría §6).
-14. **Cliente invitado.** Completar una compra sin iniciar sesión, con "Aplica a usuarios invitados" activado y desactivado. Esperado: con el ajuste desactivado, un invitado que califica no recibe nada (verificar meta `_hpg_skip_reason = customer_excluded` en la orden).
-15. **Cliente registrado.** Repetir con un usuario logueado normal (sin rol/meta de exclusión). Esperado: recibe el regalo con normalidad.
-16. **Rol mayorista excluido.** Con "Excluir clientes mayoristas" activado, probar con un cliente que tenga la meta `es_mayorista = yes` (ver `mayorista-login` en el mu-plugin existente). Esperado: no recibe regalo aunque el monto califique.
-17. **Checkout mobile.** Repetir el escenario 2 (nivel exacto) desde un viewport mobile. Verificar que la barra se ve completa, sin overflow horizontal, y que los ticks de milestone no se solapan con el texto.
-18. **Checkout desktop.** Igual que el anterior, en desktop.
-19. **Checkout Blocks.** **No aplica** — el sitio no usa Cart/Checkout Blocks (ver auditoría §2); se documenta como "no aplica" en vez de omitirse en silencio.
-20. **Checkout clásico.** **No aplica** por el mismo motivo — el comprador nunca ve el checkout clásico de WooCommerce.
-21. **Creación del pedido.** Repetir la creación de una orden calificada en LOS TRES flujos posibles (ver auditoría §2): `create-order` (MercadoPago/PayPal/transferencia), `create-order-gocuotas`, `create-order-intl`. Esperado: el regalo se agrega en los tres, confirmando que enganchar `woocommerce_new_order` cubre los tres caminos (era el punto más importante a validar de toda la arquitectura).
-22. **Cancelación del pedido y restauración de stock.** Cancelar una orden con regalo entregado desde el admin. Esperado: WooCommerce restaura el stock de la línea de regalo automáticamente, igual que cualquier otro ítem — no hace falta código propio para esto porque el regalo es un `WC_Order_Item_Product` real (confirmar igual mirando el stock del producto de regalo antes/después de cancelar).
-23. **Reembolso.** Reembolsar (parcial o total) una orden con regalo. Esperado: comportamiento nativo de WooCommerce sobre la línea del regalo (mismo motivo que el punto anterior).
-24. **Pedido fallido.** Simular un pago rechazado / orden que nunca pasa de `pending`/`failed`. Esperado: la orden igual queda con el regalo asignado en el momento de creación (el brief pide que el regalo dependa del monto elegible de productos, no del método de pago ni del estado de pago) — confirmar que esto es aceptable o si el negocio prefiere no entregar el regalo hasta el pago confirmado (ver nota abajo).
-25. **Carrito con varios productos y descuentos combinados.** Combinar cupón + producto en oferta + varias unidades de distintos productos, con "Los productos en promoción suman" activado y desactivado, para confirmar que el monto elegible excluye correctamente lo que corresponde en cada combinación.
+## Nota sobre alcance
 
-## Nota de negocio pendiente de decidir
+Cart/Checkout Blocks y el checkout clásico de WooCommerce no aplican — Hypestyle es headless, esos flujos no existen en este sitio (ver `docs/purchase-gift-audit.md` §1).
 
-El punto 24 expone una decisión de negocio, no técnica: **hoy el regalo se asigna en el momento en que se CREA la orden (estado `pending`), no cuando se CONFIRMA el pago.** Esto es consistente con cómo ya se maneja el stock en este sitio (`wc_reduce_stock_levels()` también se llama inmediatamente al crear la orden en el flujo `create-order`, antes de la confirmación de MercadoPago — ver `PHP/hypestyle-api.php`). Si se prefiere que el regalo solo se confirme cuando el pago se acredita, hay que decidir en qué hook enganchar en cambio (`woocommerce_order_status_changed` a `processing`/`completed`) — es un cambio simple de un solo hook si se decide después, pero cambia cuándo se "gasta" stock del regalo en pedidos que después fallan.
+## Evidencia a juntar antes de mergear el PR
+
+- [ ] Diff del mu-plugin (`hypestyle-api.php`).
+- [ ] Diff de los archivos del plugin (`PHP/hypestyle-purchase-gift/`).
+- [ ] Punto exacto donde cada flujo llama al Gift Engine (capturas o líneas citadas).
+- [ ] Payload real enviado a `/api/gift-progress` y response real de `/wp-json/hypestyle-gift/v1/evaluate`.
+- [ ] Estado local del regalo en `CartContext` (React DevTools o `localStorage`).
+- [ ] Prueba de que el payload de creación de orden excluye la línea de regalo (Network tab).
+- [ ] Orden real creada por cada uno de los 3 flujos, con la línea de regalo y su metadata visibles en el admin de WooCommerce.
+- [ ] Confirmación de que el total de esa línea es $0.
+- [ ] Confirmación de que el stock se reduce una sola vez.
+- [ ] Resultado de ejecutar `apply_to_order()` dos veces sobre la misma orden (no duplica).
+- [ ] Logs de shadow mode.
+- [ ] Prueba de modo test (email en la allowlist vs. fuera de ella).
+- [ ] Riesgos pendientes conocidos.
+- [ ] Instrucciones de rollback (desactivar el plugin es seguro — ver README del plugin).
