@@ -131,7 +131,10 @@ export default function CartDrawer() {
             </div>
           ) : (
             items.map((item) => (
-              <div key={cartLineKey(item)} className="flex gap-4">
+              <div
+                key={cartLineKey(item)}
+                className={`flex gap-4 ${item.isGift ? 'bg-green-50/60 border border-green-100 rounded-[8px] p-2 -mx-2' : ''}`}
+              >
                 <div className="w-20 h-24 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[5px]">
                   <img src={imgSrc(item.image)} alt={item.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 </div>
