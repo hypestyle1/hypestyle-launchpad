@@ -6,7 +6,7 @@ export const FW26_GROUPS = [
   { label: 'Camo Drop',     slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap', 'beanie-camo'] },
   { label: 'Remeras',       slugs: ['only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra'] },
   { label: 'Conjunto Gris', slugs: ['hoodie-grey-hstars', 'sweatpant-grey-hstars', 'hoodie-melange', 'sweatpant-melange'] },
-  { label: 'Accesorios',    slugs: ['chain-hype'] },
+  { label: 'Accesorios',    slugs: ['chain-hype', 'pack-x3-medias-hype', 'per-aspera-ad-astra-zippo'] },
 ];
 
 export const FW26_SLUGS = FW26_GROUPS.flatMap(g => g.slugs);
