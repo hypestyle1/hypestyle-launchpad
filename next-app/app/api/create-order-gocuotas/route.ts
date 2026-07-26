@@ -92,11 +92,16 @@ async function sanitizeDiscount(payload: any) {
 export async function POST(req: NextRequest) {
   try {
     const rawPayload = await req.json();
+    // Nunca confiar en el navegador: cualquier línea marcada como regalo (o
+    // manipulada para simularlo) se descarta acá. El Gift Engine (enganchado a
+    // woocommerce_rest_pre_insert_shop_order_object) recalcula y agrega el
+    // regalo oficial sobre la orden real, del lado de WordPress.
+    const cleanItems = Array.isArray(rawPayload.items) ? rawPayload.items.filter((it: any) => it?.isGift !== true) : [];
     const {
       items, customer, shipping, discountAmount, discountLabel, couponCode,
       paymentMethod, shippingMethodId, shippingLabel, shippingBranch,
       fbp, fbc,
-    } = await sanitizeDiscount(rawPayload);
+    } = await sanitizeDiscount({ ...rawPayload, items: cleanItems });
 
     const lineItems = await Promise.all(
       (items as any[]).map(async (item) => {

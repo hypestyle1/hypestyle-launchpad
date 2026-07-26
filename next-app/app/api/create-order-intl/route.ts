@@ -44,11 +44,17 @@ const PAYMENT_TITLES: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
+    const rawBody = await req.json();
     const {
-      items, customer, shipping, couponCode,
+      customer, shipping, couponCode,
       paymentMethod, shippingMethodId, shippingLabel, shippingBranch,
       fbp, fbc,
-    } = await req.json();
+    } = rawBody;
+    // Nunca confiar en el navegador: cualquier línea marcada como regalo (o
+    // manipulada para simularlo) se descarta acá. El Gift Engine (enganchado a
+    // woocommerce_rest_pre_insert_shop_order_object) recalcula y agrega el
+    // regalo oficial sobre la orden real, del lado de WordPress.
+    const items = Array.isArray(rawBody.items) ? rawBody.items.filter((it: any) => it?.isGift !== true) : [];
 
     const country = (customer.pais && customer.pais !== 'OTHER') ? customer.pais : 'AR';
 
