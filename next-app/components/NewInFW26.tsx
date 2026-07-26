@@ -51,10 +51,15 @@ type GroupMedia = {
   more?: { href: string }; // botón "Ver más" debajo de la editorial (grupos con +4 productos)
 };
 
-// Sección combinada (#4): Remeras (OGCJM) + Conjunto Gris (Grey HStars) se
-// renderizan juntos con una editorial que swappea por scroll. Estos grupos se
-// excluyen del render normal y sus productos se muestran en una grilla 2×2 fija.
+// Sección combinada: Remeras (OGCJM) + Conjunto Gris (Grey HStars) se
+// renderizan juntos con una editorial que swappea por scroll, en la posición
+// del PRIMERO de los dos labels que aparezca en FW26_GROUPS (respeta el orden
+// del array en vez de ir siempre al final).
 const SWAP_GROUP_LABELS = new Set<string>(['Remeras', 'Conjunto Gris']);
+
+// Accesorios se muestra en posición fija (entre Faith y Venezuela Benefit
+// Drop), no sigue el orden de FW26_GROUPS como el resto de los grupos.
+const ACCESORIOS_LABEL = 'Accesorios';
 const SWAP_PRODUCT_SLUGS = [
   'only-god-can-judge-me-blanca',
   'only-god-can-judge-me-negra',
@@ -84,17 +89,29 @@ export default function NewInFW26() {
 
   const bySlug = useMemo(() => new Map(allProducts.map(p => [p.slug, p])), [allProducts]);
 
-  // Grupos con al menos un producto disponible (excluyendo los de la sección swap)
+  // Grupos con al menos un producto disponible (Accesorios se excluye acá porque
+  // se renderiza en posición fija, ver más abajo). Remeras/Conjunto Gris SÍ quedan
+  // en su posición del array — el loop de render detecta el primero de los dos
+  // y ahí mismo mete la sección swap combinada.
   const groups = useMemo(
     () => FW26_GROUPS
       .map(g => ({ label: g.label, items: g.slugs.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts }))
-      .filter(g => g.items.length > 0 && !SWAP_GROUP_LABELS.has(g.label)),
+      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL),
     [bySlug],
   );
 
-  // Productos de la sección combinada #4 (OGCJM + Grey HStars), en orden fijo.
+  const firstSwapIndex = useMemo(() => groups.findIndex(g => SWAP_GROUP_LABELS.has(g.label)), [groups]);
+
+  // Productos de la sección combinada (OGCJM + Grey HStars), en orden fijo.
   const swapProducts = useMemo(
     () => SWAP_PRODUCT_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
+    [bySlug],
+  );
+
+  // Accesorios: posición fija entre Faith Is The Real Hype y Stars For Venezuela.
+  const accesoriosItems = useMemo(
+    () => (FW26_GROUPS.find(g => g.label === ACCESORIOS_LABEL)?.slugs ?? [])
+      .map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
     [bySlug],
   );
 
@@ -139,12 +156,42 @@ export default function NewInFW26() {
         <FaithDrop />
       </div>
 
+      {/* ── Accesorios — posición fija entre Faith y Venezuela ─────────── */}
+      {accesoriosItems.length > 0 && (
+        <div className="reveal rd2 mt-10">
+          <div className="flex items-center gap-4 mb-5">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{ACCESORIOS_LABEL}</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+            {accesoriosItems.map(renderCard)}
+          </div>
+        </div>
+      )}
+
       {/* ── Stars For Venezuela — Benefit Drop ─────────────────────────── */}
       <div className="reveal rd2">
         <VenezuelaBenefitDrop />
       </div>
 
       {groups.map((group, gi) => {
+        if (SWAP_GROUP_LABELS.has(group.label)) {
+          // Sección combinada: se renderiza una sola vez, en la posición del
+          // primero de los dos labels (Remeras / Conjunto Gris) que aparezca.
+          if (gi !== firstSwapIndex || swapProducts.length === 0) return null;
+          return (
+            <div key="swap-section" className={`reveal rd${Math.min(gi + 3, 8)} mt-10`}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
+                <NewInSwapEditorial slides={SWAP_SLIDES} />
+                <div className="grid grid-cols-2 gap-[2px] order-1 lg:order-2">
+                  {swapProducts.map(renderCard)}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         const editorial = GROUP_EDITORIAL[group.label];
         return (
           <div key={group.label} className={`reveal rd${Math.min(gi + 3, 8)} mt-10`}>
@@ -217,19 +264,6 @@ export default function NewInFW26() {
           </div>
         );
       })}
-
-      {/* Sección combinada #4: editorial con swap por scroll (OGCJM ↔ Grey HStars)
-          a la izquierda; 2×2 de productos (OGCJM arriba, Grey HStars abajo) a la derecha. */}
-      {swapProducts.length > 0 && (
-        <div className="reveal rd5 mt-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
-            <NewInSwapEditorial slides={SWAP_SLIDES} />
-            <div className="grid grid-cols-2 gap-[2px] order-1 lg:order-2">
-              {swapProducts.map(renderCard)}
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
