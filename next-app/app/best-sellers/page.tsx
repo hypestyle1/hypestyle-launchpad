@@ -18,8 +18,8 @@ export default async function BestSellersPage() {
 
         <section className="bg-bg-dark text-primary-foreground py-20 px-6 text-center">
           <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Shop</p>
-          <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3">Best Sellers</h1>
-          <p className="text-[14px] text-primary-foreground/40">Los clásicos que volvieron — por tiempo limitado</p>
+          <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3">Sale — Best Sellers</h1>
+          <p className="text-[14px] text-primary-foreground/40">Hasta 30% OFF en los productos más pedidos — por tiempo limitado</p>
         </section>
 
         <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14">

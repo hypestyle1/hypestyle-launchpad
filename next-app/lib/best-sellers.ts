@@ -1,7 +1,8 @@
-// Slugs curados que se muestran en la sección "Best Sellers" del home.
+// Slugs curados que se muestran en la sección "Sale — Best Sellers" del home.
 // Compartido entre BackInStock (home) y la página SALE, que excluye estos
 // para no repetir productos y destacar los que no aparecen en el home.
-// Orden pensado para grilla de 4 columnas (desktop): 40 productos = 10 filas justas.
+// Todos con descuento aplicado (10/15/20/30% según ventas históricas, 26/07/26).
+// Orden pensado para grilla de 4 columnas (desktop) — 41 productos, última fila incompleta.
 export const BEST_SELLERS_SLUGS = [
   // — Fila 1 —
   'per-aspera-ad-astra-zippo',
@@ -34,6 +35,7 @@ export const BEST_SELLERS_SLUGS = [
   'sweatpants-bombe-bordo',
   'knitted-tshirt-sand',
   'raglan-tee-tribal-cross',
+  'find-jesus-longsleeve-black',   // stock muy bajo (1 unidad en L y en XL) — puede agotarse rápido
   'sleeveless-ranglan-white',
   'sleeveless-ranglan-militar-green',
   'sleeveless-ranglan-grey',
@@ -45,5 +47,5 @@ export const BEST_SELLERS_SLUGS = [
   'skyline-tee',
   'aerogrey-tees',
   'mesh-camo-grey-tee',
-  'per-aspera-ad-astra-black-tee', // cierra la grilla en 40 (10 filas justas)
+  'per-aspera-ad-astra-black-tee', // cierra la grilla (41 productos)
 ];
