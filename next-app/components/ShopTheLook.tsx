@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import SectionHeader from "./SectionHeader";
@@ -22,7 +22,15 @@ export default function ShopTheLook() {
   const [activeLook, setActiveLook] = useState<Look | null>(null);
   const { formatPrice } = useLocale();
 
-  const visibleLooks = useMemo(() => {
+  // Arranca con el orden natural (igual en server y cliente) para que el primer render
+  // no tenga mismatch de hidratación, y recién en el efecto (solo cliente) se reordena al
+  // azar. Antes el shuffle corría directo en el render con useMemo: en el server daba un
+  // orden y al hidratar en el cliente daba OTRO, entonces la imagen que quedaba pintada
+  // (la del server) no coincidía con el look enganchado al click (el del cliente) — por
+  // eso se abría un look distinto al que se tocaba.
+  const [visibleLooks, setVisibleLooks] = useState<Look[]>(() => LOOKS.slice(0, 4));
+
+  useEffect(() => {
     const key = 'hype_looks_order';
     let order: string[] = [];
     try { order = JSON.parse(sessionStorage.getItem(key) || '[]'); } catch {}
@@ -31,7 +39,7 @@ export default function ShopTheLook() {
       try { sessionStorage.setItem(key, JSON.stringify(order)); } catch {}
     }
     const sorted = order.map(id => LOOKS.find(l => l.id === id)).filter(Boolean) as Look[];
-    return sorted.slice(0, 4);
+    setVisibleLooks(sorted.slice(0, 4));
   }, []);
 
   return (
