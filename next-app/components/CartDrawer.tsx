@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useCart, cartLineKey } from "@/context/CartContext";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
@@ -31,6 +31,7 @@ export default function CartDrawer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [drawerOpen, allProducts.length]
   );
+  const [suggestedSizes, setSuggestedSizes] = useState<Record<string, string>>({});
 
   const { promoActive: promo3x2Active } = usePromo3x2Status();
 
@@ -186,23 +187,42 @@ export default function CartDrawer() {
             <div className="pt-4 border-t border-border">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3">{t('Completa el look')}</p>
               <div className="grid grid-cols-2 gap-3">
-                {suggested.map((p) => (
+                {suggested.map((p) => {
+                  const available = p.sizes.filter(s => p.stock[s] !== 'out');
+                  const size = suggestedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
+                  return (
                     <div key={p.id}>
                       <div className="aspect-square bg-bg-alt overflow-hidden mb-1.5 rounded-[5px]">
                         <img src={p.image} alt={p.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       </div>
                       <p className="text-[11px] font-medium leading-tight truncate">{p.name}</p>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <p className="text-[11px] text-muted-foreground">{formatPrice(p.price)}</p>
-                        <button
-                          onClick={() => add({ id: p.slug, name: p.name, price: p.price, image: p.image, size: "U", quantity: 1 })}
-                          className="w-5 h-5 rounded-full border border-foreground/30 flex items-center justify-center text-[13px] font-light hover:bg-foreground hover:text-white transition-colors"
-                        >
-                          +
-                        </button>
-                      </div>
+                      <p className="text-[11px] text-muted-foreground mb-1">{formatPrice(p.price)}</p>
+                      {available.length > 1 && (
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {available.map(s => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => setSuggestedSizes(prev => ({ ...prev, [p.slug]: s }))}
+                              className={`text-[9px] font-semibold px-1.5 py-[2px] border rounded-[4px] transition-colors leading-none ${
+                                size === s ? 'border-foreground bg-foreground text-white' : 'border-border text-foreground/55 hover:border-foreground/50'
+                              }`}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => size && add({ id: p.slug, name: p.name, price: p.price, image: p.image, size, quantity: 1 })}
+                        disabled={!size}
+                        className="w-full text-[10px] font-semibold uppercase tracking-wide py-1 rounded-[4px] border border-foreground/30 hover:bg-foreground hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-foreground"
+                      >
+                        {size ? 'Agregar' : 'Elegí talle'}
+                      </button>
                     </div>
-                  ))}
+                  );
+                })}
               </div>
             </div>
           )}
