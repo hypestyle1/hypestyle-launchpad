@@ -188,8 +188,12 @@ export default function CartDrawer() {
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3">{t('Completa el look')}</p>
               <div className="grid grid-cols-2 gap-3">
                 {suggested.map((p) => {
-                  const available = p.sizes.filter(s => p.stock[s] !== 'out');
-                  const size = suggestedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
+                  // Mismo criterio que la ficha de producto: se muestran TODOS los talles,
+                  // los sin stock quedan tachados/deshabilitados en vez de desaparecer —
+                  // si no, un producto que solo le queda 1 talle no mostraba ningún
+                  // selector y no se entendía qué talle se estaba agregando.
+                  const availableCount = p.sizes.filter(s => p.stock[s] !== 'out').length;
+                  const size = suggestedSizes[p.slug] ?? (availableCount === 1 ? p.sizes.find(s => p.stock[s] !== 'out') ?? '' : '');
                   return (
                     <div key={p.id}>
                       <div className="aspect-square bg-bg-alt overflow-hidden mb-1.5 rounded-[5px]">
@@ -197,20 +201,33 @@ export default function CartDrawer() {
                       </div>
                       <p className="text-[11px] font-medium leading-tight truncate">{p.name}</p>
                       <p className="text-[11px] text-muted-foreground mb-1">{formatPrice(p.price)}</p>
-                      {available.length > 1 && (
+                      {p.sizes.length > 1 && (
                         <div className="flex flex-wrap gap-1 mb-1">
-                          {available.map(s => (
-                            <button
-                              key={s}
-                              type="button"
-                              onClick={() => setSuggestedSizes(prev => ({ ...prev, [p.slug]: s }))}
-                              className={`text-[9px] font-semibold px-1.5 py-[2px] border rounded-[4px] transition-colors leading-none ${
-                                size === s ? 'border-foreground bg-foreground text-white' : 'border-border text-foreground/55 hover:border-foreground/50'
-                              }`}
-                            >
-                              {s}
-                            </button>
-                          ))}
+                          {p.sizes.map(s => {
+                            const isOut = p.stock[s] === 'out';
+                            return (
+                              <button
+                                key={s}
+                                type="button"
+                                disabled={isOut}
+                                onClick={() => setSuggestedSizes(prev => ({ ...prev, [p.slug]: s }))}
+                                className={`relative text-[9px] font-semibold px-1.5 py-[2px] border rounded-[4px] transition-colors leading-none ${
+                                  isOut ? 'border-border text-foreground/25 cursor-not-allowed'
+                                  : size === s ? 'border-foreground bg-foreground text-white'
+                                  : 'border-border text-foreground/55 hover:border-foreground/50'
+                                }`}
+                              >
+                                {s}
+                                {isOut && (
+                                  <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                      <line x1="10" y1="90" x2="90" y2="10" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.3" vectorEffect="non-scaling-stroke" />
+                                    </svg>
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                       <button
