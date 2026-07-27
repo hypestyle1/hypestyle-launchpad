@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { isFlashSaleActive } from '@/lib/flash-sale';
@@ -78,6 +78,15 @@ const COUNTRIES = [
 
 const UPSELL_VISIBLE = 2; // tarjetas visibles al mismo tiempo
 
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function UpsellCard({ p, selectedSizes, setSelectedSizes, added, onAdd }: {
   p: NormalizedProduct;
   selectedSizes: Record<string, string>;
@@ -143,11 +152,18 @@ function UpsellCarousel() {
   const [idx, setIdx] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { data: allProducts = [] } = useProducts(20);
-  const cartIds = new Set(items.map(i => i.id));
-  const upsell = allProducts
-    .filter(p => !cartIds.has(p.slug) && Object.values(p.stock).some(s => s !== 'out'))
-    .slice(0, 10);
+  // Pool grande + shuffle (mismo patrón que CartDrawer) — antes traía solo los primeros 20
+  // productos por menu_order y los mostraba siempre en el mismo orden, así que terminaba
+  // pareciendo una lista fija sin importar qué hubiera en el carrito.
+  const { data: allProducts = [] } = useProducts(100);
+  const cartIdsKey = items.map(i => i.id).join(',');
+  const upsell = useMemo(() => {
+    const cartIds = new Set(items.map(i => i.id));
+    return shuffled(
+      allProducts.filter(p => !cartIds.has(p.slug) && Object.values(p.stock).some(s => s !== 'out'))
+    ).slice(0, 10);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartIdsKey, allProducts.length]);
   const total = upsell.length;
 
   const startTimer = useCallback(() => {
