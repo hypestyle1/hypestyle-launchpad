@@ -1,8 +1,21 @@
 # Arquitectura — Sistema de reseñas automáticas headless (Hypestyle)
 
-Fecha: 2026-07-26 (revisión 2 — incorpora correcciones del usuario antes de aprobar implementación)
-Estado: **propuesta para aprobación — nada de esto está implementado.**
+Fecha: 2026-07-27 (revisión 3 — implementación + pruebas de runtime reales)
+Estado: **implementado y probado contra un WordPress+WooCommerce 10.9.4 real (local, SQLite). No mergeado, no subido a producción, emails/cupón apagados.**
 Ver también: `docs/reviews-native-woocommerce-audit.md` (qué reutilizamos del core, incluye §0bis: verificación de que WooCommerce 10.7 ya tiene todo lo necesario), `docs/reviews-api.md` (endpoints en detalle), `docs/reviews-security.md` (amenazas y mitigaciones), `docs/reviews-test-plan.md` (cómo probar sin staging).
+
+## HALLAZGO CRÍTICO (revisión 3) — `status_enviado` NO es una fuente de despacho funcional hoy
+
+Confirmado con runtime real, no con lectura de código: contra una instalación real de WordPress + WooCommerce 10.9.4 (la versión estable actual), tanto `PUT /wp-json/wc/v3/orders/{id} {status:'enviado'}` (rechaza con `400 Parámetro(s) no válido(s): status` — el schema REST valida contra `wc_get_order_statuses()`) como `$order->set_status('enviado')` llamado directo (sin pasar por REST) **fallan**. En el segundo caso, `WC_Abstract_Order::set_status()` (código real, `includes/abstracts/abstract-wc-order.php` línea ~674) **reemplaza silenciosamente cualquier estado no registrado por `pending`** — no lanza error, no preserva el valor, no llega nunca a persistirse como `'enviado'`.
+
+Esto confirma la sospecha original de la auditoría (`docs/reviews-native-woocommerce-audit.md`): `enviado` nunca fue registrado formalmente como estado de WooCommerce. Como consecuencia:
+
+- El listener `HS_Reviews_Dispatcher::maybe_dispatch_on_status_change()` sobre `woocommerce_order_status_changed` **queda inofensivo pero no funcional** — nunca ve `$status_to === 'enviado'` porque WooCommerce nunca deja que ese valor se persista.
+- La **fuente confiable hoy es exclusivamente el botón manual** (`manual_button`, `HS_Reviews_Order_Actions` / endpoint `mark-dispatched`) — probada exhaustivamente con runtime real, funciona correctamente e idempotente.
+- **No se implementó un workaround silencioso** (tal como se pidió explícitamente): quedan dos caminos, a decidir por el usuario, ninguno aplicado todavía:
+  1. Registrar `enviado` como estado real de WooCommerce (`woocommerce_register_shop_order_post_statuses` + filtro `wc_order_statuses`) — cambio de alcance mayor al de este plugin, afecta el admin panel existente completo (dropdown de estado, filtros, conteos), necesita su propia auditoría/aprobación.
+  2. Dejar el botón manual como única fuente primaria (ya es así en el código actual) y remover o mantener inerte el listener de `status_enviado` hasta que (1) se resuelva.
+- **Implicancia más amplia, fuera del alcance de este plugin, que se reporta pero no se toca**: si `set_status('enviado')` core-level coacciona a `pending` incluso llamado directamente, el resto del admin panel de Hypestyle que asume que las órdenes quedan realmente en `status='enviado'` (badges, filtros, conteos en `/admin/pedidos`) merece revisión — no se modificó nada de eso acá, se señala como hallazgo a confirmar por el equipo.
 
 **Cambios respecto de la v1 de este documento, a pedido del usuario:**
 1. Se elimina la actualización de WooCommerce del camino crítico — `hypestyle-reviews` se implementa sobre 10.7.
