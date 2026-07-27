@@ -27,6 +27,7 @@ type Order = {
   adminNote: string;
   viaCargoSucursal: string;
   tracking: string; notified: string; andreani: string; pedido_id: string;
+  hsDispatchedAt: string; hsDispatchedSource: string;
   notes: Note[];
 };
 
@@ -82,6 +83,8 @@ export default function OrderDetailPage() {
   const [trackMsg, setTrackMsg] = useState('');
   const [syncingAndreani, setSyncingAndreani] = useState(false);
   const [emailMsg, setEmailMsg] = useState('');
+  const [dispatchLoading, setDispatchLoading] = useState(false);
+  const [dispatchMsg, setDispatchMsg] = useState('');
   const [noteText, setNoteText]     = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteMsg, setNoteMsg]       = useState('');
@@ -207,6 +210,54 @@ export default function OrderDetailPage() {
     const data = await res.json();
     const labels: Record<string, string> = { confirmation: 'confirmación', tracking: 'seguimiento', abandoned: 'carrito abandonado' };
     setEmailMsg(data.ok ? `✓ Email de ${labels[action]} enviado` : `Error: ${data.error}`);
+  }
+
+  // Reviews — evento de despacho (docs/reviews-headless-architecture.md §2).
+  // Independiente del dropdown de estado: dispara HS_Reviews_Dispatcher::mark_dispatched()
+  // directamente, sin importar el status actual de la orden.
+  async function markDispatched() {
+    if (!order) return;
+    setDispatchLoading(true);
+    setDispatchMsg('');
+    try {
+      const res = await fetch('/api/admin/mark-dispatched', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setDispatchMsg(data.error || 'Error al marcar el despacho'); return; }
+      setDispatchMsg(data.already_marked ? 'Esta orden ya estaba marcada como despachada.' : '✓ Orden marcada como despachada');
+      setOrder(prev => prev ? { ...prev, hsDispatchedAt: String(Date.now()), hsDispatchedSource: 'manual_button' } : prev);
+    } catch {
+      setDispatchMsg('Error al conectar');
+    } finally {
+      setDispatchLoading(false);
+    }
+  }
+
+  // Solo funciona mientras la solicitud de reseña siga 'scheduled' (el email
+  // todavía no salió) — si ya se envió, el backend devuelve 409 y hay que
+  // usar "Cancelar" desde WooCommerce → Solicitudes de reseñas en su lugar.
+  async function undoDispatch() {
+    if (!order) return;
+    setDispatchLoading(true);
+    setDispatchMsg('');
+    try {
+      const res = await fetch('/api/admin/undo-dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setDispatchMsg(data.error || 'No se pudo deshacer (¿ya se envió el mail de reseña?)'); return; }
+      setDispatchMsg('✓ Despacho deshecho');
+      setOrder(prev => prev ? { ...prev, hsDispatchedAt: '', hsDispatchedSource: '' } : prev);
+    } catch {
+      setDispatchMsg('Error al conectar');
+    } finally {
+      setDispatchLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -880,6 +931,41 @@ export default function OrderDetailPage() {
                   {emailMsg}
                 </p>
               )}
+            </div>
+
+            {/* Reviews — evento de despacho (independiente del estado de la orden) */}
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Reviews — Despacho</h2>
+              {order.hsDispatchedAt ? (
+                <>
+                  <p className="text-[11px] text-green-600 mb-2">
+                    ✓ Despachada {order.hsDispatchedSource ? `(origen: ${order.hsDispatchedSource})` : ''}
+                  </p>
+                  <button
+                    onClick={undoDispatch}
+                    disabled={dispatchLoading}
+                    className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-400 text-[12px] font-medium text-gray-700 hover:text-black transition-colors disabled:opacity-50"
+                  >
+                    {dispatchLoading ? 'Deshaciendo...' : 'Deshacer despacho'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={markDispatched}
+                  disabled={dispatchLoading}
+                  className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-400 text-[12px] font-medium text-gray-700 hover:text-black transition-colors disabled:opacity-50"
+                >
+                  {dispatchLoading ? 'Marcando...' : 'Marcar como despachado'}
+                </button>
+              )}
+              {dispatchMsg && (
+                <p className={`mt-2 text-[11px] ${dispatchMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>
+                  {dispatchMsg}
+                </p>
+              )}
+              <p className="mt-2 text-[10px] text-gray-400">
+                Dispara la solicitud automática de reseña X días después (WooCommerce → Solicitudes de reseñas). &quot;Deshacer&quot; solo funciona antes de que el mail salga.
+              </p>
             </div>
 
             {/* Rótulo de envío */}

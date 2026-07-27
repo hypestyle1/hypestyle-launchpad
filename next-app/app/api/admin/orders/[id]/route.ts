@@ -126,6 +126,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     notified:   getMeta('_tracking_notified'),
     andreani:   getMeta('_andreani_numero_de_envio') || getMeta('_andreani_remito'),
     pedido_id:  getMeta('_order_andreani_pedido_id'),
+    hsDispatchedAt:     getMeta('_hs_dispatched_at'),
+    hsDispatchedSource: getMeta('_hs_dispatched_source'),
     notes: (notes as any[])
       .filter((n: any) => n.author && n.author !== 'system')
       .map((n: any) => ({ id: n.id, note: n.note, date: n.date_created, customer_note: n.customer_note })),
