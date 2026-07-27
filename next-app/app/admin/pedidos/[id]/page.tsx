@@ -85,6 +85,10 @@ export default function OrderDetailPage() {
   const [emailMsg, setEmailMsg] = useState('');
   const [dispatchLoading, setDispatchLoading] = useState(false);
   const [dispatchMsg, setDispatchMsg] = useState('');
+  const [reviewRequest, setReviewRequest] = useState<{
+    exists: boolean; id?: number; status?: string; status_label?: string;
+    scheduled_for?: string | null; sent_at?: string | null; responded_at?: string | null; coupon_id?: number | null;
+  } | null>(null);
   const [noteText, setNoteText]     = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteMsg, setNoteMsg]       = useState('');
@@ -127,6 +131,16 @@ export default function OrderDetailPage() {
       .catch(() => setError('Error al cargar el pedido'))
       .finally(() => setLoading(false));
   }, [authed, adminKey, id]);
+
+  // Bloque "Solicitud de reseña" — mismo endpoint que consume /admin/reviews,
+  // no se duplica lógica: solo se pide el resumen liviano por order_id.
+  useEffect(() => {
+    if (!authed || !adminKey || !id) return;
+    fetch(`/api/admin/reviews/by-order/${id}`, { headers: { 'x-admin-key': adminKey } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setReviewRequest(data); })
+      .catch(() => {});
+  }, [authed, adminKey, id, dispatchMsg]);
 
   function login() {
     sessionStorage.setItem(WP_SECRET_KEY, keyInput);
@@ -964,8 +978,28 @@ export default function OrderDetailPage() {
                 </p>
               )}
               <p className="mt-2 text-[10px] text-gray-400">
-                Dispara la solicitud automática de reseña X días después (WooCommerce → Solicitudes de reseñas). &quot;Deshacer&quot; solo funciona antes de que el mail salga.
+                Dispara la solicitud automática de reseña X días después. &quot;Deshacer&quot; solo funciona antes de que el mail salga.
               </p>
+
+              {/* Bloque "Solicitud de reseña" — mismos endpoints/componentes que /admin/reviews, sin lógica duplicada */}
+              {reviewRequest?.exists && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <h3 className="text-[12px] font-semibold text-gray-900 mb-2">Solicitud de reseña</h3>
+                  <div className="text-[11px] text-gray-500 space-y-0.5">
+                    <div><span className="text-gray-400">Estado:</span> {reviewRequest.status_label}</div>
+                    <div><span className="text-gray-400">Programada:</span> {reviewRequest.scheduled_for || '—'}</div>
+                    <div><span className="text-gray-400">Enviada:</span> {reviewRequest.sent_at || '—'}</div>
+                    <div><span className="text-gray-400">Respondida:</span> {reviewRequest.responded_at || '—'}</div>
+                    <div><span className="text-gray-400">Cupón:</span> {reviewRequest.coupon_id ? 'Emitido' : 'No emitido'}</div>
+                  </div>
+                  <Link
+                    href={`/admin/reviews/${reviewRequest.id}`}
+                    className="mt-2 inline-block text-[11px] font-medium text-blue-600 hover:underline"
+                  >
+                    Ver detalle en Reseñas →
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Rótulo de envío */}
