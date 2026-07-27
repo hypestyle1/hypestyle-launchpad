@@ -174,6 +174,10 @@ export async function POST(req: NextRequest) {
     if (shippingBranch)     meta.push({ key: '_shipping_branch', value: shippingBranch });
     if (fbp)                meta.push({ key: '_fbp',             value: String(fbp) });
     if (fbc)                meta.push({ key: '_fbc',             value: String(fbc) });
+    // El plugin andreani-shipping valida el envío contra este meta, que WooCommerce
+    // solo setea en el checkout nativo (sesión). Sin esto acá, el plugin rechaza el
+    // pedido con "no es válida para envío Andreani" al querer empaquetarlo.
+    if (shippingMethodId)   meta.push({ key: '_chosen_shipping', value: shippingMethodId });
     if (meta.length)        order.meta_data = meta;
 
     const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
