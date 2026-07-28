@@ -8,7 +8,6 @@ import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
 import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
 import ReviewsDistribution from './ReviewsDistribution';
-import { DemoBadge } from './DemoContentNotice';
 
 const HIDDEN_PREFIXES = ['/checkout', '/admin', '/mayoristas', '/review/', '/reviews'];
 
@@ -153,10 +152,8 @@ export default function ReviewsDrawer() {
                   <StarRating rating={summary.average ?? 0} size={14} />
                   <span className="text-[11px] text-muted-foreground">
                     {summary.total} {summary.total === 1 ? 'reseña' : 'reseñas'}
-                    {summary.isDemo ? ' (muestra)' : ''}
                   </span>
                 </div>
-                {summary.isDemo && <DemoBadge />}
               </div>
               <div className="mt-4">
                 <ReviewsDistribution summary={summary} />

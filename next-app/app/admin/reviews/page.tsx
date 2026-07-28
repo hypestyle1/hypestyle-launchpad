@@ -255,6 +255,7 @@ function ReviewsDashboard() {
           <span className="text-[14px] font-semibold text-gray-900">Reseñas</span>
           {total > 0 && <span className="text-[12px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{total}</span>}
           <Link href="/admin/pedidos" className="text-[12px] text-gray-400 hover:text-black ml-1">Pedidos →</Link>
+          <Link href="/admin/reviews/nueva-tanda" className="text-[12px] text-gray-400 hover:text-black ml-1">Nueva tanda →</Link>
           <Link href="/admin/reviews/settings" className="text-[12px] text-gray-400 hover:text-black ml-1">Configuración →</Link>
         </div>
         <button

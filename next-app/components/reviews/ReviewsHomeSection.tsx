@@ -48,7 +48,7 @@ export default function ReviewsHomeSection() {
           <div className="flex flex-col gap-1">
             <StarRating rating={summary.average!} size={16} />
             <span className="text-[12px] text-muted-foreground">
-              {summary.total} {summary.total === 1 ? 'reseña' : 'reseñas'}{summary.isDemo ? ' (muestra)' : ''}
+              {summary.total} {summary.total === 1 ? 'reseña' : 'reseñas'}
             </span>
           </div>
         </div>

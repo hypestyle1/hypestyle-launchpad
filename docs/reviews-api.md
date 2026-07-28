@@ -125,6 +125,8 @@ Cancela una solicitud `scheduled` o `sent` no usada: desprograma en Action Sched
 
 Llama a `HS_Reviews_Dispatcher::mark_dispatched( $order, 'manual_button' )`. Devuelve `200` con `{ "dispatched": true, "already_marked": false }` si esta llamada efectivamente marcó el despacho, o `{ "dispatched": true, "already_marked": true }` si ya estaba marcado (idempotente, no es un error).
 
+**Desde 1.1.0**, después de `mark_dispatched()` este handler llama siempre a `HS_Reviews_Scheduler::maybe_schedule_for_order()` — independientemente de si la llamada anterior marcó el despacho o no. Corrige un bug real encontrado en la auditoría final: antes, si una orden se despachaba mientras el modo test bloqueaba la creación de la fila (orden no autorizada), esa fila **nunca** se creaba después, ni sumando la orden al allowlist — porque el evento `hs_order_dispatched` solo se dispara una vez por orden. Ahora, repetir esta acción (o la tanda manual, ver §2bis) sobre una orden ya despachada reintenta la creación de la fila si todavía no existe, sin volver a "despachar" nada.
+
 ### `POST /wp-json/hypestyle-reviews/v1/reviews/undo-dispatch/{order_id}` (nuevo)
 
 Solo permitido si la solicitud asociada sigue en `scheduled` (el email todavía no se envió). Borra `_hs_dispatched_at`/`_hs_dispatched_source`, desprograma la acción, **borra** la fila de `wp_hs_review_requests` (a diferencia de `cancel`, que la preserva con `status=cancelled` para historial — acá se trata como "esto nunca debió marcarse"). Si la solicitud ya está `sent` o más adelante, devuelve `409` — el camino correcto ahí es `cancel`, no `undo-dispatch`.
@@ -134,6 +136,46 @@ Solo permitido si la solicitud asociada sigue en `scheduled` (el email todavía 
 Sin cambios respecto de la v1 — historial de eventos vía `WC_Logger` (fuente `hs-reviews`), leído y filtrado por `order_id`/`request_id`.
 
 La moderación de la reseña (aprobar/rechazar/responder/spam) sigue sin reimplementarse — Productos → Reseñas nativo, con link directo desde el panel (`edit-comments.php?c={comment_id}`).
+
+---
+
+## 2bis. Primera tanda controlada (nuevo, 1.1.0)
+
+Consumido por `/admin/reviews/nueva-tanda`.
+
+### `GET /wp-json/hypestyle-reviews/v1/review-requests/eligible-orders`
+
+Lista órdenes candidatas para programar manualmente: status `processing` o `completed` (no existe un status `enviado` real, ver `docs/reviews-headless-architecture.md`), sin fila existente en `wp_hs_review_requests`, y `HS_Reviews_Eligibility::order_is_dispatch_eligible()` en `true` (excluye canceladas/reembolsadas/sin ítems reseñables — misma guarda que usa el flujo automático, sin lógica duplicada). Devuelve por orden: `order_id`, `order_number`, `customer_email`, `customer_name`, `date`, `status`, `products` (nombres de los ítems elegibles), `already_dispatched`. Paginado (`page`, `per_page`) y con `search`.
+
+### `POST /wp-json/hypestyle-reviews/v1/review-requests/bulk-dispatch`
+
+Body: `{ "order_ids": [123, 456, ...] }` (máx. 50). Por cada orden: si ya tiene una fila existente o no es elegible, se saltea (`status: "skipped"`, con `reason`); si no, se llama a `mark_dispatched()` + `maybe_schedule_for_order()` (exactamente el mismo camino que el botón individual, origen `admin_batch` solo para trazabilidad). Cada resultado individual devuelve uno de: `dispatched` (fila creada, programada), `dispatched_no_request` (despacho marcado, pero el modo test bloqueó la creación de la fila — recuperable repitiendo la acción tras autorizar la orden), `skipped`, `error`. **Este endpoint nunca envía un email por sí mismo** — solo programa la fila, sujeto a las mismas guardas de modo test/allowlist que cualquier otro despacho.
+
+---
+
+## 2ter. Endpoint público de reseñas reales (nuevo, 1.1.0 — sin autenticación)
+
+### `GET /wp-json/hypestyle/v1/public-reviews`
+
+A diferencia de todo lo anterior (namespace `hypestyle-reviews/v1`, secreto o capability obligatorios), este endpoint vive en el namespace **`hypestyle/v1`** — el mismo que usa el mu-plugin `hypestyle-api.php` — y es de lectura pública (`permission_callback` solo aplica un rate limit por IP, 60 req/min, sin secreto ni nonce). Registrarlo ahí no requiere tocar `hypestyle-api.php`: cualquier plugin puede sumar rutas al mismo namespace mientras el path no colisione (verificado, no existe `/public-reviews` en ese archivo).
+
+Consumido por `next-app/app/api/public-reviews/route.ts` (proxy sin secreto) → `next-app/lib/reviews/public.ts` → `/reviews`, la sección de home y el drawer lateral — única fuente para los tres.
+
+Query params: `page`, `per_page` (máx. 50), `stars` (1-5), `sort` (`recent` default, `top`, `low`).
+
+Devuelve únicamente reseñas `comment_type=review`, `comment_approved=1`, con `rating` de meta válido (1-5), asociadas a un producto `publish`. Nunca devuelve: email, nombre completo (se abrevia server-side, `"Lucía Martínez"` → `"Lucía M."`), order ID/item ID, token, cupón, IP, ni datos de moderación. El campo `incentivized` (booleano) SÍ se devuelve — el dato se mantiene en el modelo aunque el frontend hoy decida no mostrarlo como badge.
+
+```json
+{
+  "summary": { "average": 4.8, "total": 126, "distribution": { "5": 108, "4": 14, "3": 3, "2": 1, "1": 0 } },
+  "reviews": [
+    { "id": "review-123", "customerName": "Lucía M.", "rating": 5, "text": "Excelente calidad.", "createdAt": "2026-07-10", "productId": 456, "productName": "Hoodie Faith", "productSlug": "hoodie-faith", "productImage": "https://...", "verified": true, "incentivized": true }
+  ],
+  "pagination": { "page": 1, "pages": 13, "total": 126 }
+}
+```
+
+Verificado con 25 checks de integración real (sección B de la auditoría final) + `tests/class-hs-reviews-public-rest-test.php` — ver `NUEVAS IMPLEMENTACIONES/REVIEWS/release/wc107-integration-test-output-1.1.0.txt`.
 
 ---
 

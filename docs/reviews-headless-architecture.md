@@ -1,7 +1,7 @@
 # Arquitectura — Sistema de reseñas automáticas headless (Hypestyle)
 
-Fecha: 2026-07-27 (revisión 3 — implementación + pruebas de runtime reales)
-Estado: **implementado y probado contra un WordPress+WooCommerce 10.9.4 real (local, SQLite). No mergeado, no subido a producción, emails/cupón apagados.**
+Fecha: 2026-07-28 (revisión 4 — cierre completo: endpoint público, tanda manual, auditoría final. Ver §15.)
+Estado: **implementado y probado contra WordPress+WooCommerce 10.7.0 y 10.9.4 reales (local, SQLite), 101/101 checks. Ver reporte de cierre de sesión para el estado exacto de merge/deploy.**
 Ver también: `docs/reviews-native-woocommerce-audit.md` (qué reutilizamos del core, incluye §0bis: verificación de que WooCommerce 10.7 ya tiene todo lo necesario), `docs/reviews-api.md` (endpoints en detalle), `docs/reviews-security.md` (amenazas y mitigaciones), `docs/reviews-test-plan.md` (cómo probar sin staging).
 
 ## HALLAZGO CRÍTICO (revisión 3) — `status_enviado` NO es una fuente de despacho funcional hoy
@@ -280,4 +280,15 @@ Frontend: se agrega la integración en `app/admin/pedidos/[id]/page.tsx` (botone
 
 ## 14. Plan de rollback
 
-Sin cambios de fondo respecto de la v1, salvo que **se elimina la sección de rollback de WooCommerce** (ya no aplica, no se toca la versión de WooCommerce). Rollback de plugin (desactivar desde wp-admin), de flag interno (`hs_reviews_enabled=no` + `as_unschedule_all_actions`), y de cupón individual (desactivar desde WooCommerce → Cupones) se mantienen sin cambios.
+Sin cambios de fondo respecto de la v1, salvo que **se elimina la sección de rollback de WooCommerce** (ya no aplica, no se toca la versión de WooCommerce). Rollback de plugin (desactivar desde wp-admin), de flag interno (`hs_reviews_enabled=no` + `as_unschedule_all_actions`), y de cupón individual (desactivar desde WooCommerce → Cupones) se mantienen sin cambios. Detalle completo actualizado en `NUEVAS IMPLEMENTACIONES/REVIEWS/release/ROLLBACK.md`.
+
+## 15. Actualización 1.1.0 — endpoint público, tanda manual, fix de scheduling
+
+Cierre del sistema completo (backend + frontend público + dashboard), auditado de punta a punta y mergeado a `main`. Cambios de arquitectura respecto de la revisión 3:
+
+- **Experiencia pública** (`next-app/app/reviews`, sección de home, drawer/tab lateral) se agrega como una capa de solo lectura sobre el mismo dato: consume `GET /wp-json/hypestyle/v1/public-reviews` (nuevo, `HS_Reviews_Public_Rest`, sin secreto, namespace público compartido con `hypestyle-api.php` sin tocar ese archivo — ver `docs/reviews-api.md` §2ter). No introduce ningún dato ni tabla nueva: lee directamente `wp_comments`/`wp_commentmeta` con los mismos criterios que Productos → Reseñas nativo (aprobada + rating válido + producto vigente).
+- **Primera tanda controlada** (`docs/reviews-api.md` §2bis): la única vía para arrancar el sistema con órdenes históricas sin esperar a que se despachen órdenes nuevas. Reusa `HS_Reviews_Dispatcher::mark_dispatched()` + la lógica de scheduling existente — cero lógica de despacho duplicada.
+- **Fix de arquitectura real** (no cosmético): la creación de la fila de solicitud se desacopló del evento `hs_order_dispatched` (que solo dispara una vez por orden). Antes, una orden despachada mientras el modo test bloqueaba la autorización quedaba **permanentemente** sin fila, sin forma de recuperarla. Ahora `HS_Reviews_Scheduler::maybe_schedule_for_order()` es invocable independientemente del evento, y se llama explícitamente después de cada acción de despacho (botón individual, tanda manual) — permite recuperar órdenes bloqueadas por modo test simplemente repitiendo la acción tras autorizarlas. Encontrado y corregido durante la auditoría final, con test de integración real que reproduce el escenario exacto (ver `PHP/hypestyle-reviews/CHANGELOG.md` 1.1.0).
+- Vencimiento del cupón por defecto: 30 días (antes 60). Copy por defecto del email actualizado para dejar explícito que el beneficio no depende de la calificación.
+
+Estado tras esta revisión: **auditado con 101/101 checks de integración real contra WooCommerce 10.7.0 exacto (ver `PHP/hypestyle-reviews/CHANGELOG.md`), código en PR #265, demo mode/emails/cupón general todavía apagados por defecto.** Ver el reporte de cierre de la sesión para el estado exacto de merge/deploy y qué sigue pendiente de autorización explícita antes de activar para clientes reales.

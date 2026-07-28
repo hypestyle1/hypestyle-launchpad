@@ -114,9 +114,20 @@ Sin cambios: el email de solicitud no incluye el `order_key` nativo ni otro iden
 
 Corrección explícita del usuario: **todas** las reseñas de este flujo se insertan con `'comment_approved' => 0` **hardcodeado en el código**, sin leer `get_option('comment_moderation')`. Esto no es estrictamente un control de seguridad en el sentido de "amenaza externa", pero se documenta acá porque es un control de integridad de datos importante: si un admin cambia el setting global de moderación de WordPress por cualquier otro motivo (ej. para otro plugin), el flujo de reseñas incentivadas no debe verse afectado — la moderación de *este* flujo específico es una decisión de producto fija, no una consecuencia de un ajuste global.
 
-Meta agregada para trazabilidad y transparencia (a pedido del usuario): `_hs_incentivized_review = 'yes'` en cada reseña creada por este flujo — permite en el futuro mostrar públicamente una etiqueta tipo "Reseña incentivada" sin ocultar que hubo un beneficio a cambio, en vez de mezclar silenciosamente estas reseñas con las orgánicas.
+Meta agregada para trazabilidad y transparencia (a pedido del usuario): `_hs_incentivized_review = 'yes'` en cada reseña creada por este flujo. El dato se mantiene en el modelo y se devuelve en el endpoint público (`incentivized: true/false`, ver §15) — decisión explícita del usuario (revisión 1.1.0): **no** se muestra como badge visible en las cards por ahora, aunque el dato sigue disponible si se decide mostrarlo más adelante.
 
-## 14. Checklist de seguridad (actualizado)
+## 15. Endpoint público de reseñas (`GET /wp-json/hypestyle/v1/public-reviews`, nuevo 1.1.0)
+
+Modelo de seguridad deliberadamente distinto del resto de la API de este plugin:
+
+- **Sin secreto, sin nonce, sin capability** — es de lectura pública, mismo nivel que el catálogo de productos (`hypestyle/v1` ya expone datos de producto sin autenticación vía `hypestyle-api.php`). No hay nada que proteger con secreto: los datos devueltos ya son públicos por definición (reseñas aprobadas para mostrar en la tienda).
+- **Rate limit propio** (60 req/min por IP, transient) — distinto del rate limit de los endpoints con secreto (20/min): acá el objetivo es contener scraping/abuso de una ruta pública y cacheable, no frenar fuerza bruta de tokens.
+- **Filtrado a nivel de query, no de post-proceso**: la consulta SQL exige `comment_approved = '1'` — nunca se trae una reseña pendiente/spam/trash a PHP para después filtrarla ahí (reduce la superficie de un bug de filtrado que exponga algo que no debería).
+- **PII excluida por construcción**: el `SELECT` nunca incluye `comment_author_email`, y la respuesta se arma campo por campo (nunca un `(array) $row` completo) — no hay riesgo de que un campo nuevo en `wp_comments` se filtre por accidente a la respuesta.
+- **Nombres abreviados server-side** (`abbreviate_name()`) — el frontend nunca recibe el nombre completo, no hay forma de que un bug de UI lo muestre igual.
+- Verificado con 25 checks de integración real (auditoría final, sección B) que confirman explícitamente la ausencia de email/order_id/token/coupon/IP en la respuesta — ver `NUEVAS IMPLEMENTACIONES/REVIEWS/release/wc107-integration-test-output-1.1.0.txt`.
+
+## 16. Checklist de seguridad (actualizado)
 
 - [ ] Token de 256 bits, hasheado, comparado con `hash_equals`.
 - [ ] Expiración aplicada en cada validación.
@@ -136,3 +147,5 @@ Meta agregada para trazabilidad y transparencia (a pedido del usuario): `_hs_inc
 - [ ] Meta `_hs_incentivized_review` presente en toda reseña de este flujo.
 - [ ] Todo acceso a orden vía CRUD de WooCommerce.
 - [ ] Ningún endpoint devuelve email/dirección/total/método de pago al frontend público.
+- [ ] **Endpoint público de reseñas (`public-reviews`) con rate limit propio, sin PII, sin datos de demostración (el backend no tiene ningún concepto de "demo").**
+- [ ] `NEXT_PUBLIC_REVIEWS_DEMO_MODE` apagado por defecto en producción (opt-in explícito solo en Preview de Vercel).
