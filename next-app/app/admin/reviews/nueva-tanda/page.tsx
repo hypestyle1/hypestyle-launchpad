@@ -8,6 +8,7 @@ const WP_SECRET_KEY = 'hype_admin_key';
 type EligibleOrder = {
   order_id: number;
   order_number: string;
+  tracking: string;
   customer_email: string;
   customer_name: string;
   date: string | null;
@@ -177,7 +178,7 @@ export default function NuevaTandaPage() {
 
       <div className="max-w-[1200px] mx-auto px-4 py-5">
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-[12px] text-amber-900 leading-relaxed">
-          Esto marca las órdenes seleccionadas como despachadas y programa la solicitud de reseña (el mismo flujo que el botón individual en cada pedido). Si el sistema está en <strong>modo test</strong>, solo se enviará realmente a las órdenes de la allowlist configurada — el resto queda programado pero no se envía. Revisá <Link href="/admin/reviews/settings" className="underline">Configuración</Link> antes de confirmar una tanda real.
+          Solo se listan órdenes con <strong>guía de envío real cargada</strong> (mismo criterio que "Enviado (con guía)" en Pedidos) — no alcanza con que la orden esté pagada o en proceso. Esto marca las órdenes seleccionadas como despachadas y programa la solicitud de reseña (el mismo flujo que el botón individual en cada pedido). Si el sistema está en <strong>modo test</strong>, solo se enviará realmente a las órdenes de la allowlist configurada — el resto queda programado pero no se envía. Revisá <Link href="/admin/reviews/settings" className="underline">Configuración</Link> antes de confirmar una tanda real.
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-3 mb-4">
@@ -211,7 +212,7 @@ export default function NuevaTandaPage() {
                     {r.status === 'dispatched' && 'Despachada y programada'}
                     {r.status === 'dispatched_no_request' && 'Despachada, pero NO programada (modo test / email desactivado — revisá Configuración)'}
                     {r.status === 'already_dispatched' && 'Ya estaba despachada'}
-                    {r.status === 'skipped' && `Omitida (${r.reason === 'already_has_request' ? 'ya tenía solicitud' : 'no elegible'})`}
+                    {r.status === 'skipped' && `Omitida (${r.reason === 'already_has_request' ? 'ya tenía solicitud' : r.reason === 'not_shipped_yet' ? 'sin guía de envío cargada' : 'no elegible'})`}
                     {r.status === 'error' && 'Error — orden no encontrada'}
                   </span>
                 </div>
@@ -227,9 +228,10 @@ export default function NuevaTandaPage() {
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto">
             <div className="min-w-[900px]">
-              <div className="grid grid-cols-[36px_90px_1fr_110px_1fr_100px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50 items-center">
+              <div className="grid grid-cols-[36px_90px_130px_1fr_110px_1fr_100px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50 items-center">
                 <input type="checkbox" checked={rows.length > 0 && rows.every((r) => selected.has(r.order_id))} onChange={toggleAllOnPage} />
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Orden</div>
+                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Guía</div>
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Cliente</div>
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Fecha</div>
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Productos elegibles</div>
@@ -239,10 +241,11 @@ export default function NuevaTandaPage() {
               {rows.map((r, idx) => (
                 <div
                   key={r.order_id}
-                  className={`grid grid-cols-[36px_90px_1fr_110px_1fr_100px] gap-3 px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
+                  className={`grid grid-cols-[36px_90px_130px_1fr_110px_1fr_100px] gap-3 px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
                 >
                   <input type="checkbox" checked={selected.has(r.order_id)} onChange={() => toggle(r.order_id)} />
                   <div className="text-[13px] font-bold text-black">#{r.order_number}</div>
+                  <div className="text-[11px] text-gray-500 font-mono truncate" title={r.tracking}>{r.tracking || '—'}</div>
                   <div className="min-w-0">
                     <div className="text-[13px] font-medium text-gray-900 truncate">{r.customer_name || '—'}</div>
                     <div className="text-[11px] text-gray-400 truncate">{r.customer_email}</div>
