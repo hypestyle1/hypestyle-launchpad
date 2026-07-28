@@ -178,7 +178,7 @@ export default function NuevaTandaPage() {
 
       <div className="max-w-[1200px] mx-auto px-4 py-5">
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-[12px] text-amber-900 leading-relaxed">
-          Solo se listan órdenes con <strong>guía de envío real cargada</strong> (mismo criterio que "Enviado (con guía)" en Pedidos) — no alcanza con que la orden esté pagada o en proceso. Esto marca las órdenes seleccionadas como despachadas y programa la solicitud de reseña (el mismo flujo que el botón individual en cada pedido). Si el sistema está en <strong>modo test</strong>, solo se enviará realmente a las órdenes de la allowlist configurada — el resto queda programado pero no se envía. Revisá <Link href="/admin/reviews/settings" className="underline">Configuración</Link> antes de confirmar una tanda real.
+          Solo se listan órdenes con <strong>guía de envío real cargada</strong> (mismo criterio que &ldquo;Enviado (con guía)&rdquo; en Pedidos) — no alcanza con que la orden esté pagada o en proceso. Esto marca las órdenes seleccionadas como despachadas y programa la solicitud de reseña (el mismo flujo que el botón individual en cada pedido). Si el sistema está en <strong>modo test</strong>, solo se enviará realmente a las órdenes de la allowlist configurada — el resto queda programado pero no se envía. Revisá <Link href="/admin/reviews/settings" className="underline">Configuración</Link> antes de confirmar una tanda real.
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-3 mb-4">
