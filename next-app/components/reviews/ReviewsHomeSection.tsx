@@ -28,8 +28,10 @@ export default function ReviewsHomeSection() {
     return () => { cancelled = true; };
   }, []);
 
-  // Sin datos todavía (real, no-demo): no se muestra la sección — nada de números inventados.
-  if (!summary || summary.total === 0 || featured.length === 0) return null;
+  // Todavía cargando: no mostrar nada (evita parpadeo del estado vacío).
+  if (!summary) return null;
+
+  const hasReviews = summary.total > 0 && featured.length > 0;
 
   return (
     <section className="max-w-[1400px] mx-auto px-4 py-14 md:py-20" ref={ref}>
@@ -40,20 +42,36 @@ export default function ReviewsHomeSection() {
             Lo que dice nuestra comunidad
           </h2>
           <p className="text-[13px] text-muted-foreground max-w-md">
-            Calidad, talles, packaging y envíos, contado por quienes ya compraron.
+            {hasReviews
+              ? 'Calidad, talles, packaging y envíos, contado por quienes ya compraron.'
+              : 'Todavía no tenemos reseñas publicadas. Comprá, dejá tu reseña y llevate un 10% OFF para tu próxima compra.'}
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-[30px] font-bold leading-none tabular-nums">{summary.average!.toFixed(1)}</span>
-          <div className="flex flex-col gap-1">
-            <StarRating rating={summary.average!} size={16} />
-            <span className="text-[12px] text-muted-foreground">
-              {summary.total} {summary.total === 1 ? 'reseña' : 'reseñas'}
-            </span>
+        {hasReviews && (
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <span className="text-[30px] font-bold leading-none tabular-nums">{summary.average!.toFixed(1)}</span>
+            <div className="flex flex-col gap-1">
+              <StarRating rating={summary.average!} size={16} />
+              <span className="text-[12px] text-muted-foreground">
+                {summary.total} {summary.total === 1 ? 'reseña' : 'reseñas'}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
+      {!hasReviews && (
+        <div className="reveal rd2 flex justify-center">
+          <Link
+            href="/productos/"
+            className="inline-block bg-bg-dark text-primary-foreground text-[12px] font-bold uppercase tracking-[0.1em] px-8 py-3.5 rounded-[10px] hover:opacity-85 transition-opacity"
+          >
+            Ver productos
+          </Link>
+        </div>
+      )}
+
+      {hasReviews && (
       <div className="reveal rd2 flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-1 -mx-4 px-4 md:mx-0 md:px-0">
         {featured.map((r) => (
           <div key={r.id} className="flex-none w-[78%] sm:w-[300px] snap-start">
@@ -61,7 +79,9 @@ export default function ReviewsHomeSection() {
           </div>
         ))}
       </div>
+      )}
 
+      {hasReviews && (
       <div className="reveal rd3 flex justify-center mt-9">
         <Link
           href="/reviews/"
@@ -70,6 +90,7 @@ export default function ReviewsHomeSection() {
           Ver todas las reseñas
         </Link>
       </div>
+      )}
     </section>
   );
 }
