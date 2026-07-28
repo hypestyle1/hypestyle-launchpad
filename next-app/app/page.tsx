@@ -33,13 +33,13 @@ export default function Home() {
           <Promo3x2Section />
           <FlashSaleSection />
           <BenefitsStrip />
+          <ReviewsHomeSection />
           <NewInFW26 />
           <ShopTheLook />
           <VideoSection />
           <CollectionBanner />
           <BackInStock />
           <EditorialBanner />
-          <ReviewsHomeSection />
         </div>
       </main>
       <Footer />

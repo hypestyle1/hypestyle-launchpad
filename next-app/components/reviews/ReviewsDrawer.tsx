@@ -7,6 +7,7 @@ import { getPublicReviewSummary, getPublicReviews } from '@/lib/reviews/public';
 import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
 import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
+import ReviewsDistribution from './ReviewsDistribution';
 import { DemoBadge } from './DemoContentNotice';
 
 const HIDDEN_PREFIXES = ['/checkout', '/admin', '/mayoristas', '/review/', '/reviews'];
@@ -19,7 +20,8 @@ export default function ReviewsDrawer() {
   const [summary, setSummary] = useState<PublicReviewSummary | null>(null);
   const [recent, setRecent] = useState<PublicReview[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const tabTriggerRef = useRef<HTMLButtonElement>(null);
+  const pillTriggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -72,7 +74,10 @@ export default function ReviewsDrawer() {
 
   const close = () => {
     setOpen(false);
-    triggerRef.current?.focus();
+    // Solo uno de los dos triggers está visible según breakpoint; .focus() en un
+    // elemento con display:none es un no-op, así que llamar ambos es seguro.
+    tabTriggerRef.current?.focus();
+    pillTriggerRef.current?.focus();
   };
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
@@ -80,17 +85,34 @@ export default function ReviewsDrawer() {
 
   return (
     <>
+      {/* Desktop: pestaña lateral fija, tipo EME Studios */}
       <button
-        ref={triggerRef}
+        ref={tabTriggerRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="fixed z-[90] bottom-[92px] right-5 flex items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow"
+        aria-label={`Reseñas — promedio ${summary.average?.toFixed(1)} de 5`}
+        className="hidden sm:flex fixed z-[90] right-0 top-1/2 -translate-y-1/2 items-center gap-2 bg-white border border-border border-r-0 shadow-lg rounded-l-[10px] px-2.5 py-4 hover:px-3.5 transition-all"
+        style={{ writingMode: 'vertical-rl' }}
+      >
+        <span className="text-[12px] font-bold tabular-nums">{summary.average?.toFixed(1)}</span>
+        <span aria-hidden="true" className="text-[13px]">★</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">Reseñas</span>
+      </button>
+
+      {/* Mobile: botón fijo compacto, encima del botón de WhatsApp */}
+      <button
+        ref={pillTriggerRef}
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="flex sm:hidden fixed z-[90] bottom-[92px] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow"
       >
         <StarRating rating={summary.average ?? 0} size={12} />
         <span className="text-[12px] font-semibold tabular-nums">{summary.average?.toFixed(1)}</span>
-        <span className="text-[11px] text-muted-foreground hidden sm:inline">— Reseñas</span>
+        <span className="text-[11px] text-muted-foreground">Reseñas</span>
       </button>
 
       {open && (
@@ -135,6 +157,9 @@ export default function ReviewsDrawer() {
                   </span>
                 </div>
                 {summary.isDemo && <DemoBadge />}
+              </div>
+              <div className="mt-4">
+                <ReviewsDistribution summary={summary} />
               </div>
             </div>
 

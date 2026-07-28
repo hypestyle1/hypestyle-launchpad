@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { imgSrc } from '@/lib/img';
 import type { PublicReview } from '@/lib/reviews/types';
 import StarRating from './StarRating';
-import { DemoBadge } from './DemoContentNotice';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -11,7 +10,9 @@ function formatDate(iso: string): string {
 }
 
 export default function ReviewCard({ review, compact = false }: { review: PublicReview; compact?: boolean }) {
-  const { customerName, rating, text, createdAt, productName, productSlug, productImage, verified, incentivized, isDemo } = review;
+  // incentivized/isDemo se mantienen en el modelo (PublicReview) pero, por ahora,
+  // no se muestran como badge en la card — solo el aviso general de la página/sección.
+  const { customerName, rating, text, createdAt, productName, productSlug, productImage, verified, isDemo } = review;
 
   return (
     <article className="border border-border rounded-[10px] p-5 bg-white flex flex-col gap-3 h-full">
@@ -25,20 +26,10 @@ export default function ReviewCard({ review, compact = false }: { review: Public
 
       <p className={`text-[13px] text-foreground/80 leading-relaxed ${compact ? 'line-clamp-3' : ''}`}>{text}</p>
 
-      {(verified || incentivized || isDemo) && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {verified && (
-            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-green-800 bg-green-50 border border-green-200 rounded-[4px] px-2 py-[3px]">
-              Compra verificada
-            </span>
-          )}
-          {incentivized && (
-            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-foreground/60 bg-bg-alt border border-border rounded-[4px] px-2 py-[3px]">
-              Reseña incentivada
-            </span>
-          )}
-          {isDemo && <DemoBadge />}
-        </div>
+      {verified && (
+        <span className="self-start text-[10px] font-semibold uppercase tracking-[0.08em] text-green-800 bg-green-50 border border-green-200 rounded-[4px] px-2 py-[3px]">
+          Compra verificada
+        </span>
       )}
 
       {productName && (
