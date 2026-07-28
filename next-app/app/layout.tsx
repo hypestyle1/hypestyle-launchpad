@@ -8,6 +8,7 @@ import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import ReviewsDrawer from '@/components/reviews/ReviewsDrawer';
 import FlashSaleBar from '@/components/FlashSaleBar';
 import Promo3x2Bar from '@/components/Promo3x2Bar';
 import PromoChampionBar from '@/components/PromoChampionBar';
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <MetaPixel />
           {children}
           <WhatsAppButton />
+          <ReviewsDrawer />
         </Providers>
       </body>
     </html>
