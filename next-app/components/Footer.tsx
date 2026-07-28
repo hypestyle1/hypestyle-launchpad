@@ -14,6 +14,7 @@ const shopLinks = [
 ];
 
 const infoLinks = [
+  { label: "Reseñas", href: "/reviews/" },
   { label: "Quiénes Somos", href: "/nosotros/" },
   { label: "Envíos internacionales", href: "/worldwide/" },
   { label: "Devoluciones", href: "/politicas-de-devolucion/" },

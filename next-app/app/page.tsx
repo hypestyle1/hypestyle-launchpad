@@ -11,6 +11,7 @@ import BenefitsStrip from '@/components/BenefitsStrip';
 import FlashSaleSection from '@/components/FlashSaleSection';
 import Promo3x2Section from '@/components/Promo3x2Section';
 import VideoSection from '@/components/VideoSection';
+import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
 import Footer from '@/components/Footer';
 
 // Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra) siguen en el
@@ -32,6 +33,7 @@ export default function Home() {
           <Promo3x2Section />
           <FlashSaleSection />
           <BenefitsStrip />
+          <ReviewsHomeSection />
           <NewInFW26 />
           <ShopTheLook />
           <VideoSection />

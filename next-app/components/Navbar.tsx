@@ -15,6 +15,7 @@ import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 const navLinks = [
   { label: 'Shop',          href: '/productos/',               hasDropdown: true,  routeMatch: '/productos' },
   { label: 'Colecciones',   href: '/colecciones/',             hasDropdown: false, routeMatch: '/colecciones' },
+  { label: 'Reseñas',       href: '/reviews/',                 hasDropdown: false, routeMatch: '/reviews' },
   { label: 'FAQs',          href: '/faqs/',                    hasDropdown: false, routeMatch: '/faqs' },
   { label: 'Políticas',     href: '/politicas-de-devolucion/', hasDropdown: false, routeMatch: '/politicas' },
   { label: 'Quiénes Somos', href: '/nosotros/',                hasDropdown: false, routeMatch: '/nosotros' },
@@ -422,6 +423,7 @@ export default function Navbar() {
                 <div className="border-t border-foreground/10 pt-4 space-y-1">
                   {[
                     { label: 'Colecciones',   href: '/colecciones/' },
+                    { label: 'Reseñas',       href: '/reviews/' },
                     { label: 'FAQs',          href: '/faqs/' },
                     { label: 'Quiénes Somos', href: '/nosotros/' },
                     { label: 'Políticas',     href: '/politicas-de-devolucion/' },
