@@ -88,53 +88,53 @@ export default function RotuloPage() {
       {/* Rótulo — 10x15cm exactos al imprimir (ver @page abajo); en pantalla se */}
       {/* previsualiza en la misma proporción 2:3 a un tamaño más cómodo de leer. */}
       <div className="rotulo mx-auto bg-white border-2 border-black" style={{ width: '480px', height: '720px' }}>
-        <div className="p-8 flex flex-col h-full">
-          <div className="flex items-center justify-between pb-5 border-b-2 border-black">
-            <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-10 w-auto" />
+        <div className="p-6 flex flex-col h-full">
+          <div className="flex items-center justify-between pb-3 border-b-2 border-black">
+            <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-8 w-auto" />
             <div className="text-right">
-              <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500">Pedido</div>
-              <div className="text-[30px] font-bold leading-none">#{order.number}</div>
+              <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500">Pedido</div>
+              <div className="text-[24px] font-bold leading-none">#{order.number}</div>
             </div>
           </div>
 
-          <div className="mt-6">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500 mb-1">Destinatario</div>
-            <div className="text-[28px] font-bold leading-tight">
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500 mb-0.5">Destinatario</div>
+            <div className="text-[23px] font-bold leading-tight">
               {order.shipping.first_name} {order.shipping.last_name}
             </div>
             {order.customer.dni && (
-              <div className="text-[17px] text-gray-700 mt-1">DNI {order.customer.dni}</div>
+              <div className="text-[14px] text-gray-700 mt-0.5">DNI {order.customer.dni}</div>
             )}
           </div>
 
-          <div className="mt-6">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500 mb-1">Dirección</div>
-            <div className="text-[20px] leading-snug">
+          <div className="mt-3">
+            <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500 mb-0.5">Dirección</div>
+            <div className="text-[16px] leading-snug">
               {order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}
             </div>
-            <div className="text-[20px] leading-snug">
+            <div className="text-[16px] leading-snug">
               {order.shipping.city}, {order.shipping.state} {order.shipping.postcode ? `(${order.shipping.postcode})` : ''}
             </div>
             {order.customer.phone && (
-              <div className="text-[17px] text-gray-700 mt-1.5">Tel: {order.customer.phone}</div>
+              <div className="text-[14px] text-gray-700 mt-1">Tel: {order.customer.phone}</div>
             )}
           </div>
 
           {order.viaCargoSucursal && (
-            <div className="mt-6 border-2 border-black p-4">
-              <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500 mb-1">Sucursal Via Cargo</div>
-              <div className="text-[22px] font-bold leading-tight">{order.viaCargoSucursal}</div>
+            <div className="mt-3 border-2 border-black p-2.5">
+              <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500 mb-0.5">Sucursal Via Cargo</div>
+              <div className="text-[18px] font-bold leading-tight">{order.viaCargoSucursal}</div>
             </div>
           )}
 
-          <div className="mt-6 flex-1">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500 mb-1">Contenido</div>
-            <div className="text-[15px] text-gray-700 leading-relaxed">{itemsSummary}</div>
+          <div className="mt-3 flex-1 overflow-hidden">
+            <div className="text-[10px] uppercase tracking-[0.15em] text-gray-500 mb-0.5">Contenido</div>
+            <div className="text-[13px] text-gray-700 leading-relaxed">{itemsSummary}</div>
           </div>
 
-          <div className="pt-4 mt-auto border-t border-gray-300 flex items-center justify-between">
-            <span className="text-[13px] text-gray-400">Hypestyle · hypestyle.com.ar</span>
-            <span className="text-[13px] text-gray-400">{fmtDate(order.date)}</span>
+          <div className="pt-2.5 mt-auto border-t border-gray-300 flex items-center justify-between">
+            <span className="text-[11px] text-gray-400">Hypestyle · hypestyle.com.ar</span>
+            <span className="text-[11px] text-gray-400">{fmtDate(order.date)}</span>
           </div>
         </div>
       </div>
