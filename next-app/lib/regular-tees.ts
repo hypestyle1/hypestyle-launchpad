@@ -15,3 +15,7 @@ export const REGULAR_TEES_GROUPS = [
 ];
 
 export const REGULAR_TEES_SLUGS = REGULAR_TEES_GROUPS.flatMap(g => g.slugs);
+
+// El pack surtido es el que más conviene destacar primero en la sección del
+// home (combina los 3 colores, mejor punta de entrada que un mono-color).
+export const BASICOS_HOME_FEATURED_SLUG = 'regular-tees-3-pack-black-white-melange';
