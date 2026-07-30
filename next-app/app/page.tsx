@@ -4,7 +4,7 @@ import NewsletterPopup from '@/components/NewsletterPopup';
 import HeroHannaDrop from '@/components/HeroHannaDrop';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
-import CollectionBanner from '@/components/CollectionBanner';
+import BasicosSection from '@/components/BasicosSection';
 import NewInFW26 from '@/components/NewInFW26';
 import EditorialBanner from '@/components/EditorialBanner';
 import BenefitsStrip from '@/components/BenefitsStrip';
@@ -37,8 +37,8 @@ export default function Home() {
           <NewInFW26 />
           <ShopTheLook />
           <VideoSection />
-          <CollectionBanner />
           <BackInStock />
+          <BasicosSection />
           <EditorialBanner />
         </div>
       </main>

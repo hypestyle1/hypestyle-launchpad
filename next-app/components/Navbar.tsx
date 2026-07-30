@@ -27,6 +27,7 @@ const megaMenu = {
     { label: 'New In',         href: '/new-in/',          homeHash: 'best-sellers',   isNew: true  },
     { label: 'Colecciones',    href: '/colecciones/',    homeHash: null,             isNew: false },
     { label: 'Best Sellers',   href: '/best-sellers/',   homeHash: 'back-in-stock',  isNew: false },
+    { label: 'Básicos',        href: '/colecciones/regular-tees/', homeHash: 'basicos', isNew: false },
     { label: 'SALE', href: '/special-prices/', homeHash: 'special-prices', isNew: false, isSale: true },
   ],
   categorias: [
@@ -51,6 +52,7 @@ const mobilePanels = {
       { label: 'Ver todos los productos', href: '/productos/',      homeHash: null,             panel: null },
       { label: 'New In',                   href: '/new-in/',          homeHash: 'best-sellers',   panel: null },
       { label: 'Colecciones',              href: '/colecciones/',    homeHash: null,             panel: null },
+      { label: 'Básicos',                  href: '/colecciones/regular-tees/', homeHash: 'basicos', panel: null },
       { label: 'SALE',                     href: '/special-prices/', homeHash: 'special-prices', panel: null, isSale: true },
       { label: 'Arriba',                   href: null,               homeHash: null,             panel: 'arriba' },
       { label: 'Abajo',                    href: null,               homeHash: null,             panel: 'abajo' },

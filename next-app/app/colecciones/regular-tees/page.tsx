@@ -1,14 +1,12 @@
 'use client';
 
 import CollectionGroupedPage, { CollectionConfig } from "@/components/CollectionGroupedPage";
+import { REGULAR_TEES_GROUPS } from "@/lib/regular-tees";
 
 const config: CollectionConfig = {
   title: 'Regular Tees',
   subtitle: 'Básicos premium — 100% algodón',
-  groups: [
-    { label: 'Individuales', slugs: ['regular-tee-white', 'regular-tee-melange'] },
-    { label: '3-Packs', slugs: ['regular-tees-3-pack-white', 'regular-tees-3-pack-black', 'regular-tees-3-pack-grey', 'regular-tees-3-pack-black-white-melange'] },
-  ],
+  groups: REGULAR_TEES_GROUPS,
 };
 
 export default function RegularTeesPage() {
