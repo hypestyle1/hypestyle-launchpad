@@ -2,15 +2,13 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import EditorialSlider from "./EditorialSlider";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
-import { fetchGraphQL } from "@/lib/graphql-client";
 import { imgSrc } from "@/lib/img";
-import { REGULAR_TEES_SLUGS, BASICOS_HOME_FEATURED_SLUG } from "@/lib/regular-tees";
+import { REGULAR_TEES_SLUGS, BASICOS_HOME_FEATURED_SLUG, BASICOS_HOME_CAROUSELS } from "@/lib/regular-tees";
 
 // Pack surtido primero, después el resto en el orden de siempre.
 const HOME_ORDER = [
@@ -18,41 +16,8 @@ const HOME_ORDER = [
   ...REGULAR_TEES_SLUGS.filter(s => s !== BASICOS_HOME_FEATURED_SLUG),
 ];
 
-// Individuales que le prestan sus fotos a los 3 carruseles de relleno de la
-// primera fila (mismo tamaño que una card, junto al pack destacado). El feed
-// general (useProducts) solo trae 1 foto por producto — acá se pide la
-// galería completa de cada uno, igual que hace la ficha de producto.
-const CAROUSEL_SOURCE_SLUGS = ['regular-tee-black', 'regular-tee-white', 'regular-tee-navy'];
-
-function useCarouselImages(slugs: string[]) {
-  return useQuery<string[][]>({
-    queryKey: ['basicos-carousel-images', slugs],
-    queryFn: async () => {
-      const query = `query BasicosCarouselImages {\n` +
-        slugs.map((slug, i) =>
-          `s${i}: product(id: "${slug}", idType: SLUG) {
-            ... on SimpleProduct { image { sourceUrl } galleryImages { nodes { sourceUrl } } }
-            ... on VariableProduct { image { sourceUrl } galleryImages { nodes { sourceUrl } } }
-          }`
-        ).join('\n') + `\n}`;
-      const data = await fetchGraphQL<Record<string, { image?: { sourceUrl?: string }; galleryImages?: { nodes: { sourceUrl?: string }[] } } | null>>(query);
-      return slugs.map((_, i) => {
-        const node = data[`s${i}`];
-        const images: string[] = [];
-        if (node?.image?.sourceUrl) images.push(node.image.sourceUrl);
-        (node?.galleryImages?.nodes ?? []).forEach(g => {
-          if (g.sourceUrl && !images.includes(g.sourceUrl)) images.push(g.sourceUrl);
-        });
-        return images;
-      });
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
 export default function BasicosSection() {
   const { data: allProducts = [] } = useProducts(100);
-  const { data: carouselImages = [] } = useCarouselImages(CAROUSEL_SOURCE_SLUGS);
   const ref = useReveal([allProducts]);
 
   const { featured, rest } = useMemo(() => {
@@ -85,13 +50,13 @@ export default function BasicosSection() {
             href={`/producto/${featured.slug}/`}
           />
         </div>
-        {carouselImages.filter(imgs => imgs.length > 0).map((imgs, i) => (
+        {BASICOS_HOME_CAROUSELS.map((c) => (
           <Link
-            key={i}
-            href="/colecciones/regular-tees/"
-            className={`reveal rd${i + 3} relative aspect-square overflow-hidden rounded-[8px] bg-bg-alt block`}
+            key={c.slug}
+            href={`/producto/${c.slug}/`}
+            className="reveal rd3 relative aspect-square overflow-hidden rounded-[8px] bg-bg-alt block"
           >
-            <EditorialSlider images={imgs.map(imgSrc)} alt="Básicos — Regular Tees" />
+            <EditorialSlider images={c.images.map(imgSrc)} alt="Básicos — Regular Tees" />
           </Link>
         ))}
 
