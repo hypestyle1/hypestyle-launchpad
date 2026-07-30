@@ -101,6 +101,10 @@ export default function OrderDetailPage() {
   const [shippingSaving, setShippingSaving] = useState(false);
   const [shippingMsg, setShippingMsg] = useState('');
 
+  // Quitar / bajar cantidad de un producto sin cancelar el pedido
+  const [removingItemId, setRemovingItemId] = useState<number | null>(null);
+  const [removeItemMsg, setRemoveItemMsg] = useState('');
+
   // Agregar producto / aplicar descuento sin cancelar el pedido
   const [productCatalog, setProductCatalog] = useState<{ id: number; name: string; image: string }[]>([]);
   const [productQuery, setProductQuery]     = useState('');
@@ -308,6 +312,25 @@ export default function OrderDetailPage() {
     const r = await fetch(`/api/admin/orders/${id}`, { headers: { 'x-admin-key': adminKey } });
     const data = await r.json();
     if (data && !data.error) setOrder(data);
+  }
+
+  async function changeItemQuantity(lineItemId: number, newQuantity: number, confirmMsg?: string) {
+    if (!order) return;
+    if (confirmMsg && !window.confirm(confirmMsg)) return;
+    setRemovingItemId(lineItemId);
+    setRemoveItemMsg('');
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/remove-item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ lineItemId, newQuantity }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setRemoveItemMsg(data.error || 'No se pudo actualizar'); return; }
+      await reloadOrder();
+    } finally {
+      setRemovingItemId(null);
+    }
   }
 
   function startEditingShipping() {
@@ -592,7 +615,10 @@ export default function OrderDetailPage() {
                 <h2 className="text-[13px] font-semibold text-gray-900">Productos</h2>
               </div>
               <div className="divide-y divide-gray-50">
-                {order.items.map(item => (
+                {order.items.map(item => {
+                  const canEdit = !['cancelled', 'failed'].includes(order.status);
+                  const isBusy = removingItemId === item.id;
+                  return (
                   <div key={item.id} className="flex items-center gap-4 px-5 py-3">
                     {item.image ? (
                       <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-none" />
@@ -611,14 +637,36 @@ export default function OrderDetailPage() {
                           {item.dorsalName && <span>{item.dorsalName}</span>}
                         </div>
                       )}
+                      {canEdit && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <button
+                            onClick={() => changeItemQuantity(item.id, item.quantity - 1)}
+                            disabled={isBusy}
+                            className="w-5 h-5 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:border-gray-400 disabled:opacity-40 text-[12px] leading-none"
+                          >
+                            −
+                          </button>
+                          <button
+                            onClick={() => changeItemQuantity(item.id, 0, `¿Sacar "${item.name}" del pedido?`)}
+                            disabled={isBusy}
+                            className="text-[11px] text-red-500 hover:underline disabled:opacity-40"
+                          >
+                            {isBusy ? 'Actualizando...' : 'Quitar'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right flex-none">
                       <div className="text-[13px] text-gray-700">{fmt(item.price)} × {item.quantity}</div>
                       <div className="text-[12px] font-semibold text-gray-900">{fmt(item.total)}</div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
+              {removeItemMsg && (
+                <div className="px-5 py-2 text-[11px] text-red-500 border-t border-gray-100">{removeItemMsg}</div>
+              )}
               {/* Totals */}
               <div className="border-t border-gray-100 px-5 py-3 space-y-1.5 bg-gray-50">
                 <div className="flex justify-between text-[12px] text-gray-500">
