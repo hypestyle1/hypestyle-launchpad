@@ -178,7 +178,19 @@ export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
     after = page.pageInfo.endCursor;
   }
 
-  const products = allNodes
+  // La mayoría de los productos comparten menu_order (nunca se seteó a mano por
+  // producto), así que el cursor de WPGraphQL no separa las páginas de forma
+  // estable — página 2 puede repetir nodos que ya vinieron en la página 1.
+  // Confirmado en vivo: sin este dedupe, el catálogo mayorista mostraba cada
+  // producto duplicado (106 únicos entre 173 nodos traídos).
+  const seenIds = new Set<string>();
+  const dedupedNodes = allNodes.filter((n: any) => {
+    if (seenIds.has(n.id)) return false;
+    seenIds.add(n.id);
+    return true;
+  });
+
+  const products = dedupedNodes
     .filter((n: any) => !isCombo(n) && !EXCLUDED_SLUGS.has(n.slug))
     .map(fromNode)
     .filter((p: MayoristaProduct) => p.regularPrice > 0 && !isFullyOut(p));
