@@ -93,6 +93,14 @@ export default function OrderDetailPage() {
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteMsg, setNoteMsg]       = useState('');
 
+  // Edición de dirección de envío + teléfono/DNI
+  const [editingShipping, setEditingShipping] = useState(false);
+  const [shippingForm, setShippingForm] = useState({
+    first_name: '', last_name: '', address_1: '', address_2: '', city: '', state: '', postcode: '', phone: '', dni: '',
+  });
+  const [shippingSaving, setShippingSaving] = useState(false);
+  const [shippingMsg, setShippingMsg] = useState('');
+
   // Agregar producto / aplicar descuento sin cancelar el pedido
   const [productCatalog, setProductCatalog] = useState<{ id: number; name: string; image: string }[]>([]);
   const [productQuery, setProductQuery]     = useState('');
@@ -300,6 +308,54 @@ export default function OrderDetailPage() {
     const r = await fetch(`/api/admin/orders/${id}`, { headers: { 'x-admin-key': adminKey } });
     const data = await r.json();
     if (data && !data.error) setOrder(data);
+  }
+
+  function startEditingShipping() {
+    if (!order) return;
+    setShippingForm({
+      first_name: order.shipping.first_name,
+      last_name:  order.shipping.last_name,
+      address_1:  order.shipping.address_1,
+      address_2:  order.shipping.address_2,
+      city:       order.shipping.city,
+      state:      order.shipping.state,
+      postcode:   order.shipping.postcode,
+      phone:      order.customer.phone,
+      dni:        order.customer.dni,
+    });
+    setShippingMsg('');
+    setEditingShipping(true);
+  }
+
+  async function saveShipping() {
+    if (!order) return;
+    setShippingSaving(true);
+    setShippingMsg('');
+    try {
+      const res = await fetch(`/api/admin/orders/${order.id}/update-shipping`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({
+          shipping: {
+            first_name: shippingForm.first_name,
+            last_name:  shippingForm.last_name,
+            address_1:  shippingForm.address_1,
+            address_2:  shippingForm.address_2,
+            city:       shippingForm.city,
+            state:      shippingForm.state,
+            postcode:   shippingForm.postcode,
+          },
+          phone: shippingForm.phone,
+          dni: shippingForm.dni,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setShippingMsg(data.error || 'No se pudo guardar'); return; }
+      await reloadOrder();
+      setEditingShipping(false);
+    } finally {
+      setShippingSaving(false);
+    }
   }
 
   async function addItem() {
@@ -816,17 +872,68 @@ export default function OrderDetailPage() {
 
             {/* Shipping address */}
             <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Dirección de envío</h2>
-              <div className="text-[12px] text-gray-600 space-y-0.5">
-                <div>{order.shipping.first_name} {order.shipping.last_name}</div>
-                <div>{order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}</div>
-                <div>{order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</div>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-[13px] font-semibold text-gray-900">Dirección de envío</h2>
+                {!editingShipping && (
+                  <button onClick={startEditingShipping} className="text-[11px] text-blue-600 hover:underline">
+                    Editar
+                  </button>
+                )}
               </div>
-              {order.viaCargoSucursal && (
-                <div className="mt-2 pt-2 border-t border-gray-100 text-[12px]">
-                  <span className="text-gray-400">Sucursal Via Cargo:</span>{' '}
-                  <span className="font-medium text-gray-900">{order.viaCargoSucursal}</span>
+
+              {editingShipping ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input placeholder="Nombre" value={shippingForm.first_name} onChange={e => setShippingForm(f => ({ ...f, first_name: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                    <input placeholder="Apellido" value={shippingForm.last_name} onChange={e => setShippingForm(f => ({ ...f, last_name: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                  </div>
+                  <input placeholder="Dirección" value={shippingForm.address_1} onChange={e => setShippingForm(f => ({ ...f, address_1: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                  <input placeholder="Depto / piso (opcional)" value={shippingForm.address_2} onChange={e => setShippingForm(f => ({ ...f, address_2: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                  <div className="grid grid-cols-3 gap-2">
+                    <input placeholder="Ciudad" value={shippingForm.city} onChange={e => setShippingForm(f => ({ ...f, city: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                    <input placeholder="Provincia" value={shippingForm.state} onChange={e => setShippingForm(f => ({ ...f, state: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                    <input placeholder="CP" value={shippingForm.postcode} onChange={e => setShippingForm(f => ({ ...f, postcode: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input placeholder="Teléfono" value={shippingForm.phone} onChange={e => setShippingForm(f => ({ ...f, phone: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                    <input placeholder="DNI" value={shippingForm.dni} onChange={e => setShippingForm(f => ({ ...f, dni: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                  </div>
+
+                  {shippingMsg && <p className="text-[11px] text-red-500">{shippingMsg}</p>}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={saveShipping}
+                      disabled={shippingSaving}
+                      className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-50"
+                    >
+                      {shippingSaving ? 'Guardando...' : 'Guardar'}
+                    </button>
+                    <button onClick={() => setEditingShipping(false)} disabled={shippingSaving} className="text-[12px] text-gray-500 hover:text-black">
+                      Cancelar
+                    </button>
+                  </div>
+
+                  {(order.tracking || order.andreani) && (
+                    <p className="text-[11px] text-amber-600 pt-1">
+                      Este pedido ya tiene guía de Andreani cargada — si cambiás la dirección acá, no se actualiza sola en Andreani. Hay que corregirla directo en su sistema.
+                    </p>
+                  )}
                 </div>
+              ) : (
+                <>
+                  <div className="text-[12px] text-gray-600 space-y-0.5">
+                    <div>{order.shipping.first_name} {order.shipping.last_name}</div>
+                    <div>{order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}</div>
+                    <div>{order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</div>
+                  </div>
+                  {order.viaCargoSucursal && (
+                    <div className="mt-2 pt-2 border-t border-gray-100 text-[12px]">
+                      <span className="text-gray-400">Sucursal Via Cargo:</span>{' '}
+                      <span className="font-medium text-gray-900">{order.viaCargoSucursal}</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
