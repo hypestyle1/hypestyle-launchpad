@@ -6,6 +6,15 @@ import Footer from "@/components/Footer";
 
 const drops = [
   {
+    name: "Faith Is The Real Hype",
+    season: "Drop — Domingo",
+    description: "Streetwear con fe. Hoodies y remeras con gráficos religiosos, corte oversize.",
+    image: "newin/faith-christ-reigns-hoodie.webp",
+    href: "/colecciones/faith-is-the-real-hype/",
+    products: 12,
+    status: "disponible",
+  },
+  {
     name: "FW26",
     season: "Colección — Fall/Winter 2026",
     description: "Grey HStars, Half-Zip Polos y Pink Set Drop. La temporada más completa de Hypestyle.",
