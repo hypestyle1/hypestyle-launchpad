@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sizeFromAttributes } from '@/lib/product-size';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     const prod = await wcGet(`${target}?_fields=id,name,attributes,regular_price,price,manage_stock,stock_quantity`);
     const basePrice = parseFloat(prod.regular_price || prod.price || '0');
     const unitPrice = isGift ? 0 : (isMayorista ? Math.round(basePrice * 0.5) : parseFloat(prod.price || prod.regular_price || '0'));
-    const size = (prod.attributes || []).map((a: any) => a.option).filter(Boolean).join(' / ');
+    const size = sizeFromAttributes(prod.attributes || []);
 
     lineItems.push({
       product_id: item.productId,

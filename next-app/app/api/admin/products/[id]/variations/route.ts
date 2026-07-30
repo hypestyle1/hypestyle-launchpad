@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sizeFromAttributes } from '@/lib/product-size';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const variations = data.map((v: any) => ({
     id: v.id,
-    size: (v.attributes || []).map((a: any) => a.option).join(' / '),
+    size: sizeFromAttributes(v.attributes || []),
     price: parseFloat(v.regular_price || v.price || '0'),
     manageStock: !!v.manage_stock,
     stock: v.stock_quantity,
