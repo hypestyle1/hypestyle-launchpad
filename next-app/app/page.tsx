@@ -5,7 +5,6 @@ import HeroHannaDrop from '@/components/HeroHannaDrop';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
 import BasicosSection from '@/components/BasicosSection';
-import CollectionBanner from '@/components/CollectionBanner';
 import NewInFW26 from '@/components/NewInFW26';
 import EditorialBanner from '@/components/EditorialBanner';
 import BenefitsStrip from '@/components/BenefitsStrip';
@@ -38,7 +37,6 @@ export default function Home() {
           <NewInFW26 />
           <ShopTheLook />
           <VideoSection />
-          <CollectionBanner />
           <BackInStock />
           <BasicosSection />
           <EditorialBanner />
