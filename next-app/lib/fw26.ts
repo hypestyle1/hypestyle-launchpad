@@ -1,6 +1,7 @@
 // Drop FW26 — fuente única de los productos de la colección.
 // Usado por la página /colecciones/fw26 y la sección "New In [FW26]" del home.
 export const FW26_GROUPS = [
+  { label: 'Black Drop',    slugs: ['hoodie-black-hstars', 'sweatpant-black-hstars', 'stars-for-venezuela-hoodie', 'shoot-for-the-stars'] },
   { label: 'Half-Zip Polo', slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black'] },
   { label: 'Pink Set',      slugs: ['hoodie-pink', 'zip-hoodie-pink', 'sweatpant-pink'] },
   { label: 'Camo Drop',     slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap', 'beanie-camo'] },
