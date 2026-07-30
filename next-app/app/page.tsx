@@ -37,8 +37,8 @@ export default function Home() {
           <NewInFW26 />
           <ShopTheLook />
           <VideoSection />
-          <BackInStock />
           <BasicosSection />
+          <BackInStock />
           <EditorialBanner />
         </div>
       </main>

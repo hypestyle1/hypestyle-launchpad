@@ -5,7 +5,13 @@ import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
-import { REGULAR_TEES_SLUGS } from "@/lib/regular-tees";
+import { REGULAR_TEES_SLUGS, BASICOS_HOME_FEATURED_SLUG } from "@/lib/regular-tees";
+
+// Pack surtido primero, después el resto en el orden de siempre.
+const HOME_ORDER = [
+  BASICOS_HOME_FEATURED_SLUG,
+  ...REGULAR_TEES_SLUGS.filter(s => s !== BASICOS_HOME_FEATURED_SLUG),
+];
 
 export default function BasicosSection() {
   const { data: allProducts = [] } = useProducts(100);
@@ -13,7 +19,7 @@ export default function BasicosSection() {
 
   const products = useMemo(() => {
     const bySlug = new Map(allProducts.map(p => [p.slug, p]));
-    return REGULAR_TEES_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts;
+    return HOME_ORDER.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts;
   }, [allProducts]);
 
   if (products.length === 0) return null;
