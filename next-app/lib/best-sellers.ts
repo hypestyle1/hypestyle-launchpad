@@ -2,20 +2,21 @@
 // Compartido entre BackInStock (home) y la página SALE, que excluye estos
 // para no repetir productos y destacar los que no aparecen en el home.
 // Todos con descuento aplicado (10/15/20/30% según ventas históricas, 26/07/26).
-// Orden pensado para grilla de 4 columnas (desktop) — 41 productos, última fila incompleta.
+// Orden pensado para grilla de 4 columnas (desktop) — 40 productos, múltiplo
+// exacto de 4 (10 filas completas). El Zippo se sacó de esta lista: es un
+// accesorio, no encaja en "Best Sellers" de indumentaria (30/07/26).
 export const BEST_SELLERS_SLUGS = [
-  // — Fila 1 —
-  'per-aspera-ad-astra-zippo',
+  // — Fila 1: Stay Hustle subido + fileteado —
   'jersey-fileteado-x-alfredo-genovese',
   'mesh-camo-blue-tee',            // subido (stock abundante), después del fileteado
   'lettering-melange-jort',
-  // — Fila 2: Stay Hustle subido + 2 nuevos + No Service Hoodie de cierre —
   'hoodie-stay-hustle',
+  // — Fila 2 —
   'regular-tees-3-pack-black-white-melange',
   'crewneck-hyped-up-grey',
   'no-service-for-the-faithless-hoodie',
-  // — Fila 3 en adelante: orden original (sin los promovidos arriba) —
   'no-service-for-the-faithless-white',
+  // — Fila 3 en adelante: orden original —
   'no-service-for-the-faithless-black',
   'no-service-for-the-faithless-grey',
   'no-service-for-the-faithless-green',
@@ -35,7 +36,6 @@ export const BEST_SELLERS_SLUGS = [
   'sweatpants-bombe-bordo',
   'knitted-tshirt-sand',
   'raglan-tee-tribal-cross',
-  'find-jesus-longsleeve-black',   // stock muy bajo (1 unidad en L y en XL) — puede agotarse rápido
   'sleeveless-ranglan-white',
   'sleeveless-ranglan-militar-green',
   'sleeveless-ranglan-grey',
@@ -47,5 +47,6 @@ export const BEST_SELLERS_SLUGS = [
   'skyline-tee',
   'aerogrey-tees',
   'mesh-camo-grey-tee',
-  'per-aspera-ad-astra-black-tee', // cierra la grilla (41 productos)
+  'per-aspera-ad-astra-black-tee',
+  'find-jesus-longsleeve-black',   // al final: stock muy bajo (1 unidad en L y en XL) — puede agotarse rápido
 ];
