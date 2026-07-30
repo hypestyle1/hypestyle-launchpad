@@ -9,6 +9,7 @@ type Dict = Record<string, Partial<Record<Exclude<Language, 'ES'>, string>>>;
 const DICT: Dict = {
   // — Navbar —
   'Colecciones': { EN: 'Collections' },
+  'Básicos': { EN: 'Basics' },
   'Políticas': { EN: 'Policies' },
   'Quiénes Somos': { EN: 'About Us' },
   'Contacto': { EN: 'Contact' },
