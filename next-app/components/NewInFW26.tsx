@@ -11,7 +11,6 @@ import { useProducts } from "@/hooks/useProducts";
 import { FW26_GROUPS } from "@/lib/fw26";
 import { isFlashSaleActive } from "@/lib/flash-sale";
 import { Skeleton } from "@/components/ui/skeleton";
-import VenezuelaBenefitDrop from "./VenezuelaBenefitDrop";
 import FaithDrop from "./FaithDrop";
 
 // Mismo skeleton que CollectionBanner para mantener consistencia visual.
@@ -57,8 +56,8 @@ type GroupMedia = {
 // del array en vez de ir siempre al final).
 const SWAP_GROUP_LABELS = new Set<string>(['Remeras', 'Conjunto Gris']);
 
-// Accesorios se muestra en posición fija (entre Faith y Venezuela Benefit
-// Drop), no sigue el orden de FW26_GROUPS como el resto de los grupos.
+// Accesorios se muestra en posición fija (justo después de Faith), no sigue
+// el orden de FW26_GROUPS como el resto de los grupos.
 const ACCESORIOS_LABEL = 'Accesorios';
 const SWAP_PRODUCT_SLUGS = [
   'only-god-can-judge-me-blanca',
@@ -169,11 +168,6 @@ export default function NewInFW26() {
           </div>
         </div>
       )}
-
-      {/* ── Stars For Venezuela — Benefit Drop ─────────────────────────── */}
-      <div className="reveal rd2">
-        <VenezuelaBenefitDrop />
-      </div>
 
       {groups.map((group, gi) => {
         if (SWAP_GROUP_LABELS.has(group.label)) {

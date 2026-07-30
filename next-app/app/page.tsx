@@ -5,6 +5,7 @@ import HeroHannaDrop from '@/components/HeroHannaDrop';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
 import BasicosSection from '@/components/BasicosSection';
+import MasHypeSection from '@/components/MasHypeSection';
 import NewInFW26 from '@/components/NewInFW26';
 import EditorialBanner from '@/components/EditorialBanner';
 import BenefitsStrip from '@/components/BenefitsStrip';
@@ -39,6 +40,7 @@ export default function Home() {
           <VideoSection />
           <BasicosSection />
           <BackInStock />
+          <MasHypeSection />
           <EditorialBanner />
         </div>
       </main>
