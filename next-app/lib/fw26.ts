@@ -7,6 +7,21 @@ export const FW26_GROUPS = [
   { label: 'Remeras',       slugs: ['only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra'] },
   { label: 'Conjunto Gris', slugs: ['hoodie-grey-hstars', 'sweatpant-grey-hstars', 'hoodie-melange', 'sweatpant-melange'] },
   { label: 'Accesorios',    slugs: ['chain-hype', 'pack-x3-medias-hype', 'per-aspera-ad-astra-zippo'] },
+  // Solo los productos ya lanzados del drop (ver FAITH_DROP_ITEMS con live:true en
+  // faith-drop.ts) — los que todavía están "Próximamente" (blurred) no se listan acá.
+  {
+    label: 'Faith Is The Real Hype',
+    slugs: [
+      'longsleeve-waffle-horses',
+      'longsleeve-waffle-god-gave-me-style',
+      'christ-reigns-hoodie',
+      'he-die-so-i-could-live-hoodie',
+      'lion-of-judah-stone-wash-hoodie',
+      'christ-reigns-tee',
+      'jesus-heart-tee',
+      'he-died-so-i-could-live-melange-hoodie',
+    ],
+  },
 ];
 
 export const FW26_SLUGS = FW26_GROUPS.flatMap(g => g.slugs);

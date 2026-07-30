@@ -509,18 +509,13 @@ export default function ProductoClient({ slug, initialGoalDiscount = null }: { s
               </div>
               )}
 
-              {/* Talle único: muestra la equivalencia y el link a la guía de talles */}
+              {/* Talle único (ej. accesorios): sin variante para elegir, así que no
+                  corresponde mostrar guía de talles — solo la equivalencia si aplica. */}
               {product.sizes.length === 1 && !isColorVariant && (
                 <div className="mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-semibold uppercase tracking-wider">
-                      Talle <span className="font-bold">— Único{product.sizeEquivalent ? ` · equivale a un ${product.sizeEquivalent}` : ''}</span>
-                    </span>
-                    <button onClick={() => setSizeGuideOpen(true)}
-                      className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
-                      Guía de talles
-                    </button>
-                  </div>
+                  <span className="text-[12px] font-semibold uppercase tracking-wider">
+                    Talle <span className="font-bold">— Único{product.sizeEquivalent ? ` · equivale a un ${product.sizeEquivalent}` : ''}</span>
+                  </span>
                 </div>
               )}
 
