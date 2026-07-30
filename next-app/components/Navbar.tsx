@@ -28,6 +28,7 @@ const megaMenu = {
     { label: 'Colecciones',    href: '/colecciones/',    homeHash: null,             isNew: false },
     { label: 'Best Sellers',   href: '/best-sellers/',   homeHash: 'back-in-stock',  isNew: false },
     { label: 'Básicos',        href: '/colecciones/regular-tees/', homeHash: 'basicos', isNew: false },
+    { label: 'Más Hype',       href: '/colecciones/mas-hype/', homeHash: 'mas-hype',    isNew: false },
     { label: 'SALE', href: '/special-prices/', homeHash: 'special-prices', isNew: false, isSale: true },
   ],
   categorias: [
@@ -53,6 +54,7 @@ const mobilePanels = {
       { label: 'New In',                   href: '/new-in/',          homeHash: 'best-sellers',   panel: null },
       { label: 'Colecciones',              href: '/colecciones/',    homeHash: null,             panel: null },
       { label: 'Básicos',                  href: '/colecciones/regular-tees/', homeHash: 'basicos', panel: null },
+      { label: 'Más Hype',                 href: '/colecciones/mas-hype/', homeHash: 'mas-hype',    panel: null },
       { label: 'SALE',                     href: '/special-prices/', homeHash: 'special-prices', panel: null, isSale: true },
       { label: 'Arriba',                   href: null,               homeHash: null,             panel: 'arriba' },
       { label: 'Abajo',                    href: null,               homeHash: null,             panel: 'abajo' },

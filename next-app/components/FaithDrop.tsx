@@ -24,14 +24,17 @@ export default function FaithDrop() {
     return FAITH_DROP_ITEMS.flatMap(cfg => {
       const p = bySlug.get(cfg.slug);
       if (!p) return [];
+      const purchasable = cfg.live || cfg.preSale;
       return [{
         ...p,
-        badge: cfg.live ? "New In" : "Próximamente",
+        badge: cfg.preSale ? "Pre-Venta" : (cfg.live ? "New In" : "Próximamente"),
         blurred: cfg.blurred,
         // Vidriera hasta el lanzamiento: sin link al producto ni talles/carrito.
-        disableLink: !cfg.live,
-        sizes: cfg.live ? p.sizes : undefined,
-        stock: cfg.live ? p.stock : undefined,
+        // Pre-venta cuenta como "disponible" (se puede comprar, solo lleva un
+        // badge distinto aclarando que no es el lanzamiento definitivo).
+        disableLink: !purchasable,
+        sizes: purchasable ? p.sizes : undefined,
+        stock: purchasable ? p.stock : undefined,
       }];
     });
   }, [allProducts]);

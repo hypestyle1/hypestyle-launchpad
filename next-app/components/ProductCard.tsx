@@ -74,6 +74,7 @@ export default function ProductCard({
     if (!badge) return "";
     if (badge === "New In") return "bg-white/40 backdrop-blur-md backdrop-saturate-150 text-black rounded-[6px] border border-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]";
     if (badge === "Próximamente") return "bg-black/70 backdrop-blur-md text-white rounded-[6px]";
+    if (badge === "Pre-Venta") return "bg-amber-500 text-black rounded-[6px]";
     if (badge === "New") return "bg-bg-dark text-primary-foreground";
     if (badge === "Best Seller") return "bg-muted-foreground text-primary-foreground";
     if (badge === "Back") return "bg-primary-foreground border border-foreground text-foreground";
