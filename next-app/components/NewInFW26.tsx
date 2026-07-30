@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import Image from "next/image";
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
@@ -59,6 +59,10 @@ const SWAP_GROUP_LABELS = new Set<string>(['Remeras', 'Conjunto Gris']);
 // Accesorios se muestra en posición fija (justo después de Faith), no sigue
 // el orden de FW26_GROUPS como el resto de los grupos.
 const ACCESORIOS_LABEL = 'Accesorios';
+// Faith Is The Real Hype ya se renderiza aparte con <FaithDrop /> (maneja los
+// flags live/blurred/preSale) — si no se excluye acá, FW26_GROUPS lo vuelve a
+// mostrar una segunda vez con el loop genérico de grupos.
+const FAITH_LABEL = 'Faith Is The Real Hype';
 const SWAP_PRODUCT_SLUGS = [
   'only-god-can-judge-me-blanca',
   'only-god-can-judge-me-negra',
@@ -70,7 +74,18 @@ const SWAP_SLIDES = [
   { src: '/newin/grey-hstars.webp', alt: 'Conjunto Grey HStars', title: 'Conjunto Grey HStars' },
 ];
 
+const BLACK_DROP_LABEL = 'Black Drop';
+
 const GROUP_EDITORIAL: Record<string, GroupMedia> = {
+  'Black Drop': {
+    type: 'slider',
+    slides: [
+      { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/07/SHOOT-FOR-THE-STARS-HOODIE-FRENTE.png' },
+      { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/07/SHOOT-FOR-THE-STARS-HOODIE-BACK.png' },
+    ],
+    alt: 'Black Drop — Shoot For The Stars',
+    side: 'left',
+  },
   'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
   'Pink Set': { type: 'video', src: '/newin/pink-set.mp4', alt: 'Pink Set FW26', side: 'left', poster: '/newin/pink-set-poster.jpg' },
   'Camo Drop': {
@@ -81,6 +96,86 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
     more: { href: '/colecciones/camo-set-drop/' },
   },
 };
+
+// Bloque de grupo con editorial split o grilla simple — extraído para
+// reusarlo tanto en la posición fija de Black Drop (primera sección) como en
+// el loop genérico de FW26_GROUPS.
+function GroupBlock({
+  label, items, editorial, revealClass, renderCard,
+}: {
+  label: string;
+  items: ReturnType<typeof useProducts>['data'];
+  editorial?: GroupMedia;
+  revealClass: string;
+  renderCard: (p: NonNullable<ReturnType<typeof useProducts>['data']>[number]) => ReactNode;
+}) {
+  const list = items ?? [];
+  if (list.length === 0) return null;
+  return (
+    <div className={`${revealClass} mt-10`}>
+      <div className="flex items-center gap-4 mb-5">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{label}</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      {editorial ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
+          <div className={`relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 ${editorial.side === 'left' ? 'lg:order-1' : 'lg:order-2'}`}>
+            {editorial.type === 'video' ? (
+              <video
+                className="absolute inset-0 h-full w-full object-cover object-center"
+                src={editorial.src}
+                poster={editorial.poster}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+              />
+            ) : editorial.type === 'slider' ? (
+              <EditorialSlider slides={editorial.slides} images={editorial.images} alt={editorial.alt} />
+            ) : (
+              <Image
+                src={editorial.src ?? ''}
+                alt={editorial.alt}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover object-center"
+              />
+            )}
+          </div>
+
+          <div className={`flex flex-col gap-[14px] order-1 ${editorial.side === 'left' ? 'lg:order-2' : 'lg:order-1'}`}>
+            <div className="grid grid-cols-2 gap-[2px]">
+              {list.slice(0, 4).map(renderCard)}
+            </div>
+
+            {editorial.more && (
+              <a
+                href={editorial.more.href}
+                style={{
+                  background: 'rgba(240, 238, 232, 0.82)',
+                  backdropFilter: 'blur(32px) saturate(200%)',
+                  WebkitBackdropFilter: 'blur(32px) saturate(200%)',
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)',
+                }}
+                className="self-start inline-flex items-center justify-center rounded-full px-10 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-transform hover:-translate-y-0.5"
+              >
+                Ver más
+              </a>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+          {list.map(renderCard)}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function NewInFW26() {
   const { data: allProducts = [], isLoading } = useProducts(0);
@@ -95,7 +190,7 @@ export default function NewInFW26() {
   const groups = useMemo(
     () => FW26_GROUPS
       .map(g => ({ label: g.label, items: g.slugs.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts }))
-      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL),
+      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL && g.label !== FAITH_LABEL && g.label !== BLACK_DROP_LABEL),
     [bySlug],
   );
 
@@ -110,6 +205,14 @@ export default function NewInFW26() {
   // Accesorios: posición fija entre Faith Is The Real Hype y Stars For Venezuela.
   const accesoriosItems = useMemo(
     () => (FW26_GROUPS.find(g => g.label === ACCESORIOS_LABEL)?.slugs ?? [])
+      .map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
+    [bySlug],
+  );
+
+  // Black Drop: primera sección de todas, mismo patrón visual que Camo Drop
+  // (grilla 2x2 + banner editorial) pero en posición fija, no en el loop.
+  const blackDropItems = useMemo(
+    () => (FW26_GROUPS.find(g => g.label === BLACK_DROP_LABEL)?.slugs ?? [])
       .map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
     [bySlug],
   );
@@ -150,8 +253,17 @@ export default function NewInFW26() {
         <SectionHeader title="New In [FW26]" link="/colecciones/fw26/" linkLabel="Ver más" />
       </div>
 
+      {/* ── Black Drop — primera sección, mismo patrón que Camo Drop ────── */}
+      <GroupBlock
+        label={BLACK_DROP_LABEL}
+        items={blackDropItems}
+        editorial={GROUP_EDITORIAL[BLACK_DROP_LABEL]}
+        revealClass="reveal rd2 !mt-0"
+        renderCard={renderCard}
+      />
+
       {/* ── Faith Is The Real Hype — nuevo drop domingo ────────────────── */}
-      <div className="reveal rd2">
+      <div className="reveal rd2 mt-10">
         <FaithDrop />
       </div>
 
@@ -186,76 +298,15 @@ export default function NewInFW26() {
           );
         }
 
-        const editorial = GROUP_EDITORIAL[group.label];
         return (
-          <div key={group.label} className={`reveal rd${Math.min(gi + 3, 8)} mt-10`}>
-            {/* Subtítulo del drop */}
-            <div className="flex items-center gap-4 mb-5">
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{group.label}</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-
-            {editorial ? (
-              // Layout split: productos (máx 4) de un lado, editorial (imagen/video/
-              // slider) del otro. El orden lo define editorial.side. En mobile siempre
-              // productos arriba y editorial abajo.
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
-                {/* Columna editorial (imagen / video / slider) */}
-                <div className={`relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 ${editorial.side === 'left' ? 'lg:order-1' : 'lg:order-2'}`}>
-                  {editorial.type === 'video' ? (
-                    <video
-                      className="absolute inset-0 h-full w-full object-cover object-center"
-                      src={editorial.src}
-                      poster={editorial.poster}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  ) : editorial.type === 'slider' ? (
-                    <EditorialSlider slides={editorial.slides} images={editorial.images} alt={editorial.alt} />
-                  ) : (
-                    <Image
-                      src={editorial.src ?? ''}
-                      alt={editorial.alt}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      className="object-cover object-center"
-                    />
-                  )}
-                </div>
-
-                {/* Columna productos (+ botón Ver más debajo, para grupos con +4 productos) */}
-                <div className={`flex flex-col gap-[14px] order-1 ${editorial.side === 'left' ? 'lg:order-2' : 'lg:order-1'}`}>
-                  <div className="grid grid-cols-2 gap-[2px]">
-                    {group.items.slice(0, 4).map(renderCard)}
-                  </div>
-
-                  {editorial.more && (
-                    <a
-                      href={editorial.more.href}
-                      style={{
-                        background: 'rgba(240, 238, 232, 0.82)',
-                        backdropFilter: 'blur(32px) saturate(200%)',
-                        WebkitBackdropFilter: 'blur(32px) saturate(200%)',
-                        border: '1px solid rgba(0,0,0,0.08)',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)',
-                      }}
-                      className="self-start inline-flex items-center justify-center rounded-full px-10 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-transform hover:-translate-y-0.5"
-                    >
-                      Ver más
-                    </a>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
-                {group.items.map(renderCard)}
-              </div>
-            )}
-          </div>
+          <GroupBlock
+            key={group.label}
+            label={group.label}
+            items={group.items}
+            editorial={GROUP_EDITORIAL[group.label]}
+            revealClass={`reveal rd${Math.min(gi + 3, 8)}`}
+            renderCard={renderCard}
+          />
         );
       })}
     </section>
