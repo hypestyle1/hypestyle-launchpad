@@ -12,6 +12,7 @@ import { FW26_GROUPS } from "@/lib/fw26";
 import { isFlashSaleActive } from "@/lib/flash-sale";
 import { Skeleton } from "@/components/ui/skeleton";
 import FaithDrop from "./FaithDrop";
+import LaNuestraSection from "./LaNuestraSection";
 
 // Mismo skeleton que CollectionBanner para mantener consistencia visual.
 const SkeletonCard = () => (
@@ -274,7 +275,12 @@ export default function NewInFW26() {
         <FaithDrop />
       </div>
 
-      {/* ── Accesorios — posición fija entre Faith y Venezuela ─────────── */}
+      {/* ── La Nuestra — Jersey Mundial 26' ─────────────────────────────── */}
+      <div className="reveal rd2">
+        <LaNuestraSection />
+      </div>
+
+      {/* ── Accesorios — posición fija después de La Nuestra ────────────── */}
       {accesoriosItems.length > 0 && (
         <div className="reveal rd2 mt-10">
           <div className="flex items-center gap-4 mb-5">

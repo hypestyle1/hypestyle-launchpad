@@ -35,16 +35,3 @@ export const FAITH_DROP_ITEMS: FaithDropItem[] = [
   { slug: 'lamb-of-god-pink-tee', live: true },
   { slug: 'hs-co-grey-hoodie', live: true },
 ];
-
-export type FaithDropSlide = { src: string; type?: 'image' | 'video' };
-
-// Contenido de la comunidad debajo de la grilla de productos (fotos Hanna, 18/07).
-// Desktop: se reparte en 2 carruseles lado a lado (misma logica que EditorialSlider
-// usa en "Camo Drop" dentro de NewInFW26 — crossfade + dots), mitad y mitad.
-// Mobile: se juntan todas en un solo carrusel, igual que antes.
-export const FAITH_DROP_MEDIA: FaithDropSlide[] = [
-  { src: '/newin/faith-christ-reigns-hoodie.webp' },
-  { src: '/newin/faith-christ-reigns-tee.webp' },
-  { src: '/newin/faith-god-gave-me-style.webp' },
-  { src: '/newin/faith-lion-of-judah.webp' },
-];

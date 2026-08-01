@@ -36,6 +36,7 @@ export const BEST_SELLERS_SLUGS = [
   'sweatpants-bombe-bordo',
   'knitted-tshirt-sand',
   'raglan-tee-tribal-cross',
+  'find-jesus-longsleeve-black',   // stock muy bajo (1 unidad en L y en XL) — puede agotarse rápido
   'sleeveless-ranglan-white',
   'sleeveless-ranglan-militar-green',
   'sleeveless-ranglan-grey',
@@ -48,5 +49,4 @@ export const BEST_SELLERS_SLUGS = [
   'aerogrey-tees',
   'mesh-camo-grey-tee',
   'per-aspera-ad-astra-black-tee',
-  'find-jesus-longsleeve-black',   // al final: stock muy bajo (1 unidad en L y en XL) — puede agotarse rápido
 ];

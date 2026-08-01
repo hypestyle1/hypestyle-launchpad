@@ -2,9 +2,8 @@
 
 import { useMemo } from "react";
 import ProductCard from "./ProductCard";
-import EditorialSlider from "./EditorialSlider";
 import { useProducts } from "@/hooks/useProducts";
-import { FAITH_DROP_ITEMS, FAITH_DROP_MEDIA } from "@/lib/faith-drop";
+import { FAITH_DROP_ITEMS } from "@/lib/faith-drop";
 
 // Placeholder mientras el drop no esta cargado en WP — mismo layout que va a
 // tener con los productos reales (grilla de Best Sellers: 4 col desktop x 3 filas = 12).
@@ -59,45 +58,6 @@ export default function FaithDrop() {
           <ProductCard key={i} {...p} />
         ))}
       </div>
-
-      {/* Contenido de la comunidad, debajo de la grilla.
-          Desktop: 2 carruseles lado a lado (misma logica que "Camo Drop" —
-          EditorialSlider con crossfade + dots — repartida en 2 columnas).
-          Mobile: se juntan todas las slides en un solo carrusel, como antes. */}
-      <div className="mt-[2px]">
-        <div className="hidden lg:grid grid-cols-2 gap-[2px]">
-          {[
-            FAITH_DROP_MEDIA.slice(0, Math.ceil(FAITH_DROP_MEDIA.length / 2)),
-            FAITH_DROP_MEDIA.slice(Math.ceil(FAITH_DROP_MEDIA.length / 2)),
-          ].map((slides, i) => (
-            <div key={i} className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[4/5]">
-              {slides.length > 0 ? (
-                <EditorialSlider slides={slides} alt="Faith Is The Real Hype" />
-              ) : (
-                <MediaPlaceholder />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="lg:hidden relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[4/5]">
-          {FAITH_DROP_MEDIA.length > 0 ? (
-            <EditorialSlider slides={FAITH_DROP_MEDIA} alt="Faith Is The Real Hype" />
-          ) : (
-            <MediaPlaceholder />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MediaPlaceholder() {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-        Contenido próximamente
-      </span>
     </div>
   );
 }
