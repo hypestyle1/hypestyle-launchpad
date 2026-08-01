@@ -13,8 +13,8 @@ const SLIDES = [
   { img: '/hero/hanna-drop-1.jpg', name1: 'Stars For Venezuela', name2: 'Hoodie', slug: 'stars-for-venezuela-hoodie' },
   { img: '/hero/hanna-drop-2.jpg', name1: 'Half-Zip Polo', name2: 'Melange', slug: 'half-zip-polo-melange' },
   { img: '/hero/hanna-drop-3.jpg', name1: 'Lion Of Judah', name2: 'Stone Wash', slug: 'lion-of-judah-stone-wash-hoodie' },
-  { img: '/hero/hanna-drop-4.jpg', name1: 'Hoodie', name2: 'Pink', slug: 'hoodie-pink' },
-  { img: '/hero/hanna-drop-5.jpg', name1: 'God Gave Me Style', name2: 'Waffle', slug: 'longsleeve-waffle-god-gave-me-style' },
+  { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-pink-juani-scaled.jpg', name1: 'Hoodie', name2: 'Pink', slug: 'hoodie-pink' },
+  { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-god-gave-me-style-espaldas-scaled.jpg', name1: 'God Gave Me Style', name2: 'Waffle', slug: 'longsleeve-waffle-god-gave-me-style' },
 ];
 
 const ARROW_BTN_CLASS =
