@@ -93,8 +93,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       id:       i.id,
       name:     i.name,
       quantity: i.quantity,
-      price:    parseFloat(i.price),
-      total:    parseFloat(i.total),
+      // subtotal (no total) = precio de lista antes del cupón. WC prorratea el
+      // descuento de cupones fixed_cart entre los ítems y lo refleja en price/total,
+      // así que usar esos campos hace ver cada prenda "regalada" — el descuento real
+      // ya se muestra aparte como una sola línea (discount_total).
+      price:    parseFloat(i.subtotal) / i.quantity,
+      total:    parseFloat(i.subtotal),
       image:    i.image?.src || '',
       size:     (i.meta_data as any[])?.find((m: any) =>
         ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
