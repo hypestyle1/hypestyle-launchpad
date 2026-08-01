@@ -7,6 +7,7 @@ import CookieBanner from '@/components/CookieBanner';
 import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
+import MicrosoftClarity from '@/components/MicrosoftClarity';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ReviewsDrawer from '@/components/reviews/ReviewsDrawer';
 import FlashSaleBar from '@/components/FlashSaleBar';
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LocaleSuggestion />
           <CookieBanner />
           <MetaPixel />
+          <MicrosoftClarity />
           {children}
           <WhatsAppButton />
           <ReviewsDrawer />
