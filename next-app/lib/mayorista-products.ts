@@ -6,7 +6,7 @@ const WHOLESALE_FACTOR = 0.5;
 
 const GET_PRODUCTS = `
   query GetProductsMayorista($first: Int, $after: String) {
-    products(first: $first, after: $after, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
+    products(first: $first, after: $after, where: { status: "publish", orderby: { field: DATE, order: ASC } }) {
       pageInfo { hasNextPage endCursor }
       nodes {
         id name slug shortDescription
@@ -178,11 +178,11 @@ export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
     after = page.pageInfo.endCursor;
   }
 
-  // La mayoría de los productos comparten menu_order (nunca se seteó a mano por
-  // producto), así que el cursor de WPGraphQL no separa las páginas de forma
-  // estable — página 2 puede repetir nodos que ya vinieron en la página 1.
-  // Confirmado en vivo: sin este dedupe, el catálogo mayorista mostraba cada
-  // producto duplicado (106 únicos entre 173 nodos traídos).
+  // orderby DATE (no MENU_ORDER, ver mismo fix en app/api/products/route.ts):
+  // con MENU_ORDER compartido entre casi todos los productos, el cursor de
+  // WPGraphQL no solo duplicaba nodos entre páginas sino que podía omitir
+  // productos enteros del resultado total. El dedupe de abajo queda como
+  // resguardo, pero la causa real era el sort key no-único.
   const seenIds = new Set<string>();
   const dedupedNodes = allNodes.filter((n: any) => {
     if (seenIds.has(n.id)) return false;

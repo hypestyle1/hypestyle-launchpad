@@ -4,7 +4,7 @@ const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-ro
 
 const GET_PRODUCTS = `
   query GetProducts($first: Int, $after: String) {
-    products(first: $first, after: $after, where: { status: "publish", orderby: { field: MENU_ORDER, order: ASC } }) {
+    products(first: $first, after: $after, where: { status: "publish", orderby: { field: DATE, order: ASC } }) {
       pageInfo { hasNextPage endCursor }
       nodes {
         id
@@ -46,10 +46,19 @@ export async function GET() {
   let after: string | null = null;
 
   // Paginado por cursor: con "first: 100" a secas, en cuanto el catálogo pasó
-  // los 100 productos publicados (ya está en 106) los últimos quedaban afuera
+  // los 100 productos publicados (ya está en 108) los últimos quedaban afuera
   // en TODO el sitio que usa este endpoint (home, colecciones, best sellers,
   // básicos, etc.) sin ningún error visible — mismo bug que ya se había
   // corregido en el catálogo mayorista (ver lib/mayorista-products.ts).
+  //
+  // orderby DATE (no MENU_ORDER): confirmado en vivo (01/08/26) que ordenar
+  // por MENU_ORDER (compartido/0 en casi todos los productos, nunca se seteó
+  // a mano) hace que el cursor de WPGraphQL no solo duplique nodos entre
+  // páginas sino que directamente OMITA productos enteros del resultado total
+  // (ej. per-aspera-ad-astra-zippo, zip-hoodie-pink, zip-hoodie-camo,
+  // only-god-can-judge-me-negra no aparecían en ninguna página). DATE es único
+  // por producto — con eso las 2 páginas devuelven exactamente 108/108 sin
+  // faltantes ni duplicados.
   for (let i = 0; i < 20; i++) {
     const res = await fetch(GRAPHQL_URL, {
       method: 'POST',
