@@ -71,7 +71,7 @@ const SWAP_PRODUCT_SLUGS = [
 ];
 const SWAP_SLIDES = [
   { src: '/newin/ogcjm.webp', alt: 'Only God Can Judge Me', title: 'Only God Can Judge Me' },
-  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/cande-grey-01-4x5-1-scaled.jpg', alt: 'Conjunto Grey HStars — Cande', title: 'Conjunto Grey HStars' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/cande-grey-hstars-clean-scaled.jpg', alt: 'Conjunto Grey HStars — Cande', title: 'Conjunto Grey HStars' },
 ];
 
 const BLACK_DROP_LABEL = 'Black Drop';
@@ -87,10 +87,10 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
   'Pink Set': {
     type: 'slider',
     images: [
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-01-4x5-1-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-05-4x5-1-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-08-4x5-1-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-10-4x5-1-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-grey-wall-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-dumpster-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-detail-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-hood-back-scaled.jpg',
     ],
     alt: 'Pink Set FW26 — Juani',
     side: 'left',
