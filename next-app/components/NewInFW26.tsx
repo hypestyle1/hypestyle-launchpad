@@ -71,7 +71,7 @@ const SWAP_PRODUCT_SLUGS = [
 ];
 const SWAP_SLIDES = [
   { src: '/newin/ogcjm.webp', alt: 'Only God Can Judge Me', title: 'Only God Can Judge Me' },
-  { src: '/newin/grey-hstars.webp', alt: 'Conjunto Grey HStars', title: 'Conjunto Grey HStars' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/cande-grey-hstars-clean-scaled.jpg', alt: 'Conjunto Grey HStars — Cande', title: 'Conjunto Grey HStars' },
 ];
 
 const BLACK_DROP_LABEL = 'Black Drop';
@@ -84,7 +84,17 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
     side: 'left',
   },
   'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
-  'Pink Set': { type: 'video', src: '/newin/pink-set.mp4', alt: 'Pink Set FW26', side: 'left', poster: '/newin/pink-set-poster.jpg' },
+  'Pink Set': {
+    type: 'slider',
+    images: [
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-grey-wall-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-dumpster-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-detail-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-hood-back-scaled.jpg',
+    ],
+    alt: 'Pink Set FW26 — Juani',
+    side: 'left',
+  },
   'Camo Drop': {
     type: 'slider',
     images: ['/newin/camo-1.webp', '/newin/camo-2.webp', '/newin/camo-3.webp', '/newin/camo-4.webp'],
