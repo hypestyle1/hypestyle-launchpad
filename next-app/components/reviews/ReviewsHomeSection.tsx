@@ -61,12 +61,18 @@ export default function ReviewsHomeSection() {
       </div>
 
       {!hasReviews && (
-        <div className="reveal rd2 flex justify-center">
+        <div className="reveal rd2 flex flex-wrap justify-center gap-3">
           <Link
             href="/productos/"
             className="inline-block bg-bg-dark text-primary-foreground text-[12px] font-bold uppercase tracking-[0.1em] px-8 py-3.5 rounded-[10px] hover:opacity-85 transition-opacity"
           >
             Ver productos
+          </Link>
+          <Link
+            href="/resena"
+            className="inline-block border border-foreground/30 text-[12px] font-bold uppercase tracking-[0.1em] px-8 py-3.5 rounded-[10px] hover:bg-foreground hover:text-white transition-colors"
+          >
+            Dejá tu reseña
           </Link>
         </div>
       )}
@@ -82,12 +88,18 @@ export default function ReviewsHomeSection() {
       )}
 
       {hasReviews && (
-      <div className="reveal rd3 flex justify-center mt-9">
+      <div className="reveal rd3 flex flex-wrap justify-center gap-3 mt-9">
         <Link
           href="/reviews/"
           className="inline-block text-[12px] font-bold uppercase tracking-[0.1em] border border-foreground/30 rounded-[10px] px-8 py-3.5 hover:bg-foreground hover:text-white transition-colors"
         >
           Ver todas las reseñas
+        </Link>
+        <Link
+          href="/resena"
+          className="inline-block bg-bg-dark text-primary-foreground text-[12px] font-bold uppercase tracking-[0.1em] rounded-[10px] px-8 py-3.5 hover:opacity-85 transition-opacity"
+        >
+          Dejá tu reseña
         </Link>
       </div>
       )}

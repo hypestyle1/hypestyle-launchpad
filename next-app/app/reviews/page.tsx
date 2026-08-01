@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -28,9 +29,15 @@ export default function ReviewsPage() {
         <section className="bg-bg-dark text-primary-foreground text-center py-24 px-6">
           <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-4">Reseñas</p>
           <h1 className="text-[32px] md:text-[48px] font-bold uppercase leading-none mb-4">Lo que dice nuestra comunidad</h1>
-          <p className="text-[13px] md:text-[14px] text-primary-foreground/50 max-w-md mx-auto">
+          <p className="text-[13px] md:text-[14px] text-primary-foreground/50 max-w-md mx-auto mb-8">
             Calidad, talles, packaging y envíos, contado por quienes ya compraron.
           </p>
+          <Link
+            href="/resena"
+            className="inline-block bg-primary-foreground text-bg-dark text-[12px] font-semibold uppercase tracking-[0.08em] rounded-[6px] px-6 py-3 hover:opacity-90 transition-opacity"
+          >
+            Dejá tu reseña
+          </Link>
         </section>
 
         {/* Resumen */}

@@ -10,9 +10,9 @@ function formatDate(iso: string): string {
 }
 
 export default function ReviewCard({ review, compact = false }: { review: PublicReview; compact?: boolean }) {
-  // incentivized/isDemo se mantienen en el modelo (PublicReview) pero, por ahora,
+  // incentivized/isDemo/verified se mantienen en el modelo (PublicReview) pero
   // no se muestran como badge en la card — solo el aviso general de la página/sección.
-  const { customerName, rating, text, createdAt, productName, productSlug, productImage, verified, isDemo } = review;
+  const { customerName, rating, text, createdAt, productName, productSlug, productImage, isDemo } = review;
 
   return (
     <article className="border border-border rounded-[10px] p-5 bg-white flex flex-col gap-3 h-full">
@@ -25,12 +25,6 @@ export default function ReviewCard({ review, compact = false }: { review: Public
       </div>
 
       <p className={`text-[13px] text-foreground/80 leading-relaxed ${compact ? 'line-clamp-3' : ''}`}>{text}</p>
-
-      {verified && (
-        <span className="self-start text-[10px] font-semibold uppercase tracking-[0.08em] text-green-800 bg-green-50 border border-green-200 rounded-[4px] px-2 py-[3px]">
-          Compra verificada
-        </span>
-      )}
 
       {productName && (
         <div className="mt-auto pt-3 border-t border-border/70 flex items-center gap-2.5">
