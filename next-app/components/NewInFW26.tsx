@@ -84,7 +84,17 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
     side: 'left',
   },
   'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
-  'Pink Set': { type: 'video', src: '/newin/pink-set.mp4', alt: 'Pink Set FW26', side: 'left', poster: '/newin/pink-set-poster.jpg' },
+  'Pink Set': {
+    type: 'slider',
+    images: [
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-01-4x5-1-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-05-4x5-1-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-08-4x5-1-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-10-4x5-1-scaled.jpg',
+    ],
+    alt: 'Pink Set FW26 — Juani',
+    side: 'left',
+  },
   'Camo Drop': {
     type: 'slider',
     images: ['/newin/camo-1.webp', '/newin/camo-2.webp', '/newin/camo-3.webp', '/newin/camo-4.webp'],
