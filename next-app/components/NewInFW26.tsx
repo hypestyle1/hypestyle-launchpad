@@ -78,12 +78,9 @@ const BLACK_DROP_LABEL = 'Black Drop';
 
 const GROUP_EDITORIAL: Record<string, GroupMedia> = {
   'Black Drop': {
-    type: 'slider',
-    slides: [
-      { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/07/SHOOT-FOR-THE-STARS-HOODIE-FRENTE.png' },
-      { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/07/SHOOT-FOR-THE-STARS-HOODIE-BACK.png' },
-    ],
-    alt: 'Black Drop — Shoot For The Stars',
+    type: 'image',
+    src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/RIP_THE_WOO.png',
+    alt: 'Black Drop — Shoot For The Stars, Aim For The Moon',
     side: 'left',
   },
   'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
