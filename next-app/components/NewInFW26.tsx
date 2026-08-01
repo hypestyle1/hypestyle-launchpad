@@ -71,7 +71,7 @@ const SWAP_PRODUCT_SLUGS = [
 ];
 const SWAP_SLIDES = [
   { src: '/newin/ogcjm.webp', alt: 'Only God Can Judge Me', title: 'Only God Can Judge Me' },
-  { src: '/newin/grey-hstars.webp', alt: 'Conjunto Grey HStars', title: 'Conjunto Grey HStars' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/cande-grey-01-4x5-1-scaled.jpg', alt: 'Conjunto Grey HStars — Cande', title: 'Conjunto Grey HStars' },
 ];
 
 const BLACK_DROP_LABEL = 'Black Drop';

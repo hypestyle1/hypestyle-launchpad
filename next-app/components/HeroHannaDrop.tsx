@@ -36,7 +36,16 @@ export default function HeroHannaDrop() {
   const titleRef = useRef<HTMLDivElement>(null);
   const [slides, setSlides] = useState(SLIDES);
   const [slide, setSlide] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Heatmap (Clarity) mostraba muy poca gente llegando más allá del hero —
+  // este cue invita a scrollear y se apaga apenas el usuario ya arrancó.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Orden aleatorio por visita: se sortea recién en el cliente para no romper la hidratación SSR.
   useEffect(() => { setSlides(shuffle(SLIDES)); }, []);
@@ -171,6 +180,19 @@ export default function HeroHannaDrop() {
           </Link>
         </div>
       </div>
+
+      {/* Cue de scroll — invita a bajar, se apaga apenas el usuario arranca a scrollear */}
+      <button
+        onClick={() => window.scrollBy({ top: window.innerHeight * 0.9, behavior: 'smooth' })}
+        aria-label="Scroll hacia abajo"
+        className={`absolute bottom-5 md:bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5
+                    text-white/80 transition-opacity duration-500 ${scrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      >
+        <span className="text-[9px] uppercase tracking-[0.22em] font-medium [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">Scroll</span>
+        <svg className="animate-bounce" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.5))' }}>
+          <path d="M3 6l5 5 5-5" />
+        </svg>
+      </button>
 
       {/* Logo STYLE&CULTURE top-left (escala con el scroll) */}
       <div className="absolute top-[calc(var(--offset)+0.75rem)] md:top-[calc(var(--offset)+5rem)] left-6 md:left-12 z-20 max-w-[52vw] md:max-w-[300px]">
