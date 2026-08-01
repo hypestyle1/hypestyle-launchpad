@@ -21,7 +21,7 @@ export interface CollectionConfig {
 
 export default function CollectionGroupedPage({ config }: { config: CollectionConfig }) {
   const allSlugs = config.groups.flatMap(g => g.slugs);
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [] } = useProducts(0);
 
   const bySlug = useMemo(() => {
     const map: Record<string, (typeof allProducts)[0]> = {};

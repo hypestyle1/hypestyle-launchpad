@@ -155,7 +155,7 @@ function UpsellCarousel() {
   // Pool grande + shuffle (mismo patrón que CartDrawer) — antes traía solo los primeros 20
   // productos por menu_order y los mostraba siempre en el mismo orden, así que terminaba
   // pareciendo una lista fija sin importar qué hubiera en el carrito.
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [] } = useProducts(0);
   const cartIdsKey = items.map(i => i.id).join(',');
   const upsell = useMemo(() => {
     const cartIds = new Set(items.map(i => i.id));

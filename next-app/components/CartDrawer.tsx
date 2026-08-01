@@ -25,7 +25,7 @@ export default function CartDrawer() {
   const { items, drawerOpen, setDrawerOpen, remove, increment, decrement, total, count, add } = useCart();
   const { formatPrice, t } = useLocale();
   const router = useRouter();
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [] } = useProducts(0);
   const suggested = useMemo(
     () => shuffled(allProducts.filter(p => !items.find(i => i.id === p.slug))).slice(0, 4),
     // eslint-disable-next-line react-hooks/exhaustive-deps
