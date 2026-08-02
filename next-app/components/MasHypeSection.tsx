@@ -8,7 +8,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { MAS_HYPE_HOME_SLUGS } from "@/lib/mas-hype";
 
 export default function MasHypeSection() {
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [] } = useProducts(0);
   const ref = useReveal([allProducts]);
 
   const products = useMemo(() => {

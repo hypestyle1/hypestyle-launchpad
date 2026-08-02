@@ -51,7 +51,7 @@ function useCarouselImages(slugs: string[]) {
 }
 
 export default function BasicosSection() {
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [] } = useProducts(0);
   const { data: carouselImages = [] } = useCarouselImages(CAROUSEL_SOURCE_SLUGS);
   const ref = useReveal([allProducts]);
 

@@ -96,7 +96,7 @@ export default function Navbar() {
   const { count, setDrawerOpen } = useCart();
   const { items: wishlistItems, setDrawerOpen: openWishlist } = useWishlist();
   const { formatPrice, t } = useLocale();
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [] } = useProducts(0);
   const { phase: promoPhase } = usePromo3x2Status();
   const argMode = promoPhase === 'pre' || promoPhase === 'live' || promoPhase === 'won';
 

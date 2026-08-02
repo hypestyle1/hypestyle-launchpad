@@ -10,7 +10,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { FW26_GROUPS as GROUPS, FW26_SLUGS as ALL_SLUGS } from "@/lib/fw26";
 
 export default function FW26Page() {
-  const { data: allProducts = [] } = useProducts(100);
+  const { data: allProducts = [] } = useProducts(0);
   const bySlug = useMemo(() => {
     const map: Record<string, (typeof allProducts)[0]> = {};
     allProducts.forEach(p => { map[p.slug] = p; });

@@ -55,7 +55,7 @@ export default function CategoriaPage() {
   const [sort, setSort] = useState<SortKey>('default');
   const [sizeFilter, setSizeFilter] = useState<string[]>([]);
 
-  const { data: allProducts = [], isLoading } = useProducts(100);
+  const { data: allProducts = [], isLoading } = useProducts(0);
   const ref = useReveal([allProducts]);
 
   const baseProducts = useMemo(() => {
