@@ -96,9 +96,13 @@ export default function HeroHannaDrop() {
       });
 
       // Mobile: contenedor inset → full-bleed, título escala en sincro; luego HOLD.
+      // end +=184% (no 200%): la sección + el spacer bajaron de 100dvh/100svh a
+      // 92dvh/92svh (ver comentario en el <section>) — el rango total pineado
+      // tiene que achicarse en la misma proporción (92+92=184) para que el
+      // timeline siga terminando justo cuando la próxima sección tapa el hero.
       mm.add('(max-width: 767px)', () => {
         const tl = gsap.timeline({
-          scrollTrigger: { trigger: section, start: 'top top', end: '+=200%', pin: true, pinSpacing: false, scrub: 0.4, anticipatePin: 1 },
+          scrollTrigger: { trigger: section, start: 'top top', end: '+=184%', pin: true, pinSpacing: false, scrub: 0.4, anticipatePin: 1 },
         });
         tl.fromTo(card, { width: '88vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 }, 0);
         tl.fromTo(title, { scale: 1 }, { scale: 1.7, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
@@ -129,8 +133,12 @@ export default function HeroHannaDrop() {
         direcciones al scrollear en mobile — deja un hueco blanco abajo. dvh se
         actualiza en vivo con el alto real de la ventana. El spacer manual (más abajo)
         se deja en svh a propósito: solo necesita ser estable para el cálculo de
-        scroll, no visible. */}
-    <section ref={sectionRef} className="relative w-full h-[100dvh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
+        scroll, no visible.
+        En mobile el hero va a 92dvh (no 100): con el heatmap de Clarity se vio que
+        casi nadie scrolleaba — el hero tapaba toda la pantalla y no daba ningún
+        indicio de que había más contenido abajo. Con 92dvh se ve un borde de la
+        página real detrás, sumado a la flecha de "Scroll". Desktop queda en 100dvh. */}
+    <section ref={sectionRef} className="relative w-full h-[92dvh] md:h-[100dvh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
       <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline aria-hidden>
         <source src={VIDEO_SRC} type="video/mp4" />
       </video>
@@ -209,10 +217,11 @@ export default function HeroHannaDrop() {
       </div>
     </section>
     {/* Spacer manual (reemplaza el pinSpacing automático de GSAP): aunque esté fija,
-        la sección pineada sigue reservando su propio alto (100svh) en el flujo; este
-        spacer agrega OTRO 100svh más, así la siguiente sección recién empieza a
-        entrar en pantalla (y taparla) cuando termina el HOLD, no antes. */}
-    <div className="h-[100svh]" aria-hidden />
+        la sección pineada sigue reservando su propio alto (92svh en mobile, 100svh en
+        desktop) en el flujo; este spacer agrega OTRO tanto más, así la siguiente
+        sección recién empieza a entrar en pantalla (y taparla) cuando termina el
+        HOLD, no antes. Tiene que quedar igual al alto de <section> de arriba. */}
+    <div className="h-[92svh] md:h-[100svh]" aria-hidden />
     </>
   );
 }
