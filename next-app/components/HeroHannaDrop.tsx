@@ -96,13 +96,15 @@ export default function HeroHannaDrop() {
       });
 
       // Mobile: contenedor inset → full-bleed, título escala en sincro; luego HOLD.
-      // end +=184% (no 200%): la sección + el spacer bajaron de 100dvh/100svh a
-      // 92dvh/92svh (ver comentario en el <section>) — el rango total pineado
-      // tiene que achicarse en la misma proporción (92+92=184) para que el
-      // timeline siga terminando justo cuando la próxima sección tapa el hero.
+      // end +=4% (no 200%): la sección + el spacer bajaron de 100dvh/100svh a
+      // 80dvh/4svh (ver comentario en el <section>) — el rango total pineado
+      // tiene que achicarse en la misma proporción (80+4=84) para que el
+      // timeline siga terminando justo cuando la próxima sección tapa el hero,
+      // y para que se vea contenido real (no el spacer en blanco) ya en la
+      // carga inicial, sin scrollear.
       mm.add('(max-width: 767px)', () => {
         const tl = gsap.timeline({
-          scrollTrigger: { trigger: section, start: 'top top', end: '+=184%', pin: true, pinSpacing: false, scrub: 0.4, anticipatePin: 1 },
+          scrollTrigger: { trigger: section, start: 'top top', end: '+=4%', pin: true, pinSpacing: false, scrub: 0.4, anticipatePin: 1 },
         });
         tl.fromTo(card, { width: '88vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 }, 0);
         tl.fromTo(title, { scale: 1 }, { scale: 1.7, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
@@ -134,11 +136,12 @@ export default function HeroHannaDrop() {
         actualiza en vivo con el alto real de la ventana. El spacer manual (más abajo)
         se deja en svh a propósito: solo necesita ser estable para el cálculo de
         scroll, no visible.
-        En mobile el hero va a 92dvh (no 100): con el heatmap de Clarity se vio que
+        En mobile el hero va a 80dvh (no 100): con el heatmap de Clarity se vio que
         casi nadie scrolleaba — el hero tapaba toda la pantalla y no daba ningún
-        indicio de que había más contenido abajo. Con 92dvh se ve un borde de la
-        página real detrás, sumado a la flecha de "Scroll". Desktop queda en 100dvh. */}
-    <section ref={sectionRef} className="relative w-full h-[92dvh] md:h-[100dvh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
+        indicio de que había más contenido abajo. Con 80dvh + spacer chico (ver
+        más abajo) ya se ve contenido real (Envío Internacional, Reseñas) sin
+        scrollear nada, no solo un borde en blanco. Desktop queda en 100dvh. */}
+    <section ref={sectionRef} className="relative w-full h-[80dvh] md:h-[100dvh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
       <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline aria-hidden>
         <source src={VIDEO_SRC} type="video/mp4" />
       </video>
@@ -216,12 +219,15 @@ export default function HeroHannaDrop() {
         </div>
       </div>
     </section>
-    {/* Spacer manual (reemplaza el pinSpacing automático de GSAP): aunque esté fija,
-        la sección pineada sigue reservando su propio alto (92svh en mobile, 100svh en
-        desktop) en el flujo; este spacer agrega OTRO tanto más, así la siguiente
-        sección recién empieza a entrar en pantalla (y taparla) cuando termina el
-        HOLD, no antes. Tiene que quedar igual al alto de <section> de arriba. */}
-    <div className="h-[92svh] md:h-[100svh]" aria-hidden />
+    {/* Spacer manual (reemplaza el pinSpacing automático de GSAP): reserva el
+        scroll que dura el pin (grow + hold) antes de que la sección siguiente
+        empiece a entrar y tape el hero. En mobile es chico a propósito (4svh,
+        no el alto de la sección) — tiene que coincidir con el "end" del
+        ScrollTrigger de abajo (+=4%), no con el alto del <section>: sección
+        (80dvh) + spacer (4svh) suman menos que 100dvh, así ya se ve un pedazo
+        de contenido real (Envío Internacional, Reseñas) sin scrollear nada.
+        Desktop mantiene el patrón original (spacer = alto de la sección). */}
+    <div className="h-[4svh] md:h-[100svh]" aria-hidden />
     </>
   );
 }
