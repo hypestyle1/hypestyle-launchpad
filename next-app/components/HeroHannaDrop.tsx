@@ -95,13 +95,25 @@ export default function HeroHannaDrop() {
         tl.to({}, { duration: 1 });
       });
 
-      // Mobile: SIN pin ni grow-on-scroll (a diferencia de desktop). Con el hero
-      // ya achicado a 80dvh para que se vea contenido real de una (sin scrollear),
-      // la animación de "crece mientras se scrollea, recién ahí lo tapa la
-      // siguiente sección" dejó de tener sentido — el pin+spacer generaba una
-      // franja en blanco y el card se veía chico/redondeado hasta que el usuario
-      // scrolleaba, en vez de mostrarse ya crecido como en desktop. Card y título
-      // arrancan directamente en su tamaño final (ver clases más abajo).
+      // Mobile: el crecimiento se mantiene, pero ya NO atado al scroll (sin pin,
+      // sin ScrollTrigger) — se dispara solo, apenas se monta. Antes el "end" del
+      // scroll-jacking tenía que coincidir con el alto del spacer, y como el hero
+      // ahora es de 80dvh (para que se vea contenido real sin scrollear) esa
+      // sincro se rompía: el card quedaba chico/redondeado mientras la sección de
+      // abajo ya asomaba, dejando una franja blanca. Al sacar el ScrollTrigger, el
+      // alto de la sección (fijo, 80dvh) queda totalmente desacoplado del progreso
+      // de la animación — el contenido de abajo se ve de una siempre, sin importar
+      // en qué punto esté el crecimiento del card.
+      mm.add('(max-width: 767px)', () => {
+        gsap.fromTo(card,
+          { width: '88vw', borderRadius: 24 },
+          { width: '100vw', borderRadius: 0, ease: 'power2.out', duration: 0.9, delay: 0.15 },
+        );
+        gsap.fromTo(title,
+          { scale: 1 },
+          { scale: 1.7, transformOrigin: 'left top', ease: 'power2.out', duration: 0.9, delay: 0.15 },
+        );
+      });
     }, section);
 
     let raf = 0;
