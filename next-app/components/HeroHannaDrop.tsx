@@ -95,21 +95,13 @@ export default function HeroHannaDrop() {
         tl.to({}, { duration: 1 });
       });
 
-      // Mobile: contenedor inset → full-bleed, título escala en sincro; luego HOLD.
-      // end +=4% (no 200%): la sección + el spacer bajaron de 100dvh/100svh a
-      // 80dvh/4svh (ver comentario en el <section>) — el rango total pineado
-      // tiene que achicarse en la misma proporción (80+4=84) para que el
-      // timeline siga terminando justo cuando la próxima sección tapa el hero,
-      // y para que se vea contenido real (no el spacer en blanco) ya en la
-      // carga inicial, sin scrollear.
-      mm.add('(max-width: 767px)', () => {
-        const tl = gsap.timeline({
-          scrollTrigger: { trigger: section, start: 'top top', end: '+=4%', pin: true, pinSpacing: false, scrub: 0.4, anticipatePin: 1 },
-        });
-        tl.fromTo(card, { width: '88vw', borderRadius: 24 }, { width: '100vw', borderRadius: 0, ease: 'none', duration: 1 }, 0);
-        tl.fromTo(title, { scale: 1 }, { scale: 1.7, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
-        tl.to({}, { duration: 1 });
-      });
+      // Mobile: SIN pin ni grow-on-scroll (a diferencia de desktop). Con el hero
+      // ya achicado a 80dvh para que se vea contenido real de una (sin scrollear),
+      // la animación de "crece mientras se scrollea, recién ahí lo tapa la
+      // siguiente sección" dejó de tener sentido — el pin+spacer generaba una
+      // franja en blanco y el card se veía chico/redondeado hasta que el usuario
+      // scrolleaba, en vez de mostrarse ya crecido como en desktop. Card y título
+      // arrancan directamente en su tamaño final (ver clases más abajo).
     }, section);
 
     let raf = 0;
@@ -148,11 +140,11 @@ export default function HeroHannaDrop() {
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/55 pointer-events-none" />
 
-      {/* Contenedor (carrusel) centrado — crece con el scroll */}
-      <div className="absolute inset-0 flex items-center justify-center px-4">
+      {/* Contenedor (carrusel) centrado — full-bleed fijo en mobile, crece con el scroll en desktop */}
+      <div className="absolute inset-0 flex items-center justify-center px-0 md:px-4">
         <div
           ref={cardRef}
-          className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503] overflow-hidden rounded-[24px] bg-bg-dark"
+          className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503] overflow-hidden rounded-none md:rounded-[24px] bg-bg-dark"
         >
           {slides.map((s, i) => (
             <div
@@ -207,7 +199,7 @@ export default function HeroHannaDrop() {
 
       {/* Logo STYLE&CULTURE top-left (escala con el scroll) */}
       <div className="absolute top-[calc(var(--offset)+0.75rem)] md:top-[calc(var(--offset)+5rem)] left-6 md:left-12 z-20 max-w-[52vw] md:max-w-[300px]">
-        <div ref={titleRef} className="origin-top-left">
+        <div ref={titleRef} className="origin-top-left scale-[1.7] md:scale-100">
           <Image
             src="/STYLE&CULTURE WHITE.png"
             alt="Style & Culture"
@@ -221,13 +213,11 @@ export default function HeroHannaDrop() {
     </section>
     {/* Spacer manual (reemplaza el pinSpacing automático de GSAP): reserva el
         scroll que dura el pin (grow + hold) antes de que la sección siguiente
-        empiece a entrar y tape el hero. En mobile es chico a propósito (4svh,
-        no el alto de la sección) — tiene que coincidir con el "end" del
-        ScrollTrigger de abajo (+=4%), no con el alto del <section>: sección
-        (80dvh) + spacer (4svh) suman menos que 100dvh, así ya se ve un pedazo
-        de contenido real (Envío Internacional, Reseñas) sin scrollear nada.
-        Desktop mantiene el patrón original (spacer = alto de la sección). */}
-    <div className="h-[4svh] md:h-[100svh]" aria-hidden />
+        empiece a entrar y tape el hero. Solo hace falta en desktop (mobile ya
+        no tiene pin, ver arriba) — ahí vale 0 y la sección siguiente sigue el
+        flujo normal del documento, apareciendo de una en los 20dvh que le
+        quedan libres a la sección de 80dvh. */}
+    <div className="h-0 md:h-[100svh]" aria-hidden />
     </>
   );
 }
