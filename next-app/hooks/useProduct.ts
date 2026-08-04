@@ -80,8 +80,8 @@ const HALF_ZIP_COLORWAYS = [
 ];
 
 const RACE_TEE_COLORWAYS = [
-  { label: 'Verde', value: '#4a5c2e', slug: 'race-tee',      image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/racing-tee-verde-_-frente1-88b3eeeabd65c4f79917752459630095-1024-1024.png' },
-  { label: 'Gris',  value: '#808080', slug: 'race-tee-gris', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/racing-tee-g-_-frente1-809aeca8ef8ac9703f17752459918651-640-0-d36f3ddcd2565fe20817752747475247-1024-1024.webp' },
+  { label: 'Green', value: '#4a5c2e', slug: 'race-tee',      image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/racing-tee-verde-_-frente1-88b3eeeabd65c4f79917752459630095-1024-1024.png' },
+  { label: 'Grey',  value: '#808080', slug: 'race-tee-gris', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/racing-tee-g-_-frente1-809aeca8ef8ac9703f17752459918651-640-0-d36f3ddcd2565fe20817752747475247-1024-1024.webp' },
 ];
 
 const NO_SERVICE_COLORWAYS = [
@@ -96,9 +96,16 @@ const BABY_COME_BACK_COLORWAYS = [
   { label: 'Black', value: '#1a1a1a', slug: 'baby-come-back-black', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mesa-de-trabajo-3-fbffee6d9870b660fe17714294583297-1024-1024.jpg' },
 ];
 
+// Italiano a propósito (tributo a Napoli) — mismo criterio que el resto de
+// las colorways: nombre de color "de marca", no la traducción literal.
+const NAPOLI_TEE_COLORWAYS = [
+  { label: 'Azzurro', value: '#3a9bdc', slug: 'napoli-tee-azul',   image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/NAPOLI-TEE-HYPESTYLE-AZUL-FRENTR-1.png' },
+  { label: 'Bianco',  value: '#f5f5f5', slug: 'napoli-tee-blanca', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/NAPOLI-TEE-HYPESTYLE-BLANCA-FRENTE.png' },
+];
+
 const ONLY_GOD_COLORWAYS = [
-  { label: 'Blanca', value: '#f5f5f5', slug: 'only-god-can-judge-me-blanca', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/WHITE.png' },
-  { label: 'Negra',  value: '#1a1a1a', slug: 'only-god-can-judge-me-negra',  image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUP-NEGRO.png' },
+  { label: 'White', value: '#f5f5f5', slug: 'only-god-can-judge-me-blanca', image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/WHITE.png' },
+  { label: 'Black', value: '#1a1a1a', slug: 'only-god-can-judge-me-negra',  image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUP-NEGRO.png' },
 ];
 
 const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
@@ -115,6 +122,8 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'baby-come-back-black': BABY_COME_BACK_COLORWAYS,
   'only-god-can-judge-me-blanca': ONLY_GOD_COLORWAYS,
   'only-god-can-judge-me-negra':  ONLY_GOD_COLORWAYS,
+  'napoli-tee-azul':   NAPOLI_TEE_COLORWAYS,
+  'napoli-tee-blanca': NAPOLI_TEE_COLORWAYS,
 };
 
 const FIT_KEYWORDS: [string, string][] = [
