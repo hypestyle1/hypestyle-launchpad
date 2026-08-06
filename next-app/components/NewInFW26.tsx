@@ -71,8 +71,8 @@ const SWAP_PRODUCT_SLUGS = [
   'sweatpant-grey-hstars',
 ];
 const SWAP_SLIDES = [
-  { src: '/newin/ogcjm.webp', alt: 'Only God Can Judge Me', title: 'Only God Can Judge Me' },
-  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/cande-grey-hstars-clean-scaled.jpg', alt: 'Conjunto Grey HStars — Cande', title: 'Conjunto Grey HStars' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-ogcjm-street.jpg', alt: 'Only God Can Judge Me', title: 'Only God Can Judge Me' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-hstars-couple.jpg', alt: 'Conjunto Grey HStars', title: 'Conjunto Grey HStars' },
 ];
 
 const BLACK_DROP_LABEL = 'Black Drop';
@@ -301,6 +301,11 @@ export default function NewInFW26() {
           if (gi !== firstSwapIndex || swapProducts.length === 0) return null;
           return (
             <div key="swap-section" className={`reveal rd${Math.min(gi + 3, 8)} mt-10`}>
+              <div className="flex items-center gap-4 mb-5">
+                <span className="h-px flex-1 bg-border" />
+                <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{group.label}</span>
+                <span className="h-px flex-1 bg-border" />
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
                 <NewInSwapEditorial slides={SWAP_SLIDES} />
                 <div className="grid grid-cols-2 gap-[2px] order-1 lg:order-2">
