@@ -9,9 +9,13 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 const VIDEO_SRC = '/hero/hanna-drop-bg-2-hoodie.mp4';
 const SLIDE_MS = 4500;
 
+// pos = background-position vertical (foco del recorte en bg-cover). Las fotos
+// del shoot de agosto vienen sin recortar y cada una tiene al modelo/prenda en
+// una altura distinta del encuadre, por eso no comparten el mismo foco que las
+// demás — default 18% si no se especifica.
 const SLIDES = [
-  { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-stars-venezuela-DSC03294-scaled.jpg', name1: 'Stars For Venezuela', name2: 'Hoodie', slug: 'stars-for-venezuela-hoodie' },
-  { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-black-hstars-DSC03195-scaled.jpg', name1: 'Hoodie', name2: 'Black HStars', slug: 'hoodie-black-hstars' },
+  { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-stars-venezuela-DSC03294-scaled.jpg', name1: 'Stars For Venezuela', name2: 'Hoodie', slug: 'stars-for-venezuela-hoodie', pos: '58%' },
+  { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-black-hstars-DSC03195-scaled.jpg', name1: 'Hoodie', name2: 'Black HStars', slug: 'hoodie-black-hstars', pos: '28%' },
   { img: '/hero/hanna-drop-3.jpg', name1: 'Lion Of Judah', name2: 'Stone Wash', slug: 'lion-of-judah-stone-wash-hoodie' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-pink-juani-scaled.jpg', name1: 'Hoodie', name2: 'Pink', slug: 'hoodie-pink' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-god-gave-me-style-espaldas-scaled.jpg', name1: 'God Gave Me Style', name2: 'Waffle', slug: 'longsleeve-waffle-god-gave-me-style' },
@@ -161,8 +165,8 @@ export default function HeroHannaDrop() {
           {slides.map((s, i) => (
             <div
               key={s.img}
-              className="absolute inset-0 bg-cover bg-[center_18%] transition-opacity duration-[1200ms] ease-in-out"
-              style={{ backgroundImage: `url('${s.img}')`, opacity: i === slide ? 1 : 0 }}
+              className="absolute inset-0 bg-cover transition-opacity duration-[1200ms] ease-in-out"
+              style={{ backgroundImage: `url('${s.img}')`, backgroundPosition: `center ${s.pos ?? '18%'}`, opacity: i === slide ? 1 : 0 }}
             />
           ))}
 
