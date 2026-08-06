@@ -71,8 +71,8 @@ const SWAP_PRODUCT_SLUGS = [
   'sweatpant-grey-hstars',
 ];
 const SWAP_SLIDES = [
-  { src: '/newin/ogcjm.webp', alt: 'Only God Can Judge Me', title: 'Only God Can Judge Me' },
-  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/cande-grey-hstars-clean-scaled.jpg', alt: 'Conjunto Grey HStars — Cande', title: 'Conjunto Grey HStars' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-ogcjm-street.jpg', alt: 'Only God Can Judge Me', title: 'Only God Can Judge Me' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-hstars-couple.jpg', alt: 'Conjunto Grey HStars', title: 'Conjunto Grey HStars' },
 ];
 
 const BLACK_DROP_LABEL = 'Black Drop';
