@@ -8,6 +8,7 @@ import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
 import MicrosoftClarity from '@/components/MicrosoftClarity';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ReviewsDrawer from '@/components/reviews/ReviewsDrawer';
 import FlashSaleBar from '@/components/FlashSaleBar';
@@ -28,6 +29,9 @@ export const metadata: Metadata = {
   ],
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://hypestyle.com.ar' },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GSC_VERIFICATION,
+  },
   openGraph: {
     title: 'HYPESTYLE — STYLE&CULTURE',
     description: OG_DESCRIPTION,
@@ -65,6 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CookieBanner />
           <MetaPixel />
           <MicrosoftClarity />
+          <GoogleAnalytics />
           {children}
           <WhatsAppButton />
           <ReviewsDrawer />
