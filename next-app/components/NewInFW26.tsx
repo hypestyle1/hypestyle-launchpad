@@ -56,6 +56,9 @@ type GroupMedia = {
 // del PRIMERO de los dos labels que aparezca en FW26_GROUPS (respeta el orden
 // del array en vez de ir siempre al final).
 const SWAP_GROUP_LABELS = new Set<string>(['Remeras', 'Conjunto Gris']);
+// Label propio del divider (no el de ningún grupo individual — la sección mezcla
+// remeras OGCJM y el conjunto Grey HStars, "Remeras" solo era incorrecto).
+const SWAP_SECTION_LABEL = 'OGCJM & HStars Grey';
 
 // Accesorios se muestra en posición fija (justo después de Faith), no sigue
 // el orden de FW26_GROUPS como el resto de los grupos.
@@ -303,7 +306,7 @@ export default function NewInFW26() {
             <div key="swap-section" className={`reveal rd${Math.min(gi + 3, 8)} mt-10`}>
               <div className="flex items-center gap-4 mb-5">
                 <span className="h-px flex-1 bg-border" />
-                <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{group.label}</span>
+                <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{SWAP_SECTION_LABEL}</span>
                 <span className="h-px flex-1 bg-border" />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
