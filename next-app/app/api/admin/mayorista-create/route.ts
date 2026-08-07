@@ -11,7 +11,7 @@ function wcAuth() {
 
 export async function POST(req: NextRequest) {
   const key = req.headers.get('x-admin-key') || '';
-  if (ADMIN_SECRET && key !== ADMIN_SECRET) {
+  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

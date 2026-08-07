@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const auth = req.headers.get('authorization') || '';
   const secret = req.headers.get('x-hypestyle-secret') || '';
   const token = auth.replace(/^Bearer\s+/i, '');
-  if (WP_SECRET && token !== WP_SECRET && secret !== WP_SECRET) {
+  if (!WP_SECRET || (token !== WP_SECRET && secret !== WP_SECRET)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

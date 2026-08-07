@@ -6,7 +6,7 @@ const HS_REVIEWS_SECRET = process.env.HS_REVIEWS_SECRET  || '';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const key = req.headers.get('x-admin-key') || '';
-  if (ADMIN_SECRET && key !== ADMIN_SECRET) {
+  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

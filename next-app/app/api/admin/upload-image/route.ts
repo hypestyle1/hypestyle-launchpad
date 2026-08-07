@@ -11,7 +11,7 @@ const WP_APP_PASS  = process.env.WP_MEDIA_APP_PASSWORD || '';
 // Requiere un usuario WP con Application Password (env WP_MEDIA_USER / WP_MEDIA_APP_PASSWORD).
 export async function POST(req: NextRequest) {
   const key = req.headers.get('x-admin-key') || '';
-  if (ADMIN_SECRET && key !== ADMIN_SECRET) {
+  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   if (!WP_USER || !WP_APP_PASS) {

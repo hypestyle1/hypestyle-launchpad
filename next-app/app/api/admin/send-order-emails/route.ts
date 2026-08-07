@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdminRequest } from '@/lib/admin-auth';
 
 const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY    = (process.env.WC_CONSUMER_KEY    || '').trim();
@@ -6,7 +7,6 @@ const WC_SECRET = (process.env.WC_CONSUMER_SECRET || '').trim();
 const BREVO_KEY = (process.env.BREVO_API_KEY      || '').replace(/^﻿/, '').trim();
 const SITE_URL  = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 
-const ADMIN_SECRET  = 'hs2026';
 const SENDER_EMAIL  = 'info@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
 const REPLY_TO      = 'hypestylearg@gmail.com';
@@ -348,7 +348,12 @@ function buildAbandonedHtml(order: {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  if (searchParams.get('secret') !== ADMIN_SECRET) {
+  // Solo con la clave del panel admin (header x-admin-key), igual que el resto de
+  // /api/admin. Antes alcanzaba con ?secret=hs2026 — un literal que además viajaba
+  // en el bundle del cliente —, así que cualquiera podía pedir el reenvío de la
+  // confirmación de CUALQUIER pedido a su propio mail (&to=) y quedarse con los
+  // datos completos del cliente: nombre, dirección, items y total.
+  if (!isAdminRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

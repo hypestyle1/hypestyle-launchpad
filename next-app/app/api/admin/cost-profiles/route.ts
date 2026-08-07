@@ -5,7 +5,7 @@ const WP_SECRET = process.env.WP_SECRET          || '';
 
 function checkAuth(req: NextRequest) {
   const key = req.headers.get('x-admin-key') || '';
-  return !WP_SECRET || key === WP_SECRET;
+  return !!WP_SECRET && key === WP_SECRET;
 }
 
 export async function GET(req: NextRequest) {

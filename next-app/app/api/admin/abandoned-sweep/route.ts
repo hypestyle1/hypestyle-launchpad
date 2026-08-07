@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminHeaders } from '@/lib/admin-auth';
 
 const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY    = process.env.WC_CONSUMER_KEY    || '';
 const WC_SEC    = process.env.WC_CONSUMER_SECRET || '';
-const SECRET    = process.env.CRON_SECRET || 'hs2026';
-const MAIL_SECRET = 'hs2026';
+const SECRET    = (process.env.CRON_SECRET || '').trim();
 
 const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 
@@ -52,7 +52,8 @@ export async function GET(req: NextRequest) {
   // Acepta: ?secret=, header x-cron-secret, o el Bearer que Vercel Cron manda con CRON_SECRET.
   const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   const provided = req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret') || bearer;
-  if (provided !== SECRET) {
+  // Fail closed: sin CRON_SECRET cargado el endpoint no se abre solo.
+  if (!SECRET || provided !== SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -84,8 +85,8 @@ export async function GET(req: NextRequest) {
     if (step === null) continue; // todavía no toca el próximo paso (o ya se mandaron los 3)
     try {
       const mail = await fetch(
-        `${origin}/api/admin/send-order-emails?secret=${MAIL_SECRET}&order_id=${rep.id}&action=abandoned&step=${step}`,
-        { cache: 'no-store' }
+        `${origin}/api/admin/send-order-emails?order_id=${rep.id}&action=abandoned&step=${step}`,
+        { cache: 'no-store', headers: adminHeaders() }
       ).then(r => r.json());
       if (mail?.ok) {
         for (const o of group) {

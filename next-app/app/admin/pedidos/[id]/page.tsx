@@ -185,7 +185,9 @@ export default function OrderDetailPage() {
     setStatus('cancelled');
     setOrder(prev => prev ? { ...prev, status: 'cancelled' } : prev);
     if (cancelNotify) {
-      await fetch(`/api/admin/send-order-emails?secret=hs2026&order_id=${order.id}&action=cancellation`);
+      await fetch(`/api/admin/send-order-emails?order_id=${order.id}&action=cancellation`, {
+        headers: { 'x-admin-key': adminKey },
+      });
     }
     setCancelLoading(false);
     setCancelModal(false);
@@ -211,9 +213,12 @@ export default function OrderDetailPage() {
     setSyncingAndreani(true);
     setTrackMsg('Consultando Andreani...');
     try {
-      const res = await fetch(
-        `https://lightpink-rook-704850.hostingersite.com/wp-json/hs/v1/sync-tracking/${order.id}?key=hs2026`
-      );
+      // Vía el proxy server-side: el secreto compartido con WordPress no puede
+      // viajar en el bundle del cliente.
+      const res = await fetch(`/api/admin/sync-tracking/${order.id}`, {
+        method: 'POST',
+        headers: { 'x-admin-key': adminKey },
+      });
       const data = await res.json();
       if (data.ok && data.tracking) {
         setTracking(data.tracking);
@@ -232,7 +237,9 @@ export default function OrderDetailPage() {
   async function sendEmail(action: 'confirmation' | 'tracking' | 'abandoned') {
     if (!order) return;
     setEmailMsg('Enviando...');
-    const res = await fetch(`/api/admin/send-order-emails?secret=hs2026&order_id=${order.id}&action=${action}`);
+    const res = await fetch(`/api/admin/send-order-emails?order_id=${order.id}&action=${action}`, {
+      headers: { 'x-admin-key': adminKey },
+    });
     const data = await res.json();
     const labels: Record<string, string> = { confirmation: 'confirmación', tracking: 'seguimiento', abandoned: 'carrito abandonado' };
     setEmailMsg(data.ok ? `✓ Email de ${labels[action]} enviado` : `Error: ${data.error}`);

@@ -8,7 +8,7 @@ const REPLY_TO_EMAIL = 'hypestylearg@gmail.com';
 
 const authed = (req: NextRequest) => {
   const key = req.headers.get('x-admin-key') || '';
-  return !ADMIN_SECRET || key === ADMIN_SECRET;
+  return !!ADMIN_SECRET && key === ADMIN_SECRET;
 };
 
 // Cantidad de suscriptores de la lista (para mostrar en el composer).

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { gocuotasWebhookToken } from '@/lib/gocuotas-webhook-token';
 
 const GC_BASE  = 'https://www.gocuotas.com';
 const SITE_URL = 'https://hypestyle.com.ar';
@@ -30,12 +31,18 @@ export async function POST(req: NextRequest) {
       order_reference_id: String(wcOrderId),
       url_success:  `${SITE_URL}/confirmacion/?order_id=${wcOrderId}&key=${orderKey}&gocuotas=approved`,
       url_failure:  `${SITE_URL}/checkout/?gocuotas=failed`,
-      webhook_url:  `${SITE_URL}/api/gocuotas-webhook`,
+      // Token por pedido: es lo único que autentica el POST de vuelta (GOcuotas
+      // no firma sus webhooks). Ver lib/gocuotas-webhook-token.ts.
+      webhook_url:  `${SITE_URL}/api/gocuotas-webhook?token=${gocuotasWebhookToken(wcOrderId)}`,
       email,
       phone_number: phoneE164,
     };
 
-    console.log('[gocuotas-order] payload:', JSON.stringify(payload));
+    // El token del webhook no va al log (queda en los logs de Vercel para siempre).
+    console.log('[gocuotas-order] payload:', JSON.stringify({
+      ...payload,
+      webhook_url: `${SITE_URL}/api/gocuotas-webhook?token=***`,
+    }));
 
     const res = await fetch(`${GC_BASE}/api_redirect/v1/checkouts`, {
       method:  'POST',

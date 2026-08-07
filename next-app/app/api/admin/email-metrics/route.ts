@@ -58,7 +58,7 @@ async function fetchAllContacts(): Promise<any[]> {
 
 export async function GET(req: NextRequest) {
   const key = req.headers.get('x-admin-key') || req.nextUrl.searchParams.get('key') || '';
-  if (ADMIN_SECRET && key !== ADMIN_SECRET) {
+  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
