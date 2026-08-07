@@ -10,7 +10,7 @@ const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('bas
 
 function checkAuth(req: NextRequest) {
   const key = req.headers.get('x-admin-key') || '';
-  return !ADMIN_SECRET || key === ADMIN_SECRET;
+  return !!ADMIN_SECRET && key === ADMIN_SECRET;
 }
 
 // Variaciones de un producto (talles) para el selector de "agregar producto" en el pedido.

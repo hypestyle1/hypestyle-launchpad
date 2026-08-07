@@ -8,13 +8,15 @@ import { syncDiscount, clearDiscount } from '@/lib/goal-discount';
 
 export const revalidate = 0;
 
-const SECRET = process.env.CRON_SECRET || 'hs2026';
+const SECRET = (process.env.CRON_SECRET || '').trim();
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   const provided = sp.get('secret') || req.headers.get('x-cron-secret') || bearer;
-  if (provided !== SECRET) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Fail closed: sin CRON_SECRET cargado el endpoint no se abre solo (este cambia
+  // el precio del jersey, así que abierto es un descuento gratis para cualquiera).
+  if (!SECRET || provided !== SECRET) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   if (sp.get('clear') === '1') return NextResponse.json(await clearDiscount());
 

@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminHeaders, isAdminRequest } from '@/lib/admin-auth';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
 const WC_SEC       = process.env.WC_CONSUMER_SECRET || '';
-const ADMIN_SECRET = process.env.WP_SECRET          || '';
-// Secreto del endpoint de emails (ver app/api/admin/send-order-emails).
-const MAIL_SECRET  = 'hs2026';
 
 const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 
@@ -70,8 +68,7 @@ async function restoreItem(item: any): Promise<any[]> {
 }
 
 export async function POST(req: NextRequest) {
-  const key = req.headers.get('x-admin-key') || '';
-  if (ADMIN_SECRET && key !== ADMIN_SECRET) {
+  if (!isAdminRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
@@ -102,8 +99,8 @@ export async function POST(req: NextRequest) {
   if (notify) {
     try {
       const r = await fetch(
-        `${req.nextUrl.origin}/api/admin/send-order-emails?secret=${MAIL_SECRET}&order_id=${orderId}&action=cancellation`,
-        { cache: 'no-store' }
+        `${req.nextUrl.origin}/api/admin/send-order-emails?order_id=${orderId}&action=cancellation`,
+        { cache: 'no-store', headers: adminHeaders() }
       );
       mail = await r.json();
     } catch (e: any) {
