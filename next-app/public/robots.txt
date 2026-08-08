@@ -10,18 +10,20 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+# Las rutas transaccionales (checkout, confirmacion, pendiente-de-pago,
+# seguimiento, acceso, subir-foto-final, resena, review) YA NO van con Disallow:
+# ahora sirven "noindex, follow" en su propio HTML, y una URL bloqueada acá
+# nunca se rastrea, así que Google jamás llegaría a leer ese noindex — quedaría
+# indexable solo por el link. El noindex es la señal fuerte; el Disallow, no.
+#
+# Solo quedan bloqueadas las que NO pueden declarar noindex por sí mismas
+# (rutas de API, que devuelven JSON) o que están detrás de login y no
+# queremos que consuman presupuesto de rastreo.
+
 User-agent: *
 Allow: /
-Disallow: /checkout/
-Disallow: /confirmacion/
-Disallow: /pendiente-de-pago/
+Disallow: /api/
 Disallow: /admin/
 Disallow: /mayoristas/
-Disallow: /api/
-Disallow: /seguimiento/
-Disallow: /acceso/
-Disallow: /subir-foto-final/
-Disallow: /resena/
-Disallow: /review/
 
 Sitemap: https://hypestyle.com.ar/sitemap.xml
