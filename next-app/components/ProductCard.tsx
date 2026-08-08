@@ -7,6 +7,7 @@ import { useLocale } from "@/context/LocaleContext";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { checkStock } from "@/lib/checkStock";
+import { gaAddToCart } from "@/lib/ga";
 
 interface ProductCardProps {
   id?: string;
@@ -65,6 +66,7 @@ export default function ProductCard({
     if (typeof window !== 'undefined' && window.fbq) {
       window.fbq('track', 'AddToCart', { content_ids: [id], content_name: name, value: price, currency: 'ARS', content_type: 'product' });
     }
+    gaAddToCart({ item_id: id, item_name: name, item_category: category, item_variant: size, price, quantity: 1 });
     setAddedSize(size);
     setDrawerOpen(true);
     setTimeout(() => setAddedSize(null), 2000);

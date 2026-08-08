@@ -15,6 +15,7 @@ import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
+import { gaViewItem, gaAddToCart } from '@/lib/ga';
 
 function CareIcon({ type }: { type: string }) {
   const cls = 'w-[18px] h-[18px] flex-shrink-0 text-foreground/70';
@@ -209,6 +210,21 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     }
   }, [product?.slug]);
 
+  // view_item de GA4. Va acá y no más abajo porque los hooks tienen que correr
+  // antes de los early returns de loading/404. Se manda el precio que el cliente
+  // realmente ve (con el descuento por gol aplicado, si está activo), no el de lista.
+  useEffect(() => {
+    if (!product) return;
+    const { displayPrice } = getGoalDiscountPrice(product, goalDiscount);
+    gaViewItem({
+      item_id: product.id,
+      item_name: product.name,
+      item_category: product.category,
+      price: displayPrice,
+      quantity: 1,
+    });
+  }, [product?.slug, goalDiscount?.active, goalDiscount?.percent]);
+
   useEffect(() => {
     const el = addBtnRef.current;
     if (!el) return;
@@ -307,6 +323,14 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     setStockChecking(false);
     if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, selectedSize])); setStockError(true); return; }
     add({ id: product.id, name: product.name, price: displayPrice, image: imgUrl(coverImage), size: selectedSize, quantity: 1 });
+    gaAddToCart({
+      item_id: product.id,
+      item_name: product.name,
+      item_category: product.category,
+      item_variant: selectedSize,
+      price: displayPrice,
+      quantity: 1,
+    });
     setAdded(true);
   };
 

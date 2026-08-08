@@ -12,6 +12,7 @@ import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
+import { gaBeginCheckout } from '@/lib/ga';
 import { imgSrc } from '@/lib/img';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 import GiftProgressBar from '@/components/GiftProgressBar';
@@ -409,6 +410,26 @@ export default function Checkout() {
     clear();
   };
 
+  // Paso envío → paso pago. Es el mismo punto donde el pixel manda InitiateCheckout,
+  // así que GA4 mide begin_checkout acá y las dos herramientas quedan comparables.
+  const handleEnvioSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStep('pago');
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'InitiateCheckout', { value: totalFinal, currency: 'ARS', num_items: items.reduce((s, i) => s + i.quantity, 0) });
+    }
+    gaBeginCheckout(
+      items.map(i => ({
+        item_id: i.id,
+        item_name: i.name,
+        item_variant: i.size,
+        price: i.price,
+        quantity: i.quantity,
+      })),
+      totalFinal,
+    );
+  };
+
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pago.metodo || submitting) return;
@@ -694,7 +715,7 @@ export default function Checkout() {
           )}
 
           {step === 'envio' && (
-            <form onSubmit={e => { e.preventDefault(); setStep('pago'); if (typeof window !== 'undefined' && window.fbq) { window.fbq('track', 'InitiateCheckout', { value: totalFinal, currency: 'ARS', num_items: items.reduce((s, i) => s + i.quantity, 0) }); } }} className="space-y-6">
+            <form onSubmit={handleEnvioSubmit} className="space-y-6">
               <div className="border border-border divide-y divide-border text-[13px] rounded-[10px] overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3">
                   <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Contact' : 'Contacto'}</span><span>{info.email}</span></div>
