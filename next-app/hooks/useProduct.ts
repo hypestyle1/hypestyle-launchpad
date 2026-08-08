@@ -152,6 +152,14 @@ function stripHtml(html: string): string {
     .replace(/&nbsp;/g, ' ').replace(/&oacute;/g, 'ó').replace(/&aacute;/g, 'á')
     .replace(/&eacute;/g, 'é').replace(/&iacute;/g, 'í').replace(/&uacute;/g, 'ú')
     .replace(/&ntilde;/g, 'ñ').replace(/&Ntilde;/g, 'Ñ').replace(/&amp;/g, '&')
+    // Comillas tipográficas y rayas: WP las guarda como entidad numérica cuando
+    // vienen de un texto pegado con "comillas inteligentes" (ej. Word, Notion).
+    .replace(/&#821[6-9]|&#822[0-1];/g, m => ({ '&#8216;': '‘', '&#8217;': '’', '&#8218;': '‚', '&#8220;': '“', '&#8221;': '”' }[m] ?? ''))
+    .replace(/&ldquo;/g, '“').replace(/&rdquo;/g, '”').replace(/&lsquo;/g, '‘').replace(/&rsquo;/g, '’')
+    .replace(/&mdash;/g, '—').replace(/&ndash;/g, '–')
+    // Catch-all genérico: cualquier otra entidad numérica (&#NNN;) o hex (&#xHH;) que quede.
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
     .replace(/&[a-z]+;/g, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 
