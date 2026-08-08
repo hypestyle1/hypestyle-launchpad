@@ -79,11 +79,30 @@ const SWAP_SLIDES = [
 ];
 
 const BLACK_DROP_LABEL = 'Black Drop';
+// Napoli es la novedad del momento — va primero de todo NEW IN, antes incluso
+// de Black Drop (mismo patrón de sección fija, no sigue el orden del loop).
+const NAPOLI_LABEL = 'Napoli';
+// Lanzamiento domingo: hasta esa fecha los productos son vidriera (badge
+// "Próximamente", sin talles ni carrito) — a partir de ahí pasan a "New In"
+// y se habilita la compra, sin tocar código de nuevo (ver renderNapoliCard).
+const NAPOLI_LAUNCH = new Date('2026-08-09T00:00:00-03:00');
+const isNapoliLive = () => Date.now() >= NAPOLI_LAUNCH.getTime();
 
 const GROUP_EDITORIAL: Record<string, GroupMedia> = {
-  'Black Drop': {
+  'Napoli': {
     type: 'image',
-    src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/RIP_THE_WOO.png',
+    src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-napoli-DSC03106-scaled.jpg',
+    alt: 'Napoli Tee — Honor y Gloria',
+    side: 'left',
+  },
+  'Black Drop': {
+    type: 'slider',
+    images: [
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-hoodie-DSC03191-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-pants-DSC03194-1-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-fullbody-DSC03189-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-models-DSC03197-scaled.jpg',
+    ],
     alt: 'Black Drop — Shoot For The Stars, Aim For The Moon',
     side: 'left',
   },
@@ -201,7 +220,7 @@ export default function NewInFW26() {
   const groups = useMemo(
     () => FW26_GROUPS
       .map(g => ({ label: g.label, items: g.slugs.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts }))
-      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL && g.label !== FAITH_LABEL && g.label !== BLACK_DROP_LABEL),
+      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL && g.label !== FAITH_LABEL && g.label !== BLACK_DROP_LABEL && g.label !== NAPOLI_LABEL),
     [bySlug],
   );
 
@@ -220,15 +239,23 @@ export default function NewInFW26() {
     [bySlug],
   );
 
-  // Black Drop: primera sección de todas, mismo patrón visual que Camo Drop
-  // (grilla 2x2 + banner editorial) pero en posición fija, no en el loop.
+  // Black Drop: mismo patrón visual que Camo Drop (grilla 2x2 + banner
+  // editorial) pero en posición fija, no en el loop.
   const blackDropItems = useMemo(
     () => (FW26_GROUPS.find(g => g.label === BLACK_DROP_LABEL)?.slugs ?? [])
       .map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
     [bySlug],
   );
 
+  // Napoli: la novedad, primera sección de todas — posición fija, no en el loop.
+  const napoliItems = useMemo(
+    () => (FW26_GROUPS.find(g => g.label === NAPOLI_LABEL)?.slugs ?? [])
+      .map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
+    [bySlug],
+  );
+
   const flashActive = isFlashSaleActive();
+  const napoliLive = isNapoliLive();
 
   // Render de cada tarjeta: durante el flash sale → badge "−50%". Si no,
   // badge "New In" (o el descuento del combo si está en KEEP_DISCOUNT).
@@ -239,6 +266,21 @@ export default function NewInFW26() {
       badge={flashActive ? '−50%' : (KEEP_DISCOUNT.has(p.slug) ? p.badge : 'New In')}
       mutedPrice={!flashActive}
       giftNote={GIFT_NOTES[p.slug]}
+    />
+  );
+
+  // Napoli lanza el domingo: hasta entonces es vidriera (sin talles/carrito,
+  // sin link a la ficha) con badge "Próximamente"; ese mismo instante pasa a
+  // comportarse como cualquier producto New In, sin tocar código de nuevo.
+  const renderNapoliCard = (p: (typeof allProducts)[number]) => (
+    <ProductCard
+      key={p.slug}
+      {...p}
+      badge={napoliLive ? 'New In' : 'Próximamente'}
+      mutedPrice
+      disableLink={!napoliLive}
+      sizes={napoliLive ? p.sizes : undefined}
+      stock={napoliLive ? p.stock : undefined}
     />
   );
 
@@ -264,12 +306,21 @@ export default function NewInFW26() {
         <SectionHeader title="New In [FW26]" link="/colecciones/fw26/" linkLabel="Ver más" />
       </div>
 
-      {/* ── Black Drop — primera sección, mismo patrón que Camo Drop ────── */}
+      {/* ── Napoli — la novedad, primera sección de todas ────────────────── */}
+      <GroupBlock
+        label={NAPOLI_LABEL}
+        items={napoliItems}
+        editorial={GROUP_EDITORIAL[NAPOLI_LABEL]}
+        revealClass="reveal rd2 !mt-0"
+        renderCard={renderNapoliCard}
+      />
+
+      {/* ── Black Drop — mismo patrón que Camo Drop ──────────────────────── */}
       <GroupBlock
         label={BLACK_DROP_LABEL}
         items={blackDropItems}
         editorial={GROUP_EDITORIAL[BLACK_DROP_LABEL]}
-        revealClass="reveal rd2 !mt-0"
+        revealClass="reveal rd2"
         renderCard={renderCard}
       />
 

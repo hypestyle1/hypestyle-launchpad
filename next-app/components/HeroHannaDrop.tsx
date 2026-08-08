@@ -19,6 +19,9 @@ const SLIDES = [
   { img: '/hero/hanna-drop-3.jpg', name1: 'Lion Of Judah', name2: 'Stone Wash', slug: 'lion-of-judah-stone-wash-hoodie' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-pink-juani-scaled.jpg', name1: 'Hoodie', name2: 'Pink', slug: 'hoodie-pink' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-god-gave-me-style-espaldas-scaled.jpg', name1: 'God Gave Me Style', name2: 'Waffle', slug: 'longsleeve-waffle-god-gave-me-style' },
+  // Único slide en video (el resto son fotos) — mismo mural que el editorial de
+  // Napoli en New In, recortado de "maradona color hype04002372.mov" (mudo).
+  { video: '/hero/napoli-mural.mp4', img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-napoli-DSC03106-scaled.jpg', name1: 'Napoli', name2: 'Tee', slug: 'napoli-tee-azul' },
 ];
 
 const ARROW_BTN_CLASS =
@@ -164,10 +167,22 @@ export default function HeroHannaDrop() {
         >
           {slides.map((s, i) => (
             <div
-              key={s.img}
-              className="absolute inset-0 bg-cover transition-opacity duration-[1200ms] ease-in-out"
-              style={{ backgroundImage: `url('${s.img}')`, backgroundPosition: `center ${s.pos ?? '18%'}`, opacity: i === slide ? 1 : 0 }}
-            />
+              key={s.video ?? s.img}
+              className="absolute inset-0 transition-opacity duration-[1200ms] ease-in-out"
+              style={{ opacity: i === slide ? 1 : 0 }}
+            >
+              {s.video ? (
+                <video
+                  className="absolute inset-0 w-full h-full object-cover"
+                  src={s.video} poster={s.img} autoPlay loop muted playsInline preload="auto"
+                />
+              ) : (
+                <div
+                  className="absolute inset-0 bg-cover"
+                  style={{ backgroundImage: `url('${s.img}')`, backgroundPosition: `center ${s.pos ?? '18%'}` }}
+                />
+              )}
+            </div>
           ))}
 
           {/* Scrim: oscurece la base para que la card glass se lea neutra sobre cualquier foto */}
