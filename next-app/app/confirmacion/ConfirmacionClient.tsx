@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { clearCartSnapshot } from '@/lib/cart-recovery';
+import { gaPurchase } from '@/lib/ga';
 
 interface OrderData {
   wcOrderId?: number; wcOrderNumber?: string; orderKey?: string; orderNum: string | number;
-  items: { name: string; price: number; quantity: number; size: string; image: string }[];
+  items: { id?: string; name: string; price: number; quantity: number; size: string; image: string }[];
   total: number; email: string; nombre: string; apellido: string; ciudad: string; provincia: string;
   metodo?: string; pais?: string; telefono?: string;
 }
@@ -79,6 +80,37 @@ export default function ConfirmacionClient() {
       };
       firePurchase();
     }
+
+    // --- purchase de GA4 ---------------------------------------------------
+    // Criterio deliberadamente MÁS estricto que el Purchase del pixel de arriba.
+    // El pixel dispara con cualquier estado que no sea "rechazado", lo que incluye
+    // transferencia (el cliente todavía no transfirió) y MP en "pending". GA4 es la
+    // fuente que vamos a usar para decidir pauta, así que acá se aplica la misma
+    // regla que el mail de confirmación (PR #184): no hay venta hasta que el pago
+    // está efectivamente acreditado.
+    //
+    //   MercadoPago / tarjeta → collection_status=approved en la vuelta
+    //   GOcuotas              → gocuotas=approved (solo redirige acá si aprobó)
+    //   PayPal                → recién cuando /api/paypal-capture confirma el capture
+    //   Transferencia         → nunca desde el browser; la acredita el back manualmente
+    const gaPurchaseFor = (o: OrderData) => {
+      gaPurchase({
+        transactionId: String(o.wcOrderNumber || o.orderNum),
+        value: o.total,
+        items: o.items.map(i => ({
+          item_id: i.id || i.name,
+          item_name: i.name,
+          item_variant: i.size,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      });
+    };
+
+    const mpApproved = (params.get('collection_status') || params.get('status')) === 'approved';
+    const gcApproved = params.get('gocuotas') === 'approved';
+    if (parsed && (mpApproved || gcApproved)) gaPurchaseFor(parsed);
+
     setFecha(new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }));
 
     const paymentId  = params.get('collection_id') || params.get('payment_id');
@@ -106,7 +138,11 @@ export default function ConfirmacionClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paypalOrderId: ppToken, wcOrderId: parseInt(wcOrderIdParam, 10) }),
-      }).catch(() => {});
+      })
+        // PayPal es asíncrono: la vuelta a esta pantalla no significa que el pago
+        // haya cursado. El purchase de GA4 espera a que el capture responda OK.
+        .then(res => { if (res.ok && parsed) gaPurchaseFor(parsed); })
+        .catch(() => {});
     }
   }, []);
 
