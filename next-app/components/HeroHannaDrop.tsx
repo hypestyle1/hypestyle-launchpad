@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { preload } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { gsap } from 'gsap';
@@ -41,6 +42,13 @@ export default function HeroHannaDrop() {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
+
+  // La foto del primer slide es un background-image en CSS, así que el navegador
+  // recién la descubre después de parsear el stylesheet. Precargarla la pone en
+  // cola desde el <head>. Va siempre SLIDES[0]: el shuffle corre en un effect,
+  // después del primer pintado, así que la primera foto que se ve es esa.
+  preload(SLIDES[0].img, { as: 'image', fetchPriority: 'high' });
+
   const [slides, setSlides] = useState(SLIDES);
   const [slide, setSlide] = useState(0);
   const [scrolled, setScrolled] = useState(false);
@@ -204,7 +212,9 @@ export default function HeroHannaDrop() {
                        shadow-[0_8px_32px_rgba(0,0,0,0.22),inset_0_1.5px_0_rgba(255,255,255,0.45)]
                        transition-transform duration-300 hover:scale-[1.03]"
           >
-            <Image src="/hero/hype-white.png" alt="Hype." width={200} height={88} className="w-14 md:w-20 h-auto mb-2 md:mb-3" />
+            {/* priority: está sobre el pliegue y es el candidato a LCP del home.
+                Sin esto salía con loading="lazy" y el navegador lo pedía tarde. */}
+            <Image src="/hero/hype-white.png" alt="Hype." width={200} height={88} priority className="w-14 md:w-20 h-auto mb-2 md:mb-3" />
             <span className="block text-white/90 text-[12px] md:text-[15px] font-bold uppercase tracking-[0.06em] leading-[1.4]">
               {current.name1}
             </span>

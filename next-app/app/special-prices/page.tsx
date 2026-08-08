@@ -4,8 +4,18 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { fetchAllProducts } from "@/lib/products-server";
 import { BEST_SELLERS_SLUGS } from "@/lib/best-sellers";
+import JsonLd from "@/components/JsonLd";
+import { buildMetadata } from "@/lib/seo";
+import { collectionJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 
 export const revalidate = 60;
+
+const PATH = '/special-prices/';
+const TITLE = 'Productos en promoción';
+const DESCRIPTION =
+  'Todas las prendas de HYPESTYLE en oferta. Hoodies, remeras, pants y accesorios con descuento, mientras haya stock.';
+
+export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, path: PATH });
 
 export default async function SpecialPricesPage() {
   const allProducts = await fetchAllProducts();
@@ -15,6 +25,17 @@ export default async function SpecialPricesPage() {
 
   return (
     <>
+      <JsonLd
+        data={[
+          collectionJsonLd({
+            name: TITLE,
+            description: DESCRIPTION,
+            path: PATH,
+            products: products.map(p => ({ name: p.name, slug: p.slug })),
+          }),
+          breadcrumbJsonLd([{ name: TITLE, path: PATH }]),
+        ]}
+      />
       <AnnouncementBar />
       <Navbar />
       <main className="pt-[var(--offset)]">

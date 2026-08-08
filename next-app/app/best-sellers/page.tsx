@@ -3,8 +3,18 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { fetchAllProducts } from "@/lib/products-server";
+import JsonLd from "@/components/JsonLd";
+import { buildMetadata } from "@/lib/seo";
+import { collectionJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 
 export const revalidate = false;
+
+const PATH = '/best-sellers/';
+const TITLE = 'Sale — Best Sellers';
+const DESCRIPTION =
+  'Hasta 30% OFF en los productos más pedidos de HYPESTYLE. Los best sellers de la marca, por tiempo limitado.';
+
+export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, path: PATH });
 
 export default async function BestSellersPage() {
   const allProducts = await fetchAllProducts();
@@ -12,6 +22,17 @@ export default async function BestSellersPage() {
 
   return (
     <>
+      <JsonLd
+        data={[
+          collectionJsonLd({
+            name: TITLE,
+            description: DESCRIPTION,
+            path: PATH,
+            products: products.map(p => ({ name: p.name, slug: p.slug })),
+          }),
+          breadcrumbJsonLd([{ name: 'Best Sellers', path: PATH }]),
+        ]}
+      />
       <AnnouncementBar />
       <Navbar />
       <main className="pt-[var(--offset)]">

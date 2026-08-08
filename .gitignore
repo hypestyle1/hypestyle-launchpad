@@ -29,3 +29,8 @@ build
 next-app/.next
 next-app/out
 next-app/node_modules
+
+# Skill de audit SEO (SEOmator) — se instala con `npx skills add`, no se commitea
+.agents/
+skills-lock.json
+seomator.toml

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { clearCartSnapshot } from '@/lib/cart-recovery';
 
 interface OrderData {
   wcOrderId?: number; wcOrderNumber?: string; orderKey?: string; orderNum: string | number;
@@ -12,6 +13,17 @@ interface OrderData {
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '412944573148639';
 
+// Estados de MercadoPago que NO son un pago rechazado. Cuando no viene ningún
+// estado en la URL (transferencia, PayPal, internacional) se asume el camino
+// normal: la orden se creó y el pago se resuelve por su propio canal.
+const MP_OK_STATUSES = ['approved', 'authorized', 'pending', 'in_process', 'in_mediation'];
+
+function paymentStateFrom(status: string | null): 'approved' | 'pending' | 'rejected' {
+  if (!status) return 'approved';
+  if (status === 'pending' || status === 'in_process') return 'pending';
+  return MP_OK_STATUSES.includes(status) ? 'approved' : 'rejected';
+}
+
 export default function ConfirmacionClient() {
   const searchParams = useSearchParams();
   const [order, setOrder] = useState<OrderData | null>(null);
@@ -19,10 +31,22 @@ export default function ConfirmacionClient() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    const params = new URLSearchParams(window.location.search);
+    const estado = paymentStateFrom(params.get('collection_status') || params.get('status'));
+
+    // Pago rechazado: la copia del carrito se deja intacta para que /checkout la
+    // restaure cuando el cliente vuelva a intentar. Solo se descarta cuando el
+    // pago quedó efectivamente cursado. Ver lib/cart-recovery.ts.
+    if (estado !== 'rejected') clearCartSnapshot();
+
     const raw = sessionStorage.getItem('hype_order');
-    if (raw) {
-      const parsed: OrderData = JSON.parse(raw);
-      setOrder(parsed);
+    const parsed: OrderData | null = raw ? JSON.parse(raw) : null;
+    if (parsed) setOrder(parsed);
+
+    // El Purchase del pixel solo se dispara con un pago que efectivamente cursó:
+    // reportarlo con la tarjeta rechazada infla las conversiones de Meta y ensucia
+    // la optimización de la campaña.
+    if (parsed && estado !== 'rejected') {
       sessionStorage.removeItem('hype_order');
 
       const purchasePayload = {
@@ -57,8 +81,6 @@ export default function ConfirmacionClient() {
     }
     setFecha(new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }));
 
-    const params = new URLSearchParams(window.location.search);
-
     const paymentId  = params.get('collection_id') || params.get('payment_id');
     const externalRef = params.get('external_reference');
     const mpStatus   = params.get('collection_status') || params.get('status');
@@ -92,13 +114,29 @@ export default function ConfirmacionClient() {
   const mpOrderId       = searchParams.get('external_reference') || searchParams.get('order_id');
   const displayOrderNum = order?.wcOrderNumber || order?.orderNum || mpOrderId || '—';
   const isIntl          = !!(order?.pais && order.pais !== 'AR');
+  const estado          = paymentStateFrom(mpStatus);
+  const isRejected      = estado === 'rejected';
+  const isPending       = estado === 'pending';
 
   const t = {
     orderLabel:   isIntl ? 'Order'            : 'Pedido',
-    thanks:       isIntl ? 'Thank you for your order!' : '¡Gracias por tu compra!',
-    body: isIntl
-      ? "We've received your order and sent a confirmation to your email. Your DHL shipping cost and estimated delivery time will be confirmed within 24 hours."
-      : 'Te enviamos un email con la confirmación y los detalles del pedido. Preparamos tu orden y te avisamos cuando esté en camino.',
+    thanks: isRejected
+      ? (isIntl ? 'Your payment could not be completed' : 'El pago no se completó')
+      : isPending
+        ? (isIntl ? 'We are confirming your payment' : 'Estamos confirmando tu pago')
+        : (isIntl ? 'Thank you for your order!' : '¡Gracias por tu compra!'),
+    body: isRejected
+      ? (isIntl
+          ? 'Your order was created but the payment was rejected, so nothing was charged. You can try again with the same cart or choose a different payment method.'
+          : 'Tu pedido quedó registrado pero el pago fue rechazado, así que no se te cobró nada. Podés intentar de nuevo con el mismo carrito o elegir otro medio de pago.')
+      : isPending
+        ? (isIntl
+            ? 'Your order was created and the payment is still being processed. As soon as it clears we will send you the confirmation by email.'
+            : 'Tu pedido quedó registrado y el pago todavía se está procesando. Apenas se acredite te mandamos el mail de confirmación.')
+        : (isIntl
+            ? "We've received your order and sent a confirmation to your email. Your DHL shipping cost and estimated delivery time will be confirmed within 24 hours."
+            : 'Te enviamos un email con la confirmación y los detalles del pedido. Preparamos tu orden y te avisamos cuando esté en camino.'),
+    retry:   isIntl ? 'Try the payment again' : 'Reintentar el pago',
     contact: isIntl ? 'Questions? Chat with us on ' : 'Ante cualquier duda escribinos por ',
     sectionTitle: isIntl ? 'Order details'   : 'Información del pedido',
     orderNumber:  isIntl ? 'Order number'    : 'Número de pedido',
@@ -118,9 +156,19 @@ export default function ConfirmacionClient() {
       <div className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="max-w-[540px] w-full text-center">
 
-          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6 ${
+            isRejected ? 'bg-red-100' : isPending ? 'bg-amber-100' : 'bg-green-100'
+          }`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke={isRejected ? '#dc2626' : isPending ? '#d97706' : '#16a34a'}
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              {isRejected ? (
+                <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+              ) : isPending ? (
+                <><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></>
+              ) : (
+                <polyline points="20 6 9 17 4 12" />
+              )}
             </svg>
           </div>
 
@@ -131,7 +179,7 @@ export default function ConfirmacionClient() {
 
           <p className="text-[14px] text-muted-foreground leading-relaxed mb-2">{t.body}</p>
 
-          {isIntl && (
+          {isIntl && !isRejected && (
             <div className="mx-auto max-w-[400px] bg-foreground/[0.03] border border-border rounded-[10px] px-5 py-3.5 mb-6 text-left">
               <p className="text-[12px] text-foreground/60 leading-relaxed">
                 <span className="text-foreground font-semibold">Final DHL shipping quote</span>
@@ -168,15 +216,30 @@ export default function ConfirmacionClient() {
                 <span className="capitalize">{mpStatus}</span>
               </div>
             )}
-            <div className="flex justify-between text-[13px]">
-              <span className="text-muted-foreground">{t.shipping}</span>
-              <span className="text-right ml-4">{t.shippingVal}</span>
-            </div>
+            {/* Con el pago rechazado no hay nada que despachar todavía — prometer
+                un plazo de entrega acá confunde. */}
+            {!isRejected && (
+              <div className="flex justify-between text-[13px]">
+                <span className="text-muted-foreground">{t.shipping}</span>
+                <span className="text-right ml-4">{t.shippingVal}</span>
+              </div>
+            )}
           </div>
 
-          <a href="/" className="inline-flex items-center gap-2 bg-bg-dark text-primary-foreground px-10 py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors">
-            {t.cta}
-          </a>
+          {isRejected ? (
+            <div className="flex flex-col items-center gap-3">
+              <a href="/checkout/" className="inline-flex items-center gap-2 bg-bg-dark text-primary-foreground px-10 py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors">
+                {t.retry}
+              </a>
+              <a href="/" className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
+                {t.cta}
+              </a>
+            </div>
+          ) : (
+            <a href="/" className="inline-flex items-center gap-2 bg-bg-dark text-primary-foreground px-10 py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors">
+              {t.cta}
+            </a>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
-'use client';
-
 import CollectionGroupedPage, { CollectionConfig } from "@/components/CollectionGroupedPage";
+import JsonLd from '@/components/JsonLd';
+import { buildMetadata } from '@/lib/seo';
+import { collectionJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
 const config: CollectionConfig = {
   title: 'Race',
@@ -11,6 +12,29 @@ const config: CollectionConfig = {
   ],
 };
 
+const PATH = '/colecciones/race/';
+const SEO_DESCRIPTION =
+  'Colección Race de HYPESTYLE: motorsport y estética vintage racing. Hoodie y remeras No Service For The Faithless.';
+
+export const metadata = buildMetadata({
+  title: config.title,
+  description: SEO_DESCRIPTION,
+  path: PATH,
+});
+
 export default function RacePage() {
-  return <CollectionGroupedPage config={config} />;
+  return (
+    <>
+      <JsonLd
+        data={[
+          collectionJsonLd({ name: config.title, description: SEO_DESCRIPTION, path: PATH }),
+          breadcrumbJsonLd([
+            { name: 'Colecciones', path: '/colecciones/' },
+            { name: config.title, path: PATH },
+          ]),
+        ]}
+      />
+      <CollectionGroupedPage config={config} />
+    </>
+  );
 }

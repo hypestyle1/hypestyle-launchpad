@@ -10,6 +10,7 @@ import { computeChampionDiscount } from '@/lib/promo-champion';
 import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
 import { useLocale } from '@/context/LocaleContext';
 import { createOrderAndPreference } from '@/lib/wc-client';
+import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
 import { imgSrc } from '@/lib/img';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
@@ -242,7 +243,7 @@ interface InfoForm {
 interface PagoForm { metodo: string; instagram: string }
 
 export default function Checkout() {
-  const { items, total, clear } = useCart();
+  const { items, total, clear, restore, hydrated } = useCart();
   // El regalo por compra nunca es un producto pago: no debe contarse para 3x2,
   // CAMPEON50, ni mandarse al backend como línea comercial — el servidor lo
   // recalcula y agrega por su cuenta (HPG_Gift_Engine).
@@ -261,6 +262,8 @@ export default function Checkout() {
   const [pago, setPago] = useState<PagoForm>({ metodo: '', instagram: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [recovered, setRecovered] = useState<'failed' | 'generic' | null>(null);
+  const restoreChecked = useRef(false);
 
   const [flashActive, setFlashActive] = useState(false);
   const { promoActive: promo3x2Won } = usePromo3x2Status();
@@ -280,6 +283,29 @@ export default function Checkout() {
   const branchReady = isInternational || !isSucursal || !!selectedBranch;
 
   useEffect(() => { setFlashActive(isFlashSaleActive() || promo3x2Won || championWon); }, [promo3x2Won, championWon]);
+
+  // Vuelta de un pago que no se concretó. Los tres gateways (MercadoPago, PayPal,
+  // GOcuotas) devuelven acá cuando el pago se rechaza o se cancela, y para ese
+  // entonces el carrito ya estaba vacío: el cliente veía "Tu carrito está vacío"
+  // justo después del rechazo y tenía que rearmar toda la compra. Restauramos la
+  // copia que se guardó antes de redirigir. Ver lib/cart-recovery.ts.
+  useEffect(() => {
+    if (!hydrated || restoreChecked.current) return;
+    restoreChecked.current = true;
+    if (items.length > 0) return; // el carrito sobrevivió, no tocar nada
+    const saved = readCartSnapshot();
+    if (!saved) return;
+    restore(saved);
+    // Los parámetros de vuelta no son confiables en todos los gateways (MP no
+    // siempre los manda en failure, y el botón "atrás" del navegador no manda
+    // ninguno), así que solo sirven para elegir el mensaje — nunca para decidir
+    // si restaurar o no.
+    const params = new URLSearchParams(window.location.search);
+    const mpStatus = params.get('collection_status') || params.get('status');
+    const failed = params.get('gocuotas') === 'failed' || (!!mpStatus && mpStatus !== 'approved');
+    setRecovered(failed ? 'failed' : 'generic');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   const subtotal = total;
   // El cupón de envío gratis cero-ea Andreani igual que el umbral de $250.000.
@@ -375,6 +401,14 @@ export default function Checkout() {
     fetchBranches(rate);
   };
 
+  // Vaciar el carrito guardando primero una copia: si el pago se rechaza y el
+  // gateway devuelve a /checkout, el carrito se restaura solo en vez de aparecer
+  // vacío. La copia se descarta recién cuando el pago se confirma (/confirmacion).
+  const snapshotAndClear = () => {
+    saveCartSnapshot(items);
+    clear();
+  };
+
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pago.metodo || submitting) return;
@@ -453,7 +487,7 @@ export default function Checkout() {
           setSubmitting(false);
           return;
         }
-        clear();
+        snapshotAndClear();
         window.location.href = gcData.urlInit;
         return;
       }
@@ -489,7 +523,7 @@ export default function Checkout() {
           setSubmitting(false);
           return;
         }
-        clear();
+        snapshotAndClear();
         window.location.href = ppData.approvalUrl;
         return;
       }
@@ -498,7 +532,7 @@ export default function Checkout() {
         setSubmitting(false);
         return;
       }
-      clear();
+      snapshotAndClear();
       if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
       else if (isTransfer)            { router.push('/pendiente-de-pago/'); }
       else                            { router.push('/confirmacion/'); }
@@ -508,6 +542,11 @@ export default function Checkout() {
       setSubmitting(false);
     }
   };
+
+  // Hasta que no se leyó el carrito (localStorage) y se evaluó la copia de
+  // seguridad no se puede afirmar que esté vacío — mostrarlo antes hacía
+  // parpadear "Tu carrito está vacío" en cada carga del checkout.
+  if (!hydrated) return <div className="min-h-screen bg-white" />;
 
   if (items.length === 0 && step === 'info') return (
     <div className="min-h-screen flex items-center justify-center flex-col gap-4">
@@ -545,6 +584,21 @@ export default function Checkout() {
           ))}
         </div>
       </div>
+
+      {recovered && (
+        <div className="max-w-[1100px] mx-auto px-4 pt-6">
+          <div className="border border-amber-300 bg-amber-50 px-4 py-3.5 rounded-[10px]">
+            <p className="text-[13px] font-semibold text-amber-900">
+              {recovered === 'failed' ? 'El pago no se completó' : 'Recuperamos tu carrito'}
+            </p>
+            <p className="text-[12px] text-amber-900/80 leading-relaxed mt-0.5">
+              {recovered === 'failed'
+                ? 'Guardamos tu carrito tal como estaba. Podés intentar el pago de nuevo o elegir otro medio de pago.'
+                : 'Tus productos siguen acá para que puedas terminar la compra.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-[1100px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12">
         <div>

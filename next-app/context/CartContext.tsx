@@ -88,9 +88,15 @@ interface CartContextType {
   increment: (id: string, size: string, cust?: Customization) => void;
   decrement: (id: string, size: string, cust?: Customization) => void;
   clear: () => void;
+  /** Reemplaza el carrito entero. Uso: restaurar la copia de seguridad cuando el
+   * cliente vuelve a /checkout desde un pago rechazado. Ver lib/cart-recovery.ts. */
+  restore: (items: CartItem[]) => void;
   /** Uso exclusivo de useGiftProgress — agrega o reemplaza la única línea de regalo. */
   setGift: (item: CartItem) => void;
   clearGift: () => void;
+  /** false hasta que se leyó el carrito de localStorage. Sin esto, cualquier
+   * pantalla que dependa de `items.length === 0` parpadea "carrito vacío". */
+  hydrated: boolean;
   total: number;
   count: number;
   drawerOpen: boolean;
@@ -129,9 +135,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       increment: (id, size, cust) => dispatch({ type: 'INCREMENT', id, size, cust }),
       decrement: (id, size, cust) => dispatch({ type: 'DECREMENT', id, size, cust }),
       clear: () => dispatch({ type: 'CLEAR' }),
+      restore: (items) => dispatch({ type: 'LOAD', state: { items } }),
       setGift: (item) => dispatch({ type: 'SET_GIFT', item }),
       clearGift: () => dispatch({ type: 'CLEAR_GIFT' }),
-      total, count, drawerOpen, setDrawerOpen,
+      hydrated, total, count, drawerOpen, setDrawerOpen,
     }}>
       {children}
     </CartContext.Provider>
