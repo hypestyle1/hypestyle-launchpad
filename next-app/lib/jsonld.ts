@@ -1,5 +1,5 @@
 import type { Product } from '@/data/products';
-import { SITE_URL, SITE_NAME, canonicalUrl, truncate } from './seo';
+import { SITE_URL, SITE_NAME, canonicalUrl, truncateChars } from './seo';
 
 /**
  * Structured data (schema.org / JSON-LD).
@@ -83,7 +83,7 @@ export function productJsonLd(product: Product) {
     '@type': 'Product',
     '@id': `${url}#product`,
     name: product.name,
-    description: truncate(product.description || product.name, 300),
+    description: truncateChars(product.description || product.name, 300),
     sku: product.slug,
     category: product.category,
     ...(images.length ? { image: images } : {}),
@@ -115,7 +115,7 @@ export function collectionJsonLd(opts: {
     '@type': 'CollectionPage',
     '@id': `${url}#collection`,
     name: opts.name,
-    description: truncate(opts.description),
+    description: truncateChars(opts.description, 300),
     url,
     isPartOf: { '@id': WEBSITE_ID },
     ...(opts.products?.length
