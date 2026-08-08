@@ -8,42 +8,7 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { useReveal } from '@/hooks/useReveal';
 import { useProducts } from '@/hooks/useProducts';
-
-interface SubTab { label: string; categories: string[] }
-interface CategoryConfig { title: string; subtitle: string; categories: string[]; tag?: string; tabs?: SubTab[] }
-
-const CATEGORY_MAP: Record<string, CategoryConfig> = {
-  '/colecciones/no-love-only-style': { title: 'No Love Only Style', subtitle: 'Colección exclusiva — drops limitados', categories: [], tag: 'no-love-only-style' },
-  '/colecciones/camo-set-drop':      { title: 'Camo Set Drop',      subtitle: 'Set completo en camo print', categories: [], tag: 'camo-set-drop' },
-  '/colecciones/race':               { title: 'Race',                subtitle: 'Motorsport · Estética vintage racing', categories: [], tag: 'race' },
-  '/colecciones/summer-26':          { title: "Summer '26",          subtitle: 'La colección de verano', categories: [], tag: 'summer-26' },
-  '/colecciones/regular-tees':       { title: 'Regular Tees',        subtitle: 'Remeras de corte regular — básicos premium', categories: [], tag: 'regular-tee' },
-  '/arriba': {
-    title: 'Arriba', subtitle: 'Hoodies, remeras, longsleeves y más',
-    categories: ['Hoodie', 'Crewneck', 'Tee', 'Top', 'Sleeveless', 'Longsleeve', 'Jersey'],
-    tabs: [
-      { label: 'Todo', categories: [] }, { label: 'Hoodies', categories: ['Hoodie', 'Crewneck'] },
-      { label: 'Remeras', categories: ['Tee'] }, { label: 'Longsleeves', categories: ['Longsleeve'] },
-      { label: 'Sleeveless', categories: ['Sleeveless', 'Top'] }, { label: 'Jersey', categories: ['Jersey'] },
-    ],
-  },
-  '/abajo': {
-    title: 'Abajo', subtitle: 'Pantalones y jorts',
-    categories: ['Pantalón', 'Jort'],
-    tabs: [{ label: 'Todo', categories: [] }, { label: 'Pantalones', categories: ['Pantalón'] }, { label: 'Jorts', categories: ['Jort'] }],
-  },
-  '/accesorios': { title: 'Accesorios', subtitle: 'Gorras, anillos, beanies y más', categories: ['Accesorio'] },
-  '/sets': {
-    title: 'Sets & Packs', subtitle: 'Combos y packs de edición limitada',
-    categories: ['Set', 'Pack'],
-    tabs: [{ label: 'Todo', categories: [] }, { label: 'Sets', categories: ['Set'] }, { label: 'Packs', categories: ['Pack'] }],
-  },
-  '/productos': { title: 'Todos los productos', subtitle: 'Drops limitados · Envíos a todo el mundo', categories: [] },
-  '/tees':    { title: 'Tees',    subtitle: 'Remeras y tops', categories: ['Tee', 'Top'] },
-  '/hoodies': { title: 'Hoodies', subtitle: 'Hoodies y crewnecks', categories: ['Hoodie', 'Crewneck'] },
-  '/pants':   { title: 'Pants',   subtitle: 'Pantalones y joggers', categories: ['Pantalón'] },
-  '/jorts':   { title: 'Jorts',   subtitle: 'Jorts y shorts', categories: ['Jort'] },
-};
+import { CATEGORY_MAP } from '@/lib/category-config';
 
 type SortKey = 'default' | 'price-asc' | 'price-desc';
 

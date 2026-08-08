@@ -1,7 +1,12 @@
 import type { MetadataRoute } from 'next';
 import { fetchProductSlugs } from '@/lib/wp-products';
+import { canonicalUrl } from '@/lib/seo';
 
-const BASE_URL = 'https://hypestyle.com.ar';
+// Las URLs del sitemap pasan por canonicalUrl() para que coincidan exactamente
+// con el <link rel="canonical"> de cada página. Los paths de acá abajo se
+// escriben con barra final por costumbre, pero Next sirve sin barra (con la
+// barra redirige 308), y un sitemap lleno de redirecciones desperdicia budget
+// de crawleo y contradice al canonical.
 
 const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency']; priority: number }[] = [
   { path: '/', changeFrequency: 'daily', priority: 1 },
@@ -44,14 +49,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map(({ path, changeFrequency, priority }) => ({
-    url: `${BASE_URL}${path}`,
+    url: canonicalUrl(path),
     lastModified: now,
     changeFrequency,
     priority,
   }));
 
   const productEntries: MetadataRoute.Sitemap = productSlugs.map(slug => ({
-    url: `${BASE_URL}/producto/${slug}/`,
+    url: canonicalUrl(`/producto/${slug}/`),
     lastModified: now,
     changeFrequency: 'daily',
     priority: 0.6,

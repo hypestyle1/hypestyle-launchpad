@@ -11,6 +11,7 @@ import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useProduct } from '@/hooks/useProduct';
 import { useProducts } from '@/hooks/useProducts';
+import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
@@ -138,10 +139,12 @@ function ModelInfo({ html }: { html: string }) {
   );
 }
 
-export default function ProductoClient({ slug, initialGoalDiscount = null }: { slug: string; initialGoalDiscount?: GoalDiscount | null }) {
+export default function ProductoClient({ slug, initialProduct, initialGoalDiscount = null }: { slug: string; initialProduct?: Product; initialGoalDiscount?: GoalDiscount | null }) {
   const router = useRouter();
   const { formatPrice, currency } = useLocale();
-  const { data: product, isLoading } = useProduct(slug);
+  // initialProduct viene del servidor (page.tsx): el primer render ya sale con
+  // el producto puesto, así el <h1> y el precio están en el HTML servido.
+  const { data: product, isLoading } = useProduct(slug, initialProduct);
   const { data: allProducts = [] } = useProducts(20);
   const related = useMemo(() => {
     if (!product) return [];

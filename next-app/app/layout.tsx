@@ -15,20 +15,30 @@ import FlashSaleBar from '@/components/FlashSaleBar';
 import Promo3x2Bar from '@/components/Promo3x2Bar';
 import PromoChampionBar from '@/components/PromoChampionBar';
 import ChampionTakeover from '@/components/ChampionTakeover';
+import JsonLd from '@/components/JsonLd';
+import { organizationJsonLd, websiteJsonLd } from '@/lib/jsonld';
 
 const OG_DESCRIPTION = '© HYPESTYLE 2026 — STYLE&CULTURE. Cultura, identidad y estilo en cada drop. Worldwide Shipping.';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hypestyle.com.ar'),
-  // El título visible en la pestaña es siempre "Hype." (branding limpio).
+  // El título visible en la pestaña de la home es "Hype." (branding limpio).
+  // Las páginas hijas SÍ ponen título propio vía lib/seo.ts: el <title> es el
+  // titular del resultado de Google, y con "Hype." en todas eran todas iguales.
   title: 'Hype.',
-  description: 'HYPESTYLE® es una marca argentina de streetwear fundada en 2018. Diseñamos prendas inspiradas en la cultura, la identidad y el estilo contemporáneo. Envíos a todo el mundo.',
+  description: 'HYPESTYLE® es una marca argentina de streetwear fundada en 2018. Diseñamos prendas inspiradas en la cultura y el estilo contemporáneo.',
   keywords: [
     'streetwear argentino', 'moda urbana', 'ropa streetwear', 'hypestyle', 'oversize',
     'boxy fit', 'streetwear argentina', 'fashion argentina', 'cultura urbana', 'diseño argentino',
   ],
   robots: { index: true, follow: true },
-  alternates: { canonical: 'https://hypestyle.com.ar' },
+  // OJO: acá NO va `alternates.canonical`. Estaba fijo en la home y, como casi
+  // ninguna página hija lo pisaba, cada ficha de producto y cada colección se
+  // declaraba duplicado de la home. Cada página define el suyo con buildMetadata().
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+  },
   verification: {
     google: process.env.NEXT_PUBLIC_GSC_VERIFICATION,
   },
@@ -57,6 +67,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body>
+        {/* Identidad de la marca para Google, en todas las páginas. */}
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         <Providers>
           <FlashSaleBar />
           <PromoChampionBar />
