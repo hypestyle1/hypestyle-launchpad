@@ -59,6 +59,9 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 
 const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
 
+// Drop de lanzamiento con tratamiento visual propio (borde y fondo con color de marca).
+const NAPOLI_SLUGS = ['napoli-tee-blanca', 'napoli-tee-azul'];
+
 function ThankYouMessage() {
   return (
     <div className="mt-3 mb-1 rounded-[10px] border border-[#9cc7e8] border-t-[3px] border-t-[#c9a227] bg-[#eaf5fd] px-4 py-3">
@@ -155,8 +158,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
 
   const goalDiscount = useGoalDiscount(slug, initialGoalDiscount);
   const isLaNuestra = slug === GOAL_DISCOUNT_SLUG;
+  const isNapoli = NAPOLI_SLUGS.includes(slug);
   const primaryBtnClass = isLaNuestra
     ? 'bg-[#4a90c2] hover:bg-[#3d7aa8] border border-[#c9a227]'
+    : isNapoli
+    ? 'bg-[#1f7dc4] hover:bg-[#1a6aa8]'
     : 'bg-bg-dark hover:bg-bg-dark/85';
 
 
@@ -231,7 +237,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     ? [...product.images, 'products/argentina-jersey/preview-sample-espalda.png', 'products/argentina-jersey/preview-sample-frente.png']
     : product.images;
   // Productos con video: el video va como primer slide de la galería.
-  const galleryImages = (product.video && isLaNuestra) ? [product.video, ...baseImages] : baseImages;
+  const galleryImages = product.video ? [product.video, ...baseImages] : baseImages;
   // Imagen "de portada" (no-video) para carrito y miniaturas fijas.
   const coverImage = galleryImages.find(g => !isVideo(g)) ?? galleryImages[0];
 
@@ -321,7 +327,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     <>
       <AnnouncementBar />
       <Navbar />
-      <main className={`pt-[var(--offset)] ${isLaNuestra ? 'bg-gradient-to-b from-[#eaf5fd] via-white to-white' : ''}`}>
+      <main className={`pt-[var(--offset)] ${isLaNuestra ? 'bg-gradient-to-b from-[#eaf5fd] via-white to-white' : isNapoli ? 'bg-gradient-to-b from-[#eaf6fd] via-white to-white' : ''}`}>
         <div className="max-w-[1400px] mx-auto px-4 py-3">
           <p className="text-[11px] text-muted-foreground">
             <a href="/" className="hover:text-foreground transition-colors">Inicio</a>
@@ -348,7 +354,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 ))}
               </div>
               <div className="flex-1 flex flex-col gap-3">
-                <div className={`relative aspect-square overflow-hidden bg-bg-alt select-none cursor-crosshair ${isLaNuestra ? 'border-2 border-[#c9a227]' : ''}`}
+                <div className={`relative aspect-square overflow-hidden bg-bg-alt select-none cursor-crosshair ${isLaNuestra ? 'border-2 border-[#c9a227]' : isNapoli ? 'border-2 border-[#57b5fc]' : ''}`}
                   onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}
                   onMouseMove={handleMouseMove} onMouseLeave={() => setZoomPos(null)}
                   onClick={() => { if (window.innerWidth < 1024) setIsGalleryOpen(true); }}>
