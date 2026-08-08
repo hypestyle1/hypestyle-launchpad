@@ -82,10 +82,10 @@ const BLACK_DROP_LABEL = 'Black Drop';
 // Napoli es la novedad del momento — va primero de todo NEW IN, antes incluso
 // de Black Drop (mismo patrón de sección fija, no sigue el orden del loop).
 const NAPOLI_LABEL = 'Napoli';
-// Lanzamiento domingo: hasta esa fecha los productos son vidriera (badge
+// Lanzamiento domingo 20hs: hasta esa fecha los productos son vidriera (badge
 // "Próximamente", sin talles ni carrito) — a partir de ahí pasan a "New In"
 // y se habilita la compra, sin tocar código de nuevo (ver renderNapoliCard).
-const NAPOLI_LAUNCH = new Date('2026-08-09T00:00:00-03:00');
+const NAPOLI_LAUNCH = new Date('2026-08-09T20:00:00-03:00');
 const isNapoliLive = () => Date.now() >= NAPOLI_LAUNCH.getTime();
 
 const GROUP_EDITORIAL: Record<string, GroupMedia> = {
