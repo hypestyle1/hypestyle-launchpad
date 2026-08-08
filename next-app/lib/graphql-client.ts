@@ -1,11 +1,14 @@
-// En dev, el fetch sale del browser y WPGraphQL solo permite CORS desde
-// hypestyle.com.ar — por eso acá (solo acá, esto es client-side) usamos el
-// proxy same-origin (next.config.mjs) en vez de pegarle directo a WP. En
-// producción no hace falta (el dominio real ya está whitelisteado). OJO: no
-// tocar esto vía NEXT_PUBLIC_GRAPHQL_URL — esa env var también la lee
-// app/api/products/route.ts (server-side), donde una URL relativa no resuelve.
+// En dev, cuando el fetch sale del BROWSER, WPGraphQL bloquea por CORS
+// cualquier origen que no sea hypestyle.com.ar — por eso ahí usamos el proxy
+// same-origin (next.config.mjs) en vez de pegarle directo a WP. Este mismo
+// módulo también se usa server-side (SSR de la ficha de producto, ver
+// lib/product-detail.ts): ahí una URL relativa no resuelve (no hay CORS que
+// esquivar tampoco, el fetch del server no lo sufre), por eso el proxy es
+// SOLO para `typeof window !== 'undefined'`. En producción no hace falta
+// ninguna de las dos cosas (el dominio real ya está whitelisteado).
+const isBrowser = typeof window !== 'undefined';
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL
-  || (process.env.NODE_ENV === 'development' ? '/api/graphql-proxy' : 'https://lightpink-rook-704850.hostingersite.com/graphql');
+  || (isBrowser && process.env.NODE_ENV === 'development' ? '/api/graphql-proxy' : 'https://lightpink-rook-704850.hostingersite.com/graphql');
 
 export async function fetchGraphQL<T>(
   query: string,
