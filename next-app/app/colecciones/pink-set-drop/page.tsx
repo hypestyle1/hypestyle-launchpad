@@ -1,6 +1,7 @@
-'use client';
-
 import CollectionGroupedPage, { CollectionConfig } from "@/components/CollectionGroupedPage";
+import JsonLd from '@/components/JsonLd';
+import { buildMetadata } from '@/lib/seo';
+import { collectionJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
 const config: CollectionConfig = {
   title: 'Pink Set Drop',
@@ -14,6 +15,29 @@ const config: CollectionConfig = {
   ],
 };
 
+const PATH = '/colecciones/pink-set-drop/';
+const SEO_DESCRIPTION =
+  'Pink Set Drop: todo en rosa. Zip hoodie, sweatpant, remeras y jorts de un drop limitado de HYPESTYLE.';
+
+export const metadata = buildMetadata({
+  title: config.title,
+  description: SEO_DESCRIPTION,
+  path: PATH,
+});
+
 export default function PinkSetDropPage() {
-  return <CollectionGroupedPage config={config} />;
+  return (
+    <>
+      <JsonLd
+        data={[
+          collectionJsonLd({ name: config.title, description: SEO_DESCRIPTION, path: PATH }),
+          breadcrumbJsonLd([
+            { name: 'Colecciones', path: '/colecciones/' },
+            { name: config.title, path: PATH },
+          ]),
+        ]}
+      />
+      <CollectionGroupedPage config={config} />
+    </>
+  );
 }

@@ -19,7 +19,6 @@ Disallow: /admin/
 Disallow: /mayoristas/
 Disallow: /api/
 Disallow: /seguimiento/
-Disallow: /hero-preview/
 Disallow: /acceso/
 Disallow: /subir-foto-final/
 Disallow: /resena/

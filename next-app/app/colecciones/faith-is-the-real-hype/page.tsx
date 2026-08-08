@@ -1,6 +1,7 @@
-'use client';
-
 import CollectionGroupedPage, { CollectionConfig } from "@/components/CollectionGroupedPage";
+import JsonLd from '@/components/JsonLd';
+import { buildMetadata } from '@/lib/seo';
+import { collectionJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
 const config: CollectionConfig = {
   title: 'Faith Is The Real Hype',
@@ -13,6 +14,29 @@ const config: CollectionConfig = {
   ],
 };
 
+const PATH = '/colecciones/faith-is-the-real-hype/';
+const SEO_DESCRIPTION =
+  'Faith Is The Real Hype: streetwear con fe. Hoodies, remeras y longsleeves con gráficos religiosos, corte oversize.';
+
+export const metadata = buildMetadata({
+  title: config.title,
+  description: SEO_DESCRIPTION,
+  path: PATH,
+});
+
 export default function FaithIsTheRealHypePage() {
-  return <CollectionGroupedPage config={config} />;
+  return (
+    <>
+      <JsonLd
+        data={[
+          collectionJsonLd({ name: config.title, description: SEO_DESCRIPTION, path: PATH }),
+          breadcrumbJsonLd([
+            { name: 'Colecciones', path: '/colecciones/' },
+            { name: config.title, path: PATH },
+          ]),
+        ]}
+      />
+      <CollectionGroupedPage config={config} />
+    </>
+  );
 }
