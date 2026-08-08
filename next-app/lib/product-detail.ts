@@ -26,7 +26,7 @@ const GET_PRODUCT = `
         galleryImages { nodes { sourceUrl } }
         productCategories { nodes { name } }
         attributes { nodes { name options } }
-        metaData(key: "product_video_url") { value }
+        metaData { key value }
       }
       ... on VariableProduct {
         price
@@ -35,7 +35,7 @@ const GET_PRODUCT = `
         galleryImages { nodes { sourceUrl } }
         productCategories { nodes { name } }
         attributes { nodes { name options } }
-        metaData(key: "product_video_url") { value }
+        metaData { key value }
         variations(first: 100) {
           nodes {
             stockStatus
@@ -211,7 +211,12 @@ function fromWPNode(node: any): Product {
   if (!allImages.length) allImages.push('');
 
   // Video de producto (meta "product_video_url" en WP) — se muestra como 1er slide en la galería.
-  const video: string | undefined = node.metaData?.[0]?.value || undefined;
+  // OJO: el argumento `key` de metaData() en WPGraphQL no filtra (devuelve TODOS
+  // los meta del producto) — hay que buscar la key a mano, no asumir metaData[0].
+  // Tomar [0] a ciegas rompía la galería de CUALQUIER producto (el primer meta
+  // de cada uno es otra cosa, ej. flags internos) apenas se sacó el gate de
+  // "solo La Nuestra"/"solo Napoli" que antes tapaba el bug.
+  const video: string | undefined = node.metaData?.find((m: any) => m?.key === 'product_video_url')?.value || undefined;
 
   const sizes: string[] = [];
   const stock: Record<string, 'ok' | 'low' | 'out'> = {};
