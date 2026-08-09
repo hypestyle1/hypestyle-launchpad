@@ -237,7 +237,10 @@ export default function Navbar() {
 
               {/* Actions */}
               <div className="flex items-center justify-end gap-3 flex-1">
-                <span className="hidden lg:block"><LocalePopup /></span>
+                {/* div y no span: LocalePopup devuelve un <div>, y un bloque
+                    adentro de un inline es HTML inválido. Estaba en todas las
+                    páginas porque el navbar es global. */}
+                <div className="hidden lg:block"><LocalePopup /></div>
                 <button onClick={() => setSearchOpen(true)}
                   className="p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150" aria-label="Buscar">
                   <Search className="w-4 h-4" strokeWidth={1.2} />

@@ -369,7 +369,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
             <div className="flex gap-3">
               <div className="hidden md:flex flex-col gap-2 w-[72px] flex-shrink-0">
                 {galleryImages.map((img, i) => (
+                  // La miniatura solo contiene la imagen (alt=""), así que sin
+                  // aria-label un lector de pantalla anuncia "botón" y nada más.
                   <button key={img} onClick={() => setSelectedImage(i)}
+                    aria-label={`${isVideo(img) ? 'Ver video' : `Ver imagen ${i + 1}`} de ${product.name}`}
+                    aria-current={i === selectedImage}
                     className={`relative w-full aspect-square overflow-hidden border-[1.5px] transition-colors ${i === selectedImage ? 'border-foreground' : 'border-transparent'}`}>
                     {isVideo(img)
                       ? <video src={imgUrl(img)} muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover" />

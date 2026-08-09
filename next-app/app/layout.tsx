@@ -22,10 +22,10 @@ const OG_DESCRIPTION = '© HYPESTYLE 2026 — STYLE&CULTURE. Cultura, identidad 
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hypestyle.com.ar'),
-  // El título visible en la pestaña de la home es "Hype." (branding limpio).
-  // Las páginas hijas SÍ ponen título propio vía lib/seo.ts: el <title> es el
-  // titular del resultado de Google, y con "Hype." en todas eran todas iguales.
-  title: 'Hype.',
+  // Fallback: solo aplica a páginas que no definan el suyo. Toda página
+  // indexable pone título propio vía buildMetadata() en lib/seo.ts — el <title>
+  // es el titular del resultado de Google, y con "Hype." eran todos iguales.
+  title: 'Hype | Streetwear Argentino',
   description: 'HYPESTYLE® es una marca argentina de streetwear fundada en 2018. Diseñamos prendas inspiradas en la cultura y el estilo contemporáneo.',
   keywords: [
     'streetwear argentino', 'moda urbana', 'ropa streetwear', 'hypestyle', 'oversize',

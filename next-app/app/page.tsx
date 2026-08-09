@@ -19,9 +19,10 @@ import { buildMetadata } from '@/lib/seo';
 // Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra) siguen en el
 // repo, sin usar, por si hay que volver. Hoy el hero principal es HeroHannaDrop.
 
-// rawTitle: la home mantiene "Hype." a secas en la pestaña (decisión de marca).
+// rawTitle: el título de la home se define entero acá, sin el sufijo de marca
+// que lleva el resto del sitio (quedaría "…| HYPESTYLE" duplicando "Hype").
 export const metadata = buildMetadata({
-  title: 'Hype.',
+  title: 'Hype | Streetwear Argentino',
   rawTitle: true,
   description: 'HYPESTYLE® — streetwear argentino desde 2018. Hoodies, remeras, pants y sets de drops limitados. Envíos a todo el mundo.',
   path: '/',
