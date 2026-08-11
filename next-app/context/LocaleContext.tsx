@@ -6,6 +6,17 @@ import { translate } from '@/lib/i18n';
 export type Language = 'ES' | 'EN' | 'PT';
 export type Currency = 'ARS' | 'USD' | 'EUR';
 
+/**
+ * Idiomas que el sitio realmente traduce. Los selectores (Footer, LocalePopup)
+ * tienen que salir de acá y no de una lista propia: el Footer llegó a ofrecer
+ * DE/FR/IT, que no existían ni en el tipo Language ni en el diccionario, así
+ * que se veían, se podían clickear y no pasaba nada.
+ *
+ * Sumar un idioma = agregarlo al tipo, a esta lista Y completar su columna en
+ * lib/i18n.ts. Si falta lo último, cae a español sin avisar.
+ */
+export const LANGUAGES: Language[] = ['ES', 'EN', 'PT'];
+
 const RATES: Record<Currency, number> = { ARS: 1, USD: 1 / 1250, EUR: 1 / 1380 };
 const SYMBOLS: Record<Currency, string> = { ARS: '$', USD: 'US$', EUR: '€' };
 const NUMBER_LOCALES: Record<Currency, string> = { ARS: 'es-AR', USD: 'en-US', EUR: 'de-DE' };
