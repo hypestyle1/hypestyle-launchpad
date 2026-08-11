@@ -119,10 +119,17 @@ export default function HeroHannaDrop() {
       // alto de la sección (fijo, 80dvh) queda totalmente desacoplado del progreso
       // de la animación — el contenido de abajo se ve de una siempre, sin importar
       // en qué punto esté el crecimiento del card.
+      // scale y no width: animar el ancho es una propiedad de layout, así que
+      // cada frame cuenta como layout shift y además GSAP arrancaba pegando un
+      // salto (el CSS ya había pintado el card a w-full/100vw y el fromTo lo
+      // achicaba de golpe a 88vw antes de empezar). Con transform el card ocupa
+      // desde el primer pintado el tamaño final, no reflowa nada y el CLS de
+      // esta animación es cero. El efecto que se ve es el mismo: el card entra
+      // un poco más chico y con las esquinas redondeadas, y crece a full-bleed.
       mm.add('(max-width: 767px)', () => {
         gsap.fromTo(card,
-          { width: '88vw', borderRadius: 24 },
-          { width: '100vw', borderRadius: 0, ease: 'power2.out', duration: 0.9, delay: 0.15 },
+          { scale: 0.88, borderRadius: 24 },
+          { scale: 1, borderRadius: 0, ease: 'power2.out', duration: 0.9, delay: 0.15 },
         );
         gsap.fromTo(title,
           { scale: 1 },

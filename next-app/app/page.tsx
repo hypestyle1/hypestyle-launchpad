@@ -14,6 +14,8 @@ import Promo3x2Section from '@/components/Promo3x2Section';
 import VideoSection from '@/components/VideoSection';
 import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
 import Footer from '@/components/Footer';
+import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import { fetchAllProducts } from '@/lib/products-server';
 import { buildMetadata } from '@/lib/seo';
 
 // Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra) siguen en el
@@ -28,9 +30,28 @@ export const metadata = buildMetadata({
   path: '/',
 });
 
-export default function Home() {
+/**
+ * NewInFW26, BasicosSection, BackInStock y MasHypeSection comparten la query
+ * ['products'] de React Query, que pedía /api/products desde el browser: las
+ * cuatro secciones se renderizaban vacías y se llenaban recién al resolver el
+ * fetch. El documento pasaba de ~3.900px a ~21.000px de golpe y todo lo que
+ * estaba en pantalla saltaba — el CLS del home en mobile llegaba a 0,8.
+ *
+ * Acá se precarga esa misma query en el servidor y se hidrata el cache, así el
+ * primer render ya sale con los productos y no hay salto. fetchAllProducts()
+ * usa exactamente el mismo query GraphQL que /api/products (mismos campos,
+ * mismo orden por DATE, mismo dedupe por id), así que el dato hidratado y el
+ * que traería el browser son idénticos: no hay refetch que vuelva a mover nada.
+ */
+export default async function Home() {
+  const queryClient = new QueryClient();
+  await queryClient.prefetchQuery({
+    queryKey: ['products'],
+    queryFn: fetchAllProducts,
+  });
+
   return (
-    <>
+    <HydrationBoundary state={dehydrate(queryClient)}>
       <AnnouncementBar />
       <Navbar />
       <NewsletterPopup />
@@ -61,6 +82,6 @@ export default function Home() {
         </div>
       </main>
       <Footer />
-    </>
+    </HydrationBoundary>
   );
 }
