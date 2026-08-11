@@ -78,6 +78,10 @@ const COUNTRIES = [
   { code: 'OTHER', name: 'Other country' },
 ];
 
+// Países donde el estado/provincia es parte obligatoria de la dirección: sin
+// eso DHL no emite la etiqueta y el pedido se traba después de cobrado.
+const STATE_REQUIRED = ['US', 'CA', 'AU'];
+
 const UPSELL_VISIBLE = 2; // tarjetas visibles al mismo tiempo
 
 function shuffled<T>(arr: T[]): T[] {
@@ -250,7 +254,7 @@ export default function Checkout() {
   // recalcula y agrega por su cuenta (HPG_Gift_Engine).
   const purchasableItems = items.filter(item => !item.isGift);
   const router = useRouter();
-  const { formatPrice, currency } = useLocale();
+  const { formatPrice, currency, country } = useLocale();
   const [step, setStep] = useState<Step>('info');
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
@@ -265,6 +269,7 @@ export default function Checkout() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [recovered, setRecovered] = useState<'failed' | 'generic' | null>(null);
   const restoreChecked = useRef(false);
+  const countryTouched = useRef(false);
 
   const [flashActive, setFlashActive] = useState(false);
   const { promoActive: promo3x2Won } = usePromo3x2Status();
@@ -280,10 +285,27 @@ export default function Checkout() {
   const [loadingBranches, setLoadingBranches] = useState(false);
 
   const isInternational = info.pais !== 'AR';
+  const stateRequired = STATE_REQUIRED.includes(info.pais);
   const isSucursal = !isInternational && (selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal'));
   const branchReady = isInternational || !isSucursal || !!selectedBranch;
 
   useEffect(() => { setFlashActive(isFlashSaleActive() || promo3x2Won || championWon); }, [promo3x2Won, championWon]);
+
+  // El destino arrancaba siempre en Argentina, así que el comprador de afuera
+  // caía en el formulario doméstico —  DNI obligatorio, provincia argentina y
+  // todo en español— hasta que encontraba el selector de país, que está dentro
+  // del bloque de dirección. Se preselecciona el país detectado. Solo mientras
+  // no lo haya tocado a mano: a partir de ahí manda la persona.
+  useEffect(() => {
+    // Argentina ya es el default y su provincia viene precargada: no hay nada
+    // que cambiar (y pisarla dejaría el select de provincia en blanco).
+    if (!country || country === 'AR' || countryTouched.current) return;
+    const known = COUNTRIES.some(c => c.code === country);
+    setInfo(prev => (prev.pais === 'AR'
+      ? { ...prev, pais: known ? country : 'OTHER', provincia: '' }
+      : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [country]);
 
   // Vuelta de un pago que no se concretó. Los tres gateways (MercadoPago, PayPal,
   // GOcuotas) devuelven acá cuando el pago se rechaza o se cancela, y para ese
@@ -331,6 +353,7 @@ export default function Checkout() {
   const transferTotal = Math.round(subtotal * 0.90) - descuento + envioEnPaso;
 
   const handleCountryChange = (pais: string) => {
+    countryTouched.current = true;
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
     setSelectedRate(null);
@@ -661,11 +684,11 @@ export default function Checkout() {
 
                   {/* International notice */}
                   {isInternational && (
-                    <div className="flex items-start gap-2.5 bg-foreground/[0.03] border border-border px-4 py-3 rounded-[10px]">
-                      <span className="text-[14px] mt-0.5">🌍</span>
+                    <div className="bg-foreground/[0.03] border border-border px-4 py-3 rounded-[10px]">
                       <p className="text-[12px] text-foreground/70 leading-relaxed">
                         <span className="font-semibold text-foreground">Worldwide shipping available.</span>
-                        {' '}Place your order and we&apos;ll contact you within 24 hours to confirm your DHL shipping cost and delivery estimate.
+                        {' '}Today you pay for the items only. We&apos;ll email you within 24 hours with your DHL
+                        shipping cost, and your order ships once you approve it.
                       </p>
                     </div>
                   )}
@@ -680,7 +703,12 @@ export default function Checkout() {
                       <input placeholder="Apartment, suite (optional)" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                       <div className="grid grid-cols-2 gap-2">
                         <input placeholder="City" required value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input placeholder="State / Province" value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                        <input
+                          placeholder={stateRequired ? 'State / Province' : 'State / Province (optional)'}
+                          required={stateRequired}
+                          value={info.provincia}
+                          onChange={e => setInfo({ ...info, provincia: e.target.value })}
+                          className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                       </div>
                       <input placeholder="Postal / ZIP code" required value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                       <input placeholder="Phone (with country code)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
@@ -747,7 +775,9 @@ export default function Checkout() {
                       <span className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">TBD</span>
                     </div>
                     <div className="bg-foreground/[0.02] border border-border px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
-                      Complete your order now — we&apos;ll email you within 24 h with your DHL shipping quote and estimated delivery time. No charge until you approve the shipping cost.
+                      Complete your order now and you pay for the items only. We&apos;ll email you within 24 h with
+                      your DHL shipping quote and estimated delivery time — the shipping cost is charged separately,
+                      after you approve it.
                     </div>
                   </div>
                 ) : (
@@ -865,10 +895,10 @@ export default function Checkout() {
               </div>
 
               {isInternational && (
-                <div className="flex items-start gap-2.5 bg-foreground/[0.02] border border-border px-4 py-3 rounded-[10px]">
-                  <span className="text-[13px] mt-0.5">📦</span>
+                <div className="bg-foreground/[0.02] border border-border px-4 py-3 rounded-[10px]">
                   <p className="text-[12px] text-foreground/60 leading-relaxed">
-                    Your DHL shipping cost will be confirmed by email within 24 hours. Your order won&apos;t ship until you approve the quote.
+                    You are paying for the items only. Your DHL shipping cost will be confirmed by email within
+                    24 hours, and your order ships once you approve the quote.
                   </p>
                 </div>
               )}

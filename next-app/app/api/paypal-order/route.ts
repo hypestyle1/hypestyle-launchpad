@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getUsdRate } from '@/lib/fx';
 
 const PAYPAL_API = 'https://api-m.paypal.com';
 const CLIENT_ID  = process.env.PAYPAL_CLIENT_ID!;
@@ -19,16 +20,10 @@ async function getAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-async function getUsdRate(): Promise<number> {
-  try {
-    const res = await fetch('https://dolarapi.com/v1/dolares/oficial', { cache: 'no-store' });
-    if (!res.ok) return 1250;
-    const data = await res.json() as { venta?: number };
-    return data.venta ?? 1250;
-  } catch {
-    return 1250;
-  }
-}
+// La cotización vive en lib/fx y la comparte con el precio que se muestra en
+// el sitio (LocaleContext vía /api/fx-rate). Antes esta ruta tenía su propia
+// copia con un respaldo de 1250 mientras la vitrina usaba otro número fijo:
+// se publicaba un precio y se cobraba otro.
 
 export async function POST(req: NextRequest) {
   try {

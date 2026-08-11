@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
+import { COUNTRY_COOKIE } from '@/lib/geo';
 
 // Hora de early access (close friends) y apertura pública
 const EARLY_START = new Date('2026-06-24T19:00:00-03:00').getTime();
@@ -12,7 +13,38 @@ function isUnder(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(prefix + '/');
 }
 
+/**
+ * Deja el país del visitante en una cookie para que el cliente lo lea sin
+ * pedirlo a ningún servicio externo. Vercel ya resuelve la geolocalización en
+ * el borde y no cuesta nada; hasta acá el sitio dependía de un fetch a ipapi.co
+ * desde el navegador, que los ad-blockers cortan y que tiene límite de uso.
+ *
+ * Va como cookie y no como header leído en el layout a propósito: leer headers
+ * en el layout raíz vuelve dinámico el renderizado de todo el sitio y tiraría
+ * abajo el trabajo de SSR y de CLS que ya está hecho.
+ *
+ * No es httpOnly porque el punto es justamente que la lea el cliente. No hay
+ * nada sensible en un código de país que el propio visitante ya conoce.
+ */
+function withCountry(response: NextResponse, request: NextRequest): NextResponse {
+  const country = request.geo?.country || request.headers.get('x-vercel-ip-country') || '';
+  // En local no hay geo: se deja la cookie como está para no pisar una prueba
+  // manual desde las devtools.
+  if (!country) return response;
+  if (request.cookies.get(COUNTRY_COOKIE)?.value === country) return response;
+  response.cookies.set(COUNTRY_COOKIE, country, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+    sameSite: 'lax',
+  });
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
+  return withCountry(await handle(request), request);
+}
+
+async function handle(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Área mayorista: gate propio, independiente del early-access del sitio público.

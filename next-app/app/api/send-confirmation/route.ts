@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getUsdRate } from '@/lib/fx';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
@@ -14,16 +15,8 @@ const METODO_LABEL: Record<string, string> = {
   gocuotas:      'GOcuotas',
 };
 
-async function getUsdRate(): Promise<number> {
-  try {
-    const res = await fetch('https://dolarapi.com/v1/dolares/oficial', { cache: 'no-store' });
-    if (!res.ok) return 1250;
-    const data = await res.json() as { venta?: number };
-    return data.venta ?? 1250;
-  } catch {
-    return 1250;
-  }
-}
+// La cotización del mail sale de lib/fx, igual que el precio del sitio y el
+// cobro de PayPal — tenía su propia copia con respaldo 1250.
 
 function fmtARS(n: number) {
   return '$ ' + n.toLocaleString('es-AR');
@@ -315,7 +308,7 @@ function buildAdminHtml(order: any) {
 
   const intlBadge = isIntl ? `
     <div style="display:inline-block;background:#0a0a0a;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:4px 10px;border-radius:4px;margin-bottom:12px;">
-      🌍 International Order — ${order.pais}
+      International Order — ${order.pais}
     </div>
   ` : '';
 
@@ -329,7 +322,7 @@ function buildAdminHtml(order: any) {
   <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;">
     <div style="background:#0a0a0a;padding:16px 24px;">
       <span style="color:#fff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">
-        ${isIntl ? '🌍 International Sale' : 'Nueva venta'} — Hypestyle
+        ${isIntl ? 'International Sale' : 'Nueva venta'} — Hypestyle
       </span>
     </div>
     <div style="padding:24px;">
@@ -382,15 +375,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: 'payment-pending' });
     }
 
+    // La transferencia es el único método que llega hasta acá con la plata sin
+    // acreditar: los otros quedaron frenados arriba por paymentPending. El mail
+    // se manda igual porque es el que lleva los datos para pagar, pero decir
+    // "confirmado" cuando todavía no entró nada contradice el pedido y le da al
+    // admin una venta que no existe. El asunto dice lo que realmente pasó.
+    const awaitingPayment = order.paymentMethod === 'transferencia';
+
     let customerHtml: string;
     let subject: string;
 
     if (isIntl) {
       const usdRate = await getUsdRate();
-      subject      = `Order #${order.orderNum} confirmed — Hypestyle`;
+      subject      = awaitingPayment
+        ? `Order #${order.orderNum} received — complete your payment`
+        : `Order #${order.orderNum} confirmed — Hypestyle`;
       customerHtml = buildHtmlIntl({ ...order, usdRate });
     } else {
-      subject      = `Pedido #${order.orderNum} confirmado — Hypestyle`;
+      subject      = awaitingPayment
+        ? `Pedido #${order.orderNum} registrado — falta tu transferencia`
+        : `Pedido #${order.orderNum} confirmado — Hypestyle`;
       customerHtml = buildHtml(order);
     }
 
@@ -406,9 +410,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Brevo error', detail: err }, { status: 500 });
     }
 
+    const metodoAdmin = METODO_LABEL[order.paymentMethod] || order.paymentMethod || 'Sin método';
     const adminSubject = isIntl
-      ? `🌍 International order #${order.orderNum} — ${order.pais} — ${METODO_LABEL[order.paymentMethod] || order.paymentMethod || '?'}`
-      : `🛍 Nueva venta #${order.orderNum} — ${METODO_LABEL[order.paymentMethod] || order.paymentMethod || 'Sin método'}`;
+      ? (awaitingPayment
+          ? `Pedido internacional #${order.orderNum} — ${order.pais} — esperando transferencia`
+          : `Venta internacional #${order.orderNum} — ${order.pais} — ${metodoAdmin}`)
+      : (awaitingPayment
+          ? `Pedido #${order.orderNum} — esperando transferencia`
+          : `Nueva venta #${order.orderNum} — ${metodoAdmin}`);
 
     sendEmail(
       { email: ADMIN_EMAIL, name: 'Hypestyle Admin' },
