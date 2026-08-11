@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useReveal } from "@/hooks/useReveal";
-import { useLocale, Language } from "@/context/LocaleContext";
+import { useLocale, LANGUAGES } from "@/context/LocaleContext";
 
 const shopLinks = [
   { label: "Arriba",     href: "/arriba/" },
@@ -32,7 +32,9 @@ const rrssLinks = [
   { label: "WhatsApp", href: "https://wa.me/5491178292430" },
 ];
 
-const languages = ["ES", "EN", "PT", "DE", "FR", "IT"];
+// Sale de LocaleContext: antes era una lista propia con DE/FR/IT, idiomas que
+// el sitio no traduce — se mostraban en el selector y clickearlos no hacía nada.
+const languages = LANGUAGES;
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -145,7 +147,7 @@ export default function Footer() {
           {languages.map((lang, i) => (
             <span key={lang} className="flex items-center gap-4">
               <button
-                onClick={() => setLanguage(lang as Language)}
+                onClick={() => setLanguage(lang)}
                 className={`text-[11px] uppercase tracking-[0.12em] transition-colors ${
                   language === lang
                     ? "text-primary-foreground font-semibold"
