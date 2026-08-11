@@ -1,7 +1,8 @@
 import Worldwide from './PageClient';
 import JsonLd from '@/components/JsonLd';
 import { buildMetadata } from '@/lib/seo';
-import { breadcrumbJsonLd } from '@/lib/jsonld';
+import { breadcrumbJsonLd, faqJsonLd } from '@/lib/jsonld';
+import { SHIPPING_FAQS } from '@/lib/worldwide';
 
 // La página es un client component (hooks de estado y de datos), así que no
 // puede exportar metadata. Este wrapper server le pone el <title>, la meta
@@ -19,6 +20,7 @@ export default function Page() {
       <JsonLd
         data={[
           breadcrumbJsonLd([{ name: 'Envíos a todo el mundo', path: PATH }]),
+          faqJsonLd(SHIPPING_FAQS),
         ]}
       />
       <Worldwide />

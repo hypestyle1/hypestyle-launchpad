@@ -102,6 +102,24 @@ export function productJsonLd(product: Product) {
   };
 }
 
+/**
+ * FAQPage. Desde 2023 Google muestra el rich result de FAQ solo para sitios
+ * de gobierno y salud, así que no esperar el acordeón en la SERP — sirve para
+ * que entienda de qué responde la página (envíos, plazos, aduana), que es
+ * justo lo que busca alguien de afuera antes de comprar.
+ */
+export function faqJsonLd(items: { q: string; a: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map(item => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: { '@type': 'Answer', text: item.a },
+    })),
+  };
+}
+
 /** Listado de productos de una colección o categoría. */
 export function collectionJsonLd(opts: {
   name: string;
