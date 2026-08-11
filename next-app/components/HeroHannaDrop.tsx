@@ -52,7 +52,22 @@ export default function HeroHannaDrop() {
   const [slides, setSlides] = useState(SLIDES);
   const [slide, setSlide] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [bgVideo, setBgVideo] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // El video de fondo solo tiene sentido en desktop, que es donde se ve alrededor
+  // del card. En mobile el carrusel ocupa la sección entera y del video no
+  // quedaba más que una franja arriba y otra abajo — se veía raro y encima el
+  // mp4 se descargaba igual, compitiendo con la foto del primer slide (el LCP
+  // del home). Por eso se monta recién en el cliente y solo si el viewport es
+  // de desktop: en mobile el elemento no existe y el navegador ni lo pide.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const apply = () => setBgVideo(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   // Heatmap (Clarity) mostraba muy poca gente llegando más allá del hero —
   // este cue invita a scrollear y se apaga apenas el usuario ya arrancó.
@@ -168,17 +183,30 @@ export default function HeroHannaDrop() {
         más abajo) ya se ve contenido real (Envío Internacional, Reseñas) sin
         scrollear nada, no solo un borde en blanco. Desktop queda en 100dvh. */}
     <section ref={sectionRef} className="relative w-full h-[80dvh] md:h-[100dvh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
-      <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline aria-hidden>
-        <source src={VIDEO_SRC} type="video/mp4" />
-      </video>
+      {/* Fondo (video + su gradiente) — solo desktop, ver el effect de arriba. En
+          mobile queda el bg-bg-dark de la sección, que solo se llega a ver en el
+          borde mientras corre la animación de entrada del card. */}
+      {bgVideo && (
+        <>
+          <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline aria-hidden>
+            <source src={VIDEO_SRC} type="video/mp4" />
+          </video>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/55 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/55 pointer-events-none" />
+        </>
+      )}
 
-      {/* Contenedor (carrusel) centrado — full-bleed fijo en mobile, crece con el scroll en desktop */}
+      {/* Contenedor (carrusel) centrado — ocupa la sección entera en mobile, crece con el scroll en desktop */}
       <div className="absolute inset-0 flex items-center justify-center px-0 md:px-4">
+        {/* Mobile: h-full en vez de aspect-[4/5]. Con el aspect el card medía
+            ~0,8 del ancho de alto y sobraban ~190px de sección arriba y abajo,
+            que era lo único que se veía del video de fondo. Ahora el card toma
+            los 80dvh completos y el hero es todo carrusel.
+            Desktop no cambia: md:h-auto devuelve el alto al aspect 990/503, que
+            es lo que la animación de GSAP hace crecer con el scroll. */}
         <div
           ref={cardRef}
-          className="relative w-full max-w-[767px] aspect-[4/5] md:aspect-[990/503] overflow-hidden rounded-none md:rounded-[24px] bg-bg-dark"
+          className="relative w-full h-full max-w-[767px] md:h-auto md:aspect-[990/503] overflow-hidden rounded-none md:rounded-[24px] bg-bg-dark"
         >
           {slides.map((s, i) => (
             <div
@@ -232,11 +260,16 @@ export default function HeroHannaDrop() {
         </div>
       </div>
 
-      {/* Cue de scroll — invita a bajar, se apaga apenas el usuario arranca a scrollear */}
+      {/* Cue de scroll — invita a bajar, se apaga apenas el usuario arranca a scrollear.
+          En mobile va abajo a la DERECHA, no centrado: ahora que el card ocupa la
+          sección entera, la card glass del producto comparte esa misma franja de
+          abajo y con los nombres largos ("Stars For Venezuela Hoodie") se pisaban.
+          Desktop se mantiene centrado, que ahí el card no llega al borde. */}
       <button
         onClick={() => window.scrollBy({ top: window.innerHeight * 0.9, behavior: 'smooth' })}
         aria-label="Scroll hacia abajo"
-        className={`absolute bottom-5 md:bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5
+        className={`absolute bottom-5 right-6 md:bottom-8 md:left-1/2 md:right-auto md:-translate-x-1/2
+                    z-20 flex flex-col items-center gap-1.5
                     text-white/80 transition-opacity duration-500 ${scrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       >
         <span className="text-[9px] uppercase tracking-[0.22em] font-medium [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">Scroll</span>
