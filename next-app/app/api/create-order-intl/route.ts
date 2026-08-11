@@ -163,6 +163,12 @@ export async function POST(req: NextRequest) {
       wcOrderId:     wcOrder.id,
       wcOrderNumber: String(wcOrder.number),
       orderKey:      wcOrder.order_key,
+      // Total real de WooCommerce. El checkout cobra `wcTotal || totalFinal`, y
+      // como esta ruta no lo devolvía, el pedido internacional caía siempre al
+      // total calculado en el navegador: a PayPal se le pedía un importe que
+      // venía del cliente y no de la orden. El flujo doméstico ya lo devuelve
+      // (create-order-gocuotas); esto lo empareja.
+      wcTotal:       parseFloat(wcOrder.total),
       initPoint:     null,
       paypalUrl:     null,
     });

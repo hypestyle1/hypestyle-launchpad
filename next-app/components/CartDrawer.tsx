@@ -249,7 +249,7 @@ export default function CartDrawer() {
               )}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              🌍 <span className="font-medium text-foreground/60">Worldwide shipping</span> available via DHL Express
+              <span className="font-medium text-foreground/60">Worldwide shipping</span> available via DHL Express
             </p>
             <button
               onClick={() => { setDrawerOpen(false); router.push("/checkout"); }}
