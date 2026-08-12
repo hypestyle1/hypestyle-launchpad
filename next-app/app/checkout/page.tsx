@@ -16,6 +16,7 @@ import { gaBeginCheckout } from '@/lib/ga';
 import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
 import { imgSrc } from '@/lib/img';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
+import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import GiftProgressBar from '@/components/GiftProgressBar';
 
 type Step = 'info' | 'envio' | 'pago';
@@ -237,7 +238,6 @@ function UpsellCarousel() {
   );
 }
 
-const INTL_RATE = { id: 'dhl_international', label: 'International Shipping — DHL Express', cost: 0 };
 const FREE_SHIPPING_THRESHOLD = 250000;
 
 interface ShippingRate { id: string; label: string; cost: number }
@@ -286,6 +286,24 @@ export default function Checkout() {
   const [loadingBranches, setLoadingBranches] = useState(false);
 
   const isInternational = info.pais !== 'AR';
+
+  // Envío internacional: el precio se cierra acá, con el tarifario de Boxfly.
+  // La categoría y el peso salen del catálogo ya cargado, y el servidor rehace
+  // exactamente esta misma cuenta al crear la orden (create-order-intl), así que
+  // lo que se muestra y lo que se cobra no pueden separarse.
+  const { data: catalog = [] } = useProducts(0);
+  const intlQuote = useMemo(() => {
+    if (!isInternational || purchasableItems.length === 0) return null;
+    const bySlug = new Map(catalog.map(p => [p.slug, p]));
+    return quoteIntlShipping(
+      info.pais,
+      purchasableItems.map(item => {
+        const p = bySlug.get(item.id);
+        return { category: p?.category, weightKg: p?.weight, quantity: item.quantity };
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInternational, info.pais, catalog, JSON.stringify(purchasableItems.map(i => [i.id, i.quantity]))]);
   const stateRequired = STATE_REQUIRED.includes(info.pais);
   const isSucursal = !isInternational && (selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal'));
   const branchReady = isInternational || !isSucursal || !!selectedBranch;
@@ -395,10 +413,13 @@ export default function Checkout() {
     e.preventDefault();
     setStep('envio');
     if (isInternational) {
-      setSelectedRate(INTL_RATE);
-      setShippingRates([INTL_RATE]);
+      const rate = intlQuote
+        ? { id: 'fedex_international', label: intlQuote.label, cost: intlQuote.cost }
+        : null;
+      setSelectedRate(rate);
+      setShippingRates(rate ? [rate] : []);
       setLoadingRates(false);
-      setRatesError(null);
+      setRatesError(rate ? null : 'No pudimos calcular el envío para este destino. Escribinos y lo resolvemos.');
     } else {
       fetchRates();
     }
@@ -713,8 +734,8 @@ export default function Checkout() {
                     <div className="bg-foreground/[0.03] border border-border px-4 py-3 rounded-[10px]">
                       <p className="text-[12px] text-foreground/70 leading-relaxed">
                         <span className="font-semibold text-foreground">Worldwide shipping available.</span>
-                        {' '}Today you pay for the items only. We&apos;ll email you within 24 hours with your DHL
-                        shipping cost, and your order ships once you approve it.
+                        {' '}Shipping is calculated on the next step and charged with your order — tracked and
+                        insured, door to door.
                       </p>
                     </div>
                   )}
@@ -794,16 +815,16 @@ export default function Checkout() {
                           <div className="w-1.5 h-1.5 rounded-full bg-foreground" />
                         </div>
                         <div>
-                          <p className="text-[13px] font-medium">International Shipping — DHL Express</p>
-                          <p className="text-[11px] text-muted-foreground">Cost confirmed after purchase · door to door</p>
+                          <p className="text-[13px] font-medium">{selectedRate?.label ?? 'International shipping'}</p>
+                          <p className="text-[11px] text-muted-foreground">Door to door · tracked · insured</p>
                         </div>
                       </div>
-                      <span className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">TBD</span>
+                      <span className="text-[13px] font-semibold">
+                        {selectedRate ? formatPrice(selectedRate.cost) : '—'}
+                      </span>
                     </div>
                     <div className="bg-foreground/[0.02] border border-border px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
-                      Complete your order now and you pay for the items only. We&apos;ll email you within 24 h with
-                      your DHL shipping quote and estimated delivery time — the shipping cost is charged separately,
-                      after you approve it.
+                      {CUSTOMS_NOTICE}
                     </div>
                   </div>
                 ) : (
@@ -923,8 +944,7 @@ export default function Checkout() {
               {isInternational && (
                 <div className="bg-foreground/[0.02] border border-border px-4 py-3 rounded-[10px]">
                   <p className="text-[12px] text-foreground/60 leading-relaxed">
-                    You are paying for the items only. Your DHL shipping cost will be confirmed by email within
-                    24 hours, and your order ships once you approve the quote.
+                    {CUSTOMS_NOTICE}
                   </p>
                 </div>
               )}
@@ -1056,10 +1076,10 @@ export default function Checkout() {
                 <span>
                   {step === 'info' ? (
                     <span className="text-muted-foreground text-[11px]">
-                      {isInternational ? 'Calculated after purchase' : 'Se calcula a continuación'}
+                      {isInternational ? 'Calculated on the next step' : 'Se calcula a continuación'}
                     </span>
                   ) : isInternational ? (
-                    <span className="text-muted-foreground text-[11px]">DHL — confirmed after order</span>
+                    selectedRate ? formatPrice(selectedRate.cost) : <span className="text-muted-foreground">—</span>
                   ) : loadingRates ? (
                     <span className="text-muted-foreground">Calculando...</span>
                   ) : freeShipping ? (
@@ -1079,7 +1099,7 @@ export default function Checkout() {
                 <p className="text-[11px] text-green-700 font-semibold mt-1 text-right">Con transferencia pagás {formatPrice(transferTotal)}</p>
               )}
               {isInternational && step === 'pago' && (
-                <p className="text-[11px] text-muted-foreground mt-1">* DHL shipping cost added after purchase</p>
+                <p className="text-[11px] text-muted-foreground mt-1">{CUSTOMS_NOTICE}</p>
               )}
             </div>
             <UpsellCarousel />

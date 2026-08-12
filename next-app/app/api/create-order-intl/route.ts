@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { quoteIntlShipping, IntlShippingLine } from '@/lib/shipping-intl';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -16,12 +17,23 @@ async function wcGet(path: string) {
   return res.json();
 }
 
-async function resolveItem(slug: string, size: string): Promise<{ product_id: number; variation_id?: number }> {
-  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type&per_page=1`);
+async function resolveItem(
+  slug: string,
+  size: string,
+): Promise<{ product_id: number; variation_id?: number; category?: string; weightKg?: number }> {
+  const products = await wcGet(
+    `products?slug=${encodeURIComponent(slug)}&_fields=id,type,weight,categories&per_page=1`,
+  );
   if (!products.length) throw new Error(`Product not found: ${slug}`);
-  const { id: productId, type } = products[0];
+  const { id: productId, type, weight, categories } = products[0];
+  // Categoría y peso viajan con el ítem para poder recalcular el envío acá y no
+  // depender del número que mandó el navegador.
+  const meta = {
+    category: categories?.[0]?.name as string | undefined,
+    weightKg: Number(weight) > 0 ? Number(weight) : undefined,
+  };
 
-  if (type !== 'variable') return { product_id: productId };
+  if (type !== 'variable') return { product_id: productId, ...meta };
 
   const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes`);
   for (const v of variations) {
@@ -29,9 +41,9 @@ async function resolveItem(slug: string, size: string): Promise<{ product_id: nu
       ['talle', 'pa_talle', 'size', 'color', 'pa_color'].includes((a.name ?? '').toLowerCase()) &&
       (a.option ?? '').toLowerCase() === size.toLowerCase(),
     );
-    if (hit) return { product_id: productId, variation_id: v.id };
+    if (hit) return { product_id: productId, variation_id: v.id, ...meta };
   }
-  return { product_id: productId };
+  return { product_id: productId, ...meta };
 }
 
 const PAYMENT_TITLES: Record<string, string> = {
@@ -47,7 +59,9 @@ export async function POST(req: NextRequest) {
     const rawBody = await req.json();
     const {
       customer, shipping, couponCode,
-      paymentMethod, shippingMethodId, shippingLabel, shippingBranch,
+      // shippingLabel del cliente ya no se usa: la etiqueta la arma el
+      // recálculo de abajo, junto con el costo.
+      paymentMethod, shippingMethodId, shippingBranch,
       fbp, fbc,
     } = rawBody;
     // Nunca confiar en el navegador: cualquier línea marcada como regalo (o
@@ -58,9 +72,12 @@ export async function POST(req: NextRequest) {
 
     const country = (customer.pais && customer.pais !== 'OTHER') ? customer.pais : 'AR';
 
+    const shippingLines: IntlShippingLine[] = [];
+
     const lineItems = await Promise.all(
       (items as any[]).map(async (item) => {
-        const resolved = await resolveItem(item.id, item.size);
+        const { category, weightKg, ...resolved } = await resolveItem(item.id, item.size);
+        shippingLines.push({ category, weightKg, quantity: Number(item.quantity) || 1 });
         const lineTotal = String(Math.round(Number(item.price) * Number(item.quantity)));
         const li: Record<string, unknown> = {
           ...resolved,
@@ -94,6 +111,20 @@ export async function POST(req: NextRequest) {
 
     const paymentTitle = PAYMENT_TITLES[paymentMethod] ?? paymentMethod;
 
+    // El envío se recalcula acá, con la categoría y el peso que se acaban de
+    // leer de WooCommerce. El costo que mandó el navegador se ignora a
+    // propósito: es el importe que después se le cobra al cliente vía wcTotal,
+    // así que no puede salir del cliente. El checkout corre esta misma función
+    // sobre los mismos datos, o sea que lo mostrado y lo cobrado coinciden.
+    const quote = quoteIntlShipping(customer.pais ?? '', shippingLines);
+    if (Math.round(quote.cost) !== Math.round(Number(shipping) || 0)) {
+      console.warn(
+        '[create-order-intl] envío recalculado:', quote.cost,
+        '— el cliente había mandado:', shipping,
+        `(${quote.zone}/${quote.tier}, ${quote.volumetricKg}kg vol, ${quote.actualKg}kg real)`,
+      );
+    }
+
     const order: Record<string, unknown> = {
       payment_method:       paymentMethod,
       payment_method_title: paymentTitle,
@@ -101,9 +132,11 @@ export async function POST(req: NextRequest) {
       billing,
       shipping:             { ...billing, email: '', phone: '' },
       line_items:           lineItems,
-      shipping_lines:       shippingMethodId
-        ? [{ method_id: shippingMethodId, method_title: shippingLabel ?? shippingMethodId, total: String(shipping ?? 0) }]
-        : [],
+      shipping_lines:       [{
+        method_id:    'fedex_international',
+        method_title: quote.label,
+        total:        String(Math.round(quote.cost)),
+      }],
     };
 
     if (couponCode) order.coupon_lines = [{ code: couponCode }];
@@ -153,6 +186,8 @@ export async function POST(req: NextRequest) {
         provincia:     customer.provincia,
         paymentMethod,
         pais:          customer.pais || country,
+        shipping:      Math.round(quote.cost),
+        shippingLabel: quote.label,
         // PayPal recién se confirma cuando el cliente aprueba (paypal-capture /
         // paypal-webhook) — no mandarle "pago recibido" al crear la orden.
         paymentPending: paymentMethod === 'paypal',

@@ -170,7 +170,7 @@ export default function ConfirmacionClient() {
             ? 'Your order was created and the payment is still being processed. As soon as it clears we will send you the confirmation by email.'
             : 'Tu pedido quedó registrado y el pago todavía se está procesando. Apenas se acredite te mandamos el mail de confirmación.')
         : (isIntl
-            ? "We've received your order and sent a confirmation to your email. Your DHL shipping cost and estimated delivery time will be confirmed within 24 hours."
+            ? "We've received your order and sent a confirmation to your email. It ships within 2 to 3 business days and you'll get the FedEx tracking number by email."
             : 'Te enviamos un email con la confirmación y los detalles del pedido. Preparamos tu orden y te avisamos cuando esté en camino.'),
     retry:   isIntl ? 'Try the payment again' : 'Reintentar el pago',
     contact: isIntl ? 'Questions? Chat with us on ' : 'Ante cualquier duda escribinos por ',
@@ -179,7 +179,7 @@ export default function ConfirmacionClient() {
     date:         isIntl ? 'Date'            : 'Fecha',
     shipping:     isIntl ? 'Shipping'        : 'Envío',
     shippingVal:  isIntl
-      ? 'DHL Express — final quote confirmed by email within 24 h'
+      ? 'FedEx International — tracked and insured'
       : 'Andreani — 5 a 10 días hábiles',
     cta:          isIntl ? 'Continue shopping' : 'Seguir comprando',
   };
@@ -218,8 +218,9 @@ export default function ConfirmacionClient() {
           {isIntl && !isRejected && (
             <div className="mx-auto max-w-[400px] bg-foreground/[0.03] border border-border rounded-[10px] px-5 py-3.5 mb-6 text-left">
               <p className="text-[12px] text-foreground/60 leading-relaxed">
-                <span className="text-foreground font-semibold">Final DHL shipping quote</span>
-                {' '}will be confirmed by email after purchase. Your order won&apos;t ship until you approve the quote.
+                <span className="text-foreground font-semibold">Shipping is already included</span>
+                {' '}in what you paid. Import duties and customs fees at destination are separate and are paid
+                by the recipient.
               </p>
             </div>
           )}

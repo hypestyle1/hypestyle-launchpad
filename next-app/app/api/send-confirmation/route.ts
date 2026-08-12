@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUsdRate } from '@/lib/fx';
+import { CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
@@ -141,7 +142,7 @@ function buildHtml(order: {
 </html>`;
 }
 
-// ─── INTERNATIONAL (English / USD / DHL) ────────────────────────────────────
+// ─── INTERNATIONAL (English / USD / FedEx) ────────────────────────────────────
 
 function buildHtmlIntl(order: {
   orderNum: string | number;
@@ -154,6 +155,9 @@ function buildHtmlIntl(order: {
   email: string;
   paymentMethod?: string;
   usdRate: number;
+  /** Costo de envío ya cobrado en la orden, en pesos. */
+  shipping?: number;
+  shippingLabel?: string;
 }) {
   const { usdRate } = order;
   const isTransfer = order.paymentMethod === 'transferencia';
@@ -171,10 +175,14 @@ function buildHtmlIntl(order: {
     </tr>
   `).join('');
 
+  // El envío internacional ya viene cobrado en la orden (tarifario Boxfly), así
+  // que se muestra el importe real en vez del viejo "quoted separately".
   const shippingTotalRow = `
     <tr>
-      <td style="padding:8px 0;font-size:13px;color:#888;">Shipping (DHL Express)</td>
-      <td style="padding:8px 0;text-align:right;font-size:13px;color:#888;font-style:italic;">Quoted separately</td>
+      <td style="padding:8px 0;font-size:13px;color:#888;">${order.shippingLabel || 'International shipping'}</td>
+      <td style="padding:8px 0;text-align:right;font-size:13px;color:#888;">${
+        order.shipping ? fmtARS(order.shipping) : 'Included'
+      }</td>
     </tr>
   `;
 
@@ -212,17 +220,18 @@ function buildHtmlIntl(order: {
         </tr>
       </table>
       <p style="margin:14px 0 0;font-size:12px;color:#666;border-top:1px solid #f0f0f0;padding-top:12px;line-height:1.6;">
-        Please use your order number as the payment reference. Once payment is received, your order will be approved and DHL shipping will be coordinated by email.
+        Please use your order number as the payment reference. Once payment is received, your order will be approved and shipped with FedEx.
       </p>
     </div>
   ` : '';
 
   const dhlNote = `
     <div style="background:#f8f8f8;border-left:3px solid #0a0a0a;border-radius:0 6px 6px 0;padding:14px 16px;margin:24px 0;">
-      <p style="margin:0;font-size:13px;font-weight:700;color:#111;">DHL Express International Shipping</p>
+      <p style="margin:0;font-size:13px;font-weight:700;color:#111;">International shipping</p>
       <p style="margin:6px 0 0;font-size:12px;color:#666;line-height:1.6;">
-        Your shipping cost and estimated delivery time will be confirmed by email within 24 hours.
-        Your order will not ship until you approve the DHL quote.
+        Sent with FedEx, door to door, tracked and insured. We dispatch within 2 to 3 business days of
+        payment and email you the tracking number as soon as it ships.<br/><br/>
+        ${CUSTOMS_NOTICE}
       </p>
     </div>
   `;
@@ -271,7 +280,7 @@ function buildHtmlIntl(order: {
               </tr>
               <tr>
                 <td colspan="2" style="padding:0 0 8px;">
-                  <span style="font-size:11px;color:#aaa;">Approximate USD equivalent · Shipping quoted separately</span>
+                  <span style="font-size:11px;color:#aaa;">Approximate USD equivalent · shipping included</span>
                 </td>
               </tr>
             </table>
@@ -313,7 +322,7 @@ function buildAdminHtml(order: any) {
   ` : '';
 
   const intlNote = isIntl ? `
-    <tr><td style="padding:4px 0;color:#888;">Shipping</td><td style="padding:4px 0;font-weight:600;color:#b45309;">DHL Express — quote pending</td></tr>
+    <tr><td style="padding:4px 0;color:#888;">Shipping</td><td style="padding:4px 0;font-weight:600;color:#b45309;">FedEx International</td></tr>
   ` : `
     <tr><td style="padding:4px 0;color:#888;">Envío</td><td style="padding:4px 0;">Andreani</td></tr>
   `;

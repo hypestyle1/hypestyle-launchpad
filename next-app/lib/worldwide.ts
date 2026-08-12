@@ -9,30 +9,37 @@
  * lib/i18n.ts: la página los pasa por t() para mostrarlos en el idioma activo.
  */
 
+/*
+ * Las zonas son las mismas cuatro del tarifario de Boxfly (ver lib/shipping-intl),
+ * y no una lista aparte: antes esta página prometía "Correo Argentino / OCA" para
+ * Latinoamérica y "DHL / FedEx" para Estados Unidos mientras el checkout cobraba
+ * otra cosa. El precio exacto lo calcula el checkout según lo que haya en el
+ * carrito, así que acá se habla de plazos y transportista, no de importes.
+ */
 export const SHIPPING_ZONES = [
   {
-    region: 'América Latina',
-    countries: 'Argentina, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México',
+    region: 'América',
+    countries: 'Estados Unidos, Canadá, México, Brasil, Chile, Uruguay, Colombia, Perú y más',
     time: '7–15 días hábiles',
-    carrier: 'Correo Argentino / OCA',
-  },
-  {
-    region: 'Estados Unidos & Canadá',
-    countries: 'USA, Canada',
-    time: '10–20 días hábiles',
-    carrier: 'DHL / FedEx',
+    carrier: 'FedEx',
   },
   {
     region: 'Europa',
-    countries: 'España, Italia, Francia, Alemania, Reino Unido y más',
-    time: '12–22 días hábiles',
-    carrier: 'DHL / Correo Internacional',
+    countries: 'España, Italia, Francia, Alemania, Reino Unido, Portugal y más',
+    time: '10–18 días hábiles',
+    carrier: 'FedEx',
   },
   {
-    region: 'Resto del mundo',
-    countries: 'Consultar disponibilidad',
-    time: 'Variable',
-    carrier: 'A coordinar',
+    region: 'Asia',
+    countries: 'Japón, Corea del Sur, Singapur, Hong Kong, India, Emiratos Árabes e Israel',
+    time: '12–20 días hábiles',
+    carrier: 'FedEx',
+  },
+  {
+    region: 'Oceanía',
+    countries: 'Australia y Nueva Zelanda',
+    time: '12–22 días hábiles',
+    carrier: 'FedEx',
   },
 ];
 
@@ -51,6 +58,10 @@ export const SHIPPING_FAQS = [
   },
   {
     q: '¿Los aranceles de importación están incluidos?',
-    a: 'No. Los impuestos de importación son responsabilidad del comprador según la normativa de cada país.',
+    a: 'Los impuestos de importación quedan a cargo de quien recibe, según la normativa de cada país. El precio del envío sí incluye el flete, el seguro por pérdida o daño y los impuestos de exportación de Argentina.',
+  },
+  {
+    q: '¿Cuánto sale el envío?',
+    a: 'Se calcula en el checkout según lo que lleves y a qué país va, y se paga junto con el pedido. El precio queda cerrado antes de pagar.',
   },
 ];
