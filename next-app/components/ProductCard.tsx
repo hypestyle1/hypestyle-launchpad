@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { checkStock } from "@/lib/checkStock";
 import { gaAddToCart } from "@/lib/ga";
+import { fbAddToCart } from "@/lib/fbpixel";
 
 interface ProductCardProps {
   id?: string;
@@ -63,9 +64,7 @@ export default function ProductCard({
     }
 
     add({ id, name, price, image, size, quantity: 1 });
-    if (typeof window !== 'undefined' && window.fbq) {
-      window.fbq('track', 'AddToCart', { content_ids: [id], content_name: name, value: price, currency: 'ARS', content_type: 'product' });
-    }
+    fbAddToCart({ id, name, price, quantity: 1 });
     gaAddToCart({ item_id: id, item_name: name, item_category: category, item_variant: size, price, quantity: 1 });
     setAddedSize(size);
     setDrawerOpen(true);
