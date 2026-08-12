@@ -16,6 +16,7 @@ import { checkStock } from '@/lib/checkStock';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
 import { gaViewItem, gaAddToCart } from '@/lib/ga';
+import { fbViewContent, fbAddToCart } from '@/lib/fbpixel';
 
 function CareIcon({ type }: { type: string }) {
   const cls = 'w-[18px] h-[18px] flex-shrink-0 text-foreground/70';
@@ -225,6 +226,32 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     });
   }, [product?.slug, goalDiscount?.active, goalDiscount?.percent]);
 
+  // ViewContent del pixel de Meta. Hasta el 12/08/2026 este evento no existía en
+  // ningún lado del sitio: la ficha medía view_item de GA4 y nada del lado de
+  // Meta, y por eso la cuenta mostraba 0 ViewContent con miles de visitas.
+  //
+  // Va en un efecto propio y NO junto al gaViewItem de arriba a propósito: aquel
+  // depende de goalDiscount, que para LA NUESTRA se re-consulta cada 60s, así que
+  // se vuelve a disparar cada vez que cambia el porcentaje. Para GA4 eso ya venía
+  // así; sumar ViewContent a ese efecto multiplicaría el evento que justamente
+  // queremos usar como señal de optimización. Acá se manda uno por producto visto.
+  //
+  // El precio es el que el cliente ve en ese momento. En el único producto con
+  // descuento por gol el primer render puede tomar el precio de lista si la
+  // consulta todavía no resolvió — se prefiere eso antes que duplicar el evento.
+  const viewContentSent = useRef<string | null>(null);
+  useEffect(() => {
+    if (!product || viewContentSent.current === product.slug) return;
+    viewContentSent.current = product.slug;
+    const { displayPrice } = getGoalDiscountPrice(product, goalDiscount);
+    fbViewContent({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      price: displayPrice,
+    });
+  }, [product?.slug]);
+
   useEffect(() => {
     const el = addBtnRef.current;
     if (!el) return;
@@ -323,6 +350,10 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     setStockChecking(false);
     if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, selectedSize])); setStockError(true); return; }
     add({ id: product.id, name: product.name, price: displayPrice, image: imgUrl(coverImage), size: selectedSize, quantity: 1 });
+    // El AddToCart del pixel faltaba justo acá — estaba solo en ProductCard (el
+    // atajo del grid), así que el camino principal de compra no se medía y Meta
+    // veía menos AddToCart que InitiateCheckout, que es imposible en un embudo sano.
+    fbAddToCart({ id: product.id, name: product.name, price: displayPrice, quantity: 1 });
     gaAddToCart({
       item_id: product.id,
       item_name: product.name,

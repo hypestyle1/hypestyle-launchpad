@@ -13,6 +13,7 @@ import { createOrderAndPreference } from '@/lib/wc-client';
 import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
 import { gaBeginCheckout } from '@/lib/ga';
+import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
 import { imgSrc } from '@/lib/img';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 import GiftProgressBar from '@/components/GiftProgressBar';
@@ -438,9 +439,14 @@ export default function Checkout() {
   const handleEnvioSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStep('pago');
-    if (typeof window !== 'undefined' && window.fbq) {
-      window.fbq('track', 'InitiateCheckout', { value: totalFinal, currency: 'ARS', num_items: items.reduce((s, i) => s + i.quantity, 0) });
-    }
+    // Antes este evento iba sin content_ids: Meta veía que alguien inició un
+    // checkout de $X pero no de qué productos, así que no servía como señal de
+    // producto para el catálogo. El total va explícito porque incluye envío,
+    // cupones y descuentos que no viven en el renglón del carrito.
+    fbInitiateCheckout(
+      items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+      totalFinal,
+    );
     gaBeginCheckout(
       items.map(i => ({
         item_id: i.id,
@@ -449,6 +455,26 @@ export default function Checkout() {
         price: i.price,
         quantity: i.quantity,
       })),
+      totalFinal,
+    );
+  };
+
+  // AddPaymentInfo del pixel: el evento no existía en el sitio. El punto natural
+  // es acá, cuando el cliente elige medio de pago — es el último paso medible
+  // antes de irse al gateway, y en los pagos off-site (MercadoPago, GOcuotas,
+  // PayPal) es la última señal que se puede tomar desde el navegador.
+  //
+  // Se manda una sola vez por paso de pago aunque el cliente cambie de medio:
+  // cada cambio de radio es la misma intención, no una nueva. Si el total cambia
+  // después (el descuento del 10% por transferencia), el evento ya salió con el
+  // total del momento — se prefiere eso a mandar un evento por cada tanteo.
+  const addPaymentInfoSent = useRef(false);
+  const handleMetodoChange = (metodo: string) => {
+    setPago(prev => ({ ...prev, metodo }));
+    if (addPaymentInfoSent.current) return;
+    addPaymentInfoSent.current = true;
+    fbAddPaymentInfo(
+      items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
       totalFinal,
     );
   };
@@ -919,7 +945,7 @@ export default function Checkout() {
                 <div className="space-y-2">
                   {paymentMethods.map(m => (
                     <label key={m.id} className={`flex items-center gap-3 border px-4 py-3.5 cursor-pointer transition-colors rounded-[10px] ${pago.metodo === m.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
-                      <input type="radio" name="metodo" value={m.id} checked={pago.metodo === m.id} onChange={() => setPago({ ...pago, metodo: m.id })} className="w-4 h-4 accent-foreground" />
+                      <input type="radio" name="metodo" value={m.id} checked={pago.metodo === m.id} onChange={() => handleMetodoChange(m.id)} className="w-4 h-4 accent-foreground" />
                       <div className="flex-1">
                         <p className="text-[13px] font-medium">{m.label}</p>
                         {m.sub && <p className={`text-[11px] ${m.id === 'transferencia' && !isInternational ? 'text-green-700 font-semibold' : 'text-muted-foreground'}`}>{m.sub}</p>}
