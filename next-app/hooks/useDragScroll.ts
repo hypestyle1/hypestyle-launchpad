@@ -12,8 +12,15 @@ const DRAG_THRESHOLD_PX = 6;
  * Además cancela el click que dispara el browser al soltar tras un arrastre.
  * Sin eso, arrastrar un carrusel de links (el feed de Instagram, las reseñas)
  * termina abriendo el elemento que quedó abajo del cursor.
+ *
+ * `deps` — misma convención que useReveal. **Es obligatorio pasarlas cuando el
+ * contenedor no existe en el primer render**, por ejemplo si el componente
+ * devuelve null hasta que resuelve un fetch: el efecto correría una sola vez
+ * con `ref.current` en null, saldría temprano y no volvería a engancharse
+ * nunca. Pasó exactamente eso con el carrusel de reseñas del home, que quedó
+ * en producción sin un solo listener y no se podía arrastrar.
  */
-export function useDragScroll() {
+export function useDragScroll(deps: any[] = []) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,7 +69,8 @@ export function useDragScroll() {
       el.removeEventListener('mousemove', onMouseMove);
       el.removeEventListener('click', onClickCapture, true);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 
   return ref;
 }

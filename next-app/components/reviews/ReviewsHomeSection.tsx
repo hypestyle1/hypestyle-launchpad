@@ -6,6 +6,7 @@ import { getPublicReviewSummary, getPublicReviews } from '@/lib/reviews/public';
 import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
 import { useReveal } from '@/hooks/useReveal';
 import { useDragScroll } from '@/hooks/useDragScroll';
+import CarouselArrows from '../CarouselArrows';
 import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
 
@@ -20,7 +21,10 @@ export default function ReviewsHomeSection() {
   const [summary, setSummary] = useState<PublicReviewSummary | null>(null);
   const [featured, setFeatured] = useState<PublicReview[]>([]);
   const ref = useReveal([summary]);
-  const dragRef = useDragScroll();
+  // Las deps son obligatorias acá: hasta que resuelve el fetch este componente
+  // devuelve null, así que el contenedor del carrusel no existe en el primer
+  // render y sin esto el hook no engancharía ningún listener.
+  const dragRef = useDragScroll([featured]);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,14 +59,17 @@ export default function ReviewsHomeSection() {
           </p>
         </div>
         {hasReviews && (
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <span className="text-[30px] font-bold leading-none tabular-nums">{summary.average!.toFixed(1)}</span>
-            <div className="flex flex-col gap-1">
-              <StarRating rating={summary.average!} size={16} />
-              <span className="text-[12px] text-muted-foreground">
-                {summary.total} {summary.total === 1 ? 'reseña' : 'reseñas'}
-              </span>
+          <div className="flex items-end gap-6 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="text-[30px] font-bold leading-none tabular-nums">{summary.average!.toFixed(1)}</span>
+              <div className="flex flex-col gap-1">
+                <StarRating rating={summary.average!} size={16} />
+                <span className="text-[12px] text-muted-foreground">
+                  {summary.total} {summary.total === 1 ? 'reseña' : 'reseñas'}
+                </span>
+              </div>
             </div>
+            <CarouselArrows containerRef={dragRef} deps={[featured]} label="reseñas" />
           </div>
         )}
       </div>
