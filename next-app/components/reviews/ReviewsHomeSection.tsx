@@ -4,18 +4,32 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getPublicReviewSummary, getPublicReviews } from '@/lib/reviews/public';
 import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
+import type { HomeReviewsData } from '@/lib/reviews/server';
 import { useReveal } from '@/hooks/useReveal';
 import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
 
 const FEATURED_COUNT = 4;
 
-export default function ReviewsHomeSection() {
-  const [summary, setSummary] = useState<PublicReviewSummary | null>(null);
-  const [featured, setFeatured] = useState<PublicReview[]>([]);
+/**
+ * `initial` lo trae el servidor (ver app/page.tsx y lib/reviews/server.ts).
+ * Con eso la sección ya sale renderizada en el HTML: antes se montaba vacía,
+ * pedía los datos en un useEffect y a los 6–9s insertaba ~715px arriba de
+ * #new-in-fw26, empujando todo lo que estuviera en pantalla. Era lo último que
+ * quedaba del CLS del home.
+ *
+ * Si `initial` no viene (falló el fetch del server, o modo demo), se comporta
+ * como antes y pide por su cuenta.
+ */
+export default function ReviewsHomeSection({ initial }: { initial?: HomeReviewsData | null }) {
+  const [summary, setSummary] = useState<PublicReviewSummary | null>(initial?.summary ?? null);
+  const [featured, setFeatured] = useState<PublicReview[]>(initial?.featured ?? []);
   const ref = useReveal([summary]);
 
   useEffect(() => {
+    // Ya vino del servidor: no se vuelve a pedir, así no hay un segundo render
+    // que pueda cambiar el alto.
+    if (initial) return;
     let cancelled = false;
     Promise.all([
       getPublicReviewSummary(),
@@ -26,7 +40,7 @@ export default function ReviewsHomeSection() {
       setFeatured(r.reviews);
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [initial]);
 
   // Todavía cargando: no mostrar nada (evita parpadeo del estado vacío).
   if (!summary) return null;

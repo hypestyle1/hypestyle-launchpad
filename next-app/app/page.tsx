@@ -16,6 +16,7 @@ import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
 import Footer from '@/components/Footer';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
+import { fetchHomeReviews } from '@/lib/reviews/server';
 import { buildMetadata } from '@/lib/seo';
 
 // Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra) siguen en el
@@ -45,10 +46,13 @@ export const metadata = buildMetadata({
  */
 export default async function Home() {
   const queryClient = new QueryClient();
-  await queryClient.prefetchQuery({
-    queryKey: ['products'],
-    queryFn: fetchAllProducts,
-  });
+  // Las reseñas van por separado: no pasan por React Query, la sección las
+  // recibe por props. Sin esto se montaba vacía y a los 6–9s insertaba ~715px
+  // arriba de #new-in-fw26, que era lo último que quedaba del CLS del home.
+  const [, reviews] = await Promise.all([
+    queryClient.prefetchQuery({ queryKey: ['products'], queryFn: fetchAllProducts }),
+    fetchHomeReviews(4),
+  ]);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
@@ -71,7 +75,7 @@ export default async function Home() {
           <Promo3x2Section />
           <FlashSaleSection />
           <BenefitsStrip />
-          <ReviewsHomeSection />
+          <ReviewsHomeSection initial={reviews} />
           <NewInFW26 />
           <ShopTheLook />
           <VideoSection />
