@@ -131,6 +131,12 @@
   .cursor-grab { cursor: grab; }
   .cursor-grab:active { cursor: grabbing; }
 
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  /* `scrollbar-none` es un alias de `no-scrollbar`: varios componentes ya lo
+     usaban (BenefitsStrip, CategoriaPage, la sección de reseñas del home)
+     asumiendo que existía, pero no está definido acá ni viene con Tailwind, así
+     que la clase no hacía nada y esos carruseles mostraban la barra de scroll. */
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .no-scrollbar,
+  .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 }

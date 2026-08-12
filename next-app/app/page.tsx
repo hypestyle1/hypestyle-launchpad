@@ -13,6 +13,7 @@ import FlashSaleSection from '@/components/FlashSaleSection';
 import Promo3x2Section from '@/components/Promo3x2Section';
 import VideoSection from '@/components/VideoSection';
 import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
+import InstagramFeed from '@/components/InstagramFeed';
 import Footer from '@/components/Footer';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
@@ -79,6 +80,9 @@ export default async function Home() {
           <BackInStock />
           <MasHypeSection />
           <EditorialBanner />
+          {/* Último bloque antes del footer, a propósito: Clarity muestra que casi
+              nadie llega hasta acá, así que no compite con el producto arriba. */}
+          <InstagramFeed />
         </div>
       </main>
       <Footer />

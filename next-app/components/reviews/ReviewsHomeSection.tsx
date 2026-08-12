@@ -5,15 +5,22 @@ import Link from 'next/link';
 import { getPublicReviewSummary, getPublicReviews } from '@/lib/reviews/public';
 import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
 import { useReveal } from '@/hooks/useReveal';
+import { useDragScroll } from '@/hooks/useDragScroll';
 import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
 
-const FEATURED_COUNT = 4;
+// Eran 4 y quedaba a mitad de camino entre grilla y carrusel: 4 tarjetas de
+// 300px entran enteras en el contenedor de 1400px, así que en desktop el
+// contenedor de scroll no scrolleaba nada y se veía como una fila suelta
+// alineada a la izquierda con un hueco al costado. Con 8 el carrusel desborda
+// y se comporta igual en mobile que en desktop.
+const FEATURED_COUNT = 8;
 
 export default function ReviewsHomeSection() {
   const [summary, setSummary] = useState<PublicReviewSummary | null>(null);
   const [featured, setFeatured] = useState<PublicReview[]>([]);
   const ref = useReveal([summary]);
+  const dragRef = useDragScroll();
 
   useEffect(() => {
     let cancelled = false;
@@ -77,8 +84,14 @@ export default function ReviewsHomeSection() {
         </div>
       )}
 
+      {/* items-stretch + h-full en la card: si no, con textos de distinto largo
+          cada tarjeta terminaba con una altura y el borde inferior quedaba
+          escalonado a lo largo del carrusel. */}
       {hasReviews && (
-      <div className="reveal rd2 flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+      <div
+        ref={dragRef}
+        className="reveal rd2 flex items-stretch gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory cursor-grab select-none pb-1 -mx-4 px-4 md:mx-0 md:px-0"
+      >
         {featured.map((r) => (
           <div key={r.id} className="flex-none w-[78%] sm:w-[300px] snap-start">
             <ReviewCard review={r} compact />
