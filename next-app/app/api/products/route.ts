@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { fetchWithRetry } from '@/lib/fetch-retry';
 
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
@@ -60,7 +61,9 @@ export async function GET() {
   // por producto — con eso las 2 páginas devuelven exactamente 108/108 sin
   // faltantes ni duplicados.
   for (let i = 0; i < 20; i++) {
-    const res = await fetch(GRAPHQL_URL, {
+    // Con reintentos: esta ruta se prerenderiza en el build y un solo timeout
+    // contra WP hacía fallar el deploy completo.
+    const res = await fetchWithRetry(GRAPHQL_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100, after } }),

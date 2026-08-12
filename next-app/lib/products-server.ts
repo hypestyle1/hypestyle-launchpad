@@ -1,4 +1,5 @@
 import { fromWPNode, NormalizedProduct } from './products-normalize';
+import { fetchWithRetry } from './fetch-retry';
 
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
@@ -40,7 +41,9 @@ export async function fetchAllProducts(): Promise<NormalizedProduct[]> {
   let after: string | null = null;
 
   for (let i = 0; i < 20; i++) {
-    const res = await fetch(GRAPHQL_URL, {
+    // Con reintentos: esto corre en build para el home, /best-sellers y
+    // /special-prices. Un timeout suelto contra WP tiraba el deploy entero.
+    const res = await fetchWithRetry(GRAPHQL_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100, after } }),

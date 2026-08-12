@@ -6,6 +6,8 @@
 // esquivar tampoco, el fetch del server no lo sufre), por eso el proxy es
 // SOLO para `typeof window !== 'undefined'`. En producción no hace falta
 // ninguna de las dos cosas (el dominio real ya está whitelisteado).
+import { fetchWithRetry } from './fetch-retry';
+
 const isBrowser = typeof window !== 'undefined';
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL
   || (isBrowser && process.env.NODE_ENV === 'development' ? '/api/graphql-proxy' : 'https://lightpink-rook-704850.hostingersite.com/graphql');
@@ -19,7 +21,9 @@ export async function fetchGraphQL<T>(
   // producto le pegaría de nuevo a WPGraphQL.
   next?: { revalidate: number },
 ): Promise<T> {
-  const response = await fetch(GRAPHQL_URL, {
+  // Con reintentos: en build esto corre para el sitemap, los generateStaticParams
+  // y las 109 fichas de producto, y un solo timeout contra WP tiraba el deploy.
+  const response = await fetchWithRetry(GRAPHQL_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, variables }),
