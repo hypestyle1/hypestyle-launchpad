@@ -4,7 +4,12 @@
 // HMAC via Web Crypto (compatible con Edge middleware y route handlers).
 
 export const MAYORISTA_COOKIE = 'hype_mayorista_session';
-const SESSION_SECRET = process.env.MAYORISTA_SESSION_SECRET || 'hype-mayorista-dev-secret';
+// Fail closed: sin secreto configurado no se firman ni se validan sesiones. El
+// fallback literal anterior vivía en la fuente pública del repo, así que
+// cualquiera podía firmarse una cookie para el customerId que quisiera y leer el
+// perfil/pedidos de ese cliente. Ahora, si la variable falta, createSessionToken
+// lanza (el login falla ruidoso) y verifySessionToken rechaza (nadie autorizado).
+const SESSION_SECRET = (process.env.MAYORISTA_SESSION_SECRET || '').replace(/^﻿/, '').trim();
 const SESSION_DAYS = 30;
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
@@ -55,6 +60,7 @@ async function hmac(data: string): Promise<string> {
 }
 
 export async function createSessionToken(customerId: number): Promise<string> {
+  if (!SESSION_SECRET) throw new Error('MAYORISTA_SESSION_SECRET no configurado');
   const exp = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
   const payload = `${customerId}.${exp}`;
   const sig = await hmac(payload);
@@ -63,7 +69,7 @@ export async function createSessionToken(customerId: number): Promise<string> {
 
 // Devuelve el customerId (como número) o null si la cookie falta/expiró/no valida.
 export async function verifySessionToken(token: string | undefined | null): Promise<number | null> {
-  if (!token) return null;
+  if (!SESSION_SECRET || !token) return null;
   const parts = token.split('.');
   if (parts.length !== 3) return null;
   const [customerIdStr, expStr, sig] = parts;
