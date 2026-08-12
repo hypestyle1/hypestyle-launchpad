@@ -6,7 +6,7 @@ const items = [
   "Worldwide Shipping",
   "Drops limitados",
   "@hypestylearg",
-  "DHL International",
+  "FedEx International",
   "Cuotas sin interés",
   "Est. 2018",
 ];

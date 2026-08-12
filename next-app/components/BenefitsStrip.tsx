@@ -4,7 +4,7 @@ import { Globe, CreditCard, RotateCcw, Lock } from "lucide-react";
 import { useReveal } from "@/hooks/useReveal";
 
 const benefits = [
-  { icon: Globe, title: "Envío Internacional", desc: "DHL Express. Tracking en tiempo real." },
+  { icon: Globe, title: "Envío Internacional", desc: "FedEx. Tracking en tiempo real." },
   { icon: CreditCard, title: "Cuotas Sin Interés", desc: "3 y 6 cuotas con Visa y Mastercard." },
   { icon: RotateCcw, title: "Cambios Gratis", desc: "30 días para cambios y devoluciones." },
   { icon: Lock, title: "Drops Exclusivos", desc: "Producción limitada. Stock que no se repite." },

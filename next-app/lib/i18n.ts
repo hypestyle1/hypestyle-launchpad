@@ -61,7 +61,7 @@ const DICT: Dict = {
   // — AnnouncementBar —
   'Envío gratis desde $250.000': { EN: 'Free shipping over $250.000', PT: 'Frete grátis a partir de $250.000' },
   'Hasta 3 cuotas sin interés': { EN: 'Up to 3 interest-free installments', PT: 'Até 3x sem juros' },
-  'Worldwide Shipping vía DHL': { EN: 'Worldwide shipping via DHL', PT: 'Envio mundial via DHL' },
+  'Worldwide Shipping vía FedEx': { EN: 'Worldwide shipping via FedEx', PT: 'Envio mundial via FedEx' },
   '30 días para cambios y devoluciones': { EN: '30 days for exchanges & returns', PT: '30 dias para trocas e devoluções' },
 
   // — Footer —
