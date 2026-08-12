@@ -18,6 +18,7 @@ const GET_PRODUCTS = `
           stockStatus
           stockQuantity
           image { sourceUrl }
+          weight
           productCategories { nodes { name } }
           productTags { nodes { slug } }
         }
@@ -25,6 +26,7 @@ const GET_PRODUCTS = `
           price
           regularPrice
           image { sourceUrl }
+          weight
           productCategories { nodes { name } }
           productTags { nodes { slug } }
           variations(first: 20) {

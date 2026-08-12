@@ -113,7 +113,7 @@ export default function PendientePago() {
                   </div>
 
                   <p className="text-[12px] text-muted-foreground leading-relaxed">
-                    Once we confirm the transfer your order will be approved and we&apos;ll contact you to coordinate DHL shipping. Questions? DM us at{' '}
+                    Once we confirm the transfer your order is approved and shipped with FedEx. Questions? DM us at{' '}
                     <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground transition-colors">@hypestylearg</a>
                   </p>
                 </>
@@ -237,7 +237,7 @@ export default function PendientePago() {
                 <span>{formatPrice(displayTotal)}</span>
               </div>
               {isIntl && (
-                <p className="text-[11px] text-muted-foreground mt-1">* DHL shipping quoted separately</p>
+                <p className="text-[11px] text-muted-foreground mt-1">* Import duties at destination are paid by the recipient</p>
               )}
             </div>
             <div className="space-y-2 text-[12px]">

@@ -15,6 +15,12 @@ export interface NormalizedProduct {
   stock: Record<string, 'ok' | 'low' | 'out'>;
   tags: string[];
   customizable?: boolean;
+  /**
+   * Peso en kg cargado en WooCommerce. Lo usa el cálculo de envío internacional
+   * (lib/shipping-intl) para que el precio que se muestra en el checkout salga
+   * de los mismos datos con los que después lo recalcula el servidor.
+   */
+  weight?: number;
 }
 
 function parsePrice(s?: string | null): number {
@@ -94,6 +100,7 @@ export function fromWPNode(node: any): NormalizedProduct {
       const slug = node.productCategories?.nodes?.[0]?.slug ?? '';
       return WP_CAT[slug] ?? node.productCategories?.nodes?.[0]?.name ?? '';
     })(),
+    weight: Number(node.weight) > 0 ? Number(node.weight) : undefined,
     price,
     originalPrice,
     badge,

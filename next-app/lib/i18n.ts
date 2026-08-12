@@ -91,26 +91,31 @@ const DICT: Dict = {
   },
   'Contactanos por WhatsApp': { EN: 'Contact us on WhatsApp', PT: 'Fale conosco no WhatsApp' },
 
-  // Zonas
-  'América Latina': { EN: 'Latin America', PT: 'América Latina' },
-  'Argentina, Chile, Uruguay, Paraguay, Bolivia, Perú, Colombia, México': {
-    EN: 'Argentina, Chile, Uruguay, Paraguay, Bolivia, Peru, Colombia, Mexico',
-    PT: 'Argentina, Chile, Uruguai, Paraguai, Bolívia, Peru, Colômbia, México',
+  // Zonas — son las cuatro del tarifario de Boxfly (ver lib/shipping-intl).
+  // Si cambian ahí, hay que cambiarlas acá también: los textos de lib/worldwide
+  // son las claves de este diccionario.
+  'América': { EN: 'Americas', PT: 'América' },
+  'Estados Unidos, Canadá, México, Brasil, Chile, Uruguay, Colombia, Perú y más': {
+    EN: 'United States, Canada, Mexico, Brazil, Chile, Uruguay, Colombia, Peru and more',
+    PT: 'Estados Unidos, Canadá, México, Brasil, Chile, Uruguai, Colômbia, Peru e mais',
   },
-  'Estados Unidos & Canadá': { EN: 'United States & Canada', PT: 'Estados Unidos e Canadá' },
   'Europa': { EN: 'Europe', PT: 'Europa' },
-  'España, Italia, Francia, Alemania, Reino Unido y más': {
-    EN: 'Spain, Italy, France, Germany, United Kingdom and more',
-    PT: 'Espanha, Itália, França, Alemanha, Reino Unido e mais',
+  'España, Italia, Francia, Alemania, Reino Unido, Portugal y más': {
+    EN: 'Spain, Italy, France, Germany, United Kingdom, Portugal and more',
+    PT: 'Espanha, Itália, França, Alemanha, Reino Unido, Portugal e mais',
   },
-  'Resto del mundo': { EN: 'Rest of the world', PT: 'Resto do mundo' },
-  'Consultar disponibilidad': { EN: 'Check availability', PT: 'Consultar disponibilidade' },
+  'Asia': { EN: 'Asia', PT: 'Ásia' },
+  'Japón, Corea del Sur, Singapur, Hong Kong, India, Emiratos Árabes e Israel': {
+    EN: 'Japan, South Korea, Singapore, Hong Kong, India, United Arab Emirates and Israel',
+    PT: 'Japão, Coreia do Sul, Singapura, Hong Kong, Índia, Emirados Árabes e Israel',
+  },
+  'Oceanía': { EN: 'Oceania', PT: 'Oceania' },
+  'Australia y Nueva Zelanda': { EN: 'Australia and New Zealand', PT: 'Austrália e Nova Zelândia' },
   '7–15 días hábiles': { EN: '7–15 business days', PT: '7–15 dias úteis' },
-  '10–20 días hábiles': { EN: '10–20 business days', PT: '10–20 dias úteis' },
+  '10–18 días hábiles': { EN: '10–18 business days', PT: '10–18 dias úteis' },
+  '12–20 días hábiles': { EN: '12–20 business days', PT: '12–20 dias úteis' },
   '12–22 días hábiles': { EN: '12–22 business days', PT: '12–22 dias úteis' },
-  'Variable': { EN: 'Variable', PT: 'Variável' },
-  'DHL / Correo Internacional': { EN: 'DHL / International Mail', PT: 'DHL / Correio Internacional' },
-  'A coordinar': { EN: 'To be arranged', PT: 'A combinar' },
+  'FedEx': { EN: 'FedEx', PT: 'FedEx' },
 
   // FAQ de envíos
   '¿Cuándo se despacha mi pedido?': { EN: 'When is my order shipped?', PT: 'Quando meu pedido é enviado?' },
@@ -132,9 +137,14 @@ const DICT: Dict = {
     EN: 'Are import duties included?',
     PT: 'As taxas de importação estão incluídas?',
   },
-  'No. Los impuestos de importación son responsabilidad del comprador según la normativa de cada país.': {
-    EN: 'No. Import taxes are the buyer’s responsibility under each country’s regulations.',
-    PT: 'Não. Os impostos de importação são responsabilidade do comprador, conforme a legislação de cada país.',
+  'Los impuestos de importación quedan a cargo de quien recibe, según la normativa de cada país. El precio del envío sí incluye el flete, el seguro por pérdida o daño y los impuestos de exportación de Argentina.': {
+    EN: 'Import taxes are paid by the recipient, under each country’s regulations. The shipping price does include freight, insurance against loss or damage, and Argentine export taxes.',
+    PT: 'Os impostos de importação ficam por conta de quem recebe, conforme a legislação de cada país. O preço do envio inclui frete, seguro contra perda ou dano e os impostos de exportação da Argentina.',
+  },
+  '¿Cuánto sale el envío?': { EN: 'How much is shipping?', PT: 'Quanto custa o envio?' },
+  'Se calcula en el checkout según lo que lleves y a qué país va, y se paga junto con el pedido. El precio queda cerrado antes de pagar.': {
+    EN: 'It is calculated at checkout based on what you order and where it ships, and you pay it with your order. The price is final before you pay.',
+    PT: 'É calculado no checkout conforme o que você leva e o país de destino, e você paga junto com o pedido. O preço fica fechado antes do pagamento.',
   },
 };
 
