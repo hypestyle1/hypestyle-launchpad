@@ -17,7 +17,7 @@ const SLIDE_MS = 4500;
 const SLIDES = [
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-stars-venezuela-DSC03294-scaled.jpg', name1: 'Stars For Venezuela', name2: 'Hoodie', slug: 'stars-for-venezuela-hoodie', pos: '58%' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-black-hstars-DSC03195-scaled.jpg', name1: 'Hoodie', name2: 'Black HStars', slug: 'hoodie-black-hstars', pos: '28%' },
-  { img: '/hero/hanna-drop-3.jpg', name1: 'Lion Of Judah', name2: 'Stone Wash', slug: 'lion-of-judah-stone-wash-hoodie' },
+  { img: '/hero/hanna-drop-3.webp', name1: 'Lion Of Judah', name2: 'Stone Wash', slug: 'lion-of-judah-stone-wash-hoodie' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-pink-juani-scaled.jpg', name1: 'Hoodie', name2: 'Pink', slug: 'hoodie-pink' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-god-gave-me-style-espaldas-scaled.jpg', name1: 'God Gave Me Style', name2: 'Waffle', slug: 'longsleeve-waffle-god-gave-me-style' },
   // Único slide en video (el resto son fotos) — mismo mural que el editorial de
@@ -79,6 +79,26 @@ export default function HeroHannaDrop() {
 
   // Orden aleatorio por visita: se sortea recién en el cliente para no romper la hidratación SSR.
   useEffect(() => { setSlides(shuffle(SLIDES)); }, []);
+
+  // Qué slides tienen permitido pedir su foto. Los 6 slides están siempre en el
+  // DOM (con opacity 0) para que el crossfade sea instantáneo, pero antes cada
+  // uno traía su background-image desde el arranque: el navegador se bajaba las
+  // 6 fotos del WordPress juntas — casi 1 MB — y las 5 que nadie estaba mirando
+  // le robaban ancho de banda justo a la primera, que es el LCP del home.
+  // Ahora arranca solo la primera y se van sumando: el slide actual, el que
+  // sigue (así entra ya cargado cuando el carrusel avanza a los 4,5 s) y todos
+  // los que ya se mostraron alguna vez.
+  const [ready, setReady] = useState<Set<number>>(() => new Set([0]));
+  useEffect(() => {
+    setReady(prev => {
+      const next = (slide + 1) % slides.length;
+      if (prev.has(slide) && prev.has(next)) return prev;
+      const s = new Set(prev);
+      s.add(slide);
+      s.add(next);
+      return s;
+    });
+  }, [slide, slides.length]);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -215,14 +235,30 @@ export default function HeroHannaDrop() {
               style={{ opacity: i === slide ? 1 : 0 }}
             >
               {s.video ? (
-                <video
-                  className="absolute inset-0 w-full h-full object-cover"
-                  src={s.video} poster={s.img} autoPlay loop muted playsInline preload="auto"
-                />
+                /* El <video> se monta SOLO cuando su slide está activo. Antes
+                   estaba siempre en el DOM (con opacity 0) y con preload="auto":
+                   autoplay + preload hacen que el navegador se baje el mp4 desde
+                   el primer pintado, compitiendo con la foto del slide 1, que es
+                   el LCP. Como el slide de video puede caer en cualquier posición
+                   del shuffle, se descargaba entero aunque el usuario nunca
+                   llegara a verlo. Debajo queda siempre el poster como fondo, así
+                   el crossfade entra igual y el video aparece encima al cargar. */
+                <>
+                  <div
+                    className="absolute inset-0 bg-cover"
+                    style={{ backgroundImage: ready.has(i) ? `url('${s.img}')` : undefined, backgroundPosition: `center ${s.pos ?? '18%'}` }}
+                  />
+                  {i === slide && (
+                    <video
+                      className="absolute inset-0 w-full h-full object-cover"
+                      src={s.video} poster={s.img} autoPlay loop muted playsInline preload="none"
+                    />
+                  )}
+                </>
               ) : (
                 <div
                   className="absolute inset-0 bg-cover"
-                  style={{ backgroundImage: `url('${s.img}')`, backgroundPosition: `center ${s.pos ?? '18%'}` }}
+                  style={{ backgroundImage: ready.has(i) ? `url('${s.img}')` : undefined, backgroundPosition: `center ${s.pos ?? '18%'}` }}
                 />
               )}
             </div>

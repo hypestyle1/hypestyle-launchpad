@@ -45,7 +45,7 @@ const drops = [
     name: "Camo Set Drop",
     season: "Drop 02 — 2025",
     description: "Set completo en camo full print. Cargo fit, entretela polar, cremera YKK.",
-    image: "stl-look-camo-outdoor.png",
+    image: "stl-look-camo-outdoor.webp",
     href: "/colecciones/camo-set-drop/",
     products: 4,
     status: "disponible",

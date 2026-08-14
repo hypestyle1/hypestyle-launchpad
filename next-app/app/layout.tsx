@@ -66,6 +66,17 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
+      <head>
+        {/* Las fotos del hero (el LCP del home) viven en el WordPress, y el
+            navegador recién abre la conexión cuando descubre la URL — con
+            DNS + TLS de por medio eso son ~400 ms perdidos antes del primer
+            byte. Con preconnect el handshake arranca en paralelo al HTML.
+            Los otros dos son los scripts de medición: no bloquean nada, pero
+            resuelven el DNS gratis mientras la página se pinta. */}
+        <link rel="preconnect" href="https://lightpink-rook-704850.hostingersite.com" crossOrigin="" />
+        <link rel="preconnect" href="https://connect.facebook.net" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      </head>
       <body>
         {/* Identidad de la marca para Google, en todas las páginas. */}
         <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
