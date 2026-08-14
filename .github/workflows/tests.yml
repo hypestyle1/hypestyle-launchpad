@@ -1,0 +1,86 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Un PR que recibe varios pushes seguidos cancela las corridas viejas.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Lógica de precios, descuentos y envío. No toca la red ni necesita build:
+  # corre en segundos y su resultado siempre significa algo. Este es el check
+  # que conviene mirar.
+  unit:
+    name: Unitarios (vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: next-app/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: next-app
+        run: npm ci
+
+      - name: Correr tests unitarios
+        working-directory: next-app
+        run: npm test
+
+  # E2E del sitio. Necesita `next build`, y el build trae el catálogo de
+  # WordPress en build time: si Hostinger está caído, esto se pone rojo sin que
+  # haya nada roto en el código.
+  #
+  # Por eso NO bloquea el merge (`continue-on-error`). Un check que está rojo por
+  # motivos ajenos al PR enseña a ignorar los checks, que es justo lo que ya pasa
+  # con `Vercel – launchpad`. Cuando falle, hay que mirarlo — pero decide una
+  # persona, no el semáforo.
+  e2e:
+    name: E2E (playwright)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: next-app/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: next-app
+        run: npm ci
+
+      - name: Instalar Chromium
+        working-directory: next-app
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        working-directory: next-app
+        env:
+          NEXT_PUBLIC_WP_URL: ${{ secrets.NEXT_PUBLIC_WP_URL }}
+          WP_SECRET: ${{ secrets.WP_SECRET }}
+          WC_CONSUMER_KEY: ${{ secrets.WC_CONSUMER_KEY }}
+          WC_CONSUMER_SECRET: ${{ secrets.WC_CONSUMER_SECRET }}
+        run: npm run build
+
+      - name: Correr E2E
+        working-directory: next-app
+        run: npm run test:e2e
+
+      - name: Guardar el reporte
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: next-app/playwright-report/
+          retention-days: 7

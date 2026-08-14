@@ -38,6 +38,12 @@ next-app/.next
 next-app/out
 next-app/node_modules
 
+# Salidas de los tests (Playwright)
+next-app/test-results/
+next-app/playwright-report/
+next-app/blob-report/
+next-app/.playwright/
+
 # Skill de audit SEO (SEOmator) — se instala con `npx skills add`, no se commitea
 .agents/
 skills-lock.json
