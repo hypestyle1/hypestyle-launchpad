@@ -371,6 +371,39 @@ export default function Checkout() {
   const totalFinal = subtotal - descuento + envioEnPaso;
   const transferTotal = Math.round(subtotal * 0.90) - descuento + envioEnPaso;
 
+  // InitiateCheckout / begin_checkout: al ENTRAR al checkout con carrito, no en el
+  // paso 2. Estaba enganchado a la transición envío → pago, que es el tercer paso
+  // del formulario: todo el que abandonaba en datos o al calcular el envío quedaba
+  // fuera del embudo, y esos son justamente los que hay que poder retargetear.
+  // Es además lo que el evento significa para Meta y para GA4 — "entró al checkout",
+  // no "llegó al final del formulario". Los dos se mueven juntos para que sigan
+  // siendo comparables entre sí.
+  //
+  // Una sola vez por visita al checkout: la vuelta de un pago rechazado remonta la
+  // página y vuelve a contar, que es correcto (es un intento nuevo).
+  const checkoutStartSent = useRef(false);
+  useEffect(() => {
+    if (!hydrated || checkoutStartSent.current || items.length === 0) return;
+    checkoutStartSent.current = true;
+    // El total todavía no incluye envío (no hay tarifa elegida) — sí cupones y
+    // promos, que ya están aplicados.
+    fbInitiateCheckout(
+      items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
+      totalFinal,
+    );
+    gaBeginCheckout(
+      items.map(i => ({
+        item_id: i.id,
+        item_name: i.name,
+        item_variant: i.size,
+        price: i.price,
+        quantity: i.quantity,
+      })),
+      totalFinal,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, items.length]);
+
   const handleCountryChange = (pais: string) => {
     countryTouched.current = true;
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
@@ -455,29 +488,10 @@ export default function Checkout() {
     clear();
   };
 
-  // Paso envío → paso pago. Es el mismo punto donde el pixel manda InitiateCheckout,
-  // así que GA4 mide begin_checkout acá y las dos herramientas quedan comparables.
+  // Paso envío → paso pago.
   const handleEnvioSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setStep('pago');
-    // Antes este evento iba sin content_ids: Meta veía que alguien inició un
-    // checkout de $X pero no de qué productos, así que no servía como señal de
-    // producto para el catálogo. El total va explícito porque incluye envío,
-    // cupones y descuentos que no viven en el renglón del carrito.
-    fbInitiateCheckout(
-      items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
-      totalFinal,
-    );
-    gaBeginCheckout(
-      items.map(i => ({
-        item_id: i.id,
-        item_name: i.name,
-        item_variant: i.size,
-        price: i.price,
-        quantity: i.quantity,
-      })),
-      totalFinal,
-    );
   };
 
   // AddPaymentInfo del pixel: el evento no existía en el sitio. El punto natural
@@ -489,6 +503,11 @@ export default function Checkout() {
   // cada cambio de radio es la misma intención, no una nueva. Si el total cambia
   // después (el descuento del 10% por transferencia), el evento ya salió con el
   // total del momento — se prefiere eso a mandar un evento por cada tanteo.
+  //
+  // Acá ya se conocen los datos reales del comprador, así que el evento viaja con
+  // advanced matching (el servidor los hashea, ver app/api/capi/route.ts). Es el
+  // mismo criterio del Purchase en ConfirmacionClient: sin email ni teléfono, un
+  // evento server-side matchea solo por IP y cookie, que es el match más débil.
   const addPaymentInfoSent = useRef(false);
   const handleMetodoChange = (metodo: string) => {
     setPago(prev => ({ ...prev, metodo }));
@@ -497,6 +516,10 @@ export default function Checkout() {
     fbAddPaymentInfo(
       items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
       totalFinal,
+      {
+        em: info.email, ph: info.telefono, fn: info.nombre, ln: info.apellido,
+        ct: info.ciudad, st: info.provincia, zp: info.cp, country: info.pais,
+      },
     );
   };
 
