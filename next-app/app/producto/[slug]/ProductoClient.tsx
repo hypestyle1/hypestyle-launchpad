@@ -680,7 +680,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   <p>Los productos en PREVENTA se despachan según la fecha estimada indicada en la página del producto y pueden demorar algo más de lo estipulado. Si tu compra incluye un producto en preventa, el pedido se envía completo cuando esté disponible.</p>
 
                   <p className="font-semibold text-foreground mt-3">Envíos internacionales</p>
-                  <p>Enviamos a todo el mundo vía DHL Express. El costo final se coordina por email después de la compra. Pueden aplicar impuestos o aranceles aduaneros según el país de destino.</p>
+                  <p>Enviamos a todo el mundo vía FedEx, puerta a puerta, con seguimiento y seguro. El costo se calcula en el checkout según lo que lleves y a qué país va, y se paga junto con el pedido. Los impuestos y aranceles aduaneros del país de destino quedan a cargo de quien recibe.</p>
 
                   <p className="font-semibold text-foreground mt-3">Cambios y devoluciones</p>
                   <p>Aceptamos cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.</p>

@@ -81,7 +81,7 @@ const COUNTRIES = [
 ];
 
 // Países donde el estado/provincia es parte obligatoria de la dirección: sin
-// eso DHL no emite la etiqueta y el pedido se traba después de cobrado.
+// eso el correo no emite la etiqueta y el pedido se traba después de cobrado.
 const STATE_REQUIRED = ['US', 'CA', 'AU'];
 
 const UPSELL_VISIBLE = 2; // tarjetas visibles al mismo tiempo

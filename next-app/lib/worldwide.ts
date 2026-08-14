@@ -12,7 +12,7 @@
 /*
  * Las zonas son las mismas cuatro del tarifario de Boxfly (ver lib/shipping-intl),
  * y no una lista aparte: antes esta página prometía "Correo Argentino / OCA" para
- * Latinoamérica y "DHL / FedEx" para Estados Unidos mientras el checkout cobraba
+ * Latinoamérica y otro transportista para Estados Unidos mientras el checkout cobraba
  * otra cosa. El precio exacto lo calcula el checkout según lo que haya en el
  * carrito, así que acá se habla de plazos y transportista, no de importes.
  */
