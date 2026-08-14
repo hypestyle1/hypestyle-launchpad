@@ -39,6 +39,8 @@ export interface CreateOrderPayload {
   shippingMethodId?: string;
   shippingLabel?: string;
   shippingBranch?: string;
+  /** Código Andreani de la sucursal (ej. "RGA"). Sin esto el plugin no puede empaquetar. */
+  shippingBranchCode?: string;
   fbp?: string;
   fbc?: string;
 }
