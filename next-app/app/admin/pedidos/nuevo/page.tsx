@@ -34,7 +34,11 @@ export default function NuevoPedidoPage() {
 
   const [isMayorista, setIsMayorista] = useState(false);
   const [status, setStatus] = useState<'processing' | 'on-hold'>('processing');
-  const [isGift, setIsGift] = useState(false);
+
+  const [discountType, setDiscountType] = useState<'none' | 'percent' | 'fixed'>('none');
+  const [discountValue, setDiscountValue] = useState('');
+  const [discountLabel, setDiscountLabel] = useState('');
+  const [discountIncludesShipping, setDiscountIncludesShipping] = useState(true);
 
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerQuery, setCustomerQuery] = useState('');
@@ -143,8 +147,14 @@ export default function NuevoPedidoPage() {
   }
 
   function unitPriceFor(item: CartItem) {
-    if (isGift) return 0;
     return isMayorista ? Math.round(item.regularPrice * 0.5) : item.retailPrice;
+  }
+
+  function aplicarCanje100() {
+    setDiscountType('percent');
+    setDiscountValue('100');
+    setDiscountIncludesShipping(true);
+    if (!discountLabel.trim()) setDiscountLabel('Canje (100%)');
   }
 
   const filteredProducts = productQuery.length > 1 && !selectedProduct
@@ -152,8 +162,18 @@ export default function NuevoPedidoPage() {
     : [];
 
   const subtotal = cart.reduce((s, i) => s + unitPriceFor(i) * i.quantity, 0);
-  const shippingNum = isGift ? 0 : (Number(shippingTotal) || 0);
-  const total = subtotal + shippingNum;
+  const shippingNum = Number(shippingTotal) || 0;
+
+  // Mismo cálculo que el backend (que lo rehace con los precios reales de Woo): el descuento
+  // va como línea aparte para que el mail muestre el importe real y cuánto se bonificó.
+  const discountBase = subtotal + (discountIncludesShipping ? shippingNum : 0);
+  const discountRaw = discountType === 'none' || !Number(discountValue)
+    ? 0
+    : discountType === 'percent'
+      ? discountBase * Math.min(100, Number(discountValue)) / 100
+      : Math.abs(Number(discountValue));
+  const discount = Math.round(Math.min(discountRaw, subtotal + shippingNum));
+  const total = subtotal + shippingNum - discount;
 
   async function submit() {
     if (cart.length === 0) return;
@@ -165,7 +185,14 @@ export default function NuevoPedidoPage() {
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({
           isMayorista,
-          isGift,
+          discount: discountType !== 'none' && Number(discountValue) > 0
+            ? {
+                type: discountType,
+                value: Number(discountValue),
+                label: discountLabel.trim() || undefined,
+                includeShipping: discountIncludesShipping,
+              }
+            : undefined,
           customerId: customerId || undefined,
           billing,
           dni: dni || undefined,
@@ -227,6 +254,7 @@ export default function NuevoPedidoPage() {
             <button
               onClick={() => {
                 setCreated(null); setCart([]); clearCustomer(); setNote(''); setShippingTotal('');
+                setDiscountType('none'); setDiscountValue(''); setDiscountLabel(''); setDiscountIncludesShipping(true);
               }}
               className="text-[12px] text-gray-500 hover:text-black mt-2"
             >
@@ -269,19 +297,6 @@ export default function NuevoPedidoPage() {
             ))}
           </div>
           {isMayorista && <p className="text-[11px] text-gray-400 mt-2">Los productos se cargan al 50% del precio de lista.</p>}
-
-          <label className="flex items-start gap-2 mt-4 pt-4 border-t border-gray-100 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isGift}
-              onChange={e => setIsGift(e.target.checked)}
-              className="mt-0.5 rounded border-gray-300"
-            />
-            <div>
-              <div className="text-[13px] font-medium text-gray-900">Es un regalo (100%)</div>
-              <div className="text-[11px] text-gray-400">Productos y envío quedan en $0 — no afecta la facturación, la plata nunca entró.</div>
-            </div>
-          </label>
         </div>
 
         {/* Cliente */}
@@ -406,11 +421,10 @@ export default function NuevoPedidoPage() {
             <label className="text-[12px] text-gray-500 w-24">Envío</label>
             <input
               type="number" min={0}
-              value={isGift ? '' : shippingTotal}
+              value={shippingTotal}
               onChange={e => setShippingTotal(e.target.value)}
-              disabled={isGift}
-              placeholder={isGift ? 'Gratis (regalo)' : '0'}
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
+              placeholder="0"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -426,14 +440,93 @@ export default function NuevoPedidoPage() {
           </div>
         </div>
 
-        {/* Total + submit */}
+        {/* Descuento + total + submit */}
         <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-          <div className="flex justify-between text-[12px] text-gray-500 mb-1">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[13px] font-semibold text-gray-900">Descuento</h2>
+            <button
+              type="button"
+              onClick={aplicarCanje100}
+              className="text-[11px] font-semibold text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1 hover:border-gray-400 hover:text-black"
+            >
+              Canje / regalo 100%
+            </button>
+          </div>
+
+          <div className="flex gap-2 mb-2">
+            {([
+              { v: 'none',    label: 'Sin descuento' },
+              { v: 'percent', label: 'Porcentaje' },
+              { v: 'fixed',   label: 'Monto fijo' },
+            ] as const).map(opt => (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => setDiscountType(opt.v)}
+                className={`flex-1 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
+                  discountType === opt.v ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {discountType !== 'none' && (
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center gap-3">
+                <label className="text-[12px] text-gray-500 w-24">{discountType === 'percent' ? 'Porcentaje' : 'Monto'}</label>
+                <div className="flex-1 relative">
+                  <input
+                    type="number" min={0} max={discountType === 'percent' ? 100 : undefined}
+                    value={discountValue}
+                    onChange={e => setDiscountValue(e.target.value)}
+                    placeholder={discountType === 'percent' ? '100' : '0'}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-gray-400 pointer-events-none">
+                    {discountType === 'percent' ? '%' : '$'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-[12px] text-gray-500 w-24">Etiqueta</label>
+                <input
+                  type="text"
+                  value={discountLabel}
+                  onChange={e => setDiscountLabel(e.target.value)}
+                  placeholder="Descuento"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400"
+                />
+              </div>
+              <label className="flex items-start gap-2 cursor-pointer pl-[108px]">
+                <input
+                  type="checkbox"
+                  checked={discountIncludesShipping}
+                  onChange={e => setDiscountIncludesShipping(e.target.checked)}
+                  className="mt-0.5 rounded border-gray-300"
+                />
+                <span className="text-[12px] text-gray-600">Incluir el envío en el descuento</span>
+              </label>
+              <p className="text-[11px] text-gray-400 pl-[108px]">
+                Los productos y el envío se cargan a precio real y el descuento va como línea aparte:
+                el cliente ve en el mail cuánto vale lo que recibió y cuánto se le bonificó, y la facturación
+                lee el total, que queda en {fmt(total)}.
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-between text-[12px] text-gray-500 mb-1 pt-3 border-t border-gray-100">
             <span>Subtotal</span><span>{fmt(subtotal)}</span>
           </div>
           {shippingNum > 0 && (
             <div className="flex justify-between text-[12px] text-gray-500 mb-1">
               <span>Envío</span><span>{fmt(shippingNum)}</span>
+            </div>
+          )}
+          {discount > 0 && (
+            <div className="flex justify-between text-[12px] text-green-600 mb-1">
+              <span>{discountLabel.trim() || 'Descuento'}</span><span>-{fmt(discount)}</span>
             </div>
           )}
           <div className="flex justify-between text-[15px] font-bold pt-2 border-t border-gray-100">
