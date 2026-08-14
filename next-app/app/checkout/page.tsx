@@ -524,6 +524,9 @@ export default function Checkout() {
           shippingMethodId: selectedRate?.id,
           shippingLabel: selectedRate?.label,
           shippingBranch: selectedBranch ? `${selectedBranch.label} — ${selectedBranch.direccion}` : undefined,
+          // El código (`id`) es lo único que el plugin de Andreani sabe leer para empaquetar;
+          // el texto de arriba es solo para mostrar. Ver Andreani_Order_Mapper::get_branch_code_for_order.
+          shippingBranchCode: selectedBranch?.id || undefined,
           ...getFbCookies(),
         });
       } catch (wcErr) {

@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       customer, shipping, couponCode,
       // shippingLabel del cliente ya no se usa: la etiqueta la arma el
       // recálculo de abajo, junto con el costo.
-      paymentMethod, shippingMethodId, shippingBranch,
+      paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
       fbp, fbc,
     } = rawBody;
     // Nunca confiar en el navegador: cualquier línea marcada como regalo (o
@@ -145,6 +145,8 @@ export async function POST(req: NextRequest) {
     if (customer.dni)       meta.push({ key: '_billing_dni',    value: customer.dni });
     if (customer.instagram) meta.push({ key: '_instagram',      value: customer.instagram });
     if (shippingBranch)     meta.push({ key: '_shipping_branch', value: shippingBranch });
+    // Ver create-order-gocuotas: el plugin de Andreani lee `_shipping_branch_code`, no el texto.
+    if (shippingBranchCode) meta.push({ key: '_shipping_branch_code', value: String(shippingBranchCode) });
     if (fbp)                meta.push({ key: '_fbp',             value: String(fbp) });
     if (fbc)                meta.push({ key: '_fbc',             value: String(fbc) });
     // El plugin andreani-shipping valida el envío contra este meta, que WooCommerce

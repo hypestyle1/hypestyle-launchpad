@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     const cleanItems = Array.isArray(rawPayload.items) ? rawPayload.items.filter((it: any) => it?.isGift !== true) : [];
     const {
       items, customer, shipping, discountAmount, discountLabel, couponCode,
-      paymentMethod, shippingMethodId, shippingLabel, shippingBranch,
+      paymentMethod, shippingMethodId, shippingLabel, shippingBranch, shippingBranchCode,
       fbp, fbc,
     } = await sanitizeDiscount({ ...rawPayload, items: cleanItems });
 
@@ -172,6 +172,10 @@ export async function POST(req: NextRequest) {
     if (customer.dni)       meta.push({ key: '_billing_dni',    value: customer.dni });
     if (customer.instagram) meta.push({ key: '_instagram',      value: customer.instagram });
     if (shippingBranch)     meta.push({ key: '_shipping_branch', value: shippingBranch });
+    // `_shipping_branch` es texto para humanos; el plugin de Andreani lee SOLO
+    // `_shipping_branch_code` (Andreani_Order_Mapper::get_branch_code_for_order) y sin él
+    // rechaza el pedido con andreani_branch_missing antes de llamar a la API.
+    if (shippingBranchCode) meta.push({ key: '_shipping_branch_code', value: String(shippingBranchCode) });
     if (fbp)                meta.push({ key: '_fbp',             value: String(fbp) });
     if (fbc)                meta.push({ key: '_fbc',             value: String(fbc) });
     // El plugin andreani-shipping valida el envío contra este meta, que WooCommerce
