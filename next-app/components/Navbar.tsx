@@ -307,7 +307,7 @@ export default function Navbar() {
                 ))}
               </div>
               <div className="relative overflow-hidden rounded-sm">
-                <img src="/stl-look-camo-outdoor.png" alt="Colección"
+                <img src="/stl-look-camo-outdoor.webp" alt="Colección"
                   className="w-full h-full object-cover" style={{ maxHeight: '220px' }} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-4">
                   <div>

@@ -14,7 +14,7 @@ const SLIDES = [
   '/banner-hero (3).jpg',
   '/No Love, Only Style banner.webp',
   '/editorial-may26.png',
-  '/Banner Movile/stl-look-camo-outdoor.png',
+  '/stl-look-camo-outdoor.webp',
   '/Banner Movile/2-slide-1774199985089-7163840392-14dbaf7acdc4aaa8e83700e9e1d4f6b51774199990-1920-1920.webp',
 ];
 

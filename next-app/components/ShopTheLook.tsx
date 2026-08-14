@@ -65,9 +65,17 @@ export default function ShopTheLook() {
               onClick={() => setActiveLook(look)}
               className="relative w-full aspect-[3/4] overflow-hidden rounded-[8px] bg-bg-alt group block text-left"
             >
+              {/* loading/decoding + width/height: la sección está bien abajo del
+                  pliegue pero las 4 fotos se pedían de una, junto con el hero.
+                  Con width/height el navegador además reserva el alto antes de
+                  que baje la imagen (si no, cuenta como layout shift). */}
               <img
                 src={imgSrc(look.image)}
                 alt={look.title}
+                width={900}
+                height={1200}
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
@@ -109,6 +117,10 @@ export default function ShopTheLook() {
                         <img
                           src={imgSrc(product.image)}
                           alt={product.name}
+                          width={80}
+                          height={80}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />

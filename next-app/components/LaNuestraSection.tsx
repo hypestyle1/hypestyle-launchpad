@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import ProductCard from './ProductCard';
+import LazyVideo from './LazyVideo';
 import { useProducts } from '@/hooks/useProducts';
 
 const SLUG = 'la-nuestra-jersey-mundial-26';
 const VIDEO_SRC = '/hero/la-nuestra-bg.mp4';
+const POSTER_SRC = '/hero/la-nuestra-poster.webp';
 
 export default function LaNuestraSection() {
   const { data: allProducts = [] } = useProducts(0);
@@ -33,14 +35,10 @@ export default function LaNuestraSection() {
         {/* ── COL IZQUIERDA: video editorial ── */}
         <div className="relative overflow-hidden rounded-[12px] bg-bg-alt min-h-[300px] lg:min-h-0 order-2 lg:order-1">
           <div className="pt-[125%] lg:hidden" aria-hidden />
-          <video
-            className="absolute inset-0 w-full h-full object-cover"
+          <LazyVideo
             src={VIDEO_SRC}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="metadata"
+            poster={POSTER_SRC}
+            className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0"
             style={{ background: 'linear-gradient(to bottom, transparent 60%, rgba(0,0,0,.45) 100%)' }} />

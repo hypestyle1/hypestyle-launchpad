@@ -13,6 +13,7 @@ import { isFlashSaleActive } from "@/lib/flash-sale";
 import { Skeleton } from "@/components/ui/skeleton";
 import FaithDrop from "./FaithDrop";
 import LaNuestraSection from "./LaNuestraSection";
+import LazyVideo from "./LazyVideo";
 
 // Mismo skeleton que CollectionBanner para mantener consistencia visual.
 const SkeletonCard = () => (
@@ -106,7 +107,7 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
     alt: 'Black Drop — Shoot For The Stars, Aim For The Moon',
     side: 'left',
   },
-  'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
+  'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', poster: '/newin/polo-video-1-poster.webp', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
   'Pink Set': {
     type: 'slider',
     images: [
@@ -153,15 +154,10 @@ function GroupBlock({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
           <div className={`relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 ${editorial.side === 'left' ? 'lg:order-1' : 'lg:order-2'}`}>
             {editorial.type === 'video' ? (
-              <video
+              <LazyVideo
                 className="absolute inset-0 h-full w-full object-cover object-center"
-                src={editorial.src}
-                poster={editorial.poster}
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
+                src={editorial.src ?? ''}
+                poster={editorial.poster ?? ''}
               />
             ) : editorial.type === 'slider' ? (
               <EditorialSlider slides={editorial.slides} images={editorial.images} alt={editorial.alt} />

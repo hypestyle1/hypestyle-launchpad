@@ -10,6 +10,20 @@ export default function NewsletterPopup() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  // El fondo del popup es puramente decorativo y en mobile está oculto por CSS
+  // (`hidden md:block`). Ocultarlo con CSS no alcanza: un <video autoPlay> se
+  // descarga igual aunque su display sea none — el `preload="none"` no aplica
+  // cuando el navegador ve que el video se va a reproducir solo. Por eso acá
+  // el elemento directamente no se monta salvo en desktop.
+  const [wide, setWide] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const apply = () => setWide(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   useEffect(() => {
     if (sessionStorage.getItem(SESSION_KEY)) return;
@@ -22,14 +36,14 @@ export default function NewsletterPopup() {
 
       setTimeout(() => { timerDone = true; tryShow(); }, 7000);
 
-      let loaded = 0;
-      const onDone = () => { loaded++; if (loaded >= 2) { imagesReady = true; tryShow(); } };
-      const i1 = new window.Image();
-      const i2 = new window.Image();
-      i1.onload = i1.onerror = onDone;
-      i2.onload = i2.onerror = onDone;
-      i1.src = '/HYPE - POP UP (2).gif';
-      i2.src = '/cupon-popup.png';
+      // Solo se precarga el cupón: es lo único que se ve en las dos anchos.
+      // El fondo del popup (antes un GIF de 8,9 MB, hoy popup-hype.mp4) está
+      // oculto en mobile con `hidden md:block`, pero el precargador lo pedía
+      // igual — 8,9 MB descargados en cada visita mobile para nada. Era el
+      // segundo archivo más pesado del home después del video del polo.
+      const img = new window.Image();
+      img.onload = img.onerror = () => { imagesReady = true; tryShow(); };
+      img.src = '/cupon-popup.webp';
     };
 
     if (document.readyState === 'complete') {
@@ -76,14 +90,18 @@ export default function NewsletterPopup() {
           boxShadow: "0 24px 80px rgba(0,0,0,0.45)",
         }}
       >
-        {/* Fondo: gif a todo el popup, solo desktop (el panel glass lo difumina).
-            En mobile se oculta para que el popup quede como tarjeta glass limpia. */}
-        <img
-          src="/HYPE - POP UP (2).gif"
-          alt="Hypestyle"
-          className="hidden md:block absolute inset-0 w-full h-full object-cover"
-          aria-hidden
-        />
+        {/* Fondo a todo el popup, solo desktop (el panel glass lo difumina).
+            En mobile se oculta para que el popup quede como tarjeta glass limpia.
+            Era un GIF de 8,9 MB; el mismo loop en mp4 pesa 0,95 MB. */}
+        {wide && (
+          <video
+            src="/popup-hype.mp4"
+            poster="/popup-hype.webp"
+            autoPlay loop muted playsInline preload="none"
+            className="absolute inset-0 w-full h-full object-cover"
+            aria-hidden
+          />
+        )}
 
         {/* Botón cerrar — glass */}
         <button
@@ -103,13 +121,17 @@ export default function NewsletterPopup() {
           </svg>
         </button>
 
-        {/* Columna izquierda — gif bien encuadrado (solo desktop) */}
+        {/* Columna izquierda — el loop bien encuadrado (solo desktop) */}
         <div className="hidden md:block relative w-[45%] flex-shrink-0" style={{ minHeight: "520px" }}>
-          <img
-            src="/HYPE - POP UP (2).gif"
-            alt="Hypestyle"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          {wide && (
+            <video
+              src="/popup-hype.mp4"
+              poster="/popup-hype.webp"
+              autoPlay loop muted playsInline preload="none"
+              aria-label="Hypestyle"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
         </div>
 
         {/* Panel derecho — liquid glass sobre el gif */}
@@ -127,8 +149,10 @@ export default function NewsletterPopup() {
           {/* Cupón (PNG transparente) */}
           <div className="flex items-center justify-center px-7 pt-8 pb-2">
             <img
-              src="/cupon-popup.png"
+              src="/cupon-popup.webp"
               alt="10% Off — Solo para miembros"
+              width={700}
+              height={536}
               className="w-full object-contain"
               style={{ maxHeight: "300px" }}
             />

@@ -30,7 +30,20 @@ const nextConfig = {
   // No anunciar el framework ni su versión en cada respuesta.
   poweredByHeader: false,
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      // Los archivos de /public los servía Vercel con max-age=0: en cada visita
+      // el navegador revalidaba una por una las fotos y los videos del home.
+      // No llevan hash en el nombre, así que no se pueden marcar immutable —
+      // 30 días + stale-while-revalidate deja el repeat view instantáneo y, si
+      // se reemplaza un archivo, la versión nueva entra en la visita siguiente.
+      {
+        source: '/:path*.:ext(webp|avif|png|jpg|jpeg|gif|svg|ico|mp4|webm|woff2)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=604800' },
+        ],
+      },
+    ];
   },
   // Proxy same-origin para GraphQL: WPGraphQL solo permite CORS desde
   // hypestyle.com.ar, así que en local (localhost) el fetch directo al dominio
