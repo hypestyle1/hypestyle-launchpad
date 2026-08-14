@@ -63,6 +63,10 @@ function buildConfirmationHtml(order: {
   wcOrderId: number;
   orderKey: string;
   items: { name: string; size: string; quantity: number; price: number }[];
+  subtotal: number;
+  shipping: number;
+  couponDiscount: number;
+  feeLines: { name: string; total: number }[];
   total: number;
   nombre: string;
 }) {
@@ -77,6 +81,27 @@ function buildConfirmationHtml(order: {
       </td>
     </tr>
   `).join('');
+
+  // Filas de subtotal / envío / descuentos. Solo aparecen si hay algo que aclarar: en un pedido
+  // común sin envío ni bonificación el mail sigue mostrando únicamente el Total, como antes.
+  const summaryRow = (label: string, value: string, color = '#666') => `
+    <tr>
+      <td style="padding:4px 0;font-size:13px;color:${color};">${label}</td>
+      <td style="padding:4px 0;text-align:right;font-size:13px;color:${color};">${value}</td>
+    </tr>
+  `;
+  const summaryRows = [
+    (order.shipping > 0 || order.couponDiscount > 0 || order.feeLines.length > 0)
+      ? summaryRow('Subtotal', formatPrice(order.subtotal))
+      : '',
+    order.shipping > 0 ? summaryRow('Envío', formatPrice(order.shipping)) : '',
+    order.couponDiscount > 0 ? summaryRow('Descuento', `-${formatPrice(order.couponDiscount)}`, '#1a7f4b') : '',
+    ...order.feeLines.map(f => summaryRow(
+      f.name,
+      `${f.total < 0 ? '-' : ''}${formatPrice(Math.abs(f.total))}`,
+      f.total < 0 ? '#1a7f4b' : '#666',
+    )),
+  ].join('');
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -101,10 +126,11 @@ function buildConfirmationHtml(order: {
             <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f0f0f0;">
               ${rows}
             </table>
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+              ${summaryRows}
               <tr>
-                <td style="padding:14px 0;font-size:14px;font-weight:700;color:#111;">Total</td>
-                <td style="padding:14px 0;text-align:right;font-size:16px;font-weight:700;color:#111;">${formatPrice(order.total)}</td>
+                <td style="padding:12px 0 0;font-size:14px;font-weight:700;color:#111;${summaryRows ? 'border-top:1px solid #f0f0f0;' : ''}">Total</td>
+                <td style="padding:12px 0 0;text-align:right;font-size:16px;font-weight:700;color:#111;${summaryRows ? 'border-top:1px solid #f0f0f0;' : ''}">${formatPrice(order.total)}</td>
               </tr>
             </table>
             <p style="margin:24px 0 0;font-size:12px;color:#888;background:#f8f8f8;border-radius:6px;padding:12px 16px;">
@@ -397,10 +423,20 @@ export async function GET(req: NextRequest) {
         }
         const cleanName = rawName.replace(/\s*[—\-–]\s*Talle\s*\S+/i, '').trim();
         const qty       = (item.quantity as number) || 1;
-        const price     = parseFloat(item.total || '0') / qty;
+        // `subtotal` es el precio ANTES de descuentos — es el importe que el cliente tiene que
+        // ver como valor del producto; lo bonificado se aclara abajo en su propia fila.
+        const price     = parseFloat(item.subtotal || item.total || '0') / qty;
         const image     = item.image?.src as string | undefined;
         return { name: cleanName, size, quantity: qty, price, image };
       });
+
+    const itemsSubtotal  = items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const shipping       = parseFloat(wcOrder.shipping_total || '0');
+    // Descuento de cupón (lo aplica Woo sobre las líneas) vs. líneas de fee negativas
+    // (descuentos manuales del panel y del checkout) — son dos mecanismos distintos.
+    const couponDiscount = parseFloat(wcOrder.discount_total || '0');
+    const feeLines: { name: string; total: number }[] =
+      (wcOrder.fee_lines || []).map((f: any) => ({ name: (f.name as string) || 'Ajuste', total: parseFloat(f.total || '0') }));
 
     const results: Record<string, any> = {
       order_id:     wcOrderId,
@@ -410,7 +446,10 @@ export async function GET(req: NextRequest) {
     };
 
     if (action === 'confirmation' || action === 'both') {
-      const html = buildConfirmationHtml({ orderNum, wcOrderId, orderKey, items, total, nombre });
+      const html = buildConfirmationHtml({
+        orderNum, wcOrderId, orderKey, items, nombre, total,
+        subtotal: itemsSubtotal, shipping, couponDiscount, feeLines,
+      });
       await sendBrevo(
         { email: sendTo, name: `${nombre} ${apellido}`.trim() },
         `Pedido #${orderNum} confirmado — Hypestyle`,

@@ -19,6 +19,12 @@ const wcGet = (path: string) => {
 };
 
 type CreateItem = { productId: number; variationId: number | null; quantity: number };
+type Discount = {
+  type: 'percent' | 'fixed';
+  value: number;
+  label?: string;
+  includeShipping?: boolean;
+};
 type Billing = {
   first_name: string; last_name: string; email: string; phone: string; company?: string;
   address_1: string; address_2?: string; city: string; state?: string; postcode?: string;
@@ -33,6 +39,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json() as {
     isMayorista: boolean;
     isGift?: boolean;
+    discount?: Discount;
     customerId?: number;
     billing: Billing;
     dni?: string;
@@ -45,9 +52,14 @@ export async function POST(req: NextRequest) {
   };
 
   const { isMayorista, isGift = false, customerId, billing = {} as Billing, dni, viaCargoSucursal, instagram, items = [], status, note } = body;
-  // Un pedido 100% regalo no cobra nada — ni productos ni envío — para que la plata que
-  // nunca entró no infle ningún total de facturación (esos totales solo suman order.total).
-  const shippingTotal = isGift ? 0 : (body.shippingTotal || 0);
+  const shippingTotal = body.shippingTotal || 0;
+  // Los productos y el envío se cargan SIEMPRE a precio real y el descuento va aparte, como
+  // línea negativa (mismo patrón que el checkout del sitio y que /orders/[id]/add-items).
+  // Así el cliente ve en el mail lo que vale lo que recibió + cuánto se le bonificó, y la
+  // facturación no se infla porque los totales de plata leen order.total, que queda en $0.
+  // `isGift` queda como alias legacy de "100% sobre productos + envío".
+  const discountInput: Discount | null = body.discount
+    ?? (isGift ? { type: 'percent', value: 100, label: 'Regalo (100%)', includeShipping: true } : null);
 
   if (!items.length) {
     return NextResponse.json({ error: 'El pedido no tiene productos' }, { status: 400 });
@@ -65,7 +77,7 @@ export async function POST(req: NextRequest) {
     const target = item.variationId ? `products/${item.productId}/variations/${item.variationId}` : `products/${item.productId}`;
     const prod = await wcGet(`${target}?_fields=id,name,attributes,regular_price,price,manage_stock,stock_quantity`);
     const basePrice = parseFloat(prod.regular_price || prod.price || '0');
-    const unitPrice = isGift ? 0 : (isMayorista ? Math.round(basePrice * 0.5) : parseFloat(prod.price || prod.regular_price || '0'));
+    const unitPrice = isMayorista ? Math.round(basePrice * 0.5) : parseFloat(prod.price || prod.regular_price || '0');
     const size = sizeFromAttributes(prod.attributes || []);
 
     lineItems.push({
@@ -91,6 +103,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ningún ítem válido para agregar' }, { status: 400 });
   }
 
+  // El descuento se calcula acá con los precios reales que trajimos de Woo — nunca con un
+  // monto que mande el navegador.
+  const itemsSubtotal = lineItems.reduce((sum, li) => sum + parseFloat(li.total), 0);
+  let discountAmount = 0;
+  let discountLabel  = '';
+  if (discountInput && discountInput.value > 0) {
+    const base = itemsSubtotal + (discountInput.includeShipping ? shippingTotal : 0);
+    const raw  = discountInput.type === 'percent'
+      ? base * Math.min(100, discountInput.value) / 100
+      : Math.abs(discountInput.value);
+    // Tope duro: el descuento nunca puede dejar el pedido en negativo.
+    discountAmount = Math.round(Math.min(raw, itemsSubtotal + shippingTotal));
+    discountLabel  = discountInput.label?.trim() || 'Descuento';
+  }
+  const orderTotal = itemsSubtotal + shippingTotal - discountAmount;
+
   const billingFull: Record<string, string> = {
     first_name: billing.first_name || '',
     last_name:  billing.last_name || '',
@@ -109,7 +137,8 @@ export async function POST(req: NextRequest) {
 
   const metaData: { key: string; value: string }[] = [];
   if (isMayorista) metaData.push({ key: '_es_mayorista', value: 'true' });
-  if (isGift) metaData.push({ key: '_es_regalo', value: 'true' });
+  // "Regalo" = el pedido no cobra nada, sin importar cómo se haya escrito el descuento.
+  if (discountAmount > 0 && orderTotal === 0) metaData.push({ key: '_es_regalo', value: 'true' });
   if (dni) metaData.push({ key: '_billing_dni', value: dni });
   if (viaCargoSucursal) metaData.push({ key: '_via_cargo_sucursal', value: viaCargoSucursal });
   if (instagram) metaData.push({ key: '_instagram', value: instagram });
@@ -126,8 +155,8 @@ export async function POST(req: NextRequest) {
   };
   if (customerId) orderPayload.customer_id = customerId;
   if (shippingTotal > 0) orderPayload.shipping_lines = [{ method_id: 'admin_manual', method_title: 'Envío', total: shippingTotal.toFixed(2) }];
-  const fullNote = [isGift ? 'Regalo 100% — no cobra nada.' : '', note || ''].filter(Boolean).join(' ');
-  if (fullNote) orderPayload.customer_note = fullNote;
+  if (discountAmount > 0) orderPayload.fee_lines = [{ name: discountLabel, total: (-discountAmount).toFixed(2), tax_class: '' }];
+  if (note) orderPayload.customer_note = note;
 
   const created = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
     method: 'POST',
