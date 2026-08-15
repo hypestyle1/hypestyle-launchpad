@@ -3,10 +3,33 @@ import { imgSrc } from '@/lib/img';
 import type { PublicReview } from '@/lib/reviews/types';
 import StarRating from './StarRating';
 
+/**
+ * La zona horaria va FIJA a propósito, no se deja librada a la del visitante.
+ *
+ * Esta card se renderiza en el servidor (las reseñas del home vienen por props
+ * desde app/page.tsx). Sin `timeZone`, `toLocaleDateString` usa la zona de quien
+ * ejecuta: en Vercel eso es UTC y en el visitante argentino es UTC−3. Toda
+ * reseña creada entre las 00:00 y las 03:00 UTC se renderizaba con un día en el
+ * HTML del servidor y con el día anterior al hidratar.
+ *
+ * Ese texto distinto es un error de hidratación (React #425), y como ocurre
+ * fuera de un Suspense boundary React responde tirando a la basura TODO el HTML
+ * del servidor y volviendo a renderizar el home entero en el cliente (#423).
+ * El resultado visible era que la página se armaba, se desarmaba y se volvía a
+ * armar sola durante los primeros segundos — y si el usuario scrolleaba en esa
+ * ventana, el contenido le saltaba abajo del dedo.
+ *
+ * Verificado: con el navegador en UTC (igual que el servidor) los errores no
+ * aparecían; en America/Argentina/Buenos_Aires aparecían los tres, siempre.
+ */
+const REVIEW_TZ = 'America/Argentina/Buenos_Aires';
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('es-AR', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: REVIEW_TZ,
+  });
 }
 
 export default function ReviewCard({ review, compact = false }: { review: PublicReview; compact?: boolean }) {
