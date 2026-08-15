@@ -15,6 +15,7 @@ import { getFbCookies } from '@/lib/fbtracking';
 import { gaBeginCheckout } from '@/lib/ga';
 import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
 import { imgSrc } from '@/lib/img';
+import { normalizeCpAr } from '@/lib/postal-code';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import GiftProgressBar from '@/components/GiftProgressBar';
@@ -306,7 +307,15 @@ export default function Checkout() {
   }, [isInternational, info.pais, catalog, JSON.stringify(purchasableItems.map(i => [i.id, i.quantity]))]);
   const stateRequired = STATE_REQUIRED.includes(info.pais);
   const isSucursal = !isInternational && (selectedRate?.label?.toLowerCase().includes('sucursal') || selectedRate?.id?.toLowerCase().includes('sucursal'));
-  const branchReady = isInternational || !isSucursal || !!selectedBranch;
+  // El cartel de abajo promete "podés igualmente continuar y te contactamos para
+  // coordinar", pero exigir sucursal elegida dejaba el botón deshabilitado y el
+  // pedido moría ahí (caso real: CP sin sucursales en la respuesta de Andreani).
+  // Si no hay ninguna sucursal para elegir, no se le puede pedir al cliente que elija.
+  const sinSucursales = !loadingBranches && branches.length === 0;
+  const branchReady = isInternational || !isSucursal || !!selectedBranch || sinSucursales;
+  // El pedido viaja con el CP de 4 dígitos: es el que sabe leer el plugin de
+  // Andreani para generar la guía. El ZIP internacional se deja tal cual.
+  const cpEnvio = isInternational ? info.cp : normalizeCpAr(info.cp);
 
   useEffect(() => { setFlashActive(isFlashSaleActive() || promo3x2Won || championWon); }, [promo3x2Won, championWon]);
 
@@ -538,7 +547,7 @@ export default function Checkout() {
       try {
         orderRes = await createOrderAndPreference({
           items: purchasableItems.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization })),
-          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
+          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: cpEnvio, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
           discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0) + promo3x2Descuento + championDescuento,
           discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
@@ -546,7 +555,14 @@ export default function Checkout() {
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
           shippingLabel: selectedRate?.label,
-          shippingBranch: selectedBranch ? `${selectedBranch.label} — ${selectedBranch.direccion}` : undefined,
+          // Sin sucursal elegida el pedido igual entra (ver branchReady), pero tiene
+          // que quedar dicho en el pedido para que el equipo la coordine y no se
+          // despache como envío a domicilio.
+          shippingBranch: selectedBranch
+            ? `${selectedBranch.label} — ${selectedBranch.direccion}`
+            : isSucursal
+              ? 'A COORDINAR — no se encontraron sucursales para el CP'
+              : undefined,
           // El código (`id`) es lo único que el plugin de Andreani sabe leer para empaquetar;
           // el texto de arriba es solo para mostrar. Ver Andreani_Order_Mapper::get_branch_code_for_order.
           shippingBranchCode: selectedBranch?.id || undefined,
@@ -570,7 +586,7 @@ export default function Checkout() {
         total: authorizedTotal,
         metodo: pago.metodo, email: info.email, nombre: info.nombre, apellido: info.apellido,
         direccion: info.direccion, ciudad: info.ciudad, provincia: info.provincia,
-        cp: info.cp, telefono: info.telefono, pais: info.pais,
+        cp: cpEnvio, telefono: info.telefono, pais: info.pais,
         talo: isLocalTransfer ? orderRes.taloPaymentData : undefined,
       }));
       if (isGocuotas) {

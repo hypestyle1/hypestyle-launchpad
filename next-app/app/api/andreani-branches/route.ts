@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizeCpAr } from '@/lib/postal-code';
 
 // Credencial ID del plugin Andreani de WooCommerce (campo hash_andreani).
 // Sirve tanto para el header x-andreani-session de la API vieja como para
@@ -65,7 +66,8 @@ async function fetchBranches(cp: string, token: string) {
 }
 
 export async function GET(req: NextRequest) {
-  const cp = new URL(req.url).searchParams.get('cp') || '';
+  // El CPA completo ("C1414DNV") hace que Andreani responda 400: pide los 4 dígitos.
+  const cp = normalizeCpAr(new URL(req.url).searchParams.get('cp'));
   if (!cp) return NextResponse.json({ branches: [], error: 'cp requerido' }, { status: 400 });
 
   try {
