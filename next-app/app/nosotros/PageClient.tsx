@@ -67,7 +67,7 @@ export default function Nosotros() {
               style={{ maxHeight: "600px", overflow: "hidden" }}
             >
               <img
-                src="/team-photo.jpeg"
+                src="/team-photo.webp"
                 alt="Equipo Hypestyle"
                 className="w-full object-cover"
                 style={{ maxHeight: "600px", objectPosition: "center 15%" }}

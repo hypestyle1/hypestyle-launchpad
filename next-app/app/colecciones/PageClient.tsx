@@ -27,7 +27,7 @@ const drops = [
     name: "FW26",
     season: "Colección — Fall/Winter 2026",
     description: "Grey HStars, Half-Zip Polos y Pink Set Drop. La temporada más completa de Hypestyle.",
-    image: "fw26-camo-editorial.jpg",
+    image: "fw26-camo-editorial.webp",
     href: "/colecciones/fw26/",
     products: 7,
     status: "disponible",

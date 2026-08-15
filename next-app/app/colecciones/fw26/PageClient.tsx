@@ -27,7 +27,7 @@ export default function FW26Page() {
       <main className="pt-[var(--offset)]">
 
         <section className="relative bg-bg-dark text-primary-foreground py-20 px-6 text-center overflow-hidden">
-          <img src="/fw26-camo-editorial.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img src="/fw26-camo-editorial.webp" alt="" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/55" />
           <div className="relative z-10">
             <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 mb-3">Colección</p>

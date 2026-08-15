@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Golos_Text } from 'next/font/google';
 import './globals.css';
 import Providers from '@/components/Providers';
 import CartDrawer from '@/components/CartDrawer';
@@ -17,6 +18,17 @@ import PromoChampionBar from '@/components/PromoChampionBar';
 import ChampionTakeover from '@/components/ChampionTakeover';
 import JsonLd from '@/components/JsonLd';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/jsonld';
+
+// La tipografía de toda la marca. next/font la descarga en build time y la
+// sirve desde nuestro dominio, así que no hay request a Google en runtime ni
+// CSS que bloquee el render. `display: swap` deja pintar el texto con la
+// fuente de sistema mientras llega.
+const golos = Golos_Text({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-golos',
+});
 
 const OG_DESCRIPTION = '© HYPESTYLE 2026 — STYLE&CULTURE. Cultura, identidad y estilo en cada drop. Worldwide Shipping.';
 
@@ -65,7 +77,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" className={golos.variable}>
       <head>
         {/* Las fotos del hero (el LCP del home) viven en el WordPress, y el
             navegador recién abre la conexión cuando descubre la URL — con
