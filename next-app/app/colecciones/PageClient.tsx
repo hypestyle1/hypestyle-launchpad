@@ -6,6 +6,15 @@ import Footer from "@/components/Footer";
 
 const drops = [
   {
+    name: "Napoli",
+    season: "Drop — Agosto 2026",
+    description: "Honor y gloria. Las Napoli Tees en azzurro y bianco, filmadas en el potrero de La Boca.",
+    image: "napoli-drop-banner.webp",
+    href: "/colecciones/napoli/",
+    products: 2,
+    status: "disponible",
+  },
+  {
     name: "Faith Is The Real Hype",
     season: "Drop — Domingo",
     description: "Streetwear con fe. Hoodies y remeras con gráficos religiosos, corte oversize.",

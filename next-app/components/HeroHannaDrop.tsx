@@ -7,7 +7,11 @@ import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-const VIDEO_SRC = '/hero/hanna-drop-bg-2-hoodie.mp4';
+// Recorte de 10 s del film de Napoli (potrero de La Boca + mural de Maradona),
+// mudo y sin audio en el archivo. El master completo dura 46 s: a 1152 px de
+// ancho pesaba ~4,5 MB, así que va solo el tramo del potrero, que es el que
+// mejor funciona en loop detrás del card.
+const VIDEO_SRC = '/hero/napoli-tees-bg.mp4';
 const SLIDE_MS = 4500;
 
 // pos = background-position vertical (foco del recorte en bg-cover). Las fotos

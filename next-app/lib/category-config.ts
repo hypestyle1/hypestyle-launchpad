@@ -45,6 +45,12 @@ export const CATEGORY_MAP: Record<string, CategoryConfig> = {
     seoDescription: "Summer '26: mesh, fileteado y jorts para el verano. La colección más caliente de HYPESTYLE.",
     categories: [], tag: 'summer-26',
   },
+  '/colecciones/napoli': {
+    title: 'Napoli',
+    subtitle: 'Honor y gloria — las Napoli Tees',
+    seoDescription: 'Napoli Tees de HYPESTYLE: azzurro y bianco, homenaje a Diego en el potrero de La Boca. Edición limitada.',
+    categories: [], tag: 'napoli',
+  },
   '/colecciones/regular-tees': {
     title: 'Regular Tees',
     subtitle: 'Remeras de corte regular — básicos premium',

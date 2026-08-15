@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+const VIDEO_ID = '62_jeoVaUUY'; // "Hype - NAPOLI TEEs"
 const EMBED_SRC =
-  'https://www.youtube.com/embed/IRZ4Arbc5wE?autoplay=1&mute=1&loop=1&playlist=IRZ4Arbc5wE&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1';
+  `https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${VIDEO_ID}&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1`;
 
 export default function VideoSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -14,7 +15,7 @@ export default function VideoSection() {
   // player + ~2,2 MB de video y bloqueaba el hilo principal ~1,1 s, todo antes
   // de que el usuario llegara siquiera a esta sección — que está a media página
   // del pliegue. Mientras tanto se ve el poster, que es un frame del mismo
-  // video servido desde nuestro dominio (43 KB en webp).
+  // video servido desde nuestro dominio (40 KB en webp).
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -37,7 +38,7 @@ export default function VideoSection() {
       {load && (
         <iframe
           src={EMBED_SRC}
-          title="Hypestyle"
+          title="Napoli Tees — Hypestyle"
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
           allowFullScreen
           loading="lazy"
@@ -52,10 +53,10 @@ export default function VideoSection() {
       {/* CTA */}
       <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center pb-8 md:pb-14">
         <a
-          href="/producto/la-nuestra-jersey-mundial-26/"
+          href="/colecciones/napoli/"
           className="px-8 py-3 border border-white text-white text-[11px] md:text-[12px] uppercase tracking-[0.18em] hover:bg-white hover:text-black transition-colors duration-300"
         >
-          Ver Colección
+          Ver Napoli Tees
         </a>
       </div>
     </section>
