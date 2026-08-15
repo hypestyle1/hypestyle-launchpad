@@ -38,6 +38,14 @@ const SECRET = (process.env.CRON_SECRET || '').trim();
 /** Ventana hacia atrás. Las órdenes de PayPal expiran, no tiene sentido ir más lejos. */
 const DAYS_BACK = 30;
 
+/**
+ * Arranca en modo informe. La rama APPROVED de esta ruta cobra plata de verdad,
+ * así que mergearla NO puede alcanzar para que empiece a cobrar sola: hay que
+ * mirar primero qué reporta contra los pedidos reales. Para habilitar el cobro
+ * automático, cargar `PAYPAL_RECONCILE_LIVE=1` en Vercel.
+ */
+const LIVE = (process.env.PAYPAL_RECONCILE_LIVE || '').trim() === '1';
+
 interface WcOrder {
   id: number;
   status: string;
@@ -57,9 +65,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'PayPal sin credenciales en este entorno' }, { status: 503 });
   }
 
-  // `dry=1` reporta sin cobrar ni tocar nada. Es la forma de contestar "¿cuántos
-  // pagos aprobados tenemos sin capturar?" antes de decidir capturarlos.
-  const dryRun = req.nextUrl.searchParams.get('dry') === '1';
+  // Reporta sin cobrar ni tocar nada. Es la forma de contestar "¿cuántos pagos
+  // aprobados tenemos sin capturar?" antes de decidir capturarlos. `?dry=1`
+  // fuerza el informe aunque el cobro automático esté habilitado; sin
+  // PAYPAL_RECONCILE_LIVE=1 el informe es lo único que hace.
+  const dryRun = !LIVE || req.nextUrl.searchParams.get('dry') === '1';
 
   const after = new Date(Date.now() - DAYS_BACK * 86400_000).toISOString().slice(0, 19);
   const orders = await wcGet<WcOrder[]>(`orders?per_page=100&status=pending&after=${after}`);
@@ -73,6 +83,8 @@ export async function GET(req: NextRequest) {
   const token = await paypalAccessToken();
   const result = {
     dryRun,
+    /** false = sólo informa. Se habilita con PAYPAL_RECONCILE_LIVE=1 en Vercel. */
+    cobroAutomatico: LIVE,
     revisados: candidates.length,
     pendientesSinRastro: orders.filter(o =>
       /paypal/i.test(String(o.payment_method || '')) && !metaValue(o, PAYPAL_ORDER_META)).length,
