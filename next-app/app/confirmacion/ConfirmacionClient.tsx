@@ -130,14 +130,24 @@ export default function ConfirmacionClient() {
         });
     }
 
+    // La captura se dispara con el `token` de PayPal (el id de la orden) y nada
+    // más. Antes exigía además `PayerID` y `order`: si la vuelta no traía los
+    // tres, el pago aprobado nunca se capturaba y el pedido quedaba en `pending`
+    // para siempre, sin un solo rastro de por qué. Ninguno de los dos hacía
+    // falta — `PayerID` no se usa en ningún lado, y el pedido de WooCommerce lo
+    // resuelve el servidor leyendo el `reference_id` de la propia orden de
+    // PayPal, que es la fuente de verdad (ver /api/paypal-capture).
     const ppToken        = params.get('token');
-    const payerId        = params.get('PayerID');
     const wcOrderIdParam = params.get('order');
-    if (ppToken && payerId && wcOrderIdParam) {
+    if (ppToken) {
+      const wcOrderIdParsed = wcOrderIdParam ? parseInt(wcOrderIdParam, 10) : NaN;
       fetch('/api/paypal-capture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paypalOrderId: ppToken, wcOrderId: parseInt(wcOrderIdParam, 10) }),
+        body: JSON.stringify({
+          paypalOrderId: ppToken,
+          ...(Number.isFinite(wcOrderIdParsed) ? { wcOrderId: wcOrderIdParsed } : {}),
+        }),
       })
         // PayPal es asíncrono: la vuelta a esta pantalla no significa que el pago
         // haya cursado. El purchase de GA4 espera a que el capture responda OK.

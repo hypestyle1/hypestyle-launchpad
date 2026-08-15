@@ -1,24 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUsdRate } from '@/lib/fx';
+import { PAYPAL_API, paypalAccessToken } from '@/lib/paypal';
+import { wcPut, wcNote, PAYPAL_ORDER_META } from '@/lib/wc-admin';
 
-const PAYPAL_API = 'https://api-m.paypal.com';
-const CLIENT_ID  = process.env.PAYPAL_CLIENT_ID!;
-const SECRET     = process.env.PAYPAL_CLIENT_SECRET!;
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://lightpink-rook-704850.hostingersite.com';
-
-async function getAccessToken(): Promise<string> {
-  const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Basic ${Buffer.from(`${CLIENT_ID}:${SECRET}`).toString('base64')}`,
-    },
-    body: 'grant_type=client_credentials',
-  });
-  if (!res.ok) throw new Error(`PayPal auth failed: ${res.status}`);
-  const data = await res.json() as { access_token: string };
-  return data.access_token;
-}
 
 // La cotización vive en lib/fx y la comparte con el precio que se muestra en
 // el sitio (LocaleContext vía /api/fx-rate). Antes esta ruta tenía su propia
@@ -32,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'wcOrderId y totalARS requeridos' }, { status: 400 });
     }
 
-    const [token, usdRate] = await Promise.all([getAccessToken(), getUsdRate()]);
+    const [token, usdRate] = await Promise.all([paypalAccessToken(), getUsdRate()]);
 
     const totalUSD = (totalARS / usdRate).toFixed(2);
 
@@ -81,6 +66,18 @@ export async function POST(req: NextRequest) {
     if (!approvalLink) {
       return NextResponse.json({ error: 'No se encontró el link de aprobación' }, { status: 500 });
     }
+
+    // El id de la orden de PayPal queda guardado en el pedido de WooCommerce
+    // ANTES de mandar al cliente a pagar. Hasta el 14/08/2026 no se guardaba en
+    // ningún lado: un pedido que quedaba en `pending` era indistinguible de uno
+    // donde el cliente nunca aprobó, y no había forma —ni siquiera a posteriori—
+    // de preguntarle a PayPal qué pasó. Es lo que hace posible la reconciliación
+    // de /api/paypal-reconcile. Si falla, no se corta el pago: se pierde el
+    // rastro, no la venta.
+    await wcPut(`orders/${wcOrderId}`, {
+      meta_data: [{ key: PAYPAL_ORDER_META, value: order.id }],
+    }).catch(() => false);
+    await wcNote(wcOrderId, `PayPal: orden ${order.id} creada por USD ${totalUSD} (cotización ${usdRate}). Esperando aprobación del cliente.`);
 
     return NextResponse.json({
       paypalOrderId: order.id,
