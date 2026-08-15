@@ -17,7 +17,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Golos Text", "sans-serif"],
+        // "Golos Text" queda de fallback por si algún estilo suelto la nombra
+        // por nombre; la que se usa es la self-hosteada por next/font.
+        sans: ["var(--font-golos)", "Golos Text", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

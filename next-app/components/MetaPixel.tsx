@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useCookieConsent } from '@/context/CookieContext';
+import { onIdle } from '@/lib/defer-third-party';
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '412944573148639';
 
@@ -40,10 +41,16 @@ export default function MetaPixel() {
       if (window.fbq) window.fbq('consent', 'revoke');
       return;
     }
-    loadPixel();
+    // Diferido al primer hueco libre del hilo principal, con tope de 2 s.
+    // fbevents.js son ~300-500 ms de blocking en mobile y no hay nada que
+    // medir en los primeros 2 s más allá del PageView, que igual sale porque
+    // el timeout lo garantiza. Ver lib/defer-third-party.ts.
+    return onIdle(loadPixel);
   }, [trackingAllowed]);
 
   useEffect(() => {
+    // En el primer render fbq todavía no existe (está diferido): ese PageView
+    // inicial lo manda loadPixel(). Acá solo salen los de navegación SPA.
     if (trackingAllowed && window.fbq) {
       window.fbq('track', 'PageView');
     }

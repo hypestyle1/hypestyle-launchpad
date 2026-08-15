@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap');
+/* Golos Text ya no se pide a Google: la self-hostea next/font desde el layout
+   (ver `golos` en app/layout.tsx). Un `@import` acá encadenaba tres requests
+   en serie antes de poder pintar — CSS propio -> fonts.googleapis.com ->
+   fonts.gstatic.com — y era el grueso del render-blocking del home. */
 
 @font-face {
   font-family: 'AdidasWorldCup';
@@ -78,7 +81,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Golos Text', sans-serif;
+    font-family: var(--font-golos), 'Golos Text', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 const PUBLIC_OPEN = new Date('2026-06-24T20:00:00-03:00').getTime();
 
 const SLIDES = [
-  '/polo-gate-1.jpeg',
-  '/polo-gate-2.jpeg',
-  '/fw26-camo-editorial.jpg',
-  '/banner-hero (2).jpg',
-  '/founders-photo.jpg',
-  '/banner-hero (3).jpg',
+  // Las 10 slides se montan a la vez (solo cambia la opacidad), así que el
+  // navegador se baja todas. En originales eran ~65 MB para esta pantalla.
+  '/polo-gate-1.webp',
+  '/polo-gate-2.webp',
+  '/fw26-camo-editorial.webp',
+  '/banner-hero-2.webp',
+  '/founders-photo.webp',
+  '/banner-hero-3.webp',
   '/No Love, Only Style banner.webp',
   '/editorial-may26.png',
   '/stl-look-camo-outdoor.webp',

@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 // Mismas fotos y misma técnica (blur + oscurecido + scrim) que usamos en el
 // gate de early access (/acceso) — le da branding sin competir con la tarjeta.
 const SLIDES = [
-  '/polo-gate-1.jpeg',
-  '/polo-gate-2.jpeg',
-  '/fw26-camo-editorial.jpg',
+  '/polo-gate-1.webp',
+  '/polo-gate-2.webp',
+  '/fw26-camo-editorial.webp',
 ];
 
 const glassCard = {
