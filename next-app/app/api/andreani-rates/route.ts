@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizeCpAr } from '@/lib/postal-code';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const cp       = searchParams.get('cp') || '';
+  // Mismo criterio que /api/andreani-branches: el tarifario espera 4 dígitos.
+  const cp       = normalizeCpAr(searchParams.get('cp'));
   const provincia = searchParams.get('provincia') || '';
   const valor    = searchParams.get('valor') || '10000';
   const peso     = searchParams.get('peso') || '0.5';
