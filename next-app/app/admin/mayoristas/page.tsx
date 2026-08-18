@@ -17,6 +17,8 @@ type Mayorista = {
   lastOrderAt: string | null; lastLogin: string | null; loginCount: number;
 };
 
+type HealthCheck = { ok: boolean; label: string; detail: string };
+
 function randomPassword() {
   return Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 10);
 }
@@ -121,6 +123,11 @@ export default function MayoristasAdminPage() {
   const [togglingId, setTogglingId]   = useState<number | null>(null);
   const [minInputs, setMinInputs]     = useState<Record<number, string>>({});
   const [savingMinId, setSavingMinId] = useState<number | null>(null);
+  const [resettingId, setResettingId] = useState<number | null>(null);
+  // La clave nueva se muestra una sola vez, acá. No se guarda en ningún lado:
+  // WordPress la hashea y no hay forma de volver a leerla después.
+  const [resetPassword, setResetPassword] = useState<{ id: number; email: string; password: string; emailSent: boolean } | null>(null);
+  const [health, setHealth] = useState<{ ok: boolean; checks: HealthCheck[] } | null>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [sortKey, setSortKey]       = useState<SortKey>('totalSpent');
   const [sortDir, setSortDir]       = useState<'asc' | 'desc'>('desc');
@@ -195,6 +202,10 @@ export default function MayoristasAdminPage() {
   useEffect(() => {
     if (!authed || !adminKey) return;
     fetchList(adminKey);
+    fetch('/api/admin/mayorista-health', { headers: { 'x-admin-key': adminKey } })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data?.checks) setHealth(data); })
+      .catch(() => {});
     fetch('/api/admin/mayorista-settings', { headers: { 'x-admin-key': adminKey } })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
@@ -219,6 +230,34 @@ export default function MayoristasAdminPage() {
       if (res.ok) setGlobalMin(value);
     } finally {
       setSavingMin(false);
+    }
+  }
+
+  // Resetear ≠ revocar: el cliente conserva su usuario, su historial de pedidos
+  // y su flag de mayorista. Lo único que cambia es la clave.
+  async function resetPasswordFor(m: Mayorista) {
+    const label = m.company || m.name || m.email;
+    if (!confirm(`Generar una contraseña nueva para ${label}?
+
+La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copiala antes de cerrar.`)) return;
+    const password = randomPassword() + randomPassword().slice(0, 4);
+    setResettingId(m.id);
+    setResetPassword(null);
+    try {
+      const res = await fetch(`/api/admin/mayoristas/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setResetPassword({ id: m.id, email: m.email, password, emailSent: !!data.emailSent });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.message || 'No se pudo cambiar la contraseña');
+      }
+    } finally {
+      setResettingId(null);
     }
   }
 
@@ -314,6 +353,29 @@ export default function MayoristasAdminPage() {
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 py-8">
+        {/* Estado del acceso. El login estuvo caído una semana sin que se notara
+            desde acá — este cartel existe para que no vuelva a pasar. */}
+        {health && !health.ok && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-6">
+            <p className="text-[13px] font-semibold text-red-800">El acceso mayorista tiene problemas</p>
+            <ul className="mt-2 space-y-1">
+              {health.checks.filter(c => !c.ok).map(c => (
+                <li key={c.label} className="text-[12px] text-red-700">
+                  <span className="font-semibold">{c.label}:</span> {c.detail}
+                </li>
+              ))}
+            </ul>
+            <p className="text-[11px] text-red-600/80 mt-3">
+              Mientras siga así, los clientes que intenten entrar con la contraseña correcta van a quedar afuera.
+            </p>
+          </div>
+        )}
+        {health?.ok && (
+          <p className="text-[11px] text-gray-400 mb-4">
+            Acceso mayorista operativo — sesión, WordPress y mails verificados.
+          </p>
+        )}
+
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
           <p className="text-[13px] font-semibold text-gray-900">Pedido mínimo general</p>
           <p className="text-[12px] text-gray-500 mt-0.5">Se aplica a todos los clientes salvo que tengan un mínimo propio cargado al crearlos.</p>
@@ -520,15 +582,42 @@ export default function MayoristasAdminPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => toggleActive(m)}
-                          disabled={togglingId === m.id}
-                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border disabled:opacity-40 ${
-                            m.active ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-700 hover:bg-green-50'
-                          }`}
-                        >
-                          {togglingId === m.id ? '...' : m.active ? 'Revocar' : 'Reactivar'}
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => resetPasswordFor(m)}
+                            disabled={resettingId === m.id}
+                            title="Genera una contraseña nueva sin tocar el historial ni el acceso mayorista"
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 hover:text-black disabled:opacity-40"
+                          >
+                            {resettingId === m.id ? '...' : 'Nueva clave'}
+                          </button>
+                          <button
+                            onClick={() => toggleActive(m)}
+                            disabled={togglingId === m.id}
+                            className={`text-[11px] font-semibold px-2.5 py-1 rounded-md border disabled:opacity-40 ${
+                              m.active ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-700 hover:bg-green-50'
+                            }`}
+                          >
+                            {togglingId === m.id ? '...' : m.active ? 'Revocar' : 'Reactivar'}
+                          </button>
+                        </div>
+                        {resetPassword?.id === m.id && (
+                          <div className="mt-2 text-left bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
+                            <p className="text-[10px] text-amber-800 font-semibold uppercase tracking-wide">Contraseña nueva</p>
+                            <p className="font-mono text-[12px] text-gray-900 break-all">{resetPassword.password}</p>
+                            <p className="text-[10px] text-amber-700 mt-0.5">
+                              {resetPassword.emailSent
+                                ? `Se la mandamos por mail a ${resetPassword.email}.`
+                                : 'El mail no salió — copiala y pasásela vos.'}
+                            </p>
+                            <button
+                              onClick={() => { navigator.clipboard?.writeText(resetPassword.password); }}
+                              className="text-[10px] font-semibold text-amber-800 hover:text-black underline mt-1"
+                            >
+                              Copiar
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

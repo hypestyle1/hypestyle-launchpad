@@ -34,6 +34,11 @@ export default function MayoristaLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [slideIdx, setSlideIdx] = useState(0);
+  // Recuperación: se resuelve en la misma tarjeta, sin mandar al cliente a otra
+  // pantalla. El que llega acá ya está trabado — cuantos menos pasos, mejor.
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setSlideIdx(i => (i + 1) % SLIDES.length), 6000);
@@ -55,8 +60,46 @@ export default function MayoristaLoginPage() {
       router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.message || 'Usuario o contraseña incorrectos');
+      // El fallback NO puede ser "usuario o contraseña incorrectos": un 500 con
+      // cuerpo vacío caía siempre en ese mensaje, así que una caída del
+      // servidor se le mostraba al cliente como si hubiera tipeado mal la
+      // clave. Un mayorista pasó una semana reintentando por culpa de esto.
+      // Solo el 401 habla de credenciales; el resto dice que el problema es
+      // nuestro.
+      if (data.message) {
+        setError(data.message);
+      } else if (res.status === 401) {
+        setError('Usuario o contraseña incorrectos');
+      } else {
+        setError('No pudimos abrir tu sesión — es un problema nuestro, no de tus datos. Escribinos y lo resolvemos.');
+      }
     }
+  }
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    const res = await fetch('/api/mayorista/forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: forgotEmail }),
+    });
+    setLoading(false);
+    if (res.ok) {
+      // Confirmación igual exista o no la cuenta: si dijéramos "ese mail no es
+      // mayorista" estaríamos regalando la lista de clientes a cualquiera.
+      setForgotSent(true);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.message || 'No pudimos enviarte el mail');
+    }
+  }
+
+  function backToLogin() {
+    setMode('login');
+    setForgotSent(false);
+    setError('');
   }
 
   return (
@@ -83,9 +126,61 @@ export default function MayoristaLoginPage() {
         <div className="px-8 pt-9 pb-8">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto mx-auto" />
           <p className="text-center text-[10px] uppercase tracking-[0.3em] text-foreground/45 mt-4">
-            Catálogo mayorista
+            {mode === 'login' ? 'Catálogo mayorista' : 'Recuperar acceso'}
           </p>
 
+          {mode === 'forgot' ? (
+            forgotSent ? (
+              <div className="mt-8 text-center">
+                <p className="text-[14px] font-semibold mb-2">Revisá tu casilla</p>
+                <p className="text-[13px] text-foreground/60 leading-relaxed">
+                  Si ese mail tiene acceso mayorista, le mandamos un link para elegir una contraseña nueva. Vale por 2 horas.
+                </p>
+                <button
+                  onClick={backToLogin}
+                  className="text-[11px] uppercase tracking-wide text-foreground/50 hover:text-foreground transition-colors mt-7"
+                >
+                  Volver al ingreso
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgot} className="mt-8 space-y-2.5">
+                <p className="text-[12px] text-foreground/55 leading-relaxed pb-1">
+                  Escribí el mail con el que entrás y te mandamos un link para elegir una contraseña nueva.
+                </p>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="Tu mail"
+                  autoFocus
+                  required
+                  className="w-full px-4 py-3 text-[13px] rounded-[12px] placeholder:text-foreground/40 focus:outline-none transition-shadow"
+                  style={glassInput}
+                />
+
+                {error && <p className="text-[12px] text-destructive text-center pt-1">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60 !mt-6"
+                >
+                  {loading ? '...' : 'Enviar link'}
+                </button>
+
+                <div className="text-center !mt-5">
+                  <button
+                    type="button"
+                    onClick={backToLogin}
+                    className="text-[11px] uppercase tracking-wide text-foreground/50 hover:text-foreground transition-colors"
+                  >
+                    Volver al ingreso
+                  </button>
+                </div>
+              </form>
+            )
+          ) : (
           <form onSubmit={handleSubmit} className="mt-8 space-y-2.5">
             <input
               type="text"
@@ -116,7 +211,18 @@ export default function MayoristaLoginPage() {
             >
               {loading ? '...' : 'Ingresar'}
             </button>
+
+            <div className="text-center !mt-5">
+              <button
+                type="button"
+                onClick={() => { setMode('forgot'); setError(''); setForgotEmail(user.includes('@') ? user : ''); }}
+                className="text-[11px] uppercase tracking-wide text-foreground/50 hover:text-foreground transition-colors"
+              >
+                Olvidé mi contraseña
+              </button>
+            </div>
           </form>
+          )}
 
           <div className="flex justify-center mt-6">
             <img src="/STYLE&CULTURE BLACK.png" alt="Style&Culture" className="h-4 w-auto object-contain opacity-70" />

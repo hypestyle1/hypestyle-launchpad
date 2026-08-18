@@ -52,9 +52,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, message: 'Error de conexión, probá de nuevo' }, { status: 502 });
   }
 
+  // El token se crea ANTES de contar el ingreso, a propósito. Al revés, un
+  // fallo acá (createSessionToken tira si falta MAYORISTA_SESSION_SECRET)
+  // dejaba el contador sumando "ingresos" que nunca existieron: el panel
+  // mostraba clientes con 10 logins que en realidad no habían entrado nunca,
+  // y eso mandó el diagnóstico para el lado equivocado (la contraseña) cuando
+  // el problema era una variable de entorno faltante en Vercel.
+  let token: string;
+  try {
+    token = await createSessionToken(result.customerId);
+  } catch (e) {
+    // Falla ruidosa y con mensaje propio: antes esto era un 500 con cuerpo
+    // vacío, indistinguible de una caída cualquiera desde el navegador.
+    console.error('[mayorista/login] no se pudo firmar la sesión — revisar MAYORISTA_SESSION_SECRET en Vercel:', e);
+    return NextResponse.json({ ok: false, message: 'El acceso mayorista está fuera de servicio. Escribinos y lo resolvemos.' }, { status: 503 });
+  }
+
   await trackLogin(result.customerId);
 
-  const token = await createSessionToken(result.customerId);
   const res = NextResponse.json({ ok: true, label: result.label });
   res.cookies.set(MAYORISTA_COOKIE, token, {
     httpOnly: true,
