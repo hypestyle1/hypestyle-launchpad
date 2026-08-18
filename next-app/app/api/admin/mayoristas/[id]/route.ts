@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getMayoristaById, sendNewPasswordEmail } from '@/lib/mayorista-account';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -54,7 +55,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ message: `Error de WooCommerce (${res.status})` }, { status: 502 });
   }
 
+  // Con la clave nueva ya guardada, se la mandamos al cliente por mail. Copiarla
+  // a mano por WhatsApp es justo donde estas claves se perdían.
+  let emailSent = false;
+  if (password !== undefined) {
+    const account = await getMayoristaById(Number(params.id));
+    if (account) {
+      emailSent = await sendNewPasswordEmail(account, password);
+    }
+    // Si el mail falla no se revierte nada: la contraseña nueva ya es la válida
+    // y el panel la muestra en pantalla, así que siempre queda la salida manual.
+    if (!emailSent) {
+      console.error('[admin/mayoristas/id] contraseña cambiada pero el mail no salió — pasarla a mano');
+    }
+  }
+
   // La contraseña no vuelve en la respuesta: el panel ya la tiene porque fue él
   // quien la generó y la mandó.
-  return NextResponse.json({ ok: true, active, minOrder, passwordChanged: password !== undefined });
+  return NextResponse.json({ ok: true, active, minOrder, passwordChanged: password !== undefined, emailSent });
 }

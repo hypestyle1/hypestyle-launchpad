@@ -42,12 +42,19 @@ export default function MayoristaHeader() {
         <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/40 hidden sm:inline">Mayoristas</span>
       </Link>
       <nav className="flex items-center gap-5 text-[12px] uppercase tracking-wide">
-        {name && <span className="text-foreground/50 normal-case tracking-normal hidden sm:inline">{name}</span>}
+        {name && (
+          <Link href="/mayoristas/cuenta" className="text-foreground/50 normal-case tracking-normal hidden sm:inline hover:text-foreground transition-colors">
+            {name}
+          </Link>
+        )}
         <Link href="/mayoristas/pedidos" className="text-foreground/70 hover:text-foreground transition-colors">
           Mis pedidos
         </Link>
         <Link href="/mayoristas/carrito" className="text-foreground/70 hover:text-foreground transition-colors">
           Pedido{count > 0 ? ` (${count})` : ''}
+        </Link>
+        <Link href="/mayoristas/cuenta" className="text-foreground/70 hover:text-foreground transition-colors sm:hidden">
+          Cuenta
         </Link>
         <button onClick={logout} className="text-foreground/40 hover:text-foreground transition-colors">
           Salir
