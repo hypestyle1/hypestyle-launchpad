@@ -55,7 +55,19 @@ export default function MayoristaLoginPage() {
       router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.message || 'Usuario o contraseña incorrectos');
+      // El fallback NO puede ser "usuario o contraseña incorrectos": un 500 con
+      // cuerpo vacío caía siempre en ese mensaje, así que una caída del
+      // servidor se le mostraba al cliente como si hubiera tipeado mal la
+      // clave. Un mayorista pasó una semana reintentando por culpa de esto.
+      // Solo el 401 habla de credenciales; el resto dice que el problema es
+      // nuestro.
+      if (data.message) {
+        setError(data.message);
+      } else if (res.status === 401) {
+        setError('Usuario o contraseña incorrectos');
+      } else {
+        setError('No pudimos abrir tu sesión — es un problema nuestro, no de tus datos. Escribinos y lo resolvemos.');
+      }
     }
   }
 

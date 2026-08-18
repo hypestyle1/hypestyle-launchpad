@@ -16,13 +16,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
-  const { active, minOrder } = body as { active?: boolean; minOrder?: number | null };
+  const { active, minOrder, password } = body as { active?: boolean; minOrder?: number | null; password?: string };
 
-  if (active === undefined && minOrder === undefined) {
+  if (active === undefined && minOrder === undefined && password === undefined) {
     return NextResponse.json({ message: 'Nada para actualizar' }, { status: 400 });
   }
   if (minOrder !== undefined && minOrder !== null && (typeof minOrder !== 'number' || !Number.isFinite(minOrder) || minOrder < 0)) {
     return NextResponse.json({ message: 'minOrder inválido' }, { status: 400 });
+  }
+  // La contraseña vieja no se puede leer: WordPress la guarda hasheada y no hay
+  // forma de recuperarla, ni por REST ni por base. Por eso acá solo se pisa por
+  // una nueva, que el panel muestra una única vez y después se pierde — igual
+  // que en el alta.
+  if (password !== undefined && (typeof password !== 'string' || password.length < 8)) {
+    return NextResponse.json({ message: 'La contraseña debe tener al menos 8 caracteres' }, { status: 400 });
   }
 
   // Sin guión bajo: WC descarta en silencio los meta "protegidos" al
@@ -31,10 +38,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (active !== undefined) metaData.push({ key: 'es_mayorista', value: active ? 'yes' : 'no' });
   if (minOrder !== undefined) metaData.push({ key: 'mayorista_min_order', value: minOrder === null ? '' : String(minOrder) });
 
+  const payload: Record<string, unknown> = {};
+  if (metaData.length) payload.meta_data = metaData;
+  if (password !== undefined) payload.password = password;
+
   const res = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${params.id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-    body: JSON.stringify({ meta_data: metaData }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -43,5 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ message: `Error de WooCommerce (${res.status})` }, { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, active, minOrder });
+  // La contraseña no vuelve en la respuesta: el panel ya la tiene porque fue él
+  // quien la generó y la mandó.
+  return NextResponse.json({ ok: true, active, minOrder, passwordChanged: password !== undefined });
 }
