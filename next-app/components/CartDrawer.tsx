@@ -9,8 +9,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
 import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
 import GiftProgressBar from "@/components/GiftProgressBar";
-
-const FREE_SHIPPING = 250000;
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/envio";
 
 function shuffled<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -40,8 +39,8 @@ export default function CartDrawer() {
   // El regalo por compra no es un producto pago: no cuenta para el 3x2.
   const purchasableItems = items.filter(item => !item.isGift);
 
-  const remaining = Math.max(FREE_SHIPPING - total, 0);
-  const progress = Math.min((total / FREE_SHIPPING) * 100, 100);
+  const remaining = Math.max(FREE_SHIPPING_THRESHOLD - total, 0);
+  const progress = Math.min((total / FREE_SHIPPING_THRESHOLD) * 100, 100);
   const freeShipping = remaining === 0;
 
   const promo3x2Discount = promo3x2Active ? compute3x2Discount(purchasableItems) : 0;

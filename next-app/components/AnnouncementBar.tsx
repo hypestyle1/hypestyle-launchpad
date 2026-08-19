@@ -3,7 +3,7 @@
 import { useLocale } from "@/context/LocaleContext";
 
 const items = [
-  "Envío gratis desde $250.000",
+  "Envío gratis desde $180.000",
   "Hasta 3 cuotas sin interés",
   "Worldwide Shipping vía FedEx",
   "30 días para cambios y devoluciones",
