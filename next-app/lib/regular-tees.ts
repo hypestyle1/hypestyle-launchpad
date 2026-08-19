@@ -10,9 +10,15 @@ export const REGULAR_TEES_GROUPS = [
       'regular-tees-3-pack-grey',
       'regular-tees-3-pack-navy',
       'regular-tees-3-pack-black-white-melange',
+      'regular-tees-3-pack-black-navy-white',
     ],
   },
 ];
+
+// Ojo: esta lista es curada a mano. Un pack nuevo publicado en WooCommerce NO
+// aparece ni acá ni en /colecciones/regular-tees hasta que se agrega su slug.
+// Pasó con el pack (Black, Navy, White) el 18/08/2026: estaba publicado y
+// vendible, pero invisible en el home.
 
 export const REGULAR_TEES_SLUGS = REGULAR_TEES_GROUPS.flatMap(g => g.slugs);
 
