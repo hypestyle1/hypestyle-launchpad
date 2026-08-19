@@ -11,7 +11,7 @@ const COMPONENT_FIELDS: { key: string; label: string }[] = [
   { key: 'confeccion',    label: 'Confección' },
   { key: 'estampa',       label: 'Estampa' },
   { key: 'avios',         label: 'Avíos' },
-  { key: 'planchaYBolsa', label: 'Plancha y bolsa' },
+  { key: 'planchaybolsa', label: 'Plancha y bolsa' },
   { key: 'ecommerce',     label: 'Ecommerce' },
 ];
 
