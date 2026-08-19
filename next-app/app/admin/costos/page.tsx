@@ -13,6 +13,7 @@ const COMPONENT_FIELDS: { key: string; label: string }[] = [
   { key: 'avios',         label: 'Avíos' },
   { key: 'planchaybolsa', label: 'Plancha y bolsa' },
   { key: 'ecommerce',     label: 'Ecommerce' },
+  { key: 'tarjetayperfume', label: 'Tarjeta y perfume' },
 ];
 
 type CostProfile = { id: string; name: string; components: Record<string, number>; unitCost: number };
