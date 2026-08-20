@@ -117,7 +117,7 @@ function buildWelcomeStep2Html(name: string) {
     </tr>
     <tr>
       <td style="padding:0 40px 32px;background:#fff;text-align:center;">
-        <a href="${SITE_URL}/best-sellers" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:14px 32px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">
+        <a href="${SITE_URL}/special-prices" style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:14px 32px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;">
           Ver los más vendidos
         </a>
       </td>
