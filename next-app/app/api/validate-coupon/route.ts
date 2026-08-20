@@ -7,7 +7,7 @@ const WC_SEC    = (process.env.WC_CONSUMER_SECRET || '').trim();
 
 // Lee el flag "free shipping" del cupón (Woo). El validate-coupon del PHP solo
 // devuelve %/monto fijo; esto permite cupones de envío gratis (envío = $0, igual
-// que el umbral de $250.000) sin tocar el PHP.
+// que el umbral de envío gratis) sin tocar el PHP.
 async function couponFreeShipping(code: string): Promise<boolean> {
   if (!WC_KEY || !WC_SEC || !code) return false;
   try {

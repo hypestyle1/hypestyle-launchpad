@@ -111,7 +111,35 @@ const ONLY_GOD_COLORWAYS = [
   { label: 'Black', value: '#1a1a1a', slug: 'only-god-can-judge-me-negra',  image: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUP-NEGRO.png' },
 ];
 
+const WP = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads';
+
+// Los básicos tienen DOS familias de colorway que no se mezclan a propósito:
+// la individual y la de 3-packs. Saltar de una remera suelta a un pack sería
+// cambiar de producto y de precio, no de color.
+const REGULAR_TEE_COLORWAYS = [
+  { label: 'Black',   value: '#1a1a1a', slug: 'regular-tee-black',   image: `${WP}/2026/05/remera-regular-negra-frente.png` },
+  { label: 'White',   value: '#f5f5f5', slug: 'regular-tee-white',   image: `${WP}/2026/04/regular-2-75ea403f4d52d064fd17644453598412-1024-1024.png` },
+  { label: 'Melange', value: '#b8b4ae', slug: 'regular-tee-melange', image: `${WP}/2026/04/regular-tee-melange-frente-e6dd1bc734bcf1ba8d17610877937838-1024-1024.png` },
+  { label: 'Navy',    value: '#1a2744', slug: 'regular-tee-navy',    image: `${WP}/2026/07/remera-regular-navy-frente.png` },
+];
+
+// 8 packs: los 4 mono-color y las 4 combinaciones posibles de 3 colores
+// distintos sobre esos mismos 4. La miniatura es la portada de cada pack,
+// así se ve la combinación antes de entrar.
+const REGULAR_PACK_COLORWAYS = [
+  { label: 'Black',                   value: '#1a1a1a', slug: 'regular-tees-3-pack-black',               image: `${WP}/2026/04/regular-tee-mockupmesa-de-trabajo-11-d47aa4a3a364e74b8e17644382638816-1024-1024.png` },
+  { label: 'White',                   value: '#f5f5f5', slug: 'regular-tees-3-pack-white',               image: `${WP}/2026/04/regular-tee-mockupmesa-de-trabajo-13-a216c9787d3c579d0b17644381427908-1024-1024.png` },
+  { label: 'Melange',                 value: '#b8b4ae', slug: 'regular-tees-3-pack-grey',                image: `${WP}/2026/04/regular-tee-mockupmesa-de-trabajo-12-38e5b3a818238183ed17644383160310-1024-1024.png` },
+  { label: 'Navy',                    value: '#1a2744', slug: 'regular-tees-3-pack-navy',                image: `${WP}/2026/07/regular-navy-x3.png` },
+  { label: 'Black · Melange · White', value: '#1a1a1a', slug: 'regular-tees-3-pack-black-white-melange', image: `${WP}/2026/04/img_6083-8c896b61307c7ca2fe17643667034494-1024-1024.png` },
+  { label: 'Black · Navy · White',    value: '#1a1a1a', slug: 'regular-tees-3-pack-black-navy-white',    image: `${WP}/2026/08/regular-tees-3pack-black-navy-white.png` },
+  { label: 'Black · Melange · Navy',  value: '#1a1a1a', slug: 'regular-tees-3-pack-black-melange-navy',  image: `${WP}/2026/08/regular-tees-3-pack-black-melange-navy.png` },
+  { label: 'Melange · Navy · White',  value: '#1a2744', slug: 'regular-tees-3-pack-melange-navy-white',  image: `${WP}/2026/08/regular-tees-3-pack-melange-navy-white.png` },
+];
+
 const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
+  ...Object.fromEntries(REGULAR_TEE_COLORWAYS.map(c => [c.slug, REGULAR_TEE_COLORWAYS])),
+  ...Object.fromEntries(REGULAR_PACK_COLORWAYS.map(c => [c.slug, REGULAR_PACK_COLORWAYS])),
   'half-zip-polo-navy':    HALF_ZIP_COLORWAYS,
   'half-zip-polo-melange': HALF_ZIP_COLORWAYS,
   'half-zip-polo-black':   HALF_ZIP_COLORWAYS,

@@ -59,7 +59,7 @@ const DICT: Dict = {
   'Iniciar compra': { EN: 'Checkout', PT: 'Finalizar compra' },
 
   // — AnnouncementBar —
-  'Envío gratis desde $250.000': { EN: 'Free shipping over $250.000', PT: 'Frete grátis a partir de $250.000' },
+  'Envío gratis desde $180.000': { EN: 'Free shipping over $180.000', PT: 'Frete grátis a partir de $180.000' },
   'Hasta 3 cuotas sin interés': { EN: 'Up to 3 interest-free installments', PT: 'Até 3x sem juros' },
   'Worldwide Shipping vía FedEx': { EN: 'Worldwide shipping via FedEx', PT: 'Envio mundial via FedEx' },
   '30 días para cambios y devoluciones': { EN: '30 days for exchanges & returns', PT: '30 dias para trocas e devoluções' },
