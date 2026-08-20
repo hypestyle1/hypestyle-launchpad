@@ -1,5 +1,5 @@
 /**
- * Winter Sale — fuente única de la campaña.
+ * Cold Archive — fuente única de la campaña.
  *
  * El cierre tiene que coincidir con el `date_on_sale_to` que se cargó en
  * WooCommerce (scripts/sale-precios.mjs). Si los dos números difieren, el sitio
@@ -23,6 +23,15 @@ export const SALE_START = new Date('2026-08-20T00:00:00-03:00');
 
 /** Descuento maximo publicado. Tiene que coincidir con el mayor de Woo. */
 export const SALE_MAX_OFF = 50;
+
+/**
+ * Nombre de la campaña y su descriptor comercial. La jerarquía importa:
+ * COLD ARCHIVE es el nombre y va primero; WINTER SALE solo explica de qué se
+ * trata. Están acá y no sueltos en cada componente para que renombrar la
+ * campaña sea un cambio en un archivo.
+ */
+export const SALE_NOMBRE = 'Cold Archive';
+export const SALE_DESCRIPTOR = 'Winter Sale';
 
 export function isSaleActive(now: Date = new Date()): boolean {
   const t = now.getTime();
