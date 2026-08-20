@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useLocale } from "@/context/LocaleContext";
-import { SALE_END_LABEL, SALE_MAX_OFF, isSaleActive } from "@/lib/sale";
+import { SALE_MAX_OFF, SALE_NOMBRE, SALE_URGENCIA, isSaleActive } from "@/lib/sale";
 
-// Mientras dura el Winter Sale estos dos mensajes van adelante de los fijos, y
+// Mientras dura el Cold Archive estos dos mensajes van adelante de los fijos, y
 // la pildora se pinta con el rojo de campana. Cuando el sale vence vuelve sola
 // a la version neutra: no hay que acordarse de revertir nada.
 const SALE_ITEMS = [
-  `Winter Sale · hasta ${SALE_MAX_OFF}% OFF`,
-  `Termina el ${SALE_END_LABEL}`,
+  `${SALE_NOMBRE} · hasta ${SALE_MAX_OFF}% OFF`,
+  SALE_URGENCIA,
 ];
 
 const items = [
