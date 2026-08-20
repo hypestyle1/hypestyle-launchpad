@@ -500,7 +500,9 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                     <span className="text-[12px] font-semibold uppercase tracking-wider">Color</span>
                     <span className="text-[12px] text-muted-foreground">— {selectedColor}</span>
                   </div>
-                  <div className="flex gap-2">
+                  {/* wrap: los 3-packs tienen 8 colorways y a 44px no entran
+                      en una sola línea en mobile. */}
+                  <div className="flex gap-2 flex-wrap">
                     {product.colors.map(c => (
                       <button key={c.label}
                         onClick={() => c.slug && c.slug !== product.slug ? router.push(`/producto/${c.slug}/`) : setSelectedColor(c.label)}
