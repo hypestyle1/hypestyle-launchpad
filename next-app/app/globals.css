@@ -54,6 +54,12 @@
 
     --radius: 0px;
 
+    /* Winter Sale — rojo de campaña. Separado de --destructive, que significa
+       'error' en el resto del sistema: si comparten variable, cambiar el rojo
+       del sale te cambia los mensajes de error. */
+    --sale: 4 71% 44%;
+    --sale-foreground: 0 0% 100%;
+
     --announce-h: 42px;
     --nav-h: 48px;
     --offset: 90px;
@@ -142,4 +148,20 @@
   .scrollbar-none::-webkit-scrollbar { display: none; }
   .no-scrollbar,
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+
+/* Ticker del Winter Sale (components/SaleHero.tsx). La tira se repite tres
+   veces y se desplaza un tercio: al terminar el ciclo el contenido coincide
+   con el inicio, asi que el loop no muestra el corte. */
+@keyframes hs-marquee-x {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-33.333%); }
+}
+.hs-marquee {
+  animation: hs-marquee-x 22s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-marquee { animation: none; }
 }

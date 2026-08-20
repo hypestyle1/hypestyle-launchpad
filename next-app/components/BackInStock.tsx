@@ -13,13 +13,19 @@ export default function BackInStock() {
 
   const products = useMemo(() => {
     const bySlug = new Map(allProducts.map(p => [p.slug, p]));
-    return BEST_SELLERS_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts;
+    return BEST_SELLERS_SLUGS
+      .map(s => bySlug.get(s))
+      .filter(Boolean)
+      // Fuera los agotados y los que se quedaron sin descuento: este bloque
+      // dice SALE, asi que todo lo que muestra tiene que estar en sale.
+      .filter(p => !!p!.originalPrice && p!.originalPrice > p!.price)
+      .filter(p => Object.values(p!.stock).some(s => s !== 'out')) as typeof allProducts;
   }, [allProducts]);
 
   return (
     <section id="back-in-stock" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="Sale — Best Sellers" link="/best-sellers/" linkLabel="Ver más" />
+        <SectionHeader title="SALE" link="/special-prices/" linkLabel="Ver todo el sale" />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (

@@ -57,6 +57,11 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // /best-sellers/ y /special-prices/ eran dos vistas del mismo sale (una
+      // curada, otra con el resto) y no compartian ni un producto. Quedo una
+      // sola pagina SALE; la vieja redirige para no perder los links de afuera.
+      { source: '/best-sellers',        destination: '/special-prices',                 permanent: true },
+      { source: '/best-sellers/',       destination: '/special-prices',                 permanent: true },
       { source: '/no-love-only-style',  destination: '/colecciones/no-love-only-style', permanent: true },
       { source: '/no-love-only-style/', destination: '/colecciones/no-love-only-style', permanent: true },
       { source: '/camo-set-drop',       destination: '/colecciones/camo-set-drop',      permanent: true },
