@@ -49,14 +49,16 @@ async function handle(request: NextRequest) {
 
   // Área mayorista: gate propio, independiente del early-access del sitio público.
   if (isUnder(pathname, '/mayoristas') || isUnder(pathname, '/api/mayorista')) {
-    // Recuperar la contraseña pasa sin sesión, por definición: el cliente que
-    // llega acá es justamente el que no puede entrar.
+    // Recuperar la contraseña y pedir acceso pasan sin sesión, por definición:
+    // el que llega acá es justamente el que todavía no puede entrar.
     if (
       pathname.startsWith('/mayoristas/login') ||
       pathname.startsWith('/mayoristas/reset') ||
+      pathname.startsWith('/mayoristas/solicitud') ||
       pathname.startsWith('/api/mayorista/login') ||
       pathname.startsWith('/api/mayorista/forgot') ||
       pathname.startsWith('/api/mayorista/reset') ||
+      pathname.startsWith('/api/mayorista/solicitud') ||
       /\.[\w]{2,5}$/.test(pathname)
     ) {
       return NextResponse.next();

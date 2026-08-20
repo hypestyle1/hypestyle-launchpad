@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMayoristaById, sendNewPasswordEmail } from '@/lib/mayorista-account';
+import { getMayoristaById, sendNewPasswordEmail, sendAprobacionEmail } from '@/lib/mayorista-account';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -17,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
-  const { active, minOrder, password } = body as { active?: boolean; minOrder?: number | null; password?: string };
+  const { active, minOrder, password, approve } = body as { active?: boolean; minOrder?: number | null; password?: string; approve?: boolean };
 
   if (active === undefined && minOrder === undefined && password === undefined) {
     return NextResponse.json({ message: 'Nada para actualizar' }, { status: 400 });
@@ -57,6 +57,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   // Con la clave nueva ya guardada, se la mandamos al cliente por mail. Copiarla
   // a mano por WhatsApp es justo donde estas claves se perdían.
+  // Aprobar una solicitud avisa al comercio; activar a alguien que ya entraba
+  // (por ejemplo tras revocarlo) no, para no mandarle una bienvenida repetida.
+  if (approve === true) {
+    const account = await getMayoristaById(Number(params.id));
+    if (account) await sendAprobacionEmail(account);
+  }
+
   let emailSent = false;
   if (password !== undefined) {
     const account = await getMayoristaById(Number(params.id));

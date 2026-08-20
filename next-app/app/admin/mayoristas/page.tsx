@@ -13,6 +13,8 @@ const EMPTY = {
 type Mayorista = {
   id: number; email: string; name: string; company: string; phone: string; city: string;
   minOrderOverride: string | null; active: boolean; createdAt: string;
+  status: 'pending' | 'active' | 'revoked';
+  cuit?: string; instagram?: string; localFisico?: boolean; modalidad?: string; solicitadoEl?: string | null;
   orderCount: number; totalSpent: number;
   lastOrderAt: string | null; lastLogin: string | null; loginCount: number;
 };
@@ -128,6 +130,7 @@ export default function MayoristasAdminPage() {
   // WordPress la hashea y no hay forma de volver a leerla después.
   const [resetPassword, setResetPassword] = useState<{ id: number; email: string; password: string; emailSent: boolean } | null>(null);
   const [health, setHealth] = useState<{ ok: boolean; checks: HealthCheck[] } | null>(null);
+  const [decidingId, setDecidingId] = useState<number | null>(null);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [sortKey, setSortKey]       = useState<SortKey>('totalSpent');
   const [sortDir, setSortDir]       = useState<'asc' | 'desc'>('desc');
@@ -141,8 +144,10 @@ export default function MayoristasAdminPage() {
     }
   }
 
+  const pendientes = useMemo(() => mayoristas.filter(m => m.status === 'pending'), [mayoristas]);
+
   const visibleMayoristas = useMemo(() => {
-    const filtered = mayoristas.filter(m => {
+    const filtered = mayoristas.filter(m => m.status !== 'pending').filter(m => {
       if (filterMode === 'never-ordered') return m.orderCount === 0;
       if (filterMode === 'never-logged-in') return m.loginCount === 0;
       return true;
@@ -261,6 +266,26 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
     }
   }
 
+  async function decidirSolicitud(m: Mayorista, aprobar: boolean) {
+    const label = m.company || m.name || m.email;
+    if (!aprobar && !confirm(`Rechazar la solicitud de ${label}?`)) return;
+    setDecidingId(m.id);
+    try {
+      const res = await fetch(`/api/admin/mayoristas/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify(aprobar ? { active: true, approve: true } : { active: false }),
+      });
+      if (res.ok) {
+        setMayoristas(prev => prev.map(x => x.id === m.id
+          ? { ...x, active: aprobar, status: aprobar ? 'active' : 'revoked' }
+          : x));
+      }
+    } finally {
+      setDecidingId(null);
+    }
+  }
+
   async function toggleActive(m: Mayorista) {
     setTogglingId(m.id);
     try {
@@ -374,6 +399,58 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
           <p className="text-[11px] text-gray-400 mb-4">
             Acceso mayorista operativo — sesión, WordPress y mails verificados.
           </p>
+        )}
+
+        {/* Solicitudes que llegaron del formulario público. Van arriba de todo:
+            cada una es un comercio esperando respuesta. */}
+        {pendientes.length > 0 && (
+          <div className="bg-white rounded-xl border-2 border-amber-300 p-5 mb-6">
+            <p className="text-[13px] font-semibold text-gray-900">
+              {pendientes.length} solicitud{pendientes.length !== 1 ? 'es' : ''} esperando aprobación
+            </p>
+            <p className="text-[12px] text-gray-500 mt-0.5">
+              Ya cargaron sus datos y eligieron su contraseña. Al aprobar les llega el aviso de que pueden entrar.
+            </p>
+            <div className="mt-4 space-y-2">
+              {pendientes.map(m => (
+                <div key={m.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-between border border-gray-200 rounded-lg px-4 py-3">
+                  <div className="min-w-[180px]">
+                    <p className="text-[13px] font-semibold text-gray-900">{m.company || m.name}</p>
+                    <p className="text-[11px] text-gray-500">
+                      {[m.name, m.city].filter(Boolean).join(' · ')}
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {[m.cuit ? `CUIT ${m.cuit}` : '', m.instagram ? `@${m.instagram}` : '', m.modalidad, m.localFisico ? 'con local' : 'sin local'].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                  <div className="text-[11px] text-gray-500">
+                    <a href={`mailto:${m.email}`} className="hover:text-black block">{m.email}</a>
+                    {m.phone && (
+                      <a href={waLink(m.phone, m.name)} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:text-green-700">
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => decidirSolicitud(m, true)}
+                      disabled={decidingId === m.id}
+                      className="text-[11px] font-semibold bg-black text-white px-3.5 py-1.5 rounded-md hover:bg-gray-900 disabled:opacity-40"
+                    >
+                      {decidingId === m.id ? '...' : 'Aprobar'}
+                    </button>
+                    <button
+                      onClick={() => decidirSolicitud(m, false)}
+                      disabled={decidingId === m.id}
+                      className="text-[11px] font-semibold text-gray-500 px-2.5 py-1.5 border border-gray-300 rounded-md hover:text-black disabled:opacity-40"
+                    >
+                      Rechazar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
