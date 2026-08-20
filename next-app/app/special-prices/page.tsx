@@ -8,7 +8,7 @@ import { BEST_SELLERS_SLUGS } from "@/lib/best-sellers";
 import JsonLd from "@/components/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 import { collectionJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
-import { SALE_END_LABEL } from "@/lib/sale";
+import { SALE_URGENCIA } from "@/lib/sale";
 
 export const revalidate = 60;
 
@@ -16,7 +16,7 @@ const PATH = '/special-prices/';
 const TITLE = 'SALE';
 const DESCRIPTION =
   'Winter Sale HYPESTYLE: hoodies, remeras, pants y accesorios con hasta 50% de descuento. ' +
-  'Hasta el ' + SALE_END_LABEL + ', mientras haya stock.';
+  SALE_URGENCIA + ', mientras haya stock.';
 
 export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, path: PATH });
 

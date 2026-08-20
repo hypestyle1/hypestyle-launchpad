@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { SALE_END_LABEL, SALE_MAX_OFF, isSaleActive } from '@/lib/sale';
+import { SALE_MAX_OFF, SALE_URGENCIA, isSaleActive } from '@/lib/sale';
 
 /**
  * Banda del Winter Sale en el home.
@@ -48,7 +48,7 @@ export default function SaleBanner() {
               Winter Sale
             </p>
             <p className="mt-2 text-[13px] md:text-[14px] text-white/85">
-              Todo el catálogo en oferta · hasta el {SALE_END_LABEL}
+              Todo el catálogo en oferta · {SALE_URGENCIA.toLowerCase()}
             </p>
           </div>
 

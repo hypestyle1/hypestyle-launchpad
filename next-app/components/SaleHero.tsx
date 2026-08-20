@@ -1,4 +1,4 @@
-import { SALE_END_LABEL, saleDaysLeft } from "@/lib/sale";
+import { SALE_URGENCIA } from "@/lib/sale";
 
 /**
  * Héroe del Winter Sale — dirección "Marcador".
@@ -10,8 +10,7 @@ import { SALE_END_LABEL, saleDaysLeft } from "@/lib/sale";
  * home. Con `revalidate = 60` en la página, el número se refresca solo.
  */
 export default function SaleHero({ maxOff, total }: { maxOff: number; total: number }) {
-  const dias = saleDaysLeft();
-  const items = [`${maxOff}% OFF`, 'WINTER SALE', `TERMINA ${SALE_END_LABEL}`, `${total} PRODUCTOS`];
+  const items = [`${maxOff}% OFF`, 'WINTER SALE', SALE_URGENCIA.toUpperCase(), `${total} PRODUCTOS`];
   // Se duplica la tira para que el loop del marquee no muestre el corte.
   const tira = [...items, ...items, ...items];
 
@@ -55,17 +54,13 @@ export default function SaleHero({ maxOff, total }: { maxOff: number; total: num
 
         <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4 border-t border-white/25 pt-5">
           <div>
-            <dt className="text-[10px] uppercase tracking-[0.16em] text-white/60">Termina</dt>
-            <dd className="text-[20px] md:text-[24px] font-bold tracking-[-0.02em] tabular-nums">{SALE_END_LABEL}</dd>
+            <dt className="text-[10px] uppercase tracking-[0.16em] text-white/60">Duración</dt>
+            <dd className="text-[20px] md:text-[24px] font-bold tracking-[-0.02em]">{SALE_URGENCIA}</dd>
           </div>
-          {dias !== null && (
-            <div>
-              <dt className="text-[10px] uppercase tracking-[0.16em] text-white/60">Quedan</dt>
-              <dd className="text-[20px] md:text-[24px] font-bold tracking-[-0.02em] tabular-nums">
-                {dias === 0 ? 'último día' : `${dias} días`}
-              </dd>
-            </div>
-          )}
+          <div>
+            <dt className="text-[10px] uppercase tracking-[0.16em] text-white/60">Envío gratis</dt>
+            <dd className="text-[20px] md:text-[24px] font-bold tracking-[-0.02em] tabular-nums">desde $180.000</dd>
+          </div>
           <div>
             <dt className="text-[10px] uppercase tracking-[0.16em] text-white/60">Con transferencia</dt>
             <dd className="text-[20px] md:text-[24px] font-bold tracking-[-0.02em] tabular-nums">10% extra</dd>
