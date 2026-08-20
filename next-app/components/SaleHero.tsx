@@ -1,7 +1,7 @@
-import { SALE_URGENCIA } from "@/lib/sale";
+import { SALE_DESCRIPTOR, SALE_NOMBRE, SALE_URGENCIA } from "@/lib/sale";
 
 /**
- * Héroe del Winter Sale — dirección "Marcador".
+ * Héroe de Cold Archive — dirección "Marcador".
  *
  * Server component a propósito: los días restantes se calculan en el servidor y
  * viajan ya resueltos. Si el contador se calculara en el cliente, el HTML del
@@ -10,7 +10,7 @@ import { SALE_URGENCIA } from "@/lib/sale";
  * home. Con `revalidate = 60` en la página, el número se refresca solo.
  */
 export default function SaleHero({ maxOff, total }: { maxOff: number; total: number }) {
-  const items = [`${maxOff}% OFF`, 'WINTER SALE', SALE_URGENCIA.toUpperCase(), `${total} PRODUCTOS`];
+  const items = [`HASTA ${maxOff}% OFF`, SALE_NOMBRE.toUpperCase(), SALE_URGENCIA.toUpperCase(), `${total} PRODUCTOS`];
   // Se duplica la tira para que el loop del marquee no muestre el corte.
   const tira = [...items, ...items, ...items];
 
@@ -35,11 +35,17 @@ export default function SaleHero({ maxOff, total }: { maxOff: number; total: num
           Cierre de temporada · Otoño Invierno 26
         </p>
 
-        <h1 className="mt-3 text-[38px] md:text-[64px] font-black uppercase leading-[0.9] tracking-[-0.04em]">
-          Winter Sale
+        <h1 className="mt-3 text-[38px] md:text-[64px] font-black italic uppercase leading-[0.9] tracking-[-0.045em]">
+          {SALE_NOMBRE}<span className="text-white/55">.</span>
         </h1>
+        <p className="mt-3 text-[11px] md:text-[13px] font-medium uppercase tracking-[0.3em] text-white/65">
+          {SALE_DESCRIPTOR}
+        </p>
 
-        <div className="mt-4 flex items-baseline gap-2 md:gap-3">
+        <p className="mt-6 text-[10px] md:text-[11px] font-medium uppercase tracking-[0.28em] text-white/65">
+          Hasta
+        </p>
+        <div className="mt-1 flex items-baseline gap-2 md:gap-3">
           <span className="text-[76px] md:text-[128px] font-black leading-[0.82] tracking-[-0.06em]">
             {maxOff}
           </span>
@@ -47,10 +53,6 @@ export default function SaleHero({ maxOff, total }: { maxOff: number; total: num
             % OFF
           </span>
         </div>
-
-        <p className="mt-1 text-[13px] md:text-[15px] text-white/85">
-          hasta, en {total} productos
-        </p>
 
         <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4 border-t border-white/25 pt-5">
           <div>
