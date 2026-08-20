@@ -18,6 +18,7 @@ import { imgSrc } from '@/lib/img';
 import { normalizeCpAr } from '@/lib/postal-code';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/envio';
 import GiftProgressBar from '@/components/GiftProgressBar';
 
 type Step = 'info' | 'envio' | 'pago';
@@ -239,8 +240,6 @@ function UpsellCarousel() {
   );
 }
 
-const FREE_SHIPPING_THRESHOLD = 250000;
-
 interface ShippingRate { id: string; label: string; cost: number }
 interface AndBranch { id: string; label: string; direccion: string }
 interface InfoForm {
@@ -359,7 +358,7 @@ export default function Checkout() {
   }, [hydrated]);
 
   const subtotal = total;
-  // El cupón de envío gratis cero-ea Andreani igual que el umbral de $250.000.
+  // El cupón de envío gratis cero-ea Andreani igual que el umbral por monto.
   const couponFreeShip = !isInternational && !!couponData?.free_shipping;
   const freeShipping = !isInternational && (subtotal >= FREE_SHIPPING_THRESHOLD || couponFreeShip);
   const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
