@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 // Mismas fotos y misma técnica (blur + oscurecido + scrim) que usamos en el
 // gate de early access (/acceso) — le da branding sin competir con la tarjeta.
@@ -220,6 +221,15 @@ export default function MayoristaLoginPage() {
               >
                 Olvidé mi contraseña
               </button>
+            </div>
+
+            <div className="text-center !mt-4 pt-4 border-t border-foreground/10">
+              <p className="text-[12px] text-foreground/50">
+                ¿Todavía no sos mayorista?{' '}
+                <Link href="/mayoristas/solicitud" className="text-foreground font-medium underline underline-offset-2">
+                  Pedí tu acceso
+                </Link>
+              </p>
             </div>
           </form>
           )}

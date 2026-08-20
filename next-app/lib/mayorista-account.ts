@@ -212,3 +212,120 @@ export async function sendResetLinkEmail(account: MayoristaAccount, token: strin
     ),
   );
 }
+
+/* ─── Solicitudes de acceso ───────────────────────────────────────────────
+   El propio comercio se registra desde /mayoristas/solicitud: carga sus datos
+   y elige su usuario y contraseña. La cuenta nace en 'pending', que el login
+   ya rechaza — hypestyle_mayorista_login exige es_mayorista === 'yes' —, así
+   que no hay que inventar ningún portero nuevo: la solicitud simplemente no
+   puede entrar hasta que alguien la aprueba. */
+
+export type MayoristaStatus = 'pending' | 'active' | 'revoked';
+
+export function statusFromMeta(value: string): MayoristaStatus {
+  if (value === 'yes') return 'active';
+  if (value === 'pending') return 'pending';
+  return 'revoked';
+}
+
+const ADMIN_EMAIL = 'hypestylearg@gmail.com';
+// El token de aprobación se firma con WP_SECRET y no con el de sesiones: son
+// dos permisos distintos y no queremos que uno sirva para el otro.
+const ADMIN_SECRET = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
+const APPROVAL_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
+
+async function signAdmin(payload: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(ADMIN_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  return b64url(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload)));
+}
+
+export async function createApprovalToken(customerId: number): Promise<string | null> {
+  if (!ADMIN_SECRET) return null;
+  const exp = Date.now() + APPROVAL_TTL_MS;
+  const sig = await signAdmin(`aprobar:${customerId}:${exp}`);
+  return `${customerId}.${exp}.${sig}`;
+}
+
+export async function verifyApprovalToken(token: string): Promise<number | null> {
+  if (!ADMIN_SECRET || !token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [idStr, expStr, sig] = parts;
+  const customerId = Number(idStr);
+  const exp = Number(expStr);
+  if (!customerId || !exp || Number.isNaN(exp) || Date.now() > exp) return null;
+  const expected = await signAdmin(`aprobar:${customerId}:${exp}`);
+  return expected === sig ? customerId : null;
+}
+
+export interface SolicitudData {
+  razonSocial: string;
+  cuit: string;
+  instagram: string;
+  localFisico: boolean;
+  modalidad: string;
+  contacto: string;
+  telefono: string;
+  ciudad: string;
+  provincia: string;
+}
+
+/** Aviso a Hypestyle de que alguien pidió acceso. Lleva el link para aprobar. */
+export async function sendSolicitudAdminEmail(
+  account: MayoristaAccount,
+  data: SolicitudData,
+  token: string,
+): Promise<boolean> {
+  const link = `${SITE_URL}/admin/aprobar?token=${encodeURIComponent(token)}`;
+  const row = (label: string, value?: string) =>
+    value ? `<tr><td style="padding:5px 10px;color:#888;width:150px">${label}</td><td style="padding:5px 10px;font-weight:bold">${value}</td></tr>` : '';
+
+  return send(
+    { email: ADMIN_EMAIL, name: 'Hypestyle' },
+    `${data.razonSocial || account.label} solicitó acceso al catálogo mayorista`,
+    shell(
+      'Nueva solicitud de acceso',
+      `
+      <p style="font-size:14px;line-height:1.6"><strong>${data.razonSocial || account.label}</strong> solicitó acceso para entrar al catálogo mayorista de Hype.</p>
+      <table style="font-size:13px;border-collapse:collapse;width:100%;margin:16px 0">
+        ${row('Razón social', data.razonSocial)}
+        ${row('CUIT', data.cuit)}
+        ${row('Contacto', data.contacto)}
+        ${row('Mail', account.email)}
+        ${row('Teléfono', data.telefono)}
+        ${row('Instagram', data.instagram)}
+        ${row('Local físico', data.localFisico ? 'Sí' : 'No')}
+        ${row('Cómo vende', data.modalidad)}
+        ${row('Ubicación', [data.ciudad, data.provincia].filter(Boolean).join(', '))}
+      </table>
+      <p style="font-size:13px;line-height:1.6;color:#555">Ya cargó todos sus datos y eligió su propia contraseña. Hasta que lo apruebes, la cuenta existe pero no puede entrar.</p>
+      <p style="margin:22px 0"><a href="${link}" style="background:#111;color:#fff;text-decoration:none;font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;padding:12px 22px;border-radius:999px;display:inline-block">Revisar y aprobar</a></p>
+      <p style="font-size:12px;line-height:1.6;color:#888">El link te muestra la solicitud completa y te deja aprobarla o rechazarla con un botón. Nada se activa por abrirlo.</p>
+      <p style="font-size:12px;line-height:1.6;color:#888">También la tenés en el panel, junto con el resto: <a href="${SITE_URL}/admin/mayoristas" style="color:#888">hypestyle.com.ar/admin/mayoristas</a></p>
+    `,
+    ),
+  );
+}
+
+/** Al aprobar: se le avisa al comercio que ya puede entrar. */
+export async function sendAprobacionEmail(account: MayoristaAccount): Promise<boolean> {
+  return send(
+    { email: account.email, name: account.label },
+    'Tu acceso al catálogo mayorista de Hype está activo',
+    shell(
+      'Bienvenido al mayorista',
+      `
+      <p style="font-size:14px;line-height:1.6">Hola ${account.label}, aprobamos tu solicitud. Tu acceso al catálogo mayorista ya está activo.</p>
+      <p style="font-size:14px;line-height:1.6">Entrá con <strong>${account.email}</strong> y la contraseña que elegiste al registrarte.</p>
+      <p style="margin:22px 0"><a href="${SITE_URL}/mayoristas/login" style="background:#111;color:#fff;text-decoration:none;font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;padding:12px 22px;border-radius:999px;display:inline-block">Ver el catálogo</a></p>
+      <p style="font-size:13px;line-height:1.6;color:#555">Los precios que vas a ver son mayoristas, al 50% de la lista. Cualquier duda, respondé este mail.</p>
+    `,
+    ),
+  );
+}

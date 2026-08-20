@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { statusFromMeta } from '@/lib/mayorista-account';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -65,7 +66,16 @@ export async function GET(req: NextRequest) {
       phone: c.billing?.phone || '',
       city: c.billing?.city || '',
       minOrderOverride: metaVal(meta, 'mayorista_min_order') || null,
+      // 'active' se conserva para no romper nada que ya lo lea; 'status' es el
+      // que distingue una solicitud pendiente de un acceso revocado — antes
+      // ambas caían en el mismo 'false'.
       active: metaVal(meta, 'es_mayorista') === 'yes',
+      status: statusFromMeta(metaVal(meta, 'es_mayorista')),
+      cuit: metaVal(meta, 'mayorista_cuit'),
+      instagram: metaVal(meta, 'mayorista_instagram'),
+      localFisico: metaVal(meta, 'mayorista_local_fisico') === 'yes',
+      modalidad: metaVal(meta, 'mayorista_modalidad'),
+      solicitadoEl: metaVal(meta, 'mayorista_solicitud_fecha') || null,
       createdAt: c.date_created,
       orderCount,
       totalSpent,
