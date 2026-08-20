@@ -28,13 +28,20 @@ export interface MayoristaLoginResult {
   billing: MayoristaBilling;
 }
 
-export async function authenticateMayoristaCustomer(username: string, password: string): Promise<MayoristaLoginResult | { error: string } | null> {
+// El 403 de WP significa "la contraseña está bien pero la cuenta no tiene el
+// acceso mayorista": es el caso de una solicitud todavía sin aprobar. Antes se
+// devolvía null igual que un 401, así que a quien estaba esperando su
+// aprobación le decíamos que se había equivocado de contraseña.
+export type MayoristaAuthFailure = { failure: 'credentials' | 'not_approved' };
+
+export async function authenticateMayoristaCustomer(username: string, password: string): Promise<MayoristaLoginResult | { error: string } | MayoristaAuthFailure> {
   const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/mayorista-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${WP_SECRET}` },
     body: JSON.stringify({ username, password }),
   });
-  if (res.status === 401 || res.status === 403) return null;
+  if (res.status === 403) return { failure: 'not_approved' };
+  if (res.status === 401) return { failure: 'credentials' };
   if (!res.ok) return { error: `WP ${res.status}` };
   const data = await res.json();
   return { customerId: data.customerId, email: data.email, label: data.label, billing: data.billing };

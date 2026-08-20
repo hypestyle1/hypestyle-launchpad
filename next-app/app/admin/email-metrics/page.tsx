@@ -60,7 +60,7 @@ export default function EmailMetricsPage() {
   }
 
   const StepBar = ({ label, count, max }: { label: string; count: number; max: number }) => (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <span className="text-[12px] text-gray-500 w-16 shrink-0">{label}</span>
       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
         <div className="h-full bg-black rounded-full" style={{ width: max ? `${(count / max) * 100}%` : '0%' }} />
@@ -101,7 +101,7 @@ export default function EmailMetricsPage() {
                 <StepBar label="Step 2" count={data.abandoned.sent.step2} max={data.abandoned.sent.step1} />
                 <StepBar label="Step 3" count={data.abandoned.sent.step3} max={data.abandoned.sent.step1} />
               </div>
-              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-gray-100">
                 <div>
                   <p className="text-[11px] text-gray-400">Pedidos recuperados</p>
                   <p className="text-[18px] font-bold text-gray-900">{data.abandoned.recovered_orders}</p>
@@ -127,7 +127,7 @@ export default function EmailMetricsPage() {
                 <StepBar label="Step 2" count={data.welcome.sent.step2} max={data.welcome.sent.step1} />
                 <StepBar label="Step 3" count={data.welcome.sent.step3} max={data.welcome.sent.step1} />
               </div>
-              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-gray-100">
                 <div>
                   <p className="text-[11px] text-gray-400">Compraron</p>
                   <p className="text-[18px] font-bold text-gray-900">{data.welcome.buyers}</p>

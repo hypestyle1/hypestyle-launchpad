@@ -362,8 +362,8 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
           <span className="text-gray-300">|</span>
           <span className="text-[14px] font-semibold text-gray-900">Clientes mayoristas</span>
@@ -587,9 +587,9 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
               {mayoristas.length === 0 ? 'Todavía no creaste ningún cliente.' : 'Nadie coincide con este filtro.'}
             </p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="lg:overflow-x-auto">
               <table className="w-full text-[13px]">
-                <thead>
+                <thead className="hidden lg:table-header-group">
                   <tr className="bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                     <SortableTh label="Cliente" sortKey="name" current={sortKey} dir={sortDir} onClick={toggleSort} />
                     <th className="text-left px-4 py-2.5">Contacto</th>
@@ -604,13 +604,13 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                 </thead>
                 <tbody>
                   {visibleMayoristas.map((m) => (
-                    <tr key={m.id} className="border-t border-gray-50">
-                      <td className="px-4 py-3">
+                    <tr key={m.id} className="block lg:table-row border border-gray-200 rounded-lg mb-3 p-3 lg:p-0 lg:mb-0 lg:border-0 lg:border-t lg:border-gray-50">
+                      <td data-label="Cliente" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
                         <p className="font-medium text-gray-900">{m.company || m.name}</p>
                         {m.company && <p className="text-[11px] text-gray-400">{m.name}</p>}
                         <p className="text-[10px] text-gray-400">desde {fmtDate(m.createdAt)}</p>
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Contacto" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
                         <a href={`mailto:${m.email}`} className="block text-[12px] text-gray-600 hover:text-black truncate max-w-[180px]">{m.email}</a>
                         {m.phone && (
                           <a href={waLink(m.phone, m.name)} target="_blank" rel="noopener noreferrer" className="text-[12px] text-green-600 hover:text-green-700">
@@ -618,13 +618,13 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                           </a>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{m.city}</td>
-                      <td className="px-4 py-3 text-right font-medium">
+                      <td data-label="Ciudad" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden text-gray-600">{m.city}</td>
+                      <td data-label="Pedidos" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden text-right font-medium">
                         {m.orderCount}
                         {m.lastOrderAt && <p className="text-[10px] text-gray-400 font-normal">{fmtRelative(m.lastOrderAt)}</p>}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">{fmt(m.totalSpent)}</td>
-                      <td className="px-4 py-3">
+                      <td data-label="Total" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden text-right font-medium">{fmt(m.totalSpent)}</td>
+                      <td data-label="Último ingreso" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
                         {m.loginCount > 0 ? (
                           <>
                             <p className="text-gray-700">{fmtRelative(m.lastLogin)}</p>
@@ -634,7 +634,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                           <span className="text-[11px] text-gray-400">nunca entró</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Mínimo propio" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
                         <div className="flex items-center gap-1.5">
                           <input
                             type="number"
@@ -653,12 +653,12 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                           </button>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td data-label="Estado" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${m.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {m.active ? 'Activo' : 'Revocado'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-1 py-1.5 lg:px-4 lg:py-3 lg:text-right block lg:table-cell">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => resetPasswordFor(m)}

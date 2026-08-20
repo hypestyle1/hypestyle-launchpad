@@ -44,7 +44,13 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await authenticateMayoristaCustomer(user, pass);
-  if (!result) {
+  if ('failure' in result) {
+    if (result.failure === 'not_approved') {
+      return NextResponse.json(
+        { ok: false, pending: true, message: 'Tu solicitud está en revisión. Te avisamos por mail apenas quede aprobada.' },
+        { status: 403 },
+      );
+    }
     return NextResponse.json({ ok: false, message: 'Usuario o contraseña incorrectos' }, { status: 401 });
   }
   if ('error' in result) {
