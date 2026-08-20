@@ -11,7 +11,10 @@ function checkAuth(req: NextRequest) {
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/cost-profiles`, {
+  // El `_cb` no es paranoia: la CDN de Hostinger cachea esta respuesta por URL exacta y
+  // devuelve la foto vieja de los perfiles aunque `cache: 'no-store'` evite el cache de Next.
+  // Es el mismo recurso que ya usa /api/admin/product-costs.
+  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/cost-profiles?_cb=${Date.now()}`, {
     headers: { 'X-Hypestyle-Secret': WP_SECRET },
     cache: 'no-store',
   });
