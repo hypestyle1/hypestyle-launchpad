@@ -18,3 +18,14 @@ export function saleDaysLeft(now: Date = new Date()): number | null {
   if (ms < 0) return null;
   return Math.floor(ms / 86_400_000);
 }
+
+/** Arranque del sale. Los precios se cargaron en Woo el 20/08. */
+export const SALE_START = new Date('2026-08-20T00:00:00-03:00');
+
+/** Descuento maximo publicado. Tiene que coincidir con el mayor de Woo. */
+export const SALE_MAX_OFF = 50;
+
+export function isSaleActive(now: Date = new Date()): boolean {
+  const t = now.getTime();
+  return t >= SALE_START.getTime() && t <= SALE_END.getTime();
+}

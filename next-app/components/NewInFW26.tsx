@@ -259,8 +259,10 @@ export default function NewInFW26() {
     <ProductCard
       key={p.slug}
       {...p}
-      badge={flashActive ? '−50%' : (KEEP_DISCOUNT.has(p.slug) ? p.badge : 'New In')}
-      mutedPrice={!flashActive}
+      // Con toda la web en sale, el descuento le gana al "New In": el badge de
+      // novedad escondia el porcentaje justo en el bloque mas visto del home.
+      badge={flashActive ? '−50%' : (p.badge ?? 'New In')}
+      mutedPrice={!flashActive && !p.badge}
       giftNote={GIFT_NOTES[p.slug]}
     />
   );
@@ -272,8 +274,8 @@ export default function NewInFW26() {
     <ProductCard
       key={p.slug}
       {...p}
-      badge={napoliLive ? 'New In' : 'Próximamente'}
-      mutedPrice
+      badge={napoliLive ? (p.badge ?? 'New In') : 'Próximamente'}
+      mutedPrice={!napoliLive || !p.badge}
       disableLink={!napoliLive}
       sizes={napoliLive ? p.sizes : undefined}
       stock={napoliLive ? p.stock : undefined}
