@@ -11,6 +11,8 @@ export const REGULAR_TEES_GROUPS = [
       'regular-tees-3-pack-navy',
       'regular-tees-3-pack-black-white-melange',
       'regular-tees-3-pack-black-navy-white',
+      'regular-tees-3-pack-black-melange-navy',
+      'regular-tees-3-pack-melange-navy-white',
     ],
   },
 ];
