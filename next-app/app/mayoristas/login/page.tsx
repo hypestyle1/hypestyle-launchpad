@@ -187,7 +187,8 @@ export default function MayoristaLoginPage() {
               type="text"
               value={user}
               onChange={(e) => setUser(e.target.value)}
-              placeholder="Tu usuario"
+              placeholder="Tu mail"
+              autoComplete="username"
               autoFocus
               required
               className="w-full px-4 py-3 text-[13px] rounded-[12px] placeholder:text-foreground/40 focus:outline-none transition-shadow"
@@ -198,6 +199,7 @@ export default function MayoristaLoginPage() {
               value={pass}
               onChange={(e) => setPass(e.target.value)}
               placeholder="Tu contraseña"
+              autoComplete="current-password"
               required
               className="w-full px-4 py-3 text-[13px] rounded-[12px] placeholder:text-foreground/40 focus:outline-none transition-shadow"
               style={glassInput}
