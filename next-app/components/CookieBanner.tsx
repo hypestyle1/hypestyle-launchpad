@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useCookieConsent } from "@/context/CookieContext";
@@ -8,6 +9,12 @@ import { useCookieConsent } from "@/context/CookieContext";
 export default function CookieBanner() {
   const { consent, acceptAll, acceptNecessary } = useCookieConsent();
   const [dismissed, setDismissed] = useState(false);
+  const pathname = usePathname();
+
+  // El panel es interno y no tiene visitantes a los que pedirles
+  // consentimiento. El cartel es fijo al pie, así que desde el teléfono
+  // tapaba justo los botones de cada fila.
+  if (pathname?.startsWith('/admin')) return null;
 
   if (consent !== null || dismissed) return null;
 

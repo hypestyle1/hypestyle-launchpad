@@ -211,14 +211,14 @@ export default function CostosPage() {
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
           <span className="text-gray-300">|</span>
           <span className="text-[14px] font-semibold text-gray-900">Costos</span>
           <Link href="/admin/pedidos" className="text-[12px] text-gray-400 hover:text-black ml-1">Pedidos →</Link>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-[12px] text-gray-500 font-medium">
             {assignedCount} de {products.length} productos con costo asignado
           </span>
@@ -282,7 +282,7 @@ export default function CostosPage() {
                         </svg>
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {COMPONENT_FIELDS.map(f => (
                         <label key={f.key} className="text-[10.5px] text-gray-400">
                           {f.label}
@@ -319,7 +319,7 @@ export default function CostosPage() {
                     placeholder="Buscar producto..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400 w-[160px]"
+                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400 w-full sm:w-[160px]"
                   />
                   <select
                     value={categoryFilter}
@@ -367,7 +367,7 @@ export default function CostosPage() {
               )}
 
               {/* Table header */}
-              <div className="grid grid-cols-[32px_60px_1.5fr_100px_80px_1fr_90px_70px] gap-3 px-4 py-2 border-b border-gray-100 bg-gray-50">
+              <div className="hidden lg:grid grid-cols-[32px_60px_1.5fr_100px_80px_1fr_90px_70px] gap-3 px-4 py-2 border-b border-gray-100 bg-gray-50">
                 <div>
                   <input type="checkbox" checked={selected.size > 0 && selected.size === visibleProducts.length} onChange={toggleSelectAll} className="rounded border-gray-300 cursor-pointer" />
                 </div>
@@ -388,33 +388,33 @@ export default function CostosPage() {
                 return (
                   <div
                     key={product.id}
-                    className={`grid grid-cols-[32px_60px_1.5fr_100px_80px_1fr_90px_70px] gap-3 px-4 py-2.5 items-center border-b border-gray-50 hover:bg-gray-50 ${
+                    className={`grid grid-cols-[24px_40px_1fr_auto] gap-x-3 gap-y-1 lg:gap-y-3 lg:grid-cols-[32px_60px_1.5fr_100px_80px_1fr_90px_70px] px-4 py-2.5 items-center border-b border-gray-50 hover:bg-gray-50 ${
                       !product.profileId ? 'bg-amber-50/40' : ''
                     }`}
                   >
-                    <input type="checkbox" checked={selected.has(product.id)} onChange={() => toggleSelect(product.id)} className="rounded border-gray-300 cursor-pointer" />
+                    <input type="checkbox" checked={selected.has(product.id)} onChange={() => toggleSelect(product.id)} className="rounded border-gray-300 cursor-pointer col-start-1 row-start-1 lg:col-start-auto lg:row-start-auto" />
                     {product.image ? (
-                      <img src={product.image} alt="" className="w-9 h-9 rounded-md object-cover border border-gray-100" />
+                      <img src={product.image} alt="" className="w-9 h-9 rounded-md object-cover border border-gray-100 col-start-2 row-start-1 row-span-2 lg:row-span-1 lg:col-start-auto lg:row-start-auto" />
                     ) : (
-                      <div className="w-9 h-9 rounded-md bg-gray-100" />
+                      <div className="w-9 h-9 rounded-md bg-gray-100 col-start-2 row-start-1 row-span-2 lg:row-span-1 lg:col-start-auto lg:row-start-auto" />
                     )}
-                    <div className="text-[12.5px] font-medium text-gray-900 truncate">{product.name}</div>
-                    <div className="text-[11px] text-gray-500 truncate">{product.categories.join(', ')}</div>
-                    <div className="text-[12.5px] text-gray-700 text-right">{fmt(product.price)}</div>
+                    <div className="text-[12.5px] font-medium text-gray-900 truncate col-start-3 row-start-1 lg:col-start-auto lg:row-start-auto">{product.name}</div>
+                    <div className="text-[11px] text-gray-500 truncate col-start-3 col-span-2 row-start-2 lg:col-span-1 lg:col-start-auto lg:row-start-auto">{product.categories.join(', ')}</div>
+                    <div className="text-[12.5px] text-gray-700 text-right col-start-4 row-start-1 lg:col-start-auto lg:row-start-auto">{fmt(product.price)}</div>
                     <select
                       value={product.profileId}
                       onChange={e => onRowProfileChange(product.id, e.target.value)}
-                      className={`text-[12px] rounded-lg px-2 py-1 border focus:outline-none ${
+                      className={`text-[12px] rounded-lg px-2 py-1 border focus:outline-none col-start-3 col-span-2 row-start-3 lg:col-span-1 lg:col-start-auto lg:row-start-auto ${
                         product.profileId ? 'border-gray-200 text-gray-800' : 'border-amber-300 text-amber-700 font-medium'
                       }`}
                     >
                       <option value="">Sin asignar</option>
                       {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
-                    <div className={`text-[12.5px] text-right font-medium ${margin === null ? 'text-gray-300' : margin < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                    <div className={`text-[12.5px] text-right font-medium col-start-3 row-start-4 lg:col-start-auto lg:row-start-auto ${margin === null ? 'text-gray-300' : margin < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                       {margin === null ? '—' : fmt(margin)}
                     </div>
-                    <div className={`text-[12.5px] text-right font-medium ${marginPct === null ? 'text-gray-300' : marginPct < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                    <div className={`text-[12.5px] text-right font-medium col-start-4 row-start-4 lg:col-start-auto lg:row-start-auto ${marginPct === null ? 'text-gray-300' : marginPct < 0 ? 'text-red-600' : 'text-gray-500'}`}>
                       {marginPct === null ? '—' : `${marginPct.toFixed(0)}%`}
                     </div>
                   </div>

@@ -322,7 +322,11 @@ export async function sendAprobacionEmail(account: MayoristaAccount): Promise<bo
       'Bienvenido al mayorista',
       `
       <p style="font-size:14px;line-height:1.6">Hola ${account.label}, aprobamos tu solicitud. Tu acceso al catálogo mayorista ya está activo.</p>
-      <p style="font-size:14px;line-height:1.6">Entrá con <strong>${account.email}</strong> y la contraseña que elegiste al registrarte.</p>
+      <table style="font-size:14px;border-collapse:collapse;margin:18px 0;width:100%">
+        <tr><td style="padding:6px 10px;color:#888;width:110px">Tu usuario</td><td style="padding:6px 10px;font-weight:bold">${account.email}</td></tr>
+        <tr><td style="padding:6px 10px;color:#888">Tu contraseña</td><td style="padding:6px 10px">La que elegiste al registrarte</td></tr>
+      </table>
+      <p style="font-size:13px;line-height:1.6;color:#555">Tu usuario es tu mismo mail, el que estás leyendo ahora.</p>
       <p style="margin:22px 0"><a href="${SITE_URL}/mayoristas/login" style="background:#111;color:#fff;text-decoration:none;font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;padding:12px 22px;border-radius:999px;display:inline-block">Ver el catálogo</a></p>
       <p style="font-size:13px;line-height:1.6;color:#555">Los precios que vas a ver son mayoristas, al 50% de la lista. Cualquier duda, respondé este mail.</p>
     `,

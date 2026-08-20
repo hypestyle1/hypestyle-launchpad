@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   if (!account) return NextResponse.json({ ok: false, message: 'No autorizado' }, { status: 401 });
 
   const check = await authenticateMayoristaCustomer(account.email, current);
-  if (!check) {
+  if ('failure' in check) {
     return NextResponse.json({ ok: false, message: 'La contraseña actual no coincide' }, { status: 403 });
   }
   if ('error' in check) {

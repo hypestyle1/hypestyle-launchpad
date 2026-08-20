@@ -248,8 +248,8 @@ function ReviewsDashboard() {
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
           <span className="text-gray-300">|</span>
           <span className="text-[14px] font-semibold text-gray-900">Reseñas</span>
@@ -336,8 +336,8 @@ function ReviewsDashboard() {
           <div className="text-center py-20 text-[13px] text-gray-400">No hay solicitudes que coincidan con el filtro</div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto">
-            <div className="min-w-[1100px]">
-              <div className="grid grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+            <div className="lg:min-w-[1100px]">
+              <div className="hidden lg:grid grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Orden</div>
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Cliente</div>
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Estado</div>
@@ -352,7 +352,7 @@ function ReviewsDashboard() {
               {rows.map((row, idx) => (
                 <div
                   key={row.id}
-                  className={`grid grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] gap-3 px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
+                  className={`grid grid-cols-2 gap-x-3 gap-y-2 lg:grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
                 >
                   <div>
                     <Link href={`/admin/reviews/${row.id}`} className="text-[13px] font-bold text-black hover:underline">
