@@ -10,13 +10,27 @@ function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 }
 
-async function wcFetch(path: string) {
-  const res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
-    headers: { Authorization: wcAuth() },
-    cache: 'no-store',
-  });
-  return res;
+async function wcFetch(path: string, intentos = 3) {
+  let ultimo: Response | null = null;
+  for (let i = 0; i < intentos; i++) {
+    const res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
+      headers: { Authorization: wcAuth() },
+      cache: 'no-store',
+    });
+    if (res.ok || res.status < 500) return res;
+    ultimo = res;
+    await new Promise(r => setTimeout(r, 400 * (i + 1)));
+  }
+  return ultimo as Response;
 }
+
+/* ─── Qué cuenta como gastado ─────────────────────────────────────────────
+   Lista blanca, no negra. Antes se excluían cancelled/failed/refunded/trash
+   y entraba todo lo demás, así que 'pending' y 'on-hold' —pedidos hechos y
+   nunca pagados— sumaban al total gastado. En la tienda eso son 231 pedidos
+   por unos $28 millones que jamás se cobraron. */
+const PAGADOS   = ['completed', 'processing'];
+const SIN_PAGAR = ['pending', 'on-hold'];
 
 function metaVal(meta: any[], key: string): string {
   return meta?.find((m: any) => m.key === key)?.value ?? '';
@@ -41,22 +55,42 @@ export async function GET(req: NextRequest) {
 
   const mayoristas = all.filter(c => (c.meta_data ?? []).some((m: any) => m.key === 'es_mayorista'));
 
-  const EXCLUDED_STATUSES = new Set(['cancelled', 'failed', 'refunded', 'trash']);
+  /* Una consulta por cliente significaba 38 pedidos simultáneos a WordPress,
+     que respondía 500 a la mitad. Cada fallo se descartaba en silencio y ese
+     cliente aparecía en cero, así que los totales del panel cambiaban en cada
+     recarga. Ahora se traen los pedidos en tandas paginadas y se agrupan en
+     memoria: menos consultas, en serie, y el mismo resultado siempre. */
+  const estados = [...PAGADOS, ...SIN_PAGAR].join(',');
+  const porCliente = new Map<number, { pagados: any[]; sinPagar: any[] }>();
+  let incompleto = false;
 
-  const withStats = await Promise.all(mayoristas.map(async (c) => {
+  for (let page = 1; page <= 30; page++) {
+    const res = await wcFetch(`orders?status=${estados}&per_page=100&page=${page}&orderby=date&order=desc&_fields=id,status,total,date_created,customer_id`);
+    if (!res?.ok) { incompleto = true; break; }
+    const batch = await res.json() as any[];
+    for (const o of batch) {
+      const cid = Number(o.customer_id);
+      if (!cid) continue; // pedido de invitado: no cuelga de ninguna cuenta
+      if (!porCliente.has(cid)) porCliente.set(cid, { pagados: [], sinPagar: [] });
+      const bucket = porCliente.get(cid)!;
+      if (PAGADOS.includes(o.status)) bucket.pagados.push(o);
+      else bucket.sinPagar.push(o);
+    }
+    if (batch.length < 100) break;
+  }
+
+  const withStats = mayoristas.map((c) => {
     const meta = c.meta_data ?? [];
-    let orderCount = 0;
-    let totalSpent = 0;
-    let lastOrderAt: string | null = null;
-    try {
-      const ordRes = await wcFetch(`orders?customer=${c.id}&status=any&per_page=100&orderby=date&order=desc&_fields=id,status,total,date_created`);
-      if (ordRes.ok) {
-        const orders = (await ordRes.json() as any[]).filter(o => !EXCLUDED_STATUSES.has(o.status));
-        orderCount = orders.length;
-        totalSpent = orders.reduce((sum, o) => sum + parseFloat(o.total || '0'), 0);
-        lastOrderAt = orders[0]?.date_created ?? null;
-      }
-    } catch {}
+    const suyos = porCliente.get(Number(c.id)) ?? { pagados: [], sinPagar: [] };
+    const suma = (list: any[]) => list.reduce((t, o) => t + parseFloat(o.total || '0'), 0);
+
+    const orderCount = suyos.pagados.length;
+    const totalSpent = suma(suyos.pagados);
+    // Los pedidos hechos y nunca pagados se muestran aparte en vez de
+    // desaparecer: es plata a la que se le puede ir a buscar.
+    const pendingCount = suyos.sinPagar.length;
+    const pendingTotal = suma(suyos.sinPagar);
+    const lastOrderAt: string | null = suyos.pagados[0]?.date_created ?? null;
 
     return {
       id: c.id,
@@ -79,13 +113,17 @@ export async function GET(req: NextRequest) {
       createdAt: c.date_created,
       orderCount,
       totalSpent,
+      pendingCount,
+      pendingTotal,
       lastOrderAt,
       lastLogin: metaVal(meta, 'mayorista_last_login') || null,
       loginCount: Number(metaVal(meta, 'mayorista_login_count')) || 0,
     };
-  }));
+  });
 
   withStats.sort((a, b) => b.totalSpent - a.totalSpent);
 
-  return NextResponse.json({ mayoristas: withStats });
+  // Si alguna página de pedidos falló, se dice. Antes los huecos se veían
+  // igual que un cliente que nunca compró, y no había forma de distinguirlos.
+  return NextResponse.json({ mayoristas: withStats, incompleto });
 }
