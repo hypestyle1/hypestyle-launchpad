@@ -104,7 +104,7 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
       'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-fullbody-DSC03189-scaled.jpg',
       'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-models-DSC03197-scaled.jpg',
     ],
-    alt: 'Black Drop — Shoot For The Stars, Aim For The Moon',
+    alt: 'Black Drop — HypeStyle Stars',
     side: 'left',
   },
   'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', poster: '/newin/polo-video-1-poster.webp', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
