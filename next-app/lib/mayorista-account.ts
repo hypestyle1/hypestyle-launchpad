@@ -155,7 +155,7 @@ export function burnedNonceMeta() {
 const shell = (title: string, inner: string) => `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;max-width:520px;margin:0 auto">
   <h2 style="font-size:15px;text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:18px">${title}</h2>
   ${inner}
-  <p style="font-size:11px;color:#999;margin-top:28px;border-top:1px solid #eee;padding-top:12px">Hypestyle — Catálogo mayorista<br><a href="${SITE_URL}/mayoristas" style="color:#999">hypestyle.com.ar/mayoristas</a></p>
+  <p style="font-size:11px;color:#999;margin-top:28px;border-top:1px solid #eee;padding-top:12px">Hypestyle<br><a href="${SITE_URL}/mayoristas" style="color:#999">hypestyle.com.ar/mayoristas</a></p>
 </div>`;
 
 async function send(to: { email: string; name?: string }, subject: string, html: string): Promise<boolean> {
@@ -179,9 +179,9 @@ async function send(to: { email: string; name?: string }, subject: string, html:
 export async function sendNewPasswordEmail(account: MayoristaAccount, password: string): Promise<boolean> {
   return send(
     { email: account.email, name: account.label },
-    'Tu nuevo acceso al catálogo mayorista',
+    'Tu nuevo acceso al catálogo de Hype',
     shell(
-      'Tu acceso mayorista',
+      'Tu acceso al catálogo',
       `
       <p style="font-size:14px;line-height:1.6">Hola ${account.label}, generamos una contraseña nueva para tu cuenta.</p>
       <table style="font-size:14px;border-collapse:collapse;margin:18px 0;width:100%">
@@ -200,11 +200,11 @@ export async function sendResetLinkEmail(account: MayoristaAccount, token: strin
   const link = `${SITE_URL}/mayoristas/reset?token=${encodeURIComponent(token)}`;
   return send(
     { email: account.email, name: account.label },
-    'Recuperá tu acceso al catálogo mayorista',
+    'Recuperá tu acceso al catálogo de Hype',
     shell(
       'Recuperar acceso',
       `
-      <p style="font-size:14px;line-height:1.6">Hola ${account.label}, pediste volver a entrar al catálogo mayorista. Elegí una contraseña nueva desde acá:</p>
+      <p style="font-size:14px;line-height:1.6">Hola ${account.label}, pediste volver a entrar al catálogo. Elegí una contraseña nueva desde acá:</p>
       <p style="margin:22px 0"><a href="${link}" style="background:#111;color:#fff;text-decoration:none;font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;padding:12px 22px;border-radius:999px;display:inline-block">Elegir contraseña</a></p>
       <p style="font-size:13px;line-height:1.6;color:#555">El link vale por 2 horas y se usa una sola vez. Si no fuiste vos, ignoralo: tu contraseña actual sigue funcionando.</p>
       <p style="font-size:11px;color:#aaa;word-break:break-all;margin-top:16px">${link}</p>
@@ -288,11 +288,11 @@ export async function sendSolicitudAdminEmail(
 
   return send(
     { email: ADMIN_EMAIL, name: 'Hypestyle' },
-    `${data.razonSocial || account.label} solicitó acceso al catálogo mayorista`,
+    `${data.razonSocial || account.label} solicitó acceso al catálogo de Hype`,
     shell(
       'Nueva solicitud de acceso',
       `
-      <p style="font-size:14px;line-height:1.6"><strong>${data.razonSocial || account.label}</strong> solicitó acceso para entrar al catálogo mayorista de Hype.</p>
+      <p style="font-size:14px;line-height:1.6"><strong>${data.razonSocial || account.label}</strong> solicitó acceso para entrar al catálogo de Hype.</p>
       <table style="font-size:13px;border-collapse:collapse;width:100%;margin:16px 0">
         ${row('Razón social', data.razonSocial)}
         ${row('CUIT', data.cuit)}
@@ -317,18 +317,18 @@ export async function sendSolicitudAdminEmail(
 export async function sendAprobacionEmail(account: MayoristaAccount): Promise<boolean> {
   return send(
     { email: account.email, name: account.label },
-    'Tu acceso al catálogo mayorista de Hype está activo',
+    'Tu acceso al catálogo de Hype está activo',
     shell(
-      'Bienvenido al mayorista',
+      'Bienvenido',
       `
-      <p style="font-size:14px;line-height:1.6">Hola ${account.label}, aprobamos tu solicitud. Tu acceso al catálogo mayorista ya está activo.</p>
+      <p style="font-size:14px;line-height:1.6">Hola ${account.label}, aprobamos tu solicitud. Tu acceso al catálogo ya está activo.</p>
       <table style="font-size:14px;border-collapse:collapse;margin:18px 0;width:100%">
         <tr><td style="padding:6px 10px;color:#888;width:110px">Tu usuario</td><td style="padding:6px 10px;font-weight:bold">${account.email}</td></tr>
         <tr><td style="padding:6px 10px;color:#888">Tu contraseña</td><td style="padding:6px 10px">La que elegiste al registrarte</td></tr>
       </table>
       <p style="font-size:13px;line-height:1.6;color:#555">Tu usuario es tu mismo mail, el que estás leyendo ahora.</p>
       <p style="margin:22px 0"><a href="${SITE_URL}/mayoristas/login" style="background:#111;color:#fff;text-decoration:none;font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;padding:12px 22px;border-radius:999px;display:inline-block">Ver el catálogo</a></p>
-      <p style="font-size:13px;line-height:1.6;color:#555">Los precios que vas a ver son mayoristas, al 50% de la lista. Cualquier duda, respondé este mail.</p>
+      <p style="font-size:13px;line-height:1.6;color:#555">Los precios que vas a ver son los tuyos, al 50% de la lista. Cualquier duda, respondé este mail.</p>
     `,
     ),
   );

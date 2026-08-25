@@ -33,3 +33,37 @@ export function isAdminRequest(req: NextRequest): boolean {
 export function adminHeaders(extra?: Record<string, string>): Record<string, string> {
   return { 'x-admin-key': ADMIN_SECRET, ...(extra || {}) };
 }
+
+/* ─── Convivencia con los perfiles ────────────────────────────────────────
+ * La clave compartida sigue valiendo mientras se migra: hay ~20 pantallas y
+ * varias llamadas server-to-server que la usan. Un pedido autorizado es el que
+ * trae la clave (acceso completo, como siempre) o una sesión de perfil válida
+ * con permiso sobre la sección que está tocando.
+ *
+ * Cuando ya nadie use la clave para entrar a mano, se apaga y queda solo como
+ * credencial de máquina. */
+
+import { ADMIN_COOKIE, verifyAdminSession, puede, type Seccion, type AdminSession } from './admin-profiles';
+
+export interface AdminActor {
+  /** Sesión del perfil, o null si entró con la clave compartida. */
+  session: AdminSession | null;
+  /** true cuando vino con la clave: acceso completo, sin identidad. */
+  viaSharedKey: boolean;
+}
+
+export async function resolveAdminActor(req: NextRequest): Promise<AdminActor | null> {
+  if (adminSecretMatches(req.headers.get('x-admin-key'))) {
+    return { session: null, viaSharedKey: true };
+  }
+  const session = await verifyAdminSession(req.cookies.get(ADMIN_COOKIE)?.value);
+  return session ? { session, viaSharedKey: false } : null;
+}
+
+/** Autoriza sobre una sección puntual. La clave compartida pasa siempre. */
+export async function authorizeAdmin(req: NextRequest, seccion: Seccion): Promise<AdminActor | null> {
+  const actor = await resolveAdminActor(req);
+  if (!actor) return null;
+  if (actor.viaSharedKey) return actor;
+  return puede(actor.session!.role, seccion) ? actor : null;
+}

@@ -127,7 +127,7 @@ export default function MayoristaLoginPage() {
         <div className="px-8 pt-9 pb-8">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto mx-auto" />
           <p className="text-center text-[10px] uppercase tracking-[0.3em] text-foreground/45 mt-4">
-            {mode === 'login' ? 'Catálogo mayorista' : 'Recuperar acceso'}
+            {mode === 'login' ? 'Tu catálogo' : 'Recuperar acceso'}
           </p>
 
           {mode === 'forgot' ? (
@@ -135,7 +135,7 @@ export default function MayoristaLoginPage() {
               <div className="mt-8 text-center">
                 <p className="text-[14px] font-semibold mb-2">Revisá tu casilla</p>
                 <p className="text-[13px] text-foreground/60 leading-relaxed">
-                  Si ese mail tiene acceso mayorista, le mandamos un link para elegir una contraseña nueva. Vale por 2 horas.
+                  Si ese mail tiene acceso, le mandamos un link para elegir una contraseña nueva. Vale por 2 horas.
                 </p>
                 <button
                   onClick={backToLogin}
@@ -227,7 +227,7 @@ export default function MayoristaLoginPage() {
 
             <div className="text-center !mt-4 pt-4 border-t border-foreground/10">
               <p className="text-[12px] text-foreground/50">
-                ¿Todavía no sos mayorista?{' '}
+                ¿Todavía no trabajás con nosotros?{' '}
                 <Link href="/mayoristas/solicitud" className="text-foreground font-medium underline underline-offset-2">
                   Pedí tu acceso
                 </Link>
