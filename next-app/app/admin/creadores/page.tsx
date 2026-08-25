@@ -155,20 +155,16 @@ export default function CreadoresAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="">
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
-          <span className="text-gray-300">|</span>
           <span className="text-[14px] font-semibold text-gray-900">Creadores</span>
           {conteo.nuevo > 0 && (
             <span className="text-[12px] text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">{conteo.nuevo} sin revisar</span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <Link href="/admin/reviews" className="text-[12px] text-gray-400 hover:text-black">Reseñas →</Link>
-          <Link href="/admin/newsletter" className="text-[12px] text-gray-400 hover:text-black">Newsletter →</Link>
-          <Link href="/admin/perfiles" className="text-[12px] text-gray-400 hover:text-black">Perfiles →</Link>
+
         </div>
       </div>
 

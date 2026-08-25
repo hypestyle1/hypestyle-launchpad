@@ -293,20 +293,13 @@ export default function PedidosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
-          <span className="text-gray-300">|</span>
           <span className="text-[14px] font-semibold text-gray-900">Pedidos</span>
           {headerCount > 0 && <span className="text-[12px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{headerCount}</span>}
-          <Link href="/admin/reviews" className="text-[12px] text-gray-400 hover:text-black ml-1">Reseñas →</Link>
-          <Link href="/admin/newsletter" className="text-[12px] text-gray-400 hover:text-black ml-1">Newsletter →</Link>
-          <Link href="/admin/conversaciones" className="text-[12px] text-gray-400 hover:text-black ml-1">Conversaciones →</Link>
-          <Link href="/admin/costos" className="text-[12px] text-gray-400 hover:text-black ml-1">Costos →</Link>
-          <Link href="/admin/mayoristas" className="text-[12px] text-gray-400 hover:text-black ml-1">+ Cliente mayorista →</Link>
-          <Link href="/admin/email-metrics" className="text-[12px] text-gray-400 hover:text-black ml-1">Métricas email →</Link>
+
         </div>
         <div className="flex items-center gap-2">
           {/* Stats globales reales */}

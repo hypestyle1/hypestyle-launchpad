@@ -171,13 +171,10 @@ export default function NewsletterPage() {
   const input = "w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400";
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="">
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 sticky top-0 z-10">
-        <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
-        <span className="text-gray-300">|</span>
         <span className="text-[14px] font-semibold text-gray-900">Newsletter</span>
-        <Link href="/admin/pedidos" className="text-[12px] text-gray-400 hover:text-black ml-2">Pedidos →</Link>
-        <Link href="/admin/email-metrics" className="text-[12px] text-gray-400 hover:text-black">Métricas email →</Link>
+
         {count !== null && <span className="ml-auto text-[12px] text-gray-500">{count} suscriptores</span>}
       </div>
 

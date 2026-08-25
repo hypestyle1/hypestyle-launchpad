@@ -364,13 +364,10 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="">
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
-          <span className="text-gray-300">|</span>
           <span className="text-[14px] font-semibold text-gray-900">Clientes mayoristas</span>
-          <Link href="/admin/pedidos" className="text-[12px] text-gray-400 hover:text-black ml-1">← Pedidos</Link>
         </div>
         <button
           onClick={() => setShowForm(s => !s)}

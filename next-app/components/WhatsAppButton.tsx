@@ -7,7 +7,9 @@ const WA_MESSAGE = encodeURIComponent('Hola Hype!');
 
 export default function WhatsAppButton() {
   const pathname = usePathname();
-  if (pathname?.startsWith('/checkout')) return null;
+  // El panel es interno: el botón flotante de atención al cliente no pinta
+  // nada ahí, y encima tapa la esquina donde caen los botones de cada fila.
+  if (pathname?.startsWith('/checkout') || pathname?.startsWith('/admin')) return null;
 
   return (
     <a
