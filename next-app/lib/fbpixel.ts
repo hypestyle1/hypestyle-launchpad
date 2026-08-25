@@ -196,3 +196,24 @@ export function fbAddPaymentInfo(items: FbItem[], value?: number, user?: FbUserD
   fbTrack('AddPaymentInfo', customData, eventId);
   sendCapi('AddPaymentInfo', eventId, customData, user);
 }
+
+/**
+ * Alta de un comercio en /mayoristas/solicitud.
+ *
+ * La campaña de captación mayorista manda tráfico a ese formulario, y sin este
+ * evento Meta no tiene con qué optimizar: el ad set sale por LANDING_PAGE_VIEWS,
+ * que cuenta al que abre la página y se va igual. Con CompleteRegistration
+ * registrado se puede migrar a OFFSITE_CONVERSIONS sin tocar los creativos.
+ *
+ * `value: 0` a propósito: la solicitud no es una venta, y ponerle el ticket
+ * promedio mayorista acá ensuciaría el ROAS de la cuenta con plata que todavía
+ * no entró (la solicitud puede no aprobarse, y aprobada puede no comprar nunca).
+ */
+export function fbCompleteRegistration(): void {
+  fbTrack('CompleteRegistration', {
+    content_name: 'mayorista',
+    status: true,
+    value: 0,
+    currency: CURRENCY,
+  });
+}
