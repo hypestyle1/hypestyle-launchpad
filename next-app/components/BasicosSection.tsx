@@ -6,6 +6,7 @@ import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 import { BASICOS_HOME_ORDER } from "@/lib/regular-tees";
+import { HOME_GRID, filasCompletas } from "@/lib/home-grid";
 
 export default function BasicosSection() {
   const { data: allProducts = [] } = useProducts(0);
@@ -13,7 +14,7 @@ export default function BasicosSection() {
 
   const ordered = useMemo(() => {
     const bySlug = new Map(allProducts.map(p => [p.slug, p]));
-    return BASICOS_HOME_ORDER.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts;
+    return filasCompletas(BASICOS_HOME_ORDER.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts);
   }, [allProducts]);
 
   if (ordered.length === 0) return null;
@@ -23,7 +24,7 @@ export default function BasicosSection() {
       <div className="reveal rd1">
         <SectionHeader title="Básicos" link="/colecciones/regular-tees/" linkLabel="Ver más" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+      <div className={HOME_GRID}>
         {ordered.map((p, i) => (
           <div key={p.slug} className={`reveal rd${Math.min(i + 2, 8)}`}>
             <ProductCard

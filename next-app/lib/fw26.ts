@@ -6,17 +6,20 @@
 // Los drops envejecen —Napoli pasó de ser la novedad a ser el 3% del revenue en
 // dos semanas—, las categorías no. Por eso los grupos son por tipo de prenda.
 //
-// CAMO no va arriba pese a ser el 29% histórico: está en últimas unidades
-// (conteo del 24/08: combo 3, pant 3, zip 8). Poner arriba algo que se agota es
-// peor que no ponerlo. El combo directamente sale del home por falta de stock.
+// REGLA DE GRILLA: cada sección lleva una cantidad MÚLTIPLO DE 4 de productos.
+// El home es de 2 columnas en mobile y 4 en desktop, así que cualquier otro
+// número deja huecos en la última fila. Si un producto no entra, no se agrega
+// "para completar": se elige por ventas cuál queda afuera (ver PRODUCTOS_FUERA).
 export const FW26_GROUPS = [
-  // 1. CONJUNTOS — 41% del revenue de los últimos 30 días y el ticket más alto.
+  // 1. CONJUNTOS — 41% del revenue de 30 días y el ticket más alto del catálogo.
+  // CAMO entra acá pero NO manda la sección: está en últimas unidades
+  // (conteo 24/08: pant 3, zip 8) y el combo salió del home por falta de stock.
   {
     label: 'Conjuntos',
     slugs: [
       'hoodie-black-hstars', 'sweatpant-black-hstars',
       'hoodie-grey-hstars', 'sweatpant-grey-hstars',
-      'hoodie-pink', 'zip-hoodie-pink', 'sweatpant-pink',
+      'hoodie-pink', 'sweatpant-pink',
       'zip-hoodie-camo', 'sweatpant-camo',
     ],
   },
@@ -24,17 +27,15 @@ export const FW26_GROUPS = [
   // el problema es PayPal, no el producto (ver project_internacional_sin_pasarela).
   {
     label: 'Abrigo y Polos',
-    slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black', 'stars-for-venezuela-hoodie'],
+    slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black', 'zip-hoodie-pink'],
   },
-  // 3. REMERAS Y PACKS — 14% juntas. Los 3-PACK no estaban en el home y facturan
-  // $478k en 30 días; Napoli baja acá desde la primera posición.
+  // 3. REMERAS — 10%. Las Regular Tees y los 3-PACK NO van acá: ya tienen su
+  // propia sección en Básicos, repetirlas duplicaba el catálogo en el mismo scroll.
   {
-    label: 'Remeras y Packs',
+    label: 'Remeras',
     slugs: [
       'only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra',
       'napoli-tee-azul', 'napoli-tee-blanca',
-      'regular-tees-3-pack-black-white-melange', 'regular-tees-3-pack-black-navy-white',
-      'regular-tees-3-pack-black', 'regular-tees-3-pack-white', 'regular-tees-3-pack-grey',
     ],
   },
   // 4. Accesorios — posición fija al final, la maneja el componente.
@@ -58,6 +59,15 @@ export const FW26_GROUPS = [
       'hs-co-grey-hoodie',
     ],
   },
+];
+
+// Productos que salieron del home a propósito, para que no vuelvan sin decisión:
+//  - camo-full-set-combo: últimas unidades, oculto también en Woo.
+//  - stars-for-venezuela-hoodie: quedaba de quinto en Abrigo y rompía la grilla.
+//  - regular-tee-* y regular-tees-3-pack-*: viven en Básicos.
+export const FW26_FUERA = [
+  'camo-full-set-combo',
+  'stars-for-venezuela-hoodie',
 ];
 
 export const FW26_SLUGS = FW26_GROUPS.flatMap(g => g.slugs);

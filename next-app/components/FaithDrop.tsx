@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import ProductCard from "./ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { FAITH_DROP_ITEMS } from "@/lib/faith-drop";
+import GroupLabel from "./GroupLabel";
+import { HOME_GRID, filasCompletas } from "@/lib/home-grid";
 
 // Placeholder mientras el drop no esta cargado en WP — mismo layout que va a
 // tener con los productos reales (grilla de Best Sellers: 4 col desktop x 3 filas = 12).
@@ -40,20 +42,13 @@ export default function FaithDrop() {
 
   // Mientras no haya productos reales cargados, mostramos la grilla con placeholders
   // para poder previsualizar el layout del drop antes de subir los productos.
-  const items = products.length > 0 ? products : PLACEHOLDERS;
+  const items = filasCompletas(products.length > 0 ? products : PLACEHOLDERS);
 
   return (
-    <div className="mt-10">
-      {/* eyebrow — mismo estilo que "Benefit Drop" */}
-      <div className="flex items-center gap-4 mb-5">
-        <span className="h-px flex-1 bg-border" />
-        <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">
-          Faith Is The Real Hype
-        </span>
-        <span className="h-px flex-1 bg-border" />
-      </div>
+    <div>
+      <GroupLabel>Faith Is The Real Hype</GroupLabel>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+      <div className={HOME_GRID}>
         {items.map((p, i) => (
           <ProductCard key={i} {...p} />
         ))}
