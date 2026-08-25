@@ -16,6 +16,7 @@ type Mayorista = {
   status: 'pending' | 'active' | 'revoked';
   cuit?: string; instagram?: string; localFisico?: boolean; modalidad?: string; solicitadoEl?: string | null;
   orderCount: number; totalSpent: number;
+  pendingCount: number; pendingTotal: number;
   lastOrderAt: string | null; lastLogin: string | null; loginCount: number;
 };
 
@@ -64,7 +65,7 @@ type SortKey = 'name' | 'orderCount' | 'totalSpent' | 'lastOrderAt' | 'lastLogin
 const SORT_LABELS: Record<SortKey, string> = {
   name: 'Cliente',
   orderCount: 'Pedidos',
-  totalSpent: 'Total',
+  totalSpent: 'Total pagado',
   lastOrderAt: 'Último pedido',
   lastLogin: 'Último ingreso',
 };
@@ -75,12 +76,12 @@ function csvEscape(value: string | number): string {
 }
 
 function downloadCsv(rows: Mayorista[]) {
-  const headers = ['Cliente', 'Empresa', 'Email', 'Teléfono', 'Ciudad', 'Pedidos', 'Total gastado', 'Último pedido', 'Último ingreso', 'Veces ingresó', 'Mínimo propio', 'Estado', 'Cliente desde'];
+  const headers = ['Cliente', 'Empresa', 'Email', 'Teléfono', 'Ciudad', 'Pedidos pagados', 'Total pagado', 'Pedidos sin pagar', 'Monto sin pagar', 'Último pedido', 'Último ingreso', 'Veces ingresó', 'Mínimo propio', 'Estado', 'Cliente desde'];
   const lines = [headers.join(',')];
   for (const m of rows) {
     lines.push([
       m.name, m.company, m.email, m.phone, m.city,
-      m.orderCount, m.totalSpent, m.lastOrderAt ?? '', m.lastLogin ?? '', m.loginCount,
+      m.orderCount, m.totalSpent, m.pendingCount, m.pendingTotal, m.lastOrderAt ?? '', m.lastLogin ?? '', m.loginCount,
       m.minOrderOverride ?? '', m.active ? 'Activo' : 'Revocado', m.createdAt,
     ].map(csvEscape).join(','));
   }
@@ -131,6 +132,7 @@ export default function MayoristasAdminPage() {
   const [resetPassword, setResetPassword] = useState<{ id: number; email: string; password: string; emailSent: boolean } | null>(null);
   const [health, setHealth] = useState<{ ok: boolean; checks: HealthCheck[] } | null>(null);
   const [decidingId, setDecidingId] = useState<number | null>(null);
+  const [incompleto, setIncompleto] = useState(false);
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [sortKey, setSortKey]       = useState<SortKey>('totalSpent');
   const [sortDir, setSortDir]       = useState<'asc' | 'desc'>('desc');
@@ -178,6 +180,7 @@ export default function MayoristasAdminPage() {
         const data = await res.json();
         const list: Mayorista[] = data.mayoristas || [];
         setMayoristas(list);
+        setIncompleto(!!data.incompleto);
         setMinInputs(Object.fromEntries(list.map(m => [m.id, m.minOrderOverride ?? ''])));
       }
     } finally {
@@ -453,6 +456,14 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
           </div>
         )}
 
+        {incompleto && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
+            <p className="text-[12px] text-amber-800">
+              WordPress cortó la lectura de pedidos, así que los totales de abajo están incompletos. Recargá en un momento.
+            </p>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
           <p className="text-[13px] font-semibold text-gray-900">Pedido mínimo general</p>
           <p className="text-[12px] text-gray-500 mt-0.5">Se aplica a todos los clientes salvo que tengan un mínimo propio cargado al crearlos.</p>
@@ -595,7 +606,8 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                     <th className="text-left px-4 py-2.5">Contacto</th>
                     <th className="text-left px-4 py-2.5">Ciudad</th>
                     <SortableTh label="Pedidos" sortKey="orderCount" current={sortKey} dir={sortDir} onClick={toggleSort} align="right" />
-                    <SortableTh label="Total" sortKey="totalSpent" current={sortKey} dir={sortDir} onClick={toggleSort} align="right" />
+                    <SortableTh label="Total pagado" sortKey="totalSpent" current={sortKey} dir={sortDir} onClick={toggleSort} align="right" />
+                    <th className="text-right px-4 py-2.5">Sin pagar</th>
                     <SortableTh label="Último ingreso" sortKey="lastLogin" current={sortKey} dir={sortDir} onClick={toggleSort} />
                     <th className="text-left px-4 py-2.5">Mínimo propio</th>
                     <th className="text-left px-4 py-2.5">Estado</th>
@@ -623,7 +635,17 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                         {m.orderCount}
                         {m.lastOrderAt && <p className="text-[10px] text-gray-400 font-normal">{fmtRelative(m.lastOrderAt)}</p>}
                       </td>
-                      <td data-label="Total" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden text-right font-medium">{fmt(m.totalSpent)}</td>
+                      <td data-label="Total pagado" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden text-right font-medium">{fmt(m.totalSpent)}</td>
+                      <td data-label="Sin pagar" className="px-1 py-1.5 lg:px-4 lg:py-3 text-right block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
+                        {m.pendingCount > 0 ? (
+                          <>
+                            <span className="text-amber-700 font-medium">{fmt(m.pendingTotal)}</span>
+                            <p className="text-[10px] text-gray-400 font-normal">{m.pendingCount} pedido{m.pendingCount !== 1 ? 's' : ''}</p>
+                          </>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
                       <td data-label="Último ingreso" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
                         {m.loginCount > 0 ? (
                           <>
