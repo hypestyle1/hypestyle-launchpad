@@ -83,6 +83,20 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
     alt: 'Napoli Tee — Honor y Gloria',
     side: 'left',
   },
+<<<<<<< HEAD
+=======
+  'Black Drop': {
+    type: 'slider',
+    images: [
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-hoodie-DSC03191-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-pants-DSC03194-1-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-fullbody-DSC03189-scaled.jpg',
+      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-models-DSC03197-scaled.jpg',
+    ],
+    alt: 'Black Drop — HypeStyle Stars',
+    side: 'left',
+  },
+>>>>>>> origin/main
   'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', poster: '/newin/polo-video-1-poster.webp', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
   'Pink Set': {
     type: 'slider',
