@@ -1,23 +1,46 @@
 // Drop FW26 — fuente única de los productos de la colección.
 // Usado por la página /colecciones/fw26 y la sección "New In [FW26]" del home.
+//
+// ORDEN: por contribución al negocio, no por fecha de drop (tarea D3 del roadmap).
+// Fuente: ventas cobradas de los últimos 30 días cruzadas con A1 (90 días).
+// Los drops envejecen —Napoli pasó de ser la novedad a ser el 3% del revenue en
+// dos semanas—, las categorías no. Por eso los grupos son por tipo de prenda.
+//
+// CAMO no va arriba pese a ser el 29% histórico: está en últimas unidades
+// (conteo del 24/08: combo 3, pant 3, zip 8). Poner arriba algo que se agota es
+// peor que no ponerlo. El combo directamente sale del home por falta de stock.
 export const FW26_GROUPS = [
-  // Azzurro es la titular (se muestra primero), Bianca la suplente — mismo peso visual.
-  { label: 'Napoli',        slugs: ['napoli-tee-azul', 'napoli-tee-blanca'] },
-  // Los dos conjuntos HStars juntos (negro + gris): es el mismo modelo en dos
-  // colorways, antes estaban partidos entre "Black Drop" y "Conjunto Gris".
-  { label: 'Tracksuit HStars', slugs: ['hoodie-black-hstars', 'sweatpant-black-hstars', 'hoodie-grey-hstars', 'sweatpant-grey-hstars'] },
-  { label: 'Half-Zip Polo', slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black'] },
-  { label: 'Pink Set',      slugs: ['hoodie-pink', 'zip-hoodie-pink', 'sweatpant-pink'] },
-  { label: 'Camo Drop',     slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap', 'beanie-camo'] },
-  { label: 'Remeras',       slugs: ['only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra'] },
-  // Hoodies sueltos: los que salieron del Black Drop al pasar esa sección a ser
-  // solo conjuntos HStars. Shoot For The Stars NO va acá: se retiró del drop en
-  // #352. (hoodie-melange / sweatpant-melange tampoco: esos slugs ya no existen
-  // en Woo, estaban muertos en el config viejo.)
-  { label: 'Hoodies',       slugs: ['stars-for-venezuela-hoodie'] },
-  { label: 'Accesorios',    slugs: ['chain-hype', 'pack-x3-medias-hype', 'per-aspera-ad-astra-zippo'] },
-  // Solo los productos ya publicados del drop (live o preSale en FAITH_DROP_ITEMS,
-  // faith-drop.ts) — los que todavía están "Próximamente" (blurred) no se listan acá.
+  // 1. CONJUNTOS — 41% del revenue de los últimos 30 días y el ticket más alto.
+  {
+    label: 'Conjuntos',
+    slugs: [
+      'hoodie-black-hstars', 'sweatpant-black-hstars',
+      'hoodie-grey-hstars', 'sweatpant-grey-hstars',
+      'hoodie-pink', 'zip-hoodie-pink', 'sweatpant-pink',
+      'zip-hoodie-camo', 'sweatpant-camo',
+    ],
+  },
+  // 2. ABRIGO Y POLOS — 17%. Half-Zip Navy se queda pese a su tasa de pago baja:
+  // el problema es PayPal, no el producto (ver project_internacional_sin_pasarela).
+  {
+    label: 'Abrigo y Polos',
+    slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black', 'stars-for-venezuela-hoodie'],
+  },
+  // 3. REMERAS Y PACKS — 14% juntas. Los 3-PACK no estaban en el home y facturan
+  // $478k en 30 días; Napoli baja acá desde la primera posición.
+  {
+    label: 'Remeras y Packs',
+    slugs: [
+      'only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra',
+      'napoli-tee-azul', 'napoli-tee-blanca',
+      'regular-tees-3-pack-black-white-melange', 'regular-tees-3-pack-black-navy-white',
+      'regular-tees-3-pack-black', 'regular-tees-3-pack-white', 'regular-tees-3-pack-grey',
+    ],
+  },
+  // 4. Accesorios — posición fija al final, la maneja el componente.
+  { label: 'Accesorios',    slugs: ['chain-hype', 'pack-x3-medias-hype', 'per-aspera-ad-astra-zippo', 'camo-cap'] },
+  // 5. Faith Is The Real Hype — 16%, drop con identidad propia y su propia lógica
+  // de lanzamiento (FaithDrop maneja los flags live/blurred/preSale).
   {
     label: 'Faith Is The Real Hype',
     slugs: [

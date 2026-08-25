@@ -59,50 +59,26 @@ const ACCESORIOS_LABEL = 'Accesorios';
 // flags live/blurred/preSale) — si no se excluye acá, FW26_GROUPS lo vuelve a
 // mostrar una segunda vez con el loop genérico de grupos.
 const FAITH_LABEL = 'Faith Is The Real Hype';
-// Tracksuit HStars: hereda la editorial que swappea por scroll (antes era de
-// "OGCJM & HStars Grey"). Dos slides alternados: primero Nicki Nicole con el
-// conjunto gris, después las modelos juntas.
-const TRACKSUIT_LABEL = 'Tracksuit HStars';
+// Conjuntos: primera seccion del bloque. Hereda la editorial que swappea por
+// scroll (antes de 'OGCJM & HStars Grey'): Nicki Nicole primero, modelos despues.
+const CONJUNTOS_LABEL = 'Conjuntos';
 const TRACKSUIT_SLIDES = [
   { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/nicki-nicole-hoodie-grey-hstars-01-scaled.jpg', alt: 'Nicki Nicole con el Hoodie Grey HStars', title: 'Hoodie Grey HStars' },
   { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-hstars-couple.jpg', alt: 'Conjunto HStars', title: 'Tracksuit HStars' },
 ];
-// Napoli es la novedad del momento — va primero de todo NEW IN, antes incluso
-// de Tracksuit HStars (mismo patrón de sección fija, no sigue el orden del loop).
-const NAPOLI_LABEL = 'Napoli';
+// Napoli ya no es seccion propia (3% del revenue): sus productos viven dentro de
+// 'Remeras y Packs'. La constante queda porque renderNapoliCard usa el flag de
+// lanzamiento para decidir si muestra vidriera o carrito.
+const NAPOLI_SLUGS = new Set(['napoli-tee-azul', 'napoli-tee-blanca']);
 // Lanzamiento domingo 20hs: hasta esa fecha los productos son vidriera (badge
 // "Próximamente", sin talles ni carrito) — a partir de ahí pasan a "New In"
 // y se habilita la compra, sin tocar código de nuevo (ver renderNapoliCard).
 const NAPOLI_LAUNCH = new Date('2026-08-09T20:00:00-03:00');
 const isNapoliLive = () => Date.now() >= NAPOLI_LAUNCH.getTime();
 
-const GROUP_EDITORIAL: Record<string, GroupMedia> = {
-  'Napoli': {
-    type: 'image',
-    src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-napoli-DSC03106-scaled.jpg',
-    alt: 'Napoli Tee — Honor y Gloria',
-    side: 'left',
-  },
-  'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', poster: '/newin/polo-video-1-poster.webp', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
-  'Pink Set': {
-    type: 'slider',
-    images: [
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-grey-wall-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-dumpster-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-detail-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/pink-set-juani-hood-back-scaled.jpg',
-    ],
-    alt: 'Pink Set FW26 — Juani',
-    side: 'left',
-  },
-  'Camo Drop': {
-    type: 'slider',
-    images: ['/newin/camo-1.webp', '/newin/camo-2.webp', '/newin/camo-3.webp', '/newin/camo-4.webp'],
-    alt: 'Camo Drop FW26',
-    side: 'right',
-    more: { href: '/colecciones/camo-set-drop/' },
-  },
-};
+// Sin editoriales por grupo: quedan solo la de Conjuntos (swap) y la grilla
+// simple del resto, para que el bloque respire (pedido 24/08).
+const GROUP_EDITORIAL: Record<string, GroupMedia> = {};
 
 // Bloque de grupo con editorial split o grilla simple — extraído para
 // reusarlo tanto en las posiciones fijas (Napoli, Accesorios) como en
@@ -190,7 +166,7 @@ export default function NewInFW26() {
   const groups = useMemo(
     () => FW26_GROUPS
       .map(g => ({ label: g.label, items: g.slugs.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts }))
-      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL && g.label !== FAITH_LABEL && g.label !== TRACKSUIT_LABEL && g.label !== NAPOLI_LABEL),
+      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL && g.label !== FAITH_LABEL && g.label !== CONJUNTOS_LABEL),
     [bySlug],
   );
 
@@ -201,17 +177,10 @@ export default function NewInFW26() {
     [bySlug],
   );
 
-  // Tracksuit HStars: posición fija (segunda sección), con la editorial que
-  // swappea por scroll en vez del slider automático.
-  const tracksuitItems = useMemo(
-    () => (FW26_GROUPS.find(g => g.label === TRACKSUIT_LABEL)?.slugs ?? [])
-      .map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
-    [bySlug],
-  );
-
-  // Napoli: la novedad, primera sección de todas — posición fija, no en el loop.
-  const napoliItems = useMemo(
-    () => (FW26_GROUPS.find(g => g.label === NAPOLI_LABEL)?.slugs ?? [])
+  // Conjuntos: primera seccion del bloque (41% del revenue), con la editorial
+  // que swappea por scroll. Los 4 primeros van al split, el resto en grilla.
+  const conjuntosItems = useMemo(
+    () => (FW26_GROUPS.find(g => g.label === CONJUNTOS_LABEL)?.slugs ?? [])
       .map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
     [bySlug],
   );
@@ -221,18 +190,6 @@ export default function NewInFW26() {
 
   // Render de cada tarjeta: durante el flash sale → badge "−50%". Si no,
   // badge "New In" (o el descuento del combo si está en KEEP_DISCOUNT).
-  const renderCard = (p: (typeof allProducts)[number]) => (
-    <ProductCard
-      key={p.slug}
-      {...p}
-      // Con toda la web en sale, el descuento le gana al "New In": el badge de
-      // novedad escondia el porcentaje justo en el bloque mas visto del home.
-      badge={flashActive ? '−50%' : (p.badge ?? 'New In')}
-      mutedPrice={!flashActive && !p.badge}
-      giftNote={GIFT_NOTES[p.slug]}
-    />
-  );
-
   // Napoli lanza el domingo: hasta entonces es vidriera (sin talles/carrito,
   // sin link a la ficha) con badge "Próximamente"; ese mismo instante pasa a
   // comportarse como cualquier producto New In, sin tocar código de nuevo.
@@ -247,6 +204,24 @@ export default function NewInFW26() {
       stock={napoliLive ? p.stock : undefined}
     />
   );
+
+  const renderCard = (p: (typeof allProducts)[number]) => {
+    // Napoli ya no tiene sección propia, así que su regla de vidriera/lanzamiento
+    // se aplica acá: antes del lanzamiento la tarjeta va sin talles ni carrito.
+    if (NAPOLI_SLUGS.has(p.slug)) return renderNapoliCard(p);
+    return (
+      <ProductCard
+        key={p.slug}
+        {...p}
+        // Con toda la web en sale, el descuento le gana al "New In": el badge de
+        // novedad escondia el porcentaje justo en el bloque mas visto del home.
+        badge={flashActive ? '−50%' : (p.badge ?? 'New In')}
+        mutedPrice={!flashActive && !p.badge}
+        giftNote={GIFT_NOTES[p.slug]}
+      />
+    );
+  };
+
 
   // Mientras cargan los productos, mostramos skeletons (mismo estilo que CollectionBanner).
   if (isLoading) {
@@ -270,29 +245,25 @@ export default function NewInFW26() {
         <SectionHeader title="New In [FW26]" link="/colecciones/fw26/" linkLabel="Ver más" />
       </div>
 
-      {/* ── Napoli — la novedad, primera sección de todas ────────────────── */}
-      <GroupBlock
-        label={NAPOLI_LABEL}
-        items={napoliItems}
-        editorial={GROUP_EDITORIAL[NAPOLI_LABEL]}
-        revealClass="reveal rd2 !mt-0"
-        renderCard={renderNapoliCard}
-      />
-
-      {/* ── Tracksuit HStars — conjuntos negro y gris, editorial con swap ── */}
-      {tracksuitItems.length > 0 && (
-        <div className="reveal rd2 mt-10">
+      {/* ── Conjuntos — 41% del revenue: primera sección, apenas pasa el hero ── */}
+      {conjuntosItems.length > 0 && (
+        <div className="reveal rd2">
           <div className="flex items-center gap-4 mb-5">
             <span className="h-px flex-1 bg-border" />
-            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{TRACKSUIT_LABEL}</span>
+            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{CONJUNTOS_LABEL}</span>
             <span className="h-px flex-1 bg-border" />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
-            <NewInSwapEditorial slides={TRACKSUIT_SLIDES} />
-            <div className="grid grid-cols-2 gap-[2px] order-1 lg:order-2">
-              {tracksuitItems.map(renderCard)}
+            <NewInSwapEditorial slides={TRACKSUIT_SLIDES} side="right" />
+            <div className="grid grid-cols-2 gap-[2px] order-1 lg:order-1">
+              {conjuntosItems.slice(0, 4).map(renderCard)}
             </div>
           </div>
+          {conjuntosItems.length > 4 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px] mt-[14px]">
+              {conjuntosItems.slice(4).map(renderCard)}
+            </div>
+          )}
         </div>
       )}
 
@@ -306,19 +277,6 @@ export default function NewInFW26() {
         <LaNuestraSection />
       </div>
 
-      {/* ── Accesorios — posición fija después de La Nuestra ────────────── */}
-      {accesoriosItems.length > 0 && (
-        <div className="reveal rd2 mt-10">
-          <div className="flex items-center gap-4 mb-5">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{ACCESORIOS_LABEL}</span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
-            {accesoriosItems.map(renderCard)}
-          </div>
-        </div>
-      )}
 
       {groups.map((group, gi) => {
         return (
@@ -332,6 +290,20 @@ export default function NewInFW26() {
           />
         );
       })}
+
+      {/* ── Accesorios — cierran el bloque, después de todas las categorías ────────────── */}
+      {accesoriosItems.length > 0 && (
+        <div className="reveal rd2 mt-10">
+          <div className="flex items-center gap-4 mb-5">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{ACCESORIOS_LABEL}</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+            {accesoriosItems.map(renderCard)}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

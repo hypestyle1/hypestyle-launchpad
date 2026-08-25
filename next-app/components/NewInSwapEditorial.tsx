@@ -13,7 +13,7 @@ type Slide = { src: string; alt: string; title: string };
  * centro del viewport pasa al segundo slide; al scrollear hacia arriba vuelve.
  * Imagen y título crossfadean juntos (cada slide es una capa que cambia opacidad).
  */
-export default function NewInSwapEditorial({ slides }: { slides: Slide[] }) {
+export default function NewInSwapEditorial({ slides, side = 'left' }: { slides: Slide[]; side?: 'left' | 'right' }) {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
@@ -38,7 +38,7 @@ export default function NewInSwapEditorial({ slides }: { slides: Slide[] }) {
   return (
     <div
       ref={ref}
-      className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-1"
+      className={`relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 ${side === 'left' ? 'lg:order-1' : 'lg:order-2'}`}
     >
       {slides.map((s, i) => (
         <div
