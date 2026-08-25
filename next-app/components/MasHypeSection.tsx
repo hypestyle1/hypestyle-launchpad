@@ -6,6 +6,7 @@ import SectionHeader from "./SectionHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 import { MAS_HYPE_HOME_SLUGS } from "@/lib/mas-hype";
+import { HOME_GRID, filasCompletas } from "@/lib/home-grid";
 
 export default function MasHypeSection() {
   const { data: allProducts = [] } = useProducts(0);
@@ -13,7 +14,7 @@ export default function MasHypeSection() {
 
   const products = useMemo(() => {
     const bySlug = new Map(allProducts.map(p => [p.slug, p]));
-    return MAS_HYPE_HOME_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts;
+    return filasCompletas(MAS_HYPE_HOME_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts);
   }, [allProducts]);
 
   if (products.length === 0) return null;
@@ -23,7 +24,7 @@ export default function MasHypeSection() {
       <div className="reveal rd1">
         <SectionHeader title="Más Hype" link="/colecciones/mas-hype/" linkLabel="Ver más" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+      <div className={HOME_GRID}>
         {products.map((p, i) => (
           <div key={p.slug} className={`reveal rd${Math.min(i + 2, 8)}`}>
             <ProductCard
