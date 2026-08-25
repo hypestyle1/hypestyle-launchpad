@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { fbCompleteRegistration } from '@/lib/fbpixel';
 
 // Alta de mayoristas hecha por el propio comercio. Mismo vestido de vidrio que
 // /mayoristas/login, en una tarjeta más ancha porque son varios campos.
@@ -62,6 +63,9 @@ export default function SolicitudMayoristaPage() {
     setLoading(false);
 
     if (res.ok) {
+      // Meta necesita el evento para poder optimizar la campaña de captación
+      // mayorista por solicitud y no por visita a la página.
+      fbCompleteRegistration();
       setDone(true);
     } else {
       const data = await res.json().catch(() => ({}));
