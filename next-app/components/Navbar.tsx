@@ -19,6 +19,9 @@ const navLinks = [
   { label: 'FAQs',          href: '/faqs/',                    hasDropdown: false, routeMatch: '/faqs' },
   { label: 'Políticas',     href: '/politicas-de-devolucion/', hasDropdown: false, routeMatch: '/politicas' },
   { label: 'Quiénes Somos', href: '/nosotros/',                hasDropdown: false, routeMatch: '/nosotros' },
+  // Va último a propósito: el navbar es para comprar, y esto es una propuesta
+  // para quien ya conoce la marca.
+  { label: 'Trabajá con Hype', href: '/creadores/',           hasDropdown: false, routeMatch: '/creadores' },
 ];
 
 const megaMenu = {

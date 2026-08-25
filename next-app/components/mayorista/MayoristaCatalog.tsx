@@ -75,7 +75,7 @@ export default function MayoristaCatalog({ products }: { products: MayoristaProd
   return (
     <div className="px-5 sm:px-8 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Precio mayorista</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Tu precio</h1>
         <p className="text-[13px] text-muted-foreground mt-1">50% off del precio de lista. Pedís hoy, lo preparamos esta semana.</p>
       </div>
 

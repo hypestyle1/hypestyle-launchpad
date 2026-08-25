@@ -92,7 +92,7 @@ export default function SolicitudMayoristaPage() {
         <div className="px-7 sm:px-9 pt-9 pb-8">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto mx-auto" />
           <p className="text-center text-[10px] uppercase tracking-[0.3em] text-foreground/45 mt-4">
-            Acceso mayorista
+            Sumá Hype a tu local
           </p>
 
           {done ? (

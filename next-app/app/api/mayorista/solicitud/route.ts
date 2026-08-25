@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   const yaEs = await findActiveMayoristaByEmail(email);
   if (yaEs) {
     return NextResponse.json(
-      { ok: false, alreadyActive: true, message: 'Ese mail ya tiene acceso mayorista. Entrá desde el ingreso, y si no recordás la contraseña usá "Olvidé mi contraseña".' },
+      { ok: false, alreadyActive: true, message: 'Ese mail ya tiene acceso. Entrá desde el ingreso, y si no recordás la contraseña usá "Olvidé mi contraseña".' },
       { status: 409 },
     );
   }
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       // Mail ya registrado como cliente minorista: no es un error del sistema,
       // es algo que el comercio tiene que resolver escribiéndonos.
       if (parsed.code === 'registration-error-email-exists') {
-        message = 'Ese mail ya está registrado en la tienda. Escribinos y te damos acceso mayorista con esa misma cuenta.';
+        message = 'Ese mail ya está registrado en la tienda. Escribinos y te damos acceso con esa misma cuenta.';
       } else if (parsed.message) {
         message = parsed.message;
       }

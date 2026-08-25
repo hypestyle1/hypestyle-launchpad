@@ -21,7 +21,13 @@ const infoLinks = [
   { label: "Privacidad", href: "/politica-de-privacidad/" },
   { label: "FAQs", href: "/faqs/" },
   { label: "Contacto", href: "/contacto/" },
-  { label: "Creadores de contenido", href: "https://docs.google.com/forms/d/e/1FAIpQLSeF3f3RsTUvIZmGdD5gmBbhdc4IOTg-nhWyiHpjEjWfGenk9Q/viewform" },
+];
+
+// Las dos puertas de entrada para trabajar con la marca. Van juntas y en su
+// propia columna: no son links de tienda ni de ayuda, son propuestas.
+const trabajaLinks = [
+  { label: "Crea contenido con Hype", href: "/creadores/" },
+  { label: "Sumá Hype a tu local", href: "/mayoristas/solicitud/" },
 ];
 
 const rrssLinks = [
@@ -129,6 +135,17 @@ export default function Footer() {
 
           {/* RRSS — única aparición */}
           <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Trabajá con Hype</p>
+            <ul className="space-y-2 mb-8">
+              {trabajaLinks.map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="text-[13px] text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
             <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">{t('RRSS')}</p>
             {rrssLinks.map((l) => (
               <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"

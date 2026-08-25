@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     // Falla ruidosa y con mensaje propio: antes esto era un 500 con cuerpo
     // vacío, indistinguible de una caída cualquiera desde el navegador.
     console.error('[mayorista/login] no se pudo firmar la sesión — revisar MAYORISTA_SESSION_SECRET en Vercel:', e);
-    return NextResponse.json({ ok: false, message: 'El acceso mayorista está fuera de servicio. Escribinos y lo resolvemos.' }, { status: 503 });
+    return NextResponse.json({ ok: false, message: 'El acceso a tu catálogo está fuera de servicio. Escribinos y lo resolvemos.' }, { status: 503 });
   }
 
   await trackLogin(result.customerId);
