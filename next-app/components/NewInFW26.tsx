@@ -52,15 +52,6 @@ type GroupMedia = {
   more?: { href: string }; // botón "Ver más" debajo de la editorial (grupos con +4 productos)
 };
 
-// Sección combinada: Remeras (OGCJM) + Conjunto Gris (Grey HStars) se
-// renderizan juntos con una editorial que swappea por scroll, en la posición
-// del PRIMERO de los dos labels que aparezca en FW26_GROUPS (respeta el orden
-// del array en vez de ir siempre al final).
-const SWAP_GROUP_LABELS = new Set<string>(['Remeras', 'Conjunto Gris']);
-// Label propio del divider (no el de ningún grupo individual — la sección mezcla
-// remeras OGCJM y el conjunto Grey HStars, "Remeras" solo era incorrecto).
-const SWAP_SECTION_LABEL = 'OGCJM & HStars Grey';
-
 // Accesorios se muestra en posición fija (justo después de Faith), no sigue
 // el orden de FW26_GROUPS como el resto de los grupos.
 const ACCESORIOS_LABEL = 'Accesorios';
@@ -68,20 +59,16 @@ const ACCESORIOS_LABEL = 'Accesorios';
 // flags live/blurred/preSale) — si no se excluye acá, FW26_GROUPS lo vuelve a
 // mostrar una segunda vez con el loop genérico de grupos.
 const FAITH_LABEL = 'Faith Is The Real Hype';
-const SWAP_PRODUCT_SLUGS = [
-  'only-god-can-judge-me-blanca',
-  'only-god-can-judge-me-negra',
-  'hoodie-grey-hstars',
-  'sweatpant-grey-hstars',
+// Tracksuit HStars: hereda la editorial que swappea por scroll (antes era de
+// "OGCJM & HStars Grey"). Dos slides alternados: primero Nicki Nicole con el
+// conjunto gris, después las modelos juntas.
+const TRACKSUIT_LABEL = 'Tracksuit HStars';
+const TRACKSUIT_SLIDES = [
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/nicki-nicole-grey-hstars-set-02-scaled.jpg', alt: 'Nicki Nicole con el conjunto Grey HStars', title: 'Conjunto Grey HStars' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-hstars-couple.jpg', alt: 'Conjunto HStars', title: 'Tracksuit HStars' },
 ];
-const SWAP_SLIDES = [
-  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-ogcjm-street.jpg', alt: 'Only God Can Judge Me', title: 'Only God Can Judge Me' },
-  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-hstars-couple.jpg', alt: 'Conjunto Grey HStars', title: 'Conjunto Grey HStars' },
-];
-
-const BLACK_DROP_LABEL = 'Black Drop';
 // Napoli es la novedad del momento — va primero de todo NEW IN, antes incluso
-// de Black Drop (mismo patrón de sección fija, no sigue el orden del loop).
+// de Tracksuit HStars (mismo patrón de sección fija, no sigue el orden del loop).
 const NAPOLI_LABEL = 'Napoli';
 // Lanzamiento domingo 20hs: hasta esa fecha los productos son vidriera (badge
 // "Próximamente", sin talles ni carrito) — a partir de ahí pasan a "New In"
@@ -94,17 +81,6 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
     type: 'image',
     src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-napoli-DSC03106-scaled.jpg',
     alt: 'Napoli Tee — Honor y Gloria',
-    side: 'left',
-  },
-  'Black Drop': {
-    type: 'slider',
-    images: [
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-hoodie-DSC03191-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-pants-DSC03194-1-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-fullbody-DSC03189-scaled.jpg',
-      'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/blackdrop-models-DSC03197-scaled.jpg',
-    ],
-    alt: 'Black Drop — Shoot For The Stars, Aim For The Moon',
     side: 'left',
   },
   'Half-Zip Polo': { type: 'video', src: '/newin/polo-video-1.mp4', poster: '/newin/polo-video-1-poster.webp', alt: 'Half-Zip Polo — HypeStyle Department FW26', side: 'right' },
@@ -129,7 +105,7 @@ const GROUP_EDITORIAL: Record<string, GroupMedia> = {
 };
 
 // Bloque de grupo con editorial split o grilla simple — extraído para
-// reusarlo tanto en la posición fija de Black Drop (primera sección) como en
+// reusarlo tanto en las posiciones fijas (Napoli, Accesorios) como en
 // el loop genérico de FW26_GROUPS.
 function GroupBlock({
   label, items, editorial, revealClass, renderCard,
@@ -209,22 +185,12 @@ export default function NewInFW26() {
 
   const bySlug = useMemo(() => new Map(allProducts.map(p => [p.slug, p])), [allProducts]);
 
-  // Grupos con al menos un producto disponible (Accesorios se excluye acá porque
-  // se renderiza en posición fija, ver más abajo). Remeras/Conjunto Gris SÍ quedan
-  // en su posición del array — el loop de render detecta el primero de los dos
-  // y ahí mismo mete la sección swap combinada.
+  // Grupos con al menos un producto disponible (Accesorios, Faith, Tracksuit y
+  // Napoli se excluyen acá porque se renderizan en posición fija, más abajo).
   const groups = useMemo(
     () => FW26_GROUPS
       .map(g => ({ label: g.label, items: g.slugs.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts }))
-      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL && g.label !== FAITH_LABEL && g.label !== BLACK_DROP_LABEL && g.label !== NAPOLI_LABEL),
-    [bySlug],
-  );
-
-  const firstSwapIndex = useMemo(() => groups.findIndex(g => SWAP_GROUP_LABELS.has(g.label)), [groups]);
-
-  // Productos de la sección combinada (OGCJM + Grey HStars), en orden fijo.
-  const swapProducts = useMemo(
-    () => SWAP_PRODUCT_SLUGS.map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
+      .filter(g => g.items.length > 0 && g.label !== ACCESORIOS_LABEL && g.label !== FAITH_LABEL && g.label !== TRACKSUIT_LABEL && g.label !== NAPOLI_LABEL),
     [bySlug],
   );
 
@@ -235,10 +201,10 @@ export default function NewInFW26() {
     [bySlug],
   );
 
-  // Black Drop: mismo patrón visual que Camo Drop (grilla 2x2 + banner
-  // editorial) pero en posición fija, no en el loop.
-  const blackDropItems = useMemo(
-    () => (FW26_GROUPS.find(g => g.label === BLACK_DROP_LABEL)?.slugs ?? [])
+  // Tracksuit HStars: posición fija (segunda sección), con la editorial que
+  // swappea por scroll en vez del slider automático.
+  const tracksuitItems = useMemo(
+    () => (FW26_GROUPS.find(g => g.label === TRACKSUIT_LABEL)?.slugs ?? [])
       .map(s => bySlug.get(s)).filter(Boolean) as typeof allProducts,
     [bySlug],
   );
@@ -313,14 +279,22 @@ export default function NewInFW26() {
         renderCard={renderNapoliCard}
       />
 
-      {/* ── Black Drop — mismo patrón que Camo Drop ──────────────────────── */}
-      <GroupBlock
-        label={BLACK_DROP_LABEL}
-        items={blackDropItems}
-        editorial={GROUP_EDITORIAL[BLACK_DROP_LABEL]}
-        revealClass="reveal rd2"
-        renderCard={renderCard}
-      />
+      {/* ── Tracksuit HStars — conjuntos negro y gris, editorial con swap ── */}
+      {tracksuitItems.length > 0 && (
+        <div className="reveal rd2 mt-10">
+          <div className="flex items-center gap-4 mb-5">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{TRACKSUIT_LABEL}</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
+            <NewInSwapEditorial slides={TRACKSUIT_SLIDES} />
+            <div className="grid grid-cols-2 gap-[2px] order-1 lg:order-2">
+              {tracksuitItems.map(renderCard)}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Faith Is The Real Hype — nuevo drop domingo ────────────────── */}
       <div className="reveal rd2 mt-10">
@@ -347,27 +321,6 @@ export default function NewInFW26() {
       )}
 
       {groups.map((group, gi) => {
-        if (SWAP_GROUP_LABELS.has(group.label)) {
-          // Sección combinada: se renderiza una sola vez, en la posición del
-          // primero de los dos labels (Remeras / Conjunto Gris) que aparezca.
-          if (gi !== firstSwapIndex || swapProducts.length === 0) return null;
-          return (
-            <div key="swap-section" className={`reveal rd${Math.min(gi + 3, 8)} mt-10`}>
-              <div className="flex items-center gap-4 mb-5">
-                <span className="h-px flex-1 bg-border" />
-                <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-medium">{SWAP_SECTION_LABEL}</span>
-                <span className="h-px flex-1 bg-border" />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[14px]">
-                <NewInSwapEditorial slides={SWAP_SLIDES} />
-                <div className="grid grid-cols-2 gap-[2px] order-1 lg:order-2">
-                  {swapProducts.map(renderCard)}
-                </div>
-              </div>
-            </div>
-          );
-        }
-
         return (
           <GroupBlock
             key={group.label}

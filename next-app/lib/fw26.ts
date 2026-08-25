@@ -3,12 +3,17 @@
 export const FW26_GROUPS = [
   // Azzurro es la titular (se muestra primero), Bianca la suplente — mismo peso visual.
   { label: 'Napoli',        slugs: ['napoli-tee-azul', 'napoli-tee-blanca'] },
-  { label: 'Black Drop',    slugs: ['hoodie-black-hstars', 'sweatpant-black-hstars', 'stars-for-venezuela-hoodie', 'shoot-for-the-stars'] },
+  // Los dos conjuntos HStars juntos (negro + gris): es el mismo modelo en dos
+  // colorways, antes estaban partidos entre "Black Drop" y "Conjunto Gris".
+  { label: 'Tracksuit HStars', slugs: ['hoodie-black-hstars', 'sweatpant-black-hstars', 'hoodie-grey-hstars', 'sweatpant-grey-hstars'] },
   { label: 'Half-Zip Polo', slugs: ['half-zip-polo-melange', 'half-zip-polo-navy', 'half-zip-polo-black'] },
   { label: 'Pink Set',      slugs: ['hoodie-pink', 'zip-hoodie-pink', 'sweatpant-pink'] },
   { label: 'Camo Drop',     slugs: ['camo-full-set-combo', 'zip-hoodie-camo', 'sweatpant-camo', 'camo-cap', 'beanie-camo'] },
   { label: 'Remeras',       slugs: ['only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra'] },
-  { label: 'Conjunto Gris', slugs: ['hoodie-grey-hstars', 'sweatpant-grey-hstars', 'hoodie-melange', 'sweatpant-melange'] },
+  // Hoodies sueltos: los que salieron del Black Drop al pasar esa sección a ser
+  // solo conjuntos HStars. (hoodie-melange / sweatpant-melange estaban en el
+  // config viejo pero esos slugs ya no existen en Woo, por eso no se reubican.)
+  { label: 'Hoodies',       slugs: ['shoot-for-the-stars', 'stars-for-venezuela-hoodie'] },
   { label: 'Accesorios',    slugs: ['chain-hype', 'pack-x3-medias-hype', 'per-aspera-ad-astra-zippo'] },
   // Solo los productos ya publicados del drop (live o preSale en FAITH_DROP_ITEMS,
   // faith-drop.ts) — los que todavía están "Próximamente" (blurred) no se listan acá.
