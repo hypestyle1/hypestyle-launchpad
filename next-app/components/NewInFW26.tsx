@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import ProductCard from "./ProductCard";
 import SectionHeader from "./SectionHeader";
-import NewInSwapEditorial from "./NewInSwapEditorial";
+import EditorialSlider from "./EditorialSlider";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 import { FW26_GROUPS } from "@/lib/fw26";
@@ -41,12 +41,19 @@ const ACCESORIOS_LABEL = 'Accesorios';
 // flags live/blurred/preSale) — si no se excluye acá, FW26_GROUPS lo vuelve a
 // mostrar una segunda vez con el loop genérico de grupos.
 const FAITH_LABEL = 'Faith Is The Real Hype';
-// Conjuntos: primera sección del bloque, la única con editorial. Hereda la imagen
-// que swappea por scroll: Nicki Nicole primero, modelos después.
+// Conjuntos: primera sección del bloque, la única con editorial. Es un carrusel
+// (crossfade cada 4s + dots) con un colorway por slide, en el mismo orden en el
+// que aparecen los productos abajo: HStars, Pink, Camo y el polo que los cierra.
+// Nicki abre porque es la foto con más tracción y la que se usó en la campaña.
 const CONJUNTOS_LABEL = 'Conjuntos';
-const TRACKSUIT_SLIDES = [
-  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/nicki-nicole-hoodie-grey-hstars-01-scaled.jpg', alt: 'Nicki Nicole con el Hoodie Grey HStars', title: 'Hoodie Grey HStars' },
-  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-hstars-couple.jpg', alt: 'Conjunto HStars', title: 'Tracksuit HStars' },
+const WP = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/';
+const CONJUNTOS_SLIDES = [
+  { src: WP + '2026/08/nicki-nicole-hoodie-grey-hstars-01-scaled.jpg', title: 'Hoodie Grey HStars' },
+  { src: WP + '2026/08/newin-swap-hstars-couple.jpg',                  title: 'Tracksuit HStars' },
+  { src: WP + '2026/07/pink-set-juani-02-scaled.jpg',                  title: 'Pink Set' },
+  { src: WP + '2026/05/mia-camo-03.png',                               title: 'Camo Set' },
+  { src: WP + '2026/07/IMG_7690-scaled.jpeg',                          title: 'Half-Zip Polo Melange' },
+  { src: WP + '2026/07/IMG_7576-scaled.jpeg',                          title: 'Half-Zip Polo Navy' },
 ];
 // Napoli ya no es sección propia (3% del revenue): sus productos viven dentro de
 // 'Remeras'. La constante queda porque renderNapoliCard usa el flag de
@@ -150,7 +157,9 @@ export default function NewInFW26() {
         <div className="reveal rd2">
           <GroupLabel>{CONJUNTOS_LABEL}</GroupLabel>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[2px]">
-            <NewInSwapEditorial slides={TRACKSUIT_SLIDES} side="right" />
+            <div className="relative overflow-hidden rounded-[8px] bg-bg-alt aspect-[3/4] lg:aspect-auto min-h-[320px] order-2 lg:order-2">
+              <EditorialSlider slides={CONJUNTOS_SLIDES} alt="Conjuntos Hype FW26" />
+            </div>
             <div className="grid grid-cols-2 gap-[2px] order-1 lg:order-1">
               {conjuntosItems.slice(0, 4).map(renderCard)}
             </div>

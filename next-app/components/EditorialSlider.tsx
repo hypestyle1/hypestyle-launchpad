@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 
-type Slide = { src: string; type?: 'image' | 'video' };
+// title: qué prenda se está viendo. Con seis slides de colorways distintos, sin
+// el rótulo la foto deja de decir qué producto es (era lo que aportaba la
+// editorial que swappeaba por scroll, y se conserva acá).
+type Slide = { src: string; type?: 'image' | 'video'; title?: string };
 
 const IMAGE_DURATION = 4000;
 
@@ -98,6 +101,16 @@ export default function EditorialSlider({
                 priority={i === 0}
                 className="object-cover object-center"
               />
+            )}
+
+            {slide.title && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+                {/* bottom-9: deja libre la franja de los dots, que van en bottom-3 */}
+                <h3 className="absolute inset-x-5 bottom-9 text-white font-bold uppercase leading-none tracking-tight text-2xl md:text-3xl">
+                  {slide.title}
+                </h3>
+              </>
             )}
           </div>
         );
