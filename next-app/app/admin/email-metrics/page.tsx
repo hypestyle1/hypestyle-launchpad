@@ -71,7 +71,7 @@ export default function EmailMetricsPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 sticky top-0 z-10">
         <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
         <span className="text-gray-300">|</span>
         <span className="text-[14px] font-semibold text-gray-900">Métricas de email</span>
