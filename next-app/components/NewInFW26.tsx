@@ -64,7 +64,7 @@ const FAITH_LABEL = 'Faith Is The Real Hype';
 // conjunto gris, después las modelos juntas.
 const TRACKSUIT_LABEL = 'Tracksuit HStars';
 const TRACKSUIT_SLIDES = [
-  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/nicki-nicole-grey-hstars-set-02-scaled.jpg', alt: 'Nicki Nicole con el conjunto Grey HStars', title: 'Conjunto Grey HStars' },
+  { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/nicki-nicole-hoodie-grey-hstars-01-scaled.jpg', alt: 'Nicki Nicole con el Hoodie Grey HStars', title: 'Hoodie Grey HStars' },
   { src: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/newin-swap-hstars-couple.jpg', alt: 'Conjunto HStars', title: 'Tracksuit HStars' },
 ];
 // Napoli es la novedad del momento — va primero de todo NEW IN, antes incluso
