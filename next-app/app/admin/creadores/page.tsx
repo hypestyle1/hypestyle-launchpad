@@ -15,6 +15,8 @@ type Creador = {
   instagram: string; tiktok: string; links: string; porque: string; prenda: string;
   frecuencia: string; equipo: string; talle: string; marcas: string;
   tutor_nombre: string; tutor_contacto: string;
+  idioma: string; locale: string; idioma_detectado: string; traduccion_estado: string;
+  porque_es: string; prenda_es: string; links_es: string; marcas_es: string;
   estado: Estado; nota: string; revisadoPor: string; revisadoEl: string; creadoEl: string;
 };
 
@@ -60,6 +62,9 @@ export default function CreadoresAdminPage() {
   const [busqueda, setBusqueda] = useState('');
   const [abierto, setAbierto] = useState<number | null>(null);
   const [guardandoId, setGuardandoId] = useState<number | null>(null);
+  // El equipo lee en español. El original está a un clic, no de entrada.
+  const [verOriginal, setVerOriginal] = useState<Set<number>>(new Set());
+  const [reintentando, setReintentando] = useState<number | null>(null);
   const [quienSoy, setQuienSoy] = useState<string>('');
 
   useEffect(() => {
@@ -110,6 +115,33 @@ export default function CreadoresAdminPage() {
     creadores.forEach(x => { c[x.estado || 'nuevo'] = (c[x.estado || 'nuevo'] || 0) + 1; });
     return c;
   }, [creadores]);
+
+  async function reintentarTraduccion(c: Creador) {
+    setReintentando(c.id);
+    try {
+      const res = await fetch('/api/admin/creadores/traducir', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ id: c.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setCreadores(prev => prev.map(x => x.id === c.id ? {
+          ...x,
+          traduccion_estado: data.estado,
+          idioma_detectado: data.idiomaDetectado || x.idioma_detectado,
+          porque_es: data.traducciones?.porque ?? x.porque_es,
+          prenda_es: data.traducciones?.prenda ?? x.prenda_es,
+          links_es: data.traducciones?.links ?? x.links_es,
+          marcas_es: data.traducciones?.marcas ?? x.marcas_es,
+        } : x));
+      } else {
+        alert(data.message || 'No se pudo traducir');
+      }
+    } finally {
+      setReintentando(null);
+    }
+  }
 
   async function decidir(c: Creador, estado: Estado) {
     setGuardandoId(c.id);
@@ -277,13 +309,59 @@ export default function CreadoresAdminPage() {
 
                   {expandido && (
                     <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-4 space-y-3">
-                      {c.links && <Campo label="Su trabajo" valor={c.links} links />}
-                      {c.porque && <Campo label="Por qué Hype" valor={c.porque} />}
-                      {c.prenda && <Campo label="Qué se pondría" valor={c.prenda} />}
+                      {(() => {
+                        const original = verOriginal.has(c.id);
+                        const traducida = c.traduccion_estado === 'ok';
+                        const pendiente = c.traduccion_estado === 'pendiente';
+                        const texto = (campo: 'porque' | 'prenda' | 'links' | 'marcas') =>
+                          traducida && !original ? ((c as any)[campo + '_es'] || (c as any)[campo]) : (c as any)[campo];
+                        return (
+                          <>
+                            {(traducida || pendiente || c.idioma_detectado) && (
+                              <div className="flex flex-wrap items-center gap-2 pb-1">
+                                {c.idioma_detectado && (
+                                  <span className="text-[11px] text-gray-500">
+                                    Escrito en <span className="font-medium text-gray-700">{c.idioma_detectado}</span>
+                                  </span>
+                                )}
+                                {traducida && (
+                                  <button
+                                    onClick={() => setVerOriginal(prev => {
+                                      const n = new Set(prev);
+                                      if (n.has(c.id)) n.delete(c.id); else n.add(c.id);
+                                      return n;
+                                    })}
+                                    className="text-[11px] text-gray-500 hover:text-black underline"
+                                  >
+                                    {original ? 'Ver traducción' : 'Ver original'}
+                                  </button>
+                                )}
+                                {pendiente && (
+                                  <>
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                                      Traducción pendiente
+                                    </span>
+                                    <button
+                                      onClick={() => reintentarTraduccion(c)}
+                                      disabled={reintentando === c.id}
+                                      className="text-[11px] text-gray-500 hover:text-black underline disabled:opacity-40"
+                                    >
+                                      {reintentando === c.id ? 'Traduciendo...' : 'Reintentar'}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                            {c.links && <Campo label="Su trabajo" valor={texto('links')} links />}
+                            {c.porque && <Campo label="Por qué Hype" valor={texto('porque')} />}
+                            {c.prenda && <Campo label="Qué se pondría" valor={texto('prenda')} />}
+                          </>
+                        );
+                      })()}
                       <div className="flex flex-wrap gap-x-6 gap-y-1.5">
                         {c.frecuencia && <Dato label="Puede producir" valor={c.frecuencia} />}
                         {c.equipo && <Dato label="Graba y edita" valor={c.equipo} />}
-                        {c.marcas && <Dato label="Marcas previas" valor={c.marcas} />}
+                        {c.marcas && <Dato label="Marcas previas" valor={(c.traduccion_estado === 'ok' && !verOriginal.has(c.id) && c.marcas_es) || c.marcas} />}
                       </div>
                       {esMenor && c.tutor_nombre && (
                         <div className="text-[12px] bg-amber-50 border border-amber-200 rounded-md px-3 py-2">

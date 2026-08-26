@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guardarCreador, avisarPostulacion } from '@/lib/creadores';
+import { traducirPostulacion, metaDeTraduccion } from '@/lib/traducir';
 
 // Postulación pública para crear contenido con Hype.
 
@@ -26,6 +27,12 @@ export async function POST(req: NextRequest) {
     marcas: limpio(body.marcas),
     tutor_nombre: limpio(body.tutor_nombre),
     tutor_contacto: limpio(body.tutor_contacto),
+    // En qué idioma estaba el formulario y qué declara el navegador. Se guardan
+    // los dos porque no siempre coinciden con el idioma en que efectivamente
+    // escribió: alguien puede tener el formulario en inglés y contestar en
+    // portugués.
+    idioma: limpio(body.idioma) || 'ES',
+    locale: limpio(body.locale),
   };
 
   if (!campos.nombre || !campos.email.includes('@')) {
@@ -48,6 +55,18 @@ export async function POST(req: NextRequest) {
   const guardado = await guardarCreador(campos);
   if (!guardado) {
     return NextResponse.json({ ok: false, message: 'No pudimos guardar tu postulación. Probá de nuevo.' }, { status: 502 });
+  }
+
+  // Traducción al español de las respuestas abiertas, para que el equipo pueda
+  // leerlas sin copiar y pegar en un traductor. Va DESPUÉS de guardar y no
+  // puede tirar abajo el envío: si falla, la postulación ya existe y queda
+  // marcada como pendiente para reintentar desde el panel.
+  try {
+    const r = await traducirPostulacion(campos);
+    await guardarCreador({ email: campos.email, nombre: campos.nombre, ...metaDeTraduccion(r) });
+  } catch (e) {
+    console.error('[api/creadores] la traducción falló, la postulación queda pendiente:', e);
+    await guardarCreador({ email: campos.email, nombre: campos.nombre, traduccion_estado: 'pendiente' }).catch(() => {});
   }
 
   // Si el aviso falla, la postulación ya quedó guardada y se ve igual en el

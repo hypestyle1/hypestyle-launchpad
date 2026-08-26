@@ -48,6 +48,20 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   // layout.
   const [rates, setRates] = useState<FxRates>(FX_FALLBACK);
 
+  // navigator.language viene como 'en-GB', 'pt-BR', 'es-AR'. Solo interesa el
+  // prefijo, y solo si es un idioma que realmente tenemos traducido: sumar uno
+  // al selector sin poblar su columna del diccionario deja la interfaz en
+  // español igual, y encima confunde.
+  function idiomaDelNavegador(): Language | null {
+    if (typeof navigator === 'undefined') return null;
+    const prefs = [navigator.language, ...(navigator.languages || [])].filter(Boolean);
+    for (const p of prefs) {
+      const code = p.slice(0, 2).toUpperCase();
+      if ((LANGUAGES as string[]).includes(code)) return code as Language;
+    }
+    return null;
+  }
+
   // Idioma y moneda: la elección explícita de la persona manda siempre. Si
   // nunca eligió, se toma la del país detectado. El estado inicial se deja en
   // ES/ARS para que el HTML del server y el del cliente coincidan, y el ajuste
@@ -60,8 +74,17 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setCountry(detected);
     const guess = localeForCountry(detected);
 
+    // Orden: la elección explícita manda; después el país que detecta Vercel;
+    // y recién ahí el idioma del navegador. Este último escalón es nuevo y es
+    // aditivo: antes, alguien de afuera cuyo país no estuviera mapeado veía
+    // todo en español aunque tuviera el navegador en inglés. Eso fue lo que
+    // dejó a una creadora extranjera sin poder completar el formulario.
     if (storedLang) setLanguageState(storedLang);
     else if (guess) setLanguageState(guess.language);
+    else {
+      const delNavegador = idiomaDelNavegador();
+      if (delNavegador) setLanguageState(delNavegador);
+    }
 
     if (storedCurr) setCurrencyState(storedCurr);
     else if (guess) setCurrencyState(guess.currency);
