@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const res = await fetch(
-      `${WP_URL}/wp-json/hypestyle/v1/tracking?pedido=${pedido}&clave=${encodeURIComponent(clave)}`,
+      `${WP_URL}/wp-json/hypestyle/v1/tracking?pedido=${encodeURIComponent(pedido)}&clave=${encodeURIComponent(clave)}`,
       { next: { revalidate: 0 } },
     );
     const data = await res.json();

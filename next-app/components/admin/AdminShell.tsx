@@ -91,13 +91,17 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }, [headers, pathname]);
 
   // La pantalla de ingreso no lleva marco: sería navegación hacia lugares a
-  // los que todavía no se puede entrar.
-  if (pathname.startsWith('/admin/login') || pathname.startsWith('/admin/reset')) return <>{children}</>;
+  // los que todavía no se puede entrar. La de aprobación por mail tampoco: el
+  // que llega con ese token no tiene sesión y no debe ver el panel.
+  if (pathname.startsWith('/admin/login') || pathname.startsWith('/admin/reset') || pathname.startsWith('/admin/aprobar')) return <>{children}</>;
 
   // Las vistas para imprimir salen solas, sin barra lateral.
-  if (pathname.includes('/rotulo')) return <>{children}</>;
+  if (pathname.includes('/rotulo') || pathname.includes('/detalle')) return <>{children}</>;
 
-  const puede = (s: Seccion) => !quien || quien.secciones.includes(s);
+  // Sin identidad no se muestra ninguna sección: antes `!quien` habilitaba
+  // todo, y un visitante sin sesión (o un fallo de auth/me) veía el sidebar
+  // completo del panel.
+  const puede = (s: Seccion) => !!quien && quien.secciones.includes(s);
   const grupos = GRUPOS
     .map(g => ({ ...g, items: g.items.filter(i => puede(i.seccion)) }))
     .filter(g => g.items.length > 0);
@@ -152,11 +156,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </p>
       )}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {!quien?.viaSharedKey && (
+        {quien && !quien.viaSharedKey && (
           <Link href="/admin/cuenta" className="text-[12px] text-gray-500 hover:text-black">Mi cuenta</Link>
         )}
         <Link href="/" className="text-[12px] text-gray-500 hover:text-black">Ver el sitio</Link>
-        <button onClick={salir} className="text-[12px] text-gray-400 hover:text-black ml-auto">Salir</button>
+        {quien ? (
+          <button onClick={salir} className="text-[12px] text-gray-400 hover:text-black ml-auto">Salir</button>
+        ) : (
+          <Link href="/admin/login" className="text-[12px] text-gray-500 hover:text-black ml-auto">Ingresar</Link>
+        )}
       </div>
     </div>
   );

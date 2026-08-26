@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
 const BREVO_KEY    = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
-const ADMIN_SECRET = process.env.WP_SECRET || '';
 const NEWSLETTER_LIST_ID = 3;
 const SENDER = { name: 'Hypestyle', email: 'hypestylearg@gmail.com' };
 const REPLY_TO_EMAIL = 'hypestylearg@gmail.com';
 
 const authed = (req: NextRequest) => {
-  const key = req.headers.get('x-admin-key') || '';
-  return !!ADMIN_SECRET && key === ADMIN_SECRET;
+  return adminSecretMatches(req.headers.get('x-admin-key'));
 };
 
 // Cantidad de suscriptores de la lista (para mostrar en el composer).

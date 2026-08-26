@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
 const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WP_SECRET = process.env.WP_SECRET          || '';
 
 function checkAuth(req: NextRequest) {
-  const key = req.headers.get('x-admin-key') || '';
-  return !!WP_SECRET && key === WP_SECRET;
+  return adminSecretMatches(req.headers.get('x-admin-key'));
 }
 
 export async function GET(req: NextRequest) {

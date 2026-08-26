@@ -58,7 +58,7 @@ export async function fulfillOrder(
 
   await fetch(`${SITE}/api/send-confirmation`, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-hypestyle-secret': process.env.WP_SECRET || '' },
     body: JSON.stringify({
       orderNum:  String(order.number || wcOrderId),
       wcOrderId, orderKey: order.order_key,

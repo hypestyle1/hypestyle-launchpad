@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
 const WP_URL            = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
-const ADMIN_SECRET      = process.env.WP_SECRET          || '';
 const HS_REVIEWS_SECRET = process.env.HS_REVIEWS_SECRET  || '';
 
 // Filtros que soporta el panel /admin/reviews — se reenvían tal cual a
@@ -14,8 +14,7 @@ const PASSTHROUGH_PARAMS = [
 ];
 
 export async function GET(req: NextRequest) {
-  const key = req.headers.get('x-admin-key') || '';
-  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
+  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

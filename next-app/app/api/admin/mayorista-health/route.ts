@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSessionToken } from '@/lib/mayorista-auth';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
 // Chequeo de salud del acceso mayorista, para /admin/mayoristas.
 //
@@ -14,14 +15,12 @@ import { createSessionToken } from '@/lib/mayorista-auth';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WP_SECRET = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
-const ADMIN_SECRET = process.env.WP_SECRET || '';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 
 type Check = { ok: boolean; label: string; detail: string };
 
 export async function GET(req: NextRequest) {
-  const key = req.headers.get('x-admin-key') || '';
-  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
+  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
