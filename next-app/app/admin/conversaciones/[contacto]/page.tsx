@@ -102,20 +102,20 @@ export default function ConversacionDetallePage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -124,34 +124,34 @@ export default function ConversacionDetallePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div className="min-h-screen bg-background">
+      <div className="bg-card border-b border-border px-6 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
-          <span className="text-gray-300">|</span>
-          <Link href="/admin/conversaciones" className="text-[12px] text-gray-400 hover:text-black">← Conversaciones</Link>
+          <span className="text-muted-foreground/50">|</span>
+          <Link href="/admin/conversaciones" className="text-[12px] text-muted-foreground/70 hover:text-foreground">← Conversaciones</Link>
         </div>
       </div>
 
       <div className="max-w-[700px] mx-auto px-4 py-5">
         <div className="mb-4">
-          <div className="text-[15px] font-bold text-gray-900">{nombre || contacto}</div>
-          <div className="text-[12px] text-gray-400">{contacto} · {canal === 'instagram' ? 'Instagram' : canal === 'whatsapp' ? 'WhatsApp' : canal}</div>
+          <div className="text-[15px] font-bold text-foreground">{nombre || contacto}</div>
+          <div className="text-[12px] text-muted-foreground/70">{contacto} · {canal === 'instagram' ? 'Instagram' : canal === 'whatsapp' ? 'WhatsApp' : canal}</div>
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">Cargando...</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando...</div>
         ) : mensajes.length === 0 ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">Sin mensajes guardados</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">Sin mensajes guardados</div>
         ) : (
           <div className="flex flex-col gap-3">
             {mensajes.map((m, i) => (
               <div key={i} className={`flex ${m.rol === 'human' ? 'justify-start' : 'justify-end'}`}>
-                <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 ${
-                  m.rol === 'human' ? 'bg-white border border-gray-200' : 'bg-black text-white'
+                <div className={`max-w-[80%] rounded-lg px-3.5 py-2.5 ${
+                  m.rol === 'human' ? 'bg-card border border-border' : 'bg-primary text-primary-foreground'
                 }`}>
                   <div className="text-[13px] whitespace-pre-wrap">{m.mensaje}</div>
-                  <div className={`text-[10px] mt-1 ${m.rol === 'human' ? 'text-gray-400' : 'text-gray-400'}`}>
+                  <div className={`text-[10px] mt-1 ${m.rol === 'human' ? 'text-muted-foreground/70' : 'text-muted-foreground/70'}`}>
                     {fmtDateTime(m.fecha)}
                     {m.estado === 'sin_respuesta' && m.rol !== 'human' && (
                       <span className="ml-1.5 text-orange-400 font-semibold">· sin respuesta / derivado</span>
@@ -164,14 +164,14 @@ export default function ConversacionDetallePage() {
         )}
       </div>
 
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3">
+      <div className="sticky bottom-0 bg-card border-t border-border px-4 py-3">
         <div className="max-w-[700px] mx-auto">
           {enviarError && (
             <div className="text-[12px] text-orange-500 mb-2">{enviarError}</div>
           )}
           <div className="flex items-end gap-2">
             <textarea
-              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-black"
+              className="flex-1 border border-border-mid rounded-md px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-ring"
               rows={2}
               placeholder="Escribir respuesta..."
               value={texto}
@@ -187,7 +187,7 @@ export default function ConversacionDetallePage() {
             <button
               onClick={enviarMensaje}
               disabled={enviando || !texto.trim()}
-              className="bg-black text-white rounded-md px-4 py-2 text-[13px] font-semibold hover:bg-gray-900 disabled:opacity-40 disabled:hover:bg-black"
+              className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-[13px] font-semibold hover:opacity-90 disabled:opacity-40 disabled:hover:bg-primary"
             >
               {enviando ? 'Enviando...' : 'Enviar'}
             </button>

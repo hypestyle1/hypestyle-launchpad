@@ -156,123 +156,123 @@ export default function NewsletterPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
-          <input type="password" className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
+          <input type="password" className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin" value={keyInput} onChange={e => setKeyInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && login()} autoFocus />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">Entrar</button>
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">Entrar</button>
         </div>
       </div>
     );
   }
 
-  const input = "w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400";
+  const input = "w-full border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid";
 
   return (
     <div className="">
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 sticky top-0 z-10">
-        <span className="text-[14px] font-semibold text-gray-900">Newsletter</span>
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center gap-x-3 gap-y-1 sticky top-0 z-10">
+        <span className="text-[14px] font-semibold text-foreground">Newsletter</span>
 
-        {count !== null && <span className="ml-auto text-[12px] text-gray-500">{count} suscriptores</span>}
+        {count !== null && <span className="ml-auto text-[12px] text-muted-foreground">{count} suscriptores</span>}
       </div>
 
       <div className="max-w-[1100px] mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Composer */}
         <div className="space-y-3">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-            <p className="text-[11px] text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+          <div className="bg-card rounded-lg border border-border p-5 space-y-3">
+            <p className="text-[11px] text-muted-foreground bg-muted/50 border border-border rounded-lg px-3 py-2">
               Tip: escribí <b>[nombre]</b> en el asunto, título o texto y se reemplaza por el nombre de cada suscriptor (ej. &quot;[nombre], llegó tu drop&quot;). En la prueba se ve con un nombre de muestra.
             </p>
             <div>
-              <label className="text-[12px] font-medium text-gray-600">Asunto del email</label>
+              <label className="text-[12px] font-medium text-muted-foreground">Asunto del email</label>
               <input className={input} value={f.subject} onChange={set('subject')} placeholder="Nuevo drop FW26 ya disponible" />
             </div>
             <div>
-              <label className="text-[12px] font-medium text-gray-600">Título</label>
+              <label className="text-[12px] font-medium text-muted-foreground">Título</label>
               <input className={input} value={f.title} onChange={set('title')} placeholder="Llegó el drop que estabas esperando" />
             </div>
             <div>
-              <label className="text-[12px] font-medium text-gray-600">Texto</label>
+              <label className="text-[12px] font-medium text-muted-foreground">Texto</label>
               <textarea className={input + ' resize-y'} rows={4} value={f.body} onChange={set('body')} placeholder="Escribí el cuerpo. Cada línea es un párrafo." />
             </div>
             <div>
-              <label className="text-[12px] font-medium text-gray-600">Imagen (opcional)</label>
+              <label className="text-[12px] font-medium text-muted-foreground">Imagen (opcional)</label>
               <div className="flex gap-2">
                 <input className={input} value={f.image} onChange={set('image')} placeholder="Pegá una URL o subí un archivo →" />
-                <label className={`px-3 py-2 rounded-lg border text-[12px] font-semibold whitespace-nowrap cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : 'border-gray-300 hover:bg-gray-50'}`}>
+                <label className={`px-3 py-2 rounded-lg border text-[12px] font-semibold whitespace-nowrap cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : 'border-border-mid hover:bg-muted/50'}`}>
                   {uploading ? 'Subiendo...' : 'Subir'}
                   <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" className="hidden"
                     onChange={e => { onUpload(e.target.files?.[0] || null); e.target.value = ''; }} />
                 </label>
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">Tip: subí un <b>GIF</b> para que el mail sea animado. Recomendado ancho ≥ 600px.</p>
+              <p className="text-[11px] text-muted-foreground/70 mt-1">Tip: subí un <b>GIF</b> para que el mail sea animado. Recomendado ancho ≥ 600px.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[12px] font-medium text-gray-600">Texto del botón</label>
+                <label className="text-[12px] font-medium text-muted-foreground">Texto del botón</label>
                 <input className={input} value={f.buttonText} onChange={set('buttonText')} />
               </div>
               <div>
-                <label className="text-[12px] font-medium text-gray-600">Link del botón</label>
+                <label className="text-[12px] font-medium text-muted-foreground">Link del botón</label>
                 <input className={input} value={f.buttonLink} onChange={set('buttonLink')} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[12px] font-medium text-gray-600">Código descuento (opcional)</label>
+                <label className="text-[12px] font-medium text-muted-foreground">Código descuento (opcional)</label>
                 <input className={input} value={f.couponCode} onChange={set('couponCode')} placeholder="HYPE15" />
               </div>
               <div>
-                <label className="text-[12px] font-medium text-gray-600">Detalle del código</label>
+                <label className="text-[12px] font-medium text-muted-foreground">Detalle del código</label>
                 <input className={input} value={f.couponDesc} onChange={set('couponDesc')} placeholder="15% off · válido 48hs" />
               </div>
             </div>
           </div>
 
           {/* Acciones */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <div className="bg-card rounded-lg border border-border p-5 space-y-3">
             <div className="flex gap-2">
               <input className={input} value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="tu@email.com (prueba)" />
               <button onClick={() => send({ test: testEmail })} disabled={!canSend || !testEmail || sending}
-                className="px-3 py-2 rounded-lg border border-gray-300 text-[12px] font-semibold whitespace-nowrap hover:bg-gray-50 disabled:opacity-50">
+                className="px-3 py-2 rounded-lg border border-border-mid text-[12px] font-semibold whitespace-nowrap hover:bg-muted/50 disabled:opacity-50">
                 Enviar prueba
               </button>
             </div>
             <div className="flex gap-2">
               <button onClick={() => send({ draft: true })} disabled={!canSend || sending}
-                className="flex-1 py-2.5 rounded-lg border border-gray-300 text-[13px] font-semibold hover:bg-gray-50 disabled:opacity-50">
+                className="flex-1 py-2.5 rounded-lg border border-border-mid text-[13px] font-semibold hover:bg-muted/50 disabled:opacity-50">
                 Guardar borrador
               </button>
               <button onClick={() => setConfirmSend(true)} disabled={!canSend || sending}
-                className="flex-1 py-2.5 rounded-lg bg-black text-white text-[13px] font-semibold hover:bg-gray-800 disabled:opacity-50">
+                className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:opacity-90 disabled:opacity-50">
                 Enviar a todos{count !== null ? ` (${count})` : ''}
               </button>
             </div>
-            {!canSend && <p className="text-[11px] text-gray-400">Completá asunto, título y texto para habilitar el envío.</p>}
+            {!canSend && <p className="text-[11px] text-muted-foreground/70">Completá asunto, título y texto para habilitar el envío.</p>}
             {msg && <p className={`text-[12px] ${msg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>{msg}</p>}
           </div>
         </div>
 
         {/* Preview */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-2 border-b border-gray-100 text-[12px] font-medium text-gray-500">Vista previa</div>
-          <iframe srcDoc={html} title="preview" className="w-full h-[640px] bg-[#f5f5f5]" />
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="px-4 py-2 border-b border-border text-[12px] font-medium text-muted-foreground">Vista previa</div>
+          <iframe srcDoc={html} title="preview" className="w-full h-[640px] bg-background" />
         </div>
       </div>
 
       {/* Confirm modal */}
       {confirmSend && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !sending && setConfirmSend(false)}>
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-[15px] font-bold text-gray-900">Enviar campaña</h3>
-            <p className="text-[13px] text-gray-500 mt-1">
+          <div className="bg-card rounded-lg shadow-lg w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-[15px] font-bold text-foreground">Enviar campaña</h3>
+            <p className="text-[13px] text-muted-foreground mt-1">
               Se enviará <b>&quot;{f.subject}&quot;</b> a <b>{count ?? '...'} suscriptores</b>. Esta acción no se puede deshacer.
             </p>
             <div className="flex gap-2 mt-5">
-              <button onClick={() => setConfirmSend(false)} disabled={sending} className="flex-1 py-2 rounded-lg border border-gray-200 text-[13px] font-medium hover:bg-gray-50 disabled:opacity-50">Volver</button>
-              <button onClick={() => send()} disabled={sending} className="flex-1 py-2 rounded-lg bg-black text-white text-[13px] font-semibold hover:bg-gray-800 disabled:opacity-50">
+              <button onClick={() => setConfirmSend(false)} disabled={sending} className="flex-1 py-2 rounded-lg border border-border text-[13px] font-medium hover:bg-muted/50 disabled:opacity-50">Volver</button>
+              <button onClick={() => send()} disabled={sending} className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:opacity-90 disabled:opacity-50">
                 {sending ? 'Enviando...' : 'Enviar ahora'}
               </button>
             </div>

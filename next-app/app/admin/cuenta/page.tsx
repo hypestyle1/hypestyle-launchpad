@@ -49,14 +49,14 @@ export default function CuentaAdminPage() {
     }
   }
 
-  const input = 'w-full border border-gray-300 rounded-md px-3 py-2.5 text-[13px] focus:outline-none focus:border-black';
+  const input = 'w-full border border-border-mid rounded-md px-3 py-2.5 text-[13px] focus:outline-none focus:border-ring';
 
   return (
     <div className="max-w-[420px] mx-auto px-4 sm:px-6 py-8">
-      <h1 className="text-[20px] font-bold tracking-tight text-gray-900">Mi cuenta</h1>
+      <h1 className="text-[20px] font-bold tracking-tight text-foreground">Mi cuenta</h1>
 
       {quien?.viaSharedKey ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mt-5">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mt-5">
           <p className="text-[12px] text-amber-900 leading-relaxed">
             Entraste con la clave compartida, que no es un perfil y no tiene contraseña propia.
             Para cambiar una contraseña, entrá con tu perfil desde{' '}
@@ -65,13 +65,13 @@ export default function CuentaAdminPage() {
         </div>
       ) : (
         <>
-          <p className="text-[13px] text-gray-500 mt-1">
+          <p className="text-[13px] text-muted-foreground mt-1">
             {quien?.role === 'owner' ? 'Acceso completo' : 'Contenido y creadores'}
           </p>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5 mt-6">
-            <h2 className="text-[14px] font-semibold text-gray-900">Cambiar contraseña</h2>
-            <p className="text-[12px] text-gray-500 mt-1 leading-relaxed">
+          <div className="bg-card rounded-lg border border-border p-5 mt-6">
+            <h2 className="text-[14px] font-semibold text-foreground">Cambiar contraseña</h2>
+            <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
               Elegí una que recuerdes. La anterior deja de funcionar en el acto.
             </p>
 
@@ -79,12 +79,12 @@ export default function CuentaAdminPage() {
               <input type="password" value={actual} onChange={e => setActual(e.target.value)} placeholder="Contraseña actual" required autoComplete="current-password" className={input} />
               <input type="password" value={nueva} onChange={e => setNueva(e.target.value)} placeholder="Contraseña nueva" required minLength={MIN} autoComplete="new-password" className={input} />
               <input type="password" value={repetir} onChange={e => setRepetir(e.target.value)} placeholder="Repetí la nueva" required minLength={MIN} autoComplete="new-password" className={input} />
-              <p className="text-[11px] text-gray-400">Al menos {MIN} caracteres.</p>
+              <p className="text-[11px] text-muted-foreground/70">Al menos {MIN} caracteres.</p>
 
               {error && <p className="text-[12px] text-red-600">{error}</p>}
               {listo && <p className="text-[12px] text-green-700">Listo, tu contraseña quedó actualizada.</p>}
 
-              <button type="submit" disabled={guardando} className="w-full bg-black text-white rounded-md py-2.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-gray-900 disabled:opacity-50 !mt-5">
+              <button type="submit" disabled={guardando} className="w-full bg-primary text-primary-foreground rounded-md py-2.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:opacity-90 disabled:opacity-50 !mt-5">
                 {guardando ? '...' : 'Guardar'}
               </button>
             </form>

@@ -47,20 +47,20 @@ export default function RotuloPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -68,18 +68,18 @@ export default function RotuloPage() {
     );
   }
 
-  if (loading) return <div className="flex items-center justify-center py-32 text-[13px] text-gray-400">Cargando rótulo...</div>;
+  if (loading) return <div className="flex items-center justify-center py-32 text-[13px] text-muted-foreground/70">Cargando rótulo...</div>;
   if (!order) return <div className="flex items-center justify-center py-32 text-[13px] text-red-500">No se pudo cargar el pedido</div>;
 
   const itemsSummary = order.items.map(i => `${i.quantity}× ${i.name}${i.size ? ` (${i.size})` : ''}`).join(' · ');
 
   return (
-    <div className="min-h-screen bg-[#e8e8e8] py-8 print:bg-white print:py-0">
+    <div className="min-h-screen bg-[#e8e8e8] py-8 print:bg-card print:py-0">
       <div className="no-print max-w-[480px] mx-auto mb-4 flex items-center justify-between px-2">
-        <a href={`/admin/pedidos/${order.id}`} className="text-[12px] text-gray-500 hover:text-black">← Volver al pedido</a>
+        <a href={`/admin/pedidos/${order.id}`} className="text-[12px] text-muted-foreground hover:text-foreground">← Volver al pedido</a>
         <button
           onClick={() => window.print()}
-          className="text-[12px] font-semibold bg-black text-white px-4 py-2 rounded-md hover:bg-gray-900"
+          className="text-[12px] font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-md hover:opacity-90"
         >
           🖨 Imprimir rótulo
         </button>
@@ -87,28 +87,28 @@ export default function RotuloPage() {
 
       {/* Rótulo — 10x15cm exactos al imprimir (ver @page abajo); en pantalla se */}
       {/* previsualiza en la misma proporción 2:3 a un tamaño más cómodo de leer. */}
-      <div className="rotulo mx-auto bg-white border-2 border-black" style={{ width: '480px', height: '720px' }}>
+      <div className="rotulo mx-auto bg-card border-2 border-foreground" style={{ width: '480px', height: '720px' }}>
         <div className="p-8 flex flex-col h-full">
-          <div className="flex items-center justify-between pb-5 border-b-2 border-black">
+          <div className="flex items-center justify-between pb-5 border-b-2 border-foreground">
             <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-10 w-auto" />
             <div className="text-right">
-              <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500">Pedido</div>
+              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground">Pedido</div>
               <div className="text-[30px] font-bold leading-none">#{order.number}</div>
             </div>
           </div>
 
           <div className="mt-6">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500 mb-1">Destinatario</div>
+            <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Destinatario</div>
             <div className="text-[28px] font-bold leading-tight">
               {order.shipping.first_name} {order.shipping.last_name}
             </div>
             {order.customer.dni && (
-              <div className="text-[17px] text-gray-700 mt-1">DNI {order.customer.dni}</div>
+              <div className="text-[17px] text-foreground/80 mt-1">DNI {order.customer.dni}</div>
             )}
           </div>
 
           <div className="mt-6">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500 mb-1">Dirección</div>
+            <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Dirección</div>
             <div className="text-[20px] leading-snug">
               {order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}
             </div>
@@ -116,25 +116,25 @@ export default function RotuloPage() {
               {order.shipping.city}, {order.shipping.state} {order.shipping.postcode ? `(${order.shipping.postcode})` : ''}
             </div>
             {order.customer.phone && (
-              <div className="text-[17px] text-gray-700 mt-1.5">Tel: {order.customer.phone}</div>
+              <div className="text-[17px] text-foreground/80 mt-1.5">Tel: {order.customer.phone}</div>
             )}
           </div>
 
           {order.viaCargoSucursal && (
-            <div className="mt-6 border-2 border-black p-4">
-              <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500 mb-1">Sucursal Via Cargo</div>
+            <div className="mt-6 border-2 border-foreground p-4">
+              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Sucursal Via Cargo</div>
               <div className="text-[22px] font-bold leading-tight">{order.viaCargoSucursal}</div>
             </div>
           )}
 
           <div className="mt-6 flex-1">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-gray-500 mb-1">Contenido</div>
-            <div className="text-[15px] text-gray-700 leading-relaxed">{itemsSummary}</div>
+            <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Contenido</div>
+            <div className="text-[15px] text-foreground/80 leading-relaxed">{itemsSummary}</div>
           </div>
 
-          <div className="pt-4 mt-auto border-t border-gray-300 flex items-center justify-between">
-            <span className="text-[13px] text-gray-400">Hypestyle · hypestyle.com.ar</span>
-            <span className="text-[13px] text-gray-400">{fmtDate(order.date)}</span>
+          <div className="pt-4 mt-auto border-t border-border-mid flex items-center justify-between">
+            <span className="text-[13px] text-muted-foreground/70">Hypestyle · hypestyle.com.ar</span>
+            <span className="text-[13px] text-muted-foreground/70">{fmtDate(order.date)}</span>
           </div>
         </div>
       </div>

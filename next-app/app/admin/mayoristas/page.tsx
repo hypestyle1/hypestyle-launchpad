@@ -101,7 +101,7 @@ function SortableTh({ label, sortKey, current, dir, onClick, align = 'left' }: {
   const active = current === sortKey;
   return (
     <th className={`px-4 py-2.5 ${align === 'right' ? 'text-right' : 'text-left'}`}>
-      <button onClick={() => onClick(sortKey)} className={`inline-flex items-center gap-0.5 hover:text-black transition-colors ${active ? 'text-black' : ''}`}>
+      <button onClick={() => onClick(sortKey)} className={`inline-flex items-center gap-0.5 hover:text-foreground transition-colors ${active ? 'text-foreground' : ''}`}>
         {label}
         <span className="text-[9px]">{active ? (dir === 'desc' ? '▼' : '▲') : ''}</span>
       </button>
@@ -342,20 +342,20 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -365,13 +365,13 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
 
   return (
     <div className="">
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[14px] font-semibold text-gray-900">Clientes mayoristas</span>
+          <span className="text-[14px] font-semibold text-foreground">Clientes mayoristas</span>
         </div>
         <button
           onClick={() => setShowForm(s => !s)}
-          className="text-[12px] font-semibold bg-black text-white px-3 py-1.5 rounded-md hover:bg-gray-900"
+          className="text-[12px] font-semibold bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:opacity-90"
         >
           {showForm ? 'Cerrar' : '+ Nuevo cliente'}
         </button>
@@ -381,7 +381,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
         {/* Estado del acceso. El login estuvo caído una semana sin que se notara
             desde acá — este cartel existe para que no vuelva a pasar. */}
         {health && !health.ok && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-5 mb-6">
             <p className="text-[13px] font-semibold text-red-800">El acceso mayorista tiene problemas</p>
             <ul className="mt-2 space-y-1">
               {health.checks.filter(c => !c.ok).map(c => (
@@ -396,7 +396,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
           </div>
         )}
         {health?.ok && (
-          <p className="text-[11px] text-gray-400 mb-4">
+          <p className="text-[11px] text-muted-foreground/70 mb-4">
             Acceso mayorista operativo — sesión, WordPress y mails verificados.
           </p>
         )}
@@ -404,27 +404,27 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
         {/* Solicitudes que llegaron del formulario público. Van arriba de todo:
             cada una es un comercio esperando respuesta. */}
         {pendientes.length > 0 && (
-          <div className="bg-white rounded-xl border-2 border-amber-300 p-5 mb-6">
-            <p className="text-[13px] font-semibold text-gray-900">
+          <div className="bg-card rounded-lg border-2 border-amber-300 p-5 mb-6">
+            <p className="text-[13px] font-semibold text-foreground">
               {pendientes.length} solicitud{pendientes.length !== 1 ? 'es' : ''} esperando aprobación
             </p>
-            <p className="text-[12px] text-gray-500 mt-0.5">
+            <p className="text-[12px] text-muted-foreground mt-0.5">
               Ya cargaron sus datos y eligieron su contraseña. Al aprobar les llega el aviso de que pueden entrar.
             </p>
             <div className="mt-4 space-y-2">
               {pendientes.map(m => (
-                <div key={m.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-between border border-gray-200 rounded-lg px-4 py-3">
+                <div key={m.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-between border border-border rounded-lg px-4 py-3">
                   <div className="min-w-[180px]">
-                    <p className="text-[13px] font-semibold text-gray-900">{m.company || m.name}</p>
-                    <p className="text-[11px] text-gray-500">
+                    <p className="text-[13px] font-semibold text-foreground">{m.company || m.name}</p>
+                    <p className="text-[11px] text-muted-foreground">
                       {[m.name, m.city].filter(Boolean).join(' · ')}
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-[11px] text-muted-foreground/70 mt-0.5">
                       {[m.cuit ? `CUIT ${m.cuit}` : '', m.instagram ? `@${m.instagram}` : '', m.modalidad, m.localFisico ? 'con local' : 'sin local'].filter(Boolean).join(' · ')}
                     </p>
                   </div>
-                  <div className="text-[11px] text-gray-500">
-                    <a href={`mailto:${m.email}`} className="hover:text-black block">{m.email}</a>
+                  <div className="text-[11px] text-muted-foreground">
+                    <a href={`mailto:${m.email}`} className="hover:text-foreground block">{m.email}</a>
                     {m.phone && (
                       <a href={waLink(m.phone, m.name)} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:text-green-700">
                         WhatsApp
@@ -435,14 +435,14 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                     <button
                       onClick={() => decidirSolicitud(m, true)}
                       disabled={decidingId === m.id}
-                      className="text-[11px] font-semibold bg-black text-white px-3.5 py-1.5 rounded-md hover:bg-gray-900 disabled:opacity-40"
+                      className="text-[11px] font-semibold bg-primary text-primary-foreground px-3.5 py-1.5 rounded-md hover:opacity-90 disabled:opacity-40"
                     >
                       {decidingId === m.id ? '...' : 'Aprobar'}
                     </button>
                     <button
                       onClick={() => decidirSolicitud(m, false)}
                       disabled={decidingId === m.id}
-                      className="text-[11px] font-semibold text-gray-500 px-2.5 py-1.5 border border-gray-300 rounded-md hover:text-black disabled:opacity-40"
+                      className="text-[11px] font-semibold text-muted-foreground px-2.5 py-1.5 border border-border-mid rounded-md hover:text-foreground disabled:opacity-40"
                     >
                       Rechazar
                     </button>
@@ -454,96 +454,96 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
         )}
 
         {incompleto && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6">
             <p className="text-[12px] text-amber-800">
               WordPress cortó la lectura de pedidos, así que los totales de abajo están incompletos. Recargá en un momento.
             </p>
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-          <p className="text-[13px] font-semibold text-gray-900">Pedido mínimo general</p>
-          <p className="text-[12px] text-gray-500 mt-0.5">Se aplica a todos los clientes salvo que tengan un mínimo propio cargado al crearlos.</p>
+        <div className="bg-card rounded-lg border border-border p-5 mb-6">
+          <p className="text-[13px] font-semibold text-foreground">Pedido mínimo general</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">Se aplica a todos los clientes salvo que tengan un mínimo propio cargado al crearlos.</p>
           <div className="flex gap-2 mt-3 max-w-xs">
             <input
               type="number"
               min={0}
               value={globalMinInput}
               onChange={e => setGlobalMinInput(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black"
+              className="flex-1 border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring"
             />
             <button
               onClick={saveGlobalMin}
               disabled={savingMin || globalMinInput === String(globalMin)}
-              className="text-[12px] font-semibold bg-black text-white px-4 rounded-md hover:bg-gray-900 disabled:opacity-40"
+              className="text-[12px] font-semibold bg-primary text-primary-foreground px-4 rounded-md hover:opacity-90 disabled:opacity-40"
             >
               {savingMin ? 'Guardando…' : 'Guardar'}
             </button>
           </div>
-          {globalMin != null && <p className="text-[11px] text-gray-400 mt-2">Actual: ${globalMin.toLocaleString('es-AR')}</p>}
+          {globalMin != null && <p className="text-[11px] text-muted-foreground/70 mt-2">Actual: ${globalMin.toLocaleString('es-AR')}</p>}
         </div>
 
         {showForm && (
           <div className="mb-6">
             {created && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 text-[13px]">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-[13px]">
                 <p className="font-semibold text-green-800">Cliente creado ✓</p>
                 <p className="text-green-700 mt-1">Pasale estos datos para que entre a <code>/mayoristas</code>:</p>
-                <p className="mt-2 font-mono text-[12px] bg-white border border-green-200 rounded px-2 py-1">usuario: {created.email}</p>
-                <p className="font-mono text-[12px] bg-white border border-green-200 rounded px-2 py-1 mt-1">contraseña: {created.password}</p>
+                <p className="mt-2 font-mono text-[12px] bg-card border border-green-200 rounded px-2 py-1">usuario: {created.email}</p>
+                <p className="font-mono text-[12px] bg-card border border-green-200 rounded px-2 py-1 mt-1">contraseña: {created.password}</p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-5 space-y-3 max-w-lg">
+            <form onSubmit={handleSubmit} className="bg-card rounded-lg border border-border p-5 space-y-3 max-w-lg">
               <div className="grid grid-cols-2 gap-3">
-                <label className="col-span-2 text-[11px] font-medium text-gray-500">
+                <label className="col-span-2 text-[11px] font-medium text-muted-foreground">
                   Email (es el usuario de login)
-                  <input type="email" required {...field('email')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input type="email" required {...field('email')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="col-span-2 text-[11px] font-medium text-gray-500">
+                <label className="col-span-2 text-[11px] font-medium text-muted-foreground">
                   Contraseña
                   <div className="flex gap-2 mt-1">
-                    <input type="text" required {...field('password')} className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black font-mono" />
-                    <button type="button" onClick={() => setForm(f => ({ ...f, password: randomPassword() }))} className="text-[12px] text-gray-500 hover:text-black px-2 border border-gray-300 rounded-md">
+                    <input type="text" required {...field('password')} className="flex-1 border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring font-mono" />
+                    <button type="button" onClick={() => setForm(f => ({ ...f, password: randomPassword() }))} className="text-[12px] text-muted-foreground hover:text-foreground px-2 border border-border-mid rounded-md">
                       Generar
                     </button>
                   </div>
                 </label>
-                <label className="text-[11px] font-medium text-gray-500">
+                <label className="text-[11px] font-medium text-muted-foreground">
                   Nombre
-                  <input required {...field('first_name')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input required {...field('first_name')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="text-[11px] font-medium text-gray-500">
+                <label className="text-[11px] font-medium text-muted-foreground">
                   Apellido
-                  <input {...field('last_name')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input {...field('last_name')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="col-span-2 text-[11px] font-medium text-gray-500">
+                <label className="col-span-2 text-[11px] font-medium text-muted-foreground">
                   Local / empresa
-                  <input {...field('company')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input {...field('company')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="col-span-2 text-[11px] font-medium text-gray-500">
-                  Dirección <span className="normal-case text-gray-400">(opcional — se la pide el sitio al cliente en su primer pedido)</span>
-                  <input {...field('address_1')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                <label className="col-span-2 text-[11px] font-medium text-muted-foreground">
+                  Dirección <span className="normal-case text-muted-foreground/70">(opcional — se la pide el sitio al cliente en su primer pedido)</span>
+                  <input {...field('address_1')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="text-[11px] font-medium text-gray-500">
+                <label className="text-[11px] font-medium text-muted-foreground">
                   Ciudad
-                  <input {...field('city')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input {...field('city')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="text-[11px] font-medium text-gray-500">
+                <label className="text-[11px] font-medium text-muted-foreground">
                   Provincia
-                  <input {...field('state')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input {...field('state')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="text-[11px] font-medium text-gray-500">
+                <label className="text-[11px] font-medium text-muted-foreground">
                   CP
-                  <input {...field('postcode')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input {...field('postcode')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="text-[11px] font-medium text-gray-500">
+                <label className="text-[11px] font-medium text-muted-foreground">
                   Teléfono
-                  <input required {...field('phone')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input required {...field('phone')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
-                <label className="col-span-2 text-[11px] font-medium text-gray-500">
+                <label className="col-span-2 text-[11px] font-medium text-muted-foreground">
                   Mínimo de pedido para este cliente (opcional)
-                  <input type="number" min={0} placeholder={globalMin != null ? `Vacío = usa el general ($${globalMin.toLocaleString('es-AR')})` : 'Vacío = usa el general'} {...field('min_order')} className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-black" />
+                  <input type="number" min={0} placeholder={globalMin != null ? `Vacío = usa el general ($${globalMin.toLocaleString('es-AR')})` : 'Vacío = usa el general'} {...field('min_order')} className="mt-1 w-full border border-border-mid rounded-md px-3 py-2 text-[13px] focus:outline-none focus:border-ring" />
                 </label>
               </div>
 
@@ -552,7 +552,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full bg-black text-white rounded-md py-2.5 text-[13px] font-semibold hover:bg-gray-900 disabled:opacity-50"
+                className="w-full bg-primary text-primary-foreground rounded-md py-2.5 text-[13px] font-semibold hover:opacity-90 disabled:opacity-50"
               >
                 {saving ? 'Creando…' : 'Crear cliente mayorista'}
               </button>
@@ -560,11 +560,11 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
+        <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <p className="text-[13px] font-semibold text-gray-900">{visibleMayoristas.length} cliente{visibleMayoristas.length !== 1 ? 's' : ''}</p>
-              {loadingList && <span className="text-[11px] text-gray-400">Actualizando…</span>}
+              <p className="text-[13px] font-semibold text-foreground">{visibleMayoristas.length} cliente{visibleMayoristas.length !== 1 ? 's' : ''}</p>
+              {loadingList && <span className="text-[11px] text-muted-foreground/70">Actualizando…</span>}
             </div>
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
@@ -573,7 +573,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                     key={f}
                     onClick={() => setFilterMode(f)}
                     className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
-                      filterMode === f ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                      filterMode === f ? 'bg-primary text-primary-foreground border-foreground' : 'border-border text-muted-foreground hover:border-border-mid'
                     }`}
                   >
                     {FILTER_LABELS[f]}
@@ -583,7 +583,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
               <button
                 onClick={() => downloadCsv(visibleMayoristas)}
                 disabled={visibleMayoristas.length === 0}
-                className="text-[11px] font-semibold text-gray-600 hover:text-black px-2.5 py-1 border border-gray-300 rounded-full disabled:opacity-30"
+                className="text-[11px] font-semibold text-muted-foreground hover:text-foreground px-2.5 py-1 border border-border-mid rounded-full disabled:opacity-30"
               >
                 ⬇ Exportar CSV
               </button>
@@ -591,14 +591,14 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
           </div>
 
           {visibleMayoristas.length === 0 && !loadingList ? (
-            <p className="text-center py-12 text-[13px] text-gray-400">
+            <p className="text-center py-12 text-[13px] text-muted-foreground/70">
               {mayoristas.length === 0 ? 'Todavía no creaste ningún cliente.' : 'Nadie coincide con este filtro.'}
             </p>
           ) : (
             <div className="lg:overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead className="hidden lg:table-header-group">
-                  <tr className="bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                  <tr className="bg-muted/50 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     <SortableTh label="Cliente" sortKey="name" current={sortKey} dir={sortDir} onClick={toggleSort} />
                     <th className="text-left px-4 py-2.5">Contacto</th>
                     <th className="text-left px-4 py-2.5">Ciudad</th>
@@ -613,47 +613,47 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                 </thead>
                 <tbody>
                   {visibleMayoristas.map((m) => (
-                    <tr key={m.id} className="block lg:table-row border border-gray-200 rounded-lg mb-3 p-3 lg:p-0 lg:mb-0 lg:border-0 lg:border-t lg:border-gray-50">
-                      <td data-label="Cliente" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
-                        <p className="font-medium text-gray-900">{m.company || m.name}</p>
-                        {m.company && <p className="text-[11px] text-gray-400">{m.name}</p>}
-                        <p className="text-[10px] text-gray-400">desde {fmtDate(m.createdAt)}</p>
+                    <tr key={m.id} className="block lg:table-row border border-border rounded-lg mb-3 p-3 lg:p-0 lg:mb-0 lg:border-0 lg:border-t lg:border-border">
+                      <td data-label="Cliente" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden">
+                        <p className="font-medium text-foreground">{m.company || m.name}</p>
+                        {m.company && <p className="text-[11px] text-muted-foreground/70">{m.name}</p>}
+                        <p className="text-[10px] text-muted-foreground/70">desde {fmtDate(m.createdAt)}</p>
                       </td>
-                      <td data-label="Contacto" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
-                        <a href={`mailto:${m.email}`} className="block text-[12px] text-gray-600 hover:text-black truncate max-w-[180px]">{m.email}</a>
+                      <td data-label="Contacto" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden">
+                        <a href={`mailto:${m.email}`} className="block text-[12px] text-muted-foreground hover:text-foreground truncate max-w-[180px]">{m.email}</a>
                         {m.phone && (
                           <a href={waLink(m.phone, m.name)} target="_blank" rel="noopener noreferrer" className="text-[12px] text-green-600 hover:text-green-700">
                             WhatsApp
                           </a>
                         )}
                       </td>
-                      <td data-label="Ciudad" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden text-gray-600">{m.city}</td>
-                      <td data-label="Pedidos" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden text-right font-medium">
+                      <td data-label="Ciudad" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden text-muted-foreground">{m.city}</td>
+                      <td data-label="Pedidos" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden text-right font-medium">
                         {m.orderCount}
-                        {m.lastOrderAt && <p className="text-[10px] text-gray-400 font-normal">{fmtRelative(m.lastOrderAt)}</p>}
+                        {m.lastOrderAt && <p className="text-[10px] text-muted-foreground/70 font-normal">{fmtRelative(m.lastOrderAt)}</p>}
                       </td>
-                      <td data-label="Total pagado" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden text-right font-medium">{fmt(m.totalSpent)}</td>
-                      <td data-label="Sin pagar" className="px-1 py-1.5 lg:px-4 lg:py-3 text-right block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
+                      <td data-label="Total pagado" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden text-right font-medium">{fmt(m.totalSpent)}</td>
+                      <td data-label="Sin pagar" className="px-1 py-1.5 lg:px-4 lg:py-3 text-right block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden">
                         {m.pendingCount > 0 ? (
                           <>
                             <span className="text-amber-700 font-medium">{fmt(m.pendingTotal)}</span>
-                            <p className="text-[10px] text-gray-400 font-normal">{m.pendingCount} pedido{m.pendingCount !== 1 ? 's' : ''}</p>
+                            <p className="text-[10px] text-muted-foreground/70 font-normal">{m.pendingCount} pedido{m.pendingCount !== 1 ? 's' : ''}</p>
                           </>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-muted-foreground/50">—</span>
                         )}
                       </td>
-                      <td data-label="Último ingreso" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
+                      <td data-label="Último ingreso" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden">
                         {m.loginCount > 0 ? (
                           <>
-                            <p className="text-gray-700">{fmtRelative(m.lastLogin)}</p>
-                            <p className="text-[10px] text-gray-400">{m.loginCount} ingreso{m.loginCount !== 1 ? 's' : ''}</p>
+                            <p className="text-foreground/80">{fmtRelative(m.lastLogin)}</p>
+                            <p className="text-[10px] text-muted-foreground/70">{m.loginCount} ingreso{m.loginCount !== 1 ? 's' : ''}</p>
                           </>
                         ) : (
-                          <span className="text-[11px] text-gray-400">nunca entró</span>
+                          <span className="text-[11px] text-muted-foreground/70">nunca entró</span>
                         )}
                       </td>
-                      <td data-label="Mínimo propio" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
+                      <td data-label="Mínimo propio" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden">
                         <div className="flex items-center gap-1.5">
                           <input
                             type="number"
@@ -661,18 +661,18 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                             value={minInputs[m.id] ?? ''}
                             onChange={e => setMinInputs(prev => ({ ...prev, [m.id]: e.target.value }))}
                             placeholder={globalMin != null ? `general ($${globalMin.toLocaleString('es-AR')})` : 'general'}
-                            className="w-32 border border-gray-300 rounded-md px-2 py-1 text-[12px] focus:outline-none focus:border-black"
+                            className="w-32 border border-border-mid rounded-md px-2 py-1 text-[12px] focus:outline-none focus:border-ring"
                           />
                           <button
                             onClick={() => saveClientMin(m)}
                             disabled={savingMinId === m.id || (minInputs[m.id] ?? '') === (m.minOrderOverride ?? '')}
-                            className="text-[11px] font-semibold text-gray-500 hover:text-black px-2 py-1 border border-gray-300 rounded-md disabled:opacity-30"
+                            className="text-[11px] font-semibold text-muted-foreground hover:text-foreground px-2 py-1 border border-border-mid rounded-md disabled:opacity-30"
                           >
                             {savingMinId === m.id ? '...' : 'Guardar'}
                           </button>
                         </div>
                       </td>
-                      <td data-label="Estado" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-gray-400 before:mb-0.5 lg:before:hidden">
+                      <td data-label="Estado" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden">
                         <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${m.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                           {m.active ? 'Activo' : 'Revocado'}
                         </span>
@@ -683,7 +683,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                             onClick={() => resetPasswordFor(m)}
                             disabled={resettingId === m.id}
                             title="Genera una contraseña nueva sin tocar el historial ni el acceso mayorista"
-                            className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 hover:text-black disabled:opacity-40"
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-border-mid text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
                           >
                             {resettingId === m.id ? '...' : 'Nueva clave'}
                           </button>
@@ -700,7 +700,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                         {resetPassword?.id === m.id && (
                           <div className="mt-2 text-left bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
                             <p className="text-[10px] text-amber-800 font-semibold uppercase tracking-wide">Contraseña nueva</p>
-                            <p className="font-mono text-[12px] text-gray-900 break-all">{resetPassword.password}</p>
+                            <p className="font-mono text-[12px] text-foreground break-all">{resetPassword.password}</p>
                             <p className="text-[10px] text-amber-700 mt-0.5">
                               {resetPassword.emailSent
                                 ? `Se la mandamos por mail a ${resetPassword.email}.`
@@ -708,7 +708,7 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                             </p>
                             <button
                               onClick={() => { navigator.clipboard?.writeText(resetPassword.password); }}
-                              className="text-[10px] font-semibold text-amber-800 hover:text-black underline mt-1"
+                              className="text-[10px] font-semibold text-amber-800 hover:text-foreground underline mt-1"
                             >
                               Copiar
                             </button>

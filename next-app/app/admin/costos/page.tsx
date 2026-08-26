@@ -187,20 +187,20 @@ export default function CostosPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -211,17 +211,17 @@ export default function CostosPage() {
   return (
     <div className="">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[14px] font-semibold text-gray-900">Costos</span>
+          <span className="text-[14px] font-semibold text-foreground">Costos</span>
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[12px] text-gray-500 font-medium">
+          <span className="text-[12px] text-muted-foreground font-medium">
             {assignedCount} de {products.length} productos con costo asignado
           </span>
           <button
             onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
-            className="text-[11px] text-gray-400 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
+            className="text-[11px] text-muted-foreground/70 hover:text-foreground/80 px-2 py-1 rounded hover:bg-muted"
           >
             Salir
           </button>
@@ -230,15 +230,15 @@ export default function CostosPage() {
 
       <div className="max-w-[1280px] mx-auto px-4 py-5 space-y-5">
         {loading ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">Cargando...</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando...</div>
         ) : (
           <>
             {/* Perfiles de costo */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="bg-card rounded-lg border border-border p-5">
               <div className="flex items-center justify-between mb-1">
                 <div>
-                  <h2 className="text-[14px] font-semibold text-gray-900">Perfiles de costo</h2>
-                  <p className="text-[12px] text-gray-400 mt-0.5">
+                  <h2 className="text-[14px] font-semibold text-foreground">Perfiles de costo</h2>
+                  <p className="text-[12px] text-muted-foreground/70 mt-0.5">
                     Costo de fabricación por tela/construcción — un perfil cubre todos los productos que salen de esa misma tela, sin importar el diseño.
                   </p>
                 </div>
@@ -246,14 +246,14 @@ export default function CostosPage() {
                   {profilesMsg && <span className={`text-[11px] ${profilesMsg.startsWith('✓') ? 'text-green-600' : 'text-red-500'}`}>{profilesMsg}</span>}
                   <button
                     onClick={addProfile}
-                    className="text-[12px] font-medium px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-400 text-gray-700"
+                    className="text-[12px] font-medium px-3 py-1.5 rounded-lg border border-border hover:border-border-mid text-foreground/80"
                   >
                     + Nuevo perfil
                   </button>
                   <button
                     onClick={saveProfiles}
                     disabled={savingProfiles}
-                    className="text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-black text-white hover:bg-gray-800 disabled:opacity-50"
+                    className="text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
                   >
                     {savingProfiles ? 'Guardando...' : 'Guardar cambios'}
                   </button>
@@ -262,16 +262,16 @@ export default function CostosPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-4">
                 {profiles.map(profile => (
-                  <div key={profile.id} className="border border-gray-200 rounded-lg p-3">
+                  <div key={profile.id} className="border border-border rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <input
                         value={profile.name}
                         onChange={e => updateProfileField(profile.id, 'name', e.target.value, false)}
-                        className="flex-1 text-[13px] font-semibold text-gray-900 border-0 border-b border-transparent hover:border-gray-200 focus:border-gray-400 focus:outline-none px-0 py-0.5"
+                        className="flex-1 text-[13px] font-semibold text-foreground border-0 border-b border-transparent hover:border-border focus:border-border-mid focus:outline-none px-0 py-0.5"
                       />
                       <button
                         onClick={() => removeProfile(profile.id)}
-                        className="text-gray-300 hover:text-red-500 flex-none"
+                        className="text-muted-foreground/50 hover:text-red-500 flex-none"
                         title="Eliminar perfil"
                       >
                         <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -281,25 +281,25 @@ export default function CostosPage() {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {COMPONENT_FIELDS.map(f => (
-                        <label key={f.key} className="text-[10.5px] text-gray-400">
+                        <label key={f.key} className="text-[10.5px] text-muted-foreground/70">
                           {f.label}
                           <input
                             type="number"
                             value={profile.components[f.key] ?? 0}
                             onChange={e => updateProfileField(profile.id, f.key, e.target.value, true)}
-                            className="block w-full mt-0.5 border border-gray-200 rounded px-1.5 py-1 text-[12px] text-gray-800 focus:outline-none focus:border-gray-400"
+                            className="block w-full mt-0.5 border border-border rounded px-1.5 py-1 text-[12px] text-foreground focus:outline-none focus:border-border-mid"
                           />
                         </label>
                       ))}
                     </div>
-                    <div className="flex items-baseline justify-between mt-2 pt-2 border-t border-gray-100">
-                      <span className="text-[11px] text-gray-400">Costo unitario</span>
-                      <span className="text-[14px] font-bold text-gray-900">{fmt(sumComponents(profile.components))}</span>
+                    <div className="flex items-baseline justify-between mt-2 pt-2 border-t border-border">
+                      <span className="text-[11px] text-muted-foreground/70">Costo unitario</span>
+                      <span className="text-[14px] font-bold text-foreground">{fmt(sumComponents(profile.components))}</span>
                     </div>
                   </div>
                 ))}
                 {profiles.length === 0 && (
-                  <div className="text-[12px] text-gray-400 col-span-full text-center py-6">
+                  <div className="text-[12px] text-muted-foreground/70 col-span-full text-center py-6">
                     No hay perfiles todavía. Creá el primero con &quot;+ Nuevo perfil&quot;.
                   </div>
                 )}
@@ -307,21 +307,21 @@ export default function CostosPage() {
             </div>
 
             {/* Productos */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                <h2 className="text-[14px] font-semibold text-gray-900">Productos</h2>
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
+              <div className="px-5 py-3 border-b border-border flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <h2 className="text-[14px] font-semibold text-foreground">Productos</h2>
                 <div className="flex flex-wrap gap-2">
                   <input
                     type="text"
                     placeholder="Buscar producto..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400 w-full sm:w-[160px]"
+                    className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid w-full sm:w-[160px]"
                   />
                   <select
                     value={categoryFilter}
                     onChange={e => setCategoryFilter(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                    className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
                   >
                     <option value="all">Todas las categorías</option>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -329,7 +329,7 @@ export default function CostosPage() {
                   <button
                     onClick={() => setOnlyUnassigned(v => !v)}
                     className={`text-[12px] font-medium px-2.5 py-1.5 rounded-lg border ${
-                      onlyUnassigned ? 'bg-red-50 border-red-300 text-red-700' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                      onlyUnassigned ? 'bg-red-50 border-red-300 text-red-700' : 'border-border text-muted-foreground hover:border-border-mid'
                     }`}
                   >
                     Solo sin costo
@@ -339,12 +339,12 @@ export default function CostosPage() {
 
               {/* Bulk bar */}
               {selected.size > 0 && (
-                <div className="flex items-center gap-3 px-5 py-2.5 bg-black text-white">
+                <div className="flex items-center gap-3 px-5 py-2.5 bg-primary text-primary-foreground">
                   <span className="text-[13px] font-medium">{selected.size} seleccionado{selected.size > 1 ? 's' : ''}</span>
                   <select
                     value={bulkProfileId}
                     onChange={e => setBulkProfileId(e.target.value)}
-                    className="text-[12px] bg-white text-black rounded px-2 py-1 focus:outline-none"
+                    className="text-[12px] bg-card text-foreground rounded px-2 py-1 focus:outline-none"
                   >
                     <option value="">Asignar perfil...</option>
                     {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -352,29 +352,29 @@ export default function CostosPage() {
                   <button
                     onClick={applyBulk}
                     disabled={!bulkProfileId || bulkSaving}
-                    className="text-[12px] font-semibold bg-white text-black px-3 py-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                    className="text-[12px] font-semibold bg-card text-foreground px-3 py-1 rounded hover:bg-muted disabled:opacity-50"
                   >
                     {bulkSaving ? 'Aplicando...' : 'Aplicar'}
                   </button>
-                  {bulkMsg && <span className="text-[11px] text-gray-200">{bulkMsg}</span>}
-                  <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-gray-400 hover:text-white">
+                  {bulkMsg && <span className="text-[11px] text-muted-foreground/40">{bulkMsg}</span>}
+                  <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-primary-foreground/70 hover:text-primary-foreground">
                     Cancelar
                   </button>
                 </div>
               )}
 
               {/* Table header */}
-              <div className="hidden lg:grid grid-cols-[32px_60px_1.5fr_100px_80px_1fr_90px_70px] gap-3 px-4 py-2 border-b border-gray-100 bg-gray-50">
+              <div className="hidden lg:grid grid-cols-[32px_60px_1.5fr_100px_80px_1fr_90px_70px] gap-3 px-4 py-2 border-b border-border bg-muted/50">
                 <div>
-                  <input type="checkbox" checked={selected.size > 0 && selected.size === visibleProducts.length} onChange={toggleSelectAll} className="rounded border-gray-300 cursor-pointer" />
+                  <input type="checkbox" checked={selected.size > 0 && selected.size === visibleProducts.length} onChange={toggleSelectAll} className="rounded border-border-mid cursor-pointer" />
                 </div>
                 <div />
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Producto</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Categoría</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Precio</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Perfil de costo</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Margen $</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Margen %</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Producto</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Categoría</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Precio</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Perfil de costo</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Margen $</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Margen %</div>
               </div>
 
               {visibleProducts.map(product => {
@@ -385,33 +385,33 @@ export default function CostosPage() {
                 return (
                   <div
                     key={product.id}
-                    className={`grid grid-cols-[24px_40px_1fr_auto] gap-x-3 gap-y-1 lg:gap-y-3 lg:grid-cols-[32px_60px_1.5fr_100px_80px_1fr_90px_70px] px-4 py-2.5 items-center border-b border-gray-50 hover:bg-gray-50 ${
+                    className={`grid grid-cols-[24px_40px_1fr_auto] gap-x-3 gap-y-1 lg:gap-y-3 lg:grid-cols-[32px_60px_1.5fr_100px_80px_1fr_90px_70px] px-4 py-2.5 items-center border-b border-border hover:bg-muted/50 ${
                       !product.profileId ? 'bg-amber-50/40' : ''
                     }`}
                   >
-                    <input type="checkbox" checked={selected.has(product.id)} onChange={() => toggleSelect(product.id)} className="rounded border-gray-300 cursor-pointer col-start-1 row-start-1 lg:col-start-auto lg:row-start-auto" />
+                    <input type="checkbox" checked={selected.has(product.id)} onChange={() => toggleSelect(product.id)} className="rounded border-border-mid cursor-pointer col-start-1 row-start-1 lg:col-start-auto lg:row-start-auto" />
                     {product.image ? (
-                      <img src={product.image} alt="" className="w-9 h-9 rounded-md object-cover border border-gray-100 col-start-2 row-start-1 row-span-2 lg:row-span-1 lg:col-start-auto lg:row-start-auto" />
+                      <img src={product.image} alt="" className="w-9 h-9 rounded-md object-cover border border-border col-start-2 row-start-1 row-span-2 lg:row-span-1 lg:col-start-auto lg:row-start-auto" />
                     ) : (
-                      <div className="w-9 h-9 rounded-md bg-gray-100 col-start-2 row-start-1 row-span-2 lg:row-span-1 lg:col-start-auto lg:row-start-auto" />
+                      <div className="w-9 h-9 rounded-md bg-muted col-start-2 row-start-1 row-span-2 lg:row-span-1 lg:col-start-auto lg:row-start-auto" />
                     )}
-                    <div className="text-[12.5px] font-medium text-gray-900 truncate col-start-3 row-start-1 lg:col-start-auto lg:row-start-auto">{product.name}</div>
-                    <div className="text-[11px] text-gray-500 truncate col-start-3 col-span-2 row-start-2 lg:col-span-1 lg:col-start-auto lg:row-start-auto">{product.categories.join(', ')}</div>
-                    <div className="text-[12.5px] text-gray-700 text-right col-start-4 row-start-1 lg:col-start-auto lg:row-start-auto">{fmt(product.price)}</div>
+                    <div className="text-[12.5px] font-medium text-foreground truncate col-start-3 row-start-1 lg:col-start-auto lg:row-start-auto">{product.name}</div>
+                    <div className="text-[11px] text-muted-foreground truncate col-start-3 col-span-2 row-start-2 lg:col-span-1 lg:col-start-auto lg:row-start-auto">{product.categories.join(', ')}</div>
+                    <div className="text-[12.5px] text-foreground/80 text-right col-start-4 row-start-1 lg:col-start-auto lg:row-start-auto">{fmt(product.price)}</div>
                     <select
                       value={product.profileId}
                       onChange={e => onRowProfileChange(product.id, e.target.value)}
                       className={`text-[12px] rounded-lg px-2 py-1 border focus:outline-none col-start-3 col-span-2 row-start-3 lg:col-span-1 lg:col-start-auto lg:row-start-auto ${
-                        product.profileId ? 'border-gray-200 text-gray-800' : 'border-amber-300 text-amber-700 font-medium'
+                        product.profileId ? 'border-border text-foreground' : 'border-amber-300 text-amber-700 font-medium'
                       }`}
                     >
                       <option value="">Sin asignar</option>
                       {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
-                    <div className={`text-[12.5px] text-right font-medium col-start-3 row-start-4 lg:col-start-auto lg:row-start-auto ${margin === null ? 'text-gray-300' : margin < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                    <div className={`text-[12.5px] text-right font-medium col-start-3 row-start-4 lg:col-start-auto lg:row-start-auto ${margin === null ? 'text-muted-foreground/50' : margin < 0 ? 'text-red-600' : 'text-foreground'}`}>
                       {margin === null ? '—' : fmt(margin)}
                     </div>
-                    <div className={`text-[12.5px] text-right font-medium col-start-4 row-start-4 lg:col-start-auto lg:row-start-auto ${marginPct === null ? 'text-gray-300' : marginPct < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                    <div className={`text-[12.5px] text-right font-medium col-start-4 row-start-4 lg:col-start-auto lg:row-start-auto ${marginPct === null ? 'text-muted-foreground/50' : marginPct < 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
                       {marginPct === null ? '—' : `${marginPct.toFixed(0)}%`}
                     </div>
                   </div>
@@ -419,7 +419,7 @@ export default function CostosPage() {
               })}
 
               {visibleProducts.length === 0 && (
-                <div className="text-center py-16 text-[13px] text-gray-400">No hay productos que coincidan con el filtro.</div>
+                <div className="text-center py-16 text-[13px] text-muted-foreground/70">No hay productos que coincidan con el filtro.</div>
               )}
             </div>
           </>

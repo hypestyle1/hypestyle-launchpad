@@ -53,18 +53,18 @@ function Formulario() {
     }
   }
 
-  const input = 'w-full border border-gray-300 rounded-md px-3 py-2.5 text-[13px] focus:outline-none focus:border-black';
+  const input = 'w-full border border-border-mid rounded-md px-3 py-2.5 text-[13px] focus:outline-none focus:border-ring';
 
-  if (verificando) return <p className="text-[13px] text-gray-500 text-center py-6">Verificando el link...</p>;
+  if (verificando) return <p className="text-[13px] text-muted-foreground text-center py-6">Verificando el link...</p>;
 
   if (!valido) {
     return (
       <div className="text-center py-2">
-        <p className="text-[14px] font-semibold text-gray-900 mb-2">Este link ya no sirve</p>
-        <p className="text-[13px] text-gray-500 leading-relaxed mb-6">
+        <p className="text-[14px] font-semibold text-foreground mb-2">Este link ya no sirve</p>
+        <p className="text-[13px] text-muted-foreground leading-relaxed mb-6">
           Los links de recuperación valen 2 horas y se usan una sola vez. Pedí uno nuevo desde el ingreso.
         </p>
-        <Link href="/admin/login" className="inline-block bg-black text-white rounded-md py-2.5 px-6 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-gray-900">
+        <Link href="/admin/login" className="inline-block bg-primary text-primary-foreground rounded-md py-2.5 px-6 text-[12px] font-bold uppercase tracking-[0.1em] hover:opacity-90">
           Volver al ingreso
         </Link>
       </div>
@@ -74,20 +74,20 @@ function Formulario() {
   if (listo) {
     return (
       <div className="text-center py-2">
-        <p className="text-[14px] font-semibold text-gray-900 mb-2">Listo</p>
-        <p className="text-[13px] text-gray-500">Tu contraseña quedó actualizada. Te llevamos al ingreso.</p>
+        <p className="text-[14px] font-semibold text-foreground mb-2">Listo</p>
+        <p className="text-[13px] text-muted-foreground">Tu contraseña quedó actualizada. Te llevamos al ingreso.</p>
       </div>
     );
   }
 
   return (
     <form onSubmit={guardar} className="space-y-2.5">
-      {email && <p className="text-[12px] text-gray-500 text-center mb-4">{email}</p>}
+      {email && <p className="text-[12px] text-muted-foreground text-center mb-4">{email}</p>}
       <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Contraseña nueva" autoFocus required minLength={MIN} autoComplete="new-password" className={input} />
       <input type="password" value={repetir} onChange={e => setRepetir(e.target.value)} placeholder="Repetila" required minLength={MIN} autoComplete="new-password" className={input} />
-      <p className="text-[11px] text-gray-400">Al menos {MIN} caracteres.</p>
+      <p className="text-[11px] text-muted-foreground/70">Al menos {MIN} caracteres.</p>
       {error && <p className="text-[12px] text-red-600">{error}</p>}
-      <button type="submit" disabled={guardando} className="w-full bg-black text-white rounded-md py-2.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-gray-900 disabled:opacity-50 !mt-5">
+      <button type="submit" disabled={guardando} className="w-full bg-primary text-primary-foreground rounded-md py-2.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:opacity-90 disabled:opacity-50 !mt-5">
         {guardando ? '...' : 'Guardar contraseña'}
       </button>
     </form>
@@ -96,11 +96,11 @@ function Formulario() {
 
 export default function ResetAdminPage() {
   return (
-    <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center px-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
         <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-2" />
-        <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400 text-center mb-7">Elegí tu contraseña</p>
-        <Suspense fallback={<p className="text-[13px] text-gray-500 text-center py-6">Cargando...</p>}>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/70 text-center mb-7">Elegí tu contraseña</p>
+        <Suspense fallback={<p className="text-[13px] text-muted-foreground text-center py-6">Cargando...</p>}>
           <Formulario />
         </Suspense>
       </div>

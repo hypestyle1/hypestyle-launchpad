@@ -451,20 +451,20 @@ export default function OrderDetailPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -473,20 +473,20 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+      <div className="bg-card border-b border-border px-6 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <Link href="/admin/pedidos" className="text-gray-400 hover:text-black transition-colors">
+          <Link href="/admin/pedidos" className="text-muted-foreground/70 hover:text-foreground transition-colors">
             <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"/>
             </svg>
           </Link>
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
-          <span className="text-gray-300">|</span>
-          <Link href="/admin/pedidos" className="text-[13px] text-gray-500 hover:text-black">Pedidos</Link>
-          <span className="text-gray-300">/</span>
-          {order && <span className="text-[13px] font-semibold text-gray-900">#{order.number}</span>}
+          <span className="text-muted-foreground/50">|</span>
+          <Link href="/admin/pedidos" className="text-[13px] text-muted-foreground hover:text-foreground">Pedidos</Link>
+          <span className="text-muted-foreground/50">/</span>
+          {order && <span className="text-[13px] font-semibold text-foreground">#{order.number}</span>}
         </div>
         {order && (
           <div className="flex items-center gap-2">
@@ -506,10 +506,10 @@ export default function OrderDetailPage() {
                 </span>
               )
             )}
-            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>
+            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[order.status] || 'bg-muted text-muted-foreground'}`}>
               {STATUS_LABELS[order.status] || order.status}
             </span>
-            <span className="text-[11px] text-gray-400">{fmtDate(order.date)}</span>
+            <span className="text-[11px] text-muted-foreground/70">{fmtDate(order.date)}</span>
           </div>
         )}
       </div>
@@ -517,20 +517,20 @@ export default function OrderDetailPage() {
       {/* Cancel modal */}
       {cancelModal && order && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-[15px] font-bold text-gray-900 mb-1">Cancelar pedido #{order.number}</h2>
-            <p className="text-[13px] text-gray-500 mb-5">Confirmá las acciones que querés ejecutar al cancelar.</p>
+          <div className="bg-card rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h2 className="text-[15px] font-bold text-foreground mb-1">Cancelar pedido #{order.number}</h2>
+            <p className="text-[13px] text-muted-foreground mb-5">Confirmá las acciones que querés ejecutar al cancelar.</p>
 
             <label className="flex items-start gap-3 mb-4 cursor-pointer">
               <input
                 type="checkbox"
                 checked={cancelRestoreStock}
                 onChange={e => setCancelRestoreStock(e.target.checked)}
-                className="mt-0.5 rounded border-gray-300"
+                className="mt-0.5 rounded border-border-mid"
               />
               <div>
-                <div className="text-[13px] font-medium text-gray-900">Restaurar stock</div>
-                <div className="text-[11px] text-gray-400">Las unidades vuelven al inventario de cada producto.</div>
+                <div className="text-[13px] font-medium text-foreground">Restaurar stock</div>
+                <div className="text-[11px] text-muted-foreground/70">Las unidades vuelven al inventario de cada producto.</div>
               </div>
             </label>
 
@@ -539,18 +539,18 @@ export default function OrderDetailPage() {
                 type="checkbox"
                 checked={cancelNotify}
                 onChange={e => setCancelNotify(e.target.checked)}
-                className="mt-0.5 rounded border-gray-300"
+                className="mt-0.5 rounded border-border-mid"
               />
               <div>
-                <div className="text-[13px] font-medium text-gray-900">Notificar al cliente</div>
-                <div className="text-[11px] text-gray-400">Se envía un email a {order.customer.email} informando la cancelación.</div>
+                <div className="text-[13px] font-medium text-foreground">Notificar al cliente</div>
+                <div className="text-[11px] text-muted-foreground/70">Se envía un email a {order.customer.email} informando la cancelación.</div>
               </div>
             </label>
 
             <div className="flex gap-2">
               <button
                 onClick={() => { setCancelModal(false); setStatus(order.status); }}
-                className="flex-1 py-2 rounded-lg border border-gray-200 text-[13px] font-medium text-gray-600 hover:bg-gray-50"
+                className="flex-1 py-2 rounded-lg border border-border text-[13px] font-medium text-muted-foreground hover:bg-muted/50"
               >
                 Volver
               </button>
@@ -567,7 +567,7 @@ export default function OrderDetailPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-32 text-[13px] text-gray-400">Cargando pedido...</div>
+        <div className="flex items-center justify-center py-32 text-[13px] text-muted-foreground/70">Cargando pedido...</div>
       ) : error ? (
         <div className="flex items-center justify-center py-32 text-[13px] text-red-500">{error}</div>
       ) : !order ? null : (
@@ -576,8 +576,8 @@ export default function OrderDetailPage() {
           {/* LEFT COLUMN */}
           <div className="space-y-4">
             {/* Progreso del pedido */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-4">Progreso del pedido</h2>
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-foreground mb-4">Progreso del pedido</h2>
               {order.status === 'cancelled' || order.status === 'failed' ? (
                 <div className="text-[13px] font-medium text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                   {order.status === 'cancelled' ? 'Pedido cancelado' : 'Pago fallido'} · {fmtDate(order.date)}
@@ -595,18 +595,18 @@ export default function OrderDetailPage() {
                     return steps.map((step, i) => (
                       <div key={step.label} className="flex-1 flex flex-col items-center">
                         <div className="flex items-center w-full">
-                          <div className={`flex-1 h-0.5 ${i === 0 ? 'invisible' : steps[i - 1].done ? 'bg-black' : 'bg-gray-100'}`} />
+                          <div className={`flex-1 h-0.5 ${i === 0 ? 'invisible' : steps[i - 1].done ? 'bg-primary' : 'bg-muted'}`} />
                           <div className={`w-6 h-6 flex-none rounded-full flex items-center justify-center text-[11px] font-bold ${
-                            step.done ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'
+                            step.done ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground/70'
                           }`}>
                             {step.done ? '✓' : i + 1}
                           </div>
-                          <div className={`flex-1 h-0.5 ${i === steps.length - 1 ? 'invisible' : step.done ? 'bg-black' : 'bg-gray-100'}`} />
+                          <div className={`flex-1 h-0.5 ${i === steps.length - 1 ? 'invisible' : step.done ? 'bg-primary' : 'bg-muted'}`} />
                         </div>
-                        <div className={`text-[10.5px] text-center font-medium mt-1.5 ${step.done ? 'text-gray-900' : 'text-gray-400'}`}>
+                        <div className={`text-[10.5px] text-center font-medium mt-1.5 ${step.done ? 'text-foreground' : 'text-muted-foreground/70'}`}>
                           {step.label}
                         </div>
-                        <div className="text-[9.5px] text-gray-400 text-center leading-tight h-3">
+                        <div className="text-[9.5px] text-muted-foreground/70 text-center leading-tight h-3">
                           {step.date ? fmtDate(step.date) : ''}
                         </div>
                       </div>
@@ -617,26 +617,26 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Items */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-5 py-3 border-b border-gray-100">
-                <h2 className="text-[13px] font-semibold text-gray-900">Productos</h2>
+            <div className="bg-card rounded-lg border border-border overflow-hidden">
+              <div className="px-5 py-3 border-b border-border">
+                <h2 className="text-[13px] font-semibold text-foreground">Productos</h2>
               </div>
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-border">
                 {order.items.map(item => {
                   const canEdit = !['cancelled', 'failed'].includes(order.status);
                   const isBusy = removingItemId === item.id;
                   return (
                   <div key={item.id} className="flex items-center gap-4 px-5 py-3">
                     {item.image ? (
-                      <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-gray-100 flex-none" />
+                      <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-border flex-none" />
                     ) : (
-                      <div className="w-12 h-12 rounded-lg bg-gray-100 flex-none" />
+                      <div className="w-12 h-12 rounded-lg bg-muted flex-none" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-medium text-gray-900 truncate">
+                      <div className="text-[13px] font-medium text-foreground truncate">
                         {item.name.replace(/\s*—\s*Talle\s*\S+/i, '')}
                       </div>
-                      {item.size && <div className="text-[11px] text-gray-400">Talle {item.size}</div>}
+                      {item.size && <div className="text-[11px] text-muted-foreground/70">Talle {item.size}</div>}
                       {(item.dorsalName || item.dorsalNumber) && (
                         <div className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                           <span>Dorsal:</span>
@@ -649,7 +649,7 @@ export default function OrderDetailPage() {
                           <button
                             onClick={() => changeItemQuantity(item.id, item.quantity - 1)}
                             disabled={isBusy}
-                            className="w-5 h-5 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:border-gray-400 disabled:opacity-40 text-[12px] leading-none"
+                            className="w-5 h-5 flex items-center justify-center rounded border border-border text-muted-foreground hover:border-border-mid disabled:opacity-40 text-[12px] leading-none"
                           >
                             −
                           </button>
@@ -664,24 +664,24 @@ export default function OrderDetailPage() {
                       )}
                     </div>
                     <div className="text-right flex-none">
-                      <div className="text-[13px] text-gray-700">{fmt(item.price)} × {item.quantity}</div>
-                      <div className="text-[12px] font-semibold text-gray-900">{fmt(item.total)}</div>
+                      <div className="text-[13px] text-foreground/80">{fmt(item.price)} × {item.quantity}</div>
+                      <div className="text-[12px] font-semibold text-foreground">{fmt(item.total)}</div>
                     </div>
                   </div>
                   );
                 })}
               </div>
               {removeItemMsg && (
-                <div className="px-5 py-2 text-[11px] text-red-500 border-t border-gray-100">{removeItemMsg}</div>
+                <div className="px-5 py-2 text-[11px] text-red-500 border-t border-border">{removeItemMsg}</div>
               )}
               {/* Totals */}
-              <div className="border-t border-gray-100 px-5 py-3 space-y-1.5 bg-gray-50">
-                <div className="flex justify-between text-[12px] text-gray-500">
+              <div className="border-t border-border px-5 py-3 space-y-1.5 bg-muted/50">
+                <div className="flex justify-between text-[12px] text-muted-foreground">
                   <span>Subtotal</span>
                   <span>{fmt(order.items.reduce((s, i) => s + i.total, 0))}</span>
                 </div>
                 {order.shipping_total > 0 && (
-                  <div className="flex justify-between text-[12px] text-gray-500">
+                  <div className="flex justify-between text-[12px] text-muted-foreground">
                     <span>Envío — {order.shipping_lines[0]?.method_title || 'Andreani'}</span>
                     <span>{fmt(order.shipping_total)}</span>
                   </div>
@@ -693,12 +693,12 @@ export default function OrderDetailPage() {
                   </div>
                 )}
                 {order.feeLines.map(f => (
-                  <div key={f.id} className={`flex justify-between text-[12px] ${f.total < 0 ? 'text-green-600' : 'text-gray-500'}`}>
+                  <div key={f.id} className={`flex justify-between text-[12px] ${f.total < 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
                     <span>{f.name}</span>
                     <span>{f.total < 0 ? '-' : ''}{fmt(Math.abs(f.total))}</span>
                   </div>
                 ))}
-                <div className="flex justify-between text-[14px] font-bold text-gray-900 pt-1 border-t border-gray-200">
+                <div className="flex justify-between text-[14px] font-bold text-foreground pt-1 border-t border-border">
                   <span>Total</span>
                   <span>{fmt(order.total)}</span>
                 </div>
@@ -706,24 +706,24 @@ export default function OrderDetailPage() {
 
               {/* Agregar producto / aplicar descuento — sin cancelar el pedido */}
               {!['cancelled', 'failed', 'refunded'].includes(order.status) && (
-                <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+                <div className="border-t border-border px-5 py-4 space-y-4">
                   <div>
-                    <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Agregar producto</div>
+                    <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Agregar producto</div>
                     <div className="relative">
                       <input
                         type="text"
                         value={productQuery}
                         onChange={e => { setProductQuery(e.target.value); setSelectedProduct(null); }}
                         placeholder="Buscar producto por nombre..."
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-gray-400"
+                        className="w-full border border-border rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-border-mid"
                       />
                       {filteredProducts.length > 0 && !selectedProduct && (
-                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                        <div className="absolute z-10 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
                           {filteredProducts.map(p => (
                             <button
                               key={p.id}
                               onClick={() => selectProduct(p)}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] hover:bg-gray-50"
+                              className="w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] hover:bg-muted/50"
                             >
                               {p.image && <img src={p.image} alt="" className="w-6 h-6 rounded object-cover flex-none" />}
                               <span className="truncate">{p.name}</span>
@@ -739,7 +739,7 @@ export default function OrderDetailPage() {
                           <select
                             value={selectedVariationId === 'none' ? '' : String(selectedVariationId)}
                             onChange={e => setSelectedVariationId(e.target.value ? Number(e.target.value) : 'none')}
-                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                            className="flex-1 border border-border rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
                           >
                             <option value="">Talle...</option>
                             {variations.map(v => (
@@ -752,12 +752,12 @@ export default function OrderDetailPage() {
                           min={1}
                           value={addQty}
                           onChange={e => setAddQty(Math.max(1, Number(e.target.value)))}
-                          className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                          className="w-16 border border-border rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
                         />
                         <button
                           onClick={addItem}
                           disabled={addingItem || selectedVariationId === 'none'}
-                          className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-40 whitespace-nowrap"
+                          className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[12px] font-semibold hover:opacity-90 disabled:opacity-40 whitespace-nowrap"
                         >
                           {addingItem ? '...' : 'Agregar'}
                         </button>
@@ -768,15 +768,15 @@ export default function OrderDetailPage() {
                     )}
                   </div>
 
-                  <div className="pt-3 border-t border-gray-100">
-                    <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Aplicar descuento manual</div>
+                  <div className="pt-3 border-t border-border">
+                    <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Aplicar descuento manual</div>
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
                         value={discountName}
                         onChange={e => setDiscountName(e.target.value)}
                         placeholder="Motivo (ej: 2 remeras bonificadas)"
-                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                        className="flex-1 border border-border rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
                       />
                       <input
                         type="number"
@@ -784,12 +784,12 @@ export default function OrderDetailPage() {
                         value={discountAmount}
                         onChange={e => setDiscountAmount(e.target.value)}
                         placeholder="Monto"
-                        className="w-28 border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                        className="w-28 border border-border rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
                       />
                       <button
                         onClick={applyDiscount}
                         disabled={applyingDiscount || !discountAmount}
-                        className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-40 whitespace-nowrap"
+                        className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[12px] font-semibold hover:opacity-90 disabled:opacity-40 whitespace-nowrap"
                       >
                         {applyingDiscount ? '...' : 'Aplicar'}
                       </button>
@@ -803,48 +803,48 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Payment */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Pago</h2>
-              <div className="text-[13px] text-gray-600">{order.payment_method_title}</div>
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-foreground mb-2">Pago</h2>
+              <div className="text-[13px] text-muted-foreground">{order.payment_method_title}</div>
             </div>
 
             {/* Customer note */}
             {order.customer_note && (
-              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-                <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Nota del cliente</h2>
-                <p className="text-[13px] text-gray-600 italic">&quot;{order.customer_note}&quot;</p>
+              <div className="bg-card rounded-lg border border-border px-5 py-4">
+                <h2 className="text-[13px] font-semibold text-foreground mb-2">Nota del cliente</h2>
+                <p className="text-[13px] text-muted-foreground italic">&quot;{order.customer_note}&quot;</p>
               </div>
             )}
 
             {/* Order notes */}
             {order.notes.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-                <h2 className="text-[13px] font-semibold text-gray-900 mb-3">Notas internas</h2>
+              <div className="bg-card rounded-lg border border-border px-5 py-4">
+                <h2 className="text-[13px] font-semibold text-foreground mb-3">Notas internas</h2>
                 <div className="space-y-2">
                   {order.notes.map(n => (
-                    <div key={n.id} className="text-[12px] text-gray-600 bg-yellow-50 border border-yellow-100 rounded-lg px-3 py-2">
+                    <div key={n.id} className="text-[12px] text-muted-foreground bg-yellow-50 border border-yellow-100 rounded-lg px-3 py-2">
                       <span dangerouslySetInnerHTML={{ __html: n.note }} />
-                      <span className="block text-[10px] text-gray-400 mt-1">{fmtDate(n.date)}</span>
+                      <span className="block text-[10px] text-muted-foreground/70 mt-1">{fmtDate(n.date)}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
             {/* Nota interna editable */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Nota interna</h2>
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-foreground mb-2">Nota interna</h2>
               <textarea
                 value={noteText}
                 onChange={e => setNoteText(e.target.value)}
                 rows={3}
                 placeholder="Escribí una nota para el equipo (la podés editar cuando quieras)..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400 resize-y"
+                className="w-full border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid resize-y"
               />
               <div className="flex items-center gap-2 mt-2">
                 <button
                   onClick={saveNote}
                   disabled={noteSaving}
-                  className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-50"
+                  className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[12px] font-semibold hover:opacity-90 disabled:opacity-50"
                 >
                   {noteSaving ? 'Guardando...' : 'Guardar nota'}
                 </button>
@@ -856,27 +856,27 @@ export default function OrderDetailPage() {
           {/* RIGHT COLUMN */}
           <div className="space-y-4">
             {/* Customer */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[13px] font-semibold text-gray-900">Cliente</h2>
+                <h2 className="text-[13px] font-semibold text-foreground">Cliente</h2>
                 {order.customerHistory.orderCount > 0 ? (
                   <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
                     Recurrente · {order.customerHistory.orderCount} pedido{order.customerHistory.orderCount > 1 ? 's' : ''} más
                   </span>
                 ) : (
-                  <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                     Primera compra
                   </span>
                 )}
               </div>
-              <div className="text-[13px] font-medium text-gray-900 mb-0.5">
+              <div className="text-[13px] font-medium text-foreground mb-0.5">
                 {order.customer.first_name} {order.customer.last_name}
               </div>
               <a href={`mailto:${order.customer.email}`} className="block text-[12px] text-blue-600 hover:underline mb-0.5">
                 {order.customer.email}
               </a>
               {order.customer.dni && (
-                <div className="text-[12px] text-gray-500 mb-0.5">DNI/CUIT {order.customer.dni}</div>
+                <div className="text-[12px] text-muted-foreground mb-0.5">DNI/CUIT {order.customer.dni}</div>
               )}
               {order.customer.instagram && (
                 <a
@@ -893,7 +893,7 @@ export default function OrderDetailPage() {
               )}
               {order.customer.phone && (
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[12px] text-gray-500">{order.customer.phone}</span>
+                  <span className="text-[12px] text-muted-foreground">{order.customer.phone}</span>
                   <a
                     href={waLink(order.customer.phone, order.customer.first_name, order.number)}
                     target="_blank"
@@ -907,28 +907,28 @@ export default function OrderDetailPage() {
                   </a>
                 </div>
               )}
-              <div className="mt-3 pt-3 border-t border-gray-100 space-y-0.5">
-                <div className="text-[12px] text-gray-500">
-                  Compró el <span className="text-gray-800 font-medium">{fmtDate(order.date)}</span>
+              <div className="mt-3 pt-3 border-t border-border space-y-0.5">
+                <div className="text-[12px] text-muted-foreground">
+                  Compró el <span className="text-foreground font-medium">{fmtDate(order.date)}</span>
                 </div>
                 {order.datePaid && (
-                  <div className="text-[12px] text-gray-500">
-                    Pagó el <span className="text-gray-800 font-medium">{fmtDate(order.datePaid)}</span>
+                  <div className="text-[12px] text-muted-foreground">
+                    Pagó el <span className="text-foreground font-medium">{fmtDate(order.datePaid)}</span>
                   </div>
                 )}
                 {order.customerHistory.orderCount > 0 && (
-                  <div className="text-[12px] text-gray-500">
-                    Cliente desde <span className="text-gray-800 font-medium">{fmtDate(order.customerHistory.firstOrderDate)}</span>
-                    {' · '}<span className="text-gray-800 font-medium">{fmt(order.customerHistory.totalSpent)}</span> en pedidos anteriores
+                  <div className="text-[12px] text-muted-foreground">
+                    Cliente desde <span className="text-foreground font-medium">{fmtDate(order.customerHistory.firstOrderDate)}</span>
+                    {' · '}<span className="text-foreground font-medium">{fmt(order.customerHistory.totalSpent)}</span> en pedidos anteriores
                   </div>
                 )}
               </div>
             </div>
 
             {/* Shipping address */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-[13px] font-semibold text-gray-900">Dirección de envío</h2>
+                <h2 className="text-[13px] font-semibold text-foreground">Dirección de envío</h2>
                 {!editingShipping && (
                   <button onClick={startEditingShipping} className="text-[11px] text-blue-600 hover:underline">
                     Editar
@@ -939,19 +939,19 @@ export default function OrderDetailPage() {
               {editingShipping ? (
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-2">
-                    <input placeholder="Nombre" value={shippingForm.first_name} onChange={e => setShippingForm(f => ({ ...f, first_name: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
-                    <input placeholder="Apellido" value={shippingForm.last_name} onChange={e => setShippingForm(f => ({ ...f, last_name: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                    <input placeholder="Nombre" value={shippingForm.first_name} onChange={e => setShippingForm(f => ({ ...f, first_name: e.target.value }))} className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
+                    <input placeholder="Apellido" value={shippingForm.last_name} onChange={e => setShippingForm(f => ({ ...f, last_name: e.target.value }))} className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
                   </div>
-                  <input placeholder="Dirección" value={shippingForm.address_1} onChange={e => setShippingForm(f => ({ ...f, address_1: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
-                  <input placeholder="Depto / piso (opcional)" value={shippingForm.address_2} onChange={e => setShippingForm(f => ({ ...f, address_2: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                  <input placeholder="Dirección" value={shippingForm.address_1} onChange={e => setShippingForm(f => ({ ...f, address_1: e.target.value }))} className="w-full border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
+                  <input placeholder="Depto / piso (opcional)" value={shippingForm.address_2} onChange={e => setShippingForm(f => ({ ...f, address_2: e.target.value }))} className="w-full border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
                   <div className="grid grid-cols-3 gap-2">
-                    <input placeholder="Ciudad" value={shippingForm.city} onChange={e => setShippingForm(f => ({ ...f, city: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
-                    <input placeholder="Provincia" value={shippingForm.state} onChange={e => setShippingForm(f => ({ ...f, state: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
-                    <input placeholder="CP" value={shippingForm.postcode} onChange={e => setShippingForm(f => ({ ...f, postcode: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                    <input placeholder="Ciudad" value={shippingForm.city} onChange={e => setShippingForm(f => ({ ...f, city: e.target.value }))} className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
+                    <input placeholder="Provincia" value={shippingForm.state} onChange={e => setShippingForm(f => ({ ...f, state: e.target.value }))} className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
+                    <input placeholder="CP" value={shippingForm.postcode} onChange={e => setShippingForm(f => ({ ...f, postcode: e.target.value }))} className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <input placeholder="Teléfono" value={shippingForm.phone} onChange={e => setShippingForm(f => ({ ...f, phone: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
-                    <input placeholder="DNI" value={shippingForm.dni} onChange={e => setShippingForm(f => ({ ...f, dni: e.target.value }))} className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+                    <input placeholder="Teléfono" value={shippingForm.phone} onChange={e => setShippingForm(f => ({ ...f, phone: e.target.value }))} className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
+                    <input placeholder="DNI" value={shippingForm.dni} onChange={e => setShippingForm(f => ({ ...f, dni: e.target.value }))} className="border border-border rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
                   </div>
 
                   {shippingMsg && <p className="text-[11px] text-red-500">{shippingMsg}</p>}
@@ -960,11 +960,11 @@ export default function OrderDetailPage() {
                     <button
                       onClick={saveShipping}
                       disabled={shippingSaving}
-                      className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-50"
+                      className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[12px] font-semibold hover:opacity-90 disabled:opacity-50"
                     >
                       {shippingSaving ? 'Guardando...' : 'Guardar'}
                     </button>
-                    <button onClick={() => setEditingShipping(false)} disabled={shippingSaving} className="text-[12px] text-gray-500 hover:text-black">
+                    <button onClick={() => setEditingShipping(false)} disabled={shippingSaving} className="text-[12px] text-muted-foreground hover:text-foreground">
                       Cancelar
                     </button>
                   </div>
@@ -977,15 +977,15 @@ export default function OrderDetailPage() {
                 </div>
               ) : (
                 <>
-                  <div className="text-[12px] text-gray-600 space-y-0.5">
+                  <div className="text-[12px] text-muted-foreground space-y-0.5">
                     <div>{order.shipping.first_name} {order.shipping.last_name}</div>
                     <div>{order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}</div>
                     <div>{order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</div>
                   </div>
                   {order.viaCargoSucursal && (
-                    <div className="mt-2 pt-2 border-t border-gray-100 text-[12px]">
-                      <span className="text-gray-400">Sucursal Via Cargo:</span>{' '}
-                      <span className="font-medium text-gray-900">{order.viaCargoSucursal}</span>
+                    <div className="mt-2 pt-2 border-t border-border text-[12px]">
+                      <span className="text-muted-foreground/70">Sucursal Via Cargo:</span>{' '}
+                      <span className="font-medium text-foreground">{order.viaCargoSucursal}</span>
                     </div>
                   )}
                 </>
@@ -994,9 +994,9 @@ export default function OrderDetailPage() {
 
             {/* Billing address — solo si difiere del envío */}
             {order.billing.address_1 && order.billing.address_1 !== order.shipping.address_1 && (
-              <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-                <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Dirección de facturación</h2>
-                <div className="text-[12px] text-gray-600 space-y-0.5">
+              <div className="bg-card rounded-lg border border-border px-5 py-4">
+                <h2 className="text-[13px] font-semibold text-foreground mb-2">Dirección de facturación</h2>
+                <div className="text-[12px] text-muted-foreground space-y-0.5">
                   <div>{order.billing.address_1}{order.billing.address_2 ? `, ${order.billing.address_2}` : ''}</div>
                   <div>{order.billing.city}, {order.billing.state} {order.billing.postcode}</div>
                 </div>
@@ -1004,24 +1004,24 @@ export default function OrderDetailPage() {
             )}
 
             {/* Status */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Estado del pedido</h2>
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-foreground mb-2">Estado del pedido</h2>
               <div className="flex items-center gap-2">
                 <select
                   value={status}
                   onChange={e => saveStatus(e.target.value)}
                   disabled={statusSaving}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400 disabled:opacity-60"
+                  className="flex-1 border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid disabled:opacity-60"
                 >
                   {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
                 </select>
-                {statusSaving && <span className="text-[11px] text-gray-400">Guardando...</span>}
+                {statusSaving && <span className="text-[11px] text-muted-foreground/70">Guardando...</span>}
               </div>
             </div>
 
             {/* Tracking */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Seguimiento Andreani</h2>
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-foreground mb-2">Seguimiento Andreani</h2>
               {order.notified && (
                 <div className="text-[11px] text-green-600 mb-2">✓ Cliente notificado</div>
               )}
@@ -1041,12 +1041,12 @@ export default function OrderDetailPage() {
                   onChange={e => setTracking(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && saveTracking()}
                   placeholder="360002987658940"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[12px] font-mono focus:outline-none focus:border-gray-400"
+                  className="flex-1 border border-border rounded-lg px-3 py-2 text-[12px] font-mono focus:outline-none focus:border-border-mid"
                 />
                 <button
                   onClick={saveTracking}
                   disabled={trackSaving}
-                  className="px-3 py-2 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-50 whitespace-nowrap"
+                  className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-[12px] font-semibold hover:opacity-90 disabled:opacity-50 whitespace-nowrap"
                 >
                   {trackSaving ? '...' : 'Guardar'}
                 </button>
@@ -1065,7 +1065,7 @@ export default function OrderDetailPage() {
                   >
                     Rastrear en Andreani →
                   </a>
-                  <span className="text-gray-300">·</span>
+                  <span className="text-muted-foreground/50">·</span>
                   <a
                     href={`${SITE_URL}/seguimiento?pedido=${order.id}&clave=${order.order_key}`}
                     target="_blank" rel="noopener noreferrer"
@@ -1078,18 +1078,18 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Email actions */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-3">Emails</h2>
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-foreground mb-3">Emails</h2>
               <div className="space-y-2">
                 <button
                   onClick={() => sendEmail('confirmation')}
-                  className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-400 text-[12px] font-medium text-gray-700 hover:text-black transition-colors"
+                  className="w-full text-left px-3 py-2 rounded-lg border border-border hover:border-border-mid text-[12px] font-medium text-foreground/80 hover:text-foreground transition-colors"
                 >
                   Reenviar confirmación de compra
                 </button>
                 <button
                   onClick={() => sendEmail('tracking')}
-                  className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-400 text-[12px] font-medium text-gray-700 hover:text-black transition-colors"
+                  className="w-full text-left px-3 py-2 rounded-lg border border-border hover:border-border-mid text-[12px] font-medium text-foreground/80 hover:text-foreground transition-colors"
                 >
                   Enviar seguimiento de Andreani
                 </button>
@@ -1103,15 +1103,15 @@ export default function OrderDetailPage() {
                 )}
               </div>
               {emailMsg && (
-                <p className={`mt-2 text-[11px] ${emailMsg.startsWith('✓') ? 'text-green-600' : emailMsg === 'Enviando...' ? 'text-gray-400' : 'text-red-500'}`}>
+                <p className={`mt-2 text-[11px] ${emailMsg.startsWith('✓') ? 'text-green-600' : emailMsg === 'Enviando...' ? 'text-muted-foreground/70' : 'text-red-500'}`}>
                   {emailMsg}
                 </p>
               )}
             </div>
 
             {/* Reviews — evento de despacho (independiente del estado de la orden) */}
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-gray-900 mb-2">Reviews — Despacho</h2>
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-foreground mb-2">Reviews — Despacho</h2>
               {order.hsDispatchedAt ? (
                 <>
                   <p className="text-[11px] text-green-600 mb-2">
@@ -1120,7 +1120,7 @@ export default function OrderDetailPage() {
                   <button
                     onClick={undoDispatch}
                     disabled={dispatchLoading}
-                    className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-400 text-[12px] font-medium text-gray-700 hover:text-black transition-colors disabled:opacity-50"
+                    className="w-full text-left px-3 py-2 rounded-lg border border-border hover:border-border-mid text-[12px] font-medium text-foreground/80 hover:text-foreground transition-colors disabled:opacity-50"
                   >
                     {dispatchLoading ? 'Deshaciendo...' : 'Deshacer despacho'}
                   </button>
@@ -1129,7 +1129,7 @@ export default function OrderDetailPage() {
                 <button
                   onClick={markDispatched}
                   disabled={dispatchLoading}
-                  className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:border-gray-400 text-[12px] font-medium text-gray-700 hover:text-black transition-colors disabled:opacity-50"
+                  className="w-full text-left px-3 py-2 rounded-lg border border-border hover:border-border-mid text-[12px] font-medium text-foreground/80 hover:text-foreground transition-colors disabled:opacity-50"
                 >
                   {dispatchLoading ? 'Marcando...' : 'Marcar como despachado'}
                 </button>
@@ -1139,20 +1139,20 @@ export default function OrderDetailPage() {
                   {dispatchMsg}
                 </p>
               )}
-              <p className="mt-2 text-[10px] text-gray-400">
+              <p className="mt-2 text-[10px] text-muted-foreground/70">
                 Dispara la solicitud automática de reseña X días después. &quot;Deshacer&quot; solo funciona antes de que el mail salga.
               </p>
 
               {/* Bloque "Solicitud de reseña" — mismos endpoints/componentes que /admin/reviews, sin lógica duplicada */}
               {reviewRequest?.exists && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <h3 className="text-[12px] font-semibold text-gray-900 mb-2">Solicitud de reseña</h3>
-                  <div className="text-[11px] text-gray-500 space-y-0.5">
-                    <div><span className="text-gray-400">Estado:</span> {reviewRequest.status_label}</div>
-                    <div><span className="text-gray-400">Programada:</span> {reviewRequest.scheduled_for || '—'}</div>
-                    <div><span className="text-gray-400">Enviada:</span> {reviewRequest.sent_at || '—'}</div>
-                    <div><span className="text-gray-400">Respondida:</span> {reviewRequest.responded_at || '—'}</div>
-                    <div><span className="text-gray-400">Cupón:</span> {reviewRequest.coupon_id ? 'Emitido' : 'No emitido'}</div>
+                <div className="mt-4 pt-4 border-t border-border">
+                  <h3 className="text-[12px] font-semibold text-foreground mb-2">Solicitud de reseña</h3>
+                  <div className="text-[11px] text-muted-foreground space-y-0.5">
+                    <div><span className="text-muted-foreground/70">Estado:</span> {reviewRequest.status_label}</div>
+                    <div><span className="text-muted-foreground/70">Programada:</span> {reviewRequest.scheduled_for || '—'}</div>
+                    <div><span className="text-muted-foreground/70">Enviada:</span> {reviewRequest.sent_at || '—'}</div>
+                    <div><span className="text-muted-foreground/70">Respondida:</span> {reviewRequest.responded_at || '—'}</div>
+                    <div><span className="text-muted-foreground/70">Cupón:</span> {reviewRequest.coupon_id ? 'Emitido' : 'No emitido'}</div>
                   </div>
                   <Link
                     href={`/admin/reviews/${reviewRequest.id}`}
@@ -1169,7 +1169,7 @@ export default function OrderDetailPage() {
               href={`/admin/pedidos/${order.id}/rotulo`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center text-[13px] font-semibold text-white py-2.5 rounded-xl bg-black hover:bg-gray-800 transition-colors"
+              className="block w-full text-center text-[13px] font-semibold text-primary-foreground py-2.5 rounded-lg bg-primary hover:opacity-90 transition-colors"
             >
               🖨 Imprimir rótulo de envío
             </a>
@@ -1178,7 +1178,7 @@ export default function OrderDetailPage() {
               href={`/admin/pedidos/${order.id}/detalle`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center text-[13px] font-semibold text-gray-700 py-2.5 rounded-xl border border-gray-200 bg-white hover:border-gray-400 transition-colors"
+              className="block w-full text-center text-[13px] font-semibold text-foreground/80 py-2.5 rounded-lg border border-border bg-card hover:border-border-mid transition-colors"
             >
               🖨 Imprimir detalle del pedido
             </a>
@@ -1188,7 +1188,7 @@ export default function OrderDetailPage() {
               href={`https://lightpink-rook-704850.hostingersite.com/wp-admin/post.php?post=${order.id}&action=edit`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center text-[12px] text-gray-500 hover:text-black py-2 border border-gray-200 rounded-xl bg-white hover:border-gray-400 transition-colors"
+              className="block w-full text-center text-[12px] text-muted-foreground hover:text-foreground py-2 border border-border rounded-lg bg-card hover:border-border-mid transition-colors"
             >
               Ver en WooCommerce →
             </a>

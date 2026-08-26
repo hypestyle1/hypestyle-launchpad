@@ -271,20 +271,20 @@ export default function PedidosPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -295,26 +295,26 @@ export default function PedidosPage() {
   return (
     <div className="">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[14px] font-semibold text-gray-900">Pedidos</span>
-          {headerCount > 0 && <span className="text-[12px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{headerCount}</span>}
+          <span className="text-[14px] font-semibold text-foreground">Pedidos</span>
+          {headerCount > 0 && <span className="text-[12px] text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-full">{headerCount}</span>}
 
         </div>
         <div className="flex items-center gap-2">
           {/* Stats globales reales */}
           {counts && counts.porEmpaquetar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">{counts.porEmpaquetar} por empaquetar</span>}
           {counts && counts.empaquetados > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{counts.empaquetados} empaquetados</span>}
-          <span className="hidden md:inline text-[11px] text-gray-500 font-medium">{fmt(revenue)}</span>
+          <span className="hidden md:inline text-[11px] text-muted-foreground font-medium">{fmt(revenue)}</span>
           <Link
             href="/admin/pedidos/nuevo"
-            className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-black text-white hover:bg-gray-800 transition-colors"
+            className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-colors"
           >
             + Cargar pedido
           </Link>
           <button
             onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
-            className="text-[11px] text-gray-400 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
+            className="text-[11px] text-muted-foreground/70 hover:text-foreground/80 px-2 py-1 rounded hover:bg-muted"
           >
             Salir
           </button>
@@ -335,10 +335,10 @@ export default function PedidosPage() {
               <button
                 key={k.f}
                 onClick={() => setFilter(k.f)}
-                className={`text-left bg-white rounded-xl border p-3 transition-colors ${filter === k.f ? `${k.active} ring-1` : 'border-gray-200 hover:border-gray-300'}`}
+                className={`text-left bg-card rounded-lg border p-3 transition-colors ${filter === k.f ? `${k.active} ring-1` : 'border-border hover:border-border-mid'}`}
               >
                 <div className={`text-[22px] font-bold leading-none ${k.num}`}>{k.n}</div>
-                <div className="text-[11px] text-gray-500 mt-1 font-medium">{k.label}</div>
+                <div className="text-[11px] text-muted-foreground mt-1 font-medium">{k.label}</div>
               </button>
             ))}
           </div>
@@ -352,7 +352,7 @@ export default function PedidosPage() {
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
-                  filter === f ? 'bg-black text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-400'
+                  filter === f ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground border border-border hover:border-border-mid'
                 }`}
               >
                 {FILTER_LABELS[f] ?? STATUS_LABELS[f] ?? f}
@@ -361,7 +361,7 @@ export default function PedidosPage() {
           </div>
           <input
             type="text"
-            className="flex-1 min-w-[180px] border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] bg-white focus:outline-none focus:border-gray-400"
+            className="flex-1 min-w-[180px] border border-border rounded-lg px-3 py-1.5 text-[13px] bg-card focus:outline-none focus:border-border-mid"
             placeholder="Buscar por nombre, email u orden..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -370,12 +370,12 @@ export default function PedidosPage() {
 
         {/* Bulk action bar */}
         {selected.size > 0 && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3 bg-black text-white px-4 py-2.5 rounded-lg">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg">
             <span className="text-[13px] font-medium">{selected.size} seleccionado{selected.size > 1 ? 's' : ''}</span>
             <select
               value={bulkStatus}
               onChange={e => setBulkStatus(e.target.value)}
-              className="text-[12px] bg-white text-black rounded px-2 py-1 focus:outline-none"
+              className="text-[12px] bg-card text-foreground rounded px-2 py-1 focus:outline-none"
             >
               <option value="">Cambiar estado...</option>
               {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
@@ -383,11 +383,11 @@ export default function PedidosPage() {
             <button
               onClick={applyBulk}
               disabled={!bulkStatus || bulkLoading}
-              className="text-[12px] font-semibold bg-white text-black px-3 py-1 rounded hover:bg-gray-100 disabled:opacity-50"
+              className="text-[12px] font-semibold bg-card text-foreground px-3 py-1 rounded hover:bg-muted disabled:opacity-50"
             >
               {bulkLoading ? 'Aplicando...' : 'Aplicar'}
             </button>
-            <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-gray-400 hover:text-white">
+            <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-primary-foreground/70 hover:text-primary-foreground">
               Cancelar
             </button>
           </div>
@@ -395,34 +395,34 @@ export default function PedidosPage() {
 
         {/* Table */}
         {loading ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">Cargando pedidos...</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando pedidos...</div>
         ) : visibleOrders.length === 0 ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">No hay pedidos</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">No hay pedidos</div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
             {/* Table header */}
-            <div className="hidden lg:grid grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+            <div className="hidden lg:grid grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-2.5 border-b border-border bg-muted/50">
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   checked={selected.size === visibleOrders.length && visibleOrders.length > 0}
                   onChange={() => toggleAll(visibleOrders)}
-                  className="rounded border-gray-300 cursor-pointer"
+                  className="rounded border-border-mid cursor-pointer"
                 />
               </div>
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Orden</div>
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Cliente</div>
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:block">Productos</div>
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Total</div>
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Estado</div>
-              <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Fecha</div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Orden</div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cliente</div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hidden lg:block">Productos</div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Total</div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Estado</div>
+              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Fecha</div>
             </div>
 
             {/* Rows */}
             {visibleOrders.map((order, idx) => (
               <div
                 key={order.id}
-                className={`grid grid-cols-[28px_1fr_auto] gap-x-3 gap-y-1.5 lg:gap-y-3 lg:grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group ${
+                className={`grid grid-cols-[28px_1fr_auto] gap-x-3 gap-y-1.5 lg:gap-y-3 lg:grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] px-4 py-3 items-center border-b border-border hover:bg-muted/50 transition-colors group ${
                   selected.has(order.id) ? 'bg-blue-50 hover:bg-blue-50' : ''
                 } ${idx === visibleOrders.length - 1 ? 'border-b-0' : ''}`}
               >
@@ -432,7 +432,7 @@ export default function PedidosPage() {
                     type="checkbox"
                     checked={selected.has(order.id)}
                     onChange={() => toggleSelect(order.id)}
-                    className="rounded border-gray-300 cursor-pointer"
+                    className="rounded border-border-mid cursor-pointer"
                   />
                 </div>
 
@@ -440,7 +440,7 @@ export default function PedidosPage() {
                 <div className="col-start-2 row-start-1 lg:col-start-auto lg:row-start-auto">
                   <Link
                     href={`/admin/pedidos/${order.id}`}
-                    className="text-[13px] font-bold text-black hover:underline"
+                    className="text-[13px] font-bold text-foreground hover:underline"
                   >
                     #{order.number}
                   </Link>
@@ -450,7 +450,7 @@ export default function PedidosPage() {
                     rel="noopener noreferrer"
                     onClick={e => e.stopPropagation()}
                     title="Imprimir rótulo de envío"
-                    className="ml-1.5 text-[11px] text-gray-300 hover:text-black opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
+                    className="ml-1.5 text-[11px] text-muted-foreground/50 hover:text-foreground opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                   >
                     🖨
                   </a>
@@ -474,7 +474,7 @@ export default function PedidosPage() {
 
                 {/* Customer */}
                 <div className="min-w-0 col-start-2 col-span-2 row-start-2 lg:col-span-1 lg:col-start-auto lg:row-start-auto">
-                  <Link href={`/admin/pedidos/${order.id}`} className="text-[13px] font-medium text-gray-900 hover:underline truncate block">
+                  <Link href={`/admin/pedidos/${order.id}`} className="text-[13px] font-medium text-foreground hover:underline truncate block">
                     {order.customer.first_name} {order.customer.last_name}
                   </Link>
                   {order.customer_note && (
@@ -483,7 +483,7 @@ export default function PedidosPage() {
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[11px] text-gray-400 truncate">{order.customer.email}</span>
+                    <span className="text-[11px] text-muted-foreground/70 truncate">{order.customer.email}</span>
                     {order.customer.phone && (
                       <a
                         href={waLink(order.customer.phone, order.customer.first_name, order.number)}
@@ -502,7 +502,7 @@ export default function PedidosPage() {
                 </div>
 
                 {/* Products */}
-                <div className="hidden lg:block min-w-0 text-[12px] text-gray-500 truncate">
+                <div className="hidden lg:block min-w-0 text-[12px] text-muted-foreground truncate">
                   {order.items.map((it, i) => (
                     <span key={i}>{i > 0 && ' · '}{it.name.replace(/\s*—\s*Talle\s*\S+/i, '')}{it.size ? ` ${it.size}` : ''}{(it.dorsalNumber || it.dorsalName) ? ` [${it.dorsalNumber ? `#${it.dorsalNumber}` : ''}${it.dorsalName ? ` ${it.dorsalName}` : ''}]` : ''} ×{it.quantity}</span>
                   ))}
@@ -510,8 +510,8 @@ export default function PedidosPage() {
 
                 {/* Total */}
                 <div className="text-right col-start-3 row-start-1 lg:col-start-auto lg:row-start-auto">
-                  <div className="text-[13px] font-semibold text-gray-900">{fmt(order.total)}</div>
-                  <div className="text-[11px] text-gray-400">{order.payment_method_title.replace('MercadoPago', 'MP')}</div>
+                  <div className="text-[13px] font-semibold text-foreground">{fmt(order.total)}</div>
+                  <div className="text-[11px] text-muted-foreground/70">{order.payment_method_title.replace('MercadoPago', 'MP')}</div>
                 </div>
 
                 {/* Status */}
@@ -521,7 +521,7 @@ export default function PedidosPage() {
                     onChange={e => onStatusSelect(order, e.target.value)}
                     onClick={e => e.stopPropagation()}
                     className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-gray-300 ${
-                      STATUS_COLORS[statusMap[order.id] || order.status] || 'bg-gray-100 text-gray-600'
+                      STATUS_COLORS[statusMap[order.id] || order.status] || 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
@@ -530,11 +530,11 @@ export default function PedidosPage() {
 
                 {/* Date + antigüedad */}
                 <div className="text-right col-start-3 row-start-3 lg:col-start-auto lg:row-start-auto">
-                  <Link href={`/admin/pedidos/${order.id}`} className="text-[11px] text-gray-400 hover:text-black block">
+                  <Link href={`/admin/pedidos/${order.id}`} className="text-[11px] text-muted-foreground/70 hover:text-foreground block">
                     {fmtDate(order.date)}
                   </Link>
                   {order.status === 'processing' && !order.shipped && (
-                    <div className={`text-[10px] font-semibold mt-0.5 ${daysSince(order.date) >= 3 ? 'text-red-600' : daysSince(order.date) >= 1 ? 'text-amber-600' : 'text-gray-400'}`}>
+                    <div className={`text-[10px] font-semibold mt-0.5 ${daysSince(order.date) >= 3 ? 'text-red-600' : daysSince(order.date) >= 1 ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
                       hace {daysSince(order.date)}d
                     </div>
                   )}
@@ -550,15 +550,15 @@ export default function PedidosPage() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border bg-card hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               ← Anterior
             </button>
-            <span className="text-[12px] text-gray-500">Página {page} de {totalPages}</span>
+            <span className="text-[12px] text-muted-foreground">Página {page} de {totalPages}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border bg-card hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Siguiente →
             </button>
@@ -572,17 +572,17 @@ export default function PedidosPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={() => !cancelLoading && setCancelTarget(null)}
         >
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-[15px] font-bold text-gray-900">Cancelar pedido #{cancelTarget.number}</h3>
-            <p className="text-[12px] text-gray-500 mt-1">
+          <div className="bg-card rounded-lg shadow-lg w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-[15px] font-bold text-foreground">Cancelar pedido #{cancelTarget.number}</h3>
+            <p className="text-[12px] text-muted-foreground mt-1">
               {cancelTarget.customer.first_name} {cancelTarget.customer.last_name} · {fmt(cancelTarget.total)}
             </p>
             <div className="mt-4 space-y-3">
               <label className="flex items-start gap-2 cursor-pointer">
-                <input type="checkbox" checked={cancelRestock} onChange={e => setCancelRestock(e.target.checked)} className="mt-0.5 rounded border-gray-300" />
-                <span className="text-[13px] text-gray-800">
+                <input type="checkbox" checked={cancelRestock} onChange={e => setCancelRestock(e.target.checked)} className="mt-0.5 rounded border-border-mid" />
+                <span className="text-[13px] text-foreground">
                   Restaurar stock
-                  <span className="block text-[11px] text-gray-400">Devuelve las unidades de cada talle al inventario.</span>
+                  <span className="block text-[11px] text-muted-foreground/70">Devuelve las unidades de cada talle al inventario.</span>
                 </span>
               </label>
               <label className={`flex items-start gap-2 ${cancelTarget.customer.email ? 'cursor-pointer' : 'opacity-50'}`}>
@@ -591,18 +591,18 @@ export default function PedidosPage() {
                   checked={cancelNotify}
                   disabled={!cancelTarget.customer.email}
                   onChange={e => setCancelNotify(e.target.checked)}
-                  className="mt-0.5 rounded border-gray-300"
+                  className="mt-0.5 rounded border-border-mid"
                 />
-                <span className="text-[13px] text-gray-800">
+                <span className="text-[13px] text-foreground">
                   Enviar mail al cliente
-                  <span className="block text-[11px] text-gray-400">
+                  <span className="block text-[11px] text-muted-foreground/70">
                     {cancelTarget.customer.email ? `Mail de cancelación a ${cancelTarget.customer.email}` : 'El pedido no tiene email'}
                   </span>
                 </span>
               </label>
             </div>
             <div className="flex gap-2 mt-6">
-              <button onClick={() => setCancelTarget(null)} disabled={cancelLoading} className="flex-1 text-[13px] font-medium py-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+              <button onClick={() => setCancelTarget(null)} disabled={cancelLoading} className="flex-1 text-[13px] font-medium py-2 rounded-lg border border-border hover:bg-muted/50 disabled:opacity-50">
                 Volver
               </button>
               <button onClick={confirmCancel} disabled={cancelLoading} className="flex-1 text-[13px] font-semibold py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
