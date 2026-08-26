@@ -49,8 +49,17 @@ export interface Creador {
 
 const wpHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${WP_SECRET}` };
 
+/* El hosting tiene LiteSpeed cacheando las respuestas GET del REST de
+   WordPress. Verificado: la misma URL devuelve x-litespeed-cache: hit con datos
+   viejos, y con un parámetro distinto devuelve miss con los frescos.
+   Por eso marcar una postulación como potencial o descartada "no se guardaba":
+   se guardaba perfecto, pero la lista seguía sirviendo la respuesta cacheada.
+   El parámetro no lo lee nadie del lado de WordPress, solo rompe la clave de
+   cache. */
+const sinCache = (url: string) => url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+
 export async function listarCreadores(): Promise<Creador[] | null> {
-  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/creadores`, { headers: wpHeaders, cache: 'no-store' });
+  const res = await fetch(sinCache(`${WP_URL}/wp-json/hypestyle/v1/creadores`), { headers: wpHeaders, cache: 'no-store' });
   if (!res.ok) {
     console.error('[creadores] no se pudo leer la lista:', res.status);
     return null;
