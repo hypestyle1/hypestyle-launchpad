@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Home, Package, PackagePlus, Calculator, Store, MessageSquare,
   Users, Star, Mail, BarChart3, UserCog, ListChecks, Settings,
+  Wallet, TrendingUp, SlidersHorizontal,
 } from 'lucide-react';
 
 export type Seccion =
@@ -24,9 +25,12 @@ export const GRUPOS: NavGrupo[] = [
     ],
   },
   {
-    titulo: 'Catálogo',
+    titulo: 'Finanzas',
     items: [
+      { label: 'Resumen', href: '/admin/finance', seccion: 'costos', match: '/admin/finance', Icono: Wallet },
+      { label: 'Rentabilidad', href: '/admin/finance/rentabilidad', seccion: 'costos', match: '/admin/finance/rentabilidad', Icono: TrendingUp },
       { label: 'Costos y márgenes', href: '/admin/costos', seccion: 'costos', match: '/admin/costos', Icono: Calculator },
+      { label: 'Configuración', href: '/admin/finance/config', seccion: 'costos', match: '/admin/finance/config', Icono: SlidersHorizontal },
     ],
   },
   {
