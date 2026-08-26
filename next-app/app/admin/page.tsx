@@ -48,6 +48,7 @@ export default function AdminInicio() {
   const [attention, setAttention] = useState<{ attention: AttentionItem[]; opportunities: AttentionItem[] } | null>(null);
   const [recent, setRecent] = useState<RecentOrder[] | null>(null);
   const [customers, setCustomers] = useState<CustomerSplitData | null>(null);
+  const [botItem, setBotItem] = useState<AttentionItem | null>(null);
   const [metric, setMetric] = useState<MetricKey>('profit');
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
@@ -79,6 +80,19 @@ export default function AdminInicio() {
         .then((r) => (r.ok ? r.json() : null)).then((d) => d && setAttention({ attention: d.attention || [], opportunities: d.opportunities || [] })).catch(() => {});
       fetch('/api/admin/dashboard/recent-orders?limit=8', { headers: headers() })
         .then((r) => (r.ok ? r.json() : null)).then((d) => d && setRecent(d.orders)).catch(() => {});
+    }
+    // Capacidad n8n: sólo aparece en "Requiere atención" si hay riesgo proyectado.
+    if (puede('conversaciones')) {
+      fetch('/api/admin/bot/capacity', { headers: headers() })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!d || !d.status || d.status === 'healthy') { setBotItem(null); return; }
+          const projPct = Math.round((d.projectedPct || 0) * 100);
+          const msg = d.status === 'critical' && d.exhaustionDate
+            ? `n8n podría agotar el cupo (${projPct}% proyectado)`
+            : `n8n proyecta ${d.projectedMonthEnd?.toLocaleString('es-AR')} / ${d.limit?.toLocaleString('es-AR')} ejecuciones`;
+          setBotItem({ key: 'bot-capacity', label: msg, sub: `${projPct}% del cupo este mes`, value: projPct, href: '/admin/bot', tone: d.status === 'critical' ? 'critical' : 'warning' });
+        }).catch(() => setBotItem(null));
     }
   }, [headers, puede]);
 
@@ -238,6 +252,7 @@ export default function AdminInicio() {
             </div>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
+              {botItem && <AttentionRow key={botItem.key} item={botItem} />}
               {attention.attention.map((it) => <AttentionRow key={it.key} item={it} />)}
             </div>
           )}
