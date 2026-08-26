@@ -88,11 +88,30 @@ function cuentas(v) {
   const texto = String(v || '').trim();
   if (!texto) return { instagram: '', tiktok: '' };
 
+  // Las arrobas sueltas, que sirven para rellenar lo que la etiqueta no cubra.
+  const sueltas = [...texto.matchAll(new RegExp('@\\s*(' + HANDLE + ')', 'g'))].map(m => limpiarHandle(m[1]));
+
+  // 0) URL de TikTok: "www.tiktok.com/@usuario"
+  const mUrlTk = texto.match(new RegExp('tiktok\\.com\\/@?(' + HANDLE + ')', 'i'));
+
   // 1) Con etiqueta: "ig:", "insta:", "instagram:", "tt:", "tiktok:", "tik tok:"
-  const mIg = texto.match(new RegExp('(?:instagram|insta|ig)\\s*[:\\-]?\\s*@?(' + HANDLE + ')', 'i'));
+  const mIg = texto.match(new RegExp('(?:instagram|insta|ig)\\s*[:\\-]?\\s+@?(' + HANDLE + ')', 'i'));
   const mTk = texto.match(new RegExp('(?:tik\\s*tok|tiktok|tt)\\s*[:\\-]?\\s*@?(' + HANDLE + ')', 'i'));
-  if (mIg || mTk) {
-    return { instagram: limpiarHandle(mIg && mIg[1]), tiktok: limpiarHandle(mTk && mTk[1]) };
+
+  // "ig y tiktok: @x" — una sola cuenta para las dos redes.
+  const mIgYTk = texto.match(new RegExp('(?:ig|insta\\w*)\\s*y\\s*(?:tik\\s*tok|tiktok|tt)\\s*[:\\-]?\\s*@?(' + HANDLE + ')', 'i'));
+  if (mIgYTk) {
+    const h = limpiarHandle(mIgYTk[1]);
+    return { instagram: h, tiktok: h };
+  }
+
+  if (mIg || mTk || mUrlTk) {
+    let ig = limpiarHandle(mIg && mIg[1]);
+    let tk = limpiarHandle((mTk && mTk[1]) || (mUrlTk && mUrlTk[1]));
+    // Si una quedó vacía, se toma la primera arroba que no sea la otra.
+    if (!ig) ig = sueltas.find(h => h !== tk) || '';
+    if (!tk) tk = sueltas.find(h => h !== ig) || '';
+    if (ig || tk) return { instagram: ig, tiktok: tk };
   }
 
   // 2) "X en las dos redes" / "X en ambas": el mismo usuario para las dos.
