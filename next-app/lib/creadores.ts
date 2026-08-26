@@ -12,8 +12,12 @@ const SENDER = { name: 'Hypestyle', email: 'info@hypestyle.com.ar' };
 
 // Content manager. Se puede mover a variable de entorno el día que cambie la
 // persona; por ahora vale más que esté a la vista en el código que escondida.
+//
+// Este valor por defecto estuvo MAL: se puso una dirección inventada antes de
+// saber la real, así que los avisos de postulación se mandaban a una casilla
+// que no existe y Micaela no recibía ninguno.
 const CONTENT_MANAGER = {
-  email: (process.env.CONTENT_MANAGER_EMAIL || 'micaela.hypestyle@gmail.com').trim(),
+  email: (process.env.CONTENT_MANAGER_EMAIL || 'lagriegamanagement@gmail.com').trim(),
   nombre: 'Micaela',
 };
 const ADMIN_EMAIL = 'hypestylearg@gmail.com';
