@@ -15,14 +15,10 @@ import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 const navLinks = [
   { label: 'Shop',          href: '/productos/',               hasDropdown: true,  routeMatch: '/productos' },
   { label: 'Colecciones',   href: '/colecciones/',             hasDropdown: false, routeMatch: '/colecciones' },
-  { label: 'Reseñas',       href: '/reviews/',                 hasDropdown: false, routeMatch: '/reviews' },
+  { label: 'Contacto',      href: '/contacto/',                hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
   { label: 'FAQs',          href: '/faqs/',                    hasDropdown: false, routeMatch: '/faqs' },
   { label: 'Políticas',     href: '/politicas-de-devolucion/', hasDropdown: false, routeMatch: '/politicas' },
   { label: 'Quiénes Somos', href: '/nosotros/',                hasDropdown: false, routeMatch: '/nosotros' },
-  // Desplegable propio, chico. Las dos propuestas para trabajar con la marca
-  // viven acá adentro: como links sueltos empujaban la fila hasta encimarse
-  // con el logo, que está centrado en absoluto.
-  { label: 'Contacto',      href: '/contacto/',                hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
 ];
 
 const menuContacto = [
@@ -468,6 +464,7 @@ export default function Navbar() {
                   {[
                     { label: 'Colecciones',   href: '/colecciones/' },
                     { label: 'Reseñas',       href: '/reviews/' },
+
                     { label: 'FAQs',          href: '/faqs/' },
                     { label: 'Quiénes Somos', href: '/nosotros/' },
                     { label: 'Políticas',     href: '/politicas-de-devolucion/' },
