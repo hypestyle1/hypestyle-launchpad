@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sizeFromAttributes } from '@/lib/product-size';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
 const WC_SEC       = process.env.WC_CONSUMER_SECRET || '';
-const ADMIN_SECRET = process.env.WP_SECRET          || '';
 
 const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 
 function checkAuth(req: NextRequest) {
-  const key = req.headers.get('x-admin-key') || '';
-  return !!ADMIN_SECRET && key === ADMIN_SECRET;
+  return adminSecretMatches(req.headers.get('x-admin-key'));
 }
 
 // Variaciones de un producto (talles) para el selector de "agregar producto" en el pedido.

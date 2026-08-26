@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
-const ADMIN_SECRET = process.env.WP_SECRET || '';
 const N8N_URL       = process.env.N8N_ADMIN_REPLY_URL    || 'https://hypestyle.app.n8n.cloud/webhook/hypestyle-admin-responder';
 const N8N_SECRET    = process.env.N8N_ADMIN_REPLY_SECRET || '';
 
 export async function POST(req: NextRequest, { params }: { params: { contacto: string } }) {
-  const key = req.headers.get('x-admin-key') || '';
-  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
+  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

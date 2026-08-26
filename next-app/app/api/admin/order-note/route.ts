@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
 const WC_SEC       = process.env.WC_CONSUMER_SECRET || '';
-const ADMIN_SECRET = process.env.WP_SECRET          || '';
 
 const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 
@@ -19,8 +19,7 @@ const wcReq = (method: string, path: string, body?: any) =>
 // (visible en el admin de Woo) y se mantiene editable: al editar, borra la
 // nota anterior y crea una nueva. Guarda también el texto en meta para recargar el cuadro.
 export async function POST(req: NextRequest) {
-  const key = req.headers.get('x-admin-key') || '';
-  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
+  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

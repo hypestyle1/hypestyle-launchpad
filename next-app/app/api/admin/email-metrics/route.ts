@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
 const WC_SEC       = process.env.WC_CONSUMER_SECRET || '';
 const BREVO_KEY    = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
-const ADMIN_SECRET = process.env.WP_SECRET          || '';
 const NEWSLETTER_LIST_ID = 3;
 
 // Órdenes cuyo status implica que el pago efectivamente llegó (no cuenta cancelled/pending/failed/on-hold).
@@ -57,8 +57,7 @@ async function fetchAllContacts(): Promise<any[]> {
 }
 
 export async function GET(req: NextRequest) {
-  const key = req.headers.get('x-admin-key') || req.nextUrl.searchParams.get('key') || '';
-  if (!ADMIN_SECRET || key !== ADMIN_SECRET) {
+  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

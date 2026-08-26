@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGlobalMinOrder, setGlobalMinOrder } from '@/lib/mayorista-settings';
+import { adminSecretMatches } from '@/lib/admin-auth';
 
-const ADMIN_SECRET = process.env.WP_SECRET || '';
 
 function authorized(req: NextRequest) {
-  const key = req.headers.get('x-admin-key') || '';
-  return !!ADMIN_SECRET && key === ADMIN_SECRET;
+  return adminSecretMatches(req.headers.get('x-admin-key'));
 }
 
 export async function GET(req: NextRequest) {
