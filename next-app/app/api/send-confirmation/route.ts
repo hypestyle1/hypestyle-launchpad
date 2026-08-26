@@ -3,6 +3,7 @@ import { getUsdRate } from '@/lib/fx';
 import { CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
+const WP_SECRET     = process.env.WP_SECRET || '';
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 const SENDER_EMAIL  = 'hypestylearg@gmail.com';
 const SENDER_NAME   = 'Hypestyle';
@@ -354,6 +355,16 @@ function buildAdminHtml(order: any) {
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // Sólo lo invoca nuestro propio server (order-fulfill y los create-order-*).
+  // Sin este check era un relay abierto: cualquiera mandaba mails con la marca
+  // Hypestyle a cualquier dirección. Mismo patrón que wp-mail.
+  const auth   = req.headers.get('authorization') || '';
+  const secret = req.headers.get('x-hypestyle-secret') || '';
+  const token  = auth.replace(/^Bearer\s+/i, '');
+  if (!WP_SECRET || (token !== WP_SECRET && secret !== WP_SECRET)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+
   try {
     const order = await req.json();
 

@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
     const SITE = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
     fetch(`${SITE}/api/send-confirmation`, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-hypestyle-secret': process.env.WP_SECRET || '' },
       body: JSON.stringify({
         orderNum:      String(wcOrder.number),
         wcOrderId:     wcOrder.id,
