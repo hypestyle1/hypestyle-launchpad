@@ -34,20 +34,42 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelada' },
 ];
 
+// Tokens (light/dark), no pastel: coherente con el resto del panel.
 const STATUS_COLORS: Record<string, string> = {
-  scheduled: 'bg-blue-100 text-blue-800',
-  sent: 'bg-yellow-100 text-yellow-800',
-  processing: 'bg-orange-100 text-orange-800',
-  responded: 'bg-emerald-100 text-emerald-800',
-  failed: 'bg-red-100 text-red-700',
+  scheduled: 'bg-secondary text-secondary-foreground',
+  sent: 'bg-warning-soft text-warning',
+  processing: 'bg-warning-soft text-warning',
+  responded: 'bg-success-soft text-success',
+  failed: 'bg-destructive/10 text-destructive',
   cancelled: 'bg-muted text-muted-foreground',
 };
 
+function parseTs(s: string | null): number {
+  if (!s) return NaN;
+  return Date.parse(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+}
+
 function fmtDate(s: string | null) {
   if (!s) return '—';
-  const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+  const d = new Date(parseTs(s));
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
     + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Antigüedad de una reseña enviada sin responder: <24h / 24–48h / +48h.
+function agingSince(sent: string | null): { text: string; over48: boolean } | null {
+  const t = parseTs(sent);
+  if (!Number.isFinite(t)) return null;
+  const h = (Date.now() - t) / 3_600_000;
+  const text = h < 24 ? `hace ${Math.max(1, Math.floor(h))} h` : `hace ${Math.floor(h / 24)} d`;
+  return { text, over48: h > 48 };
+}
+
+// Fecha AR (YYYY-MM-DD) de hace N días, para el deep-link de antigüedad.
+function arDayMinus(days: number): string {
+  const d = new Date(Date.now() - days * 86_400_000 - 180 * 60_000);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
 }
 
 function ReviewsDashboard() {
@@ -68,9 +90,11 @@ function ReviewsDashboard() {
   const [dispatchedFrom, setDispatchedFrom] = useState(searchParams.get('dispatched_from') || '');
   const [dispatchedTo, setDispatchedTo]     = useState(searchParams.get('dispatched_to') || '');
   const [sentFrom, setSentFrom] = useState(searchParams.get('sent_from') || '');
-  const [sentTo, setSentTo]     = useState(searchParams.get('sent_to') || '');
+  // aging=48h (deep-link del dashboard) filtra a las enviadas hace +48h.
+  const [sentTo, setSentTo]     = useState(searchParams.get('sent_to') || (searchParams.get('aging') === '48h' ? arDayMinus(2) : ''));
   const [hasResponse, setHasResponse] = useState(searchParams.get('has_response') || '');
   const [hasCoupon, setHasCoupon]     = useState(searchParams.get('has_coupon') || '');
+  const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const perPage = 20;
 
@@ -298,6 +322,15 @@ function ReviewsDashboard() {
               <option value="yes">Con cupón emitido</option>
               <option value="no">Sin cupón</option>
             </select>
+            <select
+              value={sort}
+              onChange={e => setSort(e.target.value as 'newest' | 'oldest')}
+              className="border border-border rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
+              title="Orden por fecha de envío"
+            >
+              <option value="newest">Más nuevas</option>
+              <option value="oldest">Más antiguas</option>
+            </select>
           </div>
           <div className="flex flex-wrap gap-2 items-center text-[12px] text-muted-foreground">
             <span>Despacho:</span>
@@ -320,7 +353,7 @@ function ReviewsDashboard() {
         </div>
 
         {msg && (
-          <div className={`mb-3 px-3 py-2 rounded-lg text-[12px] ${msg.startsWith('✓') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+          <div className={`mb-3 px-3 py-2 rounded-lg text-[12px] ${msg.startsWith('✓') ? 'bg-success-soft text-success' : 'bg-destructive/10 text-destructive'}`}>
             {msg}
           </div>
         )}
@@ -345,7 +378,11 @@ function ReviewsDashboard() {
                 <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Acciones</div>
               </div>
 
-              {rows.map((row, idx) => (
+              {[...rows].sort((a, b) => {
+                const ta = parseTs(a.sent_at || a.dispatched_at) || 0;
+                const tb = parseTs(b.sent_at || b.dispatched_at) || 0;
+                return sort === 'newest' ? tb - ta : ta - tb;
+              }).map((row, idx) => (
                 <div
                   key={row.id}
                   className={`grid grid-cols-2 gap-x-3 gap-y-2 lg:grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] px-4 py-3 items-center border-b border-border hover:bg-muted/50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
@@ -367,8 +404,16 @@ function ReviewsDashboard() {
                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[row.status] || 'bg-muted text-muted-foreground'}`}>
                       {row.status_label}
                     </span>
+                    {row.status === 'sent' && !row.responded_at && (() => {
+                      const a = agingSince(row.sent_at);
+                      return a ? (
+                        <div className={`text-[10px] mt-0.5 ${a.over48 ? 'text-warning font-medium' : 'text-muted-foreground/70'}`}>
+                          Pendiente · {a.text}
+                        </div>
+                      ) : null;
+                    })()}
                     {row.fail_reason && (
-                      <div className="text-[10px] text-red-500 mt-0.5 truncate max-w-[100px]" title={row.fail_reason}>{row.fail_reason}</div>
+                      <div className="text-[10px] text-destructive mt-0.5 truncate max-w-[100px]" title={row.fail_reason}>{row.fail_reason}</div>
                     )}
                   </div>
 
