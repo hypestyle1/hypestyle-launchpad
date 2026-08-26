@@ -4,7 +4,7 @@ import { getCostMap } from '@/lib/dashboard/cost-map';
 import { fetchFinanceOrders } from '@/lib/finance/fetch-orders';
 import { loadFinanceConfig } from '@/lib/finance/load-config';
 import { computeOrderProfit, aggregateFinance, type OrderProfit } from '@/lib/finance/calculations';
-import { aggregateByGateway, type OrderFeeRow } from '@/lib/finance/fees';
+import { aggregateByGateway, feeCoverageBreakdown, type OrderFeeRow } from '@/lib/finance/fees';
 import { previousRange, granularityFor, bucketKey, emptyBuckets, type Range } from '@/lib/dashboard/periods';
 
 export const dynamic = 'force-dynamic';
@@ -59,6 +59,8 @@ export async function GET(req: NextRequest) {
       summary, previous, gateways, timeseries,
       dataQuality: {
         coverage: summary.coverage,
+        // Cobertura de fees SEPARADA: exact vs configured vs missing (por monto).
+        feeCoverage: feeCoverageBreakdown(feeRows),
         feeExactOrders: profits.filter((p) => p.fee.source === 'exact').length,
         catalogProductsWithoutCost: costMap.productsWithoutCost,
         truncated: cur.truncated,

@@ -32,8 +32,11 @@ export default function Rentabilidad() {
   const [products, setProducts] = useState<ProdRow[] | null>(null);
   const [sel, setSel] = useState<OrderRow | null>(null);
   const [marginFilter, setMarginFilter] = useState<'all' | 'positive' | 'negative' | 'incomplete'>('all');
+  const [syncOpen, setSyncOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [syncMsg, setSyncMsg] = useState('');
+  const [syncReport, setSyncReport] = useState<any | null>(null);
+  const [syncOrderId, setSyncOrderId] = useState('');
+  const [syncN, setSyncN] = useState('5');
 
   const load = useCallback(async (r: RangeState) => {
     if (!puede('costos')) return;
@@ -45,15 +48,18 @@ export default function Rentabilidad() {
 
   useEffect(() => { if (autorizado) load(range); }, [autorizado, range, load]);
 
-  async function syncMp() {
-    setSyncing(true); setSyncMsg('');
+  async function runSync(dryRun: boolean) {
+    setSyncing(true); setSyncReport(null);
     try {
-      const res = await fetch('/api/admin/finance/sync-mp', { method: 'POST', headers: headers() });
+      const qs = new URLSearchParams();
+      if (dryRun) qs.set('dryRun', '1');
+      if (syncOrderId.trim()) qs.set('orderId', syncOrderId.trim());
+      else qs.set('limit', String(Math.max(1, Math.min(200, parseInt(syncN) || 5))));
+      const res = await fetch(`/api/admin/finance/sync-mp?${qs}`, { method: 'POST', headers: headers() });
       const d = await res.json();
-      if (!res.ok) { setSyncMsg(d.error || 'Error en el sync'); return; }
-      setSyncMsg(`Sincronizados ${d.synced} · fallidos ${d.failed?.length ?? 0} de ${d.candidates} candidatos`);
-      load(range);
-    } catch { setSyncMsg('Error al conectar'); } finally { setSyncing(false); }
+      setSyncReport(res.ok ? d : { error: d.error || 'Error en el sync' });
+      if (res.ok && !dryRun) load(range);
+    } catch { setSyncReport({ error: 'Error al conectar' }); } finally { setSyncing(false); }
   }
 
   const filteredOrders = useMemo(() => {
@@ -110,15 +116,57 @@ export default function Rentabilidad() {
           <p className="text-[13px] text-muted-foreground mt-0.5">Qué pedidos y productos dejan margen.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={syncMp} disabled={syncing} title="Traer fees reales de Mercado Pago"
-            className="h-9 px-3 rounded-lg border border-border bg-card text-[12px] font-medium text-foreground hover:border-border-mid disabled:opacity-50">
-            {syncing ? 'Sincronizando…' : 'Sincronizar MP'}
+          <button onClick={() => setSyncOpen((o) => !o)} title="Traer fees reales de Mercado Pago"
+            className="h-9 px-3 rounded-lg border border-border bg-card text-[12px] font-medium text-foreground hover:border-border-mid">
+            Sincronizar MP
           </button>
           <DateRangePicker value={range} onChange={setRange} />
           <button onClick={() => load(range)} className="h-9 w-9 grid place-items-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"><RefreshCw size={14} /></button>
         </div>
       </div>
-      {syncMsg && <p className="text-[12px] text-muted-foreground mb-3">{syncMsg}</p>}
+
+      {syncOpen && (
+        <div className="bg-card border border-border rounded-lg p-4 mb-4">
+          <p className="text-[13px] font-semibold text-foreground mb-1">Sincronizar fees reales de Mercado Pago</p>
+          <p className="text-[12px] text-muted-foreground mb-3">Lee la comisión real de cada transacción (no toca el checkout) y la guarda en el pedido. <strong>Previsualizá primero</strong> — compará contra el portal de MP antes de escribir. Idempotente: no re-escribe los ya sincronizados.</p>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <label className="text-[12px] text-muted-foreground flex items-center gap-1">Pedido puntual #
+              <input value={syncOrderId} onChange={(e) => setSyncOrderId(e.target.value)} placeholder="opcional" className="w-24 border border-border rounded-md bg-card px-2 py-1 text-[13px] text-foreground" /></label>
+            <span className="text-[12px] text-muted-foreground/60">o</span>
+            <label className="text-[12px] text-muted-foreground flex items-center gap-1">N pedidos
+              <input type="number" value={syncN} onChange={(e) => setSyncN(e.target.value)} disabled={!!syncOrderId.trim()} className="w-16 border border-border rounded-md bg-card px-2 py-1 text-[13px] text-foreground text-right disabled:opacity-50" /></label>
+            <button onClick={() => runSync(true)} disabled={syncing} className="h-8 px-3 rounded-md border border-border text-[12px] font-medium text-foreground hover:bg-muted disabled:opacity-50">{syncing ? '…' : 'Previsualizar'}</button>
+            <button onClick={() => runSync(false)} disabled={syncing} className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold disabled:opacity-50">{syncing ? '…' : 'Sincronizar (escribe)'}</button>
+          </div>
+          {syncReport && (syncReport.error
+            ? <p className="text-[12px] text-destructive">{syncReport.error}</p>
+            : (
+              <div className="text-[12px]">
+                <p className="text-muted-foreground mb-2">Modo: <span className="text-foreground">{syncReport.mode}</span> · candidatos {syncReport.candidates} · ya sincronizados {syncReport.alreadySynced} · {syncReport.dryRun ? `escribiría ${syncReport.wouldWrite}` : `escritos ${syncReport.synced}`} · fallidos {syncReport.failed?.length ?? 0}</p>
+                {(syncReport.samples || []).length > 0 && (
+                  <div className="overflow-x-auto border border-border rounded-md">
+                    <table className="w-full text-[12px]">
+                      <thead><tr className="bg-muted/40 text-[10px] uppercase text-muted-foreground/80">
+                        <th className="text-left px-2 py-1">Pedido</th><th className="text-right px-2 py-1">Bruto</th><th className="text-right px-2 py-1">Fee real</th><th className="text-right px-2 py-1">Neto</th><th className="text-right px-2 py-1">Retenc.</th><th className="text-right px-2 py-1">Fee ef.</th>
+                      </tr></thead>
+                      <tbody>{syncReport.samples.map((s: any) => (
+                        <tr key={s.order} className="border-t border-border">
+                          <td className="px-2 py-1 tabular-nums">#{s.order}</td>
+                          <td className="px-2 py-1 text-right tabular-nums">{fmtARS(s.gross)}</td>
+                          <td className="px-2 py-1 text-right tabular-nums text-destructive">−{fmtARS(s.gatewayFee)}</td>
+                          <td className="px-2 py-1 text-right tabular-nums">{fmtARS(s.netReceived)}</td>
+                          <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">{s.otherCashDeduction ? `−${fmtARS(s.otherCashDeduction)}` : '—'}</td>
+                          <td className="px-2 py-1 text-right tabular-nums">{s.effectiveFeeRate}%</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                )}
+                <p className="text-[11px] text-muted-foreground/60 mt-2">Compará “Fee real” y “Neto” contra el detalle de la operación en el portal de MP antes de correr el batch completo.</p>
+              </div>
+            ))}
+        </div>
+      )}
 
       <div className="flex items-center gap-1 mb-4">
         {(['pedidos', 'productos'] as const).map((t) => (

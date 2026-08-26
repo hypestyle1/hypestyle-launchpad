@@ -160,3 +160,19 @@ export function feeCoverage(rows: OrderFeeRow[]): number {
   }
   return total > 0 ? known / total : 0;
 }
+
+/**
+ * Cobertura de fees SEPARADA por calidad (ponderada por gross). Clave para no
+ * dar falsa confianza: 'configured 100%' NO es lo mismo que 'exact 100%'.
+ */
+export function feeCoverageBreakdown(rows: OrderFeeRow[]): { exact: number; configured: number; missing: number } {
+  let total = 0, exact = 0, configured = 0, missing = 0;
+  for (const { gross, fee } of rows) {
+    total += gross;
+    if (fee.source === 'exact' || fee.source === 'snapshot') exact += gross;
+    else if (fee.source === 'configured') configured += gross;
+    else missing += gross;
+  }
+  if (total <= 0) return { exact: 0, configured: 0, missing: 0 };
+  return { exact: exact / total, configured: configured / total, missing: missing / total };
+}

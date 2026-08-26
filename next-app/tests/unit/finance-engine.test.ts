@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { providerOf, groupOf, ruleFor, computeOrderFee, aggregateByGateway, feeCoverage } from '@/lib/finance/fees';
+import { providerOf, groupOf, ruleFor, computeOrderFee, aggregateByGateway, feeCoverage, feeCoverageBreakdown } from '@/lib/finance/fees';
 import { computeShipping } from '@/lib/finance/shipping';
 import { computeVariableCosts } from '@/lib/finance/variable-costs';
 import { computeOrderProfit, aggregateFinance, type OrderInput } from '@/lib/finance/calculations';
@@ -93,6 +93,19 @@ describe('fees — agregación por pasarela y effective fee rate', () => {
       { gross: 20000, fee: computeOrderFee({ paymentMethod: 'raro', gross: 20000, dateISO: '2026-08-10' }, []) },
     ];
     expect(feeCoverage(rows)).toBeCloseTo(0.8, 4);
+  });
+
+  it('feeCoverageBreakdown separa exact / configured / missing (no confundir 100% configured con exact)', () => {
+    const snapshot = { provider: 'mercadopago_card' as const, transactionId: 't', grossAmount: 50000, gatewayFee: 2000, netReceived: 48000, otherCashDeduction: 0, breakdown: [], currency: 'ARS', syncedAt: '', source: 'exact' as const };
+    const rows = [
+      { gross: 50000, fee: computeOrderFee({ paymentMethod: 'tarjeta', gross: 50000, dateISO: '2026-08-10', snapshot }, rules) }, // exact
+      { gross: 30000, fee: computeOrderFee({ paymentMethod: 'tarjeta', gross: 30000, dateISO: '2026-08-10' }, rules) },           // configured
+      { gross: 20000, fee: computeOrderFee({ paymentMethod: 'raro', gross: 20000, dateISO: '2026-08-10' }, []) },                 // missing
+    ];
+    const b = feeCoverageBreakdown(rows);
+    expect(b.exact).toBeCloseTo(0.5, 4);       // 50k / 100k
+    expect(b.configured).toBeCloseTo(0.3, 4);
+    expect(b.missing).toBeCloseTo(0.2, 4);
   });
 });
 

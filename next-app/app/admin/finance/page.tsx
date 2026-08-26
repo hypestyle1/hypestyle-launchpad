@@ -14,7 +14,7 @@ interface SummaryResp {
   summary: FinanceSummary;
   previous: FinanceSummary | null;
   gateways: GatewayRow[];
-  dataQuality: { coverage: { cogs: number; fees: number; shipping: number; variable: number }; feeExactOrders: number; catalogProductsWithoutCost: number };
+  dataQuality: { coverage: { cogs: number; fees: number; shipping: number; variable: number }; feeCoverage: { exact: number; configured: number; missing: number }; feeExactOrders: number; catalogProductsWithoutCost: number };
 }
 
 export default function FinanceResumen() {
@@ -64,7 +64,7 @@ export default function FinanceResumen() {
     { label: 'Net Revenue', amount: s.netRevenue, kind: 'subtotal' },
     { label: 'COGS', amount: s.cogs, kind: 'subtract', source: dq && dq.coverage.cogs >= 1 ? 'configured' : 'configured', hint: dq ? `cobertura ${pct(dq.coverage.cogs)}` : undefined },
     { label: 'Gross Profit', amount: s.grossProfit, kind: 'subtotal', hint: `margen bruto ${pct(s.grossMargin)}` },
-    { label: 'Payment Fees', amount: s.paymentFees, kind: 'subtract', source: (dq && dq.feeExactOrders > 0) ? 'exact' : 'configured', hint: dq ? `cobertura ${pct(dq.coverage.fees)} · fee ef. ${pct(s.effectiveFeeRate)}` : undefined },
+    { label: 'Payment Fees', amount: s.paymentFees, kind: 'subtract', source: (dq && dq.feeCoverage.exact > 0) ? 'exact' : 'configured', hint: dq ? `exacto ${pct(dq.feeCoverage.exact)} · configurado ${pct(dq.feeCoverage.configured)} · fee ef. ${pct(s.effectiveFeeRate)}` : undefined },
     { label: 'Shipping Absorbed', amount: dq && dq.coverage.shipping > 0 ? s.shippingAbsorbed : null, kind: 'subtract', source: dq && dq.coverage.shipping > 0 ? 'configured' : 'missing' },
     { label: 'Variable Costs', amount: dq && dq.coverage.variable > 0 ? s.variableCosts : null, kind: 'subtract', source: dq && dq.coverage.variable > 0 ? 'configured' : 'missing' },
     { label: 'Contribution Profit', amount: s.contributionProfit, kind: 'result', hint: `margen de contribución ${pct(s.contributionMargin)} · estimado` },
@@ -72,7 +72,8 @@ export default function FinanceResumen() {
 
   const toComplete = dq ? [
     dq.catalogProductsWithoutCost > 0 ? { label: `${dq.catalogProductsWithoutCost} productos sin costo configurado`, href: '/admin/costos?onlyUnassigned=1' } : null,
-    dq.coverage.fees < 1 ? { label: `${pct(1 - dq.coverage.fees)} del revenue sin fee conocido`, href: '/admin/finance/config' } : null,
+    dq.feeCoverage.exact < 0.99 ? { label: `Fees de Mercado Pago sin sincronizar (hoy estimados por regla)`, href: '/admin/finance/rentabilidad' } : null,
+    dq.feeCoverage.missing > 0 ? { label: `${pct(dq.feeCoverage.missing)} del revenue sin regla de fee`, href: '/admin/finance/config' } : null,
     dq.coverage.shipping < 1 ? { label: `Costo real de envío sin configurar`, href: '/admin/finance/config' } : null,
     dq.coverage.variable < 1 ? { label: `Costos variables sin configurar`, href: '/admin/finance/config' } : null,
     { label: 'Meta Ads no conectado (entra en el próximo paso)', href: null },
@@ -116,7 +117,11 @@ export default function FinanceResumen() {
             <div>
               <FinanceSectionTitle right={<span className="text-[11px] text-muted-foreground">{dq ? `${dq.feeExactOrders} con fee exacto` : ''}</span>}>Pasarelas de pago</FinanceSectionTitle>
               <GatewayTable rows={data?.gateways || []} />
-              <p className="text-[11px] text-muted-foreground/70 mt-2">Fee efectivo = costo económico / bruto cobrado. Los fees exactos de Mercado Pago se sincronizan desde Rentabilidad.</p>
+              {dq && (
+                <p className="text-[11px] text-muted-foreground/70 mt-2">
+                  Cobertura de fees: <span className="text-success">exacto {pct(dq.feeCoverage.exact)}</span> · configurado {pct(dq.feeCoverage.configured)}{dq.feeCoverage.missing > 0 && <> · <span className="text-warning">faltante {pct(dq.feeCoverage.missing)}</span></>}. Los fees exactos de Mercado Pago se sincronizan desde Rentabilidad.
+                </p>
+              )}
             </div>
             <div>
               <FinanceSectionTitle>Datos por completar</FinanceSectionTitle>
