@@ -27,7 +27,7 @@ const channels = [
     label: "Creadores de contenido",
     description: "¿Tu estilo va con el universo STYLE&CULTURE? Sumate.",
     action: "Postulate acá",
-    href: "https://docs.google.com/forms/d/e/1FAIpQLSeF3f3RsTUvIZmGdD5gmBbhdc4IOTg-nhWyiHpjEjWfGenk9Q/viewform",
+    href: "/creadores/",
   },
 ];
 

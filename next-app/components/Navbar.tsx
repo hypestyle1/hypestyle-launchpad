@@ -15,13 +15,16 @@ import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 const navLinks = [
   { label: 'Shop',          href: '/productos/',               hasDropdown: true,  routeMatch: '/productos' },
   { label: 'Colecciones',   href: '/colecciones/',             hasDropdown: false, routeMatch: '/colecciones' },
-  { label: 'Reseñas',       href: '/reviews/',                 hasDropdown: false, routeMatch: '/reviews' },
+  { label: 'Contacto',      href: '/contacto/',                hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
   { label: 'FAQs',          href: '/faqs/',                    hasDropdown: false, routeMatch: '/faqs' },
   { label: 'Políticas',     href: '/politicas-de-devolucion/', hasDropdown: false, routeMatch: '/politicas' },
   { label: 'Quiénes Somos', href: '/nosotros/',                hasDropdown: false, routeMatch: '/nosotros' },
-  // Va último a propósito: el navbar es para comprar, y esto es una propuesta
-  // para quien ya conoce la marca.
-  { label: 'Trabajá con Hype', href: '/creadores/',           hasDropdown: false, routeMatch: '/creadores' },
+];
+
+const menuContacto = [
+  { label: 'Escribinos',              href: '/contacto/' },
+  { label: 'Crea contenido con Hype', href: '/creadores/' },
+  { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud/' },
 ];
 
 const megaMenu = {
@@ -91,6 +94,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen]   = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'main' | 'arriba' | 'abajo' | 'accesorios'>('main');
   const [shopOpen, setShopOpen]       = useState(false);
+  const [contactoOpen, setContactoOpen] = useState(false);
   const [logoError, setLogoError]     = useState(false);
   const [searchOpen, setSearchOpen]   = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -134,6 +138,7 @@ export default function Navbar() {
 
   const handleSmartLink = (href: string, homeHash: string | null) => {
     setShopOpen(false);
+    setContactoOpen(false);
     if (homeHash && pathname === '/') {
       document.getElementById(homeHash)?.scrollIntoView({ behavior: 'smooth' });
     } else {
@@ -163,7 +168,7 @@ export default function Navbar() {
               ? '0 8px 40px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.55)'
               : '0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.55)'),
         }}
-        onMouseLeave={() => setShopOpen(false)}
+        onMouseLeave={() => { setShopOpen(false); setContactoOpen(false); }}
       >
         <div className="h-full max-w-[1400px] mx-auto px-4 flex items-center relative">
           {searchOpen ? (
@@ -191,7 +196,10 @@ export default function Navbar() {
                   const isActive = link.routeMatch && pathname.startsWith(link.routeMatch);
                   return (
                     <div key={t(link.label)} className="relative flex items-center"
-                      onMouseEnter={() => link.hasDropdown && setShopOpen(true)}>
+                      onMouseEnter={() => {
+                        if (link.hasDropdown) setShopOpen(true);
+                        if ((link as { menu?: string }).menu === 'contacto') setContactoOpen(true);
+                      }}>
                       <Link href={link.href}
                         className="relative text-[12px] font-normal tracking-[0.06em] text-foreground flex items-center gap-1 px-3 py-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150">
                         <span className="whitespace-nowrap">{t(link.label)}</span>
@@ -199,10 +207,33 @@ export default function Navbar() {
                           <ChevronDown className="w-3 h-3 transition-transform duration-200" strokeWidth={1.2}
                             style={{ transform: shopOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                         )}
+                        {(link as { menu?: string }).menu === 'contacto' && (
+                          <ChevronDown className="w-3 h-3 transition-transform duration-200" strokeWidth={1.2}
+                            style={{ transform: contactoOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                        )}
                         {isActive && (
                           <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-foreground" />
                         )}
                       </Link>
+
+                      {(link as { menu?: string }).menu === 'contacto' && contactoOpen && !searchOpen && (
+                        <div
+                          className="absolute top-full left-0 mt-1.5 min-w-[240px] rounded-[12px] py-2 animate-in fade-in slide-in-from-top-1 duration-150"
+                          style={glassStyle}
+                          onMouseLeave={() => setContactoOpen(false)}
+                        >
+                          {menuContacto.map((l) => (
+                            <Link
+                              key={t(l.label)}
+                              href={l.href}
+                              onClick={() => setContactoOpen(false)}
+                              className="block px-4 py-2 text-[13px] text-foreground/70 hover:text-foreground hover:bg-black/[0.05] transition-colors"
+                            >
+                              {t(l.label)}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -433,10 +464,13 @@ export default function Navbar() {
                   {[
                     { label: 'Colecciones',   href: '/colecciones/' },
                     { label: 'Reseñas',       href: '/reviews/' },
+
                     { label: 'FAQs',          href: '/faqs/' },
                     { label: 'Quiénes Somos', href: '/nosotros/' },
                     { label: 'Políticas',     href: '/politicas-de-devolucion/' },
                     { label: 'Contacto',      href: '/contacto/' },
+                    { label: 'Crea contenido con Hype', href: '/creadores/' },
+                    { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud/' },
                   ].map((l) => (
                     <Link key={t(l.label)} href={l.href} onClick={closeMobile}
                       className="block text-[14px] text-foreground/50 hover:text-foreground transition-colors py-1">

@@ -38,7 +38,9 @@ const EMPTY = {
 // Los chips guardan SIEMPRE el valor canónico en español y muestran su
 // traducción. Así una postulación hecha en inglés llega con "Dos o tres por
 // mes" y no hay que pasar por una IA un dato que ya es estructurado.
-const TALLES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+// Los talles que Hype produce hoy. Ofrecer XS o XXL en el formulario
+// pregunta por algo que despues no le podemos mandar.
+const TALLES = ['S', 'M', 'L', 'XL'];
 const FRECUENCIAS = ['Una pieza por mes', 'Dos o tres por mes', 'Todas las semanas'];
 const EQUIPOS = ['Celular, edito yo', 'Celular, me edita alguien', 'Cámara, edito yo', 'Cámara, trabajo con un editor'];
 
