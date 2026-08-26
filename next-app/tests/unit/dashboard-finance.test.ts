@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   computeRevenue, computeNetRevenue, computeAOV, computeCOGS, computeSummary,
-  delta, compareSummaries, type FinanceOrder, type CostLookup,
+  delta, compareSummaries, costCoverage, computeTopProducts, classifyCustomers,
+  type FinanceOrder, type CostLookup, type CustomerOrder,
 } from '@/lib/dashboard/finance';
 
 // Costos: producto 10 = $1000/u, producto 20 = $500/u, producto 99 = sin costo.
@@ -72,6 +73,63 @@ describe('finance — resumen completo', () => {
     expect(s.aov).toBe(0);
     expect(s.profitMargin).toBe(0);
     expect(Number.isNaN(s.contributionProfit)).toBe(false);
+  });
+});
+
+describe('finance — cost coverage ponderada por revenue', () => {
+  it('mide revenue con costo conocido / revenue total, no productos', () => {
+    // producto 10 (con costo) factura 9000; producto 99 (sin costo) factura 1000.
+    const r = computeCOGS([order(10000, [[10, 3, 9000], [99, 1, 1000]])], costOf);
+    expect(r.revenueCovered).toBe(9000);
+    expect(r.revenueTotal).toBe(10000);
+    expect(costCoverage(r)).toBeCloseTo(0.9, 5); // 90% del revenue tiene costo
+  });
+
+  it('cobertura 0 si no hay líneas', () => {
+    expect(costCoverage(computeCOGS([], costOf))).toBe(0);
+  });
+});
+
+describe('finance — top products', () => {
+  it('rankea por revenue y deja contribution en null si falta costo', () => {
+    const orders = [
+      order(3000, [[10, 1, 2000], [99, 1, 1000]]),
+      order(2000, [[10, 1, 2000]]),
+    ];
+    const top = computeTopProducts(orders, costOf, 5);
+    expect(top[0].productId).toBe(10);
+    expect(top[0].units).toBe(2);
+    expect(top[0].revenue).toBe(4000);
+    expect(top[0].contribution).toBe(2000); // 4000 − 1000*2
+    const p99 = top.find((t) => t.productId === 99)!;
+    expect(p99.contribution).toBeNull(); // sin costo → no se inventa
+  });
+});
+
+describe('finance — nuevos vs recurrentes', () => {
+  const co = (key: string, iso: string, total: number): CustomerOrder => ({ customerKey: key, ms: Date.parse(iso), total });
+  const START = Date.parse('2026-08-01T00:00:00Z');
+  const END = Date.parse('2026-09-01T00:00:00Z');
+
+  it('nuevo = primer pedido dentro del período; recurrente = compró antes', () => {
+    const hist = [
+      co('ana', '2026-06-10T00:00:00Z', 1000),  // antes del período
+      co('ana', '2026-08-05T00:00:00Z', 2000),  // en período → recurrente
+      co('leo', '2026-08-10T00:00:00Z', 3000),  // primer pedido en período → nuevo
+    ];
+    const s = classifyCustomers(hist, START, END);
+    expect(s.newCount).toBe(1);          // leo
+    expect(s.recurringCount).toBe(1);    // ana
+    expect(s.revenueNew).toBe(3000);
+    expect(s.revenueRecurring).toBe(2000);
+    expect(s.recurringPct).toBeCloseTo(0.5, 5);
+  });
+
+  it('sin pedidos en el período → todo cero', () => {
+    const s = classifyCustomers([co('ana', '2026-06-10T00:00:00Z', 1000)], START, END);
+    expect(s.newCount).toBe(0);
+    expect(s.recurringCount).toBe(0);
+    expect(s.recurringPct).toBe(0);
   });
 });
 

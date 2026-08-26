@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { getCostMap } from '@/lib/dashboard/cost-map';
 import { fetchOrdersInRange, type DashOrder } from '@/lib/dashboard/wc-orders';
-import { computeSummary, compareSummaries } from '@/lib/dashboard/finance';
+import { computeSummary, compareSummaries, computeTopProducts } from '@/lib/dashboard/finance';
 import { previousRange, granularityFor, bucketKey, emptyBuckets, type Range } from '@/lib/dashboard/periods';
 
 export const dynamic = 'force-dynamic';
@@ -54,6 +54,8 @@ export async function GET(req: NextRequest) {
       return { bucket, revenue: s.revenue, orders: s.orders, profit: s.contributionProfit, aov: s.aov };
     });
 
+    const topProducts = computeTopProducts(cur.orders, costOf, 5);
+
     return NextResponse.json({
       range,
       granularity: g,
@@ -61,9 +63,11 @@ export async function GET(req: NextRequest) {
       previous,
       comparison,
       timeseries: points,
+      topProducts,
       dataQuality: {
         productsWithoutCost: current.quality.productsWithoutCost,
         unitsMissing: current.quality.unitsMissing,
+        costCoverage: current.quality.costCoverage,
         missingCostTypes: current.quality.missingCostTypes,
         contributionIsPartial: current.quality.contributionIsPartial,
         catalogProductsWithoutCost: costMap.productsWithoutCost,
