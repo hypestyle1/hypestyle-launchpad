@@ -32,7 +32,7 @@ const COLOR_ESTADO: Record<Estado, string> = {
   nuevo: 'bg-blue-100 text-blue-700',
   potencial: 'bg-amber-100 text-amber-800',
   aprobado: 'bg-green-100 text-green-700',
-  descartado: 'bg-gray-100 text-gray-500',
+  descartado: 'bg-muted text-muted-foreground',
 };
 
 const ETIQUETA: Record<Estado, string> = {
@@ -161,24 +161,24 @@ export default function CreadoresAdminPage() {
 
   if (!autorizado) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center px-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-8 w-full max-w-sm text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="bg-card rounded-lg border border-border p-8 w-full max-w-sm text-center">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground mb-4">Clave de administrador</p>
           <input
             type="password"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { sessionStorage.setItem(WP_SECRET_KEY, keyInput); setAdminKey(keyInput); setAutorizado(true); } }}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
           />
           <button
             onClick={() => { sessionStorage.setItem(WP_SECRET_KEY, keyInput); setAdminKey(keyInput); setAutorizado(true); }}
-            className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900"
+            className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90"
           >
             Entrar
           </button>
-          <Link href="/admin/login" className="block text-[12px] text-gray-400 hover:text-black mt-4 underline">
+          <Link href="/admin/login" className="block text-[12px] text-muted-foreground/70 hover:text-foreground mt-4 underline">
             O entrá con tu perfil
           </Link>
         </div>
@@ -188,9 +188,9 @@ export default function CreadoresAdminPage() {
 
   return (
     <div className="">
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[14px] font-semibold text-gray-900">Creadores</span>
+          <span className="text-[14px] font-semibold text-foreground">Creadores</span>
           {conteo.nuevo > 0 && (
             <span className="text-[12px] text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">{conteo.nuevo} sin revisar</span>
           )}
@@ -207,7 +207,7 @@ export default function CreadoresAdminPage() {
               key={f.value}
               onClick={() => setFiltro(f.value)}
               className={`px-3 py-1.5 text-[12px] rounded-full border transition-colors ${
-                filtro === f.value ? 'bg-black text-white border-black' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'
+                filtro === f.value ? 'bg-primary text-primary-foreground border-foreground' : 'bg-card border-border text-muted-foreground hover:border-border-mid'
               }`}
             >
               {f.label} <span className="opacity-50">{conteo[f.value] ?? 0}</span>
@@ -220,13 +220,13 @@ export default function CreadoresAdminPage() {
           value={busqueda}
           onChange={e => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre, mail, @ o ciudad..."
-          className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-[13px] mb-5 focus:outline-none focus:border-gray-400"
+          className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-[13px] mb-5 focus:outline-none focus:border-border-mid"
         />
 
         {cargando ? (
-          <p className="text-center py-20 text-[13px] text-gray-400">Cargando postulaciones...</p>
+          <p className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando postulaciones...</p>
         ) : visibles.length === 0 ? (
-          <p className="text-center py-20 text-[13px] text-gray-400">
+          <p className="text-center py-20 text-[13px] text-muted-foreground/70">
             {filtro === 'nuevo' ? 'No hay postulaciones sin revisar.' : 'No hay postulaciones que coincidan.'}
           </p>
         ) : (
@@ -236,12 +236,12 @@ export default function CreadoresAdminPage() {
               const esMenor = Number(c.edad) > 0 && Number(c.edad) < 18;
               const expandido = abierto === c.id;
               return (
-                <div key={c.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div key={c.id} className="bg-card rounded-lg border border-border overflow-hidden">
                   <div className="p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-[180px] flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[14px] font-semibold text-gray-900">{c.nombre}</p>
+                          <p className="text-[14px] font-semibold text-foreground">{c.nombre}</p>
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${COLOR_ESTADO[estado]}`}>
                             {ETIQUETA[estado]}
                           </span>
@@ -251,21 +251,21 @@ export default function CreadoresAdminPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-[12px] text-gray-500 mt-0.5">
+                        <p className="text-[12px] text-muted-foreground mt-0.5">
                           {[c.ciudad, c.edad && !esMenor ? `${c.edad} años` : '', c.talle ? `talle ${c.talle}` : ''].filter(Boolean).join(' · ')}
                         </p>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[12px]">
                           {c.instagram && (
-                            <a href={`https://instagram.com/${c.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black underline">
+                            <a href={`https://instagram.com/${c.instagram}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground underline">
                               @{c.instagram}
                             </a>
                           )}
                           {c.tiktok && (
-                            <a href={`https://tiktok.com/@${c.tiktok}`} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black underline">
+                            <a href={`https://tiktok.com/@${c.tiktok}`} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground underline">
                               TikTok @{c.tiktok}
                             </a>
                           )}
-                          <a href={`mailto:${c.email}`} className="text-gray-400 hover:text-black">{c.email}</a>
+                          <a href={`mailto:${c.email}`} className="text-muted-foreground/70 hover:text-foreground">{c.email}</a>
                           {c.telefono && (
                             <a href={waLink(c.telefono, c.nombre)} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:text-green-700">
                               WhatsApp
@@ -285,14 +285,14 @@ export default function CreadoresAdminPage() {
                         <button
                           onClick={() => decidir(c, 'aprobado')}
                           disabled={guardandoId === c.id || estado === 'aprobado'}
-                          className="text-[11px] font-semibold px-3 py-1.5 rounded-md bg-black text-white hover:bg-gray-900 disabled:opacity-30"
+                          className="text-[11px] font-semibold px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-30"
                         >
                           Aprobar
                         </button>
                         <button
                           onClick={() => decidir(c, 'descartado')}
                           disabled={guardandoId === c.id || estado === 'descartado'}
-                          className="text-[11px] font-semibold px-3 py-1.5 rounded-md border border-gray-300 text-gray-500 hover:text-black disabled:opacity-30"
+                          className="text-[11px] font-semibold px-3 py-1.5 rounded-md border border-border-mid text-muted-foreground hover:text-foreground disabled:opacity-30"
                         >
                           Descartar
                         </button>
@@ -301,14 +301,14 @@ export default function CreadoresAdminPage() {
 
                     <button
                       onClick={() => setAbierto(expandido ? null : c.id)}
-                      className="text-[11px] uppercase tracking-wide text-gray-400 hover:text-black mt-3"
+                      className="text-[11px] uppercase tracking-wide text-muted-foreground/70 hover:text-foreground mt-3"
                     >
                       {expandido ? 'Ocultar respuestas' : 'Ver respuestas'}
                     </button>
                   </div>
 
                   {expandido && (
-                    <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-4 space-y-3">
+                    <div className="border-t border-border bg-muted/50/60 px-4 py-4 space-y-3">
                       {(() => {
                         const original = verOriginal.has(c.id);
                         const traducida = c.traduccion_estado === 'ok';
@@ -320,8 +320,8 @@ export default function CreadoresAdminPage() {
                             {(traducida || pendiente || c.idioma_detectado) && (
                               <div className="flex flex-wrap items-center gap-2 pb-1">
                                 {c.idioma_detectado && (
-                                  <span className="text-[11px] text-gray-500">
-                                    Escrito en <span className="font-medium text-gray-700">{c.idioma_detectado}</span>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    Escrito en <span className="font-medium text-foreground/80">{c.idioma_detectado}</span>
                                   </span>
                                 )}
                                 {traducida && (
@@ -331,7 +331,7 @@ export default function CreadoresAdminPage() {
                                       if (n.has(c.id)) n.delete(c.id); else n.add(c.id);
                                       return n;
                                     })}
-                                    className="text-[11px] text-gray-500 hover:text-black underline"
+                                    className="text-[11px] text-muted-foreground hover:text-foreground underline"
                                   >
                                     {original ? 'Ver traducción' : 'Ver original'}
                                   </button>
@@ -344,7 +344,7 @@ export default function CreadoresAdminPage() {
                                     <button
                                       onClick={() => reintentarTraduccion(c)}
                                       disabled={reintentando === c.id}
-                                      className="text-[11px] text-gray-500 hover:text-black underline disabled:opacity-40"
+                                      className="text-[11px] text-muted-foreground hover:text-foreground underline disabled:opacity-40"
                                     >
                                       {reintentando === c.id ? 'Traduciendo...' : 'Reintentar'}
                                     </button>
@@ -369,7 +369,7 @@ export default function CreadoresAdminPage() {
                           <span className="text-amber-900">{c.tutor_nombre} — {c.tutor_contacto || 'sin contacto'}</span>
                         </div>
                       )}
-                      <p className="text-[11px] text-gray-400 pt-1">
+                      <p className="text-[11px] text-muted-foreground/70 pt-1">
                         Se postuló el {fmtFecha(c.creadoEl)}
                         {c.revisadoPor && ` · revisada por ${c.revisadoPor}`}
                       </p>
@@ -388,9 +388,9 @@ export default function CreadoresAdminPage() {
 function Campo({ label, valor, links = false }: { label: string; valor: string; links?: boolean }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">{label}</p>
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70 mb-1">{label}</p>
       {links ? (
-        <div className="text-[13px] text-gray-700 leading-relaxed space-y-0.5">
+        <div className="text-[13px] text-foreground/80 leading-relaxed space-y-0.5">
           {valor.split(/\s+/).filter(Boolean).map((t, i) =>
             /^https?:\/\//.test(t)
               ? <a key={i} href={t} target="_blank" rel="noopener noreferrer" className="block text-blue-700 hover:underline break-all">{t}</a>
@@ -398,7 +398,7 @@ function Campo({ label, valor, links = false }: { label: string; valor: string; 
           )}
         </div>
       ) : (
-        <p className="text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap">{valor}</p>
+        <p className="text-[13px] text-foreground/80 leading-relaxed whitespace-pre-wrap">{valor}</p>
       )}
     </div>
   );
@@ -407,8 +407,8 @@ function Campo({ label, valor, links = false }: { label: string; valor: string; 
 function Dato({ label, valor }: { label: string; valor: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-gray-400">{label}</p>
-      <p className="text-[12px] text-gray-700">{valor}</p>
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70">{label}</p>
+      <p className="text-[12px] text-foreground/80">{valor}</p>
     </div>
   );
 }

@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<string, string> = {
   processing: 'bg-orange-100 text-orange-800',
   responded: 'bg-emerald-100 text-emerald-800',
   failed: 'bg-red-100 text-red-700',
-  cancelled: 'bg-gray-100 text-gray-600',
+  cancelled: 'bg-muted text-muted-foreground',
 };
 
 function fmtDate(s: string | null) {
@@ -224,20 +224,20 @@ function ReviewsDashboard() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -248,15 +248,15 @@ function ReviewsDashboard() {
   return (
     <div className="">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[14px] font-semibold text-gray-900">Reseñas</span>
-          {total > 0 && <span className="text-[12px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{total}</span>}
+          <span className="text-[14px] font-semibold text-foreground">Reseñas</span>
+          {total > 0 && <span className="text-[12px] text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-full">{total}</span>}
 
         </div>
         <button
           onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
-          className="text-[11px] text-gray-400 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
+          className="text-[11px] text-muted-foreground/70 hover:text-foreground/80 px-2 py-1 rounded hover:bg-muted"
         >
           Salir
         </button>
@@ -264,11 +264,11 @@ function ReviewsDashboard() {
 
       <div className="max-w-[1400px] mx-auto px-4 py-5">
         {/* Filtros */}
-        <div className="bg-white rounded-xl border border-gray-200 p-3 mb-4 space-y-2">
+        <div className="bg-card rounded-lg border border-border p-3 mb-4 space-y-2">
           <div className="flex flex-wrap gap-2 items-center">
             <input
               type="text"
-              className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-gray-400"
+              className="flex-1 min-w-[200px] border border-border rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-border-mid"
               placeholder="Buscar por orden, nombre o email..."
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -276,14 +276,14 @@ function ReviewsDashboard() {
             <select
               value={status}
               onChange={e => setStatus(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+              className="border border-border rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
             >
               {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <select
               value={hasResponse}
               onChange={e => setHasResponse(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+              className="border border-border rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
             >
               <option value="">Respondidas: todas</option>
               <option value="yes">Con respuesta</option>
@@ -292,26 +292,26 @@ function ReviewsDashboard() {
             <select
               value={hasCoupon}
               onChange={e => setHasCoupon(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+              className="border border-border rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
             >
               <option value="">Cupón: todos</option>
               <option value="yes">Con cupón emitido</option>
               <option value="no">Sin cupón</option>
             </select>
           </div>
-          <div className="flex flex-wrap gap-2 items-center text-[12px] text-gray-500">
+          <div className="flex flex-wrap gap-2 items-center text-[12px] text-muted-foreground">
             <span>Despacho:</span>
-            <input type="date" value={dispatchedFrom} onChange={e => setDispatchedFrom(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-[12px]" />
+            <input type="date" value={dispatchedFrom} onChange={e => setDispatchedFrom(e.target.value)} className="border border-border rounded-lg px-2 py-1 text-[12px]" />
             <span>a</span>
-            <input type="date" value={dispatchedTo} onChange={e => setDispatchedTo(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-[12px]" />
+            <input type="date" value={dispatchedTo} onChange={e => setDispatchedTo(e.target.value)} className="border border-border rounded-lg px-2 py-1 text-[12px]" />
             <span className="ml-3">Envío:</span>
-            <input type="date" value={sentFrom} onChange={e => setSentFrom(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-[12px]" />
+            <input type="date" value={sentFrom} onChange={e => setSentFrom(e.target.value)} className="border border-border rounded-lg px-2 py-1 text-[12px]" />
             <span>a</span>
-            <input type="date" value={sentTo} onChange={e => setSentTo(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-[12px]" />
+            <input type="date" value={sentTo} onChange={e => setSentTo(e.target.value)} className="border border-border rounded-lg px-2 py-1 text-[12px]" />
             {(status || search || dispatchedFrom || dispatchedTo || sentFrom || sentTo || hasResponse || hasCoupon) && (
               <button
                 onClick={() => { setStatus(''); setSearch(''); setDispatchedFrom(''); setDispatchedTo(''); setSentFrom(''); setSentTo(''); setHasResponse(''); setHasCoupon(''); }}
-                className="ml-2 text-[11px] text-gray-400 hover:text-black underline"
+                className="ml-2 text-[11px] text-muted-foreground/70 hover:text-foreground underline"
               >
                 Limpiar filtros
               </button>
@@ -327,44 +327,44 @@ function ReviewsDashboard() {
 
         {/* Tabla */}
         {loading ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">Cargando solicitudes...</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando solicitudes...</div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">No hay solicitudes que coincidan con el filtro</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">No hay solicitudes que coincidan con el filtro</div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto">
+          <div className="bg-card rounded-lg border border-border overflow-hidden overflow-x-auto">
             <div className="lg:min-w-[1100px]">
-              <div className="hidden lg:grid grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Orden</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Cliente</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Estado</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Fechas</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-center">Reseñas</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Cupón</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Respondida</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">&nbsp;</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Acciones</div>
+              <div className="hidden lg:grid grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] gap-3 px-4 py-2.5 border-b border-border bg-muted/50">
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Orden</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cliente</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Estado</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fechas</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-center">Reseñas</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cupón</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Respondida</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">&nbsp;</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">Acciones</div>
               </div>
 
               {rows.map((row, idx) => (
                 <div
                   key={row.id}
-                  className={`grid grid-cols-2 gap-x-3 gap-y-2 lg:grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
+                  className={`grid grid-cols-2 gap-x-3 gap-y-2 lg:grid-cols-[90px_1fr_110px_1fr_100px_90px_110px_110px_1fr] px-4 py-3 items-center border-b border-border hover:bg-muted/50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
                 >
                   <div>
-                    <Link href={`/admin/reviews/${row.id}`} className="text-[13px] font-bold text-black hover:underline">
+                    <Link href={`/admin/reviews/${row.id}`} className="text-[13px] font-bold text-foreground hover:underline">
                       #{row.order_number}
                     </Link>
                   </div>
 
                   <div className="min-w-0">
-                    <Link href={`/admin/reviews/${row.id}`} className="text-[13px] font-medium text-gray-900 hover:underline truncate block">
+                    <Link href={`/admin/reviews/${row.id}`} className="text-[13px] font-medium text-foreground hover:underline truncate block">
                       {row.customer_name || '—'}
                     </Link>
-                    <div className="text-[11px] text-gray-400 truncate">{row.customer_email}</div>
+                    <div className="text-[11px] text-muted-foreground/70 truncate">{row.customer_email}</div>
                   </div>
 
                   <div>
-                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[row.status] || 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[row.status] || 'bg-muted text-muted-foreground'}`}>
                       {row.status_label}
                     </span>
                     {row.fail_reason && (
@@ -372,34 +372,34 @@ function ReviewsDashboard() {
                     )}
                   </div>
 
-                  <div className="text-[11px] text-gray-500 leading-tight">
+                  <div className="text-[11px] text-muted-foreground leading-tight">
                     <div>Despacho: {row.dispatched_at ? fmtDate(row.dispatched_at) : '—'}</div>
                     <div>Programada: {fmtDate(row.scheduled_for)}</div>
                     <div>Enviada: {fmtDate(row.sent_at)}</div>
                   </div>
 
-                  <div className="text-center text-[13px] font-medium text-gray-700">
+                  <div className="text-center text-[13px] font-medium text-foreground/80">
                     {row.received_count}/{row.reviewable_count}
                   </div>
 
                   <div className="text-[12px]">
                     {row.coupon_id ? (
                       <div className="flex items-center gap-1">
-                        <span className="font-mono text-gray-600">{row.coupon_code_masked}</span>
+                        <span className="font-mono text-muted-foreground">{row.coupon_code_masked}</span>
                         <button
                           onClick={() => copyCoupon(row)}
-                          className="text-[10px] text-gray-400 hover:text-black"
+                          className="text-[10px] text-muted-foreground/70 hover:text-foreground"
                           title="Copiar código completo"
                         >
                           {copiedId === row.id ? 'Copiado' : 'Copiar'}
                         </button>
                       </div>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span className="text-muted-foreground/50">—</span>
                     )}
                   </div>
 
-                  <div className="text-right text-[11px] text-gray-500">{fmtDate(row.responded_at)}</div>
+                  <div className="text-right text-[11px] text-muted-foreground">{fmtDate(row.responded_at)}</div>
 
                   <div />
 
@@ -408,7 +408,7 @@ function ReviewsDashboard() {
                       <button
                         onClick={() => doAction(row, 'resend')}
                         disabled={busyId === row.id}
-                        className="text-[11px] font-medium text-gray-600 hover:text-black border border-gray-200 rounded-md px-2 py-1 disabled:opacity-40"
+                        className="text-[11px] font-medium text-muted-foreground hover:text-foreground border border-border rounded-md px-2 py-1 disabled:opacity-40"
                       >
                         {busyId === row.id ? '...' : 'Reenviar'}
                       </button>
@@ -433,7 +433,7 @@ function ReviewsDashboard() {
                     )}
                     <Link
                       href={`/admin/reviews/${row.id}`}
-                      className="text-[11px] font-medium text-white bg-black hover:bg-gray-800 rounded-md px-2 py-1"
+                      className="text-[11px] font-medium text-white bg-primary hover:opacity-90 rounded-md px-2 py-1"
                     >
                       Ver
                     </Link>
@@ -450,15 +450,15 @@ function ReviewsDashboard() {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border bg-card hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               ← Anterior
             </button>
-            <span className="text-[12px] text-gray-500">Página {page} de {totalPages}</span>
+            <span className="text-[12px] text-muted-foreground">Página {page} de {totalPages}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border bg-card hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Siguiente →
             </button>
@@ -472,16 +472,16 @@ function ReviewsDashboard() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={() => !cancelLoading && setCancelTarget(null)}
         >
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <h3 className="text-[15px] font-semibold text-gray-900 mb-2">¿Cancelar esta solicitud?</h3>
-            <p className="text-[13px] text-gray-500 mb-5">
+          <div className="bg-card rounded-lg p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <h3 className="text-[15px] font-semibold text-foreground mb-2">¿Cancelar esta solicitud?</h3>
+            <p className="text-[13px] text-muted-foreground mb-5">
               Orden #{cancelTarget.order_number} — {cancelTarget.customer_name}. Esta acción desprograma el envío pendiente (si lo hay) y marca la solicitud como cancelada. No se puede deshacer.
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setCancelTarget(null)}
                 disabled={cancelLoading}
-                className="px-4 py-2 text-[13px] font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-40"
+                className="px-4 py-2 text-[13px] font-medium text-muted-foreground hover:bg-muted rounded-lg disabled:opacity-40"
               >
                 Volver
               </button>
@@ -502,7 +502,7 @@ function ReviewsDashboard() {
 
 export default function ReviewsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[13px] text-gray-400">Cargando...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[13px] text-muted-foreground/70">Cargando...</div>}>
       <ReviewsDashboard />
     </Suspense>
   );

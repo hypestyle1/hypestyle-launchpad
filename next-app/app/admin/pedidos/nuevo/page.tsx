@@ -216,20 +216,20 @@ export default function NuevoPedidoPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -239,16 +239,16 @@ export default function NuevoPedidoPage() {
 
   if (created) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm text-center">
-          <div className="text-[13px] text-gray-400 uppercase tracking-wide">Pedido creado</div>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-8 w-full max-w-sm text-center">
+          <div className="text-[13px] text-muted-foreground/70 uppercase tracking-wide">Pedido creado</div>
           <div className="text-2xl font-bold mt-1">#{created.orderNumber}</div>
-          <div className="text-[14px] text-gray-600 mt-2">{fmt(parseFloat(created.total))}</div>
+          <div className="text-[14px] text-muted-foreground mt-2">{fmt(parseFloat(created.total))}</div>
           <div className="flex flex-col gap-2 mt-6">
-            <Link href={`/admin/pedidos/${created.orderId}`} className="bg-black text-white rounded-lg py-2.5 text-[13px] font-semibold hover:bg-gray-800">
+            <Link href={`/admin/pedidos/${created.orderId}`} className="bg-primary text-primary-foreground rounded-lg py-2.5 text-[13px] font-semibold hover:opacity-90">
               Ver pedido
             </Link>
-            <Link href={`/admin/pedidos/${created.orderId}/rotulo`} className="border border-gray-200 rounded-lg py-2.5 text-[13px] font-semibold hover:border-gray-400">
+            <Link href={`/admin/pedidos/${created.orderId}/rotulo`} className="border border-border rounded-lg py-2.5 text-[13px] font-semibold hover:border-border-mid">
               Imprimir rótulo
             </Link>
             <button
@@ -256,7 +256,7 @@ export default function NuevoPedidoPage() {
                 setCreated(null); setCart([]); clearCustomer(); setNote(''); setShippingTotal('');
                 setDiscountType('none'); setDiscountValue(''); setDiscountLabel(''); setDiscountIncludesShipping(true);
               }}
-              className="text-[12px] text-gray-500 hover:text-black mt-2"
+              className="text-[12px] text-muted-foreground hover:text-foreground mt-2"
             >
               Cargar otro pedido
             </button>
@@ -267,103 +267,103 @@ export default function NuevoPedidoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 sticky top-0 z-10">
-        <Link href="/admin/pedidos" className="text-gray-400 hover:text-black transition-colors">
+    <div className="min-h-screen bg-background">
+      <div className="bg-card border-b border-border px-6 py-3 flex items-center gap-3 sticky top-0 z-10">
+        <Link href="/admin/pedidos" className="text-muted-foreground/70 hover:text-foreground transition-colors">
           <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </Link>
         <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
-        <span className="text-gray-300">|</span>
-        <span className="text-[14px] font-semibold text-gray-900">Cargar pedido manual</span>
+        <span className="text-muted-foreground/50">|</span>
+        <span className="text-[14px] font-semibold text-foreground">Cargar pedido manual</span>
       </div>
 
       <div className="max-w-[720px] mx-auto px-4 py-6 space-y-4">
         {/* Tipo de pedido */}
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-          <h2 className="text-[13px] font-semibold text-gray-900 mb-3">Tipo de pedido</h2>
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
+          <h2 className="text-[13px] font-semibold text-foreground mb-3">Tipo de pedido</h2>
           <div className="flex gap-2">
             {[{ v: false, label: 'Minorista' }, { v: true, label: 'Mayorista' }].map(opt => (
               <button
                 key={String(opt.v)}
                 onClick={() => setIsMayorista(opt.v)}
                 className={`flex-1 py-2 rounded-lg text-[13px] font-semibold border transition-colors ${
-                  isMayorista === opt.v ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                  isMayorista === opt.v ? 'bg-primary text-primary-foreground border-foreground' : 'border-border text-muted-foreground hover:border-border-mid'
                 }`}
               >
                 {opt.label}
               </button>
             ))}
           </div>
-          {isMayorista && <p className="text-[11px] text-gray-400 mt-2">Los productos se cargan al 50% del precio de lista.</p>}
+          {isMayorista && <p className="text-[11px] text-muted-foreground/70 mt-2">Los productos se cargan al 50% del precio de lista.</p>}
         </div>
 
         {/* Cliente */}
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-          <h2 className="text-[13px] font-semibold text-gray-900 mb-3">Cliente</h2>
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
+          <h2 className="text-[13px] font-semibold text-foreground mb-3">Cliente</h2>
           <div className="relative mb-3">
             <input
               type="text"
               value={customerQuery}
               onChange={e => { setCustomerQuery(e.target.value); if (customerId) setCustomerId(null); }}
               placeholder="Buscar cliente existente por nombre o email…"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400"
+              className="w-full border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid"
             />
             {customerHits.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+              <div className="absolute z-10 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
                 {customerHits.map(c => (
                   <button
                     key={c.id}
                     onClick={() => selectCustomer(c)}
-                    className="w-full flex items-center justify-between px-3 py-2 text-left text-[12px] hover:bg-gray-50"
+                    className="w-full flex items-center justify-between px-3 py-2 text-left text-[12px] hover:bg-muted/50"
                   >
                     <span>
                       <span className="font-medium">{c.name}</span>
-                      <span className="text-gray-400"> · {c.email}</span>
+                      <span className="text-muted-foreground/70"> · {c.email}</span>
                     </span>
-                    {c.isMayorista && <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded-full text-gray-500">Mayorista</span>}
+                    {c.isMayorista && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">Mayorista</span>}
                   </button>
                 ))}
               </div>
             )}
             {customerId && (
-              <button onClick={clearCustomer} className="text-[11px] text-gray-400 hover:text-red-500 mt-1">
+              <button onClick={clearCustomer} className="text-[11px] text-muted-foreground/70 hover:text-red-500 mt-1">
                 ✕ Quitar cliente seleccionado, cargar a mano
               </button>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <input placeholder="Nombre" value={billing.first_name} onChange={e => setBilling(b => ({ ...b, first_name: e.target.value }))} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="Apellido" value={billing.last_name} onChange={e => setBilling(b => ({ ...b, last_name: e.target.value }))} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="Email" value={billing.email} onChange={e => setBilling(b => ({ ...b, email: e.target.value }))} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="Teléfono" value={billing.phone} onChange={e => setBilling(b => ({ ...b, phone: e.target.value }))} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="DNI" value={dni} onChange={e => setDni(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="Instagram (opcional)" value={instagram} onChange={e => setInstagram(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="Dirección" value={billing.address_1} onChange={e => setBilling(b => ({ ...b, address_1: e.target.value }))} className="col-span-2 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="Ciudad" value={billing.city} onChange={e => setBilling(b => ({ ...b, city: e.target.value }))} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="Provincia" value={billing.state} onChange={e => setBilling(b => ({ ...b, state: e.target.value }))} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="CP" value={billing.postcode} onChange={e => setBilling(b => ({ ...b, postcode: e.target.value }))} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
-            <input placeholder="Sucursal Via Cargo (opcional)" value={viaCargoSucursal} onChange={e => setViaCargoSucursal(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400" />
+            <input placeholder="Nombre" value={billing.first_name} onChange={e => setBilling(b => ({ ...b, first_name: e.target.value }))} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="Apellido" value={billing.last_name} onChange={e => setBilling(b => ({ ...b, last_name: e.target.value }))} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="Email" value={billing.email} onChange={e => setBilling(b => ({ ...b, email: e.target.value }))} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="Teléfono" value={billing.phone} onChange={e => setBilling(b => ({ ...b, phone: e.target.value }))} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="DNI" value={dni} onChange={e => setDni(e.target.value)} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="Instagram (opcional)" value={instagram} onChange={e => setInstagram(e.target.value)} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="Dirección" value={billing.address_1} onChange={e => setBilling(b => ({ ...b, address_1: e.target.value }))} className="col-span-2 border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="Ciudad" value={billing.city} onChange={e => setBilling(b => ({ ...b, city: e.target.value }))} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="Provincia" value={billing.state} onChange={e => setBilling(b => ({ ...b, state: e.target.value }))} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="CP" value={billing.postcode} onChange={e => setBilling(b => ({ ...b, postcode: e.target.value }))} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
+            <input placeholder="Sucursal Via Cargo (opcional)" value={viaCargoSucursal} onChange={e => setViaCargoSucursal(e.target.value)} className="border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid" />
           </div>
         </div>
 
         {/* Productos */}
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-          <h2 className="text-[13px] font-semibold text-gray-900 mb-3">Productos</h2>
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
+          <h2 className="text-[13px] font-semibold text-foreground mb-3">Productos</h2>
           <div className="relative">
             <input
               type="text"
               value={productQuery}
               onChange={e => { setProductQuery(e.target.value); setSelectedProduct(null); }}
               placeholder="Buscar producto por nombre…"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400"
+              className="w-full border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid"
             />
             {filteredProducts.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+              <div className="absolute z-10 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
                 {filteredProducts.map(p => (
-                  <button key={p.id} onClick={() => selectProduct(p)} className="w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] hover:bg-gray-50">
+                  <button key={p.id} onClick={() => selectProduct(p)} className="w-full flex items-center gap-2 px-3 py-2 text-left text-[12px] hover:bg-muted/50">
                     {p.image && <img src={p.image} alt="" className="w-6 h-6 rounded object-cover flex-none" />}
                     <span className="truncate">{p.name}</span>
                   </button>
@@ -378,7 +378,7 @@ export default function NuevoPedidoPage() {
                 <select
                   value={selectedVariationId === 'none' ? '' : String(selectedVariationId)}
                   onChange={e => setSelectedVariationId(e.target.value ? Number(e.target.value) : 'none')}
-                  className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-gray-400"
+                  className="flex-1 border border-border rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-border-mid"
                 >
                   <option value="">Talle...</option>
                   {variations.map(v => (
@@ -386,11 +386,11 @@ export default function NuevoPedidoPage() {
                   ))}
                 </select>
               ) : null}
-              <input type="number" min={1} value={addQty} onChange={e => setAddQty(Math.max(1, Number(e.target.value)))} className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-gray-400" />
+              <input type="number" min={1} value={addQty} onChange={e => setAddQty(Math.max(1, Number(e.target.value)))} className="w-16 border border-border rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-border-mid" />
               <button
                 onClick={addToCart}
                 disabled={selectedVariationId === 'none'}
-                className="px-3 py-1.5 bg-black text-white rounded-lg text-[12px] font-semibold hover:bg-gray-800 disabled:opacity-40 whitespace-nowrap"
+                className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[12px] font-semibold hover:opacity-90 disabled:opacity-40 whitespace-nowrap"
               >
                 Agregar
               </button>
@@ -398,16 +398,16 @@ export default function NuevoPedidoPage() {
           )}
 
           {cart.length > 0 && (
-            <div className="mt-4 divide-y divide-gray-50 border-t border-gray-100">
+            <div className="mt-4 divide-y divide-border border-t border-border">
               {cart.map(item => (
                 <div key={item.key} className="flex items-center justify-between py-2.5">
                   <div className="min-w-0">
                     <div className="text-[13px] font-medium truncate">{item.name}</div>
-                    <div className="text-[11px] text-gray-400">{item.size ? `Talle ${item.size} · ` : ''}{fmt(unitPriceFor(item))} × {item.quantity}</div>
+                    <div className="text-[11px] text-muted-foreground/70">{item.size ? `Talle ${item.size} · ` : ''}{fmt(unitPriceFor(item))} × {item.quantity}</div>
                   </div>
                   <div className="flex items-center gap-3 flex-none">
                     <span className="text-[13px] font-semibold">{fmt(unitPriceFor(item) * item.quantity)}</span>
-                    <button onClick={() => removeFromCart(item.key)} className="text-gray-300 hover:text-red-500 text-[13px]">✕</button>
+                    <button onClick={() => removeFromCart(item.key)} className="text-muted-foreground/50 hover:text-red-500 text-[13px]">✕</button>
                   </div>
                 </div>
               ))}
@@ -416,38 +416,38 @@ export default function NuevoPedidoPage() {
         </div>
 
         {/* Envío / estado / nota */}
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 space-y-3">
+        <div className="bg-card rounded-lg border border-border px-5 py-4 space-y-3">
           <div className="flex items-center gap-3">
-            <label className="text-[12px] text-gray-500 w-24">Envío</label>
+            <label className="text-[12px] text-muted-foreground w-24">Envío</label>
             <input
               type="number" min={0}
               value={shippingTotal}
               onChange={e => setShippingTotal(e.target.value)}
               placeholder="0"
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400"
+              className="flex-1 border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid"
             />
           </div>
           <div className="flex items-center gap-3">
-            <label className="text-[12px] text-gray-500 w-24">Estado</label>
-            <select value={status} onChange={e => setStatus(e.target.value as 'processing' | 'on-hold')} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400">
+            <label className="text-[12px] text-muted-foreground w-24">Estado</label>
+            <select value={status} onChange={e => setStatus(e.target.value as 'processing' | 'on-hold')} className="flex-1 border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid">
               <option value="processing">Procesando (pagado)</option>
               <option value="on-hold">En espera</option>
             </select>
           </div>
           <div className="flex items-start gap-3">
-            <label className="text-[12px] text-gray-500 w-24 pt-2">Nota</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Ej: Canje talle L por M" className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400 resize-y" />
+            <label className="text-[12px] text-muted-foreground w-24 pt-2">Nota</label>
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Ej: Canje talle L por M" className="flex-1 border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid resize-y" />
           </div>
         </div>
 
         {/* Descuento + total + submit */}
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[13px] font-semibold text-gray-900">Descuento</h2>
+            <h2 className="text-[13px] font-semibold text-foreground">Descuento</h2>
             <button
               type="button"
               onClick={aplicarCanje100}
-              className="text-[11px] font-semibold text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1 hover:border-gray-400 hover:text-black"
+              className="text-[11px] font-semibold text-muted-foreground border border-border rounded-lg px-2.5 py-1 hover:border-border-mid hover:text-foreground"
             >
               Canje / regalo 100%
             </button>
@@ -464,7 +464,7 @@ export default function NuevoPedidoPage() {
                 type="button"
                 onClick={() => setDiscountType(opt.v)}
                 className={`flex-1 py-1.5 rounded-lg text-[12px] font-semibold border transition-colors ${
-                  discountType === opt.v ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                  discountType === opt.v ? 'bg-primary text-primary-foreground border-foreground' : 'border-border text-muted-foreground hover:border-border-mid'
                 }`}
               >
                 {opt.label}
@@ -475,28 +475,28 @@ export default function NuevoPedidoPage() {
           {discountType !== 'none' && (
             <div className="space-y-2 mb-3">
               <div className="flex items-center gap-3">
-                <label className="text-[12px] text-gray-500 w-24">{discountType === 'percent' ? 'Porcentaje' : 'Monto'}</label>
+                <label className="text-[12px] text-muted-foreground w-24">{discountType === 'percent' ? 'Porcentaje' : 'Monto'}</label>
                 <div className="flex-1 relative">
                   <input
                     type="number" min={0} max={discountType === 'percent' ? 100 : undefined}
                     value={discountValue}
                     onChange={e => setDiscountValue(e.target.value)}
                     placeholder={discountType === 'percent' ? '100' : '0'}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400"
+                    className="w-full border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-gray-400 pointer-events-none">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground/70 pointer-events-none">
                     {discountType === 'percent' ? '%' : '$'}
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-[12px] text-gray-500 w-24">Etiqueta</label>
+                <label className="text-[12px] text-muted-foreground w-24">Etiqueta</label>
                 <input
                   type="text"
                   value={discountLabel}
                   onChange={e => setDiscountLabel(e.target.value)}
                   placeholder="Descuento"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-gray-400"
+                  className="flex-1 border border-border rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-border-mid"
                 />
               </div>
               <label className="flex items-start gap-2 cursor-pointer pl-[108px]">
@@ -504,11 +504,11 @@ export default function NuevoPedidoPage() {
                   type="checkbox"
                   checked={discountIncludesShipping}
                   onChange={e => setDiscountIncludesShipping(e.target.checked)}
-                  className="mt-0.5 rounded border-gray-300"
+                  className="mt-0.5 rounded border-border-mid"
                 />
-                <span className="text-[12px] text-gray-600">Incluir el envío en el descuento</span>
+                <span className="text-[12px] text-muted-foreground">Incluir el envío en el descuento</span>
               </label>
-              <p className="text-[11px] text-gray-400 pl-[108px]">
+              <p className="text-[11px] text-muted-foreground/70 pl-[108px]">
                 Los productos y el envío se cargan a precio real y el descuento va como línea aparte:
                 el cliente ve en el mail cuánto vale lo que recibió y cuánto se le bonificó, y la facturación
                 lee el total, que queda en {fmt(total)}.
@@ -516,11 +516,11 @@ export default function NuevoPedidoPage() {
             </div>
           )}
 
-          <div className="flex justify-between text-[12px] text-gray-500 mb-1 pt-3 border-t border-gray-100">
+          <div className="flex justify-between text-[12px] text-muted-foreground mb-1 pt-3 border-t border-border">
             <span>Subtotal</span><span>{fmt(subtotal)}</span>
           </div>
           {shippingNum > 0 && (
-            <div className="flex justify-between text-[12px] text-gray-500 mb-1">
+            <div className="flex justify-between text-[12px] text-muted-foreground mb-1">
               <span>Envío</span><span>{fmt(shippingNum)}</span>
             </div>
           )}
@@ -529,7 +529,7 @@ export default function NuevoPedidoPage() {
               <span>{discountLabel.trim() || 'Descuento'}</span><span>-{fmt(discount)}</span>
             </div>
           )}
-          <div className="flex justify-between text-[15px] font-bold pt-2 border-t border-gray-100">
+          <div className="flex justify-between text-[15px] font-bold pt-2 border-t border-border">
             <span>Total</span><span>{fmt(total)}</span>
           </div>
 
@@ -538,7 +538,7 @@ export default function NuevoPedidoPage() {
           <button
             onClick={submit}
             disabled={submitting || cart.length === 0}
-            className="w-full mt-4 bg-black text-white rounded-lg py-3 text-[13px] font-semibold hover:bg-gray-800 disabled:opacity-40"
+            className="w-full mt-4 bg-primary text-primary-foreground rounded-lg py-3 text-[13px] font-semibold hover:opacity-90 disabled:opacity-40"
           >
             {submitting ? 'Creando pedido...' : 'Crear pedido'}
           </button>

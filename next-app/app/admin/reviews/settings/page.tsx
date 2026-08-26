@@ -30,10 +30,10 @@ type Settings = {
 function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string }) {
   return (
     <label className="flex items-start gap-3 py-2 cursor-pointer">
-      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 rounded border-gray-300 cursor-pointer" />
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 rounded border-border-mid cursor-pointer" />
       <div>
-        <div className="text-[13px] font-medium text-gray-900">{label}</div>
-        {hint && <div className="text-[11px] text-gray-400">{hint}</div>}
+        <div className="text-[13px] font-medium text-foreground">{label}</div>
+        {hint && <div className="text-[11px] text-muted-foreground/70">{hint}</div>}
       </div>
     </label>
   );
@@ -42,14 +42,14 @@ function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div className="py-2">
-      <label className="block text-[12px] font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-[12px] font-medium text-foreground/80 mb-1">{label}</label>
       {children}
-      {hint && <p className="text-[11px] text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="text-[11px] text-muted-foreground/70 mt-1">{hint}</p>}
     </div>
   );
 }
 
-const inputCls = 'w-full border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-gray-400';
+const inputCls = 'w-full border border-border rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-border-mid';
 
 export default function ReviewsSettingsPage() {
   const [adminKey, setAdminKey] = useState('');
@@ -105,20 +105,20 @@ export default function ReviewsSettingsPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={e => setKeyInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -127,21 +127,21 @@ export default function ReviewsSettingsPage() {
   }
 
   if (loading || !settings) {
-    return <div className="min-h-screen flex items-center justify-center text-[13px] text-gray-400">Cargando...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-[13px] text-muted-foreground/70">Cargando...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div className="min-h-screen bg-background">
+      <div className="bg-card border-b border-border px-6 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <Link href="/admin/reviews" className="text-[12px] text-gray-400 hover:text-black">← Reseñas</Link>
-          <span className="text-gray-300">|</span>
-          <span className="text-[14px] font-semibold text-gray-900">Configuración</span>
+          <Link href="/admin/reviews" className="text-[12px] text-muted-foreground/70 hover:text-foreground">← Reseñas</Link>
+          <span className="text-muted-foreground/50">|</span>
+          <span className="text-[14px] font-semibold text-foreground">Configuración</span>
         </div>
         <button
           onClick={save}
           disabled={saving}
-          className="text-[12px] font-semibold px-4 py-1.5 rounded-full bg-black text-white hover:bg-gray-800 disabled:opacity-50"
+          className="text-[12px] font-semibold px-4 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
@@ -154,8 +154,8 @@ export default function ReviewsSettingsPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-          <h2 className="text-[13px] font-semibold text-gray-900 mb-1">Sistema</h2>
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
+          <h2 className="text-[13px] font-semibold text-foreground mb-1">Sistema</h2>
           <Toggle
             checked={settings.system_enabled}
             onChange={v => set('system_enabled', v)}
@@ -181,8 +181,8 @@ export default function ReviewsSettingsPage() {
           />
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-          <h2 className="text-[13px] font-semibold text-gray-900 mb-1">Email de solicitud</h2>
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
+          <h2 className="text-[13px] font-semibold text-foreground mb-1">Email de solicitud</h2>
           <Toggle checked={settings.request_email_enabled} onChange={v => set('request_email_enabled', v)} label="Email de solicitud activado" />
           <Field label="Días de espera después del despacho">
             <input type="number" min={1} max={60} className={inputCls} value={settings.delay_days} onChange={e => set('delay_days', Number(e.target.value))} />
@@ -204,13 +204,13 @@ export default function ReviewsSettingsPage() {
           </Field>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-          <h2 className="text-[13px] font-semibold text-gray-900 mb-1">Email de confirmación</h2>
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
+          <h2 className="text-[13px] font-semibold text-foreground mb-1">Email de confirmación</h2>
           <Toggle checked={settings.confirmation_email_enabled} onChange={v => set('confirmation_email_enabled', v)} label="Email de confirmación + cupón activado" />
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-          <h2 className="text-[13px] font-semibold text-gray-900 mb-1">Beneficio</h2>
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
+          <h2 className="text-[13px] font-semibold text-foreground mb-1">Beneficio</h2>
           <Toggle checked={settings.incentive_enabled} onChange={v => set('incentive_enabled', v)} label="Beneficio activado" hint="Se entrega por dejar una reseña válida, sin importar el rating." />
           <Field label="Tipo de beneficio">
             <select className={inputCls} value={settings.incentive_type} disabled>
@@ -230,7 +230,7 @@ export default function ReviewsSettingsPage() {
           <Toggle checked={settings.incentive_exclude_sale_items} onChange={v => set('incentive_exclude_sale_items', v)} label="Excluir productos en oferta" />
         </div>
 
-        <p className="text-[11px] text-gray-400 px-1">
+        <p className="text-[11px] text-muted-foreground/70 px-1">
           El secreto de la API (HS_REVIEWS_SECRET) no se muestra ni se administra acá — se rota exclusivamente desde WooCommerce → Solicitudes de reseñas en wp-admin, para que nunca sea legible desde el navegador.
         </p>
       </div>

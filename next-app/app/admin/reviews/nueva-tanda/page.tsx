@@ -138,20 +138,20 @@ export default function NuevaTandaPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-8 w-full max-w-sm">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto mx-auto mb-6" />
-          <p className="text-[13px] text-gray-500 text-center mb-4">Clave de administrador</p>
+          <p className="text-[13px] text-muted-foreground text-center mb-4">Clave de administrador</p>
           <input
             type="password"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-black"
+            className="w-full border border-border-mid rounded-md px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-ring"
             placeholder="Clave admin"
             value={keyInput}
             onChange={(e) => setKeyInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && login()}
             autoFocus
           />
-          <button onClick={login} className="w-full bg-black text-white rounded-md py-2 text-[13px] font-semibold hover:bg-gray-900">
+          <button onClick={login} className="w-full bg-primary text-primary-foreground rounded-md py-2 text-[13px] font-semibold hover:opacity-90">
             Entrar
           </button>
         </div>
@@ -160,31 +160,31 @@ export default function NuevaTandaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div className="min-h-screen bg-background">
+      <div className="bg-card border-b border-border px-6 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto" />
-          <span className="text-gray-300">|</span>
-          <span className="text-[14px] font-semibold text-gray-900">Nueva tanda</span>
-          <Link href="/admin/reviews" className="text-[12px] text-gray-400 hover:text-black ml-1">← Solicitudes</Link>
+          <span className="text-muted-foreground/50">|</span>
+          <span className="text-[14px] font-semibold text-foreground">Nueva tanda</span>
+          <Link href="/admin/reviews" className="text-[12px] text-muted-foreground/70 hover:text-foreground ml-1">← Solicitudes</Link>
         </div>
         <button
           onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
-          className="text-[11px] text-gray-400 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
+          className="text-[11px] text-muted-foreground/70 hover:text-foreground/80 px-2 py-1 rounded hover:bg-muted"
         >
           Salir
         </button>
       </div>
 
       <div className="max-w-[1200px] mx-auto px-4 py-5">
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-[12px] text-amber-900 leading-relaxed">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 text-[12px] text-amber-900 leading-relaxed">
           Solo se listan órdenes con <strong>guía de envío real cargada</strong> (mismo criterio que &ldquo;Enviado (con guía)&rdquo; en Pedidos) — no alcanza con que la orden esté pagada o en proceso. Esto marca las órdenes seleccionadas como despachadas y programa la solicitud de reseña (el mismo flujo que el botón individual en cada pedido). Si el sistema está en <strong>modo test</strong>, solo se enviará realmente a las órdenes de la allowlist configurada — el resto queda programado pero no se envía. Revisá <Link href="/admin/reviews/settings" className="underline">Configuración</Link> antes de confirmar una tanda real.
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-3 mb-4">
+        <div className="bg-card rounded-lg border border-border p-3 mb-4">
           <input
             type="text"
-            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-gray-400"
+            className="w-full border border-border rounded-lg px-3 py-1.5 text-[13px] focus:outline-none focus:border-border-mid"
             placeholder="Buscar por orden, nombre o email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -194,19 +194,19 @@ export default function NuevaTandaPage() {
         {msg && <div className="mb-3 px-3 py-2 rounded-lg text-[12px] bg-red-50 text-red-600">{msg}</div>}
 
         {results && (
-          <div className="mb-4 bg-white rounded-xl border border-gray-200 p-4">
+          <div className="mb-4 bg-card rounded-lg border border-border p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[13px] font-semibold text-gray-900">Resultado de la tanda</h3>
-              <button onClick={() => setResults(null)} className="text-[11px] text-gray-400 hover:text-black">Cerrar</button>
+              <h3 className="text-[13px] font-semibold text-foreground">Resultado de la tanda</h3>
+              <button onClick={() => setResults(null)} className="text-[11px] text-muted-foreground/70 hover:text-foreground">Cerrar</button>
             </div>
             <div className="space-y-1">
               {results.map((r) => (
-                <div key={r.order_id} className="flex items-center justify-between text-[12px] border-b border-gray-50 py-1 last:border-0">
-                  <span className="text-gray-700">Orden #{r.order_id}</span>
+                <div key={r.order_id} className="flex items-center justify-between text-[12px] border-b border-border py-1 last:border-0">
+                  <span className="text-foreground/80">Orden #{r.order_id}</span>
                   <span className={
                     r.status === 'dispatched' ? 'text-emerald-700 font-medium'
                       : r.status === 'dispatched_no_request' ? 'text-amber-700'
-                      : r.status === 'already_dispatched' ? 'text-gray-500'
+                      : r.status === 'already_dispatched' ? 'text-muted-foreground'
                       : 'text-amber-700'
                   }>
                     {r.status === 'dispatched' && 'Despachada y programada'}
@@ -222,40 +222,40 @@ export default function NuevaTandaPage() {
         )}
 
         {loading ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">Cargando órdenes...</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando órdenes...</div>
         ) : rows.length === 0 ? (
-          <div className="text-center py-20 text-[13px] text-gray-400">No hay órdenes elegibles para una nueva solicitud.</div>
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">No hay órdenes elegibles para una nueva solicitud.</div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto">
+          <div className="bg-card rounded-lg border border-border overflow-hidden overflow-x-auto">
             <div className="min-w-[900px]">
-              <div className="grid grid-cols-[36px_90px_130px_1fr_110px_1fr_100px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50 items-center">
+              <div className="grid grid-cols-[36px_90px_130px_1fr_110px_1fr_100px] gap-3 px-4 py-2.5 border-b border-border bg-muted/50 items-center">
                 <input type="checkbox" checked={rows.length > 0 && rows.every((r) => selected.has(r.order_id))} onChange={toggleAllOnPage} />
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Orden</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Guía</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Cliente</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Fecha</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Productos elegibles</div>
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Estado</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Orden</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Guía</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cliente</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Fecha</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Productos elegibles</div>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Estado</div>
               </div>
 
               {rows.map((r, idx) => (
                 <div
                   key={r.order_id}
-                  className={`grid grid-cols-[36px_90px_130px_1fr_110px_1fr_100px] gap-3 px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
+                  className={`grid grid-cols-[36px_90px_130px_1fr_110px_1fr_100px] gap-3 px-4 py-3 items-center border-b border-border hover:bg-muted/50 transition-colors ${idx === rows.length - 1 ? 'border-b-0' : ''}`}
                 >
                   <input type="checkbox" checked={selected.has(r.order_id)} onChange={() => toggle(r.order_id)} />
-                  <div className="text-[13px] font-bold text-black">#{r.order_number}</div>
-                  <div className="text-[11px] text-gray-500 font-mono truncate" title={r.tracking}>{r.tracking || '—'}</div>
+                  <div className="text-[13px] font-bold text-foreground">#{r.order_number}</div>
+                  <div className="text-[11px] text-muted-foreground font-mono truncate" title={r.tracking}>{r.tracking || '—'}</div>
                   <div className="min-w-0">
-                    <div className="text-[13px] font-medium text-gray-900 truncate">{r.customer_name || '—'}</div>
-                    <div className="text-[11px] text-gray-400 truncate">{r.customer_email}</div>
+                    <div className="text-[13px] font-medium text-foreground truncate">{r.customer_name || '—'}</div>
+                    <div className="text-[11px] text-muted-foreground/70 truncate">{r.customer_email}</div>
                   </div>
-                  <div className="text-[12px] text-gray-500">{r.date || '—'}</div>
-                  <div className="text-[12px] text-gray-600 truncate" title={r.products.join(', ')}>
-                    {r.products.length > 0 ? r.products.join(', ') : <span className="text-gray-300">Sin productos elegibles</span>}
+                  <div className="text-[12px] text-muted-foreground">{r.date || '—'}</div>
+                  <div className="text-[12px] text-muted-foreground truncate" title={r.products.join(', ')}>
+                    {r.products.length > 0 ? r.products.join(', ') : <span className="text-muted-foreground/50">Sin productos elegibles</span>}
                   </div>
                   <div>
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                       {STATUS_LABELS[r.status] || r.status}
                     </span>
                   </div>
@@ -268,12 +268,12 @@ export default function NuevaTandaPage() {
         {pages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-4">
             <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40">
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border bg-card hover:bg-muted/50 disabled:opacity-40">
               ← Anterior
             </button>
-            <span className="text-[12px] text-gray-500">Página {page} de {pages} ({total} elegibles)</span>
+            <span className="text-[12px] text-muted-foreground">Página {page} de {pages} ({total} elegibles)</span>
             <button onClick={() => setPage((p) => Math.min(pages, p + 1))} disabled={page === pages}
-              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40">
+              className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-border bg-card hover:bg-muted/50 disabled:opacity-40">
               Siguiente →
             </button>
           </div>
@@ -282,13 +282,13 @@ export default function NuevaTandaPage() {
 
       {/* Barra flotante de selección */}
       {selected.size > 0 && (
-        <div className="fixed bottom-0 inset-x-0 bg-black text-white px-6 py-3 flex items-center justify-between z-20">
+        <div className="fixed bottom-0 inset-x-0 bg-primary text-primary-foreground px-6 py-3 flex items-center justify-between z-20">
           <span className="text-[13px]">{selected.size} orden(es) seleccionada(s)</span>
           <div className="flex gap-2">
-            <button onClick={() => setSelected(new Set())} className="text-[12px] text-gray-300 hover:text-white px-3 py-1.5">
+            <button onClick={() => setSelected(new Set())} className="text-[12px] text-primary-foreground/70 hover:text-primary-foreground px-3 py-1.5">
               Deseleccionar
             </button>
-            <button onClick={() => setConfirmOpen(true)} className="text-[12px] font-semibold bg-white text-black rounded-md px-4 py-1.5 hover:bg-gray-100">
+            <button onClick={() => setConfirmOpen(true)} className="text-[12px] font-semibold bg-card text-foreground rounded-md px-4 py-1.5 hover:bg-muted">
               Confirmar tanda →
             </button>
           </div>
@@ -298,26 +298,26 @@ export default function NuevaTandaPage() {
       {/* Confirmación explícita antes de despachar */}
       {confirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !sending && setConfirmOpen(false)}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-[15px] font-semibold text-gray-900 mb-2">¿Programar solicitud para {selectedRows.length} orden(es)?</h3>
-            <p className="text-[13px] text-gray-500 mb-4">
+          <div className="bg-card rounded-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[15px] font-semibold text-foreground mb-2">¿Programar solicitud para {selectedRows.length} orden(es)?</h3>
+            <p className="text-[13px] text-muted-foreground mb-4">
               Se va a marcar cada orden como despachada y programar el email según el retraso configurado. Esta acción no envía nada de inmediato.
             </p>
-            <div className="space-y-1 mb-5 border border-gray-100 rounded-lg divide-y divide-gray-50 max-h-[240px] overflow-y-auto">
+            <div className="space-y-1 mb-5 border border-border rounded-lg divide-y divide-border max-h-[240px] overflow-y-auto">
               {selectedRows.map((r) => (
                 <div key={r.order_id} className="px-3 py-2 text-[12px] flex items-center justify-between">
-                  <span className="font-medium text-gray-800">#{r.order_number} — {r.customer_name}</span>
-                  <span className="text-gray-400">{r.customer_email}</span>
+                  <span className="font-medium text-foreground">#{r.order_number} — {r.customer_name}</span>
+                  <span className="text-muted-foreground/70">{r.customer_email}</span>
                 </div>
               ))}
             </div>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setConfirmOpen(false)} disabled={sending}
-                className="px-4 py-2 text-[13px] font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-40">
+                className="px-4 py-2 text-[13px] font-medium text-muted-foreground hover:bg-muted rounded-lg disabled:opacity-40">
                 Volver
               </button>
               <button onClick={confirmBatch} disabled={sending}
-                className="px-4 py-2 text-[13px] font-semibold text-white bg-black hover:bg-gray-900 rounded-lg disabled:opacity-40">
+                className="px-4 py-2 text-[13px] font-semibold text-primary-foreground bg-primary hover:opacity-90 rounded-lg disabled:opacity-40">
                 {sending ? 'Programando...' : 'Sí, programar tanda'}
               </button>
             </div>

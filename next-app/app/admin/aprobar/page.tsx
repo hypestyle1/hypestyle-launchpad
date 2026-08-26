@@ -17,9 +17,9 @@ type Solicitud = {
 function Row({ label, value }: { label: string; value: string }) {
   if (!value) return null;
   return (
-    <div className="flex gap-4 py-2 border-b border-gray-100 last:border-0">
-      <span className="text-[12px] text-gray-400 w-32 shrink-0">{label}</span>
-      <span className="text-[13px] text-gray-900 font-medium break-words">{value}</span>
+    <div className="flex gap-4 py-2 border-b border-border last:border-0">
+      <span className="text-[12px] text-muted-foreground/70 w-32 shrink-0">{label}</span>
+      <span className="text-[13px] text-foreground font-medium break-words">{value}</span>
     </div>
   );
 }
@@ -64,13 +64,13 @@ function Aprobacion() {
     }
   }
 
-  if (loading) return <p className="text-[13px] text-gray-500 py-8 text-center">Cargando la solicitud...</p>;
+  if (loading) return <p className="text-[13px] text-muted-foreground py-8 text-center">Cargando la solicitud...</p>;
 
   if (error && !solicitud) {
     return (
       <div className="text-center py-6">
-        <p className="text-[14px] font-semibold text-gray-900 mb-2">{error}</p>
-        <Link href="/admin/mayoristas" className="text-[12px] text-gray-500 hover:text-black underline">
+        <p className="text-[14px] font-semibold text-foreground mb-2">{error}</p>
+        <Link href="/admin/mayoristas" className="text-[12px] text-muted-foreground hover:text-foreground underline">
           Ver todas las solicitudes en el panel
         </Link>
       </div>
@@ -82,17 +82,17 @@ function Aprobacion() {
   if (resultado) {
     return (
       <div className="text-center py-6">
-        <p className="text-[15px] font-semibold text-gray-900 mb-2">
+        <p className="text-[15px] font-semibold text-foreground mb-2">
           {resultado === 'aprobar' ? 'Solicitud aprobada' : 'Solicitud rechazada'}
         </p>
-        <p className="text-[13px] text-gray-500 leading-relaxed">
+        <p className="text-[13px] text-muted-foreground leading-relaxed">
           {resultado === 'aprobar'
             ? emailSent
               ? `${solicitud.razonSocial} ya puede entrar. Le avisamos por mail a ${solicitud.email}.`
               : `${solicitud.razonSocial} ya puede entrar, pero el mail de aviso no salió. Escribile vos a ${solicitud.email}.`
             : 'La cuenta queda sin acceso al catálogo.'}
         </p>
-        <Link href="/admin/mayoristas" className="inline-block mt-6 text-[12px] text-gray-500 hover:text-black underline">
+        <Link href="/admin/mayoristas" className="inline-block mt-6 text-[12px] text-muted-foreground hover:text-foreground underline">
           Ir al panel de mayoristas
         </Link>
       </div>
@@ -104,19 +104,19 @@ function Aprobacion() {
   return (
     <>
       <div className="mb-5">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">Solicitud de acceso</p>
-        <h1 className="text-[20px] font-bold text-gray-900 mt-1">{solicitud.razonSocial}</h1>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/70">Solicitud de acceso</p>
+        <h1 className="text-[20px] font-bold text-foreground mt-1">{solicitud.razonSocial}</h1>
       </div>
 
       {yaDecidida && (
-        <div className={`rounded-lg px-4 py-3 mb-5 text-[12px] ${solicitud.status === 'active' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
+        <div className={`rounded-lg px-4 py-3 mb-5 text-[12px] ${solicitud.status === 'active' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-muted/50 text-muted-foreground border border-border'}`}>
           {solicitud.status === 'active'
             ? 'Esta solicitud ya está aprobada y el cliente tiene acceso.'
             : 'Esta solicitud ya fue rechazada. Podés aprobarla igual si cambiaste de idea.'}
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 px-5 py-2">
+      <div className="bg-card rounded-lg border border-border px-5 py-2">
         <Row label="CUIT" value={solicitud.cuit} />
         <Row label="Contacto" value={solicitud.contacto} />
         <Row label="Mail" value={solicitud.email} />
@@ -133,20 +133,20 @@ function Aprobacion() {
         <button
           onClick={() => decidir('aprobar')}
           disabled={saving}
-          className="flex-1 bg-black text-white py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-gray-900 transition-colors disabled:opacity-50"
+          className="flex-1 bg-primary text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:opacity-90 transition-colors disabled:opacity-50"
         >
           {saving ? '...' : 'Aprobar acceso'}
         </button>
         <button
           onClick={() => decidir('rechazar')}
           disabled={saving}
-          className="px-5 text-[12px] font-semibold text-gray-500 border border-gray-300 rounded-full hover:text-black hover:border-gray-400 transition-colors disabled:opacity-50"
+          className="px-5 text-[12px] font-semibold text-muted-foreground border border-border-mid rounded-full hover:text-foreground hover:border-border-mid transition-colors disabled:opacity-50"
         >
           Rechazar
         </button>
       </div>
 
-      <p className="text-[11px] text-gray-400 mt-4 leading-relaxed">
+      <p className="text-[11px] text-muted-foreground/70 mt-4 leading-relaxed">
         Al aprobar, le llega un mail avisándole que ya puede entrar con la contraseña que eligió al registrarse.
       </p>
     </>
@@ -155,10 +155,10 @@ function Aprobacion() {
 
 export default function AprobarPage() {
   return (
-    <div className="min-h-screen bg-[#f5f5f5] flex items-start justify-center px-4 py-10 sm:py-16">
+    <div className="min-h-screen bg-background flex items-start justify-center px-4 py-10 sm:py-16">
       <div className="w-full max-w-[440px]">
         <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-6 w-auto mx-auto mb-8" />
-        <Suspense fallback={<p className="text-[13px] text-gray-500 py-8 text-center">Cargando...</p>}>
+        <Suspense fallback={<p className="text-[13px] text-muted-foreground py-8 text-center">Cargando...</p>}>
           <Aprobacion />
         </Suspense>
       </div>
