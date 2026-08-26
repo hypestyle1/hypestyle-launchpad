@@ -11,7 +11,8 @@ import { DataTable, type Column } from '@/components/admin/DataTable';
 import { DateRangePicker, makeRangeState, type RangeState } from '@/components/admin/DateRangePicker';
 import { MetricChart, type MetricKey } from '@/components/admin/MetricChart';
 import {
-  KpiCard, SectionTitle, AdsNotConnected, AttentionRow, type AttentionItem,
+  KpiCard, SectionTitle, AdsStrip, AttentionRow, TopProducts, CustomerSplit,
+  type AttentionItem, type ProductRank, type CustomerSplitData,
 } from '@/components/admin/dashboard/blocks';
 import type { FinanceSummary, SummaryComparison } from '@/lib/dashboard/finance';
 import type { Granularity } from '@/lib/dashboard/periods';
@@ -22,7 +23,8 @@ interface SummaryResponse {
   comparison: SummaryComparison | null;
   granularity: Granularity;
   timeseries: { bucket: string; revenue: number; orders: number; profit: number; aov: number }[];
-  dataQuality: { productsWithoutCost: number; catalogProductsWithoutCost: number; missingCostTypes: string[]; contributionIsPartial: boolean; truncated: boolean };
+  topProducts: ProductRank[];
+  dataQuality: { productsWithoutCost: number; catalogProductsWithoutCost: number; costCoverage: number; missingCostTypes: string[]; contributionIsPartial: boolean; truncated: boolean };
 }
 interface RecentOrder {
   id: number; number: string; date: string | null; customerName: string;
@@ -43,8 +45,9 @@ export default function AdminInicio() {
   const [range, setRange] = useState<RangeState>(() => makeRangeState('last30', true));
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [summaryState, setSummaryState] = useState<'loading' | 'ok' | 'error'>('loading');
-  const [attention, setAttention] = useState<AttentionItem[] | null>(null);
+  const [attention, setAttention] = useState<{ attention: AttentionItem[]; opportunities: AttentionItem[] } | null>(null);
   const [recent, setRecent] = useState<RecentOrder[] | null>(null);
+  const [customers, setCustomers] = useState<CustomerSplitData | null>(null);
   const [metric, setMetric] = useState<MetricKey>('profit');
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
@@ -64,12 +67,16 @@ export default function AdminInicio() {
     } catch (e: any) {
       if (e?.name !== 'AbortError') setSummaryState('error');
     }
+    // Clientes nuevos vs recurrentes: depende del período, carga aparte.
+    setCustomers(null);
+    fetch(`/api/admin/dashboard/customers?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
+      .then((res2) => (res2.ok ? res2.json() : null)).then((d) => d && !d.error && setCustomers(d)).catch(() => {});
   }, [headers, puede]);
 
   const loadOps = useCallback(async () => {
     if (puede('pedidos')) {
       fetch('/api/admin/dashboard/attention', { headers: headers() })
-        .then((r) => (r.ok ? r.json() : null)).then((d) => d && setAttention(d.items)).catch(() => {});
+        .then((r) => (r.ok ? r.json() : null)).then((d) => d && setAttention({ attention: d.attention || [], opportunities: d.opportunities || [] })).catch(() => {});
       fetch('/api/admin/dashboard/recent-orders?limit=8', { headers: headers() })
         .then((r) => (r.ok ? r.json() : null)).then((d) => d && setRecent(d.orders)).catch(() => {});
     }
@@ -101,11 +108,18 @@ export default function AdminInicio() {
   const cur = summary?.current;
   const cmp = summary?.comparison;
   const dq = summary?.dataQuality;
+  const coveragePct = dq ? Math.round(dq.costCoverage * 100) : null;
   const partialInfo = dq ? (
     <>
       <strong className="text-foreground">Net Revenue − COGS.</strong> Todavía no se descuentan: {dq.missingCostTypes.join(', ')} (no se asumen en cero).
-      {dq.productsWithoutCost > 0 && <> {dq.productsWithoutCost} producto(s) del período sin costo configurado.</>}
+      {coveragePct !== null && <> Cobertura de costos: {coveragePct}% del revenue.</>}
       {' '}Fuente: WooCommerce + costos Hype.
+    </>
+  ) : null;
+  const coverageInfo = dq ? (
+    <>
+      <strong className="text-foreground">Revenue con costo conocido / Revenue total.</strong> Cuánto del profit es confiable.
+      {dq.catalogProductsWithoutCost > 0 && <> {dq.catalogProductsWithoutCost} productos del catálogo sin costo configurado.</>}
     </>
   ) : null;
 
@@ -163,12 +177,15 @@ export default function AdminInicio() {
                 info="Cantidad de pedidos pagados incluidos en Revenue." />
               <KpiCard label="AOV" value={cur ? fmtARS(cur.aov) : '—'} delta={cmp?.aov}
                 info="Ticket promedio: Revenue / Pedidos." />
-              <KpiCard label="Net Revenue" value={cur ? fmtARS(cur.netRevenue) : '—'} delta={cmp?.netRevenue}
-                info="Revenue menos reembolsos. El envío cobrado no se descuenta." />
+              <KpiCard label="COGS" value={cur ? fmtARS(cur.cogs) : '—'} delta={cmp?.cogs} positiveIsGood={false}
+                estimated={coveragePct !== null && coveragePct < 100}
+                info="Costo de los productos vendidos, según los costos configurados en Hype. Sólo cubre los productos con costo cargado." />
               <KpiCard label="Contribution Profit" value={cur ? fmtARS(cur.contributionProfit) : '—'} delta={cmp?.contributionProfit}
+                sub={cur ? `${(cur.profitMargin * 100).toFixed(1)}% margen` : undefined}
                 estimated={dq?.contributionIsPartial} info={partialInfo} />
-              <KpiCard label="Profit %" value={cur ? `${(cur.profitMargin * 100).toFixed(1)}%` : '—'} delta={cmp?.profitMargin}
-                estimated={dq?.contributionIsPartial} info="Contribution Profit / Revenue. Estimado mientras falten costos variables." />
+              <KpiCard label="Cost Coverage" value={coveragePct !== null ? `${coveragePct}%` : '—'}
+                sub={dq && dq.catalogProductsWithoutCost > 0 ? `${dq.catalogProductsWithoutCost} sin costo` : undefined}
+                info={coverageInfo} />
             </div>
 
             <div className="lg:col-span-3 bg-card border border-border rounded-lg p-4 flex flex-col min-h-[320px]">
@@ -193,20 +210,46 @@ export default function AdminInicio() {
             </div>
           </div>
 
-          {/* Anuncios */}
+          {/* Anuncios — franja compacta mientras Meta no esté conectado */}
           <SectionTitle>Anuncios</SectionTitle>
-          <AdsNotConnected />
+          <AdsStrip />
+
+          {/* Top products + Clientes */}
+          <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr] mt-8">
+            <div>
+              <SectionTitle>Top productos</SectionTitle>
+              {summaryState === 'loading' && !summary
+                ? <div className="h-[180px] bg-muted/40 rounded-lg animate-pulse" />
+                : <TopProducts rows={summary?.topProducts || []} fmt={fmtARS} />}
+            </div>
+            <div>
+              <SectionTitle>Nuevos vs recurrentes</SectionTitle>
+              {customers === null
+                ? <div className="h-[140px] bg-muted/40 rounded-lg animate-pulse" />
+                : <CustomerSplit data={customers} fmt={fmtARS} />}
+            </div>
+          </div>
 
           {/* Requiere atención */}
           <SectionTitle>Requiere atención</SectionTitle>
           {attention === null ? (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-[52px] bg-muted/40 rounded-lg animate-pulse" />)}
+            <div className="grid gap-2 sm:grid-cols-2">
+              {Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-[56px] bg-muted/40 rounded-lg animate-pulse" />)}
             </div>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {attention.map((it) => <AttentionRow key={it.key} item={it} />)}
+            <div className="grid gap-2 sm:grid-cols-2">
+              {attention.attention.map((it) => <AttentionRow key={it.key} item={it} />)}
             </div>
+          )}
+
+          {/* Recuperación / oportunidades */}
+          {attention && attention.opportunities.length > 0 && (
+            <>
+              <SectionTitle>Recuperación</SectionTitle>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {attention.opportunities.map((it) => <AttentionRow key={it.key} item={it} />)}
+              </div>
+            </>
           )}
 
           {/* Últimos pedidos */}

@@ -43,8 +43,17 @@ export async function GET(req: NextRequest) {
     reviewsTotal(`status=sent&sent_to=${encodeURIComponent(arDateStr(48 * 3600_000))}`),
   ]);
 
-  // Cada item trae su deep-link (o null si no hay destino). El cliente lo abre.
-  const items = [
+  // Reseñas: una sola métrica (no dos redundantes). Si todas las pendientes
+  // llevan +48h, se dice en el sub en vez de duplicar la card.
+  const pend = reviewsPending;
+  const over48 = reviewsPending48h;
+  const reviewsSub =
+    pend && over48 != null
+      ? over48 >= pend ? 'todas hace +48h' : `${over48} hace +48h`
+      : undefined;
+
+  // ── Requiere atención = accionable ahora. ──
+  const attention = [
     {
       key: 'por-empaquetar',
       label: 'Pedidos por preparar',
@@ -53,36 +62,36 @@ export async function GET(req: NextRequest) {
       tone: (counts?.porEmpaquetar ?? 0) > 0 ? 'warning' : 'neutral',
     },
     {
-      key: 'sin-pagar',
-      // Incluye carritos abandonados; es informativo, no una alarma.
-      label: 'Pedidos sin pagar',
-      value: counts?.pendientes ?? null,
-      href: '/admin/pedidos?filter=sin-pagar',
-      tone: 'neutral',
-    },
-    {
-      key: 'resenas-pendientes',
-      // "sent" = pedido de reseña enviado, el cliente todavía no respondió.
-      label: 'Reseñas enviadas sin responder',
-      value: reviewsPending,
-      href: '/admin/reviews?status=sent',
-      tone: 'neutral',
-    },
-    {
-      key: 'resenas-48h',
-      label: 'Sin responder hace +48h',
-      value: reviewsPending48h,
-      href: '/admin/reviews?status=sent&aging=48h',
-      tone: 'neutral',
-    },
-    {
       key: 'productos-sin-costo',
-      label: 'Productos sin costo configurado',
+      label: 'Productos sin costo',
+      sub: 'afecta el cálculo de profit',
       value: costMap?.productsWithoutCost ?? null,
       href: '/admin/costos?onlyUnassigned=1',
       tone: (costMap?.productsWithoutCost ?? 0) > 0 ? 'warning' : 'neutral',
     },
   ];
 
-  return NextResponse.json({ items });
+  // ── Recuperación / oportunidades = no es urgencia operativa, pero hay valor. ──
+  const opportunities = [
+    {
+      key: 'sin-pagar',
+      // Carritos abandonados + pendientes reales: no se puede separar hoy con Woo,
+      // así que va como oportunidad de recuperación, no como alarma operativa.
+      label: 'Pedidos sin pagar',
+      sub: 'incluye carritos abandonados',
+      value: counts?.pendientes ?? null,
+      href: '/admin/pedidos?filter=sin-pagar',
+      tone: 'neutral',
+    },
+    {
+      key: 'resenas',
+      label: 'Reseñas sin responder',
+      sub: reviewsSub,
+      value: pend,
+      href: '/admin/reviews?status=sent',
+      tone: 'neutral',
+    },
+  ];
+
+  return NextResponse.json({ attention, opportunities });
 }
