@@ -147,6 +147,9 @@ async function firmarReset(payload: string): Promise<string> {
 
 const wpHeaders = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${WP_SECRET}` });
 
+// Mismo motivo que en lib/creadores.ts: LiteSpeed cachea los GET del REST.
+const sinCache = (url: string) => url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+
 export interface DatosReset { userId: number; email: string; name: string }
 
 /** Pide el nonce a WP y devuelve el token del link. Null si no hay perfil. */
@@ -203,7 +206,7 @@ export async function cambiarPasswordAdmin(email: string, password: string): Pro
 
 /** Busca el mail de un perfil por su id, para las rutas que solo tienen sesión. */
 export async function emailDePerfil(userId: number): Promise<string | null> {
-  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/admin-profiles`, { headers: wpHeaders(), cache: 'no-store' });
+  const res = await fetch(sinCache(`${WP_URL}/wp-json/hypestyle/v1/admin-profiles`), { headers: wpHeaders(), cache: 'no-store' });
   if (!res.ok) return null;
   const { profiles } = (await res.json()) as { profiles: AdminProfile[] };
   return profiles.find((p) => p.id === userId)?.email ?? null;
