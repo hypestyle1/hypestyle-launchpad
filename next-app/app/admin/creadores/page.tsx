@@ -17,6 +17,7 @@ type Creador = {
   tutor_nombre: string; tutor_contacto: string;
   idioma: string; locale: string; idioma_detectado: string; traduccion_estado: string;
   porque_es: string; prenda_es: string; links_es: string; marcas_es: string;
+  origen: string; postulado_el: string; plataforma: string; seguidores: string;
   estado: Estado; nota: string; revisadoPor: string; revisadoEl: string; creadoEl: string;
 };
 
@@ -252,7 +253,11 @@ export default function CreadoresAdminPage() {
                           )}
                         </div>
                         <p className="text-[12px] text-muted-foreground mt-0.5">
-                          {[c.ciudad, c.edad && !esMenor ? `${c.edad} años` : '', c.talle ? `talle ${c.talle}` : ''].filter(Boolean).join(' · ')}
+                          {[
+                            c.ciudad,
+                            c.edad && !esMenor ? `${c.edad} años` : '',
+                            c.talle ? `talle ${c.talle}` : 'sin talle',
+                          ].filter(Boolean).join(' · ')}
                         </p>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[12px]">
                           {c.instagram && (
@@ -359,6 +364,8 @@ export default function CreadoresAdminPage() {
                         );
                       })()}
                       <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+                        {c.plataforma && <Dato label="Dónde crea" valor={c.plataforma} />}
+                        {c.seguidores && <Dato label="Seguidores (declarado)" valor={c.seguidores} />}
                         {c.frecuencia && <Dato label="Puede producir" valor={c.frecuencia} />}
                         {c.equipo && <Dato label="Graba y edita" valor={c.equipo} />}
                         {c.marcas && <Dato label="Marcas previas" valor={(c.traduccion_estado === 'ok' && !verOriginal.has(c.id) && c.marcas_es) || c.marcas} />}
@@ -370,7 +377,8 @@ export default function CreadoresAdminPage() {
                         </div>
                       )}
                       <p className="text-[11px] text-muted-foreground/70 pt-1">
-                        Se postuló el {fmtFecha(c.creadoEl)}
+                        Se postuló el {fmtFecha(c.postulado_el || c.creadoEl)}
+                        {c.origen === 'google-form' && ' · del formulario viejo'}
                         {c.revisadoPor && ` · revisada por ${c.revisadoPor}`}
                       </p>
                     </div>
