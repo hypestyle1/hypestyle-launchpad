@@ -119,3 +119,92 @@ export async function verifyAdminSession(token: string | undefined | null): Prom
   const esperado = await sign(`admin:${id}:${role}:${exp}`);
   return esperado === sig ? { id, role: role as AdminRole } : null;
 }
+
+/* ─── Recuperación de contraseña del panel ────────────────────────────────
+   Mismo diseño que el del catálogo, y por el mismo motivo: la contraseña
+   inicial la genera quien crea el perfil, así que la primera persona que
+   necesita cambiarla es la dueña de la cuenta. Sin esto, Micaela arrastraba
+   para siempre la clave que le pasaron por WhatsApp. */
+
+const RESET_TTL_MS = 2 * 60 * 60 * 1000; // 2 horas
+
+function b64urlBuf(buf: ArrayBuffer): string {
+  let bin = '';
+  for (const b of new Uint8Array(buf)) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function firmarReset(payload: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(WP_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  return b64urlBuf(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload)));
+}
+
+const wpHeaders = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${WP_SECRET}` });
+
+export interface DatosReset { userId: number; email: string; name: string }
+
+/** Pide el nonce a WP y devuelve el token del link. Null si no hay perfil. */
+export async function crearResetAdmin(email: string): Promise<{ token: string; datos: DatosReset } | null> {
+  if (!WP_SECRET) return null;
+  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/admin-reset-nonce`, {
+    method: 'POST',
+    headers: wpHeaders(),
+    body: JSON.stringify({ email }),
+    cache: 'no-store',
+  });
+  if (!res.ok) return null;
+  const d = await res.json();
+  const exp = Date.now() + RESET_TTL_MS;
+  const sig = await firmarReset(`adminreset:${d.userId}:${exp}:${d.nonce}`);
+  return {
+    token: `${d.userId}.${exp}.${sig}`,
+    datos: { userId: d.userId, email: d.email, name: d.name },
+  };
+}
+
+/** Valida el token contra el nonce guardado. No lo consume. */
+export async function verificarResetAdmin(token: string): Promise<DatosReset | null> {
+  if (!WP_SECRET || !token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [idStr, expStr, sig] = parts;
+  const userId = Number(idStr);
+  const exp = Number(expStr);
+  if (!userId || !exp || Number.isNaN(exp) || Date.now() > exp) return null;
+
+  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/admin-reset-nonce?id=${userId}`, {
+    headers: wpHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) return null;
+  const d = await res.json();
+  if (!d.nonce) return null; // ya se usó, o nunca se pidió
+
+  const esperado = await firmarReset(`adminreset:${userId}:${exp}:${d.nonce}`);
+  return esperado === sig ? { userId, email: d.email, name: '' } : null;
+}
+
+/** Escribe la contraseña nueva. El rol NO se toca: se omite a propósito. */
+export async function cambiarPasswordAdmin(email: string, password: string): Promise<boolean> {
+  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/admin-profiles`, {
+    method: 'POST',
+    headers: wpHeaders(),
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) console.error('[admin-profiles] no se pudo cambiar la contraseña:', res.status);
+  return res.ok;
+}
+
+/** Busca el mail de un perfil por su id, para las rutas que solo tienen sesión. */
+export async function emailDePerfil(userId: number): Promise<string | null> {
+  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/admin-profiles`, { headers: wpHeaders(), cache: 'no-store' });
+  if (!res.ok) return null;
+  const { profiles } = (await res.json()) as { profiles: AdminProfile[] };
+  return profiles.find((p) => p.id === userId)?.email ?? null;
+}

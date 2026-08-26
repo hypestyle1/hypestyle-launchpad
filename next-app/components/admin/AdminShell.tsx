@@ -92,7 +92,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   // La pantalla de ingreso no lleva marco: sería navegación hacia lugares a
   // los que todavía no se puede entrar.
-  if (pathname.startsWith('/admin/login')) return <>{children}</>;
+  if (pathname.startsWith('/admin/login') || pathname.startsWith('/admin/reset')) return <>{children}</>;
 
   // Las vistas para imprimir salen solas, sin barra lateral.
   if (pathname.includes('/rotulo')) return <>{children}</>;
@@ -151,7 +151,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           {quien.viaSharedKey ? 'Clave compartida' : quien.role === 'owner' ? 'Acceso completo' : 'Contenido y creadores'}
         </p>
       )}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {!quien?.viaSharedKey && (
+          <Link href="/admin/cuenta" className="text-[12px] text-gray-500 hover:text-black">Mi cuenta</Link>
+        )}
         <Link href="/" className="text-[12px] text-gray-500 hover:text-black">Ver el sitio</Link>
         <button onClick={salir} className="text-[12px] text-gray-400 hover:text-black ml-auto">Salir</button>
       </div>
