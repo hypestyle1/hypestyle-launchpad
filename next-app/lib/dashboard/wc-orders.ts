@@ -20,6 +20,8 @@ export interface DashOrder extends FinanceOrder {
   /** Instante de creación en UTC (ISO), derivado de date_created_gmt. */
   dateGmt: string;
   customerName: string;
+  /** Clave de cliente para nuevos-vs-recurrentes: email normalizado (o id). */
+  customerKey: string;
   paymentTitle: string;
 }
 
@@ -59,7 +61,7 @@ export async function fetchOrdersInRange(
       after: afterParam,
       before: beforeParam,
       dates_are_gmt: 'true',
-      _fields: 'id,number,status,date_created_gmt,total,refunds,line_items,billing,payment_method_title',
+      _fields: 'id,number,status,date_created_gmt,total,refunds,line_items,billing,customer_id,payment_method_title',
       _cb: String(Date.now()),
     });
     const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
@@ -91,8 +93,11 @@ export async function fetchOrdersInRange(
           productId: Number(li.product_id),
           quantity: Number(li.quantity) || 0,
           lineTotal: parseFloat(li.total) || 0,
+          name: li.name || '',
         })),
         customerName: `${o.billing?.first_name || ''} ${o.billing?.last_name || ''}`.trim(),
+        // Email como clave (la mayoría del checkout es guest); si falta, el id de cliente.
+        customerKey: (o.billing?.email || '').trim().toLowerCase() || (o.customer_id ? `id:${o.customer_id}` : `order:${o.id}`),
         paymentTitle: o.payment_method_title || '',
       });
     }
