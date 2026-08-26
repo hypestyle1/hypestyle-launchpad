@@ -34,6 +34,10 @@ export interface Creador {
   instagram: string; tiktok: string; links: string; porque: string; prenda: string;
   frecuencia: string; equipo: string; talle: string; marcas: string;
   tutor_nombre: string; tutor_contacto: string;
+  // Multi-idioma. En postulaciones viejas vienen vacíos: son opcionales a
+  // propósito, para no tener que migrar nada.
+  idioma: string; locale: string; idioma_detectado: string; traduccion_estado: string;
+  porque_es: string; prenda_es: string; links_es: string; marcas_es: string;
   estado: EstadoCreador; nota: string;
   revisadoPor: string; revisadoEl: string;
   creadoEl: string;

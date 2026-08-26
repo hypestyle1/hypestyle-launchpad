@@ -146,6 +146,70 @@ const DICT: Dict = {
     EN: 'It is calculated at checkout based on what you order and where it ships, and you pay it with your order. The price is final before you pay.',
     PT: 'É calculado no checkout conforme o que você leva e o país de destino, e você paga junto com o pedido. O preço fica fechado antes do pagamento.',
   },
+  // — Crea contenido con Hype (formulario público de creadores) —
+  // Una creadora extranjera no pudo completar el formulario viejo porque
+  // estaba entero en español, no encontró cómo traducirlo y se fue. Estas
+  // claves son las que hacen que eso no vuelva a pasar.
+  'Crea contenido': { EN: 'Create content', PT: 'Crie conteúdo' },
+  'con Hype': { EN: 'with Hype', PT: 'com Hype' },
+  'Buscamos gente que entienda la marca y quiera construir algo con nosotros. No nos importa cuánta gente te sigue: nos importa lo que hacés y cómo lo hacés.': {
+    EN: 'We are looking for people who get the brand and want to build something with us. How many people follow you is not what matters: what you make and how you make it, is.',
+    PT: 'Procuramos pessoas que entendam a marca e queiram construir algo conosco. Não importa quanta gente te segue: importa o que você faz e como faz.' },
+  'Quién sos': { EN: 'About you', PT: 'Sobre você' },
+  'Nombre y apellido': { EN: 'Full name', PT: 'Nome completo' },
+  'Mail': { EN: 'Email', PT: 'E-mail' },
+  'WhatsApp': { EN: 'WhatsApp', PT: 'WhatsApp' },
+  'Ciudad': { EN: 'City', PT: 'Cidade' },
+  'Edad': { EN: 'Age', PT: 'Idade' },
+  'Como sos menor de 18, necesitamos los datos de un adulto responsable para poder trabajar juntos.': {
+    EN: 'Since you are under 18, we need the details of a responsible adult so we can work together.',
+    PT: 'Como você é menor de 18, precisamos dos dados de um adulto responsável para trabalharmos juntos.' },
+  'Nombre del adulto responsable': { EN: 'Name of the responsible adult', PT: 'Nome do adulto responsável' },
+  'Su teléfono o mail': { EN: 'Their phone or email', PT: 'Telefone ou e-mail dele(a)' },
+  'Dónde te encontramos': { EN: 'Where we find you', PT: 'Onde te encontramos' },
+  '@ de Instagram': { EN: 'Instagram handle', PT: '@ do Instagram' },
+  '@ de TikTok': { EN: 'TikTok handle', PT: '@ do TikTok' },
+  'Tu trabajo': { EN: 'Your work', PT: 'Seu trabalho' },
+  'Pegá dos o tres links a piezas tuyas de las que estés orgulloso': {
+    EN: 'Paste two or three links to work you are proud of',
+    PT: 'Cole dois ou três links de trabalhos dos quais você se orgulha' },
+  'Un reel, una foto, lo que sea que muestre cómo trabajás.': {
+    EN: 'A reel, a photo, anything that shows how you work.',
+    PT: 'Um reel, uma foto, qualquer coisa que mostre como você trabalha.' },
+  '¿Con qué frecuencia podés producir?': { EN: 'How often can you produce?', PT: 'Com que frequência você pode produzir?' },
+  'Una pieza por mes': { EN: 'One piece a month', PT: 'Uma peça por mês' },
+  'Dos o tres por mes': { EN: 'Two or three a month', PT: 'Duas ou três por mês' },
+  'Todas las semanas': { EN: 'Every week', PT: 'Toda semana' },
+  '¿Con qué grabás y editás?': { EN: 'What do you shoot and edit with?', PT: 'Com o que você grava e edita?' },
+  'Celular, edito yo': { EN: 'Phone, I edit', PT: 'Celular, eu edito' },
+  'Celular, me edita alguien': { EN: 'Phone, someone edits for me', PT: 'Celular, alguém edita para mim' },
+  'Cámara, edito yo': { EN: 'Camera, I edit', PT: 'Câmera, eu edito' },
+  'Cámara, trabajo con un editor': { EN: 'Camera, I work with an editor', PT: 'Câmera, trabalho com um editor' },
+  'Vos y la marca': { EN: 'You and the brand', PT: 'Você e a marca' },
+  '¿Por qué querés crear con Hype?': { EN: 'Why do you want to create with Hype?', PT: 'Por que você quer criar com a Hype?' },
+  '¿Qué prenda de Hype te pondrías mañana, y por qué esa?': {
+    EN: 'Which Hype piece would you wear tomorrow, and why that one?',
+    PT: 'Qual peça da Hype você usaria amanhã, e por que essa?' },
+  '¿Qué talle usás?': { EN: 'What size do you wear?', PT: 'Que tamanho você usa?' },
+  '¿Trabajaste con otras marcas? (opcional)': {
+    EN: 'Have you worked with other brands? (optional)',
+    PT: 'Você já trabalhou com outras marcas? (opcional)' },
+  'Enviar postulación': { EN: 'Send application', PT: 'Enviar candidatura' },
+  'La revisa nuestra content manager. Si hay match, te escribimos.': {
+    EN: 'Our content manager reviews it. If there is a match, we will write to you.',
+    PT: 'Nossa content manager revisa. Se houver match, entramos em contato.' },
+  'Recibimos tu postulación': { EN: 'We got your application', PT: 'Recebemos sua candidatura' },
+  'Actualizamos tu postulación': { EN: 'We updated your application', PT: 'Atualizamos sua candidatura' },
+  'Volver al sitio': { EN: 'Back to the site', PT: 'Voltar ao site' },
+  'Nos falta': { EN: 'We still need', PT: 'Ainda falta' },
+  'tu nombre': { EN: 'your name', PT: 'seu nome' },
+  'un mail válido': { EN: 'a valid email', PT: 'um e-mail válido' },
+  'al menos una cuenta': { EN: 'at least one account', PT: 'ao menos uma conta' },
+  'por qué querés crear con nosotros': { EN: 'why you want to create with us', PT: 'por que você quer criar conosco' },
+  'los datos de un adulto responsable': { EN: 'the details of a responsible adult', PT: 'os dados de um adulto responsável' },
+  'No pudimos enviar tu postulación': { EN: 'We could not send your application', PT: 'Não conseguimos enviar sua candidatura' },
+  'Idioma': { EN: 'Language', PT: 'Idioma' },
+
 };
 
 export function translate(text: string, lang: Language): string {
