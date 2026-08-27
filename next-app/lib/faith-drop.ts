@@ -20,6 +20,10 @@ export type FaithDropItem = {
 
 export const FAITH_DROP_ITEMS: FaithDropItem[] = [
   // — Fila 1 (disponibles) —
+  // FIND JESUS vuelve en pre-venta (despacha desde el 10/09) — primero para
+  // darle vidriera en el home. La grilla recorta a filas completas, asi que
+  // con 13 items queda afuera el ultimo de la lista (hs-co-grey-hoodie).
+  { slug: 'find-jesus-longsleeve-black', preSale: true },
   { slug: 'longsleeve-waffle-horses', live: true },
   { slug: 'longsleeve-waffle-god-gave-me-style', live: true },
   { slug: 'christ-reigns-hoodie', live: true },
