@@ -159,6 +159,7 @@ export default function AdminInicio() {
   ].filter((t) => puede(t.seccion));
 
   // Meta integrado: valores del summary + estado de conexión rápido.
+  const ts = summary?.timeseries || [];
   const mb = metaBlock;
   const metaConnected: boolean | null = metaConn ? (metaConn.state === 'connected' || metaConn.state === 'stale') : null;
   const roasFmt = (n: number | null) => (n == null ? '—' : `${n.toFixed(2).replace('.', ',')}×`);
@@ -203,9 +204,9 @@ export default function AdminInicio() {
 
           {/* Fila 1 — Negocio */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard label="Revenue" value={cur ? fmtARS(cur.revenue) : '—'} delta={cmp?.revenue} emphasis info="Facturación de pedidos pagados. Fuente: WooCommerce." />
-            <KpiCard label="Pedidos" value={cur ? cur.orders : '—'} delta={cmp?.orders} sub={cur ? `AOV ${fmtARS(cur.aov)}` : undefined} info="Pedidos pagados incluidos en Revenue." />
-            <KpiCard label="Contribution Profit" value={cur ? fmtARS(cur.contributionProfit) : '—'} delta={cmp?.contributionProfit}
+            <KpiCard label="Revenue" value={cur ? fmtARS(cur.revenue) : '—'} delta={cmp?.revenue} emphasis spark={ts.map((t) => t.revenue)} info="Facturación de pedidos pagados. Fuente: WooCommerce." />
+            <KpiCard label="Pedidos" value={cur ? cur.orders : '—'} delta={cmp?.orders} sub={cur ? `AOV ${fmtARS(cur.aov)}` : undefined} spark={ts.map((t) => t.orders)} info="Pedidos pagados incluidos en Revenue." />
+            <KpiCard label="Contribution Profit" value={cur ? fmtARS(cur.contributionProfit) : '—'} delta={cmp?.contributionProfit} spark={ts.map((t) => t.profit)}
               sub={cur ? `${(cur.profitMargin * 100).toFixed(1).replace('.', ',')}% margen` : undefined} estimated={dq?.contributionIsPartial} info={partialInfo} />
             <KpiCard label="Operating Profit Est." value={mb ? fmtARS(mb.business.operatingProfitEstimated) : '—'} emphasis
               sub={mb ? (mb.business.operatingProfitPartial ? 'parcial' : undefined) : (metaConnected === false ? 'requiere Meta' : undefined)}

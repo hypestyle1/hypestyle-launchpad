@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Home, Package, PackagePlus, Calculator, Store, MessageSquare,
   Users, Star, Mail, BarChart3, UserCog, ListChecks, Settings,
-  Wallet, TrendingUp, SlidersHorizontal, Bot, Receipt, Megaphone, Plug,
+  Wallet, TrendingUp, SlidersHorizontal, Bot, Receipt, Megaphone, Plug, LineChart,
 } from 'lucide-react';
 
 export type Seccion =
@@ -32,6 +32,12 @@ export const GRUPOS: NavGrupo[] = [
       { label: 'Costos y márgenes', href: '/admin/costos', seccion: 'costos', match: '/admin/costos', Icono: Calculator },
       { label: 'Costos operativos', href: '/admin/finance/operating-costs', seccion: 'costos', match: '/admin/finance/operating-costs', Icono: Receipt },
       { label: 'Configuración', href: '/admin/finance/config', seccion: 'costos', match: '/admin/finance/config', Icono: SlidersHorizontal },
+    ],
+  },
+  {
+    titulo: 'Analytics',
+    items: [
+      { label: 'Performance', href: '/admin/performance', seccion: 'costos', match: '/admin/performance', Icono: LineChart },
     ],
   },
   {

@@ -4,6 +4,7 @@ import { ReactNode, useState } from 'react';
 import Link from 'next/link';
 import { Info, ArrowUpRight, ArrowDownRight, Plug } from 'lucide-react';
 import type { Delta } from '@/lib/dashboard/finance';
+import { Sparkline } from '@/components/admin/Sparkline';
 
 // Piezas del Control Center. Todas en tokens (light/dark). El KPI card sabe
 // mostrar comparación con contexto (no flechas de color a ciegas) y un tooltip
@@ -54,7 +55,7 @@ export function DeltaBadge({ delta, positiveIsGood = true }: { delta?: Delta | n
 // a la derecha (patrón Triple Whale) y una línea secundaria opcional. Poco ruido,
 // whitespace controlado. Usada por Inicio y Finanzas.
 export function KpiCard({
-  label, value, sub, delta, positiveIsGood = true, info, estimated, compare, emphasis,
+  label, value, sub, delta, positiveIsGood = true, info, estimated, compare, emphasis, spark, sparkTone,
 }: {
   label: string;
   value: ReactNode;
@@ -65,7 +66,10 @@ export function KpiCard({
   estimated?: boolean;
   compare?: ReactNode;   // ej. "vs $11,4M período ant."
   emphasis?: boolean;    // realce para la métrica protagonista
+  spark?: number[];      // serie temporal real (sparkline)
+  sparkTone?: 'default' | 'positive' | 'negative';
 }) {
+  const hasSpark = Array.isArray(spark) && spark.length >= 2;
   return (
     <div className={`bg-card border rounded-lg p-4 flex flex-col ${emphasis ? 'border-border-mid' : 'border-border'}`}>
       <div className="flex items-start justify-between gap-2">
@@ -75,7 +79,10 @@ export function KpiCard({
         </div>
         <DeltaBadge delta={delta} positiveIsGood={positiveIsGood} />
       </div>
-      <p className={`font-bold text-foreground mt-2 leading-none tabular-nums tracking-tight ${emphasis ? 'text-[27px]' : 'text-[22px]'}`}>{value}</p>
+      <div className="flex items-end justify-between gap-2 mt-2">
+        <p className={`font-bold text-foreground leading-none tabular-nums tracking-tight ${emphasis ? 'text-[27px]' : 'text-[22px]'}`}>{value}</p>
+        {hasSpark && <div className="shrink-0 -mb-0.5"><Sparkline data={spark!} tone={sparkTone} /></div>}
+      </div>
       {(sub || compare || estimated) && (
         <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2 min-h-[15px]">
           {compare && <span className="text-[11px] text-muted-foreground/70 tabular-nums">{compare}</span>}
