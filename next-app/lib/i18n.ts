@@ -64,6 +64,10 @@ const DICT: Dict = {
   'Worldwide Shipping vía FedEx': { EN: 'Worldwide shipping via FedEx', PT: 'Envio mundial via FedEx' },
   '30 días para cambios y devoluciones': { EN: '30 days for exchanges & returns', PT: '30 dias para trocas e devoluções' },
 
+  // — SpotifyPlayer —
+  'Sonando en Hype': { EN: 'Now playing at Hype', PT: 'Tocando na Hype' },
+  'Cerrar': { EN: 'Close', PT: 'Fechar' },
+
   // — Footer —
   'Sets': {},
   'Envíos internacionales': { EN: 'International shipping', PT: 'Envios internacionais' },

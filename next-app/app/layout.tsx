@@ -11,6 +11,7 @@ import MetaPixel from '@/components/MetaPixel';
 import MicrosoftClarity from '@/components/MicrosoftClarity';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import SpotifyPlayer from '@/components/SpotifyPlayer';
 import ReviewsDrawer from '@/components/reviews/ReviewsDrawer';
 import FlashSaleBar from '@/components/FlashSaleBar';
 import Promo3x2Bar from '@/components/Promo3x2Bar';
@@ -107,6 +108,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <GoogleAnalytics />
           {children}
           <WhatsAppButton />
+          <SpotifyPlayer />
           <ReviewsDrawer />
         </Providers>
       </body>
