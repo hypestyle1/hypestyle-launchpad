@@ -180,6 +180,10 @@
     --success-soft: 145 35% 92%;
     --warning: 35 85% 32%;
     --warning-soft: 45 90% 91%;
+    /* Radio del panel: el sitio público sigue en 0 (:root). Acá lo llevamos al
+       lenguaje de Costos y Márgenes V2 → rounded-lg=10px, rounded-md=8px,
+       rounded-sm=6px. Una línea redondea todo el admin de forma consistente. */
+    --radius: 10px;
     color-scheme: light;
   }
 

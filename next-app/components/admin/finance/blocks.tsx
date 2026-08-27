@@ -44,21 +44,23 @@ export function Waterfall({ rows }: { rows: WaterfallRow[] }) {
         <table className="w-full text-[13px]">
           <tbody>
             {rows.map((r, i) => {
-              const isTotal = r.kind === 'subtotal' || r.kind === 'result';
+              const isSub = r.kind === 'subtotal';
+              const isResult = r.kind === 'result';
+              const isTotal = isSub || isResult;
               const sign = r.kind === 'subtract' && r.amount ? '−' : '';
               const val = r.amount === null
-                ? <span className="text-warning">Pendiente</span>
+                ? <span className="text-warning font-normal">Pendiente</span>
                 : <span className="tabular-nums">{sign}{fmtARS(Math.abs(r.amount))}</span>;
               return (
-                <tr key={i} className={`border-b border-border last:border-0 ${isTotal ? 'bg-muted/40' : ''} ${r.kind === 'result' ? 'border-t-2 border-t-foreground/20' : ''}`}>
-                  <td className={`px-4 py-2.5 ${isTotal ? 'font-semibold text-foreground' : 'text-muted-foreground'} ${r.kind === 'subtract' ? 'pl-8' : ''}`}>
-                    {r.label}
-                    {r.hint && <span className="block text-[11px] text-muted-foreground/60 font-normal">{r.hint}</span>}
+                <tr key={i} className={`border-b border-border last:border-0 ${isSub ? 'bg-muted/30' : ''} ${isResult ? 'bg-foreground text-background' : ''}`}>
+                  <td className={`px-4 ${isResult ? 'py-3.5' : 'py-2.5'} ${isResult ? 'font-semibold' : isSub ? 'font-semibold text-foreground' : 'text-muted-foreground'} ${r.kind === 'subtract' ? 'pl-8' : ''}`}>
+                    <span className={isResult ? 'text-[10.5px] uppercase tracking-[0.08em] opacity-80 font-medium' : ''}>{r.label}</span>
+                    {r.hint && <span className={`block text-[11px] font-normal ${isResult ? 'opacity-70' : 'text-muted-foreground/60'}`}>{r.hint}</span>}
                   </td>
-                  <td className="px-3 py-2.5 text-center w-24">
-                    {r.source && <SourceBadge source={r.source} />}
+                  <td className="px-3 py-2.5 text-center w-20">
+                    {r.source && !isResult && <SourceBadge source={r.source} />}
                   </td>
-                  <td className={`px-4 py-2.5 text-right ${isTotal ? 'font-bold text-foreground text-[15px]' : r.kind === 'subtract' ? 'text-destructive' : 'text-foreground'}`}>
+                  <td className={`px-4 text-right tracking-tight ${isResult ? 'py-3.5 font-bold text-[19px]' : isSub ? 'py-2.5 font-bold text-foreground text-[14px]' : r.kind === 'subtract' ? 'py-2.5 text-destructive' : 'py-2.5 text-foreground'}`}>
                     {val}
                   </td>
                 </tr>
@@ -91,23 +93,23 @@ export function GatewayTable({ rows }: { rows: GatewayRow[] }) {
               <th className="text-right font-medium px-3 py-2">Costo</th>
               <th className="text-right font-medium px-3 py-2">Fee ef.</th>
               <th className="text-right font-medium px-3 py-2">Neto acred.</th>
-              <th className="text-right font-medium px-3 py-2 hidden sm:table-cell">Cobertura</th>
+              <th className="text-center font-medium px-3 py-2 hidden sm:table-cell">Calidad</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.group} className="border-b border-border last:border-0">
-                <td className="px-3 py-2 text-foreground">{r.label}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{r.orders}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-foreground">{fmtARS(r.grossCollected)}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-destructive">{r.economicCost ? `−${fmtARS(r.economicCost)}` : '—'}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{pct(r.effectiveFeeRate)}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-foreground">{fmtARS(r.netCollected)}</td>
-                <td className="px-3 py-2 text-right tabular-nums hidden sm:table-cell">
-                  <span className={r.coverage >= 1 ? 'text-success' : r.coverage >= 0.5 ? 'text-muted-foreground' : 'text-warning'}>{pct(r.coverage)}</span>
-                </td>
+            {rows.map((r) => {
+              const q: DataSource = r.coverage >= 0.99 ? 'exact' : r.coverage > 0 ? 'configured' : 'missing';
+              return (
+              <tr key={r.group} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                <td className="px-3 py-2.5 text-foreground font-medium">{r.label}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{r.orders}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums text-foreground">{fmtARS(r.grossCollected)}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums text-destructive">{r.economicCost ? `−${fmtARS(r.economicCost)}` : '—'}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{pct(r.effectiveFeeRate)}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums text-foreground">{fmtARS(r.netCollected)}</td>
+                <td className="px-3 py-2.5 text-center hidden sm:table-cell"><SourceBadge source={q} /></td>
               </tr>
-            ))}
+            );})}
           </tbody>
         </table>
       </div>
@@ -128,6 +130,51 @@ export function DataToComplete({ items }: { items: { label: string; href: string
           {it.label}
         </a>
       ))}
+    </div>
+  );
+}
+
+// ── Calidad de datos: barras sutiles exact / configured / estimated / missing ──
+// No finge exactitud: muestra cuánto de cada costo es dato real vs regla vs falta.
+export interface QualityRow {
+  label: string;
+  segments: { kind: DataSource | 'estimated'; value: number }[]; // suman ~1
+}
+
+const SEG_COLOR: Record<string, string> = {
+  exact: 'bg-success',
+  snapshot: 'bg-success',
+  configured: 'bg-foreground/45',
+  estimated: 'bg-warning',
+  missing: 'bg-muted-foreground/15',
+};
+const SEG_LABEL: Record<string, string> = {
+  exact: 'exacto', snapshot: 'exacto', configured: 'configurado', estimated: 'estimado', missing: 'faltante',
+};
+
+export function DataQualityCard({ rows }: { rows: QualityRow[] }) {
+  return (
+    <div className="bg-card border border-border rounded-lg p-4">
+      <div className="space-y-3.5">
+        {rows.map((r) => {
+          const main = [...r.segments].sort((a, b) => b.value - a.value)[0];
+          return (
+            <div key={r.label}>
+              <div className="flex items-baseline justify-between mb-1.5">
+                <span className="text-[12px] font-medium text-foreground">{r.label}</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {SEG_LABEL[main.kind]} {pct(main.value)}
+                </span>
+              </div>
+              <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-muted">
+                {r.segments.filter((s) => s.value > 0).map((s, i) => (
+                  <div key={i} className={SEG_COLOR[s.kind]} style={{ width: `${Math.min(100, s.value * 100)}%` }} title={`${SEG_LABEL[s.kind]} ${pct(s.value)}`} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

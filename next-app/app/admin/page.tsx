@@ -194,8 +194,8 @@ export default function AdminInicio() {
               <KpiCard label="COGS" value={cur ? fmtARS(cur.cogs) : '—'} delta={cmp?.cogs} positiveIsGood={false}
                 estimated={coveragePct !== null && coveragePct < 100}
                 info="Costo de los productos vendidos, según los costos configurados en Hype. Sólo cubre los productos con costo cargado." />
-              <KpiCard label="Contribution Profit" value={cur ? fmtARS(cur.contributionProfit) : '—'} delta={cmp?.contributionProfit}
-                sub={cur ? `${(cur.profitMargin * 100).toFixed(1)}% margen` : undefined}
+              <KpiCard label="Contribution Profit" value={cur ? fmtARS(cur.contributionProfit) : '—'} delta={cmp?.contributionProfit} emphasis
+                sub={cur ? `${(cur.profitMargin * 100).toFixed(1).replace('.', ',')}% margen` : undefined}
                 estimated={dq?.contributionIsPartial} info={partialInfo} />
               <KpiCard label="Cost Coverage" value={coveragePct !== null ? `${coveragePct}%` : '—'}
                 sub={dq && dq.catalogProductsWithoutCost > 0 ? `${dq.catalogProductsWithoutCost} sin costo` : undefined}

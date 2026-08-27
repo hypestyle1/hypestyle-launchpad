@@ -7,7 +7,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { fmtARS } from '@/lib/admin-format';
 import { KpiCard, SectionTitle } from '@/components/admin/dashboard/blocks';
 import { DateRangePicker, makeRangeState, type RangeState } from '@/components/admin/DateRangePicker';
-import { Waterfall, GatewayTable, DataToComplete, FinanceSectionTitle, pct, type WaterfallRow, type GatewayRow } from '@/components/admin/finance/blocks';
+import { Waterfall, GatewayTable, DataToComplete, DataQualityCard, FinanceSectionTitle, pct, type WaterfallRow, type GatewayRow, type QualityRow } from '@/components/admin/finance/blocks';
 import type { FinanceSummary } from '@/lib/finance/calculations';
 
 interface SummaryResp {
@@ -70,6 +70,12 @@ export default function FinanceResumen() {
     { label: 'Contribution Profit', amount: s.contributionProfit, kind: 'result', hint: `margen de contribución ${pct(s.contributionMargin)} · estimado` },
   ] : [];
 
+  const qualityRows: QualityRow[] = dq ? [
+    { label: 'COGS', segments: [{ kind: 'configured', value: dq.coverage.cogs }, { kind: 'missing', value: Math.max(0, 1 - dq.coverage.cogs) }] },
+    { label: 'Payment fees', segments: [{ kind: 'exact', value: dq.feeCoverage.exact }, { kind: 'configured', value: dq.feeCoverage.configured }, { kind: 'missing', value: dq.feeCoverage.missing }] },
+    { label: 'Shipping', segments: [{ kind: 'estimated', value: dq.coverage.shipping }, { kind: 'missing', value: Math.max(0, 1 - dq.coverage.shipping) }] },
+  ] : [];
+
   const toComplete = dq ? [
     dq.catalogProductsWithoutCost > 0 ? { label: `${dq.catalogProductsWithoutCost} productos sin costo configurado`, href: '/admin/costos?onlyUnassigned=1' } : null,
     dq.feeCoverage.exact < 0.99 ? { label: `Fees de Mercado Pago sin sincronizar (hoy estimados por regla)`, href: '/admin/finance/rentabilidad' } : null,
@@ -100,12 +106,13 @@ export default function FinanceResumen() {
         <div className="bg-card border border-border rounded-lg p-8 text-center text-[13px] text-destructive">No se pudo calcular Finanzas. Reintentá.</div>
       ) : (
         <>
-          {/* KPIs — Contribution primero */}
+          {/* KPIs — Contribution primero, con protagonismo */}
           <SectionTitle>Resultado</SectionTitle>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard label="Contribution Profit" value={s ? fmtARS(s.contributionProfit) : '—'} delta={delta(s?.contributionProfit, cmp?.contributionProfit)} estimated
-              sub={s ? `${pct(s.contributionMargin)} margen` : undefined} info="Net Revenue − COGS − Payment Fees − Shipping Absorbed − Variable Costs. Estimado mientras falten costos. Todavía NO incluye Ads." />
-            <KpiCard label="Revenue" value={s ? fmtARS(s.revenue) : '—'} delta={delta(s?.revenue, cmp?.revenue)} info="Facturación de pedidos pagados en el período." />
+            <KpiCard label="Contribution Profit" value={s ? fmtARS(s.contributionProfit) : '—'} delta={delta(s?.contributionProfit, cmp?.contributionProfit)} estimated emphasis
+              sub={s ? `${pct(s.contributionMargin)} margen` : undefined} compare={cmp ? `vs ${fmtARS(cmp.contributionProfit)}` : undefined}
+              info="Net Revenue − COGS − Payment Fees − Shipping Absorbed − Variable Costs. Estimado mientras falten costos. Todavía NO incluye Ads ni Operating Expenses." />
+            <KpiCard label="Revenue" value={s ? fmtARS(s.revenue) : '—'} delta={delta(s?.revenue, cmp?.revenue)} compare={cmp ? `vs ${fmtARS(cmp.revenue)}` : undefined} info="Facturación de pedidos pagados en el período." />
             <KpiCard label="Gross Profit" value={s ? fmtARS(s.grossProfit) : '—'} delta={delta(s?.grossProfit, cmp?.grossProfit)} sub={s ? `${pct(s.grossMargin)} bruto` : undefined} info="Net Revenue − COGS." />
             <KpiCard label="Net Collected" value={s ? fmtARS(s.netCollected) : '—'} info="Dinero efectivamente acreditado por las pasarelas (Gross Collected − deducciones). Distinto de Contribution Profit." />
           </div>
@@ -123,9 +130,15 @@ export default function FinanceResumen() {
                 </p>
               )}
             </div>
-            <div>
-              <FinanceSectionTitle>Datos por completar</FinanceSectionTitle>
-              <DataToComplete items={toComplete} />
+            <div className="space-y-6">
+              <div>
+                <FinanceSectionTitle>Calidad de datos</FinanceSectionTitle>
+                <DataQualityCard rows={qualityRows} />
+              </div>
+              <div>
+                <FinanceSectionTitle>Datos por completar</FinanceSectionTitle>
+                <DataToComplete items={toComplete} />
+              </div>
             </div>
           </div>
 
