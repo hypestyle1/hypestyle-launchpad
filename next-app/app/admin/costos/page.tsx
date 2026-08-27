@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  CostProfile, CostComponent, unitCostOf, isConfigured, normalizeProfiles,
-  newComponentId, COST_TEMPLATES, profileFromTemplate,
+  CostProfile, CostComponent, unitCostOf, isConfigured, hasIncompleteComponent,
+  normalizeProfiles, newComponentId, COST_TEMPLATES, profileFromTemplate,
 } from '@/lib/cost-profiles';
 
 const WP_SECRET_KEY = 'hype_admin_key';
@@ -123,21 +123,21 @@ export default function CostosPage() {
     if (products.some(pr => pr.profileId === id)) {
       if (!confirm(`Hay productos usando "${p?.name}". ¿Eliminar igual? Quedarán sin costo asignado.`)) return;
     }
-    const next = profiles.filter(x => x.id !== id);
-    setProfiles(next);
-    await persist(next, id);
+    setProfiles(prev => prev.filter(x => x.id !== id)); // optimista
+    await persistDelta([], [id], id);
   }
 
-  // Guardado por perfil: persiste el array completo (el endpoint reemplaza la
-  // option) pero el feedback es de ESA card. Un único admin edita de a una card,
-  // así que no hay riesgo de pisar cambios concurrentes.
-  async function persist(list: CostProfile[], focusId: string) {
+  // Guardado por perfil DELTA: manda SÓLO el perfil editado (+ ids a borrar). El
+  // server hace merge por id, así el resto de los perfiles queda intacto en la DB
+  // (lazy migration real: legacy sigue legacy hasta que se edita). Un único admin
+  // edita de a una card → sin riesgo de pisar cambios concurrentes.
+  async function persistDelta(upserts: CostProfile[], deleteIds: string[], focusId: string) {
     setSave(focusId, 'saving');
     try {
       const res = await fetch('/api/admin/cost-profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
-        body: JSON.stringify({ profiles: list }),
+        body: JSON.stringify({ profiles: upserts, deleteIds }),
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -148,7 +148,11 @@ export default function CostosPage() {
       setSave(focusId, 'error');
     }
   }
-  const saveProfile = (id: string) => persist(profiles, id);
+  function saveProfile(id: string) {
+    const p = profiles.find(x => x.id === id);
+    if (!p) return;
+    persistDelta([p], [], id);
+  }
 
   // ── Productos ───────────────────────────────────────────────────────────
   const categories = useMemo(() => {
@@ -176,7 +180,9 @@ export default function CostosPage() {
     const configured = isConfigured(p);
     if (profileFilter === 'configured' && !configured) return false;
     if (profileFilter === 'nocost' && configured) return false;
-    if (profileFilter === 'incomplete' && !(configured && p.components.some(c => !c.label.trim() || c.amount <= 0))) return false;
+    // Incompleto = label vacío o monto inválido (NaN/negativo). Un componente en
+    // $0 es un costo CONOCIDO válido y NO cuenta como incompleto.
+    if (profileFilter === 'incomplete' && !hasIncompleteComponent(p)) return false;
     return true;
   }).sort((a, b) => a.name.localeCompare(b.name, 'es')), [profiles, profileSearch, profileFilter]);
 

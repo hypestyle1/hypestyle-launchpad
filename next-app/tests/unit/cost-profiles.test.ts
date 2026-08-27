@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   normalizeProfile, normalizeProfiles, unitCostOf, isConfigured, humanizeKey,
+  isComponentValid, hasIncompleteComponent,
   profileFromTemplate, COST_TEMPLATES, type CostProfile, type CostComponent,
 } from '@/lib/cost-profiles';
 
@@ -124,6 +125,63 @@ describe('cost-map / coverage compatibility', () => {
     const list = normalizeProfiles([LEGACY, { id: 'p_ring', name: 'Ring', components: [comp('Costo proveedor', 90000)] }]);
     const cogs = list.filter(isConfigured).reduce((s, p) => s + p.unitCost, 0);
     expect(cogs).toBe(5221.29 + 90000);
+  });
+});
+
+describe('data quality: $0 no es "incompleto"', () => {
+  const p = (comps: CostComponent[]): CostProfile => ({ id: 'p', name: 'X', components: comps, unitCost: unitCostOf(comps) });
+
+  it('un componente con label y $0 es VÁLIDO (cero conocido)', () => {
+    expect(isComponentValid(comp('Estampa', 0))).toBe(true);
+  });
+  it('label vacío = inválido', () => {
+    expect(isComponentValid({ id: 'c', label: '   ', amount: 100 })).toBe(false);
+  });
+  it('monto negativo o NaN = inválido', () => {
+    expect(isComponentValid({ id: 'c', label: 'x', amount: -5 })).toBe(false);
+    expect(isComponentValid({ id: 'c', label: 'x', amount: NaN })).toBe(false);
+  });
+
+  it('un perfil con Estampa=$0 NO es incompleto (no afecta la calidad del COGS)', () => {
+    expect(hasIncompleteComponent(p([comp('Tela', 20000), comp('Estampa', 0)]))).toBe(false);
+  });
+  it('un perfil con un componente sin nombre SÍ es incompleto', () => {
+    expect(hasIncompleteComponent(p([comp('Tela', 20000), { id: 'c', label: '', amount: 500 }]))).toBe(true);
+  });
+  it('un perfil vacío no es "incompleto" (es missing, otra categoría)', () => {
+    expect(hasIncompleteComponent(p([]))).toBe(false);
+    expect(isConfigured(p([]))).toBe(false);
+  });
+});
+
+describe('lazy migration (contrato del merge server-side)', () => {
+  // Espejo en JS del merge que hace el PHP (hype_cp_merge_profiles), para
+  // documentar el contrato desde el lado del front. El test autoritativo del
+  // merge real corre en PHP: PHP/_tests/cost-profiles-merge.test.php.
+  const legacy = (i: number) => ({
+    id: `p_${i}`, name: `Perfil ${i}`,
+    components: { tela: 1000 + i, corte: 400, confeccion: 1200, estampa: 0, avios: 300, planchaybolsa: 300, ecommerce: 500 },
+    unitCost: 0,
+  });
+
+  it('editar 1 de 20: sólo ese pasa a V2, los otros 19 quedan legacy, totales iguales', () => {
+    const stored = Array.from({ length: 20 }, (_, k) => legacy(k + 1));
+    const before = stored.map(s => normalizeProfile(s).unitCost);
+
+    // El front manda SÓLO el perfil editado (V2). Simulamos el merge por id.
+    const edited = normalizeProfile(stored[4]); // p_5 → V2
+    const upserts = new Map([[edited.id, edited]]);
+    const merged = stored.map(s => upserts.get(s.id) ?? s);
+
+    // p_5 es V2 (components array); el resto sigue legacy (components objeto).
+    expect(Array.isArray((merged[4] as any).components)).toBe(true);
+    const otrosLegacy = merged.filter((_, k) => k !== 4).every(m => !Array.isArray((m as any).components));
+    expect(otrosLegacy).toBe(true);
+    // los 19 no editados son el MISMO objeto de referencia (intactos)
+    expect(merged.filter((_, k) => k !== 4).every((m, k2) => m === stored.filter((_, k) => k !== 4)[k2])).toBe(true);
+    // todos conservan el mismo unitCost
+    const after = merged.map(m => normalizeProfile(m).unitCost);
+    expect(after).toEqual(before);
   });
 });
 

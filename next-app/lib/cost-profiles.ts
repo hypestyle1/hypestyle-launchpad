@@ -70,6 +70,19 @@ export function isConfigured(p: { components?: CostComponent[] | null }): boolea
   return Array.isArray(p.components) && p.components.length > 0;
 }
 
+/** Un componente es VÁLIDO si tiene label y un monto numérico >= 0.
+ *  Un monto de $0 es válido (cero conocido); NaN o negativo es inválido;
+ *  label vacío es incompleto. */
+export function isComponentValid(c: CostComponent): boolean {
+  return c.label.trim().length > 0 && Number.isFinite(c.amount) && c.amount >= 0;
+}
+
+/** ¿El perfil tiene algún componente incompleto/inválido? Un componente en $0
+ *  NO cuenta como incompleto — es un costo conocido y no afecta la calidad. */
+export function hasIncompleteComponent(p: { components?: CostComponent[] | null }): boolean {
+  return isConfigured(p) && (p.components as CostComponent[]).some(c => !isComponentValid(c));
+}
+
 /** Normaliza un perfil crudo (array V2 u objeto legacy) a V2. No destructivo:
  *  conserva id, labels y montos (incluidos los 0). */
 export function normalizeProfile(raw: any): CostProfile {
