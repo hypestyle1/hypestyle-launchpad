@@ -6,7 +6,8 @@
 // exacto de 4 (10 filas completas). El Zippo se sacó de esta lista: es un
 // accesorio, no encaja en "Best Sellers" de indumentaria (30/07/26).
 export const BEST_SELLERS_SLUGS = [
-  // — Fila 1: Stay Hustle subido + fileteado —
+  // — Fila 1: FIND JESUS primero (vuelve en pre-venta 27/08, stock 14 por talle) —
+  'find-jesus-longsleeve-black',
   'jersey-fileteado-x-alfredo-genovese',
   'mesh-camo-blue-tee',            // subido (stock abundante), después del fileteado
   'lettering-melange-jort',
@@ -36,7 +37,6 @@ export const BEST_SELLERS_SLUGS = [
   'sweatpants-bombe-bordo',
   'knitted-tshirt-sand',
   'raglan-tee-tribal-cross',
-  'find-jesus-longsleeve-black',   // stock muy bajo (1 unidad en L y en XL) — puede agotarse rápido
   'sleeveless-ranglan-white',
   'sleeveless-ranglan-militar-green',
   'sleeveless-ranglan-grey',
