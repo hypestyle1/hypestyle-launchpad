@@ -3,7 +3,7 @@
 // llamadas agregadas (no N+1). Cache in-memory por (nivel, rango) con TTL. La
 // cuenta es ARS y timezone AR, así que no hay conversión de moneda ni de fecha.
 
-export const META_VERSION = process.env.META_API_VERSION || 'v23.0';
+export const META_VERSION = process.env.META_API_VERSION || 'v26.0';
 const META_TOKEN = (process.env.META_ACCESS_TOKEN || '').trim();
 const META_ACCOUNT = (process.env.META_AD_ACCOUNT_ID || 'act_202030354217204').trim();
 const GRAPH = `https://graph.facebook.com/${META_VERSION}`;
@@ -43,8 +43,10 @@ export function parseInsightRow(r: any): MetaInsight {
     ? Number((roasArr.find((a: any) => a.action_type === 'omni_purchase') || roasArr[0])?.value) || null
     : null;
   return {
-    id: r.campaign_id || r.adset_id || r.ad_id || undefined,
-    name: r.campaign_name || r.adset_name || r.ad_name || undefined,
+    // id/name del nivel MÁS específico presente (ad → adset → campaign), para que
+    // las filas de ad set y de ad no colisionen con el id de la campaña.
+    id: r.ad_id || r.adset_id || r.campaign_id || undefined,
+    name: r.ad_name || r.adset_name || r.campaign_name || undefined,
     campaignId: r.campaign_id, campaignName: r.campaign_name,
     adsetId: r.adset_id, adsetName: r.adset_name,
     spend, impressions: Number(r.impressions) || 0, reach: Number(r.reach) || 0,
@@ -60,11 +62,17 @@ const LEVEL_ID_FIELDS: Record<string, string> = {
   account: '', campaign: ',campaign_id,campaign_name', adset: ',campaign_id,campaign_name,adset_id,adset_name', ad: ',campaign_id,adset_id,ad_id,ad_name',
 };
 
-async function graphGet(path: string): Promise<any> {
+// Cache COMPARTIDO real: Vercel Data Cache vía fetch revalidate. Sobrevive cold
+// starts y se comparte entre instancias (a diferencia de un Map en memoria); se
+// limpia en cada deploy. Stale-while-revalidate: sirve el último válido mientras
+// refresca en background. TTL 10min. El token va en la URL → server-side only.
+const REVALIDATE = 600;
+
+async function graphGet(path: string, forceFresh = false): Promise<any> {
   const url = `${GRAPH}${path}${path.includes('?') ? '&' : '?'}access_token=${encodeURIComponent(META_TOKEN)}`;
   let lastErr: any;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(url, forceFresh ? { cache: 'no-store' } : { next: { revalidate: REVALIDATE } });
     if (res.ok) return res.json();
     if (res.status === 429 || res.status >= 500) { lastErr = new Error(`meta ${res.status}`); await new Promise((r) => setTimeout(r, 400 * (attempt + 1))); continue; }
     const body = await res.json().catch(() => ({}));
@@ -74,13 +82,13 @@ async function graphGet(path: string): Promise<any> {
 }
 
 /** Insights de un nivel para [since, until] (YYYY-MM-DD, TZ de la cuenta = AR). Pagina. */
-export async function fetchInsights(level: 'account' | 'campaign' | 'adset' | 'ad', since: string, until: string): Promise<MetaInsight[]> {
+export async function fetchInsights(level: 'account' | 'campaign' | 'adset' | 'ad', since: string, until: string, opts: { forceFresh?: boolean } = {}): Promise<MetaInsight[]> {
   const fields = INSIGHT_FIELDS + (LEVEL_ID_FIELDS[level] || '');
   const tr = encodeURIComponent(JSON.stringify({ since, until }));
   let path = `/${META_ACCOUNT}/insights?level=${level}&fields=${fields}&time_range=${tr}&limit=200`;
   const out: MetaInsight[] = [];
   for (let page = 0; page < 20; page++) {
-    const data = await graphGet(path);
+    const data = await graphGet(path, opts.forceFresh);
     for (const row of (data.data || [])) out.push(parseInsightRow(row));
     const next = data.paging?.next;
     if (!next) break;
@@ -90,11 +98,11 @@ export async function fetchInsights(level: 'account' | 'campaign' | 'adset' | 'a
 }
 
 /** effective_status por campaña (Insights no lo trae). Una sola llamada, paginada. */
-export async function fetchCampaignStatuses(): Promise<Map<string, string>> {
+export async function fetchCampaignStatuses(opts: { forceFresh?: boolean } = {}): Promise<Map<string, string>> {
   const m = new Map<string, string>();
   let path = `/${META_ACCOUNT}/campaigns?fields=id,effective_status,objective&limit=200`;
   for (let page = 0; page < 10; page++) {
-    const data = await graphGet(path);
+    const data = await graphGet(path, opts.forceFresh);
     for (const c of (data.data || [])) m.set(String(c.id), String(c.effective_status || ''));
     const next = data.paging?.next;
     if (!next) break;
@@ -103,38 +111,25 @@ export async function fetchCampaignStatuses(): Promise<Map<string, string>> {
   return m;
 }
 
-export async function fetchAccount(): Promise<{ name: string; currency: string; timezone: string; status: number }> {
-  const d = await graphGet(`/${META_ACCOUNT}?fields=name,currency,timezone_name,account_status`);
+export async function fetchAccount(opts: { forceFresh?: boolean } = {}): Promise<{ name: string; currency: string; timezone: string; status: number }> {
+  const d = await graphGet(`/${META_ACCOUNT}?fields=name,currency,timezone_name,account_status`, opts.forceFresh);
   return { name: d.name, currency: d.currency, timezone: d.timezone_name, status: Number(d.account_status) };
 }
 
-// ── Cache in-memory por (nivel, rango). No pega a Meta en cada render. ──
-interface Cached { at: number; account: any; levels: Record<string, MetaInsight[]>; statuses: Map<string, string>; }
-const cache = new Map<string, Cached>();
-const TTL = 10 * 60_000;
-
+/** Datos de cuenta + campañas para un rango. La reliability la da el Vercel Data
+ *  Cache (revalidate 10min, compartido y con stale-while-revalidate); NO hay un
+ *  Map en memoria que prometa un snapshot persistente por instancia. `force`
+ *  saltea el cache pidiendo datos frescos. */
 export async function getMetaData(since: string, until: string, force = false): Promise<{ account: any; campaigns: MetaInsight[]; accountRow: MetaInsight | null; statuses: Map<string, string>; at: number; stale: boolean }> {
-  const key = `${since}:${until}`;
-  const hit = cache.get(key);
-  if (!force && hit && Date.now() - hit.at < TTL) {
-    return { account: hit.account, campaigns: hit.levels.campaign || [], accountRow: (hit.levels.account || [])[0] || null, statuses: hit.statuses, at: hit.at, stale: false };
-  }
-  try {
-    const [account, accountRows, campaigns, statuses] = await Promise.all([
-      fetchAccount(), fetchInsights('account', since, until), fetchInsights('campaign', since, until), fetchCampaignStatuses(),
-    ]);
-    const entry: Cached = { at: Date.now(), account, levels: { account: accountRows, campaign: campaigns }, statuses };
-    cache.set(key, entry);
-    return { account, campaigns, accountRow: accountRows[0] || null, statuses, at: entry.at, stale: false };
-  } catch (e) {
-    // Partial failure: servir último snapshot válido marcado stale, no destruir datos.
-    if (hit) return { account: hit.account, campaigns: hit.levels.campaign || [], accountRow: (hit.levels.account || [])[0] || null, statuses: hit.statuses, at: hit.at, stale: true };
-    throw e;
-  }
+  const opts = force ? { forceFresh: true } : {};
+  const [account, accountRows, campaigns, statuses] = await Promise.all([
+    fetchAccount(opts), fetchInsights('account', since, until, opts), fetchInsights('campaign', since, until, opts), fetchCampaignStatuses(opts),
+  ]);
+  return { account, campaigns, accountRow: accountRows[0] || null, statuses, at: Date.now(), stale: false };
 }
 
-/** Insights de ad sets / ads de UNA campaña (drilldown on-demand, cacheado). */
-export async function fetchChildInsights(level: 'adset' | 'ad', campaignId: string, since: string, until: string): Promise<MetaInsight[]> {
+/** Insights de ad sets de una campaña, o ads de un ad set (drilldown on-demand). */
+export async function fetchChildInsights(level: 'adset' | 'ad', filter: { campaignId?: string; adsetId?: string }, since: string, until: string): Promise<MetaInsight[]> {
   const all = await fetchInsights(level, since, until);
-  return all.filter((r) => r.campaignId === campaignId);
+  return all.filter((r) => (filter.adsetId ? r.adsetId === filter.adsetId : true) && (filter.campaignId ? r.campaignId === filter.campaignId : true));
 }

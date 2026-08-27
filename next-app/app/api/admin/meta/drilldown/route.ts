@@ -14,13 +14,15 @@ export async function GET(req: NextRequest) {
   if (!metaConfigured()) return NextResponse.json({ error: 'not_configured' }, { status: 400 });
 
   const { searchParams } = req.nextUrl;
-  const campaignId = searchParams.get('campaignId');
+  const campaignId = searchParams.get('campaignId') || undefined;
+  const adsetId = searchParams.get('adsetId') || undefined;
   const level = (searchParams.get('level') || 'adset') as 'adset' | 'ad';
   const start = searchParams.get('start'), end = searchParams.get('end');
-  if (!campaignId || !start || !end) return NextResponse.json({ error: 'campaignId, start, end requeridos' }, { status: 400 });
+  if ((!campaignId && !adsetId) || !start || !end) return NextResponse.json({ error: 'campaignId o adsetId, start, end requeridos' }, { status: 400 });
 
   try {
-    const rows = await fetchChildInsights(level, campaignId, arDate(start), arDate(end));
+    // adset → se filtra por campaña; ad → por ad set.
+    const rows = await fetchChildInsights(level, level === 'ad' ? { adsetId } : { campaignId }, arDate(start), arDate(end));
     const enriched = rows.map((r) => ({ ...r, cpa: metaCpa(r.spend, r.purchases) })).sort((a, b) => b.spend - a.spend);
     return NextResponse.json({ rows: enriched });
   } catch (e: any) {

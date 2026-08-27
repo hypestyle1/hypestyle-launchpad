@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, Fragment } from 'react';
 import Link from 'next/link';
 import { RefreshCw, ChevronRight } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
@@ -33,6 +33,8 @@ export default function AdsPage() {
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
   const [openCampaign, setOpenCampaign] = useState<string | null>(null);
   const [children, setChildren] = useState<Record<string, CampaignRow[]>>({});
+  const [openAdset, setOpenAdset] = useState<string | null>(null);
+  const [adChildren, setAdChildren] = useState<Record<string, CampaignRow[]>>({});
 
   const load = useCallback(async (r: RangeState, refresh = false) => {
     if (!puede('costos')) return;
@@ -50,11 +52,20 @@ export default function AdsPage() {
 
   async function toggleCampaign(id: string) {
     if (openCampaign === id) { setOpenCampaign(null); return; }
-    setOpenCampaign(id);
+    setOpenCampaign(id); setOpenAdset(null);
     if (!children[id]) {
       const qs = new URLSearchParams({ campaignId: id, level: 'adset', start: range.range.startUTC, end: range.range.endUTC });
       const res = await fetch(`/api/admin/meta/drilldown?${qs}`, { headers: headers() });
       if (res.ok) { const d = await res.json(); setChildren((p) => ({ ...p, [id]: d.rows || [] })); }
+    }
+  }
+  async function toggleAdset(id: string) {
+    if (openAdset === id) { setOpenAdset(null); return; }
+    setOpenAdset(id);
+    if (!adChildren[id]) {
+      const qs = new URLSearchParams({ adsetId: id, level: 'ad', start: range.range.startUTC, end: range.range.endUTC });
+      const res = await fetch(`/api/admin/meta/drilldown?${qs}`, { headers: headers() });
+      if (res.ok) { const d = await res.json(); setAdChildren((p) => ({ ...p, [id]: d.rows || [] })); }
     }
   }
 
@@ -114,7 +125,7 @@ export default function AdsPage() {
           <SectionTitle right={<span className="text-[10px] uppercase tracking-wide text-muted-foreground bg-muted rounded-full px-2 py-0.5">Meta atribuye</span>}>Plataforma</SectionTitle>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard label="Ad Spend" value={fmtARS(p!.spend)} emphasis sub={`${num(p!.impressions)} impresiones`} info="Platform Spend exacto de Meta Insights, en la moneda de la cuenta (ARS)." />
-            <KpiCard label="Effective Ad Cost" value={fmtARS(s.ad.effective)} sub={s.ad.mixed ? `+${fmtARS(s.ad.economicUplift)} cargos` : 'sin impuestos configurados'} estimated={s.ad.upliftQuality !== 'exact'} info="Platform Spend + cargos económicos NO recuperables. Sin regla de impuestos configurada = sólo spend (los impuestos no se asumen)." />
+            <KpiCard label={`Effective Ad Cost${s.ad.upliftQuality === 'missing' ? ' · Partial' : ''}`} value={fmtARS(s.ad.effective)} sub={s.ad.mixed ? `+${fmtARS(s.ad.economicUplift)} cargos` : 'impuestos pendientes'} estimated={s.ad.upliftQuality !== 'exact'} info="Platform Spend + cargos económicos NO recuperables. Sin regla de impuestos configurada = sólo spend (los impuestos no se asumen como 0 exacto)." />
             <KpiCard label="Meta ROAS" value={roas(p!.roas)} sub={`${num(p!.purchases)} compras atrib.`} info="Attributed Purchase Value / Platform Spend. Fuente Meta (omni_purchase). No es revenue contable." />
             <KpiCard label="Meta CPA" value={p!.cpa == null ? '—' : fmtARS(p!.cpa)} sub={`CTR ${pct1(p!.ctr / 100)} · CPC ${fmtARS(p!.cpc)}`} info="Platform Spend / Meta Attributed Purchases." />
           </div>
@@ -128,6 +139,14 @@ export default function AdsPage() {
             <KpiCard label="Blended CAC" value={b!.blendedCac == null ? '—' : fmtARS(b!.blendedCac)} sub={b!.newCustomers != null ? `${b!.newCustomers} nuevos` : 'sin dato'} info="Effective Advertising Cost / clientes nuevos (de Woo, no purchasers de Meta)." />
             <KpiCard label="Ad Spend % Revenue" value={pct1(b!.adSpendPctRevenue)} sub={`breakeven ROAS ${roas(b!.breakevenRoas)}`} info="Effective Advertising Cost / Woo Revenue. El breakeven ROAS sale del margen de contribución real, no de benchmarks." />
           </div>
+
+          {/* Única señal de data-quality (no un warning por card) */}
+          {s.ad.upliftQuality === 'missing' && (
+            <p className="text-[11px] text-warning mt-2 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-warning shrink-0" />
+              Impuestos/cargos de publicidad pendientes de configurar → <strong className="font-medium">Effective Ad Cost, MER, Contribution After Marketing y Operating Profit son parciales</strong> (no se asume 0).
+            </p>
+          )}
 
           {/* Operating Profit Estimated */}
           <div className="bg-foreground text-background rounded-lg p-4 mt-3 flex flex-wrap items-center gap-x-8 gap-y-2">
@@ -157,8 +176,8 @@ export default function AdsPage() {
                 </thead>
                 <tbody>
                   {s.campaigns.map((c) => (
-                    <>
-                      <tr key={c.id} onClick={() => c.campaignId && toggleCampaign(c.campaignId)} className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer">
+                    <Fragment key={c.id}>
+                      <tr onClick={() => c.campaignId && toggleCampaign(c.campaignId)} className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer">
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1.5">
                             <ChevronRight size={13} className={`text-muted-foreground/50 transition-transform ${openCampaign === c.campaignId ? 'rotate-90' : ''}`} />
@@ -175,21 +194,42 @@ export default function AdsPage() {
                         <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground hidden sm:table-cell">{c.cpa == null ? '—' : fmtARS(c.cpa)}</td>
                         <td className="px-3 py-2.5 text-right"><span className={`inline-block text-[10px] font-semibold rounded-full px-2 py-0.5 ${SIGNAL[c.signal].cls}`}>{SIGNAL[c.signal].label}</span></td>
                       </tr>
-                      {openCampaign === c.campaignId && (children[c.campaignId!] || []).map((ch) => (
-                        <tr key={ch.id} className="border-b border-border last:border-0 bg-muted/20 text-[12px]">
-                          <td className="pl-8 pr-3 py-2 text-muted-foreground truncate">{ch.name}</td>
-                          <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{fmtARS(ch.spend)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums text-muted-foreground hidden sm:table-cell">{ch.purchases}</td>
-                          <td className="px-3 py-2 text-right tabular-nums text-muted-foreground hidden md:table-cell">{fmtARS(ch.purchaseValue)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{roas(ch.roas)}</td>
-                          <td className="px-3 py-2 text-right tabular-nums text-muted-foreground hidden sm:table-cell">{ch.cpa == null ? '—' : fmtARS(ch.cpa)}</td>
-                          <td />
-                        </tr>
+                      {openCampaign === c.campaignId && (children[c.campaignId!] || []).map((as) => (
+                        <Fragment key={as.adsetId || as.id}>
+                          <tr onClick={() => as.adsetId && toggleAdset(as.adsetId)} className="border-b border-border last:border-0 bg-muted/20 text-[12px] cursor-pointer hover:bg-muted/40">
+                            <td className="pl-7 pr-3 py-2 text-muted-foreground">
+                              <div className="flex items-center gap-1.5">
+                                <ChevronRight size={12} className={`text-muted-foreground/40 transition-transform ${openAdset === as.adsetId ? 'rotate-90' : ''}`} />
+                                <span className="truncate max-w-[220px]">{as.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{fmtARS(as.spend)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground hidden sm:table-cell">{as.purchases}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground hidden md:table-cell">{fmtARS(as.purchaseValue)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{roas(as.roas)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground hidden sm:table-cell">{as.cpa == null ? '—' : fmtARS(as.cpa)}</td>
+                            <td />
+                          </tr>
+                          {openAdset === as.adsetId && (adChildren[as.adsetId!] || []).map((ad) => (
+                            <tr key={ad.id} className="border-b border-border last:border-0 bg-muted/30 text-[12px]">
+                              <td className="pl-12 pr-3 py-1.5 text-muted-foreground/80 truncate max-w-[240px]">{ad.name} <span className="text-[10px] text-muted-foreground/50">{ad.status}</span></td>
+                              <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground/80">{fmtARS(ad.spend)}</td>
+                              <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground/80 hidden sm:table-cell">{ad.purchases}</td>
+                              <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground/80 hidden md:table-cell">{fmtARS(ad.purchaseValue)}</td>
+                              <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground/80">{roas(ad.roas)}</td>
+                              <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground/80 hidden sm:table-cell">{ad.cpa == null ? '—' : fmtARS(ad.cpa)}</td>
+                              <td />
+                            </tr>
+                          ))}
+                          {openAdset === as.adsetId && !adChildren[as.adsetId!] && (
+                            <tr><td colSpan={7} className="pl-12 py-1.5 text-[11px] text-muted-foreground animate-pulse">Cargando ads…</td></tr>
+                          )}
+                        </Fragment>
                       ))}
                       {openCampaign === c.campaignId && !children[c.campaignId!] && (
                         <tr><td colSpan={7} className="px-8 py-2 text-[11px] text-muted-foreground animate-pulse">Cargando ad sets…</td></tr>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

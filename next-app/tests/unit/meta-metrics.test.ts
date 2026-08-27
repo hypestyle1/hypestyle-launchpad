@@ -112,6 +112,14 @@ describe('capas financieras', () => {
   it('Operating Profit Estimated = CAM − OpEx (no es Net Profit)', () => {
     expect(operatingProfitEstimated(7000000, 100000)).toBe(6900000);
   });
+  it('se computa con valores RAW; el redondeo es sólo de display (el "$1")', () => {
+    // Raw: 5.487.251,6 − 100.240,4 = 5.387.011,2 → display 5.387.011.
+    // Si se restara el display-de-cada-capa (5.487.252 − 100.240) daría 5.387.012.
+    const cam = 5_487_251.6, opEx = 100_240.4;
+    expect(operatingProfitEstimated(cam, opEx)).toBeCloseTo(5_387_011.2, 2);
+    expect(Math.round(cam) - Math.round(opEx)).toBe(5_387_012); // el error acumulado que EVITAMOS
+    expect(Math.round(operatingProfitEstimated(cam, opEx))).toBe(5_387_011); // el correcto
+  });
 });
 
 describe('buildAdvertisingSummary — integración', () => {
