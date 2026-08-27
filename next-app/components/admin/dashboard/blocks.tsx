@@ -34,22 +34,27 @@ export function InfoTip({ children }: { children: ReactNode }) {
   );
 }
 
+// Delta discreto: pill sutil, no verde/rojo saturado. Positivo = suave verde,
+// negativo = suave rojo, cero = neutro. La flecha es chica.
 export function DeltaBadge({ delta, positiveIsGood = true }: { delta?: Delta | null; positiveIsGood?: boolean }) {
   if (!delta || delta.pct === null) return null;
+  if (delta.pct === 0) return <span className="text-[11px] text-muted-foreground/60 tabular-nums">0,0%</span>;
   const up = delta.pct > 0;
   const good = up === positiveIsGood;
   const Icon = up ? ArrowUpRight : ArrowDownRight;
-  if (delta.pct === 0) return <span className="text-[11px] text-muted-foreground/70 tabular-nums">0%</span>;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[11px] tabular-nums ${good ? 'text-success' : 'text-destructive'}`}>
-      <Icon size={12} />
-      {Math.abs(delta.pct * 100).toFixed(1)}%
+    <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium tabular-nums leading-none ${good ? 'text-success' : 'text-destructive'}`}>
+      <Icon size={11} strokeWidth={2.5} />
+      {Math.abs(delta.pct * 100).toFixed(1).replace('.', ',')}%
     </span>
   );
 }
 
+// FinanceMetricCard V2 — compacta, valor dominante, comparación discreta arriba
+// a la derecha (patrón Triple Whale) y una línea secundaria opcional. Poco ruido,
+// whitespace controlado. Usada por Inicio y Finanzas.
 export function KpiCard({
-  label, value, sub, delta, positiveIsGood = true, info, estimated,
+  label, value, sub, delta, positiveIsGood = true, info, estimated, compare, emphasis,
 }: {
   label: string;
   value: ReactNode;
@@ -58,19 +63,26 @@ export function KpiCard({
   positiveIsGood?: boolean;
   info?: ReactNode;
   estimated?: boolean;
+  compare?: ReactNode;   // ej. "vs $11,4M período ant."
+  emphasis?: boolean;    // realce para la métrica protagonista
 }) {
   return (
-    <div className="bg-card border border-border rounded-lg p-4">
-      <div className="flex items-center gap-1.5">
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80 leading-none">{label}</p>
-        {info && <InfoTip>{info}</InfoTip>}
-      </div>
-      <p className="text-[22px] font-bold text-foreground mt-1.5 leading-none tabular-nums">{value}</p>
-      <div className="flex items-center gap-2 mt-1.5 min-h-[16px]">
+    <div className={`bg-card border rounded-lg p-4 flex flex-col ${emphasis ? 'border-border-mid' : 'border-border'}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground/80 leading-none truncate">{label}</p>
+          {info && <InfoTip>{info}</InfoTip>}
+        </div>
         <DeltaBadge delta={delta} positiveIsGood={positiveIsGood} />
-        {sub && <span className="text-[11px] text-muted-foreground/70">{sub}</span>}
-        {estimated && <span className="text-[10px] uppercase tracking-wide text-warning bg-warning-soft rounded px-1.5 py-0.5">Estimado</span>}
       </div>
+      <p className={`font-bold text-foreground mt-2 leading-none tabular-nums tracking-tight ${emphasis ? 'text-[27px]' : 'text-[22px]'}`}>{value}</p>
+      {(sub || compare || estimated) && (
+        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-2 min-h-[15px]">
+          {compare && <span className="text-[11px] text-muted-foreground/70 tabular-nums">{compare}</span>}
+          {sub && <span className="text-[11px] text-muted-foreground/70">{sub}</span>}
+          {estimated && <span className="text-[9.5px] uppercase tracking-wide text-warning bg-warning-soft rounded-full px-1.5 py-0.5 leading-none">Estimado</span>}
+        </div>
+      )}
     </div>
   );
 }
