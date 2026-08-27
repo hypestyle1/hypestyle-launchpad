@@ -111,6 +111,25 @@ export async function fetchCampaignStatuses(opts: { forceFresh?: boolean } = {})
   return m;
 }
 
+/** Serie diaria a nivel cuenta (time_increment=1) para sparklines de Meta. Una
+ *  sola llamada agregada, cacheada por el Data Cache. */
+export async function fetchDailyInsights(since: string, until: string): Promise<{ date: string; spend: number; roas: number | null; purchaseValue: number }[]> {
+  const tr = encodeURIComponent(JSON.stringify({ since, until }));
+  let path = `/${META_ACCOUNT}/insights?level=account&fields=spend,action_values,purchase_roas&time_increment=1&time_range=${tr}&limit=200`;
+  const out: { date: string; spend: number; roas: number | null; purchaseValue: number }[] = [];
+  for (let page = 0; page < 10; page++) {
+    const data = await graphGet(path);
+    for (const r of (data.data || [])) {
+      const row = parseInsightRow(r);
+      out.push({ date: r.date_start, spend: row.spend, roas: row.roas, purchaseValue: row.purchaseValue });
+    }
+    const next = data.paging?.next;
+    if (!next) break;
+    path = next.replace(GRAPH, '').replace(/&access_token=[^&]+/, '');
+  }
+  return out;
+}
+
 export async function fetchAccount(opts: { forceFresh?: boolean } = {}): Promise<{ name: string; currency: string; timezone: string; status: number }> {
   const d = await graphGet(`/${META_ACCOUNT}?fields=name,currency,timezone_name,account_status`, opts.forceFresh);
   return { name: d.name, currency: d.currency, timezone: d.timezone_name, status: Number(d.account_status) };
