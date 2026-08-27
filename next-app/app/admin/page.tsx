@@ -11,10 +11,11 @@ import { DataTable, type Column } from '@/components/admin/DataTable';
 import { DateRangePicker, makeRangeState, type RangeState } from '@/components/admin/DateRangePicker';
 import { MetricChart, type MetricKey } from '@/components/admin/MetricChart';
 import {
-  KpiCard, SectionTitle, AdsStrip, AttentionRow, TopProducts, CustomerSplit,
+  KpiCard, SectionTitle, AttentionRow, TopProducts, CustomerSplit,
   type AttentionItem, type ProductRank, type CustomerSplitData,
 } from '@/components/admin/dashboard/blocks';
 import type { FinanceSummary, SummaryComparison } from '@/lib/dashboard/finance';
+import { breakevenSignal } from '@/lib/meta/metrics';
 import type { Granularity } from '@/lib/dashboard/periods';
 
 interface SummaryResponse {
@@ -50,6 +51,7 @@ export default function AdminInicio() {
   const [customers, setCustomers] = useState<CustomerSplitData | null>(null);
   const [botItem, setBotItem] = useState<AttentionItem | null>(null);
   const [metaBlock, setMetaBlock] = useState<any | null>(null);
+  const [metaConn, setMetaConn] = useState<any | null>(null);
   const [metric, setMetric] = useState<MetricKey>('profit');
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
@@ -69,7 +71,10 @@ export default function AdminInicio() {
     } catch (e: any) {
       if (e?.name !== 'AbortError') setSummaryState('error');
     }
-    // Meta Ads: bloque real cuando está conectado (aparte, no bloquea).
+    // Estado de conexión de Meta: liviano y rápido (no espera el summary pesado).
+    fetch('/api/admin/meta/status', { headers: headers() })
+      .then((r0) => (r0.ok ? r0.json() : null)).then((d) => d && setMetaConn(d)).catch(() => {});
+    // Valores de Meta: summary cruzado (más pesado, no bloquea el resto).
     setMetaBlock(null);
     fetch(`/api/admin/meta/summary?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
       .then((res3) => (res3.ok ? res3.json() : null)).then((d) => d && d.connected && d.summary && setMetaBlock(d.summary)).catch(() => {});
@@ -153,6 +158,12 @@ export default function AdminInicio() {
     { seccion: 'perfiles', label: 'Perfiles', href: '/admin/perfiles' },
   ].filter((t) => puede(t.seccion));
 
+  // Meta integrado: valores del summary + estado de conexión rápido.
+  const mb = metaBlock;
+  const metaConnected: boolean | null = metaConn ? (metaConn.state === 'connected' || metaConn.state === 'stale') : null;
+  const roasFmt = (n: number | null) => (n == null ? '—' : `${n.toFixed(2).replace('.', ',')}×`);
+  const beLabel = (sig: string) => (sig === 'above' ? 'sobre breakeven' : sig === 'below' ? 'bajo breakeven' : sig === 'near' ? 'en breakeven' : '');
+
   const orderCols: Column<RecentOrder>[] = [
     { key: 'number', header: 'Pedido', render: (o) => <span className="font-medium tabular-nums">#{o.number}</span> },
     { key: 'date', header: 'Fecha', hideOnMobile: true, render: (o) => <span className="text-muted-foreground whitespace-nowrap">{o.date ? fmtDateTime(o.date) : '—'}</span> },
@@ -186,60 +197,64 @@ export default function AdminInicio() {
         </div>
       ) : (
         <>
-          {/* Bloque Tienda + Chart */}
-          <SectionTitle>Tienda</SectionTitle>
-          <div className="grid gap-3 lg:grid-cols-5">
-            <div className="lg:col-span-2 grid grid-cols-2 gap-3 auto-rows-min">
-              <KpiCard label="Revenue" value={cur ? fmtARS(cur.revenue) : '—'} delta={cmp?.revenue}
-                info="Facturación de pedidos pagados (procesando, completado, enviado) en el período. Fuente: WooCommerce." />
-              <KpiCard label="Pedidos" value={cur ? cur.orders : '—'} delta={cmp?.orders}
-                info="Cantidad de pedidos pagados incluidos en Revenue." />
-              <KpiCard label="AOV" value={cur ? fmtARS(cur.aov) : '—'} delta={cmp?.aov}
-                info="Ticket promedio: Revenue / Pedidos." />
-              <KpiCard label="COGS" value={cur ? fmtARS(cur.cogs) : '—'} delta={cmp?.cogs} positiveIsGood={false}
-                estimated={coveragePct !== null && coveragePct < 100}
-                info="Costo de los productos vendidos, según los costos configurados en Hype. Sólo cubre los productos con costo cargado." />
-              <KpiCard label="Contribution Profit" value={cur ? fmtARS(cur.contributionProfit) : '—'} delta={cmp?.contributionProfit} emphasis
-                sub={cur ? `${(cur.profitMargin * 100).toFixed(1).replace('.', ',')}% margen` : undefined}
-                estimated={dq?.contributionIsPartial} info={partialInfo} />
-              <KpiCard label="Cost Coverage" value={coveragePct !== null ? `${coveragePct}%` : '—'}
-                sub={dq && dq.catalogProductsWithoutCost > 0 ? `${dq.catalogProductsWithoutCost} sin costo` : undefined}
-                info={coverageInfo} />
-            </div>
+          {/* Business Performance — Woo + Finance + Meta + Operating en una sola
+              lectura ejecutiva. Meta ya no es un módulo aislado. */}
+          <SectionTitle right={mb && <Link href="/admin/ads" className="text-[12px] text-muted-foreground hover:text-foreground">Ver Meta Ads →</Link>}>Business performance</SectionTitle>
 
-            <div className="lg:col-span-3 bg-card border border-border rounded-lg p-4 flex flex-col min-h-[320px]">
-              <div className="flex items-center gap-1 mb-3">
-                {METRICS.map((m) => (
-                  <button key={m.key} onClick={() => setMetric(m.key)}
-                    className={`h-7 px-2.5 rounded-md text-[12px] font-medium transition-colors ${metric === m.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex-1 min-h-[240px]">
-                <MetricChart
-                  data={summary?.timeseries || []}
-                  previous={null}
-                  metric={metric}
-                  granularity={summary?.granularity || 'day'}
-                  loading={summaryState === 'loading' && !summary}
-                  error={summaryState === 'error'}
-                />
-              </div>
-            </div>
+          {/* Fila 1 — Negocio */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <KpiCard label="Revenue" value={cur ? fmtARS(cur.revenue) : '—'} delta={cmp?.revenue} emphasis info="Facturación de pedidos pagados. Fuente: WooCommerce." />
+            <KpiCard label="Pedidos" value={cur ? cur.orders : '—'} delta={cmp?.orders} sub={cur ? `AOV ${fmtARS(cur.aov)}` : undefined} info="Pedidos pagados incluidos en Revenue." />
+            <KpiCard label="Contribution Profit" value={cur ? fmtARS(cur.contributionProfit) : '—'} delta={cmp?.contributionProfit}
+              sub={cur ? `${(cur.profitMargin * 100).toFixed(1).replace('.', ',')}% margen` : undefined} estimated={dq?.contributionIsPartial} info={partialInfo} />
+            <KpiCard label="Operating Profit Est." value={mb ? fmtARS(mb.business.operatingProfitEstimated) : '—'} emphasis
+              sub={mb ? (mb.business.operatingProfitPartial ? 'parcial' : undefined) : (metaConnected === false ? 'requiere Meta' : undefined)}
+              estimated={!!mb} info="Contribution After Marketing − Operating Expenses. Parcial si faltan impuestos de Ads u OpEx. No es Net Profit." />
           </div>
 
-          {/* Anuncios — bloque real de Meta si está conectado, si no el placeholder */}
-          <SectionTitle right={metaBlock && <Link href="/admin/ads" className="text-[12px] text-muted-foreground hover:text-foreground">Ver Meta Ads →</Link>}>Anuncios</SectionTitle>
-          {metaBlock ? (
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-              <KpiCard label="Ad Spend" value={fmtARS(metaBlock.platform.spend)} info="Platform Spend exacto de Meta (ARS)." />
-              <KpiCard label="Effective Ad Cost" value={fmtARS(metaBlock.ad.effective)} estimated={metaBlock.ad.upliftQuality !== 'exact'} info="Spend + cargos económicos no recuperables." />
-              <KpiCard label="MER" value={metaBlock.business.mer == null ? '—' : `${metaBlock.business.mer.toFixed(2).replace('.', ',')}×`} info="Woo Revenue / Effective Ad Cost." />
-              <KpiCard label="Meta ROAS" value={metaBlock.platform.roas == null ? '—' : `${metaBlock.platform.roas.toFixed(2).replace('.', ',')}×`} info="Attributed Value / Spend (Meta)." />
-              <KpiCard label="Contribution After Mkt" value={fmtARS(metaBlock.business.contributionAfterMarketing)} info="Contribution Profit − Effective Ad Cost." />
+          {/* Fila 2 — Publicidad (Meta) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+            <KpiCard label="Ad Spend" value={mb ? fmtARS(mb.platform.spend) : '—'} sub={mb ? `${mb.platform.purchases} compras` : (metaConnected === false ? 'Meta no conectado' : undefined)} info="Platform Spend exacto de Meta (ARS)." />
+            <KpiCard label="Meta ROAS" value={mb ? roasFmt(mb.platform.roas) : '—'} sub="Meta atribuido" info="Attributed Purchase Value / Spend. Fuente Meta — no es revenue de Woo." />
+            <KpiCard label="MER" value={mb ? roasFmt(mb.business.mer) : '—'} sub="Woo / Effective Ad Cost" info="Marketing Efficiency Ratio: revenue REAL de Woo sobre el costo efectivo. Distinto del Meta ROAS." />
+            <KpiCard label="Blended CAC" value={mb ? (mb.business.blendedCac == null ? '—' : fmtARS(mb.business.blendedCac)) : '—'} sub={mb && mb.business.newCustomers != null ? `${mb.business.newCustomers} nuevos` : undefined} info="Effective Ad Cost / clientes nuevos (Woo)." />
+          </div>
+
+          {/* Fila 3 — Economía */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+            <KpiCard label="Contribution After Mkt" value={mb ? fmtARS(mb.business.contributionAfterMarketing) : '—'} estimated={!!mb}
+              sub={mb && mb.business.camMargin != null ? `${(mb.business.camMargin * 100).toFixed(1).replace('.', ',')}% margen` : (metaConnected === false ? 'requiere Meta' : undefined)}
+              info="Contribution Profit − Effective Advertising Cost." />
+            <KpiCard label="Operating Expenses" value={mb ? fmtARS(mb.business.operatingExpenses) : '—'} info="Costos operativos del período (SaaS/infra/AI). Ver Costos operativos." />
+            <KpiCard label="Breakeven ROAS" value={mb ? roasFmt(mb.business.breakevenRoas) : '—'}
+              sub={mb && mb.platform.roas != null && mb.business.breakevenRoas != null ? beLabel(breakevenSignal(mb.platform.roas, mb.business.breakevenRoas)) : undefined}
+              info="ROAS mínimo para no perder plata, derivado del margen de contribución (no benchmarks)." />
+            <KpiCard label="Cost Coverage" value={coveragePct !== null ? `${coveragePct}%` : '—'} sub={dq && dq.catalogProductsWithoutCost > 0 ? `${dq.catalogProductsWithoutCost} sin costo` : undefined} info={coverageInfo} />
+          </div>
+
+          {/* Señal de conexión: sólo si Meta NO está conectado (no $0 falso) */}
+          {metaConnected === false && (
+            <div className="mt-3 flex items-center gap-2 bg-muted text-muted-foreground rounded-lg px-3.5 py-2.5 text-[12.5px]">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+              Meta no conectado — Spend, ROAS, MER y la rentabilidad después de publicidad aparecen en gris.
+              <Link href="/admin/integraciones" className="ml-auto text-foreground hover:underline font-medium">Conectar →</Link>
             </div>
-          ) : <AdsStrip />}
+          )}
+
+          {/* Chart principal */}
+          <div className="bg-card border border-border rounded-lg p-4 flex flex-col min-h-[300px] mt-3">
+            <div className="flex items-center gap-1 mb-3">
+              {METRICS.map((m) => (
+                <button key={m.key} onClick={() => setMetric(m.key)}
+                  className={`h-7 px-2.5 rounded-md text-[12px] font-medium transition-colors ${metric === m.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 min-h-[240px]">
+              <MetricChart data={summary?.timeseries || []} previous={null} metric={metric} granularity={summary?.granularity || 'day'} loading={summaryState === 'loading' && !summary} error={summaryState === 'error'} />
+            </div>
+          </div>
 
           {/* Top products + Clientes */}
           <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr] mt-8">
