@@ -216,3 +216,20 @@
     color-scheme: dark;
   }
 }
+
+/* Barras del ecualizador del botón de Spotify (SpotifyPlayer.tsx). */
+.hs-eq-bar {
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  background: #fff;
+  transform-origin: center;
+  animation: hs-eq 900ms ease-in-out infinite;
+}
+@keyframes hs-eq {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-eq-bar { animation: none; transform: scaleY(0.6); }
+}
