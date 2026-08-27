@@ -9,6 +9,7 @@ import { KpiCard, SectionTitle } from '@/components/admin/dashboard/blocks';
 import { DateRangePicker, makeRangeState, type RangeState } from '@/components/admin/DateRangePicker';
 import { Waterfall, GatewayTable, DataToComplete, DataQualityCard, FinanceSectionTitle, pct, type WaterfallRow, type GatewayRow, type QualityRow } from '@/components/admin/finance/blocks';
 import type { FinanceSummary } from '@/lib/finance/calculations';
+import type { OperatingSummary } from '@/lib/finance/operating-costs';
 
 interface SummaryResp {
   summary: FinanceSummary;
@@ -22,6 +23,7 @@ export default function FinanceResumen() {
   const [keyInput, setKeyInput] = useState('');
   const [range, setRange] = useState<RangeState>(() => makeRangeState('last30', true));
   const [data, setData] = useState<SummaryResp | null>(null);
+  const [op, setOp] = useState<OperatingSummary | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
 
   const load = useCallback(async (r: RangeState) => {
@@ -34,6 +36,10 @@ export default function FinanceResumen() {
       setData(await res.json());
       setState('ok');
     } catch { setState('error'); }
+    // Capa operativa (aparte, no bloquea el resumen principal).
+    setOp(null);
+    fetch(`/api/admin/finance/operating-costs/summary?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
+      .then((x) => (x.ok ? x.json() : null)).then((d) => d && setOp(d.summary)).catch(() => {});
   }, [headers, puede]);
 
   useEffect(() => { if (autorizado) load(range); }, [autorizado, range, load]);
@@ -119,6 +125,36 @@ export default function FinanceResumen() {
 
           <FinanceSectionTitle>De Revenue a Contribution Profit</FinanceSectionTitle>
           <Waterfall rows={waterfall} />
+
+          {/* Capa operativa — Operating Expenses. NO activa Operating Profit
+              todavía: falta Paid Media (Meta, Paso 03). No se inventa como $0. */}
+          {op && s && (
+            <>
+              <FinanceSectionTitle right={<Link href="/admin/finance/operating-costs" className="text-[11px] text-muted-foreground hover:text-foreground">Ver costos operativos →</Link>}>Capa operativa</FinanceSectionTitle>
+              <div className="bg-card border border-border rounded-lg p-4">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                  <div>
+                    <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">Contribution Profit</p>
+                    <p className="text-[17px] font-bold text-foreground tabular-nums mt-0.5">{fmtARS(s.contributionProfit)}</p>
+                  </div>
+                  <span className="text-muted-foreground text-[16px]">−</span>
+                  <div>
+                    <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">Operating Expenses</p>
+                    <p className="text-[17px] font-bold text-foreground tabular-nums mt-0.5">{fmtARS(op.totalARS)}</p>
+                  </div>
+                  <span className="text-muted-foreground text-[16px]">=</span>
+                  <div>
+                    <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">Result before Paid Media</p>
+                    <p className="text-[17px] font-bold text-foreground tabular-nums mt-0.5">{fmtARS(s.contributionProfit - op.totalARS)}</p>
+                  </div>
+                  <span className="ml-auto bg-warning-soft text-warning rounded-full px-2.5 py-1 text-[11px] font-medium">Paid Media pendiente — Meta (Paso 03)</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground/70 mt-3">
+                  <strong className="text-foreground">Operating Profit Estimated</strong> se activa al conectar Meta: <em>Result before Paid Media − Effective Advertising Cost</em>. No es <em>Net Profit</em> (no incluye impuestos ni contabilidad fiscal completa).
+                </p>
+              </div>
+            </>
+          )}
 
           <div className="grid gap-3 lg:grid-cols-[1.7fr_1fr] mt-8">
             <div>
