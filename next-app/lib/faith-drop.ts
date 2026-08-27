@@ -24,7 +24,8 @@ export const FAITH_DROP_ITEMS: FaithDropItem[] = [
   // darle vidriera en el home. La grilla recorta a filas completas, asi que
   // con 13 items queda afuera el ultimo de la lista (hs-co-grey-hoodie).
   { slug: 'find-jesus-longsleeve-black', preSale: true },
-  { slug: 'longsleeve-waffle-horses', live: true },
+  // Running Horses se relanza con molde nuevo en pre-venta (28/08)
+  { slug: 'longsleeve-waffle-horses', preSale: true },
   { slug: 'longsleeve-waffle-god-gave-me-style', live: true },
   { slug: 'christ-reigns-hoodie', live: true },
   { slug: 'he-die-so-i-could-live-hoodie', live: true },
@@ -35,7 +36,7 @@ export const FAITH_DROP_ITEMS: FaithDropItem[] = [
   { slug: 'he-died-so-i-could-live-melange-hoodie', live: true },
   // — Fila 3 (publicados 30/07/26) —
   { slug: 'sweater-distressed-hs-co', live: true },
-  { slug: 'faith-over-everything-camo-hoodie', preSale: true }, // sale en pre-venta, aclarado con badge
+  { slug: 'faith-over-everything-camo-hoodie', live: true }, // pre-venta terminada
   { slug: 'lamb-of-god-pink-tee', live: true },
   { slug: 'hs-co-grey-hoodie', live: true },
 ];
