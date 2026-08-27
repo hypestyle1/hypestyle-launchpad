@@ -8,7 +8,7 @@ import { fmtARS } from '@/lib/admin-format';
 import { KpiCard, SectionTitle } from '@/components/admin/dashboard/blocks';
 import { DataTable, type Column } from '@/components/admin/DataTable';
 import { DateRangePicker, makeRangeState, type RangeState } from '@/components/admin/DateRangePicker';
-import { SourceBadge, DataQualityCard, FinanceSectionTitle, pct, type QualityRow } from '@/components/admin/finance/blocks';
+import { SourceBadge, FinanceSectionTitle, pct } from '@/components/admin/finance/blocks';
 import {
   CATEGORY_LABEL, type OperatingCost, type OperatingSummary, type ComputedCost,
   type Currency, type Category, type CostType, type Frequency,
@@ -101,14 +101,6 @@ export default function OperatingCostsPage() {
   }
 
   const s = summary;
-  const qualityRows: QualityRow[] = s ? [{
-    label: 'Operating Costs',
-    segments: [
-      { kind: 'exact', value: s.quality.exact },
-      { kind: 'configured', value: s.quality.configured },
-      { kind: 'estimated', value: s.quality.estimated },
-    ],
-  }] : [];
 
   const cols: Column<ComputedCost>[] = [
     { key: 'name', header: 'Costo', render: (c) => <span className="font-medium text-foreground">{c.name}</span> },
@@ -145,8 +137,8 @@ export default function OperatingCostsPage() {
       ) : (
         <>
           {persisted === false && (
-            <div className="mb-4 flex items-center gap-2 bg-warning-soft text-warning rounded-lg px-3 py-2 text-[12px]">
-              Mostrando los costos confirmados por defecto (n8n, Upstash) y observados. Guardar requiere el backend de Operating Costs (PHP 1.23.0), pendiente de deploy.
+            <div className="mb-4 flex items-center gap-2 bg-muted text-muted-foreground rounded-lg px-3 py-2 text-[12px]">
+              Mostrando los costos confirmados por defecto (n8n, Upstash) y observados. Todavía no guardaste ningún cambio — al guardar cualquier costo se persisten todos.
             </div>
           )}
 
@@ -199,11 +191,31 @@ export default function OperatingCostsPage() {
                 </div>
               )}
             </div>
-            <div>
-              <DataQualityCard rows={qualityRows} />
-              <p className="text-[11px] text-muted-foreground/70 mt-2">
-                Ponderado por monto. {s.missingCount > 0 && <>{s.missingCount} costo{s.missingCount > 1 ? 's' : ''} sin monto (no ponderan).</>} FX {s.fxQuality === 'configured' ? 'del mes' : 'histórico estimado'}: US$ = ${s.fxUSD.toLocaleString('es-AR')}.
-              </p>
+            <div className="bg-card border border-border rounded-lg p-4">
+              {/* Inventory Completeness — SEPARADO de la calidad monetaria. Un costo
+                  sin monto no desaparece: se cuenta acá, nunca como $0. */}
+              <div className="flex items-baseline justify-between mb-1.5">
+                <span className="text-[12px] font-medium text-foreground">Inventario</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">{s.inventory.known} / {s.inventory.total} costos con monto</span>
+              </div>
+              <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-muted mb-1">
+                <div className="bg-foreground" style={{ width: `${s.inventory.total ? (s.inventory.known / s.inventory.total) * 100 : 0}%` }} title="Con monto" />
+                <div className="bg-warning" style={{ width: `${s.inventory.total ? (s.inventory.missing / s.inventory.total) * 100 : 0}%` }} title="Sin monto" />
+              </div>
+              {s.inventory.missing > 0 && <p className="text-[11px] text-warning mb-3">{s.inventory.missing} costo{s.inventory.missing > 1 ? 's' : ''} sin monto — cargar para completar el total.</p>}
+
+              <div className="pt-3 mt-1 border-t border-border">
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="text-[12px] font-medium text-foreground">Calidad del costo conocido</span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">exacto {pct(s.quality.exact)} · config {pct(s.quality.configured)} · estim {pct(s.quality.estimated)}</span>
+                </div>
+                <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-muted">
+                  <div className="bg-success" style={{ width: `${s.quality.exact * 100}%` }} title="Exacto" />
+                  <div className="bg-foreground/45" style={{ width: `${s.quality.configured * 100}%` }} title="Configurado" />
+                  <div className="bg-warning" style={{ width: `${s.quality.estimated * 100}%` }} title="Estimado" />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground/70 mt-2">Sobre los montos conocidos, no sobre el total. FX {s.fxQuality === 'configured' ? 'del mes (configured)' : 'histórico estimado'}: US$ = ${s.fxUSD.toLocaleString('es-AR')}.</p>
             </div>
           </div>
 

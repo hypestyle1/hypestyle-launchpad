@@ -173,6 +173,69 @@ describe('agregación', () => {
   });
 });
 
+describe('sanity — composición del bot (72,30 USD/mes → rango)', () => {
+  const n8n = cost({ id: 'n8n', frequency: 'monthly', category: 'automation', periods: [per(65, 'USD', '2026-08-01')], bot: true });
+  const ant = cost({ id: 'ant', frequency: 'usage', costType: 'variable', category: 'ai', quality: 'estimated', periods: [per(7.30, 'USD', '2026-08-01')], bot: true });
+
+  it('27 días de agosto: n8n + Anthropic = 72,30 × 27/31 = 62,97 USD', () => {
+    const n = costForRange(n8n, '2026-08-01', '2026-08-27').byCurrency.USD;
+    const a = costForRange(ant, '2026-08-01', '2026-08-27').byCurrency.USD;
+    expect(n).toBeCloseTo((65 / 31) * 27, 6);
+    expect(a).toBeCloseTo((7.30 / 31) * 27, 6);
+    expect(n + a).toBeCloseTo((72.30 / 31) * 27, 6);
+    expect(n + a).toBeCloseTo(62.97, 2);
+  });
+  it('mes completo (31 días) = 72,30 USD', () => {
+    const n = costForRange(n8n, '2026-08-01', '2026-08-31').byCurrency.USD;
+    const a = costForRange(ant, '2026-08-01', '2026-08-31').byCurrency.USD;
+    expect(n + a).toBeCloseTo(72.30, 6);
+  });
+  it('la vigencia 01/08 excluye julio: rango 28/07–27/08 sólo imputa 27 días de agosto', () => {
+    const n = costForRange(n8n, '2026-07-28', '2026-08-27').byCurrency.USD;
+    expect(n).toBeCloseTo((65 / 31) * 27, 6); // los 3 días de julio no cuentan
+  });
+  it('bot via aggregate: total USD ≈ 72,30 en mes completo; split fijo/uso', () => {
+    const s = aggregateOperating([n8n, ant], '2026-08-01', '2026-08-31', FX);
+    expect(s.bot.totalUSDApprox).toBeCloseTo(72.30, 4);
+    expect(s.bot.fixedARS).toBeCloseTo(65000, 2);   // n8n
+    expect(s.bot.usageARS).toBeCloseTo(7300, 2);    // anthropic
+    expect(s.bot.fixedPct).toBeCloseTo(65 / 72.30, 4);
+  });
+});
+
+describe('sanity — inventory completeness ≠ calidad monetaria (punto 3)', () => {
+  const s = aggregateOperating(DEFAULT_OPERATING_COSTS, '2026-08-01', '2026-08-31', FX);
+  it('defaults: 4 / 10 costos con monto, 6 sin monto', () => {
+    expect(s.inventory).toEqual({ known: 4, total: 10, missing: 6 });
+  });
+  it('los MISSING no desaparecen ni se tratan como $0: cuentan en inventory, no en $', () => {
+    expect(s.inventory.missing).toBe(6);
+    // La calidad monetaria pondera SÓLO los montos conocidos → suma ~1.
+    expect(s.quality.exact + s.quality.configured + s.quality.estimated).toBeCloseTo(1, 6);
+  });
+});
+
+describe('sanity — persistencia de defaults (punto 4)', () => {
+  const roundTrip = (list: OperatingCost[]): OperatingCost[] => JSON.parse(JSON.stringify(list)); // save→WP→load
+
+  it('editar 1 costo (Brevo) NO pierde ni duplica los otros 9', () => {
+    const list = DEFAULT_OPERATING_COSTS.map((c) => c.id === 'oc_brevo' ? { ...c, periods: [{ ...c.periods[0], amount: 5000 }] } : c);
+    const saved = roundTrip(list);
+    expect(saved).toHaveLength(10);
+    expect(new Set(saved.map((c) => c.id)).size).toBe(10); // sin duplicados
+    expect(saved.find((c) => c.id === 'oc_brevo')!.periods[0].amount).toBe(5000);
+  });
+  it('cero conocido (Upstash/OpenAI) sobrevive como 0, distinto de null (Brevo)', () => {
+    const saved = roundTrip(DEFAULT_OPERATING_COSTS);
+    expect(saved.find((c) => c.id === 'oc_upstash')!.periods[0].amount).toBe(0);
+    expect(saved.find((c) => c.id === 'oc_openai')!.periods[0].amount).toBe(0);
+    expect(saved.find((c) => c.id === 'oc_brevo')!.periods[0].amount).toBeNull();
+  });
+  it('reload devuelve exactamente el mismo inventario (mismos ids, mismo orden)', () => {
+    expect(roundTrip(DEFAULT_OPERATING_COSTS).map((c) => c.id)).toEqual(DEFAULT_OPERATING_COSTS.map((c) => c.id));
+  });
+});
+
 describe('defaults', () => {
   it('n8n y Upstash confirmados; Brevo/Hostinger/Vercel/dominio missing', () => {
     const byId = Object.fromEntries(DEFAULT_OPERATING_COSTS.map((c) => [c.id, c]));

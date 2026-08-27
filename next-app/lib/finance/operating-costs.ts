@@ -170,7 +170,10 @@ export interface OperatingSummary {
   saasInfraARS: number;
   byCategory: { category: Category; label: string; ars: number; pct: number }[];
   quality: { exact: number; configured: number; estimated: number; missing: number }; // ponderado por ARS
-  missingCount: number;      // costos con monto pendiente
+  // Inventory Completeness: SEPARADO de la calidad monetaria. Un costo sin monto
+  // no desaparece del inventario — se cuenta acá, nunca como $0.
+  inventory: { known: number; total: number; missing: number };
+  missingCount: number;      // costos con monto pendiente (= inventory.missing)
   itemCount: number;
   items: ComputedCost[];
   fxUSD: number; fxEUR: number; fxQuality: 'configured' | 'estimated';
@@ -197,10 +200,12 @@ function primaryCurrency(byCurrency: Record<Currency, number>): { amount: number
 export function aggregateOperating(costs: OperatingCost[], startISO: string, endISO: string, fx: FxRates): OperatingSummary {
   const items: ComputedCost[] = [];
   let totalARS = 0, fixedARS = 0, variableARS = 0, saasInfraARS = 0, missingCount = 0;
+  let knownCount = 0, activeCount = 0;
   const catMap = new Map<Category, number>();
   const q = { exact: 0, configured: 0, estimated: 0, missing: 0 };
 
   for (const c of costs) {
+    if (c.active) activeCount++;
     const rc = costForRange(c, startISO, endISO);
     if (!rc.applied && !rc.hasMissing) {
       // costo que no toca el rango: lo omitimos del total pero lo listamos con ars 0
@@ -220,10 +225,14 @@ export function aggregateOperating(costs: OperatingCost[], startISO: string, end
     else fixedARS += ars; // semi_variable/one_off → fijo para el split simple
     if (c.category === 'infrastructure' || c.category === 'technology' || c.category === 'automation') saasInfraARS += ars;
     catMap.set(c.category, (catMap.get(c.category) || 0) + ars);
-    if (rc.hasMissing || (c.quality === 'missing')) missingCount += rc.hasMissing ? 1 : 0;
 
-    // Calidad ponderada por ARS (el missing sin monto se cuenta aparte, no pondera $).
-    const eff: Quality = rc.hasMissing && ars === 0 ? 'missing' : c.quality;
+    // Inventory Completeness: un costo está "conocido" si tiene ALGÚN monto real
+    // configurado (no todos null). Nunca se trata unknown como $0.
+    const hasAmount = c.periods.some((p) => p.amount != null);
+    if (c.active) { if (hasAmount) knownCount++; else missingCount++; }
+
+    // Calidad monetaria ponderada por ARS, SOLO sobre montos conocidos.
+    const eff: Quality = !hasAmount ? 'missing' : c.quality;
     if (eff !== 'missing') q[eff] += ars;
   }
 
@@ -243,7 +252,9 @@ export function aggregateOperating(costs: OperatingCost[], startISO: string, end
   return {
     rangeStart: startISO, rangeEnd: endISO,
     totalARS, fixedARS, variableARS, saasInfraARS,
-    byCategory, quality, missingCount, itemCount: items.length, items,
+    byCategory, quality,
+    inventory: { known: knownCount, total: activeCount, missing: missingCount },
+    missingCount, itemCount: items.length, items,
     fxUSD: fx.USD, fxEUR: fx.EUR, fxQuality: fxQualityFor(endISO),
     bot: botEconomics(items, fx),
   };

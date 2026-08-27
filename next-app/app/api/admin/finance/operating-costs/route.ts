@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
-import { DEFAULT_OPERATING_COSTS } from '@/lib/finance/operating-costs-defaults';
-import type { OperatingCost } from '@/lib/finance/operating-costs';
+import { fetchOperatingCosts } from '@/lib/finance/operating-costs-fetch';
 
-// Persistencia: option `hs_operating_costs` en WP (ruta hypestyle/v1/operating-costs,
-// pendiente de deploy PHP 1.23.0). Mientras la ruta no exista, GET cae a los
-// DEFAULTS confirmados — así la página funciona sin romper y en producción muestra
-// n8n/Upstash desde el día uno. POST requiere la ruta (gate PHP).
+// Persistencia: option `hs_operating_costs` en WP (ruta hypestyle/v1/operating-costs).
+// GET cae a los DEFAULTS confirmados si la option está vacía (ver el lib de fetch).
+// POST persiste el array completo.
 
 const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WP_SECRET = process.env.WP_SECRET || '';
@@ -14,21 +12,6 @@ const WP_SECRET = process.env.WP_SECRET || '';
 function checkAuth(req: NextRequest) { return adminSecretMatches(req.headers.get('x-admin-key')); }
 
 export const dynamic = 'force-dynamic';
-
-/** Trae los costos guardados; si la option está vacía o la ruta no existe, defaults. */
-export async function fetchOperatingCosts(): Promise<{ costs: OperatingCost[]; persisted: boolean }> {
-  try {
-    const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/operating-costs?_cb=${Date.now()}`, {
-      headers: { 'X-Hypestyle-Secret': WP_SECRET }, cache: 'no-store',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const costs = Array.isArray(data.costs) ? data.costs : [];
-      if (costs.length) return { costs, persisted: true };
-    }
-  } catch { /* cae a defaults */ }
-  return { costs: DEFAULT_OPERATING_COSTS, persisted: false };
-}
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });

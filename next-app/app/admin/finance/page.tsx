@@ -144,10 +144,19 @@ export default function FinanceResumen() {
                   </div>
                   <span className="text-muted-foreground text-[16px]">=</span>
                   <div>
-                    <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">Result before Paid Media</p>
+                    <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">
+                      Result before Paid Media{op.missingCount > 0 && <span className="text-warning"> · Partial</span>}
+                    </p>
                     <p className="text-[17px] font-bold text-foreground tabular-nums mt-0.5">{fmtARS(s.contributionProfit - op.totalARS)}</p>
                   </div>
-                  <span className="ml-auto bg-warning-soft text-warning rounded-full px-2.5 py-1 text-[11px] font-medium">Paid Media pendiente — Meta (Paso 03)</span>
+                  <div className="ml-auto flex flex-col items-end gap-1">
+                    {op.missingCount > 0 && (
+                      <Link href="/admin/finance/operating-costs" className="bg-warning-soft text-warning rounded-full px-2.5 py-1 text-[11px] font-medium hover:opacity-90">
+                        Operating Costs incompletos · {op.missingCount} pendiente{op.missingCount > 1 ? 's' : ''}
+                      </Link>
+                    )}
+                    <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 text-[11px] font-medium">Paid Media pendiente — Meta (Paso 03)</span>
+                  </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground/70 mt-3">
                   <strong className="text-foreground">Operating Profit Estimated</strong> se activa al conectar Meta: <em>Result before Paid Media − Effective Advertising Cost</em>. No es <em>Net Profit</em> (no incluye impuestos ni contabilidad fiscal completa).
