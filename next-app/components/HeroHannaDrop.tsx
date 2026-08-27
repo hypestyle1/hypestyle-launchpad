@@ -21,9 +21,11 @@ const SLIDE_MS = 4500;
 const SLIDES = [
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-stars-venezuela-DSC03294-scaled.jpg', name1: 'Stars For Venezuela', name2: 'Hoodie', slug: 'stars-for-venezuela-hoodie', pos: '58%' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-black-hstars-DSC03195-scaled.jpg', name1: 'Hoodie', name2: 'Black HStars', slug: 'hoodie-black-hstars', pos: '28%' },
-  // Foto del shoot de Sofi Abate (19/08/2026), dentro del local. Reemplaza a
-  // /hero/hanna-drop-3.webp, que queda en el repo por si hay que volver atrás.
-  { img: '/hero/lion-of-judah-local.webp', name1: 'Lion Of Judah', name2: 'Stone Wash', slug: 'lion-of-judah-stone-wash-hoodie' },
+  // Nicki Nicole con la Mesh Camo Blue (foto de su IG, 26/08/2026) — misma
+  // pieza que empuja la pauta NICKI x HYPE. Reemplaza al slide de Lion Of
+  // Judah (/hero/lion-of-judah-local.webp queda en el repo por si hay que
+  // volver atrás). pos 34%: deja a las dos caras dentro de la franja desktop.
+  { img: '/hero/nicki-mesh.webp', name1: 'Mesh Camo', name2: 'Blue Tee', slug: 'mesh-camo-blue-tee', pos: '34%' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-hoodie-pink-juani-scaled.jpg', name1: 'Hoodie', name2: 'Pink', slug: 'hoodie-pink' },
   { img: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/hero-god-gave-me-style-espaldas-scaled.jpg', name1: 'God Gave Me Style', name2: 'Waffle', slug: 'longsleeve-waffle-god-gave-me-style' },
   // Único slide en video (el resto son fotos) — mismo mural que el editorial de
