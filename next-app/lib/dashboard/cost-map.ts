@@ -4,6 +4,8 @@
 // (los costos cambian poco) para no rebarrer el catálogo en cada request del
 // Dashboard.
 
+import { normalizeProfile, isConfigured } from '@/lib/cost-profiles';
+
 const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WP_SECRET = (process.env.WP_SECRET || '').trim();
 const WC_KEY    = (process.env.WC_CONSUMER_KEY || '').trim();
@@ -30,9 +32,13 @@ async function fetchProfileUnitCosts(): Promise<Map<string, number>> {
   if (!res.ok) throw new Error(`cost-profiles ${res.status}`);
   const data = await res.json();
   const m = new Map<string, number>();
-  for (const p of (data.profiles || [])) {
-    const unit = Number(p.unitCost);
-    if (p.id) m.set(String(p.id), Number.isFinite(unit) ? unit : 0);
+  for (const raw of (data.profiles || [])) {
+    // Normaliza legacy (objeto) o V2 (array) por igual. Un perfil VACÍO (sin
+    // componentes) = costo desconocido → no entra al mapa (queda como missing,
+    // no como $0 conocido). Con >=1 componente, unitCost es la suma.
+    const prof = normalizeProfile(raw);
+    if (!prof.id || !isConfigured(prof)) continue;
+    m.set(prof.id, prof.unitCost);
   }
   return m;
 }
