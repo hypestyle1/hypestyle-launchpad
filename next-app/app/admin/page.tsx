@@ -49,6 +49,7 @@ export default function AdminInicio() {
   const [recent, setRecent] = useState<RecentOrder[] | null>(null);
   const [customers, setCustomers] = useState<CustomerSplitData | null>(null);
   const [botItem, setBotItem] = useState<AttentionItem | null>(null);
+  const [metaBlock, setMetaBlock] = useState<any | null>(null);
   const [metric, setMetric] = useState<MetricKey>('profit');
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
@@ -68,6 +69,10 @@ export default function AdminInicio() {
     } catch (e: any) {
       if (e?.name !== 'AbortError') setSummaryState('error');
     }
+    // Meta Ads: bloque real cuando está conectado (aparte, no bloquea).
+    setMetaBlock(null);
+    fetch(`/api/admin/meta/summary?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
+      .then((res3) => (res3.ok ? res3.json() : null)).then((d) => d && d.connected && d.summary && setMetaBlock(d.summary)).catch(() => {});
     // Clientes nuevos vs recurrentes: depende del período, carga aparte.
     setCustomers(null);
     fetch(`/api/admin/dashboard/customers?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
@@ -224,9 +229,17 @@ export default function AdminInicio() {
             </div>
           </div>
 
-          {/* Anuncios — franja compacta mientras Meta no esté conectado */}
-          <SectionTitle>Anuncios</SectionTitle>
-          <AdsStrip />
+          {/* Anuncios — bloque real de Meta si está conectado, si no el placeholder */}
+          <SectionTitle right={metaBlock && <Link href="/admin/ads" className="text-[12px] text-muted-foreground hover:text-foreground">Ver Meta Ads →</Link>}>Anuncios</SectionTitle>
+          {metaBlock ? (
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              <KpiCard label="Ad Spend" value={fmtARS(metaBlock.platform.spend)} info="Platform Spend exacto de Meta (ARS)." />
+              <KpiCard label="Effective Ad Cost" value={fmtARS(metaBlock.ad.effective)} estimated={metaBlock.ad.upliftQuality !== 'exact'} info="Spend + cargos económicos no recuperables." />
+              <KpiCard label="MER" value={metaBlock.business.mer == null ? '—' : `${metaBlock.business.mer.toFixed(2).replace('.', ',')}×`} info="Woo Revenue / Effective Ad Cost." />
+              <KpiCard label="Meta ROAS" value={metaBlock.platform.roas == null ? '—' : `${metaBlock.platform.roas.toFixed(2).replace('.', ',')}×`} info="Attributed Value / Spend (Meta)." />
+              <KpiCard label="Contribution After Mkt" value={fmtARS(metaBlock.business.contributionAfterMarketing)} info="Contribution Profit − Effective Ad Cost." />
+            </div>
+          ) : <AdsStrip />}
 
           {/* Top products + Clientes */}
           <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr] mt-8">

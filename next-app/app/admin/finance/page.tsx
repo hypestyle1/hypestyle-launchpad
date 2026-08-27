@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { RefreshCw } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
@@ -24,6 +24,7 @@ export default function FinanceResumen() {
   const [range, setRange] = useState<RangeState>(() => makeRangeState('last30', true));
   const [data, setData] = useState<SummaryResp | null>(null);
   const [op, setOp] = useState<OperatingSummary | null>(null);
+  const [meta, setMeta] = useState<any | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
 
   const load = useCallback(async (r: RangeState) => {
@@ -37,9 +38,12 @@ export default function FinanceResumen() {
       setState('ok');
     } catch { setState('error'); }
     // Capa operativa (aparte, no bloquea el resumen principal).
-    setOp(null);
-    fetch(`/api/admin/finance/operating-costs/summary?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
+    setOp(null); setMeta(null);
+    const qsOp = `start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`;
+    fetch(`/api/admin/finance/operating-costs/summary?${qsOp}`, { headers: headers() })
       .then((x) => (x.ok ? x.json() : null)).then((d) => d && setOp(d.summary)).catch(() => {});
+    fetch(`/api/admin/meta/summary?${qsOp}`, { headers: headers() })
+      .then((x) => (x.ok ? x.json() : null)).then((d) => d && d.connected && d.summary && setMeta(d.summary)).catch(() => {});
   }, [headers, puede]);
 
   useEffect(() => { if (autorizado) load(range); }, [autorizado, range, load]);
@@ -88,7 +92,7 @@ export default function FinanceResumen() {
     dq.feeCoverage.missing > 0 ? { label: `${pct(dq.feeCoverage.missing)} del revenue sin regla de fee`, href: '/admin/finance/config' } : null,
     dq.coverage.shipping < 1 ? { label: `Costo real de envío sin configurar`, href: '/admin/finance/config' } : null,
     dq.coverage.variable < 1 ? { label: `Costos variables sin configurar`, href: '/admin/finance/config' } : null,
-    { label: 'Meta Ads no conectado (entra en el próximo paso)', href: null },
+    !meta ? { label: 'Meta Ads no conectado', href: '/admin/ads' } : null,
   ].filter(Boolean) as { label: string; href: string | null }[] : [];
 
   return (
@@ -126,40 +130,38 @@ export default function FinanceResumen() {
           <FinanceSectionTitle>De Revenue a Contribution Profit</FinanceSectionTitle>
           <Waterfall rows={waterfall} />
 
-          {/* Capa operativa — Operating Expenses. NO activa Operating Profit
-              todavía: falta Paid Media (Meta, Paso 03). No se inventa como $0. */}
+          {/* Capa operativa. Con Meta conectado se activa el stack completo hasta
+              Operating Profit Estimated; sin Meta, Result before Paid Media. */}
           {op && s && (
             <>
-              <FinanceSectionTitle right={<Link href="/admin/finance/operating-costs" className="text-[11px] text-muted-foreground hover:text-foreground">Ver costos operativos →</Link>}>Capa operativa</FinanceSectionTitle>
+              <FinanceSectionTitle right={<Link href={meta ? '/admin/ads' : '/admin/finance/operating-costs'} className="text-[11px] text-muted-foreground hover:text-foreground">{meta ? 'Ver Meta Ads →' : 'Ver costos operativos →'}</Link>}>Capa operativa{meta ? ' + Paid Media' : ''}</FinanceSectionTitle>
               <div className="bg-card border border-border rounded-lg p-4">
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                  <div>
-                    <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">Contribution Profit</p>
-                    <p className="text-[17px] font-bold text-foreground tabular-nums mt-0.5">{fmtARS(s.contributionProfit)}</p>
+                {meta ? (
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+                    <FStat label="Contribution Profit" value={fmtARS(s.contributionProfit)} />
+                    <FOp>−</FOp>
+                    <FStat label="Effective Ad Cost" value={fmtARS(meta.ad.effective)} />
+                    <FOp>=</FOp>
+                    <FStat label="Contribution After Marketing" value={fmtARS(meta.business.contributionAfterMarketing)} emphasis />
+                    <FOp>−</FOp>
+                    <FStat label="Operating Expenses" value={fmtARS(op.totalARS)} />
+                    <FOp>=</FOp>
+                    <FStat label={`Operating Profit Estimated${op.missingCount > 0 ? ' · Partial' : ''}`} value={fmtARS(meta.business.operatingProfitEstimated)} emphasis />
                   </div>
-                  <span className="text-muted-foreground text-[16px]">−</span>
-                  <div>
-                    <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">Operating Expenses</p>
-                    <p className="text-[17px] font-bold text-foreground tabular-nums mt-0.5">{fmtARS(op.totalARS)}</p>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <FStat label="Contribution Profit" value={fmtARS(s.contributionProfit)} />
+                    <FOp>−</FOp>
+                    <FStat label="Operating Expenses" value={fmtARS(op.totalARS)} />
+                    <FOp>=</FOp>
+                    <FStat label={`Result before Paid Media${op.missingCount > 0 ? ' · Partial' : ''}`} value={fmtARS(s.contributionProfit - op.totalARS)} />
+                    <span className="ml-auto bg-muted text-muted-foreground rounded-full px-2.5 py-1 text-[11px] font-medium">Paid Media pendiente — Meta (Paso 03)</span>
                   </div>
-                  <span className="text-muted-foreground text-[16px]">=</span>
-                  <div>
-                    <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">
-                      Result before Paid Media{op.missingCount > 0 && <span className="text-warning"> · Partial</span>}
-                    </p>
-                    <p className="text-[17px] font-bold text-foreground tabular-nums mt-0.5">{fmtARS(s.contributionProfit - op.totalARS)}</p>
-                  </div>
-                  <div className="ml-auto flex flex-col items-end gap-1">
-                    {op.missingCount > 0 && (
-                      <Link href="/admin/finance/operating-costs" className="bg-warning-soft text-warning rounded-full px-2.5 py-1 text-[11px] font-medium hover:opacity-90">
-                        Operating Costs incompletos · {op.missingCount} pendiente{op.missingCount > 1 ? 's' : ''}
-                      </Link>
-                    )}
-                    <span className="bg-muted text-muted-foreground rounded-full px-2.5 py-1 text-[11px] font-medium">Paid Media pendiente — Meta (Paso 03)</span>
-                  </div>
-                </div>
+                )}
                 <p className="text-[11px] text-muted-foreground/70 mt-3">
-                  <strong className="text-foreground">Operating Profit Estimated</strong> se activa al conectar Meta: <em>Result before Paid Media − Effective Advertising Cost</em>. No es <em>Net Profit</em> (no incluye impuestos ni contabilidad fiscal completa).
+                  {meta
+                    ? <><strong className="text-foreground">Operating Profit Estimated</strong> = Contribution After Marketing − Operating Expenses. No es <em>Net Profit</em>.{op.missingCount > 0 && ` ${op.missingCount} operating costs sin monto → parcial.`} Meta ROAS y MER son preguntas distintas (ver Ads).</>
+                    : <><strong className="text-foreground">Operating Profit Estimated</strong> se activa al conectar Meta: <em>Result before Paid Media − Effective Advertising Cost</em>. No es <em>Net Profit</em>.</>}
                 </p>
               </div>
             </>
@@ -194,4 +196,17 @@ export default function FinanceResumen() {
       )}
     </div>
   );
+}
+
+// Pieza chica del stack financiero (label + valor), con realce opcional.
+function FStat({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
+  return (
+    <div>
+      <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/80">{label}</p>
+      <p className={`font-bold text-foreground tabular-nums mt-0.5 tracking-tight ${emphasis ? 'text-[19px]' : 'text-[16px]'}`}>{value}</p>
+    </div>
+  );
+}
+function FOp({ children }: { children: ReactNode }) {
+  return <span className="text-muted-foreground text-[15px]">{children}</span>;
 }
