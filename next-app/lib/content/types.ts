@@ -26,8 +26,9 @@ export interface ContentItem {
   scheduledAt?: string | null;   // planificada (ISO)
   publishedAt?: string | null;   // real (ISO)
   responsibleId?: string | null;
-  campaignId?: string | null;    // reservado para 04B
+  campaignId?: string | null;      // 04B: iniciativa a la que pertenece
   creatorId?: string | null;
+  collaborationId?: string | null; // 04B: acuerdo concreto (identifica la colaboración aunque el creator repita)
   productIds?: number[];
   copy?: string;                 // texto a publicar (largo, con saltos)
   notes?: string;                // interno
