@@ -122,7 +122,7 @@ export default function PerformancePage() {
                 <option value="">—</option>
                 {CHART_METRICS.filter((m) => m !== chartMetric).map((m) => <option key={m} value={m}>{METRICS[m]?.label}</option>)}
               </select>
-              {chartMetric2 && <span className="text-[11px] text-muted-foreground/60">vista indexada (cada serie a su propia escala)</span>}
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground bg-muted rounded-full px-2 py-0.5" title="Cada serie se normaliza a su propia escala. Los valores reales están en el tooltip.">Vista indexada</span>
             </div>
             <PerfChart series={d.series} m1={chartMetric} m2={chartMetric2} />
           </div>
@@ -200,7 +200,7 @@ export default function PerformancePage() {
                     <Stat label="Blended CAC" value={val('blendedCac') == null ? '—' : fmtARS(val('blendedCac')!)} sub="por cliente nuevo" />
                     <Stat label="AOV" value={fmtARS(val('aov') || 0)} sub="ticket promedio" />
                     <Stat label="Rev. nuevos" value={fmtARS(d.customers.revenueNew || 0)} />
-                    <Stat label="LTV" value="—" sub="próximamente" muted />
+                    {/* LTV: pendiente de fuente real; no se muestra hasta tener dato. */}
                   </div>
                 ) : <p className="text-[12.5px] text-muted-foreground">Sin datos de clientes.</p>}
               </div>
@@ -286,10 +286,15 @@ function ProductTable({ rows }: { rows: any[] }) {
   return <DataTable columns={cols} rows={rows} keyOf={(p) => p.productId} emptyTitle="Sin ventas en el período" />;
 }
 
-// Chart de líneas: 1–2 series, cada una normalizada a su propio min-max (indexado).
+// Chart de líneas: 1–2 series, cada una normalizada a su propio min-max (VISTA
+// INDEXADA — no valores absolutos). El tooltip conserva los valores REALES de
+// cada métrica, así una serie normalizada nunca se confunde con absolutos.
 function PerfChart({ series, m1, m2 }: { series: any[]; m1: string; m2: string }) {
+  const [hover, setHover] = useState<number | null>(null);
   const W = 900, H = 240, PAD = 6;
+  const dates: string[] = (series || []).map((s) => s.date);
   const pick = (id: string) => (series || []).map((s) => SERIES_KEY[id]?.(s) ?? null);
+  const raw1 = pick(m1); const raw2 = m2 ? pick(m2) : null;
   const norm = (arr: (number | null)[]) => {
     const vals = arr.filter((n): n is number => Number.isFinite(n as number));
     if (vals.length < 2) return null;
@@ -298,17 +303,38 @@ function PerfChart({ series, m1, m2 }: { series: any[]; m1: string; m2: string }
     return arr.map((v, i) => v == null ? null : [i * step, H - PAD - ((v - min) / span) * (H - 2 * PAD)] as const);
   };
   const path = (pts: any) => pts ? pts.filter(Boolean).map((p: any, i: number) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ') : '';
-  const s1 = norm(pick(m1)); const s2 = m2 ? norm(pick(m2)) : null;
+  const s1 = norm(raw1); const s2 = raw2 ? norm(raw2) : null;
   if (!s1) return <div className="h-[240px] grid place-items-center text-[12px] text-muted-foreground/60">Sin serie para el período.</div>;
+
+  const n = dates.length;
+  const onMove = (e: any) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const rel = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    setHover(Math.round(rel * (n - 1)));
+  };
+  const guideX = hover != null ? (hover / (n - 1)) * 100 : 0;
+
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 320, height: 240 }} preserveAspectRatio="none">
-        <path d={path(s1)} fill="none" stroke="hsl(var(--foreground))" strokeWidth="1.8" strokeLinejoin="round" />
-        {s2 && <path d={path(s2)} fill="none" stroke="hsl(var(--warning))" strokeWidth="1.6" strokeDasharray="4 3" strokeLinejoin="round" opacity="0.85" />}
-      </svg>
+    <div className="relative">
+      <div className="overflow-x-auto" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 320, height: 240 }} preserveAspectRatio="none">
+          <path d={path(s1)} fill="none" stroke="hsl(var(--foreground))" strokeWidth="1.8" strokeLinejoin="round" />
+          {s2 && <path d={path(s2)} fill="none" stroke="hsl(var(--warning))" strokeWidth="1.6" strokeDasharray="4 3" strokeLinejoin="round" opacity="0.85" />}
+          {hover != null && s1[hover] && <line x1={s1[hover]![0]} y1={0} x2={s1[hover]![0]} y2={H} stroke="hsl(var(--border-mid))" strokeWidth="1" />}
+          {hover != null && s1[hover] && <circle cx={s1[hover]![0]} cy={s1[hover]![1]} r="2.5" fill="hsl(var(--foreground))" />}
+          {hover != null && s2 && s2[hover] && <circle cx={s2[hover]![0]} cy={s2[hover]![1]} r="2.5" fill="hsl(var(--warning))" />}
+        </svg>
+      </div>
+      {hover != null && dates[hover] && (
+        <div className="absolute top-1 pointer-events-none bg-popover border border-border rounded-md shadow-lg px-2.5 py-1.5 text-[11px]" style={{ left: `min(${guideX}%, calc(100% - 130px))` }}>
+          <p className="text-muted-foreground mb-0.5">{dates[hover]}</p>
+          <p className="text-foreground tabular-nums flex items-center gap-1.5"><span className="h-2 w-2 bg-foreground rounded-full" />{METRICS[m1]?.label}: <strong>{fmtMetric(raw1[hover], METRICS[m1]?.format || 'ars')}</strong></p>
+          {m2 && <p className="text-foreground tabular-nums flex items-center gap-1.5"><span className="h-2 w-2 bg-warning rounded-full" />{METRICS[m2]?.label}: <strong>{fmtMetric(raw2![hover], METRICS[m2]?.format || 'ars')}</strong></p>}
+        </div>
+      )}
       <div className="flex gap-4 text-[11px] mt-1">
         <span className="flex items-center gap-1.5 text-muted-foreground"><span className="h-2 w-3 bg-foreground rounded-sm" />{METRICS[m1]?.label}</span>
-        {m2 && <span className="flex items-center gap-1.5 text-muted-foreground"><span className="h-2 w-3 bg-warning rounded-sm" />{METRICS[m2]?.label}</span>}
+        {m2 && <span className="flex items-center gap-1.5 text-muted-foreground"><span className="h-2 w-3 bg-warning rounded-sm" />{METRICS[m2]?.label} (indexado)</span>}
       </div>
     </div>
   );
