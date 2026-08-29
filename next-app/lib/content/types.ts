@@ -15,6 +15,16 @@ export type ContentFormat =
 export interface ContentReference { id: string; label?: string; url: string; type?: string }
 export interface ContentAsset { id: string; type?: string; url: string; label?: string }
 
+// 04C — Workflow + Knowledge
+export type ApprovalState = 'not_requested' | 'pending_review' | 'changes_requested' | 'approved';
+export type ContentPillar =
+  | 'product' | 'editorial' | 'community' | 'culture' | 'campaign' | 'ugc'
+  | 'creator' | 'behind_the_scenes' | 'education_storytelling' | 'brand' | 'other';
+export type ContentObjective =
+  | 'awareness' | 'engagement' | 'traffic' | 'conversion' | 'launch' | 'community' | 'retention' | 'other';
+export interface ChecklistItem { id: string; label: string; completed: boolean; completedAt?: string | null; completedBy?: string | null }
+export interface AssetRevision { id: string; revisionNumber: number; url: string; uploadedAt?: string | null; uploadedBy?: string | null; notes?: string; approved?: boolean }
+
 export interface ContentItem {
   id: string;
   title: string;
@@ -34,6 +44,29 @@ export interface ContentItem {
   notes?: string;                // interno
   references?: ContentReference[];
   assets?: ContentAsset[];
+  // 04C — aprobación (snapshot; el historial vive en eventos)
+  approvalState?: ApprovalState;
+  reviewerId?: string | null;
+  approverId?: string | null;
+  reviewRequestedAt?: string | null;
+  approvedAt?: string | null;
+  // 04C — brief (conocimiento para producir)
+  contentPillar?: ContentPillar | null;
+  objective?: ContentObjective | null;
+  hook?: string;
+  keyMessage?: string;
+  cta?: string;
+  audience?: string;
+  briefDo?: string[];
+  briefDont?: string[];
+  additionalRequirements?: string;
+  // 04C — checklist, blockers, revisions
+  checklist?: ChecklistItem[];
+  blockedReason?: string;
+  blockedByContentIds?: number[];
+  assetRevisions?: AssetRevision[];
+  currentRevision?: string | null;
+  approvedRevision?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   createdBy?: string | null;
@@ -54,10 +87,36 @@ export const FORMAT_LABEL: Record<ContentFormat, string> = {
   video: 'Video', newsletter: 'Newsletter', shooting: 'Shooting', ugc: 'UGC', blog: 'Blog', other: 'Otro',
 };
 
-// Workflow principal (orden del flujo). Blocked/Cancelled son laterales.
-export const KANBAN_STATUSES: ContentStatus[] = ['idea', 'pending', 'in_production', 'review', 'approved', 'scheduled', 'published'];
+// 04C — Producción y aprobación son dimensiones distintas. El Kanban es de
+// PRODUCCIÓN (sin review/approved: eso es approvalState). review/approved siguen
+// en el type sólo por compatibilidad con datos legacy (0 en prod al 28/08).
+export const KANBAN_STATUSES: ContentStatus[] = ['idea', 'pending', 'in_production', 'scheduled', 'published'];
 export const SIDE_STATUSES: ContentStatus[] = ['blocked', 'cancelled'];
-export const ALL_STATUSES: ContentStatus[] = [...KANBAN_STATUSES, ...SIDE_STATUSES];
+// Estados de producción seleccionables en el drawer (sin review/approved).
+export const PRODUCTION_STATUSES: ContentStatus[] = [...KANBAN_STATUSES, ...SIDE_STATUSES];
+export const ALL_STATUSES: ContentStatus[] = ['idea', 'pending', 'in_production', 'review', 'approved', 'scheduled', 'published', 'blocked', 'cancelled'];
+
+// ── Aprobación (04C) ──
+export const APPROVAL_LABEL: Record<ApprovalState, string> = {
+  not_requested: 'Sin revisión', pending_review: 'Para revisar', changes_requested: 'Cambios pedidos', approved: 'Aprobado',
+};
+export const APPROVAL_TONE: Record<ApprovalState, string> = {
+  not_requested: 'bg-muted text-muted-foreground/70',
+  pending_review: 'bg-warning-soft text-warning',
+  changes_requested: 'bg-destructive/10 text-destructive',
+  approved: 'bg-success-soft text-success',
+};
+export const APPROVAL_STATES: ApprovalState[] = ['not_requested', 'pending_review', 'changes_requested', 'approved'];
+
+export const PILLAR_LABEL: Record<ContentPillar, string> = {
+  product: 'Producto', editorial: 'Editorial', community: 'Comunidad', culture: 'Cultura', campaign: 'Campaña',
+  ugc: 'UGC', creator: 'Creador', behind_the_scenes: 'Detrás de escena', education_storytelling: 'Educación / storytelling', brand: 'Marca', other: 'Otro',
+};
+export const OBJECTIVE_LABEL: Record<ContentObjective, string> = {
+  awareness: 'Awareness', engagement: 'Engagement', traffic: 'Tráfico', conversion: 'Conversión', launch: 'Lanzamiento', community: 'Comunidad', retention: 'Retención', other: 'Otro',
+};
+export const PILLARS = Object.keys(PILLAR_LABEL) as ContentPillar[];
+export const OBJECTIVES = Object.keys(OBJECTIVE_LABEL) as ContentObjective[];
 
 // Tono de status para badges (monocromo + semántico sutil, sin rainbow).
 export const STATUS_TONE: Record<ContentStatus, string> = {

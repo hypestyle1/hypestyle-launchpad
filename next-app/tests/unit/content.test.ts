@@ -12,10 +12,11 @@ describe('Content OS — modelo', () => {
     for (const c of CHANNELS) expect(CHANNEL_LABEL[c]).toBeTruthy();
     for (const f of FORMATS) expect(FORMAT_LABEL[f]).toBeTruthy();
   });
-  it('workflow: 7 principales en kanban + blocked/cancelled laterales', () => {
-    expect(KANBAN_STATUSES).toEqual(['idea', 'pending', 'in_production', 'review', 'approved', 'scheduled', 'published']);
+  it('workflow: Kanban de PRODUCCIÓN (04C separó review/approved a approvalState)', () => {
+    // 04C: review/approved dejaron de ser columnas de producción (pasaron a approvalState).
+    expect(KANBAN_STATUSES).toEqual(['idea', 'pending', 'in_production', 'scheduled', 'published']);
     expect(SIDE_STATUSES).toEqual(['blocked', 'cancelled']);
-    expect(ALL_STATUSES).toHaveLength(9);
+    expect(ALL_STATUSES).toHaveLength(9); // conserva legacy review/approved
   });
   it('cancelled es un status, NO un delete (existe en el modelo)', () => {
     expect(ALL_STATUSES).toContain('cancelled' as ContentStatus);

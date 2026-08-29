@@ -11,6 +11,7 @@ import {
   CHANNEL_LABEL, FORMAT_LABEL, STATUS_LABEL, STATUS_TONE, CHANNELS, CHANNEL_FORMATS,
 } from '@/lib/content/types';
 import { ItemsSentEditor, type SentItem } from '@/components/admin/ProductSearch';
+import { type UsageRights, type UsageTristate, USAGE_TRISTATE_LABEL, USAGE_TRISTATES, blankUsage } from '@/lib/workflow/types';
 
 const inputCls = 'w-full border border-border bg-card text-foreground rounded-lg px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-border-mid';
 const localDT = (iso?: string | null) => { if (!iso) return ''; const d = new Date(iso); const off = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - off).toISOString().slice(0, 16); };
@@ -119,6 +120,10 @@ export function CollaborationDrawer({ initial, creators, campaigns, responsibles
             <p className="text-[10.5px] text-muted-foreground/50">El acuerdo se registra operativamente. No genera gasto en Finanzas todavía.</p>
           </div>
 
+          {/* 04C — UGC usage rights */}
+          <UsageSection usage={(f.usage as UsageRights) || blankUsage()} rightsExpireInDays={(f as any).rightsExpireInDays} onChange={(u) => set({ usage: u } as any)} />
+
+
           {isEdit && (
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
@@ -160,6 +165,47 @@ export function CollaborationDrawer({ initial, creators, campaigns, responsibles
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// 04C — UGC usage rights. Tri-state: falta info NO es "no".
+function UsageSection({ usage, rightsExpireInDays, onChange }: { usage: UsageRights; rightsExpireInDays?: number | null; onChange: (u: UsageRights) => void }) {
+  const set = (patch: Partial<UsageRights>) => onChange({ ...usage, ...patch });
+  const tri = (label: string, key: keyof UsageRights) => (
+    <label className="text-[11px] text-muted-foreground">{label}
+      <select className={inputCls} value={usage[key] as UsageTristate} onChange={(e) => set({ [key]: e.target.value as UsageTristate } as any)}>
+        {USAGE_TRISTATES.map((t) => <option key={t} value={t}>{USAGE_TRISTATE_LABEL[t]}</option>)}
+      </select>
+    </label>
+  );
+  return (
+    <div className="space-y-2 pt-1">
+      <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/70">Derechos de uso (UGC)</p>
+      <div className="grid grid-cols-2 gap-2">
+        {tri('Orgánico', 'organicUsageAllowed')}
+        {tri('Ads pagos', 'paidAdsUsageAllowed')}
+        {tri('Whitelisting', 'whitelistingAllowed')}
+        {tri('Exclusividad', 'exclusivity')}
+      </div>
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground"><input type="checkbox" checked={usage.rawFilesRequired} onChange={(e) => set({ rawFilesRequired: e.target.checked })} /> Raw requeridos</label>
+        <label className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground"><input type="checkbox" checked={usage.rawFilesReceived} onChange={(e) => set({ rawFilesReceived: e.target.checked })} /> Raw recibidos</label>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-[11px] text-muted-foreground">Uso desde<input type="datetime-local" className={inputCls} value={localDT(usage.usageStartAt)} onChange={(e) => set({ usageStartAt: e.target.value ? new Date(e.target.value).toISOString() : null })} /></label>
+        <label className="text-[11px] text-muted-foreground">Uso hasta<input type="datetime-local" className={inputCls} value={localDT(usage.usageEndAt)} onChange={(e) => set({ usageEndAt: e.target.value ? new Date(e.target.value).toISOString() : null })} /></label>
+      </div>
+      {typeof rightsExpireInDays === 'number' && usage.usageEndAt && (
+        <p className={`text-[11px] ${rightsExpireInDays < 0 ? 'text-destructive' : rightsExpireInDays <= 14 ? 'text-warning' : 'text-muted-foreground'}`}>
+          {rightsExpireInDays < 0 ? `Derechos vencidos hace ${Math.abs(rightsExpireInDays)} días` : `Los derechos vencen en ${rightsExpireInDays} días`}
+        </p>
+      )}
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-[11px] text-muted-foreground">Territorio<input className={inputCls} value={usage.territory || ''} onChange={(e) => set({ territory: e.target.value })} placeholder="Argentina…" /></label>
+        <label className="text-[11px] text-muted-foreground">Acuerdo (URL/ref)<input className={inputCls} value={usage.agreementReference || ''} onChange={(e) => set({ agreementReference: e.target.value })} /></label>
+      </div>
+      <label className="block text-[11px] text-muted-foreground">Notas de uso<textarea className={`${inputCls} resize-y`} rows={2} value={usage.usageNotes || ''} onChange={(e) => set({ usageNotes: e.target.value })} /></label>
     </div>
   );
 }

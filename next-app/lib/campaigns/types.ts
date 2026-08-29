@@ -6,6 +6,7 @@
 // counts NO se guardan: se derivan de los ContentItems ligados (ver counts).
 
 import type { ContentReference } from '@/lib/content/types';
+import type { UsageRights } from '@/lib/workflow/types';
 
 /* ── Campaign ──────────────────────────────────────────────────────────── */
 export type CampaignStatus = 'draft' | 'planning' | 'active' | 'completed' | 'paused' | 'cancelled';
@@ -93,6 +94,8 @@ export interface CreatorCollaboration {
   itemsSent?: CollaborationItem[];
   compensation?: CollaborationCompensation | null;
   notes?: string;
+  usage?: UsageRights;            // 04C — UGC usage rights
+  rightsExpireInDays?: number | null; // derivado
   contentItemIds?: string[];      // derivado (link vive en el ContentItem)
   counts?: CollaborationCounts;   // derivado
   overdue?: boolean;              // derivado

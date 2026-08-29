@@ -8,8 +8,11 @@ import {
   type ContentItem, type ContentStatus, type ContentChannel, type ContentFormat, type ContentPriority, type ContentReference,
   STATUS_LABEL, PRIORITY_LABEL, CHANNEL_LABEL, FORMAT_LABEL, STATUS_TONE, PRIORITY_TONE,
   KANBAN_STATUSES, ALL_STATUSES, CHANNELS, FORMATS, PRIORITIES, CHANNEL_FORMATS, blankContentItem,
+  APPROVAL_LABEL, APPROVAL_TONE, APPROVAL_STATES, PILLAR_LABEL, OBJECTIVE_LABEL, PILLARS, OBJECTIVES,
 } from '@/lib/content/types';
-import { ContentDrawer } from '@/components/admin/ContentDrawer';
+import { ContentDrawer, type SaveResult } from '@/components/admin/ContentDrawer';
+import { type SavedView, type StructuredFilter, type Template, SYSTEM_VIEWS, contentFromTemplate } from '@/lib/workflow/types';
+import Link from 'next/link';
 
 type View = 'calendar' | 'kanban' | 'list';
 const VIEWS: { id: View; label: string; Icon: any }[] = [
@@ -35,7 +38,15 @@ function ContentInner() {
   const [state, setState] = useState<'loading' | 'ok' | 'error' | 'notdeployed'>('loading');
   const [refs, setRefs] = useState<{ responsibles: any[]; creators: any[]; campaigns: any[] }>({ responsibles: [], creators: [], campaigns: [] });
   const [edit, setEdit] = useState<Partial<ContentItem> | null>(null);
-  const [filters, setFilters] = useState<{ status: string; channel: string; format: string; priority: string; search: string; campaignId: string; creatorId: string }>({ status: sp.get('status') || '', channel: '', format: '', priority: '', search: '', campaignId: sp.get('campaignId') || '', creatorId: sp.get('creatorId') || '' });
+  const emptyFilters = { status: '', channel: '', format: '', priority: '', search: '', campaignId: '', creatorId: '', approvalState: '', contentPillar: '', objective: '', reviewerId: '', responsibleId: '' };
+  const [filters, setFilters] = useState<typeof emptyFilters>({ ...emptyFilters, status: sp.get('status') || '', campaignId: sp.get('campaignId') || '', creatorId: sp.get('creatorId') || '', approvalState: sp.get('approvalState') || '' });
+  const [showMore, setShowMore] = useState(false);
+  // Saved views: dateMode se resuelve client-side (today/week/overdue/nodate); el resto va al backend.
+  const [dateMode, setDateMode] = useState<'' | 'today' | 'week' | 'overdue' | 'nodate'>('');
+  const [me, setMe] = useState('');
+  const [templates, setTemplates] = useState<Template[] | null>(null);
+  const [showTmpl, setShowTmpl] = useState(false);
+  const openTemplates = () => { setShowTmpl(true); if (!templates) fetch('/api/admin/templates', { headers: headers() }).then((r) => r.ok ? r.json() : null).then((d) => setTemplates(d?.items || [])).catch(() => setTemplates([])); };
 
   const load = useCallback(async () => {
     if (!puede('creadores')) return;
@@ -54,16 +65,38 @@ function ContentInner() {
 
   useEffect(() => { if (autorizado) load(); }, [autorizado, load]);
   useEffect(() => { if (autorizado) fetch('/api/admin/content/refs', { headers: headers() }).then((r) => r.ok ? r.json() : null).then((d) => d && setRefs(d)).catch(() => {}); }, [autorizado, headers]);
+  useEffect(() => { if (autorizado) fetch('/api/admin/auth/me', { headers: headers() }).then((r) => r.ok ? r.json() : null).then((d) => { if (d?.id) setMe(String(d.id)); }).catch(() => {}); }, [autorizado, headers]);
 
   const responsibleName = (id?: string | null) => refs.responsibles.find((r) => r.id === id)?.name || (id ? id : '—');
   const campaignName = (id?: string | null) => refs.campaigns.find((c) => c.id === id)?.name || null;
 
-  async function saveItem(patch: Partial<ContentItem>, id?: string) {
+  // Filtro de fecha client-side para las system/saved views basadas en fecha.
+  const shown = useMemo(() => {
+    if (!items || !dateMode) return items;
+    const AR = 'America/Argentina/Buenos_Aires';
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: AR });
+    const now = Date.now();
+    const weekEnd = now + 7 * 86400000;
+    return items.filter((it) => {
+      const d = it.scheduledAt;
+      if (dateMode === 'nodate') return !d;
+      if (!d) return false;
+      const day = new Date(d).toLocaleDateString('en-CA', { timeZone: AR });
+      if (dateMode === 'today') return day === today;
+      if (dateMode === 'week') { const t = new Date(d).getTime(); return t >= now - 86400000 && t <= weekEnd; }
+      if (dateMode === 'overdue') return new Date(d).getTime() < now && it.status !== 'published' && it.status !== 'cancelled';
+      return true;
+    });
+  }, [items, dateMode]);
+
+  async function saveItem(patch: Partial<ContentItem>, id?: string): Promise<SaveResult> {
     const url = id ? `/api/admin/content/${id}` : '/api/admin/content';
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers() }, body: JSON.stringify(patch) });
-    if (res.status === 501) { const d = await res.json(); alert(d.error); return false; }
-    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.conflict ? 'El contenido cambió en otra sesión. Recargá.' : (d.error || 'Error al guardar')); return false; }
-    await load(); return true;
+    if (res.status === 409) return { ok: false, conflict: true };
+    const d = await res.json().catch(() => ({}));
+    if (res.status === 501) { alert(d.error); return { ok: false }; }
+    if (!res.ok) { alert(d.error || 'Error al guardar'); return { ok: false }; }
+    await load(); return { ok: true, item: d.item };
   }
   async function archiveItem(id: string) {
     if (!confirm('¿Archivar este contenido? Queda en la papelera, no se borra.')) return;
@@ -103,9 +136,13 @@ function ContentInner() {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setEdit(blankContentItem())} className="h-9 px-3.5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold flex items-center gap-1.5"><Plus size={14} /> Nuevo contenido</button>
+          <button onClick={openTemplates} className="h-9 px-3 rounded-lg border border-border bg-card text-[13px] text-foreground hover:bg-muted">Desde template</button>
           <button onClick={load} title="Actualizar" className="h-9 w-9 grid place-items-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:border-border-mid"><RefreshCw size={14} className={state === 'loading' ? 'animate-spin' : ''} /></button>
         </div>
       </div>
+
+      {/* Saved views */}
+      <SavedViewsBar me={me} headers={headers} filters={filters} setFilters={setFilters} emptyFilters={emptyFilters} view={view} setView={setView} dateMode={dateMode} setDateMode={setDateMode} />
 
       {/* View switcher + filtros */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -133,8 +170,27 @@ function ContentInner() {
             {refs.creators.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         )}
-        {(filters.status || filters.channel || filters.priority || filters.search || filters.campaignId || filters.creatorId) && <button onClick={() => setFilters({ status: '', channel: '', format: '', priority: '', search: '', campaignId: '', creatorId: '' })} className="text-[12px] text-muted-foreground hover:text-foreground">Limpiar</button>}
+        <button onClick={() => setShowMore((s) => !s)} className="h-8 px-2.5 rounded-lg border border-border bg-card text-[12px] text-muted-foreground hover:text-foreground">{showMore ? 'Menos filtros' : 'Más filtros'}</button>
+        {(Object.values(filters).some(Boolean) || dateMode) && <button onClick={() => { setFilters(emptyFilters); setDateMode(''); }} className="text-[12px] text-muted-foreground hover:text-foreground">Limpiar</button>}
       </div>
+      {showMore && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 -mt-1">
+          <select value={filters.approvalState} onChange={(e) => setFilters((f) => ({ ...f, approvalState: e.target.value }))} className="h-8 border border-border bg-card text-foreground rounded-lg px-2 text-[12px] focus:outline-none focus:border-border-mid">
+            <option value="">Aprobación</option>{APPROVAL_STATES.map((s) => <option key={s} value={s}>{APPROVAL_LABEL[s]}</option>)}
+          </select>
+          <select value={filters.contentPillar} onChange={(e) => setFilters((f) => ({ ...f, contentPillar: e.target.value }))} className="h-8 border border-border bg-card text-foreground rounded-lg px-2 text-[12px] focus:outline-none focus:border-border-mid">
+            <option value="">Pilar</option>{PILLARS.map((p) => <option key={p} value={p}>{PILLAR_LABEL[p]}</option>)}
+          </select>
+          <select value={filters.objective} onChange={(e) => setFilters((f) => ({ ...f, objective: e.target.value }))} className="h-8 border border-border bg-card text-foreground rounded-lg px-2 text-[12px] focus:outline-none focus:border-border-mid">
+            <option value="">Objetivo</option>{OBJECTIVES.map((o) => <option key={o} value={o}>{OBJECTIVE_LABEL[o]}</option>)}
+          </select>
+          {refs.responsibles.length > 0 && (
+            <select value={filters.reviewerId} onChange={(e) => setFilters((f) => ({ ...f, reviewerId: e.target.value }))} className="h-8 border border-border bg-card text-foreground rounded-lg px-2 text-[12px] focus:outline-none focus:border-border-mid max-w-[150px]">
+              <option value="">Reviewer</option>{refs.responsibles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+          )}
+        </div>
+      )}
 
       {!puede('creadores') ? (
         <div className="bg-card border border-border rounded-lg p-8 text-center text-[13px] text-muted-foreground">Sin acceso a Contenido.</div>
@@ -151,14 +207,36 @@ function ContentInner() {
           <button onClick={() => setEdit(blankContentItem())} className="mt-4 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold">Crear primer contenido</button>
         </div>
       ) : view === 'calendar' ? (
-        <CalendarView items={items} onOpen={setEdit} onNew={(d) => setEdit({ ...blankContentItem(), scheduledAt: d })} respName={responsibleName} campaignName={campaignName} />
+        <CalendarView items={shown || items} onOpen={setEdit} onNew={(d) => setEdit({ ...blankContentItem(), scheduledAt: d })} respName={responsibleName} campaignName={campaignName} />
       ) : view === 'kanban' ? (
-        <KanbanView items={items} onOpen={setEdit} onNew={(s) => setEdit({ ...blankContentItem(), status: s })} onDrop={changeStatus} respName={responsibleName} campaignName={campaignName} />
+        <KanbanView items={shown || items} onOpen={setEdit} onNew={(s) => setEdit({ ...blankContentItem(), status: s })} onDrop={changeStatus} respName={responsibleName} campaignName={campaignName} />
       ) : (
-        <ListView items={items} onOpen={setEdit} respName={responsibleName} campaignName={campaignName} />
+        <ListView items={shown || items} onOpen={setEdit} respName={responsibleName} campaignName={campaignName} />
       )}
 
       {edit && <ContentDrawer initial={edit} refs={refs} headers={headers} onClose={() => setEdit(null)} onSave={saveItem} onArchive={archiveItem} />}
+
+      {showTmpl && (
+        <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center px-4" onClick={() => setShowTmpl(false)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-md max-h-[70vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h3 className="text-[14px] font-bold text-foreground">Crear desde template</h3>
+              <button onClick={() => setShowTmpl(false)} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
+            </div>
+            <div className="overflow-y-auto p-3 space-y-1.5">
+              {templates === null ? <p className="text-[12px] text-muted-foreground/60 p-4 text-center">Cargando…</p>
+                : templates.length === 0 ? <div className="p-6 text-center"><p className="text-[13px] text-muted-foreground">Sin templates todavía.</p><Link href="/admin/content/templates" className="text-[12.5px] text-primary hover:underline mt-1 inline-block">Crear uno →</Link></div>
+                : templates.map((t) => (
+                  <button key={t.id} onClick={() => { setEdit(contentFromTemplate(t)); setShowTmpl(false); }} className="w-full text-left bg-muted/40 rounded-lg px-3 py-2 hover:bg-muted/70">
+                    <p className="text-[13px] font-medium text-foreground">{t.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{CHANNEL_LABEL[t.channel]} · {FORMAT_LABEL[t.format]}</p>
+                  </button>
+                ))}
+            </div>
+            <div className="px-4 py-2.5 border-t border-border"><Link href="/admin/content/templates" className="text-[12px] text-muted-foreground hover:text-foreground">Administrar templates →</Link></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -172,6 +250,9 @@ function ItemCard({ item, onOpen, respName, campaignName, compact }: { item: Con
       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
         <span className="text-[10px] text-muted-foreground">{CHANNEL_LABEL[item.channel]} · {FORMAT_LABEL[item.format]}</span>
         {!compact && <span className={`text-[9.5px] rounded-full px-1.5 py-0.5 ${STATUS_TONE[item.status]}`}>{STATUS_LABEL[item.status]}</span>}
+        {item.approvalState && item.approvalState !== 'not_requested' && <span className={`text-[9.5px] rounded-full px-1.5 py-0.5 ${APPROVAL_TONE[item.approvalState]}`}>{APPROVAL_LABEL[item.approvalState]}</span>}
+        {item.status === 'blocked' && <span className="text-[9.5px] text-destructive" title={item.blockedReason || 'Bloqueado'}>● bloqueado</span>}
+        {(item.checklist?.length ?? 0) > 0 && <span className="text-[9.5px] text-muted-foreground/70 tabular-nums">{item.checklist!.filter((c) => c.completed).length}/{item.checklist!.length}</span>}
       </div>
       {camp && <p className="text-[9.5px] text-muted-foreground/70 truncate mt-0.5">{camp}</p>}
       {(item.responsibleId || item.priority !== 'medium') && (
@@ -305,6 +386,77 @@ function ListView({ items, onOpen, respName, campaignName }: { items: ContentIte
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// ── Saved Views bar (Notion-inspired): system views + personales/compartidas ──
+function SavedViewsBar({ me, headers, filters, setFilters, emptyFilters, view, setView, dateMode, setDateMode }: {
+  me: string; headers: () => Record<string, string>;
+  filters: any; setFilters: (f: any) => void; emptyFilters: any;
+  view: string; setView: (v: any) => void;
+  dateMode: string; setDateMode: (m: any) => void;
+}) {
+  const [saved, setSaved] = useState<SavedView[]>([]);
+  const [active, setActive] = useState<string>('');
+  const load = useCallback(() => {
+    fetch(`/api/admin/saved-views?ownerId=${encodeURIComponent(me)}`, { headers: headers() })
+      .then((r) => r.ok ? r.json() : null).then((d) => d && setSaved(d.items || [])).catch(() => {});
+  }, [me, headers]);
+  useEffect(() => { load(); }, [load]);
+
+  const applyFilters = (fs: StructuredFilter[]) => {
+    const next = { ...emptyFilters }; let dm = '';
+    for (const f of fs) {
+      if (f.field === '_dateMode') dm = f.value;
+      else if (f.field in next) next[f.field] = f.value;
+    }
+    setFilters(next); setDateMode(dm);
+  };
+  const applySystem = (id: string) => {
+    setActive(id);
+    if (id === 'sys_mine') { setFilters({ ...emptyFilters, responsibleId: me }); setDateMode(''); return; }
+    const v = SYSTEM_VIEWS.find((x) => x.id === id);
+    if (!v) return;
+    const next = { ...emptyFilters }; let dm = '';
+    for (const f of v.filters) {
+      if (f.field === 'approvalState') next.approvalState = f.value;
+      else if (f.field === 'scheduledAt' && f.operator === 'is_empty') dm = 'nodate';
+      else if (f.field === 'scheduledAt' && f.value === 'today') dm = 'today';
+      else if (f.field === 'scheduledAt' && f.value === 'this_week') dm = 'week';
+      else if (f.field === 'scheduledAt' && f.operator === 'before') dm = 'overdue';
+    }
+    setFilters(next); setDateMode(dm);
+  };
+  const applySaved = (v: SavedView) => { setActive(v.id); applyFilters(v.filters); if (v.viewType) setView(v.viewType); };
+
+  async function saveCurrent(scope: 'personal' | 'shared') {
+    const name = prompt('Nombre de la vista:'); if (!name?.trim()) return;
+    const fs: StructuredFilter[] = [];
+    for (const [k, val] of Object.entries(filters)) if (val) fs.push({ field: k, operator: 'equals', value: val });
+    if (dateMode) fs.push({ field: '_dateMode', operator: 'equals', value: dateMode });
+    const r = await fetch('/api/admin/saved-views', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers() },
+      body: JSON.stringify({ name: name.trim(), viewType: view, filters: fs, ownerId: me, scope }) });
+    if (r.ok) load(); else alert('No se pudo guardar la vista.');
+  }
+  async function delView(id: string) { if (!confirm('¿Borrar esta vista?')) return; await fetch(`/api/admin/saved-views/${id}`, { method: 'DELETE', headers: headers() }); load(); }
+
+  const chip = (id: string, label: string, on: () => void, deletable?: string) => (
+    <span key={id} className={`inline-flex items-center rounded-lg text-[12px] ${active === id ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground hover:text-foreground'}`}>
+      <button onClick={on} className="px-2.5 h-7">{label}</button>
+      {deletable && <button onClick={() => delView(deletable)} className="pr-1.5 opacity-60 hover:opacity-100"><X size={11} /></button>}
+    </span>
+  );
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 mb-3">
+      {chip('', 'Todo', () => { setActive(''); setFilters(emptyFilters); setDateMode(''); })}
+      {me && chip('sys_mine', 'Mío', () => applySystem('sys_mine'))}
+      {SYSTEM_VIEWS.map((v) => chip(v.id, v.name, () => applySystem(v.id)))}
+      {saved.map((v) => chip(v.id, v.scope === 'shared' ? v.name : `${v.name}`, () => applySaved(v), v.id))}
+      <span className="mx-1 h-4 w-px bg-border" />
+      <button onClick={() => saveCurrent('personal')} className="h-7 px-2.5 rounded-lg border border-dashed border-border text-[12px] text-muted-foreground hover:text-foreground flex items-center gap-1"><Plus size={11} /> Guardar vista</button>
+      {me && <button onClick={() => saveCurrent('shared')} className="h-7 px-2 rounded-lg text-[11.5px] text-muted-foreground/70 hover:text-foreground">compartida</button>}
     </div>
   );
 }

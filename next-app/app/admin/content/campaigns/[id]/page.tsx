@@ -13,7 +13,7 @@ import {
 import { type ContentItem, STATUS_LABEL, STATUS_TONE, CHANNEL_LABEL, FORMAT_LABEL } from '@/lib/content/types';
 import { CampaignDrawer } from '@/components/admin/CampaignDrawer';
 import { CollaborationDrawer } from '@/components/admin/CollaborationDrawer';
-import { ContentDrawer, type ContentRefs } from '@/components/admin/ContentDrawer';
+import { ContentDrawer, type ContentRefs, type SaveResult } from '@/components/admin/ContentDrawer';
 import { ProductMultiSelect } from '@/components/admin/ProductSearch';
 
 const fmtDay = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }) : '—');
@@ -64,11 +64,13 @@ export default function CampaignDetailPage() {
     if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.conflict ? 'La campaña cambió en otra sesión. Recargá.' : (d.error || 'Error')); return false; }
     await load(); return true;
   }
-  async function saveContent(patch: Partial<ContentItem>, cid?: string) {
+  async function saveContent(patch: Partial<ContentItem>, cid?: string): Promise<SaveResult> {
     const url = cid ? `/api/admin/content/${cid}` : '/api/admin/content';
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers() }, body: JSON.stringify(patch) });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.conflict ? 'El contenido cambió en otra sesión. Recargá.' : (d.error || 'Error')); return false; }
-    await load(); return true;
+    if (res.status === 409) return { ok: false, conflict: true };
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(d.error || 'Error'); return { ok: false }; }
+    await load(); return { ok: true, item: d.item };
   }
   async function archiveContent(cid: string) {
     if (!confirm('¿Archivar este contenido?')) return;
