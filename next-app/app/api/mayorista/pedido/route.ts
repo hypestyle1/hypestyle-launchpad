@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
 import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
+import { mapLimit } from '@/lib/map-limit';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -29,13 +30,35 @@ function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 }
 
+// WordPress devuelve 500 esporádicos bajo carga (transitorios): los 5xx y los
+// errores de red se reintentan con backoff. Los 4xx no — son determinísticos.
 async function wcGet(path: string) {
-  const res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
-    headers: { Authorization: wcAuth() },
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`WC ${res.status} on GET ${path}`);
-  return res.json();
+  const MAX_ATTEMPTS = 3;
+  let lastError: Error = new Error(`WC: sin respuesta en GET ${path}`);
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let res: Response | null = null;
+    try {
+      res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
+        headers: { Authorization: wcAuth() },
+        cache: 'no-store',
+      });
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+    if (res) {
+      if (res.ok) return res.json();
+      if (res.status < 500) throw new Error(`WC ${res.status} on GET ${path}`);
+      lastError = new Error(`WC ${res.status} on GET ${path}`);
+    }
+    if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 400 * attempt));
+  }
+  throw lastError;
+}
+
+class ProductNotFoundError extends Error {
+  constructor(readonly slug: string) {
+    super(`Producto no encontrado: ${slug}`);
+  }
 }
 
 // Guarda la dirección/DNI/sucursal cargados en este pedido como perfil del
@@ -60,19 +83,30 @@ async function saveCustomerProfile(customerId: number, billing: Record<string, u
   if (!res.ok) console.error('[mayorista/pedido] no se pudo guardar el perfil del cliente:', res.status);
 }
 
-async function resolveItem(slug: string, size: string): Promise<{ product_id: number; variation_id?: number }> {
+interface ResolvedProduct {
+  product_id: number;
+  variations: { id: number; options: string[] }[];
+}
+
+// Antes se resolvía producto + variaciones POR ÍTEM y todo en paralelo: un
+// pedido de 35 ítems eran ~70 requests simultáneos y WP tira 500 esporádicos
+// con ese fan-out — el Promise.all volteaba el pedido entero ("Error al crear
+// el pedido"). Ahora se consulta una sola vez por producto y de a pocos.
+async function resolveProduct(slug: string): Promise<ResolvedProduct> {
   const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type&per_page=1`);
-  if (!products.length) throw new Error(`Producto no encontrado: ${slug}`);
+  if (!products.length) throw new ProductNotFoundError(slug);
   const { id: productId, type } = products[0];
 
-  if (type !== 'variable') return { product_id: productId };
+  if (type !== 'variable') return { product_id: productId, variations: [] };
 
   const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes`);
-  const needle = size.toLowerCase().trim();
-  const hit = variations.find((v: any) =>
-    (v.attributes ?? []).some((a: any) => (a.option ?? '').toLowerCase().trim() === needle),
-  );
-  return hit ? { product_id: productId, variation_id: hit.id } : { product_id: productId };
+  return {
+    product_id: productId,
+    variations: variations.map((v: any) => ({
+      id: v.id,
+      options: (v.attributes ?? []).map((a: any) => String(a.option ?? '').toLowerCase().trim()),
+    })),
+  };
 }
 
 async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, orderNumber: string) {
@@ -166,11 +200,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
     }
 
-    const lineItems = await Promise.all(items.map(async (item) => {
-      const resolved = await resolveItem(item.slug, item.size);
+    const slugs = [...new Set(items.map(i => i.slug))];
+    let resolvedBySlug: Map<string, ResolvedProduct>;
+    try {
+      const resolvedList = await mapLimit(slugs, 3, resolveProduct);
+      resolvedBySlug = new Map(slugs.map((s, i) => [s, resolvedList[i]]));
+    } catch (err) {
+      if (err instanceof ProductNotFoundError) {
+        const name = items.find(i => i.slug === err.slug)?.name ?? err.slug;
+        return NextResponse.json(
+          { message: `"${name}" ya no está disponible en el catálogo. Sacalo del pedido e intentá de nuevo.` },
+          { status: 400 },
+        );
+      }
+      throw err;
+    }
+
+    const lineItems = items.map((item) => {
+      const resolved = resolvedBySlug.get(item.slug)!;
+      const needle = item.size.toLowerCase().trim();
+      const hit = resolved.variations.find(v => v.options.includes(needle));
       const lineTotal = String(Math.round(item.price * item.quantity));
-      return { ...resolved, quantity: item.quantity, subtotal: lineTotal, total: lineTotal };
-    }));
+      return {
+        product_id: resolved.product_id,
+        ...(hit ? { variation_id: hit.id } : {}),
+        quantity: item.quantity,
+        subtotal: lineTotal,
+        total: lineTotal,
+        // Si el talle no matcheó ninguna variación, que igual quede visible en
+        // la orden — antes se perdía en silencio y el admin no sabía qué talle era.
+        ...(hit ? {} : { meta_data: [{ key: 'Talle', value: item.size }] }),
+      };
+    });
 
     const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
@@ -234,6 +295,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number) });
   } catch (err) {
     console.error('[mayorista/pedido]', err);
-    return NextResponse.json({ message: 'Error al crear el pedido' }, { status: 500 });
+    return NextResponse.json({ message: 'Error al crear el pedido. Tu pedido sigue cargado: esperá unos segundos e intentá de nuevo.' }, { status: 500 });
   }
 }
