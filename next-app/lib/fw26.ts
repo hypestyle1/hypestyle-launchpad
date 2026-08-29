@@ -31,10 +31,14 @@ export const FW26_GROUPS = [
   },
   // 3. REMERAS — 10%. Las Regular Tees y los 3-PACK NO van acá: ya tienen su
   // propia sección en Básicos, repetirlas duplicaba el catálogo en el mismo scroll.
+  // Las Only God salieron de aca el 29/08: ya estan destacadas en la seccion
+  // Faith Is The Real Hype del home (duplicaban en el mismo scroll). Entra
+  // Ladytribal reestockeada en pre-venta; cuando se suba la remera LETTERING
+  // reestockeada va en el 4to lugar y la fila vuelve a cerrar en 4.
   {
     label: 'Remeras',
     slugs: [
-      'only-god-can-judge-me-blanca', 'only-god-can-judge-me-negra',
+      'ladytribal-black-longsleeve',
       'napoli-tee-azul', 'napoli-tee-blanca',
     ],
   },
@@ -71,3 +75,8 @@ export const FW26_FUERA = [
 ];
 
 export const FW26_SLUGS = FW26_GROUPS.flatMap(g => g.slugs);
+
+// Productos de la seccion NEW IN que estan en pre-venta: la card muestra el
+// badge "Pre-Venta" en vez de "New In" (mismo criterio que FaithDrop — se
+// pueden comprar, solo se aclara que el despacho es diferido).
+export const FW26_PRESALE_SLUGS = new Set(['ladytribal-black-longsleeve']);

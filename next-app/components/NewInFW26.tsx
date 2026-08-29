@@ -6,7 +6,7 @@ import SectionHeader from "./SectionHeader";
 import EditorialSlider from "./EditorialSlider";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
-import { FW26_GROUPS } from "@/lib/fw26";
+import { FW26_GROUPS, FW26_PRESALE_SLUGS } from "@/lib/fw26";
 import { isFlashSaleActive } from "@/lib/flash-sale";
 import { Skeleton } from "@/components/ui/skeleton";
 import FaithDrop from "./FaithDrop";
@@ -123,7 +123,9 @@ export default function NewInFW26() {
         {...p}
         // Con toda la web en sale, el descuento le gana al "New In": el badge de
         // novedad escondia el porcentaje justo en el bloque mas visto del home.
-        badge={flashActive && !KEEP_DISCOUNT.has(p.slug) ? '−50%' : (p.badge ?? 'New In')}
+        // Pre-venta le gana a todo: hay que aclarar el despacho diferido.
+        badge={FW26_PRESALE_SLUGS.has(p.slug) ? 'Pre-Venta'
+          : flashActive && !KEEP_DISCOUNT.has(p.slug) ? '−50%' : (p.badge ?? 'New In')}
         mutedPrice={!flashActive && !p.badge}
         giftNote={GIFT_NOTES[p.slug]}
       />
