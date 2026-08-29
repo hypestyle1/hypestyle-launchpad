@@ -5,7 +5,7 @@ import ProductCard from "./ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { FAITH_DROP_ITEMS } from "@/lib/faith-drop";
 import GroupLabel from "./GroupLabel";
-import { HOME_GRID, filasCompletas } from "@/lib/home-grid";
+import { HOME_GRID } from "@/lib/home-grid";
 
 // Placeholder mientras el drop no esta cargado en WP — mismo layout que va a
 // tener con los productos reales (grilla de Best Sellers: 4 col desktop x 3 filas = 12).
@@ -42,7 +42,10 @@ export default function FaithDrop() {
 
   // Mientras no haya productos reales cargados, mostramos la grilla con placeholders
   // para poder previsualizar el layout del drop antes de subir los productos.
-  const items = filasCompletas(products.length > 0 ? products : PLACEHOLDERS);
+  // Esta seccion muestra TODOS los productos del drop sin recortar a filas
+  // completas (pedido 29/08): con una cantidad no multiplo de 4, la ultima
+  // fila de desktop queda con celdas vacias — preferible a esconder productos.
+  const items = products.length > 0 ? products : PLACEHOLDERS;
 
   return (
     <div>

@@ -22,8 +22,8 @@ export const FAITH_DROP_ITEMS: FaithDropItem[] = [
   // — Fila 1 —
   // Los dos HS CO primero (pedido 29/08): el green es colorway nuevo, todavia
   // sin stock ni mockup → "Proximamente" (vidriera sin compra); pasa a live
-  // cuando se cargue stock. La grilla recorta a filas completas: con 14 items
-  // quedan afuera los 2 ultimos (faith-over-everything y lamb-of-god).
+  // cuando se cargue stock. FaithDrop muestra la lista COMPLETA sin recorte
+  // (29/08) — todos los productos del drop se ven en el home.
   { slug: 'hs-co-green-hoodie' },
   { slug: 'hs-co-grey-hoodie', live: true },
   // FIND JESUS en pre-venta (despacha desde el 10/09)
