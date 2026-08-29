@@ -17,7 +17,13 @@ export default function SpotifyPlayer() {
   // desmonta más — desmontarlo cortaría la música al cerrar el panel.
   const [loaded, setLoaded] = useState(false);
 
-  if (pathname?.startsWith('/checkout') || pathname?.startsWith('/admin')) return null;
+  // Sin player en checkout/admin, y tampoco en el canal mayorista: es otro
+  // contexto de compra y la experiencia "musica de local" es del minorista.
+  if (
+    pathname?.startsWith('/checkout') ||
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/mayoristas')
+  ) return null;
 
   function toggle() {
     if (!loaded) setLoaded(true);
