@@ -8,7 +8,7 @@ import {
 } from '@/lib/campaigns/types';
 import { type ContentItem, STATUS_LABEL, STATUS_TONE, CHANNEL_LABEL, FORMAT_LABEL } from '@/lib/content/types';
 import { CollaborationDrawer } from '@/components/admin/CollaborationDrawer';
-import { ContentDrawer, type ContentRefs } from '@/components/admin/ContentDrawer';
+import { ContentDrawer, type ContentRefs, type SaveResult } from '@/components/admin/ContentDrawer';
 
 const fmtDay = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }) : '—');
 
@@ -49,11 +49,13 @@ export function CreatorCollaborations({ creatorId, headers }: { creatorId: strin
     await fetch(`/api/admin/collaborations/${id}`, { method: 'DELETE', headers: headers() });
     setEditCollab(null); load();
   }
-  async function saveContent(patch: Partial<ContentItem>, id?: string) {
+  async function saveContent(patch: Partial<ContentItem>, id?: string): Promise<SaveResult> {
     const url = id ? `/api/admin/content/${id}` : '/api/admin/content';
     const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers() }, body: JSON.stringify(patch) });
-    if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.conflict ? 'El contenido cambió en otra sesión. Recargá.' : (d.error || 'Error')); return false; }
-    await load(); return true;
+    if (res.status === 409) return { ok: false, conflict: true };
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { alert(d.error || 'Error'); return { ok: false }; }
+    await load(); return { ok: true, item: d.item };
   }
   async function archiveContent(id: string) { await fetch(`/api/admin/content/${id}`, { method: 'DELETE', headers: headers() }); setEditContent(null); load(); }
 
