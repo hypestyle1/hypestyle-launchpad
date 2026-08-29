@@ -9,6 +9,7 @@ import {
   STATUS_LABEL, PRIORITY_LABEL, CHANNEL_LABEL, FORMAT_LABEL, STATUS_TONE, PRIORITY_TONE,
   KANBAN_STATUSES, ALL_STATUSES, CHANNELS, FORMATS, PRIORITIES, CHANNEL_FORMATS, blankContentItem,
 } from '@/lib/content/types';
+import { ContentDrawer } from '@/components/admin/ContentDrawer';
 
 type View = 'calendar' | 'kanban' | 'list';
 const VIEWS: { id: View; label: string; Icon: any }[] = [
@@ -32,9 +33,9 @@ function ContentInner() {
 
   const [items, setItems] = useState<ContentItem[] | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'error' | 'notdeployed'>('loading');
-  const [refs, setRefs] = useState<{ responsibles: any[]; creators: any[] }>({ responsibles: [], creators: [] });
+  const [refs, setRefs] = useState<{ responsibles: any[]; creators: any[]; campaigns: any[] }>({ responsibles: [], creators: [], campaigns: [] });
   const [edit, setEdit] = useState<Partial<ContentItem> | null>(null);
-  const [filters, setFilters] = useState<{ status: string; channel: string; format: string; priority: string; search: string }>({ status: sp.get('status') || '', channel: '', format: '', priority: '', search: '' });
+  const [filters, setFilters] = useState<{ status: string; channel: string; format: string; priority: string; search: string; campaignId: string; creatorId: string }>({ status: sp.get('status') || '', channel: '', format: '', priority: '', search: '', campaignId: sp.get('campaignId') || '', creatorId: sp.get('creatorId') || '' });
 
   const load = useCallback(async () => {
     if (!puede('creadores')) return;
@@ -55,6 +56,7 @@ function ContentInner() {
   useEffect(() => { if (autorizado) fetch('/api/admin/content/refs', { headers: headers() }).then((r) => r.ok ? r.json() : null).then((d) => d && setRefs(d)).catch(() => {}); }, [autorizado, headers]);
 
   const responsibleName = (id?: string | null) => refs.responsibles.find((r) => r.id === id)?.name || (id ? id : '—');
+  const campaignName = (id?: string | null) => refs.campaigns.find((c) => c.id === id)?.name || null;
 
   async function saveItem(patch: Partial<ContentItem>, id?: string) {
     const url = id ? `/api/admin/content/${id}` : '/api/admin/content';
@@ -119,7 +121,19 @@ function ContentInner() {
             {(opts as string[]).map((o) => <option key={o} value={o}>{(labels as any)[o]}</option>)}
           </select>
         ))}
-        {(filters.status || filters.channel || filters.priority || filters.search) && <button onClick={() => setFilters({ status: '', channel: '', format: '', priority: '', search: '' })} className="text-[12px] text-muted-foreground hover:text-foreground">Limpiar</button>}
+        {refs.campaigns.length > 0 && (
+          <select value={filters.campaignId} onChange={(e) => setFilters((f) => ({ ...f, campaignId: e.target.value }))} className="h-8 border border-border bg-card text-foreground rounded-lg px-2 text-[12px] focus:outline-none focus:border-border-mid max-w-[150px]">
+            <option value="">Campaña</option>
+            {refs.campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
+        {refs.creators.length > 0 && (
+          <select value={filters.creatorId} onChange={(e) => setFilters((f) => ({ ...f, creatorId: e.target.value }))} className="h-8 border border-border bg-card text-foreground rounded-lg px-2 text-[12px] focus:outline-none focus:border-border-mid max-w-[150px]">
+            <option value="">Creador</option>
+            {refs.creators.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
+        {(filters.status || filters.channel || filters.priority || filters.search || filters.campaignId || filters.creatorId) && <button onClick={() => setFilters({ status: '', channel: '', format: '', priority: '', search: '', campaignId: '', creatorId: '' })} className="text-[12px] text-muted-foreground hover:text-foreground">Limpiar</button>}
       </div>
 
       {!puede('creadores') ? (
@@ -137,20 +151,21 @@ function ContentInner() {
           <button onClick={() => setEdit(blankContentItem())} className="mt-4 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold">Crear primer contenido</button>
         </div>
       ) : view === 'calendar' ? (
-        <CalendarView items={items} onOpen={setEdit} onNew={(d) => setEdit({ ...blankContentItem(), scheduledAt: d })} respName={responsibleName} />
+        <CalendarView items={items} onOpen={setEdit} onNew={(d) => setEdit({ ...blankContentItem(), scheduledAt: d })} respName={responsibleName} campaignName={campaignName} />
       ) : view === 'kanban' ? (
-        <KanbanView items={items} onOpen={setEdit} onNew={(s) => setEdit({ ...blankContentItem(), status: s })} onDrop={changeStatus} respName={responsibleName} />
+        <KanbanView items={items} onOpen={setEdit} onNew={(s) => setEdit({ ...blankContentItem(), status: s })} onDrop={changeStatus} respName={responsibleName} campaignName={campaignName} />
       ) : (
-        <ListView items={items} onOpen={setEdit} respName={responsibleName} />
+        <ListView items={items} onOpen={setEdit} respName={responsibleName} campaignName={campaignName} />
       )}
 
-      {edit && <ContentDrawer initial={edit} refs={refs} onClose={() => setEdit(null)} onSave={saveItem} onArchive={archiveItem} />}
+      {edit && <ContentDrawer initial={edit} refs={refs} headers={headers} onClose={() => setEdit(null)} onSave={saveItem} onArchive={archiveItem} />}
     </div>
   );
 }
 
 // ── Card compacta (compartida por Calendar/Kanban) ──
-function ItemCard({ item, onOpen, respName, compact }: { item: ContentItem; onOpen: (i: ContentItem) => void; respName: (id?: string | null) => string; compact?: boolean }) {
+function ItemCard({ item, onOpen, respName, campaignName, compact }: { item: ContentItem; onOpen: (i: ContentItem) => void; respName: (id?: string | null) => string; campaignName?: (id?: string | null) => string | null; compact?: boolean }) {
+  const camp = campaignName?.(item.campaignId);
   return (
     <button onClick={() => onOpen(item)} className="w-full text-left bg-card border border-border rounded-lg px-2.5 py-2 hover:border-border-mid transition-colors">
       <p className="text-[12px] font-medium text-foreground truncate leading-tight">{item.title}</p>
@@ -158,6 +173,7 @@ function ItemCard({ item, onOpen, respName, compact }: { item: ContentItem; onOp
         <span className="text-[10px] text-muted-foreground">{CHANNEL_LABEL[item.channel]} · {FORMAT_LABEL[item.format]}</span>
         {!compact && <span className={`text-[9.5px] rounded-full px-1.5 py-0.5 ${STATUS_TONE[item.status]}`}>{STATUS_LABEL[item.status]}</span>}
       </div>
+      {camp && <p className="text-[9.5px] text-muted-foreground/70 truncate mt-0.5">{camp}</p>}
       {(item.responsibleId || item.priority !== 'medium') && (
         <div className="flex items-center justify-between mt-1">
           <span className="text-[10px] text-muted-foreground/70 truncate">{item.responsibleId ? respName(item.responsibleId) : ''}</span>
@@ -169,7 +185,7 @@ function ItemCard({ item, onOpen, respName, compact }: { item: ContentItem; onOp
 }
 
 // ── Calendar (Month) + bandeja Sin fecha ──
-function CalendarView({ items, onOpen, onNew, respName }: { items: ContentItem[]; onOpen: (i: ContentItem) => void; onNew: (dateIso: string) => void; respName: (id?: string | null) => string }) {
+function CalendarView({ items, onOpen, onNew, respName, campaignName }: { items: ContentItem[]; onOpen: (i: ContentItem) => void; onNew: (dateIso: string) => void; respName: (id?: string | null) => string; campaignName: (id?: string | null) => string | null }) {
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
   const byDay = useMemo(() => { const m = new Map<string, ContentItem[]>(); for (const it of items) { const d = dayOf(it.scheduledAt); if (d) (m.get(d) || m.set(d, []).get(d))!.push(it); } return m; }, [items]);
   const unscheduled = items.filter((i) => !i.scheduledAt);
@@ -207,7 +223,7 @@ function CalendarView({ items, onOpen, onNew, respName }: { items: ContentItem[]
                     <button onClick={() => onNew(`${day}T12:00`)} className="opacity-0 hover:opacity-100 focus:opacity-100 text-muted-foreground/50 hover:text-foreground text-[13px] leading-none" title="Nuevo">+</button>
                   </div>
                   <div className="space-y-1 mt-1">
-                    {(byDay.get(day) || []).slice(0, 3).map((it) => <ItemCard key={it.id} item={it} onOpen={onOpen} respName={respName} compact />)}
+                    {(byDay.get(day) || []).slice(0, 3).map((it) => <ItemCard key={it.id} item={it} onOpen={onOpen} respName={respName} campaignName={campaignName} compact />)}
                     {(byDay.get(day) || []).length > 3 && <p className="text-[10px] text-muted-foreground/60 px-1">+{(byDay.get(day)!.length - 3)} más</p>}
                   </div>
                 </>
@@ -220,7 +236,7 @@ function CalendarView({ items, onOpen, onNew, respName }: { items: ContentItem[]
       <div>
         <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80 mb-2">Sin fecha ({unscheduled.length})</p>
         <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
-          {unscheduled.length === 0 ? <p className="text-[12px] text-muted-foreground/60">Todo tiene fecha.</p> : unscheduled.map((it) => <ItemCard key={it.id} item={it} onOpen={onOpen} respName={respName} />)}
+          {unscheduled.length === 0 ? <p className="text-[12px] text-muted-foreground/60">Todo tiene fecha.</p> : unscheduled.map((it) => <ItemCard key={it.id} item={it} onOpen={onOpen} respName={respName} campaignName={campaignName} />)}
         </div>
       </div>
     </div>
@@ -228,7 +244,7 @@ function CalendarView({ items, onOpen, onNew, respName }: { items: ContentItem[]
 }
 
 // ── Kanban (columnas por status, drag & drop) ──
-function KanbanView({ items, onOpen, onNew, onDrop, respName }: { items: ContentItem[]; onOpen: (i: ContentItem) => void; onNew: (s: ContentStatus) => void; onDrop: (item: ContentItem, s: ContentStatus) => void; respName: (id?: string | null) => string }) {
+function KanbanView({ items, onOpen, onNew, onDrop, respName, campaignName }: { items: ContentItem[]; onOpen: (i: ContentItem) => void; onNew: (s: ContentStatus) => void; onDrop: (item: ContentItem, s: ContentStatus) => void; respName: (id?: string | null) => string; campaignName: (id?: string | null) => string | null }) {
   const [drag, setDrag] = useState<ContentItem | null>(null);
   const [over, setOver] = useState<ContentStatus | null>(null);
   const byStatus = (s: ContentStatus) => items.filter((i) => i.status === s);
@@ -246,7 +262,7 @@ function KanbanView({ items, onOpen, onNew, onDrop, respName }: { items: Content
             <div className="p-1.5 space-y-1.5 min-h-[80px]">
               {byStatus(s).map((it) => (
                 <div key={it.id} draggable onDragStart={() => setDrag(it)} onDragEnd={() => { setDrag(null); setOver(null); }} className={drag?.id === it.id ? 'opacity-40' : ''}>
-                  <ItemCard item={it} onOpen={onOpen} respName={respName} compact />
+                  <ItemCard item={it} onOpen={onOpen} respName={respName} campaignName={campaignName} compact />
                 </div>
               ))}
               <button onClick={() => onNew(s)} className="w-full text-[11.5px] text-muted-foreground/60 hover:text-foreground py-1">+ Agregar</button>
@@ -259,7 +275,7 @@ function KanbanView({ items, onOpen, onNew, onDrop, respName }: { items: Content
 }
 
 // ── List (tabla densa) ──
-function ListView({ items, onOpen, respName }: { items: ContentItem[]; onOpen: (i: ContentItem) => void; respName: (id?: string | null) => string }) {
+function ListView({ items, onOpen, respName, campaignName }: { items: ContentItem[]; onOpen: (i: ContentItem) => void; respName: (id?: string | null) => string; campaignName: (id?: string | null) => string | null }) {
   const [sort, setSort] = useState<{ k: string; dir: 1 | -1 }>({ k: 'updatedAt', dir: -1 });
   const sorted = useMemo(() => {
     const arr = [...items];
@@ -271,13 +287,14 @@ function ListView({ items, onOpen, respName }: { items: ContentItem[]; onOpen: (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead><tr className="border-b border-border bg-muted/40">{th('title', 'Contenido')}{th('channel', 'Canal', 'hidden md:table-cell')}{th('format', 'Formato', 'hidden lg:table-cell')}{th('status', 'Estado')}{th('responsibleId', 'Responsable', 'hidden md:table-cell')}{th('scheduledAt', 'Fecha', 'hidden sm:table-cell')}{th('priority', 'Prioridad', 'hidden lg:table-cell')}{th('updatedAt', 'Actualizado', 'hidden xl:table-cell')}</tr></thead>
+          <thead><tr className="border-b border-border bg-muted/40">{th('title', 'Contenido')}{th('campaignId', 'Campaña', 'hidden lg:table-cell')}{th('channel', 'Canal', 'hidden md:table-cell')}{th('format', 'Formato', 'hidden xl:table-cell')}{th('status', 'Estado')}{th('responsibleId', 'Responsable', 'hidden md:table-cell')}{th('scheduledAt', 'Fecha', 'hidden sm:table-cell')}{th('priority', 'Prioridad', 'hidden xl:table-cell')}{th('updatedAt', 'Actualizado', 'hidden xl:table-cell')}</tr></thead>
           <tbody>
             {sorted.map((it) => (
               <tr key={it.id} onClick={() => onOpen(it)} className="border-b border-border last:border-0 hover:bg-muted/40 cursor-pointer">
                 <td className="px-3 py-2.5 text-foreground font-medium max-w-[280px] truncate">{it.title}</td>
+                <td className="px-3 py-2.5 text-muted-foreground hidden lg:table-cell truncate max-w-[140px]">{campaignName(it.campaignId) || '—'}</td>
                 <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell">{CHANNEL_LABEL[it.channel]}</td>
-                <td className="px-3 py-2.5 text-muted-foreground hidden lg:table-cell">{FORMAT_LABEL[it.format]}</td>
+                <td className="px-3 py-2.5 text-muted-foreground hidden xl:table-cell">{FORMAT_LABEL[it.format]}</td>
                 <td className="px-3 py-2.5"><span className={`text-[10px] rounded-full px-2 py-0.5 ${STATUS_TONE[it.status]}`}>{STATUS_LABEL[it.status]}</span></td>
                 <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell truncate max-w-[140px]">{it.responsibleId ? respName(it.responsibleId) : '—'}</td>
                 <td className="px-3 py-2.5 text-muted-foreground tabular-nums hidden sm:table-cell whitespace-nowrap">{fmtDayTime(it.scheduledAt)}</td>
@@ -287,99 +304,6 @@ function ListView({ items, onOpen, respName }: { items: ContentItem[]; onOpen: (
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
-  );
-}
-
-// ── Drawer create/edit ──
-function ContentDrawer({ initial, refs, onClose, onSave, onArchive }: { initial: Partial<ContentItem>; refs: { responsibles: any[]; creators: any[] }; onClose: () => void; onSave: (patch: Partial<ContentItem>, id?: string) => Promise<boolean>; onArchive: (id: string) => void }) {
-  const [f, setF] = useState<Partial<ContentItem>>(initial);
-  const [saving, setSaving] = useState(false);
-  const [newRef, setNewRef] = useState('');
-  const set = (patch: Partial<ContentItem>) => setF((p) => ({ ...p, ...patch }));
-  const isEdit = !!f.id;
-  const inputCls = 'w-full border border-border bg-card text-foreground rounded-lg px-2.5 py-1.5 text-[13px] focus:outline-none focus:border-border-mid';
-  const localDT = (iso?: string | null) => { if (!iso) return ''; const d = new Date(iso); const off = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - off).toISOString().slice(0, 16); };
-
-  async function submit() {
-    if (!f.title?.trim()) { alert('El título es obligatorio.'); return; }
-    setSaving(true);
-    const patch: Partial<ContentItem> = { ...f };
-    if (isEdit) (patch as any).expectedUpdatedAt = f.updatedAt;
-    const ok = await onSave(patch, f.id); setSaving(false);
-    if (ok) onClose();
-  }
-  function addRef() {
-    const url = newRef.trim(); if (!url) return;
-    try { new URL(url); } catch { alert('URL inválida.'); return; }
-    const ref: ContentReference = { id: 'r_' + Date.now().toString(36), url };
-    set({ references: [...(f.references || []), ref] }); setNewRef('');
-  }
-  const formats = CHANNEL_FORMATS[f.channel as ContentChannel] || FORMATS;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
-      <div className="w-full max-w-lg bg-background h-full overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-background z-10">
-          <h3 className="text-[15px] font-bold text-foreground">{isEdit ? 'Editar contenido' : 'Nuevo contenido'}</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
-        </div>
-        <div className="p-5 space-y-5">
-          <div className="space-y-3">
-            <label className="block text-[11px] text-muted-foreground">Título *<input className={inputCls} value={f.title || ''} onChange={(e) => set({ title: e.target.value })} autoFocus /></label>
-            <label className="block text-[11px] text-muted-foreground">Descripción (qué hay que hacer)<textarea className={`${inputCls} resize-y`} rows={2} value={f.description || ''} onChange={(e) => set({ description: e.target.value })} /></label>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="text-[11px] text-muted-foreground">Canal *<select className={inputCls} value={f.channel} onChange={(e) => { const ch = e.target.value as ContentChannel; set({ channel: ch, format: (CHANNEL_FORMATS[ch] || [])[0] || 'other' }); }}>{CHANNELS.map((c) => <option key={c} value={c}>{CHANNEL_LABEL[c]}</option>)}</select></label>
-              <label className="text-[11px] text-muted-foreground">Formato *<select className={inputCls} value={f.format} onChange={(e) => set({ format: e.target.value as ContentFormat })}>{formats.map((c) => <option key={c} value={c}>{FORMAT_LABEL[c]}</option>)}</select></label>
-              <label className="text-[11px] text-muted-foreground">Estado<select className={inputCls} value={f.status} onChange={(e) => set({ status: e.target.value as ContentStatus })}>{ALL_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select></label>
-              <label className="text-[11px] text-muted-foreground">Prioridad<select className={inputCls} value={f.priority} onChange={(e) => set({ priority: e.target.value as ContentPriority })}>{PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>)}</select></label>
-            </div>
-          </div>
-
-          <div className="space-y-3 pt-1">
-            <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/70">Planificación</p>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="text-[11px] text-muted-foreground">Fecha/hora programada<input type="datetime-local" className={inputCls} value={localDT(f.scheduledAt)} onChange={(e) => set({ scheduledAt: e.target.value ? new Date(e.target.value).toISOString() : null })} /></label>
-              <label className="text-[11px] text-muted-foreground">Responsable<select className={inputCls} value={f.responsibleId || ''} onChange={(e) => set({ responsibleId: e.target.value || null })}><option value="">Sin responsable</option>{refs.responsibles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></label>
-            </div>
-          </div>
-
-          <div className="space-y-3 pt-1">
-            <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/70">Contenido</p>
-            <label className="block text-[11px] text-muted-foreground">Copy / Caption<textarea className={`${inputCls} resize-y`} rows={4} value={f.copy || ''} onChange={(e) => set({ copy: e.target.value })} placeholder="Texto que se publica…" /></label>
-            <label className="block text-[11px] text-muted-foreground">Notas internas<textarea className={`${inputCls} resize-y`} rows={2} value={f.notes || ''} onChange={(e) => set({ notes: e.target.value })} /></label>
-            <div>
-              <p className="text-[11px] text-muted-foreground mb-1">Referencias</p>
-              <div className="space-y-1 mb-1.5">
-                {(f.references || []).map((r) => (
-                  <div key={r.id} className="flex items-center gap-2 text-[12px]">
-                    <a href={r.url} target="_blank" rel="noreferrer" className="text-foreground hover:underline truncate flex-1">{r.label || r.url}</a>
-                    <button onClick={() => set({ references: (f.references || []).filter((x) => x.id !== r.id) })} className="text-muted-foreground/50 hover:text-destructive"><X size={13} /></button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input className={inputCls} value={newRef} onChange={(e) => setNewRef(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addRef()} placeholder="https://…" />
-                <button onClick={addRef} className="h-8 px-3 rounded-lg border border-border text-[12px] text-foreground hover:bg-muted shrink-0">Agregar</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3 pt-1">
-            <p className="text-[10.5px] uppercase tracking-wider text-muted-foreground/70">Relaciones</p>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="text-[11px] text-muted-foreground">Creador<select className={inputCls} value={f.creatorId || ''} onChange={(e) => set({ creatorId: e.target.value || null })}><option value="">—</option>{refs.creators.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-              <label className="text-[11px] text-muted-foreground">Productos (IDs Woo)<input className={inputCls} value={(f.productIds || []).join(', ')} onChange={(e) => set({ productIds: e.target.value.split(',').map((x) => parseInt(x.trim())).filter((n) => n > 0) })} placeholder="1234, 5678" /></label>
-            </div>
-            <p className="text-[10.5px] text-muted-foreground/50">Campaña queda reservada para 04B.</p>
-          </div>
-
-          <div className="flex items-center gap-2 pt-2 pb-6">
-            <button onClick={submit} disabled={saving || !f.title?.trim()} className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-[13px] font-semibold disabled:opacity-50">{saving ? 'Guardando…' : isEdit ? 'Guardar' : 'Crear'}</button>
-            {isEdit && <button onClick={() => onArchive(f.id!)} className="ml-auto text-[12px] text-muted-foreground hover:text-destructive flex items-center gap-1"><Trash2 size={13} /> Archivar</button>}
-          </div>
-        </div>
       </div>
     </div>
   );

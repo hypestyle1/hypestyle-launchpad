@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { CreatorCollaborations } from '@/components/admin/CreatorCollaborations';
 
 // Bandeja de postulaciones para crear contenido. La comparten la content
 // manager y la dueña de la cuenta, así que cada decisión queda firmada.
@@ -381,6 +382,7 @@ export default function CreadoresAdminPage() {
                         {c.origen === 'google-form' && ' · del formulario viejo'}
                         {c.revisadoPor && ` · revisada por ${c.revisadoPor}`}
                       </p>
+                      <CreatorCollaborations creatorId={String(c.id)} headers={headers} />
                     </div>
                   )}
                 </div>

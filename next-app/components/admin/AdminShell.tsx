@@ -123,7 +123,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 px-3 mb-1.5">{g.titulo}</p>
           )}
           {g.items.map(i => {
-            const activo = pathname.startsWith(i.match);
+            // Sólo el match MÁS específico queda activo: así /admin/content/campaigns
+            // no enciende también "Contenido" (/admin/content), ni rentabilidad enciende Resumen.
+            const activeMatch = grupos.flatMap(x => x.items).filter(x => pathname.startsWith(x.match)).reduce((b, x) => (x.match.length > b.length ? x.match : b), '');
+            const activo = i.match === activeMatch;
             return (
               <Link
                 key={i.href}

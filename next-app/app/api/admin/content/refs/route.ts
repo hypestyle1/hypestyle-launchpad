@@ -17,12 +17,16 @@ async function wp(path: string) {
 
 export async function GET(req: NextRequest) {
   if (!adminSecretMatches(req.headers.get('x-admin-key'))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  const [profiles, creators] = await Promise.all([wp('admin-profiles'), wp('creadores')]);
+  const [profiles, creators, campaigns] = await Promise.all([wp('admin-profiles'), wp('creadores'), wp('campaigns')]);
   const responsibles = Array.isArray(profiles?.profiles)
     ? profiles.profiles.map((p: any) => ({ id: String(p.id ?? p.username ?? p.email ?? ''), name: p.name || p.username || p.email || 'Perfil' }))
     : [];
   const creatorList = Array.isArray(creators?.creadores)
     ? creators.creadores.filter((c: any) => (c.estado === 'aprobado' || c.estado === 'potencial')).slice(0, 200).map((c: any) => ({ id: String(c.id), name: c.nombre || c.instagram || `#${c.id}` }))
     : [];
-  return NextResponse.json({ responsibles, creators: creatorList });
+  // Campañas activas primero (04B). Si el backend 1.25.0 no está desplegado, viene vacío.
+  const campaignList = Array.isArray(campaigns?.items)
+    ? campaigns.items.filter((c: any) => !c.archived).slice(0, 200).map((c: any) => ({ id: String(c.id), name: c.name || `#${c.id}`, status: c.status }))
+    : [];
+  return NextResponse.json({ responsibles, creators: creatorList, campaigns: campaignList });
 }
