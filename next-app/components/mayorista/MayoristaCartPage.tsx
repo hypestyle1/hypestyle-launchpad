@@ -89,6 +89,21 @@ async function downloadOrderPdf(orderNumber: string, clientName: string, email: 
   URL.revokeObjectURL(url);
 }
 
+interface Draft {
+  id: string;
+  name: string;
+  items: MayoristaCartItem[];
+  updatedAt: string;
+}
+
+function draftTotal(d: Draft) {
+  return d.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+}
+
+function fmtDraftDate(iso: string) {
+  return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', timeZone: 'America/Argentina/Buenos_Aires' });
+}
+
 interface ShippingForm {
   first_name: string; last_name: string; company: string;
   address_1: string; city: string; state: string; postcode: string; phone: string;
@@ -101,7 +116,7 @@ const EMPTY_SHIPPING: ShippingForm = {
 };
 
 export default function MayoristaCartPage() {
-  const { items, remove, setQty, clear, total } = useMayoristaCart();
+  const { items, remove, setQty, clear, replace, total } = useMayoristaCart();
   const [step, setStep] = useState<'cart' | 'shipping'>('cart');
   const [shipping, setShipping] = useState<ShippingForm>(EMPTY_SHIPPING);
   const [email, setEmail] = useState('');
@@ -109,6 +124,60 @@ export default function MayoristaCartPage() {
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number } | null>(null);
   const [minOrder, setMinOrder] = useState<number | null>(null);
+  const [drafts, setDrafts] = useState<Draft[] | null>(null);
+  // Si el pedido actual salió de un borrador, "guardar" lo pisa en vez de duplicarlo,
+  // y al confirmar el pedido ese borrador se elimina solo.
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftError, setDraftError] = useState('');
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/mayorista/drafts')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setDrafts(data?.drafts ?? []))
+      .catch(() => setDrafts([]));
+  }, []);
+
+  async function saveDraft() {
+    setSavingDraft(true);
+    setDraftError('');
+    try {
+      const res = await fetch('/api/mayorista/drafts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: activeDraftId ?? undefined, items }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Error al guardar el borrador');
+      setDrafts(data.drafts);
+      setActiveDraftId(data.draft.id);
+      setDraftSavedAt(Date.now());
+    } catch (e: any) {
+      setDraftError(e.message || 'Error al guardar el borrador');
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
+  function loadDraft(draft: Draft) {
+    if (items.length > 0 && draft.id !== activeDraftId) {
+      const ok = window.confirm('Cargar este borrador reemplaza el pedido actual. ¿Continuar?');
+      if (!ok) return;
+    }
+    replace(draft.items);
+    setActiveDraftId(draft.id);
+    setDraftSavedAt(null);
+    setStep('cart');
+  }
+
+  async function deleteDraft(id: string) {
+    setDrafts(ds => (ds ?? []).filter(d => d.id !== id));
+    if (id === activeDraftId) setActiveDraftId(null);
+    try {
+      await fetch(`/api/mayorista/drafts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch {}
+  }
 
   useEffect(() => {
     fetch('/api/mayorista/perfil')
@@ -151,6 +220,9 @@ export default function MayoristaCartPage() {
       if (!res.ok) throw new Error(data.message || 'No se pudo enviar el pedido');
       setConfirmed({ orderNumber: data.wcOrderNumber, items, total });
       clear();
+      // El borrador ya se convirtió en pedido: se elimina para que la lista
+      // muestre solo lo que falta confirmar.
+      if (activeDraftId) deleteDraft(activeDraftId);
     } catch (e: any) {
       setError(e.message || 'Error al enviar el pedido');
     } finally {
@@ -164,6 +236,42 @@ export default function MayoristaCartPage() {
       onChange: (e: React.ChangeEvent<HTMLInputElement>) => setShipping(s => ({ ...s, [key]: e.target.value })),
     };
   }
+
+  const draftsSection = drafts !== null && drafts.length > 0 && (
+    <div className="mt-10">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground mb-3">Borradores guardados</p>
+      <div className="space-y-3">
+        {drafts.map((d) => (
+          <div key={d.id} className={`rounded-[12px] border p-4 ${d.id === activeDraftId ? 'border-foreground' : 'border-border'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold truncate">{d.name}</p>
+                <p className="text-[11px] text-text-light mt-0.5">
+                  {d.items.length} producto{d.items.length !== 1 ? 's' : ''} · guardado el {fmtDraftDate(d.updatedAt)}
+                </p>
+              </div>
+              <span className="text-[14px] font-bold whitespace-nowrap">{formatArs(draftTotal(d))}</span>
+            </div>
+            <div className="flex items-center mt-3 pt-3 border-t border-border">
+              <button
+                onClick={() => loadDraft(d)}
+                disabled={d.id === activeDraftId}
+                className="text-[11px] font-semibold uppercase tracking-wide px-4 py-1.5 rounded-full border border-border hover:border-foreground transition-colors disabled:opacity-50"
+              >
+                {d.id === activeDraftId ? 'Cargado en tu pedido' : 'Cargar al pedido'}
+              </button>
+              <button
+                onClick={() => deleteDraft(d.id)}
+                className="ml-auto text-[11px] uppercase tracking-wide text-text-light hover:text-destructive transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   if (confirmed) {
     return (
@@ -217,11 +325,14 @@ export default function MayoristaCartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="max-w-lg mx-auto px-5 py-24 text-center">
-        <p className="text-muted-foreground text-sm">Todavía no agregaste productos.</p>
-        <Link href="/mayoristas" className="inline-block mt-6 bg-bg-dark text-primary-foreground px-6 py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors">
-          Ir al catálogo
-        </Link>
+      <div className="max-w-lg mx-auto px-5 py-24">
+        <div className="text-center">
+          <p className="text-muted-foreground text-sm">Todavía no agregaste productos.</p>
+          <Link href="/mayoristas" className="inline-block mt-6 bg-bg-dark text-primary-foreground px-6 py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors">
+            Ir al catálogo
+          </Link>
+        </div>
+        {draftsSection}
       </div>
     );
   }
@@ -334,9 +445,27 @@ export default function MayoristaCartPage() {
       >
         Continuar
       </button>
-      <button onClick={clear} className="mt-3 w-full text-[11px] uppercase tracking-wide text-text-light hover:text-destructive transition-colors py-2">
+      <button
+        onClick={saveDraft}
+        disabled={savingDraft}
+        className="mt-3 w-full text-[11px] font-semibold uppercase tracking-wide py-2.5 rounded-full border border-border hover:border-foreground transition-colors disabled:opacity-50"
+      >
+        {savingDraft ? 'Guardando…' : activeDraftId ? 'Actualizar borrador' : 'Guardar como borrador'}
+      </button>
+      {draftError && <p className="mt-2 text-[12px] text-destructive text-center">{draftError}</p>}
+      {draftSavedAt !== null && !draftError && (
+        <p className="mt-2 text-[12px] text-muted-foreground text-center">
+          Borrador guardado. Podés seguir sumando productos y confirmarlo cuando quieras.
+        </p>
+      )}
+      <button
+        onClick={() => { clear(); setActiveDraftId(null); setDraftSavedAt(null); }}
+        className="mt-3 w-full text-[11px] uppercase tracking-wide text-text-light hover:text-destructive transition-colors py-2"
+      >
         Vaciar pedido
       </button>
+
+      {draftsSection}
     </div>
   );
 }

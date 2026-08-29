@@ -56,6 +56,7 @@ interface MayoristaCartContextType {
   remove: (slug: string, size: string) => void;
   setQty: (slug: string, size: string, quantity: number) => void;
   clear: () => void;
+  replace: (items: MayoristaCartItem[]) => void;
   total: number;
   count: number;
 }
@@ -89,6 +90,7 @@ export function MayoristaCartProvider({ children }: { children: ReactNode }) {
       remove: (slug, size) => dispatch({ type: 'REMOVE', slug, size }),
       setQty: (slug, size, quantity) => dispatch({ type: 'SET_QTY', slug, size, quantity }),
       clear: () => dispatch({ type: 'CLEAR' }),
+      replace: (items) => dispatch({ type: 'LOAD', state: { items } }),
       total, count,
     }}>
       {children}
