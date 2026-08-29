@@ -19,27 +19,24 @@ export type FaithDropItem = {
 };
 
 export const FAITH_DROP_ITEMS: FaithDropItem[] = [
-  // — Fila 1 —
-  // Los dos HS CO primero (pedido 29/08): el green es colorway nuevo, todavia
-  // sin stock ni mockup → "Proximamente" (vidriera sin compra); pasa a live
-  // cuando se cargue stock. FaithDrop muestra la lista COMPLETA sin recorte
-  // (29/08) — todos los productos del drop se ven en el home.
-  { slug: 'hs-co-green-hoodie' },
+  // Orden (29/08): los dos HS CO primero (pedido explicito), despues las dos
+  // pre-ventas con pauta activa, y el resto por unidades vendidas cobradas de
+  // los ultimos 60 dias (Woo, completed+processing). La lista se muestra
+  // COMPLETA, sin recorte a filas.
+  // — Destacados —
+  { slug: 'hs-co-green-hoodie' }, // colorway nuevo: Proximamente hasta cargar stock/mockup
   { slug: 'hs-co-grey-hoodie', live: true },
-  // FIND JESUS en pre-venta (despacha desde el 10/09)
-  { slug: 'find-jesus-longsleeve-black', preSale: true },
-  // Running Horses se relanza con molde nuevo en pre-venta (28/08)
-  { slug: 'longsleeve-waffle-horses', preSale: true },
-  { slug: 'longsleeve-waffle-god-gave-me-style', live: true },
-  { slug: 'christ-reigns-hoodie', live: true },
-  { slug: 'he-die-so-i-could-live-hoodie', live: true },
-  // — Fila 2 (disponibles) —
-  { slug: 'lion-of-judah-stone-wash-hoodie', live: true },
-  { slug: 'christ-reigns-tee', live: true },
-  { slug: 'jesus-heart-tee', live: true },
-  { slug: 'he-died-so-i-could-live-melange-hoodie', live: true },
-  // — Fila 3 (publicados 30/07/26) —
-  { slug: 'sweater-distressed-hs-co', live: true },
-  { slug: 'faith-over-everything-camo-hoodie', live: true }, // pre-venta terminada
-  { slug: 'lamb-of-god-pink-tee', live: true },
+  { slug: 'find-jesus-longsleeve-black', preSale: true }, // despacha desde el 10/09
+  { slug: 'longsleeve-waffle-horses', preSale: true }, // molde nuevo 28/08; 2do mas vendido (16u)
+  // — Por ventas 60d (relevado 29/08) —
+  { slug: 'lamb-of-god-pink-tee', live: true }, // 21u, el mas vendido del drop
+  { slug: 'longsleeve-waffle-god-gave-me-style', live: true }, // 13u
+  { slug: 'lion-of-judah-stone-wash-hoodie', live: true }, // 5u
+  { slug: 'christ-reigns-tee', live: true }, // 5u
+  { slug: 'christ-reigns-hoodie', live: true }, // 4u
+  { slug: 'he-die-so-i-could-live-hoodie', live: true }, // 4u
+  { slug: 'jesus-heart-tee', live: true }, // 3u
+  { slug: 'faith-over-everything-camo-hoodie', live: true }, // 2u
+  { slug: 'he-died-so-i-could-live-melange-hoodie', live: true }, // 2u
+  { slug: 'sweater-distressed-hs-co', live: true }, // 2u
 ];
