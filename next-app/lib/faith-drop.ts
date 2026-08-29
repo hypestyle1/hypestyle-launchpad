@@ -19,10 +19,14 @@ export type FaithDropItem = {
 };
 
 export const FAITH_DROP_ITEMS: FaithDropItem[] = [
-  // — Fila 1 (disponibles) —
-  // FIND JESUS vuelve en pre-venta (despacha desde el 10/09) — primero para
-  // darle vidriera en el home. La grilla recorta a filas completas, asi que
-  // con 13 items queda afuera el ultimo de la lista (hs-co-grey-hoodie).
+  // — Fila 1 —
+  // Los dos HS CO primero (pedido 29/08): el green es colorway nuevo, todavia
+  // sin stock ni mockup → "Proximamente" (vidriera sin compra); pasa a live
+  // cuando se cargue stock. La grilla recorta a filas completas: con 14 items
+  // quedan afuera los 2 ultimos (faith-over-everything y lamb-of-god).
+  { slug: 'hs-co-green-hoodie' },
+  { slug: 'hs-co-grey-hoodie', live: true },
+  // FIND JESUS en pre-venta (despacha desde el 10/09)
   { slug: 'find-jesus-longsleeve-black', preSale: true },
   // Running Horses se relanza con molde nuevo en pre-venta (28/08)
   { slug: 'longsleeve-waffle-horses', preSale: true },
@@ -38,5 +42,4 @@ export const FAITH_DROP_ITEMS: FaithDropItem[] = [
   { slug: 'sweater-distressed-hs-co', live: true },
   { slug: 'faith-over-everything-camo-hoodie', live: true }, // pre-venta terminada
   { slug: 'lamb-of-god-pink-tee', live: true },
-  { slug: 'hs-co-grey-hoodie', live: true },
 ];
