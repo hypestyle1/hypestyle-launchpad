@@ -33,12 +33,19 @@ export const FW26_GROUPS = [
   // propia sección en Básicos, repetirlas duplicaba el catálogo en el mismo scroll.
   // Las Only God salieron de aca el 29/08: ya estan destacadas en la seccion
   // Faith Is The Real Hype del home (duplicaban en el mismo scroll). Entra
-  // Ladytribal reestockeada en pre-venta; cuando se suba la remera LETTERING
-  // reestockeada va en el 4to lugar y la fila vuelve a cerrar en 4.
+  // Ladytribal reestockeada en pre-venta.
+  // LA NUESTRA sube desde la vidriera de Más Hype (29/08): con 3 productos
+  // filasCompletas recortaba el grupo a 2 y la Napoli Bianca no se mostraba.
+  // Es la más vendida del grupo (19u) y el Mundial es el contexto del momento,
+  // así que se gana el 4to lugar. Sale de MAS_HYPE_HOME_SLUGS para no repetirla
+  // en el mismo scroll (sigue en la página /mas-hype completa).
+  // Cuando se suba la remera LETTERING reestockeada hay que elegir: entra ella
+  // o queda LA NUESTRA — con 5 la grilla vuelve a recortar a 4.
   {
     label: 'Remeras',
     slugs: [
       'ladytribal-black-longsleeve',
+      'la-nuestra-jersey-mundial-26',
       'napoli-tee-azul', 'napoli-tee-blanca',
     ],
   },
