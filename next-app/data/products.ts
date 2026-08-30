@@ -9,6 +9,8 @@ export interface Product {
   transferRate?: number;
   description: string;
   careItems: { icon: string; text: string }[];
+  // Aclaración opcional debajo de la lista de cuidados (ej. prendas con strass).
+  careNote?: string;
   fit: string;
   sizes: string[];
   stock: Record<string, "ok" | "low" | "out">;

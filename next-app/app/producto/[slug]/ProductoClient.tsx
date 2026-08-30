@@ -35,6 +35,16 @@ function CareIcon({ type }: { type: string }) {
       <path d="M5 17h14l2-6H9L5 17z"/><path d="M5 17l-2 2"/><circle cx="10" cy="13" r="0.8" fill="currentColor" stroke="none"/>
     </svg>
   );
+  if (type === 'no-hot') return (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 3a4 4 0 0 0 0 6 4 4 0 0 1 0 6"/><path d="M15 3a4 4 0 0 0 0 6 4 4 0 0 1 0 6"/><line x1="4" y1="4" x2="20" y2="20"/>
+    </svg>
+  );
+  if (type === 'no-spin') return (
+    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="M12 7a5 5 0 0 1 5 5"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  );
   if (type === 'no-dry') return (
     <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -663,13 +673,16 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 )}
                 <Accordion title="Guía de cuidado de ropa">
                   <ul className="space-y-2.5">
-                    {product.careItems.map(item => (
-                      <li key={item.icon} className="flex items-center gap-3">
+                    {product.careItems.map((item, i) => (
+                      <li key={item.icon + "-" + i} className="flex items-center gap-3">
                         <CareIcon type={item.icon} />
                         <span>{item.text}</span>
                       </li>
                     ))}
                   </ul>
+                  {product.careNote && (
+                    <p className="mt-3 text-[12px] text-foreground/55">{product.careNote}</p>
+                  )}
                 </Accordion>
                 <Accordion title="Envíos y devoluciones">
                   <p className="font-semibold text-foreground">Procesamiento</p>

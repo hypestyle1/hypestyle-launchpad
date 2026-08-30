@@ -60,6 +60,24 @@ const CARE_ACCESSORY = [
   { icon: 'no-dry',   text: 'Guardar en lugar fresco y seco' },
 ];
 
+// Prendas con aplicaciones de strass: el calor y el centrifugado despegan las
+// piedras, así que la guía genérica de apparel no alcanza.
+const CARE_STRASS = [
+  { icon: 'wash',     text: 'Lavar del revés, a mano o a máquina en agua fría (máx. 30°C)' },
+  { icon: 'no-hot',   text: 'Evitar el agua caliente' },
+  { icon: 'no-spin',  text: 'Lavar sin centrifugado' },
+  { icon: 'no-dryer', text: 'No usar secadora' },
+  { icon: 'iron-low', text: 'Planchar del revés, a temperatura baja y sin pasar por encima de las piedras' },
+  { icon: 'no-dry',   text: 'No lavar en seco' },
+];
+
+const CARE_STRASS_NOTE = 'Esta prenda lleva piedras de strass aplicadas: el agua caliente y el centrifugado pueden despegarlas. Lavándola en frío y sin centrifugar, las piedras se mantienen en su lugar.';
+
+// Cuidados propios de un producto puntual, por slug. Pisa la guía por categoría.
+const CARE_BY_SLUG: Record<string, { items: { icon: string; text: string }[]; note: string }> = {
+  'faith-over-everything-camo-hoodie': { items: CARE_STRASS, note: CARE_STRASS_NOTE },
+};
+
 const COLOR_HEX: Record<string, string> = {
   negro: '#1a1a1a', black: '#1a1a1a',
   blanco: '#f5f5f5', white: '#f5f5f5',
@@ -315,13 +333,15 @@ function fromWPNode(node: any): Product {
   const m = { ancho: attrVal('ancho'), largo: attrVal('largo'), manga: attrVal('manga') };
   const measurements = (m.ancho || m.largo || m.manga) ? m : undefined;
 
-  const careItems = category === 'Accesorio' ? CARE_ACCESSORY : CARE_APPAREL;
+  const careOverride = CARE_BY_SLUG[slug];
+  const careItems = careOverride?.items ?? (category === 'Accesorio' ? CARE_ACCESSORY : CARE_APPAREL);
+  const careNote = careOverride?.note;
 
   return {
     slug, id: slug, name, category, price, originalPrice,
     description, modelInfo, sizeGuideImage, sizeEquivalent, measurements,
     measurementsTable: measurementsTable.length ? measurementsTable : undefined,
-    careItems, fit, sizes, stock,
+    careItems, careNote, fit, sizes, stock,
     customizable: CUSTOMIZABLE_SLUGS.has(slug),
     colorVariant,
     colors: COLORWAYS[slug]?.map(c => ({
