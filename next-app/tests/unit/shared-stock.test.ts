@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPoolsPayload, COLOR_LABEL } from '@/lib/shared-stock';
+import { buildPoolsPayload, decodeWpTitle, COLOR_LABEL } from '@/lib/shared-stock';
 
 // buildPoolsPayload es el filtro entre el formulario del panel y el mu-plugin:
 // deja pasar sólo enteros >= 0, ignora los casilleros vacíos (que significan
@@ -65,5 +65,31 @@ describe('buildPoolsPayload', () => {
     const r = build({ melange: { S: '5' }, navy: { S: '-4' } });
     expect(r).toEqual({ error: `${COLOR_LABEL.navy} S: poné un número entero de 0 en adelante` });
     expect(r).not.toHaveProperty('pools');
+  });
+});
+
+describe('decodeWpTitle', () => {
+  it('decodifica el guion largo que manda WordPress', () => {
+    // Tal cual lo devuelve hypestyle/v1/shared-stock en producción.
+    expect(decodeWpTitle('Regular Tee &#8211; Melange')).toBe('Regular Tee – Melange');
+    expect(decodeWpTitle('Regular Tees &#8211; 3 PACK (Black, Melange, White)'))
+      .toBe('Regular Tees – 3 PACK (Black, Melange, White)');
+  });
+
+  it('cubre entidades hexadecimales y nombradas', () => {
+    expect(decodeWpTitle('Tee &#x2013; Navy')).toBe('Tee – Navy');
+    expect(decodeWpTitle('Black &amp; White')).toBe('Black & White');
+    expect(decodeWpTitle('Talle&nbsp;S')).toBe('Talle S');
+    expect(decodeWpTitle('&quot;Hype&quot;')).toBe('"Hype"');
+  });
+
+  it('deja intacto un título que ya es texto plano', () => {
+    expect(decodeWpTitle('Regular Tee - Melange')).toBe('Regular Tee - Melange');
+    expect(decodeWpTitle('')).toBe('');
+  });
+
+  it('resuelve &amp; al final, sin encadenar decodificaciones', () => {
+    // Un &amp;lt; tiene que quedar en &lt; literal, no convertirse en <.
+    expect(decodeWpTitle('&amp;lt;')).toBe('&lt;');
   });
 });
