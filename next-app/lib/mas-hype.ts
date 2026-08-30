@@ -50,8 +50,12 @@ export const MAS_HYPE_SLUGS = MAS_HYPE_GROUPS.flatMap(g => g.slugs);
 // Selección para la vidriera del home — 8 productos (2 filas x 4), priorizando
 // piezas con stock real y visualmente distintas entre sí (no 5 remeras
 // parecidas seguidas). El resto solo se ve entrando a la página completa.
+// LA NUESTRA salió de acá el 29/08: subió al grupo Remeras de NEW IN (fw26.ts),
+// que es el bloque más visto del home. Entra CROP TOPs en su lugar — con stock
+// y la única musculosa de la vidriera, así no quedan 5 remeras seguidas.
+// LA NUESTRA sigue listada en MAS_HYPE_GROUPS, o sea en la página /mas-hype.
 export const MAS_HYPE_HOME_SLUGS = [
-  'la-nuestra-jersey-mundial-26',
+  'crop-tops',
   'regular-tee-11-x-art-by-randal',
   'trucker-cap-11-x-art-by-randal',
   'hs-ring-silver-925',
