@@ -47,11 +47,34 @@ function wpHeaders(extra?: Record<string, string>): Record<string, string> {
   return { 'X-Hypestyle-Secret': WP_SECRET, ...(extra || {}) };
 }
 
+/**
+ * Los títulos de WordPress vienen con entidades HTML: el guion de "Regular Tee
+ * – Melange" llega como `&#8211;`, y React lo pinta literal porque escapa todo
+ * lo que renderiza. Se decodifica acá, en el borde, para que del lib para
+ * adentro los nombres sean texto y ya.
+ */
+export function decodeWpTitle(s: string): string {
+  return String(s)
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    // &amp; va última: si no, un `&amp;lt;` terminaría convertido en `<`.
+    .replace(/&amp;/g, '&');
+}
+
 function parseSnapshot(data: unknown): SharedStockSnapshot | null {
   if (!data || typeof data !== 'object') return null;
   const d = data as Partial<SharedStockSnapshot>;
   if (!Array.isArray(d.sizes) || !Array.isArray(d.pools) || !Array.isArray(d.products)) return null;
-  return { sizes: d.sizes, pools: d.pools, products: d.products };
+  return {
+    sizes: d.sizes,
+    pools: d.pools.map(p => ({ ...p, name: decodeWpTitle(p.name) })),
+    products: d.products.map(p => ({ ...p, name: decodeWpTitle(p.name) })),
+  };
 }
 
 /** Lee pilas + packs. Devuelve null si la ruta del mu-plugin no está desplegada. */
