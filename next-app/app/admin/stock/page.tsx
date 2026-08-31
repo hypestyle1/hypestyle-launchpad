@@ -114,7 +114,8 @@ export default function StockCompartidoPage() {
         </div>
       </div>
       <p className="text-[13px] text-muted-foreground">
-        Las Regular Tees salen de cuatro pilas físicas de color. Cargá lo que hay en depósito y los packs se recalculan solos.
+        Varios productos de Woo salen de una misma pila física: los packs de Regular Tee de su color, y los diseños
+        estampados del blank sobre el que se imprimen. Cargá lo que hay en depósito y el resto se recalcula solo.
       </p>
       {msg && (
         <p className={`text-[12px] mt-2 ${msg.tipo === 'ok' ? 'text-success' : 'text-warning'}`}>{msg.texto}</p>
@@ -127,7 +128,8 @@ export default function StockCompartidoPage() {
           {/* ── Pilas: lo único editable ─────────────────────────────────── */}
           <h2 className="text-[13px] font-semibold uppercase tracking-wide text-foreground mt-8 mb-1">Unidades en depósito</h2>
           <p className="text-[12px] text-muted-foreground mb-3">
-            Remeras sueltas de cada color. Dejá un casillero vacío para no tocar ese talle.
+            Remeras sueltas de cada color y blanks sin estampar. Dejá un casillero vacío para no tocar ese talle;
+            una pila marcada <span className="text-warning">sin cargar</span> pide los cuatro talles la primera vez.
           </p>
           <div className="bg-card border border-border rounded-lg overflow-x-auto">
             <table className="w-full min-w-[420px] text-[13px]">
@@ -142,6 +144,9 @@ export default function StockCompartidoPage() {
                   <tr key={pool.color}>
                     <td className="px-4 py-2.5">
                       <span className="text-foreground font-medium">{COLOR_LABEL[pool.color] ?? pool.color}</span>
+                      {pool.loaded === false && (
+                        <span className="ml-2 text-[11px] text-warning">sin cargar</span>
+                      )}
                       <span className="block text-[11px] text-muted-foreground/70">{pool.name}</span>
                     </td>
                     {snap.sizes.map(talle => {

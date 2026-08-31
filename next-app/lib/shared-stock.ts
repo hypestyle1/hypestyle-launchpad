@@ -1,6 +1,9 @@
-// Pilas de stock compartido de las Regular Tees. Doce entradas de Woo se
-// sirven de cuatro pilas físicas de color; la fuente de verdad es el mu-plugin
-// (ruta hypestyle/v1/shared-stock), que además recalcula los packs al guardar.
+// Pilas de stock compartido. Hay dos clases y funcionan igual: las cuatro
+// remeras Regular, donde doce entradas de Woo se sirven de cuatro pilas de
+// color, y los blanks sin estampar del print on demand, donde varios diseños
+// se imprimen sobre la misma prenda (los tres hoodies negros, por ejemplo).
+// La fuente de verdad es el mu-plugin (ruta hypestyle/v1/shared-stock), que
+// además recalcula lo derivado al guardar.
 //
 // Acá no se deriva nada: si el cálculo viviera también en TS habría dos
 // versiones de la misma regla y en algún momento dirían cosas distintas.
@@ -11,18 +14,23 @@ const WP_SECRET = (process.env.WP_SECRET || '').trim();
 export type StockPorTalle = Record<string, number | null>;
 
 export interface SharedStockPool {
-  /** melange | black | white | navy */
+  /** melange | black | white | navy | boxy_blanco | hoodie_negro | … */
   color: string;
-  /** Producto individual de ese color: su stock ES la pila. */
+  /** El producto cuyo stock ES la pila: la remera individual, o el blank. */
   productId: number;
   name: string;
   stock: StockPorTalle;
+  /**
+   * false mientras la pila de blank nunca se cargó: hasta la primera carga
+   * completa no deriva nada, así los diseños no se van a cero solos.
+   */
+  loaded?: boolean;
 }
 
 export interface SharedStockProduct {
   productId: number;
   name: string;
-  /** true para las cuatro remeras individuales, que no se derivan de nadie. */
+  /** true para las remeras individuales, que no se derivan de nadie. */
   isPool: boolean;
   /** color => remeras que consume una unidad vendida, del mismo talle. */
   recipe: Record<string, number>;
@@ -41,6 +49,11 @@ export const COLOR_LABEL: Record<string, string> = {
   black: 'Black',
   white: 'White',
   navy: 'Navy',
+  boxy_blanco: 'Blank remera boxy blanco',
+  boxy_negro: 'Blank remera boxy negro',
+  boxy_gris_topo: 'Blank remera boxy gris topo',
+  boxy_crop_blanco: 'Blank remera boxy crop blanco',
+  hoodie_negro: 'Blank hoodie negro',
 };
 
 function wpHeaders(extra?: Record<string, string>): Record<string, string> {
