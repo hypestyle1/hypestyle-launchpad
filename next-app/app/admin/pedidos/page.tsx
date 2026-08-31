@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import PendienteEstampar from '@/components/admin/PendienteEstampar';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -343,6 +344,9 @@ export default function PedidosPage() {
             ))}
           </div>
         )}
+
+        {/* Cola de estampado de las prendas print on demand por empaquetar. */}
+        <PendienteEstampar adminKey={adminKey} />
 
         {/* Filters + Search */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
