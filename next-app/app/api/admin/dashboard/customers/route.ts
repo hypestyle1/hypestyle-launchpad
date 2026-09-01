@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
-import { fetchOrdersInRange } from '@/lib/dashboard/wc-orders';
-import { classifyCustomers, type CustomerOrder } from '@/lib/dashboard/finance';
+import { fetchCustomerHistory } from '@/lib/dashboard/wc-orders';
+import { classifyCustomers } from '@/lib/dashboard/finance';
 
 export const dynamic = 'force-dynamic';
+// Es el fetch más grande del panel: todo 2026, no el rango elegido.
+export const maxDuration = 60;
 
 // Piso de historial: la tienda empezó a operar en 2026. Traer desde acá cubre
 // el "primer pedido" de cualquier cliente para clasificar nuevo vs recurrente
@@ -24,13 +26,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Historial de pagados desde el piso hasta el fin del período.
-    const { orders, truncated } = await fetchOrdersInRange(HISTORY_FLOOR, new Date(e).toISOString(), { onlyPaid: true });
-    const history: CustomerOrder[] = orders.map((o) => ({
-      customerKey: o.customerKey,
-      ms: Date.parse(o.dateGmt),
-      total: o.total,
-    }));
+    // Historial de pagados desde el piso hasta el fin del período, con la
+    // proyección liviana: este cálculo sólo mira clave, fecha y total, así que
+    // pedir line_items costaba 2,7x por página para tirarlos a la basura.
+    const { history, truncated } = await fetchCustomerHistory(HISTORY_FLOOR, new Date(e).toISOString());
     const split = classifyCustomers(history, s, e);
     return NextResponse.json({ ...split, truncated });
   } catch (err: any) {

@@ -8,6 +8,8 @@ import { aggregateByGateway, feeCoverageBreakdown, type OrderFeeRow } from '@/li
 import { previousRange, granularityFor, bucketKey, emptyBuckets, type Range } from '@/lib/dashboard/periods';
 
 export const dynamic = 'force-dynamic';
+// Agrega varias paginas de pedidos de Woo: el default de la plataforma queda corto.
+export const maxDuration = 60;
 
 function parseRange(sp: URLSearchParams): Range | null {
   const start = sp.get('start'), end = sp.get('end');
