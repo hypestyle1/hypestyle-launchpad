@@ -41,6 +41,7 @@ const megaMenu = {
     { label: 'Abajo',      href: '/abajo/',      indent: false },
     { label: 'Accesorios', href: '/accesorios/', indent: false },
     { label: 'Sets',       href: '/sets/',       indent: false },
+    { label: 'Gift Card',  href: '/gift-cards/', indent: false },
   ],
   colecciones: [
     { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },

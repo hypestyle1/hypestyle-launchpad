@@ -19,6 +19,7 @@ import { normalizeCpAr } from '@/lib/postal-code';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/envio';
+import { isGiftCardItem } from '@/lib/gift-card';
 import GiftProgressBar from '@/components/GiftProgressBar';
 import { Stepper } from '@/components/ui/stepper';
 import { ScrambleText } from '@/components/ui/scramble-text';
@@ -258,6 +259,13 @@ export default function Checkout() {
   // CAMPEON50, ni mandarse al backend como línea comercial — el servidor lo
   // recalcula y agrega por su cuenta (HPG_Gift_Engine).
   const purchasableItems = items.filter(item => !item.isGift);
+  // Gift cards: digitales. Si el carrito es sólo gift cards no hay envío ni
+  // dirección, y sobre su monto no aplican 3x2 ni el 10% de transferencia
+  // (sería comprar crédito con descuento). El PHP valida lo mismo.
+  const giftItems = purchasableItems.filter(isGiftCardItem);
+  const fisicos = purchasableItems.filter(item => !isGiftCardItem(item));
+  const soloGift = purchasableItems.length > 0 && fisicos.length === 0;
+  const subtotalGift = giftItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const router = useRouter();
   const { formatPrice, currency, country } = useLocale();
   const [step, setStep] = useState<Step>('info');
@@ -364,24 +372,30 @@ export default function Checkout() {
   const subtotal = total;
   // El cupón de envío gratis cero-ea Andreani igual que el umbral por monto.
   const couponFreeShip = !isInternational && !!couponData?.free_shipping;
-  const freeShipping = !isInternational && (subtotal >= FREE_SHIPPING_THRESHOLD || couponFreeShip);
+  // El umbral de envío gratis se mide sobre lo físico: una gift card no viaja.
+  const freeShipping = soloGift || (!isInternational && ((subtotal - subtotalGift) >= FREE_SHIPPING_THRESHOLD || couponFreeShip));
   const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
-  const shippingReady = isInternational ? !!selectedRate : freeShipping || !!selectedRate;
+  const shippingReady = soloGift ? true : isInternational ? !!selectedRate : freeShipping || !!selectedRate;
+  // Un cupón de monto fijo (o una gift card) nunca descuenta más que el subtotal:
+  // sin este tope una gift card de $250k sobre un carrito de $80k daba negativo.
   const cuponDescuento = couponData ? (
-    couponData.type === 'percent' ? Math.round(subtotal * (couponData.amount / 100)) : couponData.amount
+    couponData.type === 'percent'
+      ? Math.round(subtotal * (couponData.amount / 100))
+      : Math.min(couponData.amount, subtotal)
   ) : 0;
   // 50% off "campeones del mundo" tiene prioridad sobre el 3x2 — no deberían solaparse
   // (si por algún motivo ambos estados dieran 'won' a la vez, no se suman).
   const championActive = championWon && !isInternational;
-  const championDescuento = championActive ? computeChampionDiscount(purchasableItems) : 0;
+  const championDescuento = championActive ? computeChampionDiscount(fisicos) : 0;
   // 3x2 (más barata gratis) solo si Argentina ganó — promo local, no aplica a envíos internacionales.
   const promo3x2Active = promo3x2Won && !isInternational && !championActive;
-  const promo3x2Descuento = promo3x2Active ? compute3x2Discount(purchasableItems) : 0;
-  const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(purchasableItems) : 0;
+  const promo3x2Descuento = promo3x2Active ? compute3x2Discount(fisicos) : 0;
+  const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(fisicos) : 0;
   const descuento = cuponDescuento + promo3x2Descuento + championDescuento;
   const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
   const totalFinal = subtotal - descuento + envioEnPaso;
-  const transferTotal = Math.round(subtotal * 0.90) - descuento + envioEnPaso;
+  // El 10% de transferencia va sobre lo físico; la gift card se paga entera.
+  const transferTotal = Math.round((subtotal - subtotalGift) * 0.90) + subtotalGift - descuento + envioEnPaso;
 
   // InitiateCheckout / begin_checkout: al ENTRAR al checkout con carrito, no en el
   // paso 2. Estaba enganchado a la transición envío → pago, que es el tercer paso
@@ -456,6 +470,13 @@ export default function Checkout() {
 
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (soloGift) {
+      // Nada que enviar: directo a pagar.
+      setSelectedRate(null);
+      setShippingRates([]);
+      setStep('pago');
+      return;
+    }
     setStep('envio');
     if (isInternational) {
       const rate = intlQuote
@@ -549,10 +570,10 @@ export default function Checkout() {
       let orderRes;
       try {
         orderRes = await createOrderAndPreference({
-          items: purchasableItems.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization })),
+          items: purchasableItems.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization, gift: item.customization?.gift })),
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: cpEnvio, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
           shipping: envioCosto,
-          discountAmount: (isLocalTransfer ? Math.round(subtotal * 0.10) : 0) + promo3x2Descuento + championDescuento,
+          discountAmount: (isLocalTransfer ? Math.round((subtotal - subtotalGift) * 0.10) : 0) + promo3x2Descuento + championDescuento,
           discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
           couponCode: couponData?.code,
           paymentMethod: pago.metodo,
@@ -692,7 +713,7 @@ export default function Checkout() {
   );
 
   const stepLabel = (s: Step) => ({ info: 'Información', envio: 'Envío', pago: 'Pago' }[s]);
-  const steps: Step[] = ['info', 'envio', 'pago'];
+  const steps: Step[] = soloGift ? ['info', 'pago'] : ['info', 'envio', 'pago'];
 
   // Mercado Pago reactivado (12/07/2026): la cuenta fue devuelta tras la suspensión
   // del 05/07. Vuelve a ofrecerse como la forma más simple de cobrar con tarjeta
@@ -700,7 +721,7 @@ export default function Checkout() {
   const paymentMethods = [
     !isInternational && { id: 'tarjeta',       label: 'Tarjeta de crédito o débito',       sub: 'Hasta 3 cuotas sin interés' },
     !isInternational && { id: 'gocuotas',      label: '4 cuotas con débito sin interés',   sub: 'Con tu tarjeta de débito · sin interés' },
-    !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency === 'ARS' ? `Pagás ${formatPrice(transferTotal)} (10% off)` : '' },
+    !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency !== 'ARS' ? '' : soloGift ? 'Sin descuento sobre gift cards' : `Pagás ${formatPrice(transferTotal)} (10% off)` },
     !isInternational && { id: 'mercadopago',   label: 'Mercado Pago',                       sub: '' },
     !isInternational && { id: 'paypal',        label: 'PayPal',                             sub: 'Solo con saldo disponible en tu cuenta de PayPal' },
     isInternational  && { id: 'paypal',        label: 'PayPal',                             sub: 'Credit card, debit or PayPal balance' },
@@ -755,6 +776,23 @@ export default function Checkout() {
                 </label>
               </div>
 
+              {soloGift ? (
+              // Sólo gift cards: nada se envía. Alcanza con nombre y teléfono
+              // para el pedido y el mail; sin dirección, DNI ni código postal.
+              <div>
+                <h2 className="text-[15px] font-semibold mb-3">Tus datos</h2>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input placeholder="Nombre" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                    <input placeholder="Apellido" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                  </div>
+                  <input placeholder="Teléfono (con código de área)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                  <p className="text-[12px] text-muted-foreground leading-relaxed pt-1">
+                    La gift card es digital: te llega por mail apenas se acredita el pago.
+                  </p>
+                </div>
+              </div>
+              ) : (
               <div>
                 <h2 className="text-[15px] font-semibold mb-3">
                   {isInternational ? 'Shipping address' : 'Dirección de envío'}
@@ -827,9 +865,10 @@ export default function Checkout() {
                   )}
                 </div>
               </div>
+              )}
 
               <button type="submit" className="w-full bg-bg-dark text-primary-foreground py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]">
-                {isInternational ? 'Continue to shipping' : 'Continuar con el envío'}
+                {soloGift ? 'Continuar con el pago' : isInternational ? 'Continue to shipping' : 'Continuar con el envío'}
               </button>
             </form>
           )}
@@ -971,10 +1010,16 @@ export default function Checkout() {
                   <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Contact' : 'Contacto'}</span><span>{info.email}</span></div>
                   <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
                 </div>
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Ship to' : 'Enviar a'}</span><span>{info.direccion}, {info.ciudad}</span></div>
-                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
-                </div>
+                {soloGift ? (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex gap-2"><span className="text-muted-foreground">Entrega</span><span>Gift card digital · por mail a {info.email}</span></div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Ship to' : 'Enviar a'}</span><span>{info.direccion}, {info.ciudad}</span></div>
+                    <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
+                  </div>
+                )}
                 {selectedRate && (
                   <div className="flex items-center justify-between px-4 py-3">
                     <div className="flex gap-2 flex-col">
@@ -1024,8 +1069,8 @@ export default function Checkout() {
 
               {submitError && <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{submitError}</p>}
               <div className="flex items-center justify-between pt-2">
-                <button type="button" onClick={() => setStep('envio')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
-                  {isInternational ? '‹ Back to shipping' : '‹ Volver al envío'}
+                <button type="button" onClick={() => setStep(soloGift ? 'info' : 'envio')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+                  {soloGift ? '‹ Volver' : isInternational ? '‹ Back to shipping' : '‹ Volver al envío'}
                 </button>
                 <DynamicButton
                   type="submit"
@@ -1071,6 +1116,12 @@ export default function Checkout() {
                     <p className="text-[13px] font-medium leading-tight">{item.name}</p>
                     {item.isGift ? (
                       <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-green-700">Regalo por compra</p>
+                    ) : isGiftCardItem(item) ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        {item.customization?.gift?.paraEmail
+                          ? `Para ${item.customization.gift.paraNombre || item.customization.gift.paraEmail}`
+                          : 'Digital · por mail'}
+                      </p>
                     ) : (
                       <p className="text-[11px] text-muted-foreground">Talle: {item.size}</p>
                     )}
@@ -1101,8 +1152,10 @@ export default function Checkout() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ code: coupon, total: subtotal }),
                       });
-                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; error?: string };
-                      if (data.valid && data.code && data.type && data.amount !== undefined) {
+                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; error?: string };
+                      if (data.valid && data.gift_card && giftItems.length > 0) {
+                        setCouponError('Una gift card no sirve para comprar otra gift card');
+                      } else if (data.valid && data.code && data.type && data.amount !== undefined) {
                         setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping });
                       }
                       else { setCouponError(data.error || 'Código inválido'); }

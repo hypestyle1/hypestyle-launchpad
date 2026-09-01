@@ -49,6 +49,7 @@ const DICT: Dict = {
   'envío gratis': { EN: 'free shipping', PT: 'frete grátis' },
   'Tu carrito está vacío': { EN: 'Your cart is empty', PT: 'Seu carrinho está vazio' },
   'Seguir comprando': { EN: 'Continue shopping', PT: 'Continuar comprando' },
+  'o regalá una gift card': { EN: 'or give a gift card', PT: 'ou presenteie um gift card' },
   'Talle': { EN: 'Size', PT: 'Tamanho' },
   'Dorsal': { EN: 'Custom', PT: 'Personalização' },
   'Eliminar': { EN: 'Remove', PT: 'Remover' },

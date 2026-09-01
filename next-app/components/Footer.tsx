@@ -10,6 +10,7 @@ const shopLinks = [
   { label: "Abajo",      href: "/abajo/" },
   { label: "Accesorios", href: "/accesorios/" },
   { label: "Sets",       href: "/sets/" },
+  { label: "Gift Card",  href: "/gift-cards/" },
   { label: "Ver todo",   href: "/productos/" },
 ];
 

@@ -97,7 +97,10 @@ export async function GET() {
   // `publish` porque el motor del plugin llama a `is_purchasable()`, que rechaza
   // los `private` — por eso no se puede esconder del lado de WordPress como sí
   // se hace con las pilas de blanks del stock compartido.
-  const SLUGS_INTERNOS = new Set(['par-de-medias-hype']);
+  //
+  // gift-card (3012) es la gift card: se compra desde /gift-cards con su propia
+  // UI de monto, no desde una card del catálogo.
+  const SLUGS_INTERNOS = new Set(['par-de-medias-hype', 'gift-card']);
 
   // La mayoría de los productos comparten menu_order (nunca se seteó a mano por
   // producto), así que el cursor de WPGraphQL no separa las páginas de forma
