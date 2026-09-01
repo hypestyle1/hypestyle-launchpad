@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-const VIDEO_ID = '62_jeoVaUUY'; // "Hype - NAPOLI TEEs"
+const VIDEO_ID = 'XXI72CD1qzE'; // "Hype® FW26 — Final Film | Rio de Janeiro, Brasil"
 const EMBED_SRC =
   `https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${VIDEO_ID}&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1`;
 
@@ -38,7 +38,7 @@ export default function VideoSection() {
       {load && (
         <iframe
           src={EMBED_SRC}
-          title="Napoli Tees — Hypestyle"
+          title="Hype FW26 — Final Film, Rio de Janeiro"
           allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
           allowFullScreen
           loading="lazy"
@@ -53,10 +53,10 @@ export default function VideoSection() {
       {/* CTA */}
       <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center pb-8 md:pb-14">
         <a
-          href="/colecciones/napoli/"
+          href="/colecciones/fw26/"
           className="px-8 py-3 border border-white text-white text-[11px] md:text-[12px] uppercase tracking-[0.18em] hover:bg-white hover:text-black transition-colors duration-300"
         >
-          Ver Napoli Tees
+          Ver FW26
         </a>
       </div>
     </section>
