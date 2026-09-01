@@ -11,6 +11,8 @@ import { previousRange } from '@/lib/dashboard/periods';
 // sparkline, la serie para el chart, y los datos de cada sección.
 
 export const dynamic = 'force-dynamic';
+// Agrega varias paginas de pedidos de Woo: el default de la plataforma queda corto.
+export const maxDuration = 60;
 const AR_OFFSET_MS = 180 * 60_000;
 const arDate = (iso: string) => new Date(Date.parse(iso) - AR_OFFSET_MS).toISOString().slice(0, 10);
 
