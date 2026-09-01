@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/context/LocaleContext';
 import { imgSrc } from '@/lib/img';
+import { Check, Copy, MessageCircle } from 'lucide-react';
+import { DynamicButton } from '@/components/ui/dynamic-button';
+import { ReceiptPrinter } from '@/components/ReceiptPrinter';
 
 const CVU          = '0000069707170407909550';
 const TITULAR      = 'Valentin Pozzi';
@@ -65,24 +68,30 @@ export default function PendientePago() {
             <p className="text-[22px] font-bold">#{displayOrderNum}</p>
           </div>
 
-          <div className="border border-border">
-            <div className="px-5 py-4 border-b border-border flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full border-2 border-amber-500 flex items-center justify-center flex-shrink-0">
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              </div>
-              <div>
-                <p className="text-[14px] font-semibold">
-                  {isIntl ? 'Awaiting payment' : 'En espera de pago'}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {isIntl
-                    ? 'Transfer the exact amount to the details below'
-                    : 'Realizá la transferencia para confirmar tu pedido'}
-                </p>
-              </div>
-            </div>
-
-            <div className="px-5 py-5 space-y-5">
+          {/* La misma impresora de /confirmacion, en espera: el ticket que sale
+              trae los datos para transferir. Cuando el pago se acredita, el
+              cliente recibe el comprobante por mail. */}
+          <ReceiptPrinter stage="imprimiendo" className="max-w-none">
+            <ReceiptPrinter.Machine>
+              <ReceiptPrinter.Header>
+                <img src="/logo-hypestyle-2026.png" alt="" className="h-4 w-auto invert" />
+                <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/40">#{displayOrderNum}</span>
+              </ReceiptPrinter.Header>
+              <ReceiptPrinter.Screen>
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between gap-4 font-mono text-[12px]">
+                    <span className="text-white/60">{isIntl ? 'Awaiting payment' : 'En espera de pago'}</span>
+                    <strong className="text-[14px]">{formatPrice(displayTotal)}</strong>
+                  </div>
+                  <ReceiptPrinter.Status>
+                    {isIntl ? 'Waiting for your transfer' : 'Esperando tu transferencia'}
+                  </ReceiptPrinter.Status>
+                </div>
+              </ReceiptPrinter.Screen>
+            </ReceiptPrinter.Machine>
+            <ReceiptPrinter.Output>
+            <ReceiptPrinter.Paper className="font-sans">
+            <div className="space-y-5">
               {isIntl ? (
                 <>
                   <p className="text-[13px] text-muted-foreground leading-relaxed">
@@ -136,10 +145,13 @@ export default function PendientePago() {
                         <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">Alias exclusivo para esta compra</p>
                         <p className="text-[13px] font-mono font-semibold tracking-wider truncate">{order.talo.alias}</p>
                       </div>
-                      <button onClick={() => handleCopy(order.talo.alias, 'alias')}
-                        className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider border transition-all flex-shrink-0 ${copied === 'alias' ? 'border-green-600 text-green-600 bg-green-50' : 'border-foreground text-foreground hover:bg-foreground hover:text-white'}`}>
-                        {copied === 'alias' ? '✓ Copiado' : 'Copiar alias'}
-                      </button>
+                      <DynamicButton
+                        onClick={() => handleCopy(order.talo.alias, 'alias')}
+                        icon={copied === 'alias' ? <Check className="h-[13px] w-[13px]" strokeWidth={3} /> : <Copy className="h-[13px] w-[13px]" />}
+                        className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider border rounded-[8px] flex-shrink-0 ${copied === 'alias' ? 'border-green-600 text-green-700 bg-green-50' : 'border-foreground text-foreground hover:bg-foreground hover:text-white'}`}
+                      >
+                        {copied === 'alias' ? 'Copiado' : 'Copiar alias'}
+                      </DynamicButton>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex items-center justify-between">
@@ -150,15 +162,18 @@ export default function PendientePago() {
                   <p className="text-[12px] text-muted-foreground leading-relaxed">
                     Tu pedido se confirma automáticamente al detectar la transferencia (podés tardar unos minutos en verlo reflejado). Si preferís avisarnos igual o tenés algún problema, mandanos el comprobante por WhatsApp con tu número de pedido.
                   </p>
-                  <a
-                    href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${displayOrderNum}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] text-white rounded-[10px] transition-colors hover:opacity-90"
+                  <DynamicButton
+                    width="full"
+                    onClick={() => window.open(
+                      `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${displayOrderNum}`)}`,
+                      '_blank', 'noopener,noreferrer',
+                    )}
+                    icon={<MessageCircle className="h-[15px] w-[15px]" />}
+                    className="py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] text-white rounded-[8px] hover:opacity-90"
                     style={{ background: '#25D366' }}
                   >
                     Enviar comprobante por WhatsApp
-                  </a>
+                  </DynamicButton>
                 </>
               ) : (
                 <>
@@ -175,10 +190,13 @@ export default function PendientePago() {
                         <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">CVU</p>
                         <p className="text-[13px] font-mono font-semibold tracking-wider">{CVU}</p>
                       </div>
-                      <button onClick={() => handleCopy(CVU, 'cvu')}
-                        className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider border transition-all flex-shrink-0 ${copied === 'cvu' ? 'border-green-600 text-green-600 bg-green-50' : 'border-foreground text-foreground hover:bg-foreground hover:text-white'}`}>
-                        {copied === 'cvu' ? '✓ Copiado' : 'Copiar CVU'}
-                      </button>
+                      <DynamicButton
+                        onClick={() => handleCopy(CVU, 'cvu')}
+                        icon={copied === 'cvu' ? <Check className="h-[13px] w-[13px]" strokeWidth={3} /> : <Copy className="h-[13px] w-[13px]" />}
+                        className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider border rounded-[8px] flex-shrink-0 ${copied === 'cvu' ? 'border-green-600 text-green-700 bg-green-50' : 'border-foreground text-foreground hover:bg-foreground hover:text-white'}`}
+                      >
+                        {copied === 'cvu' ? 'Copiado' : 'Copiar CVU'}
+                      </DynamicButton>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="flex items-center justify-between">
@@ -189,15 +207,18 @@ export default function PendientePago() {
                   <p className="text-[12px] text-muted-foreground leading-relaxed">
                     Una vez que hagas la transferencia, mandanos el comprobante por WhatsApp con tu número de pedido para que aprobemos y despachemos tu compra. Si en 48hs no llega el comprobante, la orden se cancela.
                   </p>
-                  <a
-                    href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${displayOrderNum}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] text-white rounded-[10px] transition-colors hover:opacity-90"
+                  <DynamicButton
+                    width="full"
+                    onClick={() => window.open(
+                      `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Te paso el comprobante de la transferencia de mi pedido #${displayOrderNum}`)}`,
+                      '_blank', 'noopener,noreferrer',
+                    )}
+                    icon={<MessageCircle className="h-[15px] w-[15px]" />}
+                    className="py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] text-white rounded-[8px] hover:opacity-90"
                     style={{ background: '#25D366' }}
                   >
                     Enviar comprobante por WhatsApp
-                  </a>
+                  </DynamicButton>
                 </>
               )}
 
@@ -206,11 +227,17 @@ export default function PendientePago() {
                 {isIntl ? 'Change payment method' : 'Cambiar medio de pago'}
               </button>
             </div>
-          </div>
+            </ReceiptPrinter.Paper>
+            </ReceiptPrinter.Output>
+          </ReceiptPrinter>
 
-          <a href="/" className="inline-block border border-foreground text-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-foreground hover:text-white transition-colors">
-            {isIntl ? 'Continue shopping' : 'Seguir comprando'}
-          </a>
+          {/* Quien acaba de comprar no quiere volver a comprar ya: vuelve al home. */}
+          <DynamicButton
+            onClick={() => router.push('/')}
+            className="border border-foreground text-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] rounded-[8px] hover:bg-foreground hover:text-white"
+          >
+            {isIntl ? 'Back to home' : 'Volver al home'}
+          </DynamicButton>
         </div>
 
         <div className="lg:border-l lg:border-border lg:pl-10">
@@ -267,10 +294,13 @@ function BankRow({ label, value, onCopy, copied, mono }: {
       <div className="flex items-center gap-2 min-w-0">
         <p className={`text-[13px] font-semibold truncate ${mono ? 'font-mono tracking-wider' : ''}`}>{value}</p>
         {onCopy && (
-          <button onClick={onCopy}
-            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider border transition-all flex-shrink-0 rounded-[4px] ${copied ? 'border-green-600 text-green-600 bg-green-50' : 'border-foreground/30 text-foreground/60 hover:border-foreground hover:text-foreground'}`}>
-            {copied ? '✓' : 'Copy'}
-          </button>
+          <DynamicButton
+            onClick={onCopy}
+            icon={copied ? <Check className="h-[11px] w-[11px]" strokeWidth={3} /> : <Copy className="h-[11px] w-[11px]" />}
+            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider border flex-shrink-0 rounded-[6px] ${copied ? 'border-green-600 text-green-700 bg-green-50' : 'border-foreground/30 text-foreground/60 hover:border-foreground hover:text-foreground'}`}
+          >
+            {copied ? 'Copied' : 'Copy'}
+          </DynamicButton>
         )}
       </div>
     </div>

@@ -7,6 +7,7 @@ import { gaPurchase } from '@/lib/ga';
 import { ReceiptPrinter, type ReceiptStage } from '@/components/ReceiptPrinter';
 import { GiftCard } from '@/components/GiftCard';
 import { GIFT_CARD_SLUG } from '@/lib/gift-card';
+import { DynamicButton } from '@/components/ui/dynamic-button';
 
 type GiftCode = { code: string; monto: number; para_email?: string; para_nombre?: string; saldo?: number };
 
@@ -227,7 +228,8 @@ export default function ConfirmacionClient() {
     shippingVal:  isIntl
       ? 'FedEx International — tracked and insured'
       : 'Andreani — 5 a 10 días hábiles',
-    cta:          isIntl ? 'Continue shopping' : 'Seguir comprando',
+    // Quien acaba de comprar no quiere volver a comprar ya: vuelve al home.
+    cta:          isIntl ? 'Back to home' : 'Volver al home',
   };
 
   const stage: ReceiptStage = isRejected
@@ -404,17 +406,23 @@ export default function ConfirmacionClient() {
 
           {isRejected ? (
             <div className="flex flex-col items-center gap-3">
-              <a href="/checkout/" className="inline-flex items-center gap-2 bg-bg-dark text-primary-foreground px-10 py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors">
+              <DynamicButton
+                onClick={() => { window.location.href = '/checkout/'; }}
+                className="bg-bg-dark text-primary-foreground px-10 py-4 text-[12px] font-bold uppercase tracking-[0.1em] rounded-[8px] hover:bg-bg-dark/85"
+              >
                 {t.retry}
-              </a>
+              </DynamicButton>
               <a href="/" className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
                 {t.cta}
               </a>
             </div>
           ) : (
-            <a href="/" className="inline-flex items-center gap-2 bg-bg-dark text-primary-foreground px-10 py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors">
+            <DynamicButton
+              onClick={() => { window.location.href = '/'; }}
+              className="bg-bg-dark text-primary-foreground px-10 py-4 text-[12px] font-bold uppercase tracking-[0.1em] rounded-[8px] hover:bg-bg-dark/85"
+            >
               {t.cta}
-            </a>
+            </DynamicButton>
           )}
         </div>
       </div>
