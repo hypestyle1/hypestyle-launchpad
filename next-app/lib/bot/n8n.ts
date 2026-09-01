@@ -1,5 +1,6 @@
-// Acceso server-side a la API de n8n Cloud. El token (N8N_API_KEY) NUNCA sale del
-// servidor: no va al browser, ni a la respuesta, ni a logs, ni a query strings.
+// Acceso server-side a la API de n8n, autoalojado en n8n.hypestyle.com.ar desde el
+// 01/09/2026. El token (N8N_API_KEY) NUNCA sale del servidor: no va al browser, ni
+// a la respuesta, ni a logs, ni a query strings.
 // Cacheado en memoria por proceso (los datos de capacidad no cambian segundo a
 // segundo). La API de n8n NO expone el límite mensual del plan → se configura aparte.
 //
@@ -9,7 +10,7 @@
 
 import type { ExecLite } from './capacity';
 
-const N8N_URL = (process.env.N8N_API_URL || 'https://hypestyle.app.n8n.cloud').replace(/\/+$/, '');
+const N8N_URL = (process.env.N8N_API_URL || 'https://n8n.hypestyle.com.ar').replace(/\/+$/, '');
 const N8N_KEY = (process.env.N8N_API_KEY || '').trim();
 
 export function n8nConfigured(): boolean { return !!N8N_KEY; }
