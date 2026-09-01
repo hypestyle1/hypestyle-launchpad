@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { clearCartSnapshot } from '@/lib/cart-recovery';
 import { gaPurchase } from '@/lib/ga';
+import { ReceiptPrinter, type ReceiptStage } from '@/components/ReceiptPrinter';
 
 interface OrderData {
   wcOrderId?: number; wcOrderNumber?: string; orderKey?: string; orderNum: string | number;
@@ -29,6 +30,14 @@ export default function ConfirmacionClient() {
   const searchParams = useSearchParams();
   const [order, setOrder] = useState<OrderData | null>(null);
   const [fecha, setFecha] = useState('');
+  // El pago aprobado arranca "imprimiendo" y pasa a "listo" cuando el papel
+  // terminó de salir (misma duración que `hs-receipt-feed` en globals.css).
+  // Pendiente y rechazado no imprimen nada: no hay comprobante que dar todavía.
+  const [impreso, setImpreso] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setImpreso(true), 1900);
+    return () => window.clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -194,84 +203,148 @@ export default function ConfirmacionClient() {
     cta:          isIntl ? 'Continue shopping' : 'Seguir comprando',
   };
 
+  const stage: ReceiptStage = isRejected
+    ? 'rechazado'
+    : isPending
+      ? 'procesando'
+      : impreso
+        ? 'listo'
+        : 'imprimiendo';
+
+  const money = (n: number) =>
+    new Intl.NumberFormat(isIntl ? 'en-US' : 'es-AR', {
+      style: 'currency',
+      currency: isIntl ? 'USD' : 'ARS',
+      maximumFractionDigits: 0,
+    }).format(n);
+
+  const subtotal = order?.items.reduce((acc, i) => acc + i.price * i.quantity, 0) ?? 0;
+  const envio = order ? Math.max(0, order.total - subtotal) : 0;
+
+  const statusLabel = isRejected
+    ? (isIntl ? 'Payment declined' : 'Pago rechazado')
+    : isPending
+      ? (isIntl ? 'Confirming your payment' : 'Confirmando el pago')
+      : impreso
+        ? (isIntl ? 'Order confirmed' : 'Compra confirmada')
+        : (isIntl ? 'Printing your receipt' : 'Imprimiendo tu comprobante');
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="border-b border-border py-5 px-4 text-center">
         <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto object-contain mx-auto" /></a>
       </div>
-      <div className="flex-1 flex items-center justify-center px-4 py-16">
-        <div className="max-w-[540px] w-full text-center">
 
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6 ${
-            isRejected ? 'bg-red-100' : isPending ? 'bg-amber-100' : 'bg-green-100'
-          }`}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-              stroke={isRejected ? '#dc2626' : isPending ? '#d97706' : '#16a34a'}
-              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              {isRejected ? (
-                <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
-              ) : isPending ? (
-                <><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></>
-              ) : (
-                <polyline points="20 6 9 17 4 12" />
-              )}
-            </svg>
-          </div>
-
+      <div className="flex-1 flex flex-col items-center px-4 py-12 md:py-16">
+        <div className="max-w-[540px] w-full text-center mb-10">
           <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-2">
             {t.orderLabel} #{displayOrderNum}
           </p>
           <h1 className="text-[26px] md:text-[32px] font-bold leading-tight mb-4">{t.thanks}</h1>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">{t.body}</p>
+        </div>
 
-          <p className="text-[14px] text-muted-foreground leading-relaxed mb-2">{t.body}</p>
+        <ReceiptPrinter stage={stage}>
+          <ReceiptPrinter.Machine>
+            <ReceiptPrinter.Header>
+              <img src="/logo-hypestyle-2026.png" alt="" className="h-4 w-auto invert" />
+              <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/40">
+                #{displayOrderNum}
+              </span>
+            </ReceiptPrinter.Header>
+            <ReceiptPrinter.Screen>
+              <div className="space-y-3">
+                <div className="flex items-baseline justify-between gap-4 font-mono text-[12px]">
+                  <span className="text-white/60">{fecha}</span>
+                  {order && <strong className="text-[14px]">{money(order.total)}</strong>}
+                </div>
+                <ReceiptPrinter.Status>{statusLabel}</ReceiptPrinter.Status>
+              </div>
+            </ReceiptPrinter.Screen>
+          </ReceiptPrinter.Machine>
 
-          {isIntl && !isRejected && (
-            <div className="mx-auto max-w-[400px] bg-foreground/[0.03] border border-border rounded-[10px] px-5 py-3.5 mb-6 text-left">
-              <p className="text-[12px] text-foreground/60 leading-relaxed">
-                <span className="text-foreground font-semibold">Shipping is already included</span>
-                {' '}in what you paid. Import duties and customs fees at destination are separate and are paid
-                by the recipient.
+          <ReceiptPrinter.Output>
+            <ReceiptPrinter.Paper>
+              <p className="text-center text-[10px] uppercase tracking-[0.2em] text-black/50">
+                {isIntl ? 'Receipt' : 'Comprobante'}
               </p>
-            </div>
-          )}
+              <p className="text-center font-bold mt-1">HYPESTYLE</p>
+              <p className="text-center text-[11px] text-black/60">Buenos Aires — Est. 2018</p>
 
-          <p className="text-[13px] text-muted-foreground mb-10">
+              <div className="my-4 border-t border-dashed border-black/30" />
+
+              <dl className="space-y-1 text-[12px]">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-black/60">{t.orderNumber}</dt>
+                  <dd className="font-semibold">#{displayOrderNum}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-black/60">{t.date}</dt>
+                  <dd>{fecha}</dd>
+                </div>
+                {order?.email && (
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-black/60">Email</dt>
+                    <dd className="truncate text-right">{order.email}</dd>
+                  </div>
+                )}
+              </dl>
+
+              {order && order.items.length > 0 && (
+                <>
+                  <div className="my-4 border-t border-dashed border-black/30" />
+                  <ul className="space-y-2 text-[12px]">
+                    {order.items.map((item, i) => (
+                      <li key={`${item.id ?? item.name}-${item.size}-${i}`} className="flex justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="truncate uppercase">{item.name}</p>
+                          <p className="text-black/60">
+                            {item.size ? `${isIntl ? 'Size' : 'Talle'} ${item.size} · ` : ''}
+                            {item.quantity} x {money(item.price)}
+                          </p>
+                        </div>
+                        <span className="shrink-0">{money(item.price * item.quantity)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="my-4 border-t border-dashed border-black/30" />
+                  <dl className="space-y-1 text-[12px]">
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-black/60">Subtotal</dt>
+                      <dd>{money(subtotal)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-black/60">{t.shipping}</dt>
+                      <dd>{envio > 0 ? money(envio) : (isIntl ? 'Included' : 'Incluido')}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4 pt-1 text-[14px] font-bold">
+                      <dt>Total</dt>
+                      <dd>{money(order.total)}</dd>
+                    </div>
+                  </dl>
+                </>
+              )}
+
+              <div className="my-4 border-t border-dashed border-black/30" />
+              <p className="text-[11px] text-black/60 leading-relaxed">{t.shippingVal}</p>
+              {isIntl && (
+                <p className="mt-2 text-[11px] text-black/60 leading-relaxed">
+                  Shipping is included. Import duties at destination are paid by the recipient.
+                </p>
+              )}
+              <p className="mt-5 text-center text-[11px] uppercase tracking-[0.15em]">
+                {isIntl ? 'Thank you' : 'Gracias'}
+              </p>
+            </ReceiptPrinter.Paper>
+          </ReceiptPrinter.Output>
+        </ReceiptPrinter>
+
+        <div className="max-w-[540px] w-full text-center mt-10">
+          <p className="text-[13px] text-muted-foreground mb-8">
             {t.contact}
             <a href="https://wa.me/5491178292430?text=Hola%20Hype!" target="_blank" rel="noopener noreferrer"
                className="underline hover:text-foreground transition-colors">WhatsApp</a>
           </p>
-
-          <div className="border-t border-border pt-8 mb-8 text-left space-y-2">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-3">{t.sectionTitle}</p>
-            <div className="flex justify-between text-[13px]">
-              <span className="text-muted-foreground">{t.orderNumber}</span>
-              <span className="font-semibold">#{displayOrderNum}</span>
-            </div>
-            <div className="flex justify-between text-[13px]">
-              <span className="text-muted-foreground">{t.date}</span>
-              <span>{fecha}</span>
-            </div>
-            {order?.email && (
-              <div className="flex justify-between text-[13px]">
-                <span className="text-muted-foreground">Email</span>
-                <span className="truncate ml-4 text-right">{order.email}</span>
-              </div>
-            )}
-            {mpStatus && mpStatus !== 'approved' && (
-              <div className="flex justify-between text-[13px]">
-                <span className="text-muted-foreground">Estado MP</span>
-                <span className="capitalize">{mpStatus}</span>
-              </div>
-            )}
-            {/* Con el pago rechazado no hay nada que despachar todavía — prometer
-                un plazo de entrega acá confunde. */}
-            {!isRejected && (
-              <div className="flex justify-between text-[13px]">
-                <span className="text-muted-foreground">{t.shipping}</span>
-                <span className="text-right ml-4">{t.shippingVal}</span>
-              </div>
-            )}
-          </div>
 
           {isRejected ? (
             <div className="flex flex-col items-center gap-3">

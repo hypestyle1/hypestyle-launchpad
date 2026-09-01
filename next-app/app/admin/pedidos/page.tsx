@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import PendienteEstampar from '@/components/admin/PendienteEstampar';
+import { HoldToConfirm } from '@/components/ui/hold-to-confirm';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -241,10 +242,8 @@ export default function PedidosPage() {
   async function applyBulk() {
     if (!bulkStatus || selected.size === 0) return;
     const ids = [...selected];
-    if (bulkStatus === 'cancelled') {
-      const ok = window.confirm(`¿Cancelar ${ids.length} pedido${ids.length > 1 ? 's' : ''} y restaurar su stock?`);
-      if (!ok) return;
-    }
+    // Cancelar ya no pasa por window.confirm: el botón de la barra es un
+    // HoldToConfirm, y sostenerlo es la confirmación.
     setBulkLoading(true);
     if (bulkStatus === 'cancelled') {
       await bulkCancel(ids);
@@ -384,13 +383,26 @@ export default function PedidosPage() {
               <option value="">Cambiar estado...</option>
               {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
             </select>
-            <button
-              onClick={applyBulk}
-              disabled={!bulkStatus || bulkLoading}
-              className="text-[12px] font-semibold bg-card text-foreground px-3 py-1 rounded hover:bg-muted disabled:opacity-50"
-            >
-              {bulkLoading ? 'Aplicando...' : 'Aplicar'}
-            </button>
+            {bulkStatus === 'cancelled' ? (
+              // Cancelar restaura stock y no tiene vuelta atrás: se confirma
+              // sosteniendo, no con un click.
+              <HoldToConfirm
+                onConfirm={applyBulk}
+                disabled={bulkLoading}
+                className="h-7 min-w-0 rounded text-[12px]"
+                confirmedContent={bulkLoading ? 'Cancelando...' : 'Cancelado'}
+              >
+                {`Mantené para cancelar ${selected.size}`}
+              </HoldToConfirm>
+            ) : (
+              <button
+                onClick={applyBulk}
+                disabled={!bulkStatus || bulkLoading}
+                className="text-[12px] font-semibold bg-card text-foreground px-3 py-1 rounded hover:bg-muted disabled:opacity-50"
+              >
+                {bulkLoading ? 'Aplicando...' : 'Aplicar'}
+              </button>
+            )}
             <button onClick={() => setSelected(new Set())} className="ml-auto text-[11px] text-primary-foreground/70 hover:text-primary-foreground">
               Cancelar
             </button>
@@ -609,9 +621,14 @@ export default function PedidosPage() {
               <button onClick={() => setCancelTarget(null)} disabled={cancelLoading} className="flex-1 text-[13px] font-medium py-2 rounded-lg border border-border hover:bg-muted/50 disabled:opacity-50">
                 Volver
               </button>
-              <button onClick={confirmCancel} disabled={cancelLoading} className="flex-1 text-[13px] font-semibold py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-                {cancelLoading ? 'Cancelando...' : 'Cancelar pedido'}
-              </button>
+              <HoldToConfirm
+                onConfirm={confirmCancel}
+                disabled={cancelLoading}
+                className="h-9 flex-1 min-w-0 rounded-lg text-[13px]"
+                confirmedContent={cancelLoading ? 'Cancelando...' : 'Cancelado'}
+              >
+                Mantené para cancelar
+              </HoldToConfirm>
             </div>
           </div>
         </div>
