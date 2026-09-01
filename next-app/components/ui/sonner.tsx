@@ -1,3 +1,9 @@
+"use client";
+
+// Sin esta directiva, montar <Toaster /> desde un layout server (admin) hace
+// que useTheme() corra durante el prerender y el build de Vercel falle con
+// "(0, s.F) is not a function" en todas las páginas de /admin. En `next dev`
+// no se nota porque no prerenderiza.
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
 

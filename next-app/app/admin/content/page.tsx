@@ -11,6 +11,8 @@ import {
   APPROVAL_LABEL, APPROVAL_TONE, APPROVAL_STATES, PILLAR_LABEL, OBJECTIVE_LABEL, PILLARS, OBJECTIVES,
 } from '@/lib/content/types';
 import { ContentDrawer, type SaveResult } from '@/components/admin/ContentDrawer';
+import { UndoNotice } from '@/components/ui/undo-notice';
+import { toast } from '@/components/ui/sonner';
 import { type SavedView, type StructuredFilter, type Template, SYSTEM_VIEWS, contentFromTemplate } from '@/lib/workflow/types';
 import Link from 'next/link';
 
@@ -98,10 +100,28 @@ function ContentInner() {
     if (!res.ok) { alert(d.error || 'Error al guardar'); return { ok: false }; }
     await load(); return { ok: true, item: d.item };
   }
-  async function archiveItem(id: string) {
-    if (!confirm('¿Archivar este contenido? Queda en la papelera, no se borra.')) return;
-    await fetch(`/api/admin/content/${id}`, { method: 'DELETE', headers: headers() });
-    setEdit(null); load();
+  // Archivar es reversible de verdad: el ítem desaparece de la lista al toque,
+  // pero el DELETE recién sale cuando se agota la ventana de "Deshacer". Antes
+  // había un confirm() que interrumpía y no evitaba el error igual.
+  function archiveItem(id: string) {
+    const prev = items || [];
+    setItems(prev.filter((i) => i.id !== id));
+    setEdit(null);
+
+    toast.custom(
+      (t) => (
+        <UndoNotice
+          message="Contenido archivado"
+          onUndo={() => { toast.dismiss(t); setItems(prev); }}
+          onExpire={async () => {
+            toast.dismiss(t);
+            await fetch(`/api/admin/content/${id}`, { method: 'DELETE', headers: headers() });
+            load();
+          }}
+        />
+      ),
+      { duration: Infinity },
+    );
   }
   // Cambio de status optimista (kanban/drawer) con rollback.
   async function changeStatus(item: ContentItem, status: ContentStatus) {
