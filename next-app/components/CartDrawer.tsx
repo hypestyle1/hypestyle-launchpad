@@ -134,6 +134,15 @@ export default function CartDrawer() {
               >
                 {t('Seguir comprando')}
               </button>
+              {/* El carrito vacío es el momento exacto en que alguien no sabe
+                  qué llevarse: la gift card resuelve eso. */}
+              <a
+                href="/gift-cards/"
+                onClick={() => setDrawerOpen(false)}
+                className="mt-3 text-[12px] text-foreground/50 hover:text-foreground transition-colors"
+              >
+                {t('o regalá una gift card')}
+              </a>
             </div>
           ) : (
             items.map((item) => (
