@@ -20,6 +20,10 @@ import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/envio';
 import GiftProgressBar from '@/components/GiftProgressBar';
+import { Stepper } from '@/components/ui/stepper';
+import { ScrambleText } from '@/components/ui/scramble-text';
+import { DynamicButton } from '@/components/ui/dynamic-button';
+import { ScrollFadeList } from '@/components/ui/scroll-fade-list';
 
 type Step = 'info' | 'envio' | 'pago';
 
@@ -707,14 +711,14 @@ export default function Checkout() {
     <div className={`min-h-screen bg-white${flashActive ? ' pt-[40px]' : ''}`}>
       <div className="border-b border-border py-5 px-4 text-center">
         <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto object-contain mx-auto" /></a>
-        <div className="flex items-center justify-center gap-2 mt-3 text-[12px]">
-          {steps.map((s, i) => (
-            <span key={s} className="flex items-center gap-2">
-              {i > 0 && <span className="text-muted-foreground">›</span>}
-              <span className={step === s ? 'font-semibold text-foreground' : 'text-muted-foreground'}>{stepLabel(s)}</span>
-            </span>
-          ))}
-        </div>
+        {/* Los pasos completados son clickeables para volver; adelantarse no,
+            porque cada paso valida al enviar su formulario. */}
+        <Stepper<Step>
+          className="mt-4"
+          steps={steps.map(s => ({ id: s, label: stepLabel(s) }))}
+          current={step}
+          onSelect={setStep}
+        />
       </div>
 
       {recovered && (
@@ -1023,10 +1027,16 @@ export default function Checkout() {
                 <button type="button" onClick={() => setStep('envio')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
                   {isInternational ? '‹ Back to shipping' : '‹ Volver al envío'}
                 </button>
-                <button type="submit" disabled={submitting}
-                  className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2">
-                  {submitting ? (<><svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>{isInternational ? 'Processing...' : 'Procesando...'}</>) : (isInternational ? 'Place order' : 'Realizar pedido')}
-                </button>
+                <DynamicButton
+                  type="submit"
+                  disabled={submitting}
+                  icon={submitting ? (
+                    <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                  ) : undefined}
+                  className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitting ? (isInternational ? 'Processing' : 'Procesando') : (isInternational ? 'Place order' : 'Realizar pedido')}
+                </DynamicButton>
               </div>
             </form>
           )}
@@ -1035,7 +1045,12 @@ export default function Checkout() {
         {/* Order summary */}
         <div className="lg:border-l lg:border-border lg:pl-10">
           <div className="sticky top-6">
-            <div className="space-y-4 mb-6">
+            {/* Con muchos productos la lista scrollea dentro de una altura fija
+                y se difumina en los bordes, así el total no se va de la vista. */}
+            <ScrollFadeList
+              className="mb-6 [--scroll-fade-bg:#fff]"
+              scrollClassName="max-h-[360px] overflow-y-auto overscroll-contain space-y-4 pr-1"
+            >
               {items.map(item => (
                 <div
                   key={`${item.id}-${item.size}-${item.customization?.number ?? ''}-${item.customization?.playerName ?? ''}`}
@@ -1068,14 +1083,14 @@ export default function Checkout() {
                   <span className="text-[13px] font-semibold">{formatPrice(item.price * item.quantity)}</span>
                 </div>
               ))}
-            </div>
+            </ScrollFadeList>
             <GiftProgressBar email={info.email} couponCode={couponData?.code} className="pb-4 mb-4 border-b border-border" />
             <div className="space-y-1.5 mb-5">
               <div className="flex gap-2">
                 <input type="text" placeholder={isInternational ? 'Discount code' : 'Código de descuento'} value={coupon}
                   onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponData) setCouponData(null); }}
                   className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                <button
+                <DynamicButton
                   onClick={async () => {
                     if (!coupon.trim() || couponValidating) return;
                     setCouponValidating(true);
@@ -1095,9 +1110,14 @@ export default function Checkout() {
                     finally { setCouponValidating(false); }
                   }}
                   disabled={couponValidating || !!couponData}
-                  className="px-4 py-2.5 border border-border text-[12px] font-medium hover:border-foreground transition-colors rounded-[10px] disabled:opacity-60">
-                  {couponData ? '✓ Applied' : couponValidating ? '...' : (isInternational ? 'Apply' : 'Aplicar')}
-                </button>
+                  className={`px-4 py-2.5 border text-[12px] font-medium rounded-[10px] disabled:opacity-60 ${couponData ? 'border-green-700 text-green-700' : 'border-border hover:border-foreground'}`}
+                >
+                  {couponData
+                    ? (isInternational ? 'Applied' : 'Aplicado')
+                    : couponValidating
+                      ? (isInternational ? 'Checking' : 'Validando')
+                      : (isInternational ? 'Apply' : 'Aplicar')}
+                </DynamicButton>
               </div>
               {couponError && <p className="text-[11px] text-destructive">{couponError}</p>}
               {couponData && <p className="text-[11px] text-green-700 font-medium">Cupón {couponData.code} aplicado — {couponData.type === 'percent' ? `${couponData.amount}% off` : formatPrice(couponData.amount)}</p>}
@@ -1134,7 +1154,12 @@ export default function Checkout() {
               </div>
               <div className="flex justify-between text-[16px] font-bold border-t border-border pt-3 mt-2">
                 <span>Total</span>
-                <span>{formatPrice(step === 'info' || !shippingReady ? subtotal - descuento : totalFinal)}</span>
+                {/* El total cambia al sumar el envío, aplicar un cupón o elegir
+                    transferencia: el número viejo se descifra en el nuevo en vez
+                    de saltar. Al cargar se muestra directo. */}
+                <ScrambleText animateOnMount={false} intervalMs={16} className="tabular-nums">
+                  {formatPrice(step === 'info' || !shippingReady ? subtotal - descuento : totalFinal)}
+                </ScrambleText>
               </div>
               {step === 'pago' && pago.metodo === 'transferencia' && !isInternational && (
                 <p className="text-[11px] text-green-700 font-semibold mt-1 text-right">Con transferencia pagás {formatPrice(transferTotal)}</p>
