@@ -486,10 +486,13 @@
 }
 
 .hs-foil-esmeralda {
-  --foil-base-gradient: linear-gradient(135deg, #d2efe1 0%, #7fd0ac 40%, #2f8f6b 72%, #c2e9d8 100%);
-  --pearl-opacity: 0.82;
-  --surface-inset-shadow: inset 0 0 0 1px rgba(226, 250, 240, 0.45);
-  background: #7fd0ac;
+  /* Más profundo que la primera versión (que tiraba a menta): la piedra, no el
+     chicle. El brillo sigue llegando a claro en el barrido, pero el cuerpo es
+     verde bosque. */
+  --foil-base-gradient: linear-gradient(135deg, #8fd0b0 0%, #3d9c76 38%, #14634a 72%, #6fbf98 100%);
+  --pearl-opacity: 0.7;
+  --surface-inset-shadow: inset 0 0 0 1px rgba(226, 250, 240, 0.35);
+  background: #2f8a67;
 }
 
 .dark .hs-foil-oro {
@@ -557,4 +560,23 @@
    pierde ninguna información por no ver el recorrido. */
 @media (prefers-reduced-motion: reduce) {
   .hs-receipt-feed { animation: none; transform: none; }
+}
+
+/* Tramado de la gift card. Dos tramas de líneas finas a 45° y 135°, como el
+   guilloché de un billete o de una tarjeta impresa en offset. Es lo que le da
+   "textura de objeto" a la superficie: sin esto el foil lee como degradado de
+   pantalla. Se desvanece hacia arriba a la izquierda con una máscara para no
+   pelear con el logo, y usa blend multiply para oscurecer el metal en vez de
+   pintar gris encima. */
+.hs-foil-trama {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 11px);
+  mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(200deg, transparent 18%, #000 62%);
+  mask-image: linear-gradient(200deg, transparent 18%, #000 62%);
 }

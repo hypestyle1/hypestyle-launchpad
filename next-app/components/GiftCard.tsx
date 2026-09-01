@@ -44,7 +44,10 @@ export function GiftCard({ tier, className }: GiftCardProps) {
       tone={tier.tone}
       className={cn('hs-foil-intenso aspect-[1.586] w-full rounded-[8px]', className)}
     >
-      <div className="flex h-full flex-col justify-between p-5 sm:p-6">
+      {/* Trama de líneas finas (globals.css). Va dentro del contenido para
+          quedar por encima del metal y por debajo del texto. */}
+      <span aria-hidden className="hs-foil-trama" />
+      <div className="relative flex h-full flex-col justify-between p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           {/* Logo oficial, sin re-tipografiar y sin filtros: sobre los tres
               metales el negro tiene contraste de sobra. */}
