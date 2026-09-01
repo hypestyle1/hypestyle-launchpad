@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Ticket } from '@/components/ui/ticket';
 
 interface TrackingEvent {
   fecha: string;
@@ -165,27 +166,60 @@ function TrackingView({ data }: { data: TrackingData }) {
 
         {/* LEFT */}
         <div>
-          {/* Status hero */}
-          <div className="mb-10">
-            <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 ${iconBg}`}>
-              {statusInfo.icon === 'check' ? <IconCheck /> : statusInfo.icon === 'x' ? <IconX /> : <IconBox />}
-            </div>
-            <h1 className="text-[22px] md:text-[26px] font-bold leading-tight mb-1">{statusInfo.label}</h1>
-            <p className="text-sm text-muted-foreground">{statusInfo.sub}</p>
+          {/* Status hero: el estado del envío como ticket de papel. El cuerpo
+              lleva el estado y el destino; el talón, el código de Andreani. */}
+          <div className="mb-10 pb-10 border-b border-border">
+            <Ticket
+              aria-label={`Estado del pedido ${data.order_number}`}
+              className="w-full max-w-[440px] aspect-[4/3] md:aspect-[16/11]"
+              stubHeight="26%"
+              body={
+                <div className="flex h-full flex-col justify-between gap-3 p-5 pb-4 md:p-6 md:pb-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] opacity-60">
+                      Orden #{data.order_number}
+                    </span>
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${iconBg}`}>
+                      {statusInfo.icon === 'check' ? <IconCheck /> : statusInfo.icon === 'x' ? <IconX /> : <IconBox />}
+                    </span>
+                  </div>
+                  <div>
+                    <h1 className="text-[22px] md:text-[26px] font-bold leading-tight mb-1">{statusInfo.label}</h1>
+                    <p className="text-[13px] opacity-70">{statusInfo.sub}</p>
+                  </div>
+                  {data.destination ? (
+                    <dl>
+                      <dt className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] opacity-55">Destino</dt>
+                      <dd className="truncate text-[13px] font-medium">{data.destination}</dd>
+                    </dl>
+                  ) : <span />}
+                </div>
+              }
+              stub={
+                <div className="flex h-full items-center justify-between gap-4 bg-black px-5 text-white md:px-6">
+                  {data.tracking_number ? (
+                    <>
+                      <div className="min-w-0">
+                        <p className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] opacity-60">Cód. Andreani</p>
+                        <p className="truncate font-mono text-[15px] font-bold tracking-[0.08em]">{data.tracking_number}</p>
+                      </div>
+                      <a
+                        href={`https://www.andreani.com/envio/${data.tracking_number}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="shrink-0 border border-white/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] hover:border-white transition-colors"
+                      >
+                        Ver seguimiento
+                      </a>
+                    </>
+                  ) : (
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] opacity-70">
+                      Te avisamos por mail cuando salga
+                    </p>
+                  )}
+                </div>
+              }
+            />
           </div>
-
-          {/* Destination */}
-          {data.destination && (
-            <div className="flex items-start gap-3 mb-10 pb-8 border-b border-border">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="mt-0.5 flex-shrink-0 text-muted-foreground">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-              </svg>
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">Destino</p>
-                <p className="text-sm font-medium">{data.destination}</p>
-              </div>
-            </div>
-          )}
 
           {/* Milestone timeline */}
           <ol className="relative border-l-2 border-border ml-3 mb-10 space-y-0">

@@ -10,6 +10,7 @@ import { compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
 import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
 import GiftProgressBar from "@/components/GiftProgressBar";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/envio";
+import { ScrollFadeList } from "@/components/ui/scroll-fade-list";
 
 function shuffled<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -117,8 +118,13 @@ export default function CartDrawer() {
           </div>
         )}
 
-        {/* Items */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+        {/* Items. El scroll se difumina contra los bordes en vez de cortar en
+            seco: con 3 o más productos avisa que la lista sigue sin flecha ni
+            sombra. El fondo del degradado tiene que ser el del drawer (blanco). */}
+        <ScrollFadeList
+          className="flex-1 min-h-0 [--scroll-fade-bg:#fff]"
+          scrollClassName="h-full overflow-y-auto overscroll-contain px-6 py-4 space-y-5"
+        >
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <p className="text-[13px] text-muted-foreground mb-4">{t('Tu carrito está vacío')}</p>
@@ -225,7 +231,7 @@ export default function CartDrawer() {
               </div>
             </div>
           )}
-        </div>
+        </ScrollFadeList>
 
         {/* Footer */}
         {items.length > 0 && (
