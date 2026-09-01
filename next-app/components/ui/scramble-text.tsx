@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 type ScrambleTextProps = {
@@ -8,6 +8,10 @@ type ScrambleTextProps = {
   className?: string;
   /** Milisegundos entre pasos. En 0 o menos se muestra el texto directo. */
   intervalMs?: number;
+  /** Con `false`, el primer render muestra el texto tal cual y sólo se anima
+   *  cuando `children` cambia. Es lo que quiere un total: nunca aparecer
+   *  cifrado al cargar la página. */
+  animateOnMount?: boolean;
 };
 
 const CHARS = '-_~`!@#$%^&*()+=[]{}|;:,.<>?';
@@ -58,15 +62,26 @@ function mezclar(segmentos: string[], revelados: number, estable = false) {
  * El texto real siempre está en el DOM para lectores de pantalla; lo que se
  * mezcla es una capa `aria-hidden`.
  */
-export function ScrambleText({ children, className, intervalMs = 32 }: ScrambleTextProps) {
-  const [texto, setTexto] = useState(() => mezclar(segmentar(children), 0, true));
+export function ScrambleText({
+  children,
+  className,
+  intervalMs = 32,
+  animateOnMount = true,
+}: ScrambleTextProps) {
+  const [texto, setTexto] = useState(() =>
+    animateOnMount ? mezclar(segmentar(children), 0, true) : children,
+  );
+  const primerRender = useRef(true);
 
   useEffect(() => {
     const segmentos = segmentar(children);
+    const esMontaje = primerRender.current;
+    primerRender.current = false;
 
     if (
       segmentos.length === 0 ||
       intervalMs <= 0 ||
+      (esMontaje && !animateOnMount) ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     ) {
       setTexto(children);
