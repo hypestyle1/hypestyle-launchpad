@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { GiftCard } from '@/components/GiftCard';
 import { DynamicButton } from '@/components/ui/dynamic-button';
+import { ScrambleText } from '@/components/ui/scramble-text';
 import { useCart } from '@/context/CartContext';
 import { useReveal } from '@/hooks/useReveal';
 import {
@@ -114,7 +115,9 @@ export default function GiftCardsClient() {
               <div className="mt-8">
                 <div className="mb-3 flex items-baseline justify-between">
                   <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Monto</span>
-                  <span className="text-[13px] font-semibold">{formatGiftAmount(monto)}</span>
+                  <ScrambleText animateOnMount={false} intervalMs={14} className="text-[13px] font-semibold tabular-nums">
+                    {formatGiftAmount(monto)}
+                  </ScrambleText>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   {GIFT_CARD_PRESETS.map((p) => (
