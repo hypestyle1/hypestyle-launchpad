@@ -4,7 +4,7 @@ import { type PointerEvent, useRef, useState } from 'react';
 import { IridescentFoil } from '@/components/ui/iridescent-foil';
 import { ScrambleText } from '@/components/ui/scramble-text';
 import { cn } from '@/lib/utils';
-import { formatGiftAmount, giftCardTone, GIFT_CARD_TONE_LABEL } from '@/lib/gift-card';
+import { formatGiftAmount, giftCardTone, GIFT_CARD_TONE_LABEL, GIFT_CARD_TONE_UNICO } from '@/lib/gift-card';
 
 type GiftCardProps = {
   monto: number;
@@ -93,14 +93,17 @@ export function GiftCard({ monto, codigo, dorso = false, onClick, className }: G
                     alt="Hypestyle"
                     className={cn('h-4 w-auto object-contain sm:h-5', claro && 'invert')}
                   />
+                  {/* Con una sola tarjeta el nivel no dice nada: arriba a la
+                      derecha va "Gift card" y abajo queda el monto solo. */}
                   <span className="text-[10px] font-bold uppercase tracking-[0.18em] opacity-70">
-                    {GIFT_CARD_TONE_LABEL[tone]}
+                    {GIFT_CARD_TONE_UNICO ? 'Gift card' : GIFT_CARD_TONE_LABEL[tone]}
                   </span>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">Gift card</p>
-                  {/* Al cambiar el monto, el número viejo se descifra en el nuevo
-                      mientras el metal cambia de color. */}
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">
+                    {GIFT_CARD_TONE_UNICO ? 'Crédito' : 'Gift card'}
+                  </p>
+                  {/* Al cambiar el monto, el número viejo se descifra en el nuevo. */}
                   <ScrambleText
                     animateOnMount={false}
                     intervalMs={14}

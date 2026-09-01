@@ -19,11 +19,12 @@ import {
   formatGiftAmount,
   giftCardTone,
   GIFT_CARD_TONE_LABEL,
+  GIFT_CARD_TONE_UNICO,
   type GiftData,
 } from '@/lib/gift-card';
 
 const PASOS = [
-  { titulo: 'Elegís el monto', texto: 'De $50.000 en adelante, de a $50.000. El color de la tarjeta cambia con el monto.' },
+  { titulo: 'Elegís el monto', texto: 'De $50.000 en adelante, de a $50.000. Una sola tarjeta, la black, para cualquier monto.' },
   { titulo: 'Llega por mail', texto: 'Apenas se acredita el pago. A vos siempre; a quien se la regalás, si querés, con tu mensaje y en la fecha que elijas.' },
   { titulo: 'Se usa en el checkout', texto: 'El código va en el dorso y se carga en el campo de descuento. El saldo que sobra queda para la próxima compra. Vale 12 meses desde la emisión.' },
 ];
@@ -75,7 +76,7 @@ export default function GiftCardsClient() {
       : undefined;
     add({
       id: GIFT_CARD_SLUG,
-      name: `Gift Card ${GIFT_CARD_TONE_LABEL[giftCardTone(monto)]}`,
+      name: GIFT_CARD_TONE_UNICO ? 'Gift Card' : `Gift Card ${GIFT_CARD_TONE_LABEL[giftCardTone(monto)]}`,
       price: monto,
       image: '',
       size: 'U',

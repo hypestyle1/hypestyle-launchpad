@@ -15,8 +15,13 @@ export const GIFT_CARD_VIGENCIA_MESES = 12;
 
 export type GiftCardTone = 'plata' | 'oro' | 'esmeralda' | 'negro';
 
-/** El color de la tarjeta lo decide el monto. */
+/** Una sola tarjeta, color de marca: la black. Como Nude, Vicinity y M'MANSION,
+ *  la tarjeta representa a la marca, no al monto. Poner `null` vuelve al
+ *  esquema por monto (plata / oro / esmeralda / black), que sigue abajo. */
+export const GIFT_CARD_TONE_UNICO: GiftCardTone | null = 'negro';
+
 export function giftCardTone(monto: number): GiftCardTone {
+  if (GIFT_CARD_TONE_UNICO) return GIFT_CARD_TONE_UNICO;
   if (monto >= 500000) return 'negro';
   if (monto >= 300000) return 'esmeralda';
   if (monto >= 150000) return 'oro';
