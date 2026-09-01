@@ -45,6 +45,14 @@
     --destructive: 4 64% 46%;
     --destructive-foreground: 0 0% 100%;
 
+    /* Verde y ámbar semánticos. Nacieron dentro de .admin-theme, pero hay
+       componentes compartidos (UndoNotice) que se usan también fuera del panel,
+       así que el set base vive acá y el panel sólo lo redefine para su oscuro. */
+    --success: 145 45% 30%;
+    --success-soft: 145 35% 92%;
+    --warning: 35 85% 32%;
+    --warning-soft: 45 90% 91%;
+
     --text-light: 37 5% 59%;
 
     --border: 0 0% 88%;
@@ -232,4 +240,321 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .hs-eq-bar { animation: none; transform: scaleY(0.6); }
+}
+
+/* ─── Foil iridiscente (components/ui/iridescent-foil.tsx) ───────────────────
+   Superficie tipo lámina holográfica: seis capas apiladas por z-index dentro de
+   un contenedor con `isolation: isolate`, para que los mix-blend-mode no se
+   escapen al resto de la página.
+
+       hs-foil-base   gradiente metálico + banda de arcoíris    (z 0)
+       hs-foil-film   cuatro manchas de color en `screen`       (z 1)
+       hs-foil-pearl  nacarado en `soft-light`                  (z 2)
+       hs-foil-content  el contenido real                       (z 3)
+       hs-foil-shine  brillo direccional que sigue al puntero   (z 4)
+       hs-foil-glare  destello puntual bajo el cursor           (z 5)
+
+   El JS no anima nada: sólo escribe las custom properties de abajo y todo el
+   movimiento es `background-position`. Eso mantiene el trabajo en el compositor
+   en vez de disparar layout.
+
+   Costo: cuatro capas con blend + blur. Es la parte cara en mobile, por eso
+   `contain: layout paint style` acota el repaint al componente y el JS deja de
+   escuchar cuando la pieza sale del viewport. No poner esto en una grilla de
+   muchos badges a la vez. */
+.hs-foil {
+  --pointer-x: 50%;
+  --pointer-y: 50%;
+  --foil-shift: 0%;
+  --foil-y-shift: 0%;
+  --glare-x: 50%;
+  --glare-y: 50%;
+  --shine-angle: 135deg;
+  --shine-opacity: 0.62;
+  --shine-opacity-scale: 1;
+  --film-opacity: 0.34;
+  --foil-filter: saturate(1.18) contrast(1.22) brightness(1);
+  --highlight-filter: brightness(1) saturate(1);
+  --foil-base-gradient: linear-gradient(135deg, #eeeeee 0%, #dcdcdc 40%, #c9c9c9 72%, #e8e8e8 100%);
+  --glare-opacity: 0.38;
+  --pearl-opacity: 0.98;
+  --surface-inset-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #e9e9e9;
+  box-shadow: var(--surface-inset-shadow);
+  contain: layout paint style;
+}
+
+.dark .hs-foil {
+  --film-opacity: 0.46;
+  --foil-filter: saturate(1.22) contrast(1.12) brightness(0.96);
+  --highlight-filter: brightness(0.72) saturate(0.82);
+  --foil-base-gradient: linear-gradient(135deg, #232323 0%, #232323 44%, #2e2e2e 72%, #232323 100%);
+  --glare-opacity: 0.26;
+  --pearl-opacity: 0.56;
+  --shine-opacity-scale: 0.42;
+  --surface-inset-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: #1c1c1c;
+}
+
+.hs-foil-base,
+.hs-foil-content,
+.hs-foil-film,
+.hs-foil-glare,
+.hs-foil-pearl,
+.hs-foil-shine {
+  position: absolute;
+  inset: 0;
+}
+
+.hs-foil-base,
+.hs-foil-film,
+.hs-foil-glare,
+.hs-foil-pearl,
+.hs-foil-shine {
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
+/* Las capas de color se pasan del borde para que el desplazamiento nunca
+   descubra un canto vacío. */
+.hs-foil-base,
+.hs-foil-film,
+.hs-foil-pearl,
+.hs-foil-shine {
+  inset: -48%;
+}
+
+.hs-foil-base {
+  z-index: 0;
+  background:
+    linear-gradient(
+      112deg,
+      transparent 0%,
+      transparent 28%,
+      rgba(0, 220, 255, 0.08) 32%,
+      rgba(80, 255, 190, 0.07) 36%,
+      rgba(190, 255, 80, 0.05) 40%,
+      transparent 46%,
+      rgba(255, 230, 70, 0.04) 50%,
+      rgba(255, 70, 180, 0.07) 56%,
+      rgba(150, 90, 255, 0.07) 64%,
+      rgba(60, 120, 255, 0.06) 70%,
+      transparent 75%,
+      transparent 100%
+    ),
+    var(--foil-base-gradient);
+  background-position: var(--foil-shift) center, center;
+  background-size: 320% 100%, 100% 100%;
+  filter: var(--foil-filter);
+  will-change: background-position;
+}
+
+.hs-foil-film {
+  z-index: 1;
+  background:
+    radial-gradient(ellipse at 16% 28%, rgba(255, 70, 180, 0.1) 0%, rgba(255, 70, 180, 0.04) 18%, transparent 48%),
+    radial-gradient(ellipse at 66% 18%, rgba(0, 220, 255, 0.1) 0%, rgba(0, 220, 255, 0.04) 20%, transparent 52%),
+    radial-gradient(ellipse at 78% 70%, rgba(80, 255, 190, 0.1) 0%, rgba(80, 255, 190, 0.04) 22%, transparent 56%),
+    radial-gradient(ellipse at 38% 82%, rgba(150, 90, 255, 0.1) 0%, rgba(150, 90, 255, 0.04) 18%, transparent 52%);
+  background-position:
+    calc(var(--foil-shift) * -0.2) calc(var(--foil-y-shift) * 0.3),
+    calc(var(--foil-shift) * 0.5) calc(var(--foil-y-shift) * -0.2),
+    calc(var(--foil-shift) * -0.4) calc(var(--foil-y-shift) * 0.5),
+    calc(var(--foil-shift) * 0.35) calc(var(--foil-y-shift) * 0.25);
+  background-size: 150% 150%, 160% 160%, 145% 145%, 155% 155%;
+  filter: blur(0.4px) saturate(1.35);
+  mix-blend-mode: screen;
+  opacity: var(--film-opacity);
+  will-change: background-position;
+}
+
+.hs-foil-pearl {
+  z-index: 2;
+  background:
+    radial-gradient(
+      ellipse at calc(var(--glare-x) * 0.9) calc(var(--glare-y) * 0.85),
+      rgba(224, 233, 240, 0.48) 0%,
+      rgba(205, 217, 226, 0.18) 22%,
+      transparent 54%
+    ),
+    linear-gradient(
+      112deg,
+      rgba(220, 230, 238, 0.32) 0%,
+      rgba(220, 230, 238, 0) 28%,
+      rgba(84, 108, 128, 0.2) 48%,
+      rgba(215, 226, 235, 0.3) 72%,
+      rgba(215, 226, 235, 0.04) 100%
+    ),
+    linear-gradient(
+      28deg,
+      rgba(188, 218, 255, 0.12) 0%,
+      transparent 34%,
+      rgba(255, 223, 244, 0.12) 58%,
+      transparent 100%
+    );
+  background-position: center, var(--foil-shift) center, var(--foil-shift) center;
+  background-size: 100% 100%, 180% 100%, 160% 100%;
+  filter: var(--highlight-filter);
+  mix-blend-mode: soft-light;
+  opacity: var(--pearl-opacity);
+  will-change: background-position;
+}
+
+.hs-foil-content {
+  z-index: 3;
+}
+
+.hs-foil-shine {
+  z-index: 4;
+  background:
+    linear-gradient(
+      var(--shine-angle),
+      transparent 0%,
+      rgba(220, 230, 238, 0.04) 12%,
+      rgba(226, 235, 242, 0.48) 31%,
+      rgba(37, 52, 66, 0.24) 52%,
+      rgba(0, 124, 255, 0.08) 64%,
+      rgba(255, 0, 147, 0.08) 74%,
+      rgba(223, 232, 239, 0.28) 88%,
+      transparent 100%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 0%,
+      transparent 30%,
+      rgba(0, 220, 255, 0.04) 34%,
+      rgba(80, 255, 190, 0.04) 38%,
+      rgba(190, 255, 80, 0.03) 42%,
+      transparent 45%,
+      rgba(255, 230, 70, 0.03) 52%,
+      rgba(255, 70, 180, 0.05) 59%,
+      transparent 66%,
+      rgba(150, 90, 255, 0.05) 73%,
+      rgba(60, 120, 255, 0.04) 78%,
+      transparent 84%
+    );
+  background-position:
+    calc(50% + (var(--pointer-x) - 50%) * 0.35)
+    calc(50% + (var(--pointer-y) - 50%) * 0.24);
+  background-size: 220% 100%;
+  filter: blur(0.25px) var(--highlight-filter);
+  mix-blend-mode: screen;
+  opacity: calc(var(--shine-opacity) * var(--shine-opacity-scale));
+  will-change: background-position, opacity;
+}
+
+.hs-foil-glare {
+  z-index: 5;
+  background: radial-gradient(
+    circle at var(--glare-x) var(--glare-y),
+    rgba(226, 235, 242, 0.34) 0%,
+    rgba(205, 218, 228, 0.14) 9%,
+    rgba(226, 237, 246, 0.08) 22%,
+    transparent 36%
+  );
+  filter: var(--highlight-filter);
+  mix-blend-mode: screen;
+  opacity: var(--glare-opacity);
+  will-change: background;
+}
+
+/* Sin movimiento el `will-change` sólo reserva memoria de compositor al pedo:
+   el componente ya no escribe las custom properties (ver el efecto en el TSX). */
+@media (prefers-reduced-motion: reduce) {
+  .hs-foil-base,
+  .hs-foil-film,
+  .hs-foil-glare,
+  .hs-foil-pearl,
+  .hs-foil-shine {
+    will-change: auto;
+  }
+}
+
+/* Tonos del foil. Sólo cambia el metal de base (`--foil-base-gradient`): la
+   banda de arcoíris y el film se dejan neutros a propósito, porque es la
+   iridiscencia la que hace leer la superficie como lámina y no como un color
+   plano. Se usan en las tres gift cards: plata, oro y esmeralda. */
+.hs-foil-oro {
+  --foil-base-gradient: linear-gradient(135deg, #f8ecc4 0%, #e9cd74 40%, #c9a227 72%, #f3e3ab 100%);
+  --pearl-opacity: 0.78;
+  --surface-inset-shadow: inset 0 0 0 1px rgba(255, 245, 214, 0.5);
+  background: #e9cd74;
+}
+
+.hs-foil-esmeralda {
+  --foil-base-gradient: linear-gradient(135deg, #d2efe1 0%, #7fd0ac 40%, #2f8f6b 72%, #c2e9d8 100%);
+  --pearl-opacity: 0.82;
+  --surface-inset-shadow: inset 0 0 0 1px rgba(226, 250, 240, 0.45);
+  background: #7fd0ac;
+}
+
+.dark .hs-foil-oro {
+  --foil-base-gradient: linear-gradient(135deg, #4a3d18 0%, #4a3d18 44%, #63521f 72%, #4a3d18 100%);
+  background: #2e2610;
+}
+
+.dark .hs-foil-esmeralda {
+  --foil-base-gradient: linear-gradient(135deg, #13372a 0%, #13372a 44%, #1b4a39 72%, #13372a 100%);
+  background: #0e2820;
+}
+
+/* Realce para superficies chicas. La calibración de dqnamo está pensada para
+   paneles grandes: en una tarjeta de ~380px el arcoíris no llega a leerse y la
+   pieza parece un degradado plano. Subir un poco el film y la saturación la
+   devuelve a "lámina". Probado contra valores más agresivos: pasado este punto
+   el oro se va a amarillo neón y la plata se tiñe de rosa. */
+.hs-foil-intenso {
+  --film-opacity: 0.5;
+  --foil-filter: saturate(1.55) contrast(1.24) brightness(1);
+}
+
+/* ─── Impresora de tickets (components/ReceiptPrinter.tsx) ───────────────────
+   La confirmación de compra imprime un ticket en vez de mostrar una lista. Las
+   tres etapas (procesando / imprimiendo / listo) son las mismas que ya calcula
+   `paymentStateFrom()` en la página, así que el visual no inventa estados.
+
+   El avance del papel es un @keyframes con pasos: el papel sale un tramo, frena,
+   sale otro. Eso es lo que hace que se lea como una impresora térmica y no como
+   un div deslizándose. Los tiempos vienen del original y no son regulares a
+   propósito. */
+@keyframes hs-receipt-feed {
+  0% { transform: translateY(calc(-100% + 2px)); }
+  7.5% { transform: translateY(-91%); }
+  10.5% { transform: translateY(-91%); }
+  18% { transform: translateY(-81%); }
+  21% { transform: translateY(-81%); }
+  28.5% { transform: translateY(-70%); }
+  31.5% { transform: translateY(-70%); }
+  39% { transform: translateY(-58%); }
+  42% { transform: translateY(-58%); }
+  49.5% { transform: translateY(-45%); }
+  52.5% { transform: translateY(-45%); }
+  60% { transform: translateY(-32%); }
+  63% { transform: translateY(-32%); }
+  70.5% { transform: translateY(-20%); }
+  73.5% { transform: translateY(-20%); }
+  81% { transform: translateY(-10%); }
+  84% { transform: translateY(-10%); }
+  91.5% { transform: translateY(-3%); }
+  94.5% { transform: translateY(-3%); }
+  100% { transform: translateY(0%); }
+}
+
+.hs-receipt-paper {
+  /* 40 dientes de 4px: el borde troquelado de abajo. */
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), 98.75% 100%, 97.5% calc(100% - 4px), 96.25% 100%, 95% calc(100% - 4px), 93.75% 100%, 92.5% calc(100% - 4px), 91.25% 100%, 90% calc(100% - 4px), 88.75% 100%, 87.5% calc(100% - 4px), 86.25% 100%, 85% calc(100% - 4px), 83.75% 100%, 82.5% calc(100% - 4px), 81.25% 100%, 80% calc(100% - 4px), 78.75% 100%, 77.5% calc(100% - 4px), 76.25% 100%, 75% calc(100% - 4px), 73.75% 100%, 72.5% calc(100% - 4px), 71.25% 100%, 70% calc(100% - 4px), 68.75% 100%, 67.5% calc(100% - 4px), 66.25% 100%, 65% calc(100% - 4px), 63.75% 100%, 62.5% calc(100% - 4px), 61.25% 100%, 60% calc(100% - 4px), 58.75% 100%, 57.5% calc(100% - 4px), 56.25% 100%, 55% calc(100% - 4px), 53.75% 100%, 52.5% calc(100% - 4px), 51.25% 100%, 50% calc(100% - 4px), 48.75% 100%, 47.5% calc(100% - 4px), 46.25% 100%, 45% calc(100% - 4px), 43.75% 100%, 42.5% calc(100% - 4px), 41.25% 100%, 40% calc(100% - 4px), 38.75% 100%, 37.5% calc(100% - 4px), 36.25% 100%, 35% calc(100% - 4px), 33.75% 100%, 32.5% calc(100% - 4px), 31.25% 100%, 30% calc(100% - 4px), 28.75% 100%, 27.5% calc(100% - 4px), 26.25% 100%, 25% calc(100% - 4px), 23.75% 100%, 22.5% calc(100% - 4px), 21.25% 100%, 20% calc(100% - 4px), 18.75% 100%, 17.5% calc(100% - 4px), 16.25% 100%, 15% calc(100% - 4px), 13.75% 100%, 12.5% calc(100% - 4px), 11.25% 100%, 10% calc(100% - 4px), 8.75% 100%, 7.5% calc(100% - 4px), 6.25% 100%, 5% calc(100% - 4px), 3.75% 100%, 2.5% calc(100% - 4px), 1.25% 100%, 0% calc(100% - 4px));
+}
+
+.hs-receipt-feed {
+  animation: hs-receipt-feed 1750ms linear both;
+}
+
+/* Sin animación el ticket aparece ya impreso: el contenido es el mismo y no se
+   pierde ninguna información por no ver el recorrido. */
+@media (prefers-reduced-motion: reduce) {
+  .hs-receipt-feed { animation: none; transform: none; }
 }
