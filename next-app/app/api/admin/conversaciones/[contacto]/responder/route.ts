@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
 
-const N8N_URL       = process.env.N8N_ADMIN_REPLY_URL    || 'https://hypestyle.app.n8n.cloud/webhook/hypestyle-admin-responder';
+const N8N_URL       = process.env.N8N_ADMIN_REPLY_URL    || 'https://n8n.hypestyle.com.ar/webhook/hypestyle-admin-responder';
 const N8N_SECRET    = process.env.N8N_ADMIN_REPLY_SECRET || '';
 
 export async function POST(req: NextRequest, { params }: { params: { contacto: string } }) {
