@@ -9,7 +9,15 @@ export interface CartItem {
   image: string;
   size: string;
   quantity: number;
-  customization?: { playerName: string; number: string };
+  /** Personalización de la línea. `playerName`/`number` es el dorsal del jersey;
+   *  `gift` es el destinatario/mensaje/fecha de una gift card. Viaja acá (y no
+   *  en un campo aparte) para que remove/increment/decrement, que reciben la
+   *  personalización, distingan dos gift cards con distinto destinatario. */
+  customization?: {
+    playerName: string;
+    number: string;
+    gift?: { paraEmail?: string; paraNombre?: string; deNombre?: string; mensaje?: string; enviarEl?: string };
+  };
   /** Línea de regalo por compra (Purchase Gift) — solo informativo del lado del
    * cliente, nunca se confía en esto server-side. Siempre id=`purchase-gift:<levelId>`,
    * price=0, quantity=1, locked=true. Ver hooks/useGiftProgress.ts. */
@@ -25,7 +33,13 @@ type Customization = CartItem['customization'];
 // Firma única de una personalización: dos ítems del mismo producto/talle pero con
 // distinto dorsal son líneas distintas (no se fusionan ni se editan entre sí).
 function custKey(c?: Customization): string {
-  return c && (c.playerName || c.number) ? `${c.number}|${c.playerName}` : '';
+  if (!c) return '';
+  const dorsal = c.playerName || c.number ? `${c.number}|${c.playerName}` : '';
+  const g = c.gift;
+  const gift = g && (g.paraEmail || g.paraNombre || g.mensaje || g.enviarEl)
+    ? `gift:${g.paraEmail ?? ''}|${g.paraNombre ?? ''}|${g.enviarEl ?? ''}|${g.mensaje ?? ''}`
+    : '';
+  return dorsal + gift;
 }
 function matches(i: CartItem, id: string, size: string, cust?: Customization): boolean {
   return i.id === id && i.size === size && custKey(i.customization) === custKey(cust);

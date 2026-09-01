@@ -5,6 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { clearCartSnapshot } from '@/lib/cart-recovery';
 import { gaPurchase } from '@/lib/ga';
 import { ReceiptPrinter, type ReceiptStage } from '@/components/ReceiptPrinter';
+import { GiftCard } from '@/components/GiftCard';
+import { GIFT_CARD_SLUG } from '@/lib/gift-card';
+
+type GiftCode = { code: string; monto: number; para_email?: string; para_nombre?: string; saldo?: number };
 
 interface OrderData {
   wcOrderId?: number; wcOrderNumber?: string; orderKey?: string; orderNum: string | number;
@@ -38,6 +42,29 @@ export default function ConfirmacionClient() {
     const t = window.setTimeout(() => setImpreso(true), 1900);
     return () => window.clearTimeout(t);
   }, []);
+
+  // Gift cards del pedido. El código lo emite el mu-plugin cuando el pago se
+  // acredita, que puede llegar unos segundos después de volver acá: se
+  // consulta cada 3 s hasta que estén (o hasta 45 s). El dorso de la tarjeta se
+  // muestra recién con el código real.
+  const [giftCodes, setGiftCodes] = useState<GiftCode[]>([]);
+  const [giftDorso, setGiftDorso] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!order?.wcOrderId || !order.orderKey) return;
+    if (!order.items.some(i => i.id === GIFT_CARD_SLUG || /gift card/i.test(i.name))) return;
+    let intentos = 0;
+    let timer = 0;
+    const consultar = async () => {
+      try {
+        const r = await fetch(`/api/gift-card-codes?order=${order.wcOrderId}&key=${encodeURIComponent(order.orderKey!)}`);
+        const d = await r.json();
+        if (r.ok && d.issued && Array.isArray(d.codes) && d.codes.length) { setGiftCodes(d.codes); return; }
+      } catch { /* reintenta */ }
+      if (++intentos < 15) timer = window.setTimeout(consultar, 3000);
+    };
+    consultar();
+    return () => window.clearTimeout(timer);
+  }, [order]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -338,6 +365,35 @@ export default function ConfirmacionClient() {
             </ReceiptPrinter.Paper>
           </ReceiptPrinter.Output>
         </ReceiptPrinter>
+
+        {giftCodes.length > 0 && !isRejected && (
+          <div className="max-w-[420px] w-full mt-12">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground text-center mb-5">
+              {giftCodes.length === 1 ? 'Tu gift card' : 'Tus gift cards'} · tocá para ver el código
+            </p>
+            <div className="space-y-6">
+              {giftCodes.map(c => (
+                <div key={c.code}>
+                  <GiftCard
+                    monto={c.monto}
+                    codigo={c.code}
+                    dorso={!!giftDorso[c.code]}
+                    onClick={() => setGiftDorso(d => ({ ...d, [c.code]: !d[c.code] }))}
+                    className="cursor-pointer"
+                  />
+                  {c.para_email && (
+                    <p className="mt-2 text-center text-[12px] text-muted-foreground">
+                      También se la mandamos a {c.para_nombre || c.para_email}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="mt-5 text-center text-[12px] text-muted-foreground leading-relaxed">
+              Te llegó por mail. Se carga en el checkout, en el campo de código de descuento. No vence.
+            </p>
+          </div>
+        )}
 
         <div className="max-w-[540px] w-full text-center mt-10">
           <p className="text-[13px] text-muted-foreground mb-8">

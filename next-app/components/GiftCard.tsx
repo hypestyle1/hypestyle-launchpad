@@ -1,103 +1,96 @@
 'use client';
 
-import { IridescentFoil, type FoilTone } from '@/components/ui/iridescent-foil';
+import { IridescentFoil } from '@/components/ui/iridescent-foil';
 import { cn } from '@/lib/utils';
-
-export type GiftCardTier = {
-  /** Slug del producto en Woo. */
-  slug: string;
-  nombre: string;
-  /** Monto fijo. La tarjeta a medida no lo tiene: lo elige quien compra. */
-  monto?: number;
-  tone: FoilTone;
-  /** Color del texto y del logo sobre el metal. */
-  ink: 'oscuro' | 'claro';
-};
-
-/** Los tres niveles fijos, en el orden en que se muestran. Slugs y montos se
- *  cierran contra Woo. */
-export const GIFT_CARD_TIERS: GiftCardTier[] = [
-  { slug: 'gift-card-plata', nombre: 'Plata', monto: 120000, tone: 'plata', ink: 'oscuro' },
-  { slug: 'gift-card-oro', nombre: 'Oro', monto: 250000, tone: 'oro', ink: 'oscuro' },
-  { slug: 'gift-card-esmeralda', nombre: 'Esmeralda', monto: 400000, tone: 'esmeralda', ink: 'oscuro' },
-];
-
-/** La tarjeta a medida: monto libre dentro de un rango, en pasos de $5.000. El
- *  rango se valida también del lado del servidor cuando se cree el pedido; acá
- *  sólo acota el input. */
-export const GIFT_CARD_CUSTOM: GiftCardTier = {
-  slug: 'gift-card-personalizada',
-  nombre: 'A medida',
-  tone: 'negro',
-  ink: 'claro',
-};
-export const GIFT_CARD_CUSTOM_MIN = 50000;
-export const GIFT_CARD_CUSTOM_MAX = 1000000;
-export const GIFT_CARD_CUSTOM_STEP = 5000;
-
-export const formatGiftAmount = (n: number) =>
-  new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-  }).format(n);
+import { formatGiftAmount, giftCardTone, GIFT_CARD_TONE_LABEL } from '@/lib/gift-card';
 
 type GiftCardProps = {
-  tier: GiftCardTier;
-  /** Pisa el monto del nivel. Lo usa la tarjeta a medida mientras se elige. */
-  monto?: number;
+  monto: number;
+  /** Código en el dorso. Si viene, la tarjeta puede darse vuelta. */
+  codigo?: string;
+  /** Muestra el dorso (con el código) en vez del frente. */
+  dorso?: boolean;
+  onClick?: () => void;
   className?: string;
 };
 
 /**
- * La tarjeta de regalo. Es la lámina iridiscente con el logo oficial, el nivel y
- * el monto encima, más una trama fina de líneas para que lea como objeto impreso.
+ * La tarjeta de regalo. Una sola: el color lo decide el monto (plata, oro,
+ * esmeralda, black). Frente: logo oficial, nivel y monto sobre la lámina
+ * iridiscente con trama. Dorso: el código entre cuatro esquinas, como una
+ * tarjeta física rascada.
  *
- * Proporción 1.586 = la de una tarjeta física (85,6 x 53,98 mm). Se respeta para
- * que la pieza siga leyéndose como tarjeta cuando alguien la captura y la manda
- * por WhatsApp, que es la mitad del punto de una gift card.
+ * Proporción 1.586 = la de una tarjeta física (85,6 x 53,98 mm), para que
+ * siga leyéndose como tarjeta cuando alguien la captura y la reenvía.
  */
-export function GiftCard({ tier, monto, className }: GiftCardProps) {
-  const valor = monto ?? tier.monto;
-  const claro = tier.ink === 'claro';
+export function GiftCard({ monto, codigo, dorso = false, onClick, className }: GiftCardProps) {
+  const tone = giftCardTone(monto);
+  const claro = tone === 'negro';
 
   return (
-    <IridescentFoil
-      tone={tier.tone}
-      className={cn('hs-foil-intenso aspect-[1.586] w-full rounded-[8px]', className)}
+    <div
+      className={cn('relative aspect-[1.586] w-full [perspective:1200px]', className)}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      aria-label={onClick ? (dorso ? 'Ver frente de la tarjeta' : 'Ver dorso de la tarjeta') : undefined}
     >
-      {/* Trama de líneas finas (globals.css). Va dentro del contenido para
-          quedar por encima del metal y por debajo del texto. */}
-      <span aria-hidden className="hs-foil-trama" />
       <div
         className={cn(
-          'relative flex h-full flex-col justify-between p-5 sm:p-6',
-          claro ? 'text-white' : 'text-black',
+          'relative h-full w-full transition-transform duration-700 [transform-style:preserve-3d] motion-reduce:transition-none',
+          dorso && '[transform:rotateY(180deg)]',
         )}
       >
-        <div className="flex items-start justify-between gap-3">
-          {/* Logo oficial, sin re-tipografiar. El PNG es negro: sobre el metal
-              oscuro se invierte a blanco, que es la versión válida para fondos
-              oscuros. */}
-          <img
-            src="/logo-hypestyle-2026.png"
-            alt="Hypestyle"
-            className={cn('h-4 w-auto object-contain sm:h-5', claro && 'invert')}
-          />
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] opacity-70">
-            {tier.nombre}
-          </span>
+        {/* Frente. El foil va dentro de un wrapper absoluto: `.hs-foil` fija
+            `position: relative` fuera de las capas de Tailwind y le ganaría a
+            un `absolute` puesto por utility, dejándolo sin alto. */}
+        <div className="absolute inset-0 [backface-visibility:hidden]">
+        <IridescentFoil tone={tone} className="hs-foil-intenso h-full w-full rounded-[8px]">
+          <span aria-hidden className="hs-foil-trama" />
+          <div className={cn('relative flex h-full flex-col justify-between p-5 sm:p-6', claro ? 'text-white' : 'text-black')}>
+            <div className="flex items-start justify-between gap-3">
+              {/* Logo oficial, sin re-tipografiar. Sobre el metal oscuro va en
+                  blanco, que es la versión válida para fondos oscuros. */}
+              <img
+                src="/logo-hypestyle-2026.png"
+                alt="Hypestyle"
+                className={cn('h-4 w-auto object-contain sm:h-5', claro && 'invert')}
+              />
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] opacity-70">
+                {GIFT_CARD_TONE_LABEL[tone]}
+              </span>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">Gift card</p>
+              <p className="mt-1 text-[26px] font-bold leading-none sm:text-[32px]">{formatGiftAmount(monto)}</p>
+            </div>
+          </div>
+        </IridescentFoil>
         </div>
 
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">
-            Gift card
+        {/* Dorso: negro mate, el código entre las esquinas. */}
+        <div
+          aria-hidden={!dorso}
+          className="absolute inset-0 flex flex-col justify-between rounded-[8px] bg-[#0e0e0e] p-5 text-white [backface-visibility:hidden] [transform:rotateY(180deg)] sm:p-6"
+        >
+          <p className="text-center text-[9px] uppercase tracking-[0.2em] text-white/50">
+            Código válido en hypestyle.com.ar
           </p>
-          <p className="mt-1 text-[26px] font-bold leading-none sm:text-[32px]">
-            {valor !== undefined ? formatGiftAmount(valor) : 'Vos elegís'}
-          </p>
+          <div className="relative mx-auto w-full max-w-[280px] py-5">
+            {/* Las cuatro esquinas. */}
+            <span aria-hidden className="absolute left-0 top-0 h-3 w-3 border-l border-t border-white/60" />
+            <span aria-hidden className="absolute right-0 top-0 h-3 w-3 border-r border-t border-white/60" />
+            <span aria-hidden className="absolute bottom-0 left-0 h-3 w-3 border-b border-l border-white/60" />
+            <span aria-hidden className="absolute bottom-0 right-0 h-3 w-3 border-b border-r border-white/60" />
+            <p className="text-center font-mono text-[18px] font-bold tracking-[0.18em] sm:text-[22px]">
+              {codigo ?? 'HYPE-••••-••••'}
+            </p>
+          </div>
+          <div className="flex items-end justify-between text-[9px] uppercase tracking-[0.15em] text-white/50">
+            <span>{formatGiftAmount(monto)}</span>
+            <span>Se carga en el checkout</span>
+          </div>
         </div>
       </div>
-    </IridescentFoil>
+    </div>
   );
 }

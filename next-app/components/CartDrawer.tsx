@@ -146,8 +146,15 @@ export default function CartDrawer() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium leading-tight">{item.name}</p>
-                  {!item.isGift && (
+                  {!item.isGift && item.id !== 'gift-card' && (
                     <p className="text-[11px] text-muted-foreground mt-0.5">{t('Talle')}: {item.size}</p>
+                  )}
+                  {item.id === 'gift-card' && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {item.customization?.gift?.paraEmail
+                        ? `Para ${item.customization.gift.paraNombre || item.customization.gift.paraEmail}${item.customization.gift.enviarEl ? ` · ${item.customization.gift.enviarEl}` : ''}`
+                        : 'Digital · te llega por mail'}
+                    </p>
                   )}
                   {item.customization && (item.customization.playerName || item.customization.number) && (
                     <p className="text-[11px] text-foreground/70 mt-0.5 font-medium">

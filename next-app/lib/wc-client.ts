@@ -11,6 +11,8 @@ export interface OrderItem {
   size: string;
   image: string;
   customization?: { playerName: string; number: string };
+  /** Gift card: el PHP lo guarda como meta de la línea y lo usa para el mail. */
+  gift?: { paraEmail?: string; paraNombre?: string; deNombre?: string; mensaje?: string; enviarEl?: string };
 }
 
 export interface OrderCustomer {
