@@ -14,9 +14,9 @@ export type GiftCardTier = {
 /** Los tres niveles de la gift card. El monto y el slug se cierran contra Woo;
  *  el orden acá es el orden en que se muestran. */
 export const GIFT_CARD_TIERS: GiftCardTier[] = [
-  { slug: 'gift-card-plata', nombre: 'Plata', monto: 30000, tone: 'plata' },
-  { slug: 'gift-card-oro', nombre: 'Oro', monto: 60000, tone: 'oro' },
-  { slug: 'gift-card-esmeralda', nombre: 'Esmeralda', monto: 120000, tone: 'esmeralda' },
+  { slug: 'gift-card-plata', nombre: 'Plata', monto: 120000, tone: 'plata' },
+  { slug: 'gift-card-oro', nombre: 'Oro', monto: 250000, tone: 'oro' },
+  { slug: 'gift-card-esmeralda', nombre: 'Esmeralda', monto: 400000, tone: 'esmeralda' },
 ];
 
 const money = new Intl.NumberFormat('es-AR', {
