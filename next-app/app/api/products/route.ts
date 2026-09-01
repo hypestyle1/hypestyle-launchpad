@@ -88,6 +88,17 @@ export async function GET() {
     after = page.pageInfo.endCursor;
   }
 
+  // Productos internos: existen en Woo pero no son parte del catálogo público.
+  // `catalog_visibility: hidden` no alcanza para sacarlos del sitio — la query
+  // de arriba filtra por `status`, no por visibilidad, así que este endpoint es
+  // el único lugar donde se decide qué ve el sitio.
+  //
+  // par-de-medias-hype (3000) es el regalo del Purchase Gift. Tiene que estar
+  // `publish` porque el motor del plugin llama a `is_purchasable()`, que rechaza
+  // los `private` — por eso no se puede esconder del lado de WordPress como sí
+  // se hace con las pilas de blanks del stock compartido.
+  const SLUGS_INTERNOS = new Set(['par-de-medias-hype']);
+
   // La mayoría de los productos comparten menu_order (nunca se seteó a mano por
   // producto), así que el cursor de WPGraphQL no separa las páginas de forma
   // estable — página 2 puede repetir nodos que ya vinieron en la página 1. Se
@@ -97,7 +108,7 @@ export async function GET() {
   const uniqueNodes = allNodes.filter(n => {
     if (seen.has(n.id)) return false;
     seen.add(n.id);
-    return true;
+    return !SLUGS_INTERNOS.has(n.slug);
   });
 
   return NextResponse.json({ products: { nodes: uniqueNodes } }, {
