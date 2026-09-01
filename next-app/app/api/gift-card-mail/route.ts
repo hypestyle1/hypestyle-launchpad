@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { formatGiftAmount, giftCardTone, GIFT_CARD_TONE_LABEL, type GiftCardTone } from '@/lib/gift-card';
+import { formatGiftAmount, giftCardTone, GIFT_CARD_TONE_LABEL, GIFT_CARD_TONE_UNICO, type GiftCardTone } from '@/lib/gift-card';
 
 // Mail de la gift card. Lo dispara el mu-plugin (PHP/hypestyle-gift-cards.php)
 // cuando el pedido se acredita y ya emitió los códigos:
@@ -47,10 +47,10 @@ function tarjetaHtml(c: Code) {
   const t = TONO[tone];
   return `
   <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:380px;margin:0 auto;border-collapse:separate;">
-    <tr><td style="background:${t.bg};background-color:#d9d9d9;border-radius:8px;padding:22px 24px;color:${t.ink};font-family:Arial,Helvetica,sans-serif;">
-      <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.7;text-align:right;">${GIFT_CARD_TONE_LABEL[tone]}</div>
+    <tr><td style="background:${t.bg};background-color:${tone === 'negro' ? '#1a1a1a' : '#d9d9d9'};border-radius:8px;padding:22px 24px;color:${t.ink};font-family:Arial,Helvetica,sans-serif;">
+      <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.7;text-align:right;">${GIFT_CARD_TONE_UNICO ? 'Gift card' : GIFT_CARD_TONE_LABEL[tone]}</div>
       <div style="height:64px;"></div>
-      <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.6;">Gift card</div>
+      <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.6;">${GIFT_CARD_TONE_UNICO ? 'Crédito' : 'Gift card'}</div>
       <div style="font-size:30px;font-weight:bold;line-height:1;margin-top:4px;">${formatGiftAmount(c.monto)}</div>
     </td></tr>
     <tr><td style="height:14px;"></td></tr>

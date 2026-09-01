@@ -37,7 +37,7 @@ const CONDICIONES = [
 ];
 
 const inputClass =
-  'w-full border border-border bg-transparent px-4 py-3 text-[14px] outline-none transition-colors focus:border-foreground placeholder:text-muted-foreground';
+  'hs-glass w-full rounded-[12px] px-4 py-3 text-[14px] outline-none transition-colors placeholder:text-muted-foreground';
 
 export default function GiftCardsClient() {
   const heroRef = useReveal();
@@ -46,12 +46,11 @@ export default function GiftCardsClient() {
 
   const [monto, setMonto] = useState(100000);
   const [otroRaw, setOtroRaw] = useState('');
+  const [otroActivo, setOtroActivo] = useState(false);
   const [dorso, setDorso] = useState(false);
   const [esRegalo, setEsRegalo] = useState(false);
   const [gift, setGift] = useState<GiftData>({});
   const [agregado, setAgregado] = useState(false);
-
-  const esPreset = GIFT_CARD_PRESETS.includes(monto);
 
   const commitOtro = () => {
     const n = Number(otroRaw.replace(/\D/g, ''));
@@ -120,36 +119,58 @@ export default function GiftCardsClient() {
                     {formatGiftAmount(monto)}
                   </ScrambleText>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {GIFT_CARD_PRESETS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => { setMonto(p); setOtroRaw(''); }}
-                      aria-pressed={monto === p}
-                      className={`border px-2 py-2.5 text-[12px] font-semibold tabular-nums transition-colors ${
-                        monto === p ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-foreground'
-                      }`}
-                    >
-                      {p / 1000}k
-                    </button>
-                  ))}
+                {/* Selector de montos: texto, sin cajas. El elegido va en negrita con
+                    un punto arriba a la derecha, como una opción marcada a mano. */}
+                <div role="radiogroup" aria-label="Monto" className="flex flex-wrap items-baseline gap-x-7 gap-y-3">
+                  {GIFT_CARD_PRESETS.map((p) => {
+                    const activo = monto === p && !otroActivo;
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        role="radio"
+                        aria-checked={activo}
+                        onClick={() => { setMonto(p); setOtroRaw(''); setOtroActivo(false); }}
+                        className={`relative py-1 text-[15px] tabular-nums transition-colors ${
+                          activo ? 'font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {p / 1000}k
+                        {activo && <span aria-hidden className="absolute -right-2 top-1 h-[5px] w-[5px] rounded-full bg-foreground" />}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={otroActivo}
+                    onClick={() => setOtroActivo(true)}
+                    className={`relative py-1 text-[15px] transition-colors ${
+                      otroActivo ? 'font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Otro
+                    {otroActivo && <span aria-hidden className="absolute -right-2 top-1 h-[5px] w-[5px] rounded-full bg-foreground" />}
+                  </button>
                 </div>
-                <label className="mt-3 block">
-                  <span className="sr-only">Otro monto</span>
-                  <div className={`flex items-center border transition-colors focus-within:border-foreground ${!esPreset ? 'border-foreground' : 'border-border'}`}>
-                    <span className="pl-4 text-[14px] text-muted-foreground">Otro monto: $</span>
-                    <input
-                      inputMode="numeric"
-                      placeholder={`de ${GIFT_CARD_MIN / 1000}k a ${GIFT_CARD_MAX / 1000}k, de a ${GIFT_CARD_STEP / 1000}k`}
-                      value={otroRaw ? Number(otroRaw).toLocaleString('es-AR') : ''}
-                      onChange={(e) => setOtroRaw(e.target.value.replace(/\D/g, ''))}
-                      onBlur={commitOtro}
-                      onKeyDown={(e) => e.key === 'Enter' && commitOtro()}
-                      className="w-full bg-transparent px-2 py-3 text-[14px] font-semibold outline-none"
-                    />
-                  </div>
-                </label>
+                {otroActivo && (
+                  <label className="mt-4 block">
+                    <span className="sr-only">Otro monto</span>
+                    <div className="hs-glass flex items-center rounded-[12px] transition-colors">
+                      <span className="pl-4 text-[14px] text-muted-foreground">$</span>
+                      <input
+                        autoFocus
+                        inputMode="numeric"
+                        placeholder={`de ${GIFT_CARD_MIN / 1000}k a ${GIFT_CARD_MAX / 1000}k, de a ${GIFT_CARD_STEP / 1000}k`}
+                        value={otroRaw ? Number(otroRaw).toLocaleString('es-AR') : ''}
+                        onChange={(e) => setOtroRaw(e.target.value.replace(/\D/g, ''))}
+                        onBlur={commitOtro}
+                        onKeyDown={(e) => e.key === 'Enter' && commitOtro()}
+                        className="w-full bg-transparent px-2 py-3 text-[14px] font-semibold outline-none"
+                      />
+                    </div>
+                  </label>
+                )}
               </div>
 
               {/* Regalo */}
@@ -212,7 +233,7 @@ export default function GiftCardsClient() {
                 width="full"
                 onClick={agregar}
                 disabled={!emailOk}
-                className="mt-8 bg-bg-dark px-8 py-4 text-[12px] font-bold uppercase tracking-[0.1em] text-primary-foreground hover:bg-bg-dark/85 disabled:opacity-60"
+                className="hs-glass-dark mt-8 rounded-[12px] px-8 py-4 text-[12px] font-bold uppercase tracking-[0.1em] text-white disabled:opacity-60"
               >
                 {agregado ? 'Agregada al carrito' : `Agregar al carrito · ${formatGiftAmount(monto)}`}
               </DynamicButton>

@@ -614,3 +614,32 @@
 @media (prefers-reduced-motion: reduce) {
   .hs-label-in { animation: none; }
 }
+
+/* ─── Glass ──────────────────────────────────────────────────────────────────
+   La misma receta de los creativos (_FORMATOS/producto-glass y WINTER SALE):
+   fondo translúcido, blur con saturación, borde claro y un brillo de 1px en el
+   canto superior. `hs-glass` para superficies claras (inputs sobre fondo
+   blanco), `hs-glass-dark` para el botón principal. Sin fondo detrás el blur
+   no tiene qué desenfocar: el efecto vive del borde y del brillo. */
+.hs-glass {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  backdrop-filter: blur(28px) saturate(140%);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.hs-glass:focus-within,
+.hs-glass:focus {
+  border-color: rgba(0, 0, 0, 0.45);
+}
+
+.hs-glass-dark {
+  background: rgba(10, 10, 10, 0.86);
+  -webkit-backdrop-filter: blur(28px) saturate(140%);
+  backdrop-filter: blur(28px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+.hs-glass-dark:hover {
+  background: rgba(10, 10, 10, 0.94);
+}
