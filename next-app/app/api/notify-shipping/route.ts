@@ -5,7 +5,9 @@ const WP_SECRET     = process.env.WP_SECRET || '';
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 // Remitente en el dominio autenticado en Brevo (desde un Gmail, Brevo reescribe
 // el From a @brevosend.com y el mail sale de Principal).
-const SENDER_EMAIL  = 'info@hypestyle.com.ar';
+// Transaccional separado del marketing (ver send-confirmation): pedidos@ para
+// tickets, info@ para newsletter.
+const SENDER_EMAIL  = 'pedidos@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
 const REPLY_TO      = 'hypestylearg@gmail.com';
 

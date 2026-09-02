@@ -24,7 +24,7 @@ const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle
 // Remitente en el dominio autenticado en Brevo (DKIM brevo1/brevo2). Desde un
 // Gmail, Brevo no puede firmar y reescribe el From a @brevosend.com: llega,
 // pero fuera de Principal. Las respuestas van al Gmail igual.
-const SENDER_EMAIL  = 'info@hypestyle.com.ar';
+const SENDER_EMAIL  = 'pedidos@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
 const REPLY_TO      = 'hypestylearg@gmail.com';
 
