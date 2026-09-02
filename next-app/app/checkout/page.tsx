@@ -25,6 +25,7 @@ import { Stepper } from '@/components/ui/stepper';
 import { ScrambleText } from '@/components/ui/scramble-text';
 import { DynamicButton } from '@/components/ui/dynamic-button';
 import { ScrollFadeList } from '@/components/ui/scroll-fade-list';
+import { ReceiptPrinter } from '@/components/ReceiptPrinter';
 
 type Step = 'info' | 'envio' | 'pago';
 
@@ -1090,6 +1091,34 @@ export default function Checkout() {
         {/* Order summary */}
         <div className="lg:border-l lg:border-border lg:pl-10">
           <div className="sticky top-6">
+            {submitting ? (
+              // Al confirmar, el resumen se convierte en la misma impresora que
+              // después imprime el comprobante en /confirmacion: la orden se está
+              // creando en Woo y armando el pago. Cubre los 2 a 4 segundos que
+              // antes eran un spinner en el botón.
+              <ReceiptPrinter stage="procesando" className="mx-auto">
+                <ReceiptPrinter.Machine>
+                  <ReceiptPrinter.Header>
+                    <img src="/logo-hypestyle-2026.png" alt="" className="h-4 w-auto invert" />
+                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/40">
+                      {isInternational ? 'New order' : 'Nuevo pedido'}
+                    </span>
+                  </ReceiptPrinter.Header>
+                  <ReceiptPrinter.Screen>
+                    <div className="space-y-3">
+                      <div className="flex items-baseline justify-between gap-4 font-mono text-[12px]">
+                        <span className="text-white/60">{purchasableItems.length} {purchasableItems.length === 1 ? 'producto' : 'productos'}</span>
+                        <strong className="text-[14px]">{formatPrice(totalFinal)}</strong>
+                      </div>
+                      <ReceiptPrinter.Status>
+                        {isInternational ? 'Creating your order' : 'Creando tu pedido'}
+                      </ReceiptPrinter.Status>
+                    </div>
+                  </ReceiptPrinter.Screen>
+                </ReceiptPrinter.Machine>
+              </ReceiptPrinter>
+            ) : (
+            <>
             {/* Con muchos productos la lista scrollea dentro de una altura fija
                 y se difumina en los bordes, así el total no se va de la vista. */}
             <ScrollFadeList
@@ -1222,6 +1251,8 @@ export default function Checkout() {
               )}
             </div>
             <UpsellCarousel />
+            </>
+            )}
           </div>
         </div>
       </div>
