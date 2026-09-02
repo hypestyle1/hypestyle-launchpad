@@ -21,8 +21,12 @@ const WC_KEY        = (process.env.WC_CONSUMER_KEY || '').trim();
 const WC_SEC        = (process.env.WC_CONSUMER_SECRET || '').trim();
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
-const SENDER_EMAIL  = 'hypestylearg@gmail.com';
+// Remitente en el dominio autenticado en Brevo (DKIM brevo1/brevo2). Desde un
+// Gmail, Brevo no puede firmar y reescribe el From a @brevosend.com: llega,
+// pero fuera de Principal. Las respuestas van al Gmail igual.
+const SENDER_EMAIL  = 'info@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
+const REPLY_TO      = 'hypestylearg@gmail.com';
 
 type Code = {
   code: string; monto: number;
@@ -96,7 +100,7 @@ async function sendEmail(to: { email: string; name?: string }, subject: string, 
   const r = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [to], subject, htmlContent: html }),
+    body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, replyTo: { name: SENDER_NAME, email: REPLY_TO }, to: [to], subject, htmlContent: html }),
   });
   if (!r.ok) throw new Error(`Brevo ${r.status}: ${(await r.text()).slice(0, 200)}`);
 }

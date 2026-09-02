@@ -5,7 +5,10 @@ import { CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const WP_SECRET     = process.env.WP_SECRET || '';
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
-const SENDER_EMAIL  = 'hypestylearg@gmail.com';
+// Remitente en el dominio autenticado en Brevo. Desde un Gmail, Brevo no puede
+// firmar y reescribe el From a @brevosend.com: llega, pero fuera de Principal.
+const SENDER_EMAIL  = 'info@hypestyle.com.ar';
+const REPLY_TO      = 'hypestylearg@gmail.com';
 const SENDER_NAME   = 'Hypestyle';
 const ADMIN_EMAIL   = 'hypestylearg@gmail.com';
 
@@ -378,7 +381,7 @@ export async function POST(req: NextRequest) {
       fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [to], subject, htmlContent: html }),
+        body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, replyTo: { name: SENDER_NAME, email: REPLY_TO }, to: [to], subject, htmlContent: html }),
       });
 
     // Ninguno de estos confirma el pago en el momento de crear la orden — PayPal

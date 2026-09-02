@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const WP_SECRET     = process.env.WP_SECRET || '';
-const SENDER_EMAIL  = 'hypestylearg@gmail.com';
+// Remitente en el dominio autenticado en Brevo (desde un Gmail, Brevo reescribe
+// el From a @brevosend.com y el mail sale de Principal).
+const SENDER_EMAIL  = 'info@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
+const REPLY_TO      = 'hypestylearg@gmail.com';
 
 export async function POST(req: NextRequest) {
   const auth   = req.headers.get('authorization') || '';
@@ -27,6 +30,7 @@ export async function POST(req: NextRequest) {
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         sender:      { name: SENDER_NAME, email: SENDER_EMAIL },
+        replyTo:     { name: SENDER_NAME, email: REPLY_TO },
         to:          [{ email: to.trim() }],
         subject,
         ...(isHtml ? { htmlContent: message } : { textContent: message }),
