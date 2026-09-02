@@ -124,11 +124,17 @@ function stockLevel(status: string, qty: number | null): 'ok' | 'low' | 'out' {
 
 // Combos/packs (ej. "Regular Tees 3 PACK", "CAMO FULL SET - COMBO") son
 // promos armadas para el minorista — no tienen sentido en mayorista, donde
-// el cliente ya compra por volumen los productos individuales.
-const EXCLUDED_CATEGORY_SLUGS = new Set(['pack', 'set']);
+// el cliente ya compra por volumen los productos individuales. La Gift Card
+// tampoco: es un saldo para comprar en el sitio, no mercadería para revender.
+const EXCLUDED_CATEGORY_SLUGS = new Set(['pack', 'set', 'gift-card']);
 function isCombo(node: any): boolean {
   const slugs: string[] = (node.productCategories?.nodes ?? []).map((c: any) => c.slug);
   return slugs.some((s) => EXCLUDED_CATEGORY_SLUGS.has(s));
+}
+
+/** Productos que no se ofrecen a mayoristas (por categoría o por slug). */
+export function isExcludedFromMayorista(node: any): boolean {
+  return isCombo(node) || EXCLUDED_SLUGS.has(node.slug);
 }
 
 // Productos puntuales que el negocio decidió no ofrecer a mayoristas
@@ -260,7 +266,7 @@ export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
   });
 
   const products = dedupedNodes
-    .filter((n: any) => !isCombo(n) && !EXCLUDED_SLUGS.has(n.slug))
+    .filter((n: any) => !isExcludedFromMayorista(n))
     .map(normalizeMayoristaNode)
     .filter((p: MayoristaProduct) => p.regularPrice > 0 && !isFullyOut(p));
 
