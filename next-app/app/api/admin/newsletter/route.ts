@@ -3,7 +3,9 @@ import { adminSecretMatches } from '@/lib/admin-auth';
 
 const BREVO_KEY    = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const NEWSLETTER_LIST_ID = 3;
-const SENDER = { name: 'Hypestyle', email: 'hypestylearg@gmail.com' };
+// Remitente en el dominio autenticado en Brevo (desde un Gmail, Brevo reescribe
+// el From a @brevosend.com y el mail sale de Principal).
+const SENDER = { name: 'Hypestyle', email: 'info@hypestyle.com.ar' };
 const REPLY_TO_EMAIL = 'hypestylearg@gmail.com';
 
 const authed = (req: NextRequest) => {

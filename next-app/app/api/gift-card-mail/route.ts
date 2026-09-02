@@ -21,8 +21,12 @@ const WC_KEY        = (process.env.WC_CONSUMER_KEY || '').trim();
 const WC_SEC        = (process.env.WC_CONSUMER_SECRET || '').trim();
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
-const SENDER_EMAIL  = 'hypestylearg@gmail.com';
+// Remitente en el dominio autenticado en Brevo (DKIM brevo1/brevo2). Desde un
+// Gmail, Brevo no puede firmar y reescribe el From a @brevosend.com: llega,
+// pero fuera de Principal. Las respuestas van al Gmail igual.
+const SENDER_EMAIL  = 'info@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
+const REPLY_TO      = 'hypestylearg@gmail.com';
 
 type Code = {
   code: string; monto: number;
@@ -42,16 +46,29 @@ const TONO: Record<GiftCardTone, { bg: string; ink: string }> = {
   negro:     { bg: 'linear-gradient(135deg,#3a3a3a 0%,#1a1a1a 55%,#0a0a0a 100%)', ink: '#ffffff' },
 };
 
+// Logo blanco oficial en CDN (Logos/README.md): en mails nunca img + filter.
+const LOGO_BLANCO = 'https://i.imgur.com/qH2tl73.png';
+
+function numeracion(code: string) {
+  const m = code.match(/^HYPE-([A-Z0-9]{4})-([A-Z0-9]{4})$/i);
+  return m ? `HYPE-••••-${m[2].toUpperCase()}` : 'HYPE-••••-••••';
+}
+
+// Frente de la tarjeta, como en el sitio: STYLE&CULTURE arriba a la derecha,
+// el logo al centro, la numeración abajo a la izquierda y el monto a la derecha.
 function tarjetaHtml(c: Code) {
   const tone = giftCardTone(c.monto);
   const t = TONO[tone];
   return `
   <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:380px;margin:0 auto;border-collapse:separate;">
-    <tr><td style="background:${t.bg};background-color:${tone === 'negro' ? '#1a1a1a' : '#d9d9d9'};border-radius:8px;padding:22px 24px;color:${t.ink};font-family:Arial,Helvetica,sans-serif;">
-      <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.7;text-align:right;">${GIFT_CARD_TONE_UNICO ? 'Gift card' : GIFT_CARD_TONE_LABEL[tone]}</div>
-      <div style="height:64px;"></div>
-      <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.6;">${GIFT_CARD_TONE_UNICO ? 'Crédito' : 'Gift card'}</div>
-      <div style="font-size:30px;font-weight:bold;line-height:1;margin-top:4px;">${formatGiftAmount(c.monto)}</div>
+    <tr><td style="background:${t.bg};background-color:${tone === 'negro' ? '#1a1a1a' : '#d9d9d9'};border-radius:10px;padding:20px 22px;color:${t.ink};font-family:Arial,Helvetica,sans-serif;">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">
+        <tr><td style="text-align:right;"><img src="${SITE_URL}/STYLE%26CULTURE%20WHITE.png" alt="Style &amp; Culture" height="9" style="height:9px;width:auto;opacity:.85;"></td></tr>
+        <tr><td style="text-align:center;padding:26px 0 30px;"><img src="${LOGO_BLANCO}" alt="Hypestyle" width="150" style="width:150px;height:auto;"></td></tr>
+        <tr>
+          <td style="font-family:Consolas,'Courier New',monospace;font-size:12px;letter-spacing:.2em;color:rgba(255,255,255,.75);">${numeracion(c.code)}<span style="float:right;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;letter-spacing:0;color:#fff;">${formatGiftAmount(c.monto)}</span></td>
+        </tr>
+      </table>
     </td></tr>
     <tr><td style="height:14px;"></td></tr>
     <tr><td style="background:#0e0e0e;border-radius:8px;padding:22px 24px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;text-align:center;">
@@ -83,7 +100,7 @@ async function sendEmail(to: { email: string; name?: string }, subject: string, 
   const r = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, to: [to], subject, htmlContent: html }),
+    body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, replyTo: { name: SENDER_NAME, email: REPLY_TO }, to: [to], subject, htmlContent: html }),
   });
   if (!r.ok) throw new Error(`Brevo ${r.status}: ${(await r.text()).slice(0, 200)}`);
 }

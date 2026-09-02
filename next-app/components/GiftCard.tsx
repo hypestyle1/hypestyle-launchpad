@@ -4,7 +4,7 @@ import { type PointerEvent, useRef, useState } from 'react';
 import { IridescentFoil } from '@/components/ui/iridescent-foil';
 import { ScrambleText } from '@/components/ui/scramble-text';
 import { cn } from '@/lib/utils';
-import { formatGiftAmount, giftCardTone, GIFT_CARD_TONE_LABEL, GIFT_CARD_TONE_UNICO } from '@/lib/gift-card';
+import { formatGiftAmount, giftCardTone } from '@/lib/gift-card';
 
 type GiftCardProps = {
   monto: number;
@@ -19,26 +19,27 @@ type GiftCardProps = {
 const TILT_MEDIA = '(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)';
 const TILT_MAX = 7; // grados
 
+/** Numeración del frente: como una tarjeta física, oculta salvo el último bloque. */
+function numeracion(codigo?: string) {
+  const m = codigo?.match(/^HYPE-([A-Z0-9]{4})-([A-Z0-9]{4})$/i);
+  return m ? `HYPE-••••-${m[2].toUpperCase()}` : 'HYPE-••••-••••';
+}
+
 /**
- * La tarjeta de regalo. Una sola: el color lo decide el monto (plata, oro,
- * esmeralda, black). Frente: logo oficial, nivel y monto sobre la lámina
- * iridiscente con trama. Dorso: el código entre cuatro esquinas, como una
- * tarjeta física rascada.
+ * La gift card. Negra, como una tarjeta bancaria: el logo oficial en relieve
+ * satinado al centro, STYLE&CULTURE arriba a la derecha, la numeración abajo
+ * a la izquierda y el monto abajo a la derecha. Detrás, el foil holográfico
+ * negro y un patrón de líneas finas.
  *
- * Dos capas de transformación, una adentro de la otra:
- *  - la externa inclina hasta 7° siguiendo al puntero (sin transición, para
- *    que responda al instante) y vuelve suave al soltar;
- *  - la interna gira 180° para mostrar el dorso, con transición de 700 ms.
- * Separadas porque una sola `transform` con transición haría que la
- * inclinación "flotara" detrás del mouse. La inclinación sólo existe donde hay
- * puntero fino y sin reduced-motion; en touch queda el foil con el scroll.
+ * Dos capas de transformación anidadas: la externa inclina hasta 7° con el
+ * puntero (80 ms, sin flotar) y vuelve suave al soltar; la interna gira 180°
+ * para el dorso con 700 ms. Sólo hay inclinación con puntero fino y sin
+ * reduced-motion; en touch queda el foil con el scroll.
  *
- * Proporción 1.586 = la de una tarjeta física (85,6 x 53,98 mm), para que
- * siga leyéndose como tarjeta cuando alguien la captura y la reenvía.
+ * Proporción 1.586 = la de una tarjeta física (85,6 x 53,98 mm).
  */
 export function GiftCard({ monto, codigo, dorso = false, onClick, className }: GiftCardProps) {
   const tone = giftCardTone(monto);
-  const claro = tone === 'negro';
   const tiltRef = useRef<HTMLDivElement>(null);
   const [inclina] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(TILT_MEDIA).matches,
@@ -69,9 +70,7 @@ export function GiftCard({ monto, codigo, dorso = false, onClick, className }: G
       role={onClick ? 'button' : undefined}
       aria-label={onClick ? (dorso ? 'Ver frente de la tarjeta' : 'Ver dorso de la tarjeta') : undefined}
     >
-      {/* Capa de inclinación */}
       <div ref={tiltRef} className="h-full w-full [transform-style:preserve-3d]">
-        {/* Capa de giro */}
         <div
           className={cn(
             'relative h-full w-full transition-transform duration-700 [transform-style:preserve-3d] motion-reduce:transition-none',
@@ -82,32 +81,37 @@ export function GiftCard({ monto, codigo, dorso = false, onClick, className }: G
               `position: relative` fuera de las capas de Tailwind y le ganaría a
               un `absolute` puesto por utility, dejándolo sin alto. */}
           <div className="absolute inset-0 [backface-visibility:hidden]">
-            <IridescentFoil tone={tone} className="hs-foil-intenso h-full w-full rounded-[8px]">
-              <span aria-hidden className="hs-foil-trama" />
-              <div className={cn('relative flex h-full flex-col justify-between p-5 sm:p-6', claro ? 'text-white' : 'text-black')}>
-                <div className="flex items-start justify-between gap-3">
-                  {/* Logo oficial, sin re-tipografiar. Sobre el metal oscuro va en
-                      blanco, que es la versión válida para fondos oscuros. */}
+            <IridescentFoil tone={tone} className="hs-foil-intenso h-full w-full rounded-[10px]">
+              <span aria-hidden className="hs-gift-pattern" />
+              <div className="relative flex h-full flex-col justify-between p-5 text-white sm:p-6">
+                {/* Arriba: STYLE&CULTURE a la derecha, como el "Global" de una
+                    tarjeta bancaria. */}
+                <div className="flex items-start justify-end">
                   <img
-                    src="/logo-hypestyle-2026.png"
-                    alt="Hypestyle"
-                    className={cn('h-4 w-auto object-contain sm:h-5', claro && 'invert')}
+                    src="/STYLE&CULTURE WHITE.png"
+                    alt="Style & Culture"
+                    className="h-[9px] w-auto object-contain opacity-80 sm:h-[10px]"
                   />
-                  {/* Con una sola tarjeta el nivel no dice nada: arriba a la
-                      derecha va "Gift card" y abajo queda el monto solo. */}
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] opacity-70">
-                    {GIFT_CARD_TONE_UNICO ? 'Gift card' : GIFT_CARD_TONE_LABEL[tone]}
-                  </span>
                 </div>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-60">
-                    {GIFT_CARD_TONE_UNICO ? 'Crédito' : 'Gift card'}
-                  </p>
-                  {/* Al cambiar el monto, el número viejo se descifra en el nuevo. */}
+
+                {/* Centro: el logo oficial en relieve. */}
+                <div className="flex flex-1 items-center justify-center">
+                  <div className="hs-emboss w-[44%] max-w-[220px]" aria-label="Hypestyle" role="img">
+                    <span className="hs-emboss-shadow" />
+                    <span className="hs-emboss-light" />
+                    <span className="hs-emboss-face" />
+                  </div>
+                </div>
+
+                {/* Abajo: numeración a la izquierda, monto a la derecha. */}
+                <div className="flex items-end justify-between gap-4">
+                  <span className="font-mono text-[11px] tracking-[0.22em] text-white/75 sm:text-[12px]">
+                    {numeracion(codigo)}
+                  </span>
                   <ScrambleText
                     animateOnMount={false}
                     intervalMs={14}
-                    className="mt-1 text-[26px] font-bold leading-none tabular-nums sm:text-[32px]"
+                    className="text-[15px] font-semibold tabular-nums tracking-tight sm:text-[17px]"
                   >
                     {formatGiftAmount(monto)}
                   </ScrambleText>
@@ -119,9 +123,9 @@ export function GiftCard({ monto, codigo, dorso = false, onClick, className }: G
           {/* Dorso: negro mate, el código entre las esquinas. */}
           <div
             aria-hidden={!dorso}
-            className="absolute inset-0 flex flex-col justify-between rounded-[8px] bg-[#0e0e0e] p-5 text-white [backface-visibility:hidden] [transform:rotateY(180deg)] sm:p-6"
+            className="absolute inset-0 flex flex-col justify-between rounded-[10px] bg-[#0e0e0e] p-5 text-white [backface-visibility:hidden] [transform:rotateY(180deg)] sm:p-6"
           >
-            <p className="text-center text-[9px] uppercase tracking-[0.2em] text-white/50">
+            <p className="text-center text-[10px] uppercase tracking-[0.2em] text-white/60">
               Código válido en hypestyle.com.ar
             </p>
             <div className="relative mx-auto w-full max-w-[280px] py-5">
@@ -133,7 +137,7 @@ export function GiftCard({ monto, codigo, dorso = false, onClick, className }: G
                 {codigo ?? 'HYPE-••••-••••'}
               </p>
             </div>
-            <div className="flex items-end justify-between text-[9px] uppercase tracking-[0.15em] text-white/50">
+            <div className="flex items-end justify-between text-[10px] uppercase tracking-[0.15em] text-white/60">
               <span>{formatGiftAmount(monto)}</span>
               <span>Se carga en el checkout</span>
             </div>
