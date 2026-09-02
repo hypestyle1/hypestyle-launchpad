@@ -643,3 +643,68 @@
 .hs-glass-dark:hover {
   background: rgba(10, 10, 10, 0.94);
 }
+
+/* ─── Gift card: patrón y relieve ────────────────────────────────────────────
+   Patrón geométrico de líneas finas (arcos concéntricos en dos esquinas y
+   rayado diagonal en las otras dos), como el guilloché de una tarjeta bancaria.
+   Es un SVG de una sola baldosa de 240px repetida; en `screen` sobre el foil
+   negro queda como líneas de luz muy tenues. */
+.hs-gift-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: screen;
+  opacity: 0.9;
+  background-size: 240px 240px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' fill='none' stroke='%23ffffff' stroke-opacity='0.085' stroke-width='1.2'%3E%3Cpath d='M0 24a24 24 0 0 1 24-24M0 48a48 48 0 0 1 48-48M0 72a72 72 0 0 1 72-72M0 96a96 96 0 0 1 96-96M0 120a120 120 0 0 1 120-120'/%3E%3Cpath d='M240 216a24 24 0 0 1-24 24M240 192a48 48 0 0 1-48 48M240 168a72 72 0 0 1-72 72M240 144a96 96 0 0 1-96 96M240 120a120 120 0 0 1-120 120'/%3E%3Cpath d='M132 0l108 108M144 0l96 96M156 0l84 84M168 0l72 72M180 0l60 60M192 0l48 48M204 0l36 36M216 0l24 24M228 0l12 12'/%3E%3Cpath d='M0 132l108 108M0 144l96 96M0 156l84 84M0 168l72 72M0 180l60 60M0 192l48 48M0 204l36 36M0 216l24 24M0 228l12 12'/%3E%3C/svg%3E");
+  /* Se apaga hacia el centro para que el logo respire. */
+  -webkit-mask-image: radial-gradient(ellipse 55% 60% at 50% 50%, transparent 0%, rgba(0,0,0,0.35) 45%, #000 75%);
+  mask-image: radial-gradient(ellipse 55% 60% at 50% 50%, transparent 0%, rgba(0,0,0,0.35) 45%, #000 75%);
+}
+
+/* Logo en relieve satinado. Tres copias del logo oficial usadas como máscara
+   (el PNG negro con alfa, nunca re-tipografiado): una sombra corrida 1.5px
+   abajo-derecha, un filo de luz 1px arriba-izquierda, y la cara con un
+   degradado metálico que se desplaza con el puntero (`--pointer-x` lo escribe
+   el foil en el mismo nodo padre, y las custom properties heredan). El
+   resultado lee como metal estampado, no como un PNG blanco pegado. */
+.hs-emboss {
+  /* El wordmark oficial vectorial (Logos/hype-wordmark.svg): recorte ajustado
+     a la tinta, ratio 2.2517:1, nítido a cualquier tamaño. */
+  --logo: url('/hype-wordmark.svg');
+  position: relative;
+  aspect-ratio: 3686 / 1637;
+}
+.hs-emboss > span {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: var(--logo) center / contain no-repeat;
+  mask: var(--logo) center / contain no-repeat;
+}
+.hs-emboss-shadow {
+  background: rgba(0, 0, 0, 0.7);
+  transform: translate(1.5px, 2px);
+  filter: blur(0.6px);
+}
+.hs-emboss-light {
+  background: rgba(255, 255, 255, 0.45);
+  transform: translate(-1px, -1px);
+}
+.hs-emboss-face {
+  background: linear-gradient(
+    112deg,
+    #f2f2f2 0%,
+    #b4b4b4 18%,
+    #ffffff 36%,
+    #8d8d8d 54%,
+    #ececec 72%,
+    #a3a3a3 100%
+  );
+  background-size: 260% 100%;
+  background-position: calc(100% - var(--pointer-x, 50%)) 50%;
+  transition: background-position 120ms linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-emboss-face { transition: none; }
+}
