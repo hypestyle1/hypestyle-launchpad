@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 const WP_SECRET_KEY = 'hype_admin_key';
 const SITE_URL = 'https://hypestyle.com.ar';
 
-type Item = { id: number; name: string; quantity: number; price: number; total: number; size: string; image: string; dorsalName?: string; dorsalNumber?: string };
+type Item = { id: number; name: string; quantity: number; price: number; total: number; size: string; color?: string; image: string; dorsalName?: string; dorsalNumber?: string };
 type Address = { address_1: string; address_2: string; city: string; state: string; postcode: string };
 type Note = { id: number; note: string; date: string };
 type CustomerHistory = { orderCount: number; totalSpent: number; firstOrderDate: string };
@@ -636,7 +636,11 @@ export default function OrderDetailPage() {
                       <div className="text-[13px] font-medium text-foreground truncate">
                         {item.name.replace(/\s*—\s*Talle\s*\S+/i, '')}
                       </div>
-                      {item.size && <div className="text-[11px] text-muted-foreground/70">Talle {item.size}</div>}
+                      {(item.size || item.color) && (
+                        <div className="text-[11px] text-muted-foreground/70">
+                          {[item.size && `Talle ${item.size}`, item.color].filter(Boolean).join(' · ')}
+                        </div>
+                      )}
                       {(item.dorsalName || item.dorsalNumber) && (
                         <div className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                           <span>Dorsal:</span>

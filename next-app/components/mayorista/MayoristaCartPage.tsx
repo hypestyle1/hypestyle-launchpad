@@ -7,7 +7,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { imgSrc } from '@/lib/img';
 import { Button } from '@/components/ui/button';
 import { formatArs } from '@/lib/mayorista-format';
-import { useMayoristaCart, MayoristaCartItem } from '@/context/MayoristaCartContext';
+import { useMayoristaCart, lineKey, MayoristaCartItem } from '@/context/MayoristaCartContext';
 
 function csvEscape(value: string | number): string {
   const s = String(value ?? '');
@@ -15,11 +15,11 @@ function csvEscape(value: string | number): string {
 }
 
 function downloadOrderCsv(orderNumber: string, items: MayoristaCartItem[], total: number) {
-  const lines = [['Producto', 'Talle', 'Cantidad', 'Precio unitario', 'Subtotal'].join(',')];
+  const lines = [['Producto', 'Color', 'Talle', 'Cantidad', 'Precio unitario', 'Subtotal'].join(',')];
   for (const item of items) {
-    lines.push([item.name, item.size, item.quantity, item.price, item.price * item.quantity].map(csvEscape).join(','));
+    lines.push([item.name, item.color ?? '', item.size, item.quantity, item.price, item.price * item.quantity].map(csvEscape).join(','));
   }
-  lines.push(['', '', '', 'Total', total].map(csvEscape).join(','));
+  lines.push(['', '', '', '', 'Total', total].map(csvEscape).join(','));
   const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -71,6 +71,10 @@ async function downloadOrderPdf(orderNumber: string, clientName: string, email: 
     page.drawText(item.size, { x: colTalle, y, size: 9, font });
     page.drawText(String(item.quantity), { x: colCant, y, size: 9, font });
     page.drawText(formatArs(item.price * item.quantity), { x: colSubtotal, y, size: 9, font });
+    if (item.color) {
+      y -= 11;
+      page.drawText(`Color: ${item.color}`, { x: marginX, y, size: 8, font, color: gray });
+    }
     y -= 16;
   }
 
@@ -290,8 +294,8 @@ export default function MayoristaCartPage() {
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">Resumen del pedido</p>
           <div className="space-y-2">
             {confirmed.items.map((item) => (
-              <div key={`${item.slug}-${item.size}`} className="flex items-center justify-between text-[13px]">
-                <span className="text-foreground/80">{item.name} <span className="text-text-light">· Talle {item.size} · x{item.quantity}</span></span>
+              <div key={lineKey(item)} className="flex items-center justify-between text-[13px]">
+                <span className="text-foreground/80">{item.name} <span className="text-text-light">{item.color ? `· ${item.color} ` : ''}· Talle {item.size} · x{item.quantity}</span></span>
                 <span className="font-medium">{formatArs(item.price * item.quantity)}</span>
               </div>
             ))}
@@ -405,21 +409,21 @@ export default function MayoristaCartPage() {
 
       <div className="space-y-3">
         {items.map((item) => (
-          <div key={`${item.slug}-${item.size}`} className="flex items-center gap-4 rounded-[12px] border border-border p-3">
+          <div key={lineKey(item)} className="flex items-center gap-4 rounded-[12px] border border-border p-3">
             <div className="relative w-16 h-16 rounded-[6px] overflow-hidden bg-bg-alt shrink-0">
               {item.image && <Image src={imgSrc(item.image)} alt={item.name} fill sizes="64px" className="object-cover object-top" />}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium truncate">{item.name}</p>
-              <p className="text-[11px] text-text-light">Talle {item.size}</p>
+              <p className="text-[11px] text-text-light">{item.color ? `${item.color} · ` : ''}Talle {item.size}</p>
               <p className="text-[13px] font-semibold mt-0.5">{formatArs(item.price)}</p>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setQty(item.slug, item.size, item.quantity - 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">−</button>
+              <button onClick={() => setQty(item, item.quantity - 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">−</button>
               <span className="w-6 text-center text-[13px]">{item.quantity}</span>
-              <button onClick={() => setQty(item.slug, item.size, item.quantity + 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">+</button>
+              <button onClick={() => setQty(item, item.quantity + 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">+</button>
             </div>
-            <button onClick={() => remove(item.slug, item.size)} className="text-text-light hover:text-destructive transition-colors text-[12px] ml-2">✕</button>
+            <button onClick={() => remove(item)} className="text-text-light hover:text-destructive transition-colors text-[12px] ml-2">✕</button>
           </div>
         ))}
       </div>

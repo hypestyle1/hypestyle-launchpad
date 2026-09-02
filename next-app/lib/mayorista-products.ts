@@ -17,13 +17,15 @@ const GET_PRODUCTS = `
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name slug } }
+          attributes { nodes { name options } }
         }
         ... on VariableProduct {
           regularPrice
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name slug } }
-          variations(first: 20) {
+          attributes { nodes { name options } }
+          variations(first: 100) {
             nodes {
               stockStatus stockQuantity
               attributes { nodes { name value } }
@@ -46,8 +48,36 @@ export interface MayoristaProduct {
   image: string;
   images: string[];
   sizes: string[];
+  // Colores ofrecidos, en el orden en que están cargados en Woo. Salen del
+  // atributo "Color" del producto. Vacío si el producto no tiene color.
+  colors: string[];
+  // true cuando Color es eje de variación (Color + Talle, ej. SLEEVELESS
+  // RANGLAN): ahí el stock se lleva por color y talle. false cuando Color es
+  // un atributo informativo del producto (caso AERO: una sola entrada en Woo
+  // "disponible en blanco, gris melange y negro"), donde el stock es por
+  // talle y el color viaja como dato del pedido.
+  colorAxis: boolean;
+  // Clave = stockKey(product, size, color).
   stock: Record<string, 'ok' | 'low' | 'out'>;
   stockQty: Record<string, number | null>;
+}
+
+/** Clave del stock de una combinación talle/color. */
+export function stockKey(p: Pick<MayoristaProduct, 'colorAxis'>, size: string, color?: string | null): string {
+  return p.colorAxis && color ? `${color} / ${size}` : size;
+}
+
+const LEVEL_RANK = { ok: 0, low: 1, out: 2 } as const;
+
+/** Disponibilidad de un talle mirando todos sus colores (la mejor de todas). */
+export function sizeLevel(p: MayoristaProduct, size: string): 'ok' | 'low' | 'out' {
+  if (!p.colorAxis) return p.stock[size] ?? 'out';
+  let best: 'ok' | 'low' | 'out' = 'out';
+  for (const c of p.colors) {
+    const lvl = p.stock[stockKey(p, size, c)];
+    if (lvl && LEVEL_RANK[lvl] < LEVEL_RANK[best]) best = lvl;
+  }
+  return best;
 }
 
 // La descripción corta de WP viene con HTML (<p>, &nbsp;, etc.) — acá solo
@@ -76,6 +106,15 @@ function sortSizes(sizes: string[]): string[] {
   });
 }
 
+function isSizeAttr(name?: string | null): boolean {
+  const n = (name || '').toLowerCase();
+  return n === 'talle' || n === 'size' || n === 'pa_talle' || n === 'pa_size';
+}
+function isColorAttr(name?: string | null): boolean {
+  const n = (name || '').toLowerCase();
+  return n === 'color' || n === 'pa_color' || n === 'colour';
+}
+
 function stockLevel(status: string, qty: number | null): 'ok' | 'low' | 'out' {
   if (status === 'OUT_OF_STOCK') return 'out';
   if (qty !== null && qty <= 0) return 'out';
@@ -101,13 +140,13 @@ const EXCLUDED_SLUGS = new Set(['hs-ring-silver-925', 'zip-hoodie-pink']);
 // (más bajo = más disponible = va primero) y para sacar del todo los que no
 // tienen ningún talle disponible.
 function stockScore(p: MayoristaProduct): number {
-  return p.sizes.reduce((sum, s) => sum + (p.stock[s] === 'out' ? 2 : p.stock[s] === 'low' ? 1 : 0), 0);
+  return p.sizes.reduce((sum, s) => sum + LEVEL_RANK[sizeLevel(p, s)], 0);
 }
 function isFullyOut(p: MayoristaProduct): boolean {
-  return p.sizes.length > 0 && p.sizes.every((s) => p.stock[s] === 'out');
+  return p.sizes.length > 0 && p.sizes.every((s) => sizeLevel(p, s) === 'out');
 }
 
-function fromNode(node: any): MayoristaProduct {
+export function normalizeMayoristaNode(node: any): MayoristaProduct {
   const regularPrice = parsePrice(node.regularPrice);
   const wholesalePrice = Math.round(regularPrice * WHOLESALE_FACTOR);
 
@@ -117,28 +156,52 @@ function fromNode(node: any): MayoristaProduct {
     if (g.sourceUrl && !images.includes(g.sourceUrl)) images.push(g.sourceUrl);
   });
 
+  // Colores del producto: el atributo "Color" de Woo, sea o no eje de
+  // variación. Antes el catálogo ignoraba cualquier atributo que no fuera el
+  // talle y el mayorista no tenía forma de pedir "la negra".
+  const colors: string[] = [];
+  const colorAttr = (node.attributes?.nodes ?? []).find((a: any) => isColorAttr(a.name));
+  for (const o of colorAttr?.options ?? []) {
+    const c = String(o ?? '').trim();
+    if (c && !colors.includes(c)) colors.push(c);
+  }
+
   const sizes: string[] = [];
   const stock: Record<string, 'ok' | 'low' | 'out'> = {};
   const stockQty: Record<string, number | null> = {};
   const variations: any[] = node.variations?.nodes ?? [];
+  let colorAxis = false;
 
   if (variations.length) {
     for (const v of variations) {
-      const sizeAttr = v.attributes?.nodes?.find((a: any) => {
-        const n = (a.name || '').toLowerCase();
-        return n === 'talle' || n === 'size' || n === 'pa_talle' || n === 'pa_size';
-      }) ?? v.attributes?.nodes?.[0];
+      const attrs: any[] = v.attributes?.nodes ?? [];
+      const sizeAttr = attrs.find((a) => isSizeAttr(a.name)) ?? attrs.find((a) => !isColorAttr(a.name));
+      const colorVal = attrs.find((a) => isColorAttr(a.name))?.value?.trim() || '';
       const sz = sizeAttr?.value?.trim() || 'Única';
-      if (!sizes.includes(sz)) {
-        sizes.push(sz);
-        stock[sz] = stockLevel(v.stockStatus, v.stockQuantity ?? null);
-        stockQty[sz] = v.stockQuantity ?? null;
+      if (colorVal) {
+        colorAxis = true;
+        if (!colors.includes(colorVal)) colors.push(colorVal);
+      }
+      if (!sizes.includes(sz)) sizes.push(sz);
+      const key = colorVal ? `${colorVal} / ${sz}` : sz;
+      if (!(key in stock)) {
+        stock[key] = stockLevel(v.stockStatus, v.stockQuantity ?? null);
+        stockQty[key] = v.stockQuantity ?? null;
       }
     }
   } else {
     sizes.push('Única');
     stock['Única'] = stockLevel(node.stockStatus || 'IN_STOCK', node.stockQuantity ?? null);
     stockQty['Única'] = node.stockQuantity ?? null;
+  }
+
+  // Con Color como eje, cada talle/color tiene su clave aunque Woo no haya
+  // creado esa variación (queda 'out'): así la UI no cae en undefined.
+  if (colorAxis) {
+    for (const c of colors) for (const sz of sizes) {
+      const key = `${c} / ${sz}`;
+      if (!(key in stock)) { stock[key] = 'out'; stockQty[key] = 0; }
+    }
   }
 
   return {
@@ -152,6 +215,8 @@ function fromNode(node: any): MayoristaProduct {
     image: images[0] ?? '',
     images,
     sizes: sortSizes(sizes),
+    colors,
+    colorAxis,
     stock,
     stockQty,
   };
@@ -196,7 +261,7 @@ export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
 
   const products = dedupedNodes
     .filter((n: any) => !isCombo(n) && !EXCLUDED_SLUGS.has(n.slug))
-    .map(fromNode)
+    .map(normalizeMayoristaNode)
     .filter((p: MayoristaProduct) => p.regularPrice > 0 && !isFullyOut(p));
 
   // Estable: entre productos con el mismo puntaje de stock, se mantiene el
