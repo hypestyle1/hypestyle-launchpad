@@ -1,6 +1,6 @@
 'use client';
 
-import { type PointerEvent, useRef, useState } from 'react';
+import { type PointerEvent, type ReactNode, useRef, useState } from 'react';
 import { IridescentFoil } from '@/components/ui/iridescent-foil';
 import { ScrambleText } from '@/components/ui/scramble-text';
 import { cn } from '@/lib/utils';
@@ -25,16 +25,45 @@ function numeracion(codigo?: string) {
   return m ? `HYPE-••••-${m[2].toUpperCase()}` : 'HYPE-••••-••••';
 }
 
+/** Una cara de la tarjeta: la misma lámina negra satinada y el mismo patrón
+ *  para el frente y el dorso; cambia sólo lo que va al centro y abajo. */
+function Cara({ tone, centro, abajoIzq, abajoDer }: {
+  tone: ReturnType<typeof giftCardTone>;
+  centro: ReactNode;
+  abajoIzq: ReactNode;
+  abajoDer: ReactNode;
+}) {
+  return (
+    <IridescentFoil tone={tone} className="hs-foil-intenso h-full w-full rounded-[10px]">
+      <span aria-hidden className="hs-gift-pattern" />
+      <div className="relative flex h-full flex-col justify-between p-5 text-white sm:p-6">
+        <div className="flex items-start justify-end">
+          <img
+            src="/STYLE&CULTURE WHITE.png"
+            alt="Style & Culture"
+            className="h-[9px] w-auto object-contain opacity-80 sm:h-[10px]"
+          />
+        </div>
+        <div className="flex flex-1 items-center justify-center">{centro}</div>
+        <div className="flex items-end justify-between gap-4">
+          {abajoIzq}
+          {abajoDer}
+        </div>
+      </div>
+    </IridescentFoil>
+  );
+}
+
 /**
- * La gift card. Negra, como una tarjeta bancaria: el logo oficial en relieve
- * satinado al centro, STYLE&CULTURE arriba a la derecha, la numeración abajo
- * a la izquierda y el monto abajo a la derecha. Detrás, el foil holográfico
- * negro y un patrón de líneas finas.
+ * La gift card. Negra satinada, como una tarjeta bancaria. Frente: el logo
+ * oficial en relieve al centro, STYLE&CULTURE arriba a la derecha, la
+ * numeración abajo a la izquierda y el monto a la derecha. Dorso: la misma
+ * base, con el código entre cuatro esquinas donde iba el logo.
  *
  * Dos capas de transformación anidadas: la externa inclina hasta 7° con el
  * puntero (80 ms, sin flotar) y vuelve suave al soltar; la interna gira 180°
  * para el dorso con 700 ms. Sólo hay inclinación con puntero fino y sin
- * reduced-motion; en touch queda el foil con el scroll.
+ * reduced-motion; en touch queda la lámina con el scroll.
  *
  * Proporción 1.586 = la de una tarjeta física (85,6 x 53,98 mm).
  */
@@ -61,6 +90,16 @@ export function GiftCard({ monto, codigo, dorso = false, onClick, className }: G
     el.style.transform = '';
   };
 
+  const montoEl = (
+    <ScrambleText
+      animateOnMount={false}
+      intervalMs={14}
+      className="text-[15px] font-semibold tabular-nums tracking-tight sm:text-[17px]"
+    >
+      {formatGiftAmount(monto)}
+    </ScrambleText>
+  );
+
   return (
     <div
       className={cn('relative aspect-[1.586] w-full [perspective:1200px]', className)}
@@ -81,66 +120,49 @@ export function GiftCard({ monto, codigo, dorso = false, onClick, className }: G
               `position: relative` fuera de las capas de Tailwind y le ganaría a
               un `absolute` puesto por utility, dejándolo sin alto. */}
           <div className="absolute inset-0 [backface-visibility:hidden]">
-            <IridescentFoil tone={tone} className="hs-foil-intenso h-full w-full rounded-[10px]">
-              <span aria-hidden className="hs-gift-pattern" />
-              <div className="relative flex h-full flex-col justify-between p-5 text-white sm:p-6">
-                {/* Arriba: STYLE&CULTURE a la derecha, como el "Global" de una
-                    tarjeta bancaria. */}
-                <div className="flex items-start justify-end">
-                  <img
-                    src="/STYLE&CULTURE WHITE.png"
-                    alt="Style & Culture"
-                    className="h-[9px] w-auto object-contain opacity-80 sm:h-[10px]"
-                  />
+            <Cara
+              tone={tone}
+              centro={
+                <div className="hs-emboss w-[44%] max-w-[220px]" aria-label="Hypestyle" role="img">
+                  <span className="hs-emboss-shadow" />
+                  <span className="hs-emboss-light" />
+                  <span className="hs-emboss-face" />
                 </div>
-
-                {/* Centro: el logo oficial en relieve. */}
-                <div className="flex flex-1 items-center justify-center">
-                  <div className="hs-emboss w-[44%] max-w-[220px]" aria-label="Hypestyle" role="img">
-                    <span className="hs-emboss-shadow" />
-                    <span className="hs-emboss-light" />
-                    <span className="hs-emboss-face" />
-                  </div>
-                </div>
-
-                {/* Abajo: numeración a la izquierda, monto a la derecha. */}
-                <div className="flex items-end justify-between gap-4">
-                  <span className="font-mono text-[11px] tracking-[0.22em] text-white/75 sm:text-[12px]">
-                    {numeracion(codigo)}
-                  </span>
-                  <ScrambleText
-                    animateOnMount={false}
-                    intervalMs={14}
-                    className="text-[15px] font-semibold tabular-nums tracking-tight sm:text-[17px]"
-                  >
-                    {formatGiftAmount(monto)}
-                  </ScrambleText>
-                </div>
-              </div>
-            </IridescentFoil>
+              }
+              abajoIzq={
+                <span className="font-mono text-[11px] tracking-[0.22em] text-white/75 sm:text-[12px]">
+                  {numeracion(codigo)}
+                </span>
+              }
+              abajoDer={montoEl}
+            />
           </div>
 
-          {/* Dorso: negro mate, el código entre las esquinas. */}
+          {/* Dorso: misma base; el código entre cuatro esquinas donde iba el logo. */}
           <div
             aria-hidden={!dorso}
-            className="absolute inset-0 flex flex-col justify-between rounded-[10px] bg-[#0e0e0e] p-5 text-white [backface-visibility:hidden] [transform:rotateY(180deg)] sm:p-6"
+            className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]"
           >
-            <p className="text-center text-[10px] uppercase tracking-[0.2em] text-white/60">
-              Código válido en hypestyle.com.ar
-            </p>
-            <div className="relative mx-auto w-full max-w-[280px] py-5">
-              <span aria-hidden className="absolute left-0 top-0 h-3 w-3 border-l border-t border-white/60" />
-              <span aria-hidden className="absolute right-0 top-0 h-3 w-3 border-r border-t border-white/60" />
-              <span aria-hidden className="absolute bottom-0 left-0 h-3 w-3 border-b border-l border-white/60" />
-              <span aria-hidden className="absolute bottom-0 right-0 h-3 w-3 border-b border-r border-white/60" />
-              <p className="text-center font-mono text-[18px] font-bold tracking-[0.18em] sm:text-[22px]">
-                {codigo ?? 'HYPE-••••-••••'}
-              </p>
-            </div>
-            <div className="flex items-end justify-between text-[10px] uppercase tracking-[0.15em] text-white/60">
-              <span>{formatGiftAmount(monto)}</span>
-              <span>Se carga en el checkout</span>
-            </div>
+            <Cara
+              tone={tone}
+              centro={
+                <div className="relative w-[72%] max-w-[300px] py-5">
+                  <span aria-hidden className="absolute left-0 top-0 h-3 w-3 border-l border-t border-white/70" />
+                  <span aria-hidden className="absolute right-0 top-0 h-3 w-3 border-r border-t border-white/70" />
+                  <span aria-hidden className="absolute bottom-0 left-0 h-3 w-3 border-b border-l border-white/70" />
+                  <span aria-hidden className="absolute bottom-0 right-0 h-3 w-3 border-b border-r border-white/70" />
+                  <p className="text-center font-mono text-[18px] font-bold tracking-[0.2em] sm:text-[22px]">
+                    {codigo ?? 'HYPE-••••-••••'}
+                  </p>
+                </div>
+              }
+              abajoIzq={
+                <span className="text-[10px] uppercase tracking-[0.18em] text-white/70">
+                  Se carga en el checkout
+                </span>
+              }
+              abajoDer={montoEl}
+            />
           </div>
         </div>
       </div>
