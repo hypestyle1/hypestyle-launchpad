@@ -10,7 +10,7 @@ type Order = {
   customer: { first_name: string; last_name: string; phone: string; dni: string };
   shipping: { first_name: string; last_name: string; address_1: string; address_2: string; city: string; state: string; postcode: string };
   viaCargoSucursal: string;
-  items: { name: string; quantity: number; size: string }[];
+  items: { name: string; quantity: number; size: string; color?: string }[];
 };
 
 function fmtDate(s: string) {
@@ -71,7 +71,10 @@ export default function RotuloPage() {
   if (loading) return <div className="flex items-center justify-center py-32 text-[13px] text-muted-foreground/70">Cargando rótulo...</div>;
   if (!order) return <div className="flex items-center justify-center py-32 text-[13px] text-red-500">No se pudo cargar el pedido</div>;
 
-  const itemsSummary = order.items.map(i => `${i.quantity}× ${i.name}${i.size ? ` (${i.size})` : ''}`).join(' · ');
+  const itemsSummary = order.items.map(i => {
+    const detail = [i.size, i.color].filter(Boolean).join(' ');
+    return `${i.quantity}× ${i.name}${detail ? ` (${detail})` : ''}`;
+  }).join(' · ');
 
   return (
     <div className="min-h-screen bg-[#e8e8e8] py-8 print:bg-card print:py-0">

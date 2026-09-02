@@ -7,24 +7,28 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { imgSrc } from '@/lib/img';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
-import type { MayoristaProduct } from '@/lib/mayorista-products';
+import { sizeLevel, stockKey, type MayoristaProduct } from '@/lib/mayorista-products';
 
 export default function MayoristaProductCard({ product }: { product: MayoristaProduct }) {
   const { add } = useMayoristaCart();
   const [added, setAdded] = useState<string | null>(null);
   const [imgIndex, setImgIndex] = useState(0);
 
-  const outOfStock = product.sizes.every(s => product.stock[s] === 'out');
+  const outOfStock = product.sizes.every(s => sizeLevel(product, s) === 'out');
   const images = product.images.length ? product.images : [product.image];
   const hasMultiple = images.length > 1;
+  // Con más de un color el talle solo no alcanza para armar la línea del
+  // pedido: la card manda a la ficha, donde se elige color y talle.
+  const hasColors = product.colors.length > 1;
+  const singleColor = product.colors.length === 1 ? product.colors[0] : undefined;
   const singleSize = product.sizes.length === 1;
-  const singleSizeLow = singleSize && product.stock[product.sizes[0]] === 'low';
-  const singleSizeQty = singleSize ? product.stockQty[product.sizes[0]] : null;
+  const singleSizeLow = singleSize && sizeLevel(product, product.sizes[0]) === 'low';
+  const singleSizeQty = singleSize ? product.stockQty[stockKey(product, product.sizes[0], singleColor)] : null;
 
   function handleAdd(size: string, e: React.MouseEvent) {
     e.preventDefault();
-    if (product.stock[size] === 'out') return;
-    add({ slug: product.slug, name: product.name, price: product.wholesalePrice, image: product.image, size, quantity: 1 });
+    if (hasColors || product.stock[stockKey(product, size, singleColor)] === 'out') return;
+    add({ slug: product.slug, name: product.name, price: product.wholesalePrice, image: product.image, size, ...(singleColor ? { color: singleColor } : {}), quantity: 1 });
     setAdded(size);
     setTimeout(() => setAdded(null), 1500);
   }
@@ -95,8 +99,18 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
           <span className="text-[12px] text-text-light line-through">{formatArs(product.regularPrice)}</span>
         </div>
 
-        {/* Talle único (accesorios): banner de últimas unidades + un solo botón, sin pills */}
-        {singleSize ? (
+        {hasColors ? (
+          <>
+            <p className="mt-2 text-[11px] text-text-light">{product.colors.join(' · ')}</p>
+            <span
+              className={`mt-2 block w-full text-center py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] transition-colors ${
+                outOfStock ? 'bg-bg-alt text-text-light/60' : 'bg-bg-dark text-primary-foreground group-hover:bg-bg-dark/85'
+              }`}
+            >
+              {outOfStock ? 'Sin stock' : 'Elegir color y talle'}
+            </span>
+          </>
+        ) : singleSize ? (
           <>
             {singleSizeLow && singleSizeQty != null && (
               <p className="mt-2 text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-[6px] px-2 py-1">
@@ -118,9 +132,9 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
         ) : (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {product.sizes.map((size) => {
-              const isOut = product.stock[size] === 'out';
-              const isLow = product.stock[size] === 'low';
-              const qty = product.stockQty[size];
+              const isOut = sizeLevel(product, size) === 'out';
+              const isLow = sizeLevel(product, size) === 'low';
+              const qty = product.stockQty[stockKey(product, size, singleColor)];
               return (
                 <button
                   key={size}

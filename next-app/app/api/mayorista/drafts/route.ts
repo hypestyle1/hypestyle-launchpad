@@ -17,6 +17,7 @@ interface DraftItem {
   price: number;
   image: string;
   size: string;
+  color?: string;
   quantity: number;
 }
 
@@ -66,12 +67,14 @@ function sanitizeItems(items: unknown): DraftItem[] | null {
   for (const it of items) {
     if (!it || typeof it.slug !== 'string' || typeof it.size !== 'string') return null;
     const quantity = Math.max(1, Math.round(Number(it.quantity) || 1));
+    const color = typeof it.color === 'string' ? it.color.trim().slice(0, 60) : '';
     clean.push({
       slug: it.slug,
       name: String(it.name ?? it.slug),
       price: Number(it.price) || 0,
       image: String(it.image ?? ''),
       size: it.size,
+      ...(color ? { color } : {}),
       quantity,
     });
   }

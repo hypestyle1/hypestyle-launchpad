@@ -102,6 +102,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       size:     (i.meta_data as any[])?.find((m: any) =>
         ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
       )?.value || '',
+      color:    (i.meta_data as any[])?.find((m: any) =>
+        ['color', 'pa_color'].includes((m.key || '').toLowerCase())
+      )?.value || '',
       dorsalName:   (i.meta_data as any[])?.find((m: any) =>
         ['nombre dorsal', 'player name'].includes((m.key || '').toLowerCase())
       )?.value || '',

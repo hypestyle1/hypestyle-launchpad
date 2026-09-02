@@ -16,7 +16,14 @@ interface PedidoItem {
   name: string;
   price: number;
   size: string;
+  // Color elegido en el catálogo (productos con atributo Color en Woo).
+  color?: string;
   quantity: number;
+}
+
+// Celda "Talle" de los mails: talle y, si lo hay, color.
+function sizeLabel(it: PedidoItem): string {
+  return it.color ? `${it.size} · ${it.color}` : it.size;
 }
 
 interface ShippingInfo {
@@ -113,7 +120,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
   if (!BREVO_API_KEY) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
-    <td style="padding:6px 8px;border:1px solid #eee">${it.size}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${sizeLabel(it)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${formatArs(it.price)}</td>
   </tr>`).join('');
@@ -155,7 +162,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
   if (!BREVO_API_KEY || !toEmail) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
-    <td style="padding:6px 8px;border:1px solid #eee">${it.size}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${sizeLabel(it)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${formatArs(it.price)}</td>
   </tr>`).join('');
@@ -218,18 +225,28 @@ export async function POST(req: NextRequest) {
 
     const lineItems = items.map((item) => {
       const resolved = resolvedBySlug.get(item.slug)!;
-      const needle = item.size.toLowerCase().trim();
-      const hit = resolved.variations.find(v => v.options.includes(needle));
+      const color = (item.color ?? '').trim();
+      // La variación tiene que tener TODOS los atributos elegidos: con Color +
+      // Talle como ejes, buscar solo por talle devolvía la primera del color
+      // que fuera. "Única" no es un atributo de Woo, no se exige.
+      const wanted = [item.size, color].map(s => s.toLowerCase().trim()).filter(s => s && s !== 'única');
+      const hit = resolved.variations.find(v => wanted.every(w => v.options.includes(w)));
       const lineTotal = String(Math.round(item.price * item.quantity));
+      // Lo que no quedó representado por la variación va como meta visible en
+      // la orden: el talle si no matcheó ninguna, y el color siempre que la
+      // variación no lo lleve (caso AERO: una sola entrada en Woo, el color es
+      // un dato del pedido). Antes se perdía en silencio y el admin no sabía
+      // qué talle era.
+      const meta: { key: string; value: string }[] = [];
+      if (!hit) meta.push({ key: 'Talle', value: item.size });
+      if (color && !(hit && hit.options.includes(color.toLowerCase()))) meta.push({ key: 'Color', value: color });
       return {
         product_id: resolved.product_id,
         ...(hit ? { variation_id: hit.id } : {}),
         quantity: item.quantity,
         subtotal: lineTotal,
         total: lineTotal,
-        // Si el talle no matcheó ninguna variación, que igual quede visible en
-        // la orden — antes se perdía en silencio y el admin no sabía qué talle era.
-        ...(hit ? {} : { meta_data: [{ key: 'Talle', value: item.size }] }),
+        ...(meta.length ? { meta_data: meta } : {}),
       };
     });
 
