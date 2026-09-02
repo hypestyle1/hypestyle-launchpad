@@ -7,7 +7,11 @@ const WP_SECRET     = process.env.WP_SECRET || '';
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 // Remitente en el dominio autenticado en Brevo. Desde un Gmail, Brevo no puede
 // firmar y reescribe el From a @brevosend.com: llega, pero fuera de Principal.
-const SENDER_EMAIL  = 'info@hypestyle.com.ar';
+// Transaccional separado del marketing: `pedidos@` manda confirmación, envío y
+// gift card; `info@` queda para newsletter y avisos. Gmail clasifica por
+// remitente, así que mezclar promos con tickets arrastra los tickets a
+// Promociones. El remitente existe en Brevo (dominio autenticado).
+const SENDER_EMAIL  = 'pedidos@hypestyle.com.ar';
 const REPLY_TO      = 'hypestylearg@gmail.com';
 const SENDER_NAME   = 'Hypestyle';
 const ADMIN_EMAIL   = 'hypestylearg@gmail.com';
