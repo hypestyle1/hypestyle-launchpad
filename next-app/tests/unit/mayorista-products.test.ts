@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeMayoristaNode, sizeLevel, stockKey } from '@/lib/mayorista-products';
+import { isExcludedFromMayorista, normalizeMayoristaNode, sizeLevel, stockKey } from '@/lib/mayorista-products';
 
 /**
  * El catálogo mayorista solo modelaba el talle: cualquier otro atributo de la
@@ -21,6 +21,16 @@ const node = (over: Record<string, any> = {}) => ({
   attributes: { nodes: [{ name: 'Talle', options: ['S', 'M'] }, { name: 'Fit', options: ['Regular'] }] },
   variations: { nodes: [variation({ Talle: 'S' }, 19), variation({ Talle: 'M' }, 3)] },
   ...over,
+});
+
+describe('isExcludedFromMayorista', () => {
+  it('saca packs, sets y la Gift Card; deja la mercadería', () => {
+    const withCat = (slug: string) => ({ slug: 'x', productCategories: { nodes: [{ name: slug, slug }] } });
+    expect(isExcludedFromMayorista(withCat('gift-card'))).toBe(true);
+    expect(isExcludedFromMayorista(withCat('pack'))).toBe(true);
+    expect(isExcludedFromMayorista(withCat('remera'))).toBe(false);
+    expect(isExcludedFromMayorista({ slug: 'hs-ring-silver-925', productCategories: { nodes: [] } })).toBe(true);
+  });
 });
 
 describe('normalizeMayoristaNode — color', () => {
