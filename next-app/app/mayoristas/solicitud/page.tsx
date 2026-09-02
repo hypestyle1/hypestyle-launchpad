@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { fbCompleteRegistration } from '@/lib/fbpixel';
+import { Button } from '@/components/ui/button';
 
 // Alta de mayoristas hecha por el propio comercio. Mismo vestido de vidrio que
 // /mayoristas/login, en una tarjeta más ancha porque son varios campos.
@@ -174,13 +175,9 @@ export default function SolicitudMayoristaPage() {
 
                 {error && <p className="text-[12px] text-destructive pt-1">{error}</p>}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60 !mt-7"
-                >
-                  {loading ? '...' : 'Enviar solicitud'}
-                </button>
+                <Button type="submit" variant="hype" size="ctaFull" disabled={loading} className="py-3 rounded-full !mt-7">
+                  {loading ? 'Enviando...' : 'Enviar solicitud'}
+                </Button>
 
                 <div className="text-center !mt-5">
                   <Link href="/mayoristas/login" className="text-[11px] uppercase tracking-wide text-foreground/50 hover:text-foreground transition-colors">

@@ -11,6 +11,7 @@ import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
 import GiftProgressBar from "@/components/GiftProgressBar";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/envio";
 import { ScrollFadeList } from "@/components/ui/scroll-fade-list";
+import { Button } from "@/components/ui/button";
 
 function shuffled<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -272,12 +273,13 @@ export default function CartDrawer() {
             <p className="text-[11px] text-muted-foreground">
               <span className="font-medium text-foreground/60">Worldwide shipping</span> available via FedEx
             </p>
-            <button
+            <Button
+              variant="hype" size="ctaFull"
               onClick={() => { setDrawerOpen(false); router.push("/checkout"); }}
-              className="w-full bg-bg-dark text-primary-foreground py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]"
+              className="py-3.5 rounded-[10px]"
             >
               {t('Iniciar compra')}
-            </button>
+            </Button>
             <button
               onClick={() => setDrawerOpen(false)}
               className="w-full text-center text-[12px] text-foreground/40 hover:text-foreground transition-colors"

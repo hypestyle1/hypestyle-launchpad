@@ -1,6 +1,7 @@
 'use client';
 
 import AnnouncementBar from "@/components/AnnouncementBar";
+import { buttonVariants } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useReveal } from "@/hooks/useReveal";
@@ -81,7 +82,7 @@ export default function Worldwide() {
             href="https://wa.me/5491178292430"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block bg-bg-dark text-primary-foreground text-[12px] font-semibold uppercase tracking-[0.14em] px-8 py-4 hover:opacity-80 transition-opacity"
+            className={buttonVariants({ variant: 'hype', size: 'ctaLg' })}
           >
             {t('Contactanos por WhatsApp')}
           </a>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -162,13 +163,9 @@ export default function MayoristaLoginPage() {
 
                 {error && <p className="text-[12px] text-destructive text-center pt-1">{error}</p>}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60 !mt-6"
-                >
-                  {loading ? '...' : 'Enviar link'}
-                </button>
+                <Button type="submit" variant="hype" size="ctaFull" disabled={loading} className="py-3 rounded-full !mt-6">
+                  {loading ? 'Enviando...' : 'Enviar link'}
+                </Button>
 
                 <div className="text-center !mt-5">
                   <button
@@ -207,13 +204,9 @@ export default function MayoristaLoginPage() {
 
             {error && <p className="text-[12px] text-destructive text-center pt-1">{error}</p>}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60 !mt-6"
-            >
-              {loading ? '...' : 'Ingresar'}
-            </button>
+            <Button type="submit" variant="hype" size="ctaFull" disabled={loading} className="py-3 rounded-full !mt-6">
+              {loading ? 'Ingresando...' : 'Ingresar'}
+            </Button>
 
             <div className="text-center !mt-5">
               <button

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, LANGUAGES } from '@/context/LocaleContext';
+import { Button } from '@/components/ui/button';
 
 // "Crea contenido con Hype" — reemplaza al Google Form.
 //
@@ -256,13 +257,9 @@ export default function CreadoresPage() {
 
                 {error && <p className="text-[12px] text-destructive pt-1">{error}</p>}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-bg-dark text-primary-foreground py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60 !mt-8"
-                >
-                  {loading ? '...' : t('Enviar postulación')}
-                </button>
+                <Button type="submit" variant="hype" size="ctaFull" disabled={loading} className="py-3.5 rounded-full !mt-8">
+                  {loading ? t('Enviando...') : t('Enviar postulación')}
+                </Button>
 
                 <p className="text-[11px] text-foreground/40 text-center !mt-4">
                   {t('La revisa nuestra content manager. Si hay match, te escribimos.')}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getPublicReviewSummary, getPublicReviews } from '@/lib/reviews/public';
+import { Button } from '@/components/ui/button';
 import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
 import type { HomeReviewsData } from '@/lib/reviews/server';
 import { useReveal } from '@/hooks/useReveal';
@@ -90,18 +91,12 @@ export default function ReviewsHomeSection({ initial }: { initial?: HomeReviewsD
 
       {!hasReviews && (
         <div className="reveal rd2 flex flex-wrap justify-center gap-3">
-          <Link
-            href="/productos/"
-            className="inline-block bg-bg-dark text-primary-foreground text-[12px] font-bold uppercase tracking-[0.1em] px-8 py-3.5 rounded-[10px] hover:opacity-85 transition-opacity"
-          >
-            Ver productos
-          </Link>
-          <Link
-            href="/resena"
-            className="inline-block border border-foreground/30 text-[12px] font-bold uppercase tracking-[0.1em] px-8 py-3.5 rounded-[10px] hover:bg-foreground hover:text-white transition-colors"
-          >
-            Dejá tu reseña
-          </Link>
+          <Button asChild variant="hype" size="cta" className="rounded-[10px]">
+            <Link href="/productos/">Ver productos</Link>
+          </Button>
+          <Button asChild variant="hypeOutline" size="cta" className="rounded-[10px] border-foreground/30">
+            <Link href="/resena">Dejá tu reseña</Link>
+          </Button>
         </div>
       )}
 
@@ -129,12 +124,9 @@ export default function ReviewsHomeSection({ initial }: { initial?: HomeReviewsD
         >
           Ver todas las reseñas
         </Link>
-        <Link
-          href="/resena"
-          className="inline-block bg-bg-dark text-primary-foreground text-[12px] font-bold uppercase tracking-[0.1em] rounded-[10px] px-8 py-3.5 hover:opacity-85 transition-opacity"
-        >
-          Dejá tu reseña
-        </Link>
+        <Button asChild variant="hype" size="cta" className="rounded-[10px]">
+          <Link href="/resena">Dejá tu reseña</Link>
+        </Button>
       </div>
       )}
     </section>

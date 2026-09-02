@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AnnouncementBar from "@/components/AnnouncementBar";
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useReveal } from "@/hooks/useReveal";
@@ -122,12 +123,9 @@ export default function FAQs() {
         {/* CTA */}
         <section className="text-center pb-16 px-6">
           <p className="text-[14px] text-muted-foreground mb-6">¿No encontrás lo que buscás?</p>
-          <a
-            href="/contacto/"
-            className="inline-block bg-bg-dark text-primary-foreground text-[12px] font-semibold uppercase tracking-[0.14em] px-8 py-4 hover:opacity-80 transition-opacity"
-          >
-            Contactanos
-          </a>
+          <Button asChild variant="hype" size="ctaLg">
+            <a href="/contacto/">Contactanos</a>
+          </Button>
         </section>
 
       </main>

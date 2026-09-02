@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AnnouncementBar from "@/components/AnnouncementBar";
+import { buttonVariants } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useReveal } from "@/hooks/useReveal";
@@ -218,7 +219,7 @@ export default function Politicas() {
               href="https://instagram.com/hypestylearg"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 border border-foreground text-foreground px-6 py-3 text-[12px] font-semibold uppercase tracking-wider hover:bg-foreground hover:text-background transition-all duration-200"
+              className={buttonVariants({ variant: 'hypeOutline', size: 'cta' })}
             >
               Contactarnos por Instagram
             </a>

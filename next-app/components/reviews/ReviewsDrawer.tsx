@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getPublicReviewSummary, getPublicReviews } from '@/lib/reviews/public';
+import { Button } from '@/components/ui/button';
 import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
 import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
@@ -165,13 +166,9 @@ export default function ReviewsDrawer() {
             </div>
 
             <div className="px-6 py-5 border-t border-border">
-              <Link
-                href="/reviews/"
-                onClick={close}
-                className="block w-full text-center bg-bg-dark text-primary-foreground py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]"
-              >
-                Ver todas las reseñas
-              </Link>
+              <Button asChild variant="hype" size="ctaFull" className="py-3.5 rounded-[10px]">
+                <Link href="/reviews/" onClick={close}>Ver todas las reseñas</Link>
+              </Button>
             </div>
           </div>
         </>

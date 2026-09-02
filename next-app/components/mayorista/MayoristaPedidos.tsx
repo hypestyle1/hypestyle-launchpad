@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatArs } from '@/lib/mayorista-format';
+import { Button } from '@/components/ui/button';
 
 interface Pedido {
   id: number;
@@ -60,9 +61,9 @@ export default function MayoristaPedidos() {
           <p className="text-[13px] text-muted-foreground mt-1.5 max-w-sm mx-auto">
             Cuando confirmes tu primer pedido desde el catálogo, va a aparecer en esta lista con su estado.
           </p>
-          <Link href="/mayoristas" className="inline-block mt-6 bg-bg-dark text-primary-foreground px-6 py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors">
-            Ir al catálogo
-          </Link>
+          <Button asChild variant="hype" size="cta" className="mt-6 py-3 rounded-full">
+            <Link href="/mayoristas">Ir al catálogo</Link>
+          </Button>
         </div>
       )}
 

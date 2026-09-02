@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { imgSrc } from '@/lib/img';
+import { Button } from '@/components/ui/button';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart, MayoristaCartItem } from '@/context/MayoristaCartContext';
 
@@ -316,9 +317,9 @@ export default function MayoristaCartPage() {
           </button>
         </div>
 
-        <Link href="/mayoristas" className="block text-center mt-3 bg-bg-dark text-primary-foreground px-6 py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors">
-          Volver al catálogo
-        </Link>
+        <Button asChild variant="hype" size="ctaFull" className="mt-3 py-3 rounded-full">
+          <Link href="/mayoristas">Volver al catálogo</Link>
+        </Button>
       </div>
     );
   }
@@ -328,9 +329,9 @@ export default function MayoristaCartPage() {
       <div className="max-w-lg mx-auto px-5 py-24">
         <div className="text-center">
           <p className="text-muted-foreground text-sm">Todavía no agregaste productos.</p>
-          <Link href="/mayoristas" className="inline-block mt-6 bg-bg-dark text-primary-foreground px-6 py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors">
-            Ir al catálogo
-          </Link>
+          <Button asChild variant="hype" size="cta" className="mt-6 py-3 rounded-full">
+            <Link href="/mayoristas">Ir al catálogo</Link>
+          </Button>
         </div>
         {draftsSection}
       </div>
@@ -391,13 +392,9 @@ export default function MayoristaCartPage() {
 
         {error && <p className="mt-4 text-[12px] text-destructive">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={sending}
-          className="mt-8 w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-50"
-        >
+        <Button type="submit" variant="hype" size="ctaFull" disabled={sending} className="mt-8 py-3 rounded-full">
           {sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(total)}`}
-        </button>
+        </Button>
       </form>
     );
   }
@@ -438,13 +435,9 @@ export default function MayoristaCartPage() {
         </p>
       )}
 
-      <button
-        onClick={() => setStep('shipping')}
-        disabled={belowMin}
-        className="mt-6 w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-      >
+      <Button variant="hype" size="ctaFull" onClick={() => setStep('shipping')} disabled={belowMin} className="mt-6 py-3 rounded-full disabled:cursor-not-allowed">
         Continuar
-      </button>
+      </Button>
       <button
         onClick={saveDraft}
         disabled={savingDraft}
