@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import AnnouncementBar from "@/components/AnnouncementBar";
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useReveal } from "@/hooks/useReveal";
@@ -99,12 +100,9 @@ export default function Contacto() {
                     placeholder="¿En qué te podemos ayudar?"
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="w-full bg-bg-dark text-primary-foreground text-[12px] font-semibold uppercase tracking-[0.14em] py-4 hover:opacity-80 transition-opacity"
-                >
+                <Button type="submit" variant="hype" size="ctaFull">
                   Enviar mensaje
-                </button>
+                </Button>
               </form>
             )}
           </div>

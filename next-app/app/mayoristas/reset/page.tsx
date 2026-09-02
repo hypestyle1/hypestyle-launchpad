@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -82,12 +83,9 @@ function ResetForm() {
         <p className="text-[13px] text-foreground/60 leading-relaxed mb-6">
           Los links de recuperación valen 2 horas y se usan una sola vez. Pedí uno nuevo desde el ingreso.
         </p>
-        <Link
-          href="/mayoristas/login"
-          className="inline-block bg-bg-dark text-primary-foreground py-3 px-7 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors"
-        >
-          Volver al ingreso
-        </Link>
+        <Button asChild variant="hype" size="cta" className="py-3 px-7 rounded-full">
+          <Link href="/mayoristas/login">Volver al ingreso</Link>
+        </Button>
       </div>
     );
   }
@@ -130,13 +128,9 @@ function ResetForm() {
 
       {error && <p className="text-[12px] text-destructive text-center pt-1">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60 !mt-6"
-      >
-        {saving ? '...' : 'Guardar contraseña'}
-      </button>
+      <Button type="submit" variant="hype" size="ctaFull" disabled={saving} className="py-3 rounded-full !mt-6">
+        {saving ? 'Guardando...' : 'Guardar contraseña'}
+      </Button>
     </form>
   );
 }

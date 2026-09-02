@@ -51,6 +51,8 @@ const DICT: Dict = {
   'Seguir comprando': { EN: 'Continue shopping', PT: 'Continuar comprando' },
   'o regalá una gift card': { EN: 'or give a gift card', PT: 'ou presenteie um gift card' },
   'Regalá crédito · de $50.000 en adelante': { EN: 'Give store credit · from $50,000', PT: 'Presenteie crédito · a partir de $50.000' },
+  'Gift Card · regalá crédito de a $50.000': { EN: 'Gift Card · store credit from $50,000', PT: 'Gift Card · crédito a partir de $50.000' },
+  'Enviando...': { EN: 'Sending...', PT: 'Enviando...' },
   'Talle': { EN: 'Size', PT: 'Tamanho' },
   'Dorsal': { EN: 'Custom', PT: 'Personalização' },
   'Eliminar': { EN: 'Remove', PT: 'Remover' },

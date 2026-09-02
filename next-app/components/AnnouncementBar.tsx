@@ -17,6 +17,7 @@ const items = [
   "Hasta 3 cuotas sin interés",
   "Worldwide Shipping vía FedEx",
   "30 días para cambios y devoluciones",
+  "Gift Card · regalá crédito de a $50.000",
 ];
 
 export default function AnnouncementBar() {

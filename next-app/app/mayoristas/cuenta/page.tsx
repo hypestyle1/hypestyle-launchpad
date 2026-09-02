@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 // "Mi cuenta" del mayorista: por ahora, cambiar la contraseña. La del alta la
 // generamos nosotros al azar, así que casi nadie la recuerda — acá se la puede
@@ -101,13 +102,9 @@ export default function MayoristaCuentaPage() {
           {error && <p className="text-[12px] text-destructive pt-1">{error}</p>}
           {done && <p className="text-[12px] text-green-700 pt-1">Listo, tu contraseña quedó actualizada.</p>}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60 !mt-6"
-          >
-            {saving ? '...' : 'Guardar'}
-          </button>
+          <Button type="submit" variant="hype" size="ctaFull" disabled={saving} className="py-3 rounded-full !mt-6">
+            {saving ? 'Guardando...' : 'Guardar'}
+          </Button>
         </form>
       </div>
     </div>

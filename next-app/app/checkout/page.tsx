@@ -26,6 +26,7 @@ import { ScrambleText } from '@/components/ui/scramble-text';
 import { DynamicButton } from '@/components/ui/dynamic-button';
 import { ScrollFadeList } from '@/components/ui/scroll-fade-list';
 import { ReceiptPrinter } from '@/components/ReceiptPrinter';
+import { Button } from '@/components/ui/button';
 
 type Step = 'info' | 'envio' | 'pago';
 
@@ -868,9 +869,9 @@ export default function Checkout() {
               </div>
               )}
 
-              <button type="submit" className="w-full bg-bg-dark text-primary-foreground py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px]">
+              <Button type="submit" variant="hype" size="ctaFull" className="rounded-[10px]">
                 {soloGift ? 'Continuar con el pago' : isInternational ? 'Continue to shipping' : 'Continuar con el envío'}
-              </button>
+              </Button>
             </form>
           )}
 
@@ -996,10 +997,10 @@ export default function Checkout() {
                 <button type="button" onClick={() => setStep('info')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
                   {isInternational ? '‹ Back to information' : '‹ Volver a información'}
                 </button>
-                <button type="submit" disabled={loadingRates || !shippingReady || !branchReady}
-                  className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed">
+                <Button type="submit" variant="hype" size="cta" disabled={loadingRates || !shippingReady || !branchReady}
+                  className="rounded-[10px] disabled:cursor-not-allowed">
                   {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
-                </button>
+                </Button>
               </div>
             </form>
           )}

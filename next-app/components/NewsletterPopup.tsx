@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 const SESSION_KEY = "hype_popup_shown";
 
@@ -196,13 +197,9 @@ export default function NewsletterPopup() {
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
                   }}
                 />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-bg-dark text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.1em] rounded-full hover:bg-bg-dark/85 transition-colors disabled:opacity-60"
-                >
-                  {loading ? "..." : "Unirme"}
-                </button>
+                <Button type="submit" variant="hype" size="ctaFull" disabled={loading} className="py-3 rounded-full">
+                  {loading ? "Enviando..." : "Unirme"}
+                </Button>
               </form>
             )}
 

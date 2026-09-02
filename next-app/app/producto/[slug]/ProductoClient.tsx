@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { useCart } from '@/context/CartContext';
+import { Button } from '@/components/ui/button';
 import { useLocale } from '@/context/LocaleContext';
 import { useProduct } from '@/hooks/useProduct';
 import { useProducts } from '@/hooks/useProducts';
@@ -614,15 +615,14 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 </button>
               )}
 
-              <button ref={addBtnRef} onClick={handleAdd} disabled={stockChecking}
-                className={`w-full ${primaryBtnClass} text-primary-foreground py-4 text-[13px] font-bold uppercase tracking-[0.1em] transition-colors mb-4 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2`}>
-                {stockChecking ? (
-                  <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>Verificando stock...</>
-                ) : 'Agregar al carrito'}
-              </button>
+              {/* Label de texto plano: el Button anima el cambio a "Verificando
+                  stock..." (entra desde abajo, el ancho se acomoda) en vez del
+                  spinner. Mismo look que antes: negro, 13px, radio 10px. */}
+              <Button ref={addBtnRef} onClick={handleAdd} disabled={stockChecking}
+                variant="hype" size="ctaFull"
+                className={`${primaryBtnClass} text-[13px] mb-4 rounded-[10px] disabled:cursor-not-allowed`}>
+                {stockChecking ? 'Verificando stock...' : 'Agregar al carrito'}
+              </Button>
 
               <div className="border-b border-border">
                 <Accordion title="Descripción">{product.description}</Accordion>
