@@ -50,6 +50,7 @@ const DICT: Dict = {
   'Tu carrito está vacío': { EN: 'Your cart is empty', PT: 'Seu carrinho está vazio' },
   'Seguir comprando': { EN: 'Continue shopping', PT: 'Continuar comprando' },
   'o regalá una gift card': { EN: 'or give a gift card', PT: 'ou presenteie um gift card' },
+  'Regalá crédito · de $50.000 en adelante': { EN: 'Give store credit · from $50,000', PT: 'Presenteie crédito · a partir de $50.000' },
   'Talle': { EN: 'Size', PT: 'Tamanho' },
   'Dorsal': { EN: 'Custom', PT: 'Personalização' },
   'Eliminar': { EN: 'Remove', PT: 'Remover' },

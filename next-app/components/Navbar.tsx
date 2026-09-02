@@ -66,6 +66,7 @@ const mobilePanels = {
       { label: 'Abajo',                    href: null,               homeHash: null,             panel: 'abajo' },
       { label: 'Accesorios',               href: null,               homeHash: null,             panel: 'accesorios' },
       { label: 'Sets',                     href: '/sets/',           homeHash: null,             panel: null },
+      { label: 'Gift Card',                href: '/gift-cards/',     homeHash: null,             panel: null },
     ],
     collections: [
       { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
@@ -115,6 +116,9 @@ export default function Navbar() {
         )
         .slice(0, 6)
     : [];
+  // La gift card no es un producto del catálogo (tiene su propia página), así
+  // que el buscador la ofrece como atajo cuando la búsqueda va por ahí.
+  const searchGift = searchQuery.length >= 2 && /gift|regal|tarjeta|cr[eé]dito|vale/i.test(searchQuery);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
@@ -363,7 +367,20 @@ export default function Navbar() {
           <div className="absolute left-0 right-0 top-full animate-in fade-in slide-in-from-top-1 duration-200"
             style={{ ...glassStyle, borderRadius: '0 0 14px 14px', borderTop: 'none' }}>
             <div className="max-w-[1400px] mx-auto p-2">
-              {searchResults.length > 0 ? searchResults.map((p) => (
+              {searchGift && (
+                <Link href="/gift-cards/"
+                  onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
+                  <span className="w-10 h-10 flex-shrink-0 rounded-[6px] bg-[#141414] flex items-center justify-center">
+                    <img src="/logo-hypestyle-2026.png" alt="" className="h-3 w-auto invert" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-medium truncate">Gift Card</p>
+                    <p className="text-[10px] text-text-light uppercase tracking-[0.12em]">{t('Regalá crédito · de $50.000 en adelante')}</p>
+                  </div>
+                </Link>
+              )}
+              {searchResults.length > 0 || searchGift ? searchResults.map((p) => (
                 <Link key={p.slug} href={`/producto/${p.slug}/`}
                   onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
