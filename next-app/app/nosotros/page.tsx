@@ -9,7 +9,7 @@ import { breadcrumbJsonLd } from '@/lib/jsonld';
 const PATH = '/nosotros/';
 const TITLE = 'Nosotros';
 const DESCRIPTION =
-  'HYPESTYLE nació en 2018 en Buenos Aires para darle identidad propia a los jóvenes a través de la ropa. Nuestra historia.';
+  'Empezamos en 2018 como una apuesta personal. Streetwear con identidad, cultura y concepto, hecho en Buenos Aires. Quiénes somos y cómo pensamos.';
 
 export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, path: PATH });
 

@@ -1,0 +1,115 @@
+/* Estilos propios de /nosotros: firma animada y foto enmarcada.
+   Lo demás va con Tailwind en PageClient.tsx. */
+
+/* ---------- Firma que se dibuja sola ----------
+   Técnica: path normalizado con pathLength="1", stroke-dasharray 1 y
+   stroke-dashoffset de 1 → 0. Primero se traza el contorno y al final
+   aparece el relleno. */
+.sig {
+  --sig-dur: 2.6s;
+  --sig-ease: cubic-bezier(0.2, 0.2, 0.8, 0.9);
+  color: hsl(var(--foreground));
+}
+
+.sig svg {
+  display: block;
+  height: 76px;
+  width: auto;
+  max-width: 240px;
+  overflow: visible;
+}
+
+.sig path {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill-opacity: 0;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.on path {
+  transition:
+    stroke-dashoffset var(--sig-dur) var(--sig-ease) var(--sig-delay, 0s),
+    fill-opacity 0.7s var(--sig-ease) calc(var(--sig-delay, 0s) + var(--sig-dur) - 0.4s);
+  stroke-dashoffset: 0;
+  fill-opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sig path,
+  .on path {
+    transition: none;
+    stroke-dashoffset: 0;
+    fill-opacity: 1;
+  }
+}
+
+/* ---------- Foto enmarcada ---------- */
+.frameWrap {
+  perspective: 1600px;
+}
+
+.frame {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--foreground));
+  padding: clamp(14px, 2.6vw, 28px) clamp(14px, 2.6vw, 28px) 0;
+  box-shadow:
+    0 30px 60px -30px rgba(0, 0, 0, 0.35),
+    0 2px 0 0 hsl(var(--foreground));
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.2, 0.2, 0.8, 0.9);
+  will-change: transform;
+}
+
+.print {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3 / 2;
+  background: hsl(var(--bg-alt));
+}
+
+.print img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  transform: scale(1.06);
+  transition: transform 6s linear;
+}
+
+.frameIn .print img {
+  transform: scale(1);
+}
+
+/* brillo que cruza la foto una vez al entrar en pantalla */
+.print::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 35%);
+  transform: translateX(-120%);
+  transition: transform 1.6s cubic-bezier(0.2, 0.2, 0.8, 0.9) 0.3s;
+}
+
+.frameIn .print::after {
+  transform: translateX(120%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .print img,
+  .print::after {
+    transition: none;
+  }
+  .print img {
+    transform: none;
+  }
+  .print::after {
+    display: none;
+  }
+}
