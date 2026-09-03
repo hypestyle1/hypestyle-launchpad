@@ -56,22 +56,48 @@ export async function fulfillOrder(
     };
   });
 
-  await fetch(`${SITE}/api/send-confirmation`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'x-hypestyle-secret': process.env.WP_SECRET || '' },
-    body: JSON.stringify({
-      orderNum:  String(order.number || wcOrderId),
-      wcOrderId, orderKey: order.order_key,
-      items, total: parseFloat(order.total || '0'),
-      email:     order.billing?.email,
-      nombre:    order.billing?.first_name,
-      apellido:  order.billing?.last_name,
-      ciudad:    order.billing?.city,
-      provincia: order.billing?.state,
-      paymentMethod,
-      pais: order.billing?.country || 'AR',
-    }),
-  }).catch(() => {});
+  // El flag se graba SOLO si el mail salió de verdad. Antes se grababa aunque
+  // send-confirmation fallara (Brevo caído, 403, timeout) y el pedido quedaba
+  // como "confirmación enviada" sin que nadie la hubiera recibido, sin rastro
+  // y sin posibilidad de reintento (02/09/2026, pedido #3043 y compañía).
+  // Si falla, el pedido queda pagado (processing) pero sin flag: el próximo
+  // disparo (/confirmacion, hook de WP, reconcile) lo vuelve a intentar.
+  let sendError = '';
+  try {
+    const res = await fetch(`${SITE}/api/send-confirmation`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'x-hypestyle-secret': process.env.WP_SECRET || '' },
+      body: JSON.stringify({
+        orderNum:  String(order.number || wcOrderId),
+        wcOrderId, orderKey: order.order_key,
+        items, total: parseFloat(order.total || '0'),
+        email:     order.billing?.email,
+        nombre:    order.billing?.first_name,
+        apellido:  order.billing?.last_name,
+        ciudad:    order.billing?.city,
+        provincia: order.billing?.state,
+        paymentMethod,
+        pais: order.billing?.country || 'AR',
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body?.ok !== true) {
+      sendError = `HTTP ${res.status} ${JSON.stringify(body).slice(0, 200)}`;
+    }
+  } catch (e: any) {
+    sendError = String(e?.message || e);
+  }
+
+  if (sendError) {
+    console.error(`[order-fulfill] confirmación NO enviada para #${wcOrderId}: ${sendError}`);
+    // Nota en el pedido para que se vea desde el admin de Woo, sin depender de logs.
+    await fetch(`${WP_URL}/wp-json/wc/v3/orders/${wcOrderId}/notes`, {
+      method:  'POST',
+      headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: `Mail de confirmación NO enviado (${sendError.slice(0, 150)}). Reenviar desde el panel.` }),
+    }).catch(() => {});
+    return { ok: false, reason: 'mail-failed' };
+  }
 
   await fetch(`${WP_URL}/wp-json/wc/v3/orders/${wcOrderId}`, {
     method:  'PUT',
