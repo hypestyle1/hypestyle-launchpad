@@ -36,6 +36,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // actualizar un customer por REST (mismo motivo que en la creación).
   const metaData: { key: string; value: string }[] = [];
   if (active !== undefined) metaData.push({ key: 'es_mayorista', value: active ? 'yes' : 'no' });
+  // Fecha de aprobación: cierra el tramo solicitud → aprobado del funnel
+  // mayorista. Solo al aprobar (no al revocar ni al reactivar).
+  if (active === true && approve === true) metaData.push({ key: 'mayorista_aprobado_fecha', value: new Date().toISOString() });
   if (minOrder !== undefined) metaData.push({ key: 'mayorista_min_order', value: minOrder === null ? '' : String(minOrder) });
 
   const payload: Record<string, unknown> = {};

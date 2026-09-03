@@ -109,6 +109,17 @@ export async function GET(req: NextRequest) {
       localFisico: metaVal(meta, 'mayorista_local_fisico') === 'yes',
       modalidad: metaVal(meta, 'mayorista_modalidad'),
       solicitadoEl: metaVal(meta, 'mayorista_solicitud_fecha') || null,
+      aprobadoEl: metaVal(meta, 'mayorista_aprobado_fecha') || null,
+      // Origen de la solicitud (lo guarda /api/mayorista/solicitud desde el
+      // formulario). 'meta' cuando vino de un ad; vacío = orgánico o directo.
+      origen: {
+        source: metaVal(meta, 'mayorista_utm_source') || null,
+        medium: metaVal(meta, 'mayorista_utm_medium') || null,
+        campaign: metaVal(meta, 'mayorista_utm_campaign') || null,
+        content: metaVal(meta, 'mayorista_utm_content') || null,
+        fbclid: Boolean(metaVal(meta, 'mayorista_fbclid')),
+        referrer: metaVal(meta, 'mayorista_referrer') || null,
+      },
       createdAt: c.date_created,
       orderCount,
       totalSpent,

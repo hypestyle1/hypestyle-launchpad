@@ -43,6 +43,23 @@ export async function POST(req: NextRequest) {
   const modalidad = clean(body.modalidad);
   const localFisico = body.localFisico === true || body.localFisico === 'true';
 
+  // Origen de la solicitud (utm/fbclid/referrer que capturó el formulario).
+  // Sin esto no hay forma de saber qué solicitudes vinieron de la campaña de
+  // Meta y cuáles entraron solas. Se guarda tal cual, acotado, como meta del
+  // customer para que /admin/mayoristas y los reportes lo puedan leer.
+  const attr = (body.attribution && typeof body.attribution === 'object') ? body.attribution : {};
+  const attrVal = (k: string) => clean(attr[k]).slice(0, 200);
+  const attribution = {
+    utm_source: attrVal('utm_source'),
+    utm_medium: attrVal('utm_medium'),
+    utm_campaign: attrVal('utm_campaign'),
+    utm_content: attrVal('utm_content'),
+    utm_term: attrVal('utm_term'),
+    fbclid: attrVal('fbclid'),
+    referrer: attrVal('referrer'),
+    landing: attrVal('landing'),
+  };
+
   if (!email.includes('@')) return NextResponse.json({ ok: false, message: 'Escribí un mail válido' }, { status: 400 });
   if (password.length < MIN_PASSWORD) {
     return NextResponse.json({ ok: false, message: `La contraseña necesita al menos ${MIN_PASSWORD} caracteres` }, { status: 400 });
@@ -88,6 +105,15 @@ export async function POST(req: NextRequest) {
     { key: 'mayorista_local_fisico', value: localFisico ? 'yes' : 'no' },
     { key: 'mayorista_modalidad', value: modalidad },
     { key: 'mayorista_solicitud_fecha', value: new Date().toISOString() },
+    // Origen. Vacío cuando la solicitud entró sin parámetros (orgánico/directo).
+    { key: 'mayorista_utm_source', value: attribution.utm_source },
+    { key: 'mayorista_utm_medium', value: attribution.utm_medium },
+    { key: 'mayorista_utm_campaign', value: attribution.utm_campaign },
+    { key: 'mayorista_utm_content', value: attribution.utm_content },
+    { key: 'mayorista_utm_term', value: attribution.utm_term },
+    { key: 'mayorista_fbclid', value: attribution.fbclid },
+    { key: 'mayorista_referrer', value: attribution.referrer },
+    { key: 'mayorista_landing', value: attribution.landing },
   ];
 
   const res = await fetch(`${WP_URL}/wp-json/wc/v3/customers`, {

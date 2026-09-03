@@ -209,11 +209,18 @@ export function fbAddPaymentInfo(items: FbItem[], value?: number, user?: FbUserD
  * promedio mayorista acá ensuciaría el ROAS de la cuenta con plata que todavía
  * no entró (la solicitud puede no aprobarse, y aprobada puede no comprar nunca).
  */
-export function fbCompleteRegistration(): void {
-  fbTrack('CompleteRegistration', {
+export function fbCompleteRegistration(user?: FbUserData): void {
+  const customData = {
     content_name: 'mayorista',
     status: true,
     value: 0,
     currency: CURRENCY,
-  });
+  };
+  // Mismo par pixel + CAPI que el checkout: el audit del 03/09/2026 encontró 2
+  // CompleteRegistration en el pixel contra 5 solicitudes reales en Woo, y
+  // ninguna atribuida a la campaña. Con el camino server-side y los datos del
+  // comercio (mail, teléfono, ciudad) Meta puede matchear el evento al click.
+  const eventId = newEventId();
+  fbTrack('CompleteRegistration', customData, eventId);
+  sendCapi('CompleteRegistration', eventId, customData, user);
 }
