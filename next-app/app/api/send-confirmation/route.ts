@@ -446,11 +446,19 @@ export async function POST(req: NextRequest) {
           ? `Pedido #${order.orderNum} — esperando transferencia`
           : `Nueva venta #${order.orderNum} — ${metodoAdmin}`);
 
-    sendEmail(
+    // Se espera la respuesta: disparado sin await, la función serverless puede
+    // congelarse apenas devuelve el 200 y el aviso al admin se pierde en silencio.
+    // Si falla, el cliente ya recibió su mail, así que se responde ok igual y
+    // queda registrado en el log.
+    const adminRes = await sendEmail(
       { email: ADMIN_EMAIL, name: 'Hypestyle Admin' },
       adminSubject,
       buildAdminHtml(order),
-    ).catch(() => {});
+    ).catch((e: any) => ({ ok: false, status: 0, json: async () => ({ error: String(e?.message || e) }) }));
+    if (!adminRes.ok) {
+      const err = await adminRes.json().catch(() => ({}));
+      console.error('[brevo admin]', adminRes.status, err);
+    }
 
     // El mail al proveedor de estampas NO se manda acá (el checkout corre antes
     // del pago). Se dispara cuando la orden pasa a PROCESSING (paga) vía el hook

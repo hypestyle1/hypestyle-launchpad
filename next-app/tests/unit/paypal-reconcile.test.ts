@@ -60,7 +60,7 @@ function setup(s: Scenario) {
       return { ok: true, json: async () => ({}) };
     }
     // send-confirmation
-    return { ok: true, json: async () => ({}) };
+    return { ok: true, json: async () => ({ ok: true }) };
   }));
 
   return { captured, wcWrites };
