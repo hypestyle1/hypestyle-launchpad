@@ -6,7 +6,7 @@ import { breadcrumbJsonLd } from '@/lib/jsonld';
 const PATH = '/gift-cards/';
 const TITLE = 'Gift cards';
 const DESCRIPTION =
-  'Regalá crédito para usar en HYPESTYLE. Tres montos, el código llega por mail y lo usa quien vos quieras, cuando quiera.';
+  'Regalá crédito para usar en HYPESTYLE. Elegís el monto desde $50.000, el código llega por mail y lo usa quien vos quieras, cuando quiera.';
 
 export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, path: PATH });
 
