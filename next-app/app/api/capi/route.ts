@@ -41,7 +41,7 @@ const TEST_EVENT_CODE = (process.env.META_CAPI_TEST_EVENT_CODE || '').trim();
  * cualquiera podría inyectar `Purchase` a nombre del pixel. Purchase queda
  * deliberadamente afuera: ese sale de WooCommerce, donde el pago está confirmado.
  */
-const ALLOWED_EVENTS = new Set(['InitiateCheckout', 'AddPaymentInfo']);
+const ALLOWED_EVENTS = new Set(['InitiateCheckout', 'AddPaymentInfo', 'CompleteRegistration']);
 
 interface UserDataIn {
   em?: string; ph?: string; fn?: string; ln?: string;

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { fbCompleteRegistration } from '@/lib/fbpixel';
+import { captureAttribution, type Attribution } from '@/lib/attribution';
 import { Button } from '@/components/ui/button';
 
 // Alta de mayoristas hecha por el propio comercio. Mismo vestido de vidrio que
@@ -40,8 +41,15 @@ export default function SolicitudMayoristaPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  // Origen de la visita (utm, fbclid, referrer). Se captura al montar porque el
+  // envío puede llegar minutos después, ya sin parámetros en la URL.
+  const [attribution, setAttribution] = useState<Attribution>({});
 
-  const field = (name: keyof typeof EMPTY) => ({
+  useEffect(() => {
+    setAttribution(captureAttribution());
+  }, []);
+
+  const field =(name: keyof typeof EMPTY) => ({
     value: form[name],
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [name]: e.target.value })),
   });
@@ -59,14 +67,24 @@ export default function SolicitudMayoristaPage() {
     const res = await fetch('/api/mayorista/solicitud', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, localFisico }),
+      body: JSON.stringify({ ...form, localFisico, attribution }),
     });
     setLoading(false);
 
     if (res.ok) {
       // Meta necesita el evento para poder optimizar la campaña de captación
-      // mayorista por solicitud y no por visita a la página.
-      fbCompleteRegistration();
+      // mayorista por solicitud y no por visita a la página. Va con los datos
+      // del comercio para que el evento se pueda atribuir al click del ad.
+      const [fn, ...ln] = form.contacto.trim().split(' ');
+      fbCompleteRegistration({
+        em: form.email,
+        ph: form.telefono,
+        fn,
+        ln: ln.join(' '),
+        ct: form.ciudad,
+        st: form.provincia,
+        country: 'ar',
+      });
       setDone(true);
     } else {
       const data = await res.json().catch(() => ({}));
