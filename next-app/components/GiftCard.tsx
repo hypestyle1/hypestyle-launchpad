@@ -94,6 +94,7 @@ export function GiftCard({ monto, codigo, dorso = false, onClick, className }: G
     <ScrambleText
       animateOnMount={false}
       intervalMs={14}
+      numeric
       className="text-[15px] font-semibold tabular-nums tracking-tight sm:text-[17px]"
     >
       {formatGiftAmount(monto)}
