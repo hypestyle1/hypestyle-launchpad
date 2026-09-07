@@ -33,7 +33,7 @@ export default function SpecialPrices() {
   return (
     <section id="special-prices" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="COLD ARCHIVE" link="/special-prices/" linkLabel="Ver todo el sale" />
+        <SectionHeader title="SPECIAL PRICES" link="/special-prices/" linkLabel="Ver más" />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
         {products.map((p, i) => (
