@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
@@ -121,7 +121,7 @@ const EMPTY_SHIPPING: ShippingForm = {
 };
 
 export default function MayoristaCartPage() {
-  const { items, remove, setQty, clear, replace, total } = useMayoristaCart();
+  const { items, remove, setQty, clear, replace, total, hydrated } = useMayoristaCart();
   const [step, setStep] = useState<'cart' | 'shipping'>('cart');
   const [shipping, setShipping] = useState<ShippingForm>(EMPTY_SHIPPING);
   const [email, setEmail] = useState('');
@@ -136,6 +136,54 @@ export default function MayoristaCartPage() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftError, setDraftError] = useState('');
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  // Chequeo de stock contra Woo al hidratar el carrito y al cargar un
+  // borrador: lo que ya no está publicado o quedó sin stock se saca solo (o
+  // se recorta la cantidad) y se avisa. Hasta el 07/09 un borrador viejo
+  // podía llegar a confirmarse con un producto privado y en stock 0.
+  const [checkingStock, setCheckingStock] = useState(false);
+  const [stockNotice, setStockNotice] = useState<string[]>([]);
+  const checkedOnHydrate = useRef(false);
+
+  async function pruneUnavailable(candidate: MayoristaCartItem[]): Promise<MayoristaCartItem[]> {
+    if (candidate.length === 0) return candidate;
+    setCheckingStock(true);
+    try {
+      const res = await fetch('/api/mayorista/disponibilidad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: candidate.map(i => ({ slug: i.slug, name: i.name, size: i.size, color: i.color, quantity: i.quantity })) }),
+      });
+      if (!res.ok) return candidate; // si no se pudo verificar, el pedido igual se frena al confirmar
+      const data = await res.json() as { unavailable: { slug: string; size: string; color?: string; reason: string; available?: number; message: string }[] };
+      if (!data.unavailable?.length) { setStockNotice([]); return candidate; }
+      const byKey = new Map(data.unavailable.map(u => [lineKey(u), u]));
+      const notices: string[] = [];
+      const next: MayoristaCartItem[] = [];
+      for (const item of candidate) {
+        const u = byKey.get(lineKey(item));
+        if (!u) { next.push(item); continue; }
+        if (u.reason === 'insufficient' && typeof u.available === 'number' && u.available > 0) {
+          next.push({ ...item, quantity: u.available });
+          notices.push(`${u.message} Se ajustó la cantidad.`);
+        } else {
+          notices.push(`${u.message} Se sacó del pedido.`);
+        }
+      }
+      setStockNotice(notices);
+      return next;
+    } catch {
+      return candidate;
+    } finally {
+      setCheckingStock(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!hydrated || checkedOnHydrate.current) return;
+    checkedOnHydrate.current = true;
+    pruneUnavailable(items).then((next) => { if (next.length !== items.length || next.some((n, i) => n.quantity !== items[i].quantity)) replace(next); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   useEffect(() => {
     fetch('/api/mayorista/drafts')
@@ -165,7 +213,7 @@ export default function MayoristaCartPage() {
     }
   }
 
-  function loadDraft(draft: Draft) {
+  async function loadDraft(draft: Draft) {
     if (items.length > 0 && draft.id !== activeDraftId) {
       const ok = window.confirm('Cargar este borrador reemplaza el pedido actual. ¿Continuar?');
       if (!ok) return;
@@ -173,7 +221,11 @@ export default function MayoristaCartPage() {
     replace(draft.items);
     setActiveDraftId(draft.id);
     setDraftSavedAt(null);
+    setStockNotice([]);
     setStep('cart');
+    // El borrador puede tener semanas: se revisa contra el stock de hoy.
+    const next = await pruneUnavailable(draft.items);
+    if (next !== draft.items) replace(next);
   }
 
   async function deleteDraft(id: string) {
@@ -407,6 +459,16 @@ export default function MayoristaCartPage() {
     <div className="max-w-2xl mx-auto px-5 sm:px-8 py-8">
       <h1 className="text-2xl font-bold tracking-tight mb-6">Mi pedido</h1>
 
+      {stockNotice.length > 0 && (
+        <div className="mb-4 rounded-[12px] border border-orange-300 bg-orange-50 p-4 text-[12px] text-orange-800">
+          <p className="font-semibold mb-1">Cambió el stock desde que armaste el pedido</p>
+          <ul className="space-y-0.5">
+            {stockNotice.map((n, i) => <li key={i}>{n}</li>)}
+          </ul>
+          <button onClick={() => setStockNotice([])} className="mt-2 text-[11px] uppercase tracking-wide underline">Entendido</button>
+        </div>
+      )}
+
       <div className="space-y-3">
         {items.map((item) => (
           <div key={lineKey(item)} className="flex items-center gap-4 rounded-[12px] border border-border p-3">
@@ -439,8 +501,8 @@ export default function MayoristaCartPage() {
         </p>
       )}
 
-      <Button variant="hype" size="ctaFull" onClick={() => setStep('shipping')} disabled={belowMin} className="mt-6 py-3 rounded-full disabled:cursor-not-allowed">
-        Continuar
+      <Button variant="hype" size="ctaFull" onClick={() => setStep('shipping')} disabled={belowMin || checkingStock} className="mt-6 py-3 rounded-full disabled:cursor-not-allowed">
+        {checkingStock ? 'Verificando stock…' : 'Continuar'}
       </Button>
       <button
         onClick={saveDraft}
