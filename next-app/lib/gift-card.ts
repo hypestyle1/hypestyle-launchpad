@@ -3,6 +3,8 @@
 // cambia acá hay que cambiarlo allá.
 
 export const GIFT_CARD_SLUG = 'gift-card';
+/** Foto de producto en Woo (id 3134): la tarjeta 3D del video, 1024x1024 transparente. */
+export const GIFT_CARD_IMAGE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/09/gift-card-hype.png';
 export const GIFT_CARD_MIN = 50000;
 export const GIFT_CARD_MAX = 1000000;
 export const GIFT_CARD_STEP = 50000;
