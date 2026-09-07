@@ -8,15 +8,19 @@ import { BEST_SELLERS_SLUGS } from "@/lib/best-sellers";
 import JsonLd from "@/components/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 import { collectionJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
-import { SALE_DESCRIPTOR, SALE_NOMBRE, SALE_URGENCIA } from "@/lib/sale";
+import { isSaleActive } from "@/lib/sale";
 
 export const revalidate = 60;
 
 const PATH = '/special-prices/';
 const TITLE = 'SALE';
+// Sin nombre de campaña ni porcentaje fijo: al cerrar el Cold Archive (06/09/26)
+// esta pagina dejo de ser la vitrina de una campaña y volvio a ser la lista
+// permanente de lo que este rebajado en cada momento. Una description que
+// prometa "hasta 50%" queda mintiendo apenas cambian los precios.
 const DESCRIPTION =
-  SALE_NOMBRE + ' — el ' + SALE_DESCRIPTOR + ' de HYPESTYLE: hoodies, remeras, pants y accesorios con hasta 50% de descuento. ' +
-  SALE_URGENCIA + ', mientras haya stock.';
+  'Productos con precio rebajado en HYPESTYLE: remeras, hoodies, pants y accesorios. ' +
+  'Mientras haya stock.';
 
 export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, path: PATH });
 
@@ -33,6 +37,28 @@ function hayStock(p: { stock: Record<string, 'ok' | 'low' | 'out'> }) {
 
 function descuento(p: { originalPrice?: number; price: number }) {
   return p.originalPrice ? 1 - p.price / p.originalPrice : 0;
+}
+
+/**
+ * Cabecera de la pagina SALE fuera de campaña.
+ *
+ * Misma receta que el resto de las cabeceras de coleccion (fondo oscuro, centrada,
+ * volanta + H1 + linea de detalle) en vez del rojo de Cold Archive: sin campaña
+ * corriendo, el rojo no significa nada y el sitio tiene que verse como se ve
+ * siempre. El heroe rojo sigue en components/SaleHero.tsx para la proxima.
+ */
+function SaleHeaderNeutro({ maxOff, total }: { maxOff: number; total: number }) {
+  return (
+    <section className="bg-bg-dark text-primary-foreground py-20 px-6 text-center">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 mb-3">Precios especiales</p>
+      <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3 text-white">Sale</h1>
+      <p className="text-[14px] text-white/40">
+        {total > 0
+          ? `${total} ${total === 1 ? 'producto' : 'productos'} · hasta ${maxOff}% OFF · mientras haya stock`
+          : 'Mientras haya stock'}
+      </p>
+    </section>
+  );
 }
 
 export default async function SalePage() {
@@ -73,7 +99,13 @@ export default async function SalePage() {
       <Navbar />
       <main className="pt-[var(--offset)]">
 
-        <SaleHero maxOff={maxOff} total={total} />
+        {/* Con campaña viva manda el heroe rojo de Cold Archive. Sin campaña la
+            pagina sigue existiendo —siempre hay algo rebajado— pero con la
+            cabecera neutra de la casa: el rojo es el acento de campaña, no el
+            del sitio. Se decide en el servidor, igual que el resto de la pagina. */}
+        {isSaleActive()
+          ? <SaleHero maxOff={maxOff} total={total} />
+          : <SaleHeaderNeutro maxOff={maxOff} total={total} />}
 
         {destacados.length > 0 && (
           <section className="max-w-[1400px] mx-auto px-4 pt-10 md:pt-14">

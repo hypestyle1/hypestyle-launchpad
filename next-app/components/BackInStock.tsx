@@ -17,20 +17,22 @@ export default function BackInStock() {
     const vigentes = BEST_SELLERS_SLUGS
       .map(s => bySlug.get(s))
       .filter(Boolean)
-      // Fuera los agotados y los que se quedaron sin descuento: este bloque
-      // dice SALE, asi que todo lo que muestra tiene que estar en sale.
-      .filter(p => !!p!.originalPrice && p!.originalPrice > p!.price)
+      // Solo se cae lo agotado. El filtro por descuento se saco al cerrar el
+      // Cold Archive (06/09/26): este bloque volvio a ser BEST SELLERS y ahi el
+      // criterio es que se venda, no que este rebajado. Con el sale cerrado ese
+      // filtro dejaba la seccion practicamente vacia — de los 40 curados solo
+      // sobrevivia el 3-PACK, que es lo unico que sigue en oferta.
       .filter(p => Object.values(p!.stock).some(s => s !== 'out')) as typeof allProducts;
-    // El filtro por stock y descuento deja un largo impredecible (la lista
-    // curada es multiplo de 4, la filtrada no): se recorta a filas completas
-    // para que la seccion no termine con celdas vacias al lado del ultimo.
+    // El filtro por stock deja un largo impredecible (la lista curada es
+    // multiplo de 4, la filtrada no): se recorta a filas completas para que la
+    // seccion no termine con celdas vacias al lado del ultimo.
     return filasCompletas(vigentes);
   }, [allProducts]);
 
   return (
     <section id="back-in-stock" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="SALE" link="/special-prices/" linkLabel="Ver todo el sale" />
+        <SectionHeader title="BEST SELLERS" link="/productos/" linkLabel="Ver todo" />
       </div>
       <div className={HOME_GRID}>
         {products.map((p, i) => (
