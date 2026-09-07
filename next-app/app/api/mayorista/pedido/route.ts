@@ -3,6 +3,7 @@ import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
 import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
 import { mapLimit } from '@/lib/map-limit';
+import { unavailableReason, unavailableMessage, type StockInfo } from '@/lib/mayorista-availability';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -92,7 +93,17 @@ async function saveCustomerProfile(customerId: number, billing: Record<string, u
 
 interface ResolvedProduct {
   product_id: number;
-  variations: { id: number; options: string[] }[];
+  stock: StockInfo;
+  variations: { id: number; options: string[]; stock: StockInfo }[];
+}
+
+function stockInfo(x: any): StockInfo {
+  return {
+    status: x.status ?? null,
+    stockStatus: x.stock_status ?? null,
+    manageStock: x.manage_stock ?? null,
+    stockQuantity: typeof x.stock_quantity === 'number' ? x.stock_quantity : null,
+  };
 }
 
 // Antes se resolvía producto + variaciones POR ÍTEM y todo en paralelo: un
@@ -100,18 +111,23 @@ interface ResolvedProduct {
 // con ese fan-out — el Promise.all volteaba el pedido entero ("Error al crear
 // el pedido"). Ahora se consulta una sola vez por producto y de a pocos.
 async function resolveProduct(slug: string): Promise<ResolvedProduct> {
-  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type&per_page=1`);
+  // status=any: WC REST filtra a "publish" por defecto y acá también queremos
+  // encontrar el producto privado para poder decirle al cliente por qué no va.
+  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&status=any&_fields=id,type,status,stock_status,manage_stock,stock_quantity&per_page=1`);
   if (!products.length) throw new ProductNotFoundError(slug);
   const { id: productId, type } = products[0];
+  const stock = stockInfo(products[0]);
 
-  if (type !== 'variable') return { product_id: productId, variations: [] };
+  if (type !== 'variable') return { product_id: productId, stock, variations: [] };
 
-  const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes`);
+  const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes,stock_status,manage_stock,stock_quantity`);
   return {
     product_id: productId,
+    stock,
     variations: variations.map((v: any) => ({
       id: v.id,
       options: (v.attributes ?? []).map((a: any) => String(a.option ?? '').toLowerCase().trim()),
+      stock: stockInfo(v),
     })),
   };
 }
@@ -223,6 +239,10 @@ export async function POST(req: NextRequest) {
       throw err;
     }
 
+    // Lo que el catálogo ya no ofrece (producto despublicado, talle sin
+    // stock) no puede entrar en la orden aunque siga en el carrito o en un
+    // borrador viejo. Se avisa todo junto para que el cliente lo saque de una.
+    const unavailable: string[] = [];
     const lineItems = items.map((item) => {
       const resolved = resolvedBySlug.get(item.slug)!;
       const color = (item.color ?? '').trim();
@@ -231,6 +251,8 @@ export async function POST(req: NextRequest) {
       // que fuera. "Única" no es un atributo de Woo, no se exige.
       const wanted = [item.size, color].map(s => s.toLowerCase().trim()).filter(s => s && s !== 'única');
       const hit = resolved.variations.find(v => wanted.every(w => v.options.includes(w)));
+      const why = unavailableReason(resolved.stock, hit?.stock ?? null, item.quantity);
+      if (why) unavailable.push(unavailableMessage(item.name, item.size, why));
       const lineTotal = String(Math.round(item.price * item.quantity));
       // Lo que no quedó representado por la variación va como meta visible en
       // la orden: el talle si no matcheó ninguna, y el color siempre que la
@@ -249,6 +271,13 @@ export async function POST(req: NextRequest) {
         ...(meta.length ? { meta_data: meta } : {}),
       };
     });
+
+    if (unavailable.length) {
+      return NextResponse.json(
+        { message: `${unavailable.join(' ')} Sacalo del pedido e intentá de nuevo.`, unavailable },
+        { status: 409 },
+      );
+    }
 
     const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
