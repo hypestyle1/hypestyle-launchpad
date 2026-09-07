@@ -11,6 +11,7 @@ import { useCart } from '@/context/CartContext';
 import { useReveal } from '@/hooks/useReveal';
 import {
   GIFT_CARD_SLUG,
+  GIFT_CARD_IMAGE,
   GIFT_CARD_PRESETS,
   GIFT_CARD_MIN,
   GIFT_CARD_MAX,
@@ -77,7 +78,7 @@ export default function GiftCardsClient() {
       id: GIFT_CARD_SLUG,
       name: GIFT_CARD_TONE_UNICO ? 'Gift Card' : `Gift Card ${GIFT_CARD_TONE_LABEL[giftCardTone(monto)]}`,
       price: monto,
-      image: '',
+      image: GIFT_CARD_IMAGE,
       size: 'U',
       quantity: 1,
       customization: g ? { playerName: '', number: '', gift: g } : undefined,
