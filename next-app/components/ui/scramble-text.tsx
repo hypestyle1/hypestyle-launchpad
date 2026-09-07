@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { mezclar, segmentar } from '@/lib/scramble';
 
 type ScrambleTextProps = {
   children: string;
@@ -12,45 +13,13 @@ type ScrambleTextProps = {
    *  cuando `children` cambia. Es lo que quiere un total: nunca aparecer
    *  cifrado al cargar la página. */
   animateOnMount?: boolean;
+  /** Para montos: solo se mezclan los dígitos, y con dígitos. El símbolo de
+   *  moneda, los puntos de miles y la coma quedan en su lugar, así el total
+   *  se ve como un número que rueda y no como "$ >!;]%,]" por un instante. */
+  numeric?: boolean;
 };
 
-const CHARS = '-_~`!@#$%^&*()+=[]{}|;:,.<>?';
 const MAX_PASOS = 48;
-
-/** Grafemas, no code units: sin esto un emoji o una tilde compuesta se parte al
- *  medio y quedan caracteres rotos en pantalla. */
-function segmentar(text: string) {
-  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
-    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-    return Array.from(seg.segment(text), ({ segment }) => segment);
-  }
-  return Array.from(text);
-}
-
-function charAlAzar() {
-  return CHARS[Math.floor(Math.random() * CHARS.length)];
-}
-
-/** Versión determinística, para el primer render. Si el servidor y el cliente
- *  sortearan distinto, React tiraría error de hidratación. */
-function charEstable(segmento: string, index: number) {
-  let hash = index + 1;
-  for (const c of segmento) {
-    hash = (hash * 31 + (c.codePointAt(0) ?? 0)) % 2147483647;
-  }
-  return CHARS[hash % CHARS.length];
-}
-
-function mezclar(segmentos: string[], revelados: number, estable = false) {
-  return segmentos
-    .map((c, i) => {
-      // Los espacios se dejan intactos: si se mezclan, la palabra pierde forma
-      // y el texto salta de ancho en cada paso.
-      if (c.trim() === '' || i < revelados) return c;
-      return estable ? charEstable(c, i) : charAlAzar();
-    })
-    .join('');
-}
 
 /**
  * Revela un texto pasando de caracteres cifrados al contenido real.
@@ -67,9 +36,10 @@ export function ScrambleText({
   className,
   intervalMs = 32,
   animateOnMount = true,
+  numeric = false,
 }: ScrambleTextProps) {
   const [texto, setTexto] = useState(() =>
-    animateOnMount ? mezclar(segmentar(children), 0, true) : children,
+    animateOnMount ? mezclar(segmentar(children), 0, true, numeric) : children,
   );
   const primerRender = useRef(true);
 
@@ -91,16 +61,16 @@ export function ScrambleText({
     let revelados = 0;
     // En textos largos se revela de a varios para que nunca pase de 48 pasos.
     const paso = Math.max(1, Math.ceil(segmentos.length / MAX_PASOS));
-    setTexto(mezclar(segmentos, revelados));
+    setTexto(mezclar(segmentos, revelados, false, numeric));
 
     const timer = window.setInterval(() => {
       revelados = Math.min(segmentos.length, revelados + paso);
-      setTexto(mezclar(segmentos, revelados));
+      setTexto(mezclar(segmentos, revelados, false, numeric));
       if (revelados >= segmentos.length) window.clearInterval(timer);
     }, intervalMs);
 
     return () => window.clearInterval(timer);
-  }, [children, intervalMs]);
+  }, [children, intervalMs, numeric]);
 
   return (
     <span className={cn('inline-block', className)}>

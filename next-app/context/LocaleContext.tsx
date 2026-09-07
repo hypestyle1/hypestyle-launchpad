@@ -26,7 +26,14 @@ interface LocaleContextValue {
   language: Language;
   setLanguage: (l: Language) => void;
   currency: Currency;
-  setCurrency: (c: Currency) => void;
+  /**
+   * Con `persist = false` cambia la moneda de la sesión sin guardarla como
+   * elección de la persona: es lo que hace el checkout al cambiar el país de
+   * envío. Una elección explícita (selector) siempre se guarda y manda.
+   */
+  setCurrency: (c: Currency, persist?: boolean) => void;
+  /** True si la persona eligió moneda a mano alguna vez (localStorage). */
+  currencyChosen: boolean;
   formatPrice: (arsAmount: number) => string;
   /** Traduce un texto de interfaz al idioma activo (cae a español si falta). */
   t: (text: string) => string;
@@ -42,6 +49,7 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('ES');
   const [currency, setCurrencyState] = useState<Currency>('ARS');
+  const [currencyChosen, setCurrencyChosen] = useState(false);
   const [country, setCountry] = useState<string | null>(null);
   // Arranca con el respaldo de lib/fx para poder pintar precios en el primer
   // render; la cotización real llega enseguida y solo cambia el número, no el
@@ -86,7 +94,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       if (delNavegador) setLanguageState(delNavegador);
     }
 
-    if (storedCurr) setCurrencyState(storedCurr);
+    if (storedCurr) { setCurrencyState(storedCurr); setCurrencyChosen(true); }
     else if (guess) setCurrencyState(guess.currency);
   }, []);
 
@@ -107,9 +115,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('hs-language', l);
   }
 
-  function setCurrency(c: Currency) {
+  function setCurrency(c: Currency, persist = true) {
     setCurrencyState(c);
-    localStorage.setItem('hs-currency', c);
+    if (persist) {
+      localStorage.setItem('hs-currency', c);
+      setCurrencyChosen(true);
+    }
   }
 
   function formatPrice(arsAmount: number): string {
@@ -126,7 +137,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <LocaleContext.Provider value={{ language, setLanguage, currency, setCurrency, formatPrice, t, country }}>
+    <LocaleContext.Provider value={{ language, setLanguage, currency, setCurrency, currencyChosen, formatPrice, t, country }}>
       {children}
     </LocaleContext.Provider>
   );

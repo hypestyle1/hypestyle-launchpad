@@ -115,7 +115,7 @@ export default function GiftCardsClient() {
               <div className="mt-8">
                 <div className="mb-3 flex items-baseline justify-between">
                   <span className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground">Monto</span>
-                  <ScrambleText animateOnMount={false} intervalMs={14} className="text-[13px] font-semibold tabular-nums">
+                  <ScrambleText animateOnMount={false} intervalMs={14} numeric className="text-[13px] font-semibold tabular-nums">
                     {formatGiftAmount(monto)}
                   </ScrambleText>
                 </div>

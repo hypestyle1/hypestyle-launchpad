@@ -9,6 +9,7 @@ import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 import { computeChampionDiscount } from '@/lib/promo-champion';
 import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
 import { useLocale } from '@/context/LocaleContext';
+import { localeForCountry, readCountryCookie } from '@/lib/geo';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
@@ -269,7 +270,7 @@ export default function Checkout() {
   const soloGift = purchasableItems.length > 0 && fisicos.length === 0;
   const subtotalGift = giftItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const router = useRouter();
-  const { formatPrice, currency, country } = useLocale();
+  const { formatPrice, currency, setCurrency, currencyChosen, country } = useLocale();
   const [step, setStep] = useState<Step>('info');
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
@@ -347,6 +348,17 @@ export default function Checkout() {
       : prev));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [country]);
+
+  // La moneda que el checkout toma prestada del país de envío (ver
+  // handleCountryChange) se devuelve al salir: fuera del checkout vuelve a
+  // mandar la geo de Vercel, salvo que la persona haya elegido moneda a mano.
+  const currencyChosenRef = useRef(currencyChosen);
+  currencyChosenRef.current = currencyChosen;
+  useEffect(() => () => {
+    if (currencyChosenRef.current) return;
+    setCurrency(localeForCountry(readCountryCookie())?.currency ?? 'ARS', false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Vuelta de un pago que no se concretó. Los tres gateways (MercadoPago, PayPal,
   // GOcuotas) devuelven acá cuando el pago se rechaza o se cancela, y para ese
@@ -436,6 +448,12 @@ export default function Checkout() {
     countryTouched.current = true;
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
+    // La moneda de la vitrina la decide la geo de Vercel, no el destino. Si la
+    // persona nunca eligió moneda a mano y cambia el país de envío, el resumen
+    // pasa a la moneda de ese destino (ES → EUR, US → USD, AR → ARS): antes un
+    // pedido a España desde una IP argentina se veía en pesos hasta el final.
+    // No se persiste: es contexto del pedido, no una elección de la persona.
+    if (!currencyChosen) setCurrency(localeForCountry(pais)?.currency ?? 'ARS', false);
     setSelectedRate(null);
     setShippingRates([]);
     setRatesError(null);
@@ -1240,7 +1258,7 @@ export default function Checkout() {
                 {/* El total cambia al sumar el envío, aplicar un cupón o elegir
                     transferencia: el número viejo se descifra en el nuevo en vez
                     de saltar. Al cargar se muestra directo. */}
-                <ScrambleText animateOnMount={false} intervalMs={16} className="tabular-nums">
+                <ScrambleText animateOnMount={false} intervalMs={16} numeric className="tabular-nums">
                   {formatPrice(step === 'info' || !shippingReady ? subtotal - descuento : totalFinal)}
                 </ScrambleText>
               </div>

@@ -11,9 +11,13 @@
  * Se usa `venta` porque es lo que cuesta comprar un dólar, que es la operación
  * que hace el comprador de afuera.
  *
- * Los valores de respaldo son la cotización del 11/08/2026. Solo entran en
+ * Los valores de respaldo son la cotización del 05/09/2026. Solo entran en
  * juego si dolarapi está caída; conviene refrescarlos cada tanto para que un
  * corte no devuelva el sitio a precios viejos.
+ *
+ * También son lo que se pinta en el PRIMER render del cliente, antes de que
+ * llegue /api/fx-rate: si quedan viejos, el precio en euros o dólares cambia
+ * a la vista apenas carga la página (se vio el 05/09: € 36,99 → € 36,50).
  */
 
 export interface FxRates {
@@ -23,7 +27,7 @@ export interface FxRates {
   EUR: number;
 }
 
-export const FX_FALLBACK: FxRates = { USD: 1520, EUR: 1730 };
+export const FX_FALLBACK: FxRates = { USD: 1530, EUR: 1753 };
 
 /** Una hora: el oficial se mueve por escalones, no tick a tick. */
 export const FX_REVALIDATE_SECONDS = 3600;
