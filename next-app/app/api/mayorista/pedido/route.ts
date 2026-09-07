@@ -2,12 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
 import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
-import { mapLimit } from '@/lib/map-limit';
-import { unavailableReason, unavailableMessage, type StockInfo } from '@/lib/mayorista-availability';
+import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '@/lib/mayorista-stock';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
-const WC_KEY = process.env.WC_CONSUMER_KEY || '';
-const WC_SEC = process.env.WC_CONSUMER_SECRET || '';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const ADMIN_EMAIL = 'hypestylearg@gmail.com';
 const SENDER = { name: 'Hypestyle Mayoristas', email: 'info@hypestyle.com.ar' };
@@ -34,41 +31,6 @@ interface ShippingInfo {
   dni: string; via_cargo_sucursal: string;
 }
 
-function wcAuth() {
-  return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
-}
-
-// WordPress devuelve 500 esporádicos bajo carga (transitorios): los 5xx y los
-// errores de red se reintentan con backoff. Los 4xx no — son determinísticos.
-async function wcGet(path: string) {
-  const MAX_ATTEMPTS = 3;
-  let lastError: Error = new Error(`WC: sin respuesta en GET ${path}`);
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    let res: Response | null = null;
-    try {
-      res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
-        headers: { Authorization: wcAuth() },
-        cache: 'no-store',
-      });
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-    }
-    if (res) {
-      if (res.ok) return res.json();
-      if (res.status < 500) throw new Error(`WC ${res.status} on GET ${path}`);
-      lastError = new Error(`WC ${res.status} on GET ${path}`);
-    }
-    if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 400 * attempt));
-  }
-  throw lastError;
-}
-
-class ProductNotFoundError extends Error {
-  constructor(readonly slug: string) {
-    super(`Producto no encontrado: ${slug}`);
-  }
-}
-
 // Guarda la dirección/DNI/sucursal cargados en este pedido como perfil del
 // cliente, para que /api/mayorista/perfil los precargue de ahí en adelante
 // — así los tiene que tipear una vez por cuenta (y puede corregirlos en
@@ -89,47 +51,6 @@ async function saveCustomerProfile(customerId: number, billing: Record<string, u
     }),
   });
   if (!res.ok) console.error('[mayorista/pedido] no se pudo guardar el perfil del cliente:', res.status);
-}
-
-interface ResolvedProduct {
-  product_id: number;
-  stock: StockInfo;
-  variations: { id: number; options: string[]; stock: StockInfo }[];
-}
-
-function stockInfo(x: any): StockInfo {
-  return {
-    status: x.status ?? null,
-    stockStatus: x.stock_status ?? null,
-    manageStock: x.manage_stock ?? null,
-    stockQuantity: typeof x.stock_quantity === 'number' ? x.stock_quantity : null,
-  };
-}
-
-// Antes se resolvía producto + variaciones POR ÍTEM y todo en paralelo: un
-// pedido de 35 ítems eran ~70 requests simultáneos y WP tira 500 esporádicos
-// con ese fan-out — el Promise.all volteaba el pedido entero ("Error al crear
-// el pedido"). Ahora se consulta una sola vez por producto y de a pocos.
-async function resolveProduct(slug: string): Promise<ResolvedProduct> {
-  // status=any: WC REST filtra a "publish" por defecto y acá también queremos
-  // encontrar el producto privado para poder decirle al cliente por qué no va.
-  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&status=any&_fields=id,type,status,stock_status,manage_stock,stock_quantity&per_page=1`);
-  if (!products.length) throw new ProductNotFoundError(slug);
-  const { id: productId, type } = products[0];
-  const stock = stockInfo(products[0]);
-
-  if (type !== 'variable') return { product_id: productId, stock, variations: [] };
-
-  const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes,stock_status,manage_stock,stock_quantity`);
-  return {
-    product_id: productId,
-    stock,
-    variations: variations.map((v: any) => ({
-      id: v.id,
-      options: (v.attributes ?? []).map((a: any) => String(a.option ?? '').toLowerCase().trim()),
-      stock: stockInfo(v),
-    })),
-  };
 }
 
 async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, orderNumber: string) {
@@ -223,36 +144,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
     }
 
-    const slugs = [...new Set(items.map(i => i.slug))];
-    let resolvedBySlug: Map<string, ResolvedProduct>;
-    try {
-      const resolvedList = await mapLimit(slugs, 3, resolveProduct);
-      resolvedBySlug = new Map(slugs.map((s, i) => [s, resolvedList[i]]));
-    } catch (err) {
-      if (err instanceof ProductNotFoundError) {
-        const name = items.find(i => i.slug === err.slug)?.name ?? err.slug;
-        return NextResponse.json(
-          { message: `"${name}" ya no está disponible en el catálogo. Sacalo del pedido e intentá de nuevo.` },
-          { status: 400 },
-        );
-      }
-      throw err;
+    const resolvedBySlug = await resolveProducts(items.map(i => i.slug));
+
+    // Lo que el catálogo ya no ofrece (producto despublicado o borrado, talle
+    // sin stock) no puede entrar en la orden aunque siga en el carrito o en un
+    // borrador viejo. El carrito ya se sanea solo (/api/mayorista/disponibilidad)
+    // pero esto es la última barrera: se avisa todo junto.
+    const unavailable = findUnavailable(items, resolvedBySlug);
+    if (unavailable.length) {
+      return NextResponse.json(
+        { message: `${unavailable.map(u => u.message).join(' ')} Sacalo del pedido e intentá de nuevo.`, unavailable },
+        { status: 409 },
+      );
     }
 
-    // Lo que el catálogo ya no ofrece (producto despublicado, talle sin
-    // stock) no puede entrar en la orden aunque siga en el carrito o en un
-    // borrador viejo. Se avisa todo junto para que el cliente lo saque de una.
-    const unavailable: string[] = [];
     const lineItems = items.map((item) => {
       const resolved = resolvedBySlug.get(item.slug)!;
       const color = (item.color ?? '').trim();
-      // La variación tiene que tener TODOS los atributos elegidos: con Color +
-      // Talle como ejes, buscar solo por talle devolvía la primera del color
-      // que fuera. "Única" no es un atributo de Woo, no se exige.
-      const wanted = [item.size, color].map(s => s.toLowerCase().trim()).filter(s => s && s !== 'única');
-      const hit = resolved.variations.find(v => wanted.every(w => v.options.includes(w)));
-      const why = unavailableReason(resolved.stock, hit?.stock ?? null, item.quantity);
-      if (why) unavailable.push(unavailableMessage(item.name, item.size, why));
+      const hit = findVariation(resolved, item);
       const lineTotal = String(Math.round(item.price * item.quantity));
       // Lo que no quedó representado por la variación va como meta visible en
       // la orden: el talle si no matcheó ninguna, y el color siempre que la
@@ -271,13 +180,6 @@ export async function POST(req: NextRequest) {
         ...(meta.length ? { meta_data: meta } : {}),
       };
     });
-
-    if (unavailable.length) {
-      return NextResponse.json(
-        { message: `${unavailable.join(' ')} Sacalo del pedido e intentá de nuevo.`, unavailable },
-        { status: 409 },
-      );
-    }
 
     const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 

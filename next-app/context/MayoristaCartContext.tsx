@@ -69,6 +69,8 @@ interface MayoristaCartContextType {
   replace: (items: MayoristaCartItem[]) => void;
   total: number;
   count: number;
+  // true una vez que el carrito se leyó de localStorage (antes, items está vacío).
+  hydrated: boolean;
 }
 
 const MayoristaCartContext = createContext<MayoristaCartContextType | null>(null);
@@ -101,7 +103,7 @@ export function MayoristaCartProvider({ children }: { children: ReactNode }) {
       setQty: (line, quantity) => dispatch({ type: 'SET_QTY', line, quantity }),
       clear: () => dispatch({ type: 'CLEAR' }),
       replace: (items) => dispatch({ type: 'LOAD', state: { items } }),
-      total, count,
+      total, count, hydrated,
     }}>
       {children}
     </MayoristaCartContext.Provider>

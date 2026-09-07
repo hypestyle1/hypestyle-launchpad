@@ -58,3 +58,46 @@ describe('unavailableMessage', () => {
       .toBe('Camo Cap: quedan 2 unidades.');
   });
 });
+
+import { findUnavailable, findVariation, type ResolvedProduct } from '@/lib/mayorista-stock';
+
+describe('findUnavailable', () => {
+  const hoodie: ResolvedProduct = {
+    product_id: 2351,
+    stock: { status: 'private', stockStatus: 'outofstock', manageStock: false, stockQuantity: null },
+    variations: [
+      { id: 2355, options: ['m', 'boxy'], stock: { stockStatus: 'outofstock', manageStock: true, stockQuantity: 0 } },
+      { id: 2356, options: ['l', 'boxy'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 3 } },
+    ],
+  };
+  const tee: ResolvedProduct = {
+    product_id: 1,
+    stock: { status: 'publish', stockStatus: 'instock', manageStock: false, stockQuantity: null },
+    variations: [
+      { id: 11, options: ['l', 'negra'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 2 } },
+      { id: 12, options: ['l', 'blanca'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 10 } },
+    ],
+  };
+  const resolved = new Map<string, ResolvedProduct | null>([['shoot-for-the-stars', hoodie], ['tee', tee], ['borrado', null]]);
+
+  it('marca el hoodie privado, el talle sin stock, el borrado y la cantidad excedida', () => {
+    const out = findUnavailable([
+      { slug: 'shoot-for-the-stars', name: 'SHOOT FOR THE STARS - HOODIE', size: 'M', quantity: 1 },
+      { slug: 'tee', name: 'TEE', size: 'L', color: 'Negra', quantity: 5 },
+      { slug: 'tee', name: 'TEE', size: 'L', color: 'Blanca', quantity: 5 },
+      { slug: 'borrado', name: 'VIEJO', size: 'S', quantity: 1 },
+    ], resolved);
+    expect(out.map(u => [u.slug, u.color ?? '', u.reason, u.available ?? null])).toEqual([
+      ['shoot-for-the-stars', '', 'not-published', null],
+      ['tee', 'Negra', 'insufficient', 2],
+      ['borrado', '', 'not-published', null],
+    ]);
+    expect(out[1].message).toBe('TEE (talle L): quedan 2 unidades.');
+  });
+
+  it('findVariation exige talle Y color', () => {
+    expect(findVariation(tee, { size: 'L', color: 'Blanca' })?.id).toBe(12);
+    expect(findVariation(tee, { size: 'L' })?.id).toBe(11);
+    expect(findVariation(hoodie, { size: 'XL' })).toBeUndefined();
+  });
+});
