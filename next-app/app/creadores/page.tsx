@@ -43,6 +43,13 @@ const EMPTY = {
 // pregunta por algo que despues no le podemos mandar.
 const TALLES = ['S', 'M', 'L', 'XL'];
 const FRECUENCIAS = ['Una pieza por mes', 'Dos o tres por mes', 'Todas las semanas'];
+// Opcional. Se guarda el valor canónico en español (mujer/hombre/otro) y se
+// muestra traducido, igual que los demás chips.
+const GENEROS: { value: string; label: string }[] = [
+  { value: 'mujer', label: 'Mujer' },
+  { value: 'hombre', label: 'Hombre' },
+  { value: 'otro', label: 'Otro' },
+];
 const EQUIPOS = ['Celular, edito yo', 'Celular, me edita alguien', 'Cámara, edito yo', 'Cámara, trabajo con un editor'];
 
 export default function CreadoresPage() {
@@ -53,6 +60,7 @@ export default function CreadoresPage() {
   const [talle, setTalle] = useState('');
   const [frecuencia, setFrecuencia] = useState('');
   const [equipo, setEquipo] = useState('');
+  const [genero, setGenero] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [listo, setListo] = useState<{ actualizada: boolean } | null>(null);
@@ -92,7 +100,7 @@ export default function CreadoresPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...form, talle, frecuencia, equipo,
+        ...form, talle, frecuencia, equipo, genero,
         idioma: language,
         locale: typeof navigator !== 'undefined' ? navigator.language : '',
       }),
@@ -181,6 +189,14 @@ export default function CreadoresPage() {
                 <div className="grid grid-cols-2 gap-2.5">
                   <input type="text" placeholder={t('Ciudad')} {...field('ciudad')} className={inputClass} style={glassInput} />
                   <input type="number" min={13} max={99} placeholder={t('Edad')} {...field('edad')} className={inputClass} style={glassInput} />
+                </div>
+                <div className="!mt-3">
+                  <p className="text-[12px] text-foreground/60 mb-2">{t('¿Cómo te identificás? (opcional)')}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {GENEROS.map(g => (
+                      <button key={g.value} type="button" onClick={() => setGenero(genero === g.value ? '' : g.value)} className={chip(genero === g.value)}>{t(g.label)}</button>
+                    ))}
+                  </div>
                 </div>
 
                 {esMenor && (
