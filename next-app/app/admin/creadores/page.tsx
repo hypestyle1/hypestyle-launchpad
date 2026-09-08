@@ -10,6 +10,8 @@ import { CreatorCollaborations } from '@/components/admin/CreatorCollaborations'
 const WP_SECRET_KEY = 'hype_admin_key';
 
 type Estado = 'nuevo' | 'potencial' | 'descartado' | 'aprobado';
+// '' = sin asignar: todas las postulaciones anteriores a que existiera el campo.
+type Genero = 'mujer' | 'hombre' | 'otro' | '';
 
 type Creador = {
   id: number; nombre: string; email: string; telefono: string; ciudad: string; edad: string;
@@ -19,6 +21,7 @@ type Creador = {
   idioma: string; locale: string; idioma_detectado: string; traduccion_estado: string;
   porque_es: string; prenda_es: string; links_es: string; marcas_es: string;
   origen: string; postulado_el: string; plataforma: string; seguidores: string;
+  genero: Genero;
   estado: Estado; nota: string; revisadoPor: string; revisadoEl: string; creadoEl: string;
 };
 
@@ -29,6 +32,25 @@ const FILTROS: { value: Estado | 'todos'; label: string }[] = [
   { value: 'descartado', label: 'Descartados' },
   { value: 'todos', label: 'Todos' },
 ];
+
+// El filtro de género se cruza con el de estado: "Potenciales + Mujeres" es
+// la búsqueda que pidió la content manager. Los conteos de cada chip se
+// calculan sobre el estado ya elegido, para que digan cuántas hay AHÍ.
+const FILTROS_GENERO: { value: Genero | 'todos'; label: string }[] = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'mujer', label: 'Mujeres' },
+  { value: 'hombre', label: 'Hombres' },
+  { value: 'otro', label: 'Otro' },
+  { value: '', label: 'Sin género' },
+];
+
+const GENEROS_ASIGNABLES: { value: Exclude<Genero, ''>; label: string }[] = [
+  { value: 'mujer', label: 'Mujer' },
+  { value: 'hombre', label: 'Hombre' },
+  { value: 'otro', label: 'Otro' },
+];
+
+const ETIQUETA_GENERO: Record<Exclude<Genero, ''>, string> = { mujer: 'Mujer', hombre: 'Hombre', otro: 'Otro' };
 
 const COLOR_ESTADO: Record<Estado, string> = {
   nuevo: 'bg-blue-100 text-blue-700',
@@ -61,6 +83,7 @@ export default function CreadoresAdminPage() {
   const [creadores, setCreadores] = useState<Creador[]>([]);
   const [cargando, setCargando] = useState(true);
   const [filtro, setFiltro] = useState<Estado | 'todos'>('nuevo');
+  const [filtroGenero, setFiltroGenero] = useState<Genero | 'todos'>('todos');
   const [busqueda, setBusqueda] = useState('');
   const [abierto, setAbierto] = useState<number | null>(null);
   const [guardandoId, setGuardandoId] = useState<number | null>(null);
@@ -105,12 +128,24 @@ export default function CreadoresAdminPage() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  // Primero el estado (Sin revisar / Potenciales / ...), después el género.
+  const porEstado = useMemo(
+    () => creadores.filter(c => filtro === 'todos' || (c.estado || 'nuevo') === filtro),
+    [creadores, filtro],
+  );
+
   const visibles = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    return creadores
-      .filter(c => filtro === 'todos' || (c.estado || 'nuevo') === filtro)
+    return porEstado
+      .filter(c => filtroGenero === 'todos' || (c.genero || '') === filtroGenero)
       .filter(c => !q || [c.nombre, c.email, c.instagram, c.tiktok, c.ciudad].some(v => (v || '').toLowerCase().includes(q)));
-  }, [creadores, filtro, busqueda]);
+  }, [porEstado, filtroGenero, busqueda]);
+
+  const conteoGenero = useMemo(() => {
+    const c: Record<string, number> = { todos: porEstado.length, mujer: 0, hombre: 0, otro: 0, '': 0 };
+    porEstado.forEach(x => { const g = x.genero || ''; c[g] = (c[g] || 0) + 1; });
+    return c;
+  }, [porEstado]);
 
   const conteo = useMemo(() => {
     const c: Record<string, number> = { nuevo: 0, potencial: 0, aprobado: 0, descartado: 0, todos: creadores.length };
@@ -142,6 +177,25 @@ export default function CreadoresAdminPage() {
       }
     } finally {
       setReintentando(null);
+    }
+  }
+
+  // Género: un clic asigna, otro clic sobre el mismo lo saca. No firma quién
+  // lo puso porque no es una decisión sobre la postulación, es un dato.
+  async function asignarGenero(c: Creador, genero: Genero) {
+    const nuevo: Genero = (c.genero || '') === genero ? '' : genero;
+    setGuardandoId(c.id);
+    try {
+      const res = await fetch('/api/admin/creadores', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ id: c.id, genero: nuevo }),
+      });
+      if (res.ok) {
+        setCreadores(prev => prev.map(x => x.id === c.id ? { ...x, genero: nuevo } : x));
+      }
+    } finally {
+      setGuardandoId(null);
     }
   }
 
@@ -217,6 +271,25 @@ export default function CreadoresAdminPage() {
           ))}
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 mr-1">Género</span>
+          {FILTROS_GENERO.map(f => {
+            // "Otro" solo aparece si hay alguien ahí, para no ensuciar la fila.
+            if (f.value === 'otro' && !conteoGenero.otro && filtroGenero !== 'otro') return null;
+            return (
+              <button
+                key={f.value || 'sin'}
+                onClick={() => setFiltroGenero(f.value)}
+                className={`px-3 py-1 text-[11px] rounded-full border transition-colors ${
+                  filtroGenero === f.value ? 'bg-foreground text-background border-foreground' : 'bg-card border-border text-muted-foreground hover:border-border-mid'
+                }`}
+              >
+                {f.label} <span className="opacity-50">{conteoGenero[f.value] ?? 0}</span>
+              </button>
+            );
+          })}
+        </div>
+
         <input
           type="text"
           value={busqueda}
@@ -229,7 +302,7 @@ export default function CreadoresAdminPage() {
           <p className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando postulaciones...</p>
         ) : visibles.length === 0 ? (
           <p className="text-center py-20 text-[13px] text-muted-foreground/70">
-            {filtro === 'nuevo' ? 'No hay postulaciones sin revisar.' : 'No hay postulaciones que coincidan.'}
+            {filtro === 'nuevo' && filtroGenero === 'todos' ? 'No hay postulaciones sin revisar.' : 'No hay postulaciones que coincidan.'}
           </p>
         ) : (
           <div className="space-y-3">
@@ -250,6 +323,11 @@ export default function CreadoresAdminPage() {
                           {esMenor && (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
                               Menor · {c.edad}
+                            </span>
+                          )}
+                          {c.genero && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-foreground/70">
+                              {ETIQUETA_GENERO[c.genero]}
                             </span>
                           )}
                         </div>
@@ -277,6 +355,26 @@ export default function CreadoresAdminPage() {
                               WhatsApp
                             </a>
                           )}
+                        </div>
+                        {/* Asignar género. Las postulaciones viejas no lo tienen y
+                            se etiquetan de a un clic desde acá. */}
+                        <div className="flex flex-wrap items-center gap-1 mt-2">
+                          {GENEROS_ASIGNABLES.map(g => {
+                            const activo = (c.genero || '') === g.value;
+                            return (
+                              <button
+                                key={g.value}
+                                onClick={() => asignarGenero(c, g.value)}
+                                disabled={guardandoId === c.id}
+                                title={activo ? 'Quitar' : `Marcar como ${g.label.toLowerCase()}`}
+                                className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors disabled:opacity-40 ${
+                                  activo ? 'bg-foreground text-background border-foreground' : 'bg-card border-border text-muted-foreground/70 hover:text-foreground hover:border-border-mid'
+                                }`}
+                              >
+                                {g.label}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 

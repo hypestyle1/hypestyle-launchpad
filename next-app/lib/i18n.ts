@@ -199,6 +199,10 @@ const DICT: Dict = {
     EN: 'Which Hype piece would you wear tomorrow, and why that one?',
     PT: 'Qual peça da Hype você usaria amanhã, e por que essa?' },
   '¿Qué talle usás?': { EN: 'What size do you wear?', PT: 'Que tamanho você usa?' },
+  '¿Cómo te identificás? (opcional)': { EN: 'How do you identify? (optional)', PT: 'Como você se identifica? (opcional)' },
+  'Mujer': { EN: 'Woman', PT: 'Mulher' },
+  'Hombre': { EN: 'Man', PT: 'Homem' },
+  'Otro': { EN: 'Other', PT: 'Outro' },
   '¿Trabajaste con otras marcas? (opcional)': {
     EN: 'Have you worked with other brands? (optional)',
     PT: 'Você já trabalhou com outras marcas? (opcional)' },

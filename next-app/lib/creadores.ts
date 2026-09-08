@@ -25,6 +25,11 @@ const ADMIN_EMAIL = 'hypestylearg@gmail.com';
 export const ESTADOS = ['nuevo', 'potencial', 'descartado', 'aprobado'] as const;
 export type EstadoCreador = (typeof ESTADOS)[number];
 
+// Para separar creadoras y creadores en el panel. Vacío = sin asignar (todas
+// las postulaciones anteriores a la versión 1.32.0 del PHP).
+export const GENEROS = ['mujer', 'hombre', 'otro'] as const;
+export type GeneroCreador = (typeof GENEROS)[number];
+
 export const ETIQUETA_ESTADO: Record<EstadoCreador, string> = {
   nuevo: 'Sin revisar',
   potencial: 'Potencial',
@@ -42,6 +47,7 @@ export interface Creador {
   // propósito, para no tener que migrar nada.
   idioma: string; locale: string; idioma_detectado: string; traduccion_estado: string;
   porque_es: string; prenda_es: string; links_es: string; marcas_es: string;
+  genero: GeneroCreador | '';
   estado: EstadoCreador; nota: string;
   revisadoPor: string; revisadoEl: string;
   creadoEl: string;
@@ -82,7 +88,7 @@ export async function guardarCreador(campos: Record<string, string>): Promise<{ 
   return { id: data.creador?.id, repetido: !!data.repetido };
 }
 
-export async function actualizarCreador(id: number, cambios: { estado?: string; nota?: string; revisadoPor?: string }) {
+export async function actualizarCreador(id: number, cambios: { estado?: string; nota?: string; revisadoPor?: string; genero?: string }) {
   const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/creadores/${id}`, {
     method: 'POST',
     headers: wpHeaders,
@@ -112,6 +118,7 @@ export async function avisarPostulacion(c: Record<string, string>, repetido: boo
       ${fila('Teléfono', c.telefono)}
       ${fila('Ciudad', c.ciudad)}
       ${fila('Edad', c.edad)}
+      ${fila('Género', c.genero)}
       ${fila('Instagram', c.instagram ? '@' + c.instagram.replace(/^@/, '') : '')}
       ${fila('TikTok', c.tiktok ? '@' + c.tiktok.replace(/^@/, '') : '')}
       ${fila('Talle', c.talle)}
