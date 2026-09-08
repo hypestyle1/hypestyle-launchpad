@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 
 // Acción de aprobación sobre un ContentItem → actualiza el snapshot approvalState
 // y genera un evento inmutable en el backend. Aprobar ≠ publicar.
@@ -9,7 +9,7 @@ const WP_SECRET = process.env.WP_SECRET || '';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!adminSecretMatches(req.headers.get('x-admin-key'))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (!(await authorizeAdmin(req, 'creadores'))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   const body = await req.json();
   const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/content/${params.id}/approval`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Hypestyle-Secret': WP_SECRET }, body: JSON.stringify(body),

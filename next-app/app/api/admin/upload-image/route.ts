@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 
 export const runtime = 'nodejs';
 
@@ -10,7 +10,7 @@ const WP_APP_PASS  = process.env.WP_MEDIA_APP_PASSWORD || '';
 // Sube una imagen a la biblioteca de medios de WordPress y devuelve su URL pública.
 // Requiere un usuario WP con Application Password (env WP_MEDIA_USER / WP_MEDIA_APP_PASSWORD).
 export async function POST(req: NextRequest) {
-  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
+  if (!(await authorizeAdmin(req, 'newsletter'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   if (!WP_USER || !WP_APP_PASS) {

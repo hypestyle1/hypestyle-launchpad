@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 import { loadStore } from '@/lib/close-friends/store';
 
 export const dynamic = 'force-dynamic';
 
 /** GET: la lista completa (entradas + último sync). */
 export async function GET(req: NextRequest) {
-  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
+  if (!(await authorizeAdmin(req, 'creadores'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   const r = await loadStore();

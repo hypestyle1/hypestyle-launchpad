@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WP_SECRET = process.env.WP_SECRET || '';
-const check = (req: NextRequest) => adminSecretMatches(req.headers.get('x-admin-key'));
+const check = (req: NextRequest) => authorizeAdmin(req, 'creadores');
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!check(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (!(await check(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/content/${params.id}?_cb=${Date.now()}`, {
     headers: { 'X-Hypestyle-Secret': WP_SECRET }, cache: 'no-store',
   });
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!check(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (!(await check(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   const body = await req.json();
   const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/content/${params.id}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Hypestyle-Secret': WP_SECRET }, body: JSON.stringify(body),
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!check(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (!(await check(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   const hard = req.nextUrl.searchParams.get('hard') === '1' ? '?hard=1' : '';
   const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/content/${params.id}${hard}`, {
     method: 'DELETE', headers: { 'X-Hypestyle-Secret': WP_SECRET },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 import { loadStore, upsertEntries } from '@/lib/close-friends/store';
 import { collectFromWoo } from '@/lib/close-friends/sync';
 
@@ -11,7 +11,7 @@ export const maxDuration = 60;
  * y suma a la lista los usuarios de IG que no estaban. Devuelve el delta.
  */
 export async function POST(req: NextRequest) {
-  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
+  if (!(await authorizeAdmin(req, 'creadores'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   const current = await loadStore();

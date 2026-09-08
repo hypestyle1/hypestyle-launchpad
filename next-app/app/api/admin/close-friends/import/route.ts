@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 import { upsertEntries } from '@/lib/close-friends/store';
 import { entriesFromSheetCsv } from '@/lib/close-friends/types';
 
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  * tildados del sheet ("Agregado a CF" = TRUE) quedan tildados acá también.
  */
 export async function POST(req: NextRequest) {
-  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
+  if (!(await authorizeAdmin(req, 'creadores'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   let body: any;
