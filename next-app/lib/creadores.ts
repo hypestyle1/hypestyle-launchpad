@@ -25,10 +25,48 @@ const ADMIN_EMAIL = 'hypestylearg@gmail.com';
 export const ESTADOS = ['nuevo', 'potencial', 'descartado', 'aprobado'] as const;
 export type EstadoCreador = (typeof ESTADOS)[number];
 
-// Para separar creadoras y creadores en el panel. Vacío = sin asignar (todas
-// las postulaciones anteriores a la versión 1.32.0 del PHP).
-export const GENEROS = ['mujer', 'hombre', 'otro'] as const;
-export type GeneroCreador = (typeof GENEROS)[number];
+// Etiquetas cerradas con las que el panel filtra. Vacío = sin asignar (todas
+// las postulaciones anteriores a la versión 1.32.0 del PHP). El género además
+// lo declara la persona en el formulario; relación y compensación las pone
+// solo el equipo. Mismo enum que HS_CREADOR_ETIQUETAS en el PHP.
+export const ETIQUETAS = {
+  genero: {
+    label: 'Género',
+    sinAsignar: 'Sin género',
+    valores: [
+      { value: 'mujer', label: 'Mujer', plural: 'Mujeres' },
+      { value: 'hombre', label: 'Hombre', plural: 'Hombres' },
+      { value: 'otro', label: 'Otro', plural: 'Otro' },
+    ],
+  },
+  relacion: {
+    label: 'Relación',
+    sinAsignar: 'Sin relación',
+    valores: [
+      { value: 'trabajamos', label: 'Ya trabajamos', plural: 'Ya trabajamos' },
+      { value: 'aun_no', label: 'Aún no', plural: 'Aún no' },
+      { value: 'contactar', label: 'Contactar pronto', plural: 'Contactar pronto' },
+    ],
+  },
+  compensacion: {
+    label: 'Cobro',
+    sinAsignar: 'Sin cobro definido',
+    valores: [
+      { value: 'cobra', label: 'Cobra', plural: 'Cobra' },
+      { value: 'canje', label: 'Canje', plural: 'Canje' },
+      { value: 'mixto', label: 'Canje + cobro', plural: 'Canje + cobro' },
+    ],
+  },
+} as const;
+export type EtiquetaCreador = keyof typeof ETIQUETAS;
+export const CLAVES_ETIQUETA = Object.keys(ETIQUETAS) as EtiquetaCreador[];
+
+export const GENEROS = ETIQUETAS.genero.valores.map(v => v.value);
+export type GeneroCreador = (typeof ETIQUETAS.genero.valores)[number]['value'];
+
+export function valorEtiquetaValido(clave: EtiquetaCreador, valor: unknown): valor is string {
+  return valor === '' || (ETIQUETAS[clave].valores as readonly { value: string }[]).some(v => v.value === valor);
+}
 
 export const ETIQUETA_ESTADO: Record<EstadoCreador, string> = {
   nuevo: 'Sin revisar',
@@ -48,6 +86,7 @@ export interface Creador {
   idioma: string; locale: string; idioma_detectado: string; traduccion_estado: string;
   porque_es: string; prenda_es: string; links_es: string; marcas_es: string;
   genero: GeneroCreador | '';
+  relacion: string; compensacion: string;
   estado: EstadoCreador; nota: string;
   revisadoPor: string; revisadoEl: string;
   creadoEl: string;
@@ -88,7 +127,10 @@ export async function guardarCreador(campos: Record<string, string>): Promise<{ 
   return { id: data.creador?.id, repetido: !!data.repetido };
 }
 
-export async function actualizarCreador(id: number, cambios: { estado?: string; nota?: string; revisadoPor?: string; genero?: string }) {
+export async function actualizarCreador(
+  id: number,
+  cambios: { estado?: string; nota?: string; revisadoPor?: string } & Partial<Record<EtiquetaCreador, string>>,
+) {
   const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/creadores/${id}`, {
     method: 'POST',
     headers: wpHeaders,
