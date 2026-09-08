@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { CreatorCollaborations } from '@/components/admin/CreatorCollaborations';
+import { ETIQUETAS, CLAVES_ETIQUETA, type EtiquetaCreador } from '@/lib/creadores';
 
 // Bandeja de postulaciones para crear contenido. La comparten la content
 // manager y la dueña de la cuenta, así que cada decisión queda firmada.
@@ -10,8 +11,10 @@ import { CreatorCollaborations } from '@/components/admin/CreatorCollaborations'
 const WP_SECRET_KEY = 'hype_admin_key';
 
 type Estado = 'nuevo' | 'potencial' | 'descartado' | 'aprobado';
-// '' = sin asignar: todas las postulaciones anteriores a que existiera el campo.
-type Genero = 'mujer' | 'hombre' | 'otro' | '';
+// Valor de una etiqueta (género, relación, cobro). '' = sin asignar: todas
+// las postulaciones anteriores a que existieran los campos.
+type Filtros = Record<EtiquetaCreador, string | 'todos'>;
+const FILTROS_INICIALES = Object.fromEntries(CLAVES_ETIQUETA.map(k => [k, 'todos'])) as Filtros;
 
 type Creador = {
   id: number; nombre: string; email: string; telefono: string; ciudad: string; edad: string;
@@ -21,7 +24,7 @@ type Creador = {
   idioma: string; locale: string; idioma_detectado: string; traduccion_estado: string;
   porque_es: string; prenda_es: string; links_es: string; marcas_es: string;
   origen: string; postulado_el: string; plataforma: string; seguidores: string;
-  genero: Genero;
+  genero: string; relacion: string; compensacion: string;
   estado: Estado; nota: string; revisadoPor: string; revisadoEl: string; creadoEl: string;
 };
 
@@ -33,24 +36,19 @@ const FILTROS: { value: Estado | 'todos'; label: string }[] = [
   { value: 'todos', label: 'Todos' },
 ];
 
-// El filtro de género se cruza con el de estado: "Potenciales + Mujeres" es
-// la búsqueda que pidió la content manager. Los conteos de cada chip se
-// calculan sobre el estado ya elegido, para que digan cuántas hay AHÍ.
-const FILTROS_GENERO: { value: Genero | 'todos'; label: string }[] = [
-  { value: 'todos', label: 'Todos' },
-  { value: 'mujer', label: 'Mujeres' },
-  { value: 'hombre', label: 'Hombres' },
-  { value: 'otro', label: 'Otro' },
-  { value: '', label: 'Sin género' },
-];
+// Las etiquetas (género, relación, cobro) se cruzan entre sí y con el estado:
+// "Potenciales + Mujeres + Canje" es la búsqueda que pidió la content
+// manager. El conteo de cada chip se calcula con todos los OTROS filtros
+// aplicados, para que diga cuántas quedarían si lo tocás.
+const COLOR_ETIQUETA: Record<EtiquetaCreador, string> = {
+  genero: 'bg-muted text-foreground/70',
+  relacion: 'bg-violet-100 text-violet-800',
+  compensacion: 'bg-emerald-100 text-emerald-800',
+};
 
-const GENEROS_ASIGNABLES: { value: Exclude<Genero, ''>; label: string }[] = [
-  { value: 'mujer', label: 'Mujer' },
-  { value: 'hombre', label: 'Hombre' },
-  { value: 'otro', label: 'Otro' },
-];
-
-const ETIQUETA_GENERO: Record<Exclude<Genero, ''>, string> = { mujer: 'Mujer', hombre: 'Hombre', otro: 'Otro' };
+function etiquetaLabel(clave: EtiquetaCreador, valor: string) {
+  return (ETIQUETAS[clave].valores as readonly { value: string; label: string }[]).find(v => v.value === valor)?.label || '';
+}
 
 const COLOR_ESTADO: Record<Estado, string> = {
   nuevo: 'bg-blue-100 text-blue-700',
@@ -83,7 +81,7 @@ export default function CreadoresAdminPage() {
   const [creadores, setCreadores] = useState<Creador[]>([]);
   const [cargando, setCargando] = useState(true);
   const [filtro, setFiltro] = useState<Estado | 'todos'>('nuevo');
-  const [filtroGenero, setFiltroGenero] = useState<Genero | 'todos'>('todos');
+  const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIALES);
   const [busqueda, setBusqueda] = useState('');
   const [abierto, setAbierto] = useState<number | null>(null);
   const [guardandoId, setGuardandoId] = useState<number | null>(null);
@@ -128,24 +126,40 @@ export default function CreadoresAdminPage() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  // Primero el estado (Sin revisar / Potenciales / ...), después el género.
-  const porEstado = useMemo(
-    () => creadores.filter(c => filtro === 'todos' || (c.estado || 'nuevo') === filtro),
-    [creadores, filtro],
+  // Primero el estado (Sin revisar / Potenciales / ...) y la búsqueda,
+  // después las etiquetas.
+  const base = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    return creadores
+      .filter(c => filtro === 'todos' || (c.estado || 'nuevo') === filtro)
+      .filter(c => !q || [c.nombre, c.email, c.instagram, c.tiktok, c.ciudad].some(v => (v || '').toLowerCase().includes(q)));
+  }, [creadores, filtro, busqueda]);
+
+  const pasaEtiquetas = useCallback(
+    (c: Creador, salvo?: EtiquetaCreador) =>
+      CLAVES_ETIQUETA.every(k => k === salvo || filtros[k] === 'todos' || (c[k] || '') === filtros[k]),
+    [filtros],
   );
 
-  const visibles = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    return porEstado
-      .filter(c => filtroGenero === 'todos' || (c.genero || '') === filtroGenero)
-      .filter(c => !q || [c.nombre, c.email, c.instagram, c.tiktok, c.ciudad].some(v => (v || '').toLowerCase().includes(q)));
-  }, [porEstado, filtroGenero, busqueda]);
+  const visibles = useMemo(() => base.filter(c => pasaEtiquetas(c)), [base, pasaEtiquetas]);
 
-  const conteoGenero = useMemo(() => {
-    const c: Record<string, number> = { todos: porEstado.length, mujer: 0, hombre: 0, otro: 0, '': 0 };
-    porEstado.forEach(x => { const g = x.genero || ''; c[g] = (c[g] || 0) + 1; });
-    return c;
-  }, [porEstado]);
+  // Conteo por chip, con los demás filtros aplicados (facetas).
+  const conteoEtiquetas = useMemo(() => {
+    const out = {} as Record<EtiquetaCreador, Record<string, number>>;
+    for (const k of CLAVES_ETIQUETA) {
+      const c: Record<string, number> = { todos: 0, '': 0 };
+      base.forEach(x => {
+        if (!pasaEtiquetas(x, k)) return;
+        c.todos++;
+        const v = x[k] || '';
+        c[v] = (c[v] || 0) + 1;
+      });
+      out[k] = c;
+    }
+    return out;
+  }, [base, pasaEtiquetas]);
+
+  const hayFiltroEtiqueta = CLAVES_ETIQUETA.some(k => filtros[k] !== 'todos');
 
   const conteo = useMemo(() => {
     const c: Record<string, number> = { nuevo: 0, potencial: 0, aprobado: 0, descartado: 0, todos: creadores.length };
@@ -180,19 +194,19 @@ export default function CreadoresAdminPage() {
     }
   }
 
-  // Género: un clic asigna, otro clic sobre el mismo lo saca. No firma quién
-  // lo puso porque no es una decisión sobre la postulación, es un dato.
-  async function asignarGenero(c: Creador, genero: Genero) {
-    const nuevo: Genero = (c.genero || '') === genero ? '' : genero;
+  // Etiquetas: un clic asigna, otro clic sobre el mismo lo saca. No firma
+  // quién lo puso porque no es una decisión sobre la postulación, es un dato.
+  async function etiquetar(c: Creador, clave: EtiquetaCreador, valor: string) {
+    const nuevo = (c[clave] || '') === valor ? '' : valor;
     setGuardandoId(c.id);
     try {
       const res = await fetch('/api/admin/creadores', {
         method: 'POST',
         headers: headers(),
-        body: JSON.stringify({ id: c.id, genero: nuevo }),
+        body: JSON.stringify({ id: c.id, [clave]: nuevo }),
       });
       if (res.ok) {
-        setCreadores(prev => prev.map(x => x.id === c.id ? { ...x, genero: nuevo } : x));
+        setCreadores(prev => prev.map(x => x.id === c.id ? { ...x, [clave]: nuevo } : x));
       }
     } finally {
       setGuardandoId(null);
@@ -271,23 +285,41 @@ export default function CreadoresAdminPage() {
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 mr-1">Género</span>
-          {FILTROS_GENERO.map(f => {
-            // "Otro" solo aparece si hay alguien ahí, para no ensuciar la fila.
-            if (f.value === 'otro' && !conteoGenero.otro && filtroGenero !== 'otro') return null;
-            return (
+        <div className="space-y-2 mb-4">
+          {CLAVES_ETIQUETA.map(k => {
+            const def = ETIQUETAS[k];
+            const conteo = conteoEtiquetas[k];
+            const chips: { value: string; label: string }[] = [
+              { value: 'todos', label: 'Todos' },
+              ...def.valores.map(v => ({ value: v.value, label: v.plural })),
+              { value: '', label: def.sinAsignar },
+            ];
+            const chip = (value: string, label: string) => (
               <button
-                key={f.value || 'sin'}
-                onClick={() => setFiltroGenero(f.value)}
+                key={value || 'sin'}
+                onClick={() => setFiltros(f => ({ ...f, [k]: value }))}
                 className={`px-3 py-1 text-[11px] rounded-full border transition-colors ${
-                  filtroGenero === f.value ? 'bg-foreground text-background border-foreground' : 'bg-card border-border text-muted-foreground hover:border-border-mid'
+                  filtros[k] === value ? 'bg-foreground text-background border-foreground' : 'bg-card border-border text-muted-foreground hover:border-border-mid'
                 }`}
               >
-                {f.label} <span className="opacity-50">{conteoGenero[f.value] ?? 0}</span>
+                {label} <span className="opacity-50">{conteo[value] ?? 0}</span>
               </button>
             );
+            return (
+              <div key={k} className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 w-[64px]">{def.label}</span>
+                {chips.map(c => chip(c.value, c.label))}
+              </div>
+            );
           })}
+          {hayFiltroEtiqueta && (
+            <button
+              onClick={() => setFiltros(FILTROS_INICIALES)}
+              className="text-[11px] text-muted-foreground hover:text-foreground underline ml-[72px]"
+            >
+              Limpiar etiquetas
+            </button>
+          )}
         </div>
 
         <input
@@ -302,7 +334,7 @@ export default function CreadoresAdminPage() {
           <p className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando postulaciones...</p>
         ) : visibles.length === 0 ? (
           <p className="text-center py-20 text-[13px] text-muted-foreground/70">
-            {filtro === 'nuevo' && filtroGenero === 'todos' ? 'No hay postulaciones sin revisar.' : 'No hay postulaciones que coincidan.'}
+            {filtro === 'nuevo' && !hayFiltroEtiqueta ? 'No hay postulaciones sin revisar.' : 'No hay postulaciones que coincidan.'}
           </p>
         ) : (
           <div className="space-y-3">
@@ -325,11 +357,11 @@ export default function CreadoresAdminPage() {
                               Menor · {c.edad}
                             </span>
                           )}
-                          {c.genero && (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-muted text-foreground/70">
-                              {ETIQUETA_GENERO[c.genero]}
+                          {CLAVES_ETIQUETA.map(k => c[k] ? (
+                            <span key={k} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${COLOR_ETIQUETA[k]}`}>
+                              {etiquetaLabel(k, c[k])}
                             </span>
-                          )}
+                          ) : null)}
                         </div>
                         <p className="text-[12px] text-muted-foreground mt-0.5">
                           {[
@@ -356,25 +388,30 @@ export default function CreadoresAdminPage() {
                             </a>
                           )}
                         </div>
-                        {/* Asignar género. Las postulaciones viejas no lo tienen y
-                            se etiquetan de a un clic desde acá. */}
-                        <div className="flex flex-wrap items-center gap-1 mt-2">
-                          {GENEROS_ASIGNABLES.map(g => {
-                            const activo = (c.genero || '') === g.value;
-                            return (
-                              <button
-                                key={g.value}
-                                onClick={() => asignarGenero(c, g.value)}
-                                disabled={guardandoId === c.id}
-                                title={activo ? 'Quitar' : `Marcar como ${g.label.toLowerCase()}`}
-                                className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors disabled:opacity-40 ${
-                                  activo ? 'bg-foreground text-background border-foreground' : 'bg-card border-border text-muted-foreground/70 hover:text-foreground hover:border-border-mid'
-                                }`}
-                              >
-                                {g.label}
-                              </button>
-                            );
-                          })}
+                        {/* Etiquetar. Las postulaciones viejas no tienen nada y
+                            se marcan de a un clic desde acá. */}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2">
+                          {CLAVES_ETIQUETA.map(k => (
+                            <div key={k} className="flex flex-wrap items-center gap-1">
+                              <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 mr-0.5">{ETIQUETAS[k].label}</span>
+                              {ETIQUETAS[k].valores.map(v => {
+                                const activo = (c[k] || '') === v.value;
+                                return (
+                                  <button
+                                    key={v.value}
+                                    onClick={() => etiquetar(c, k, v.value)}
+                                    disabled={guardandoId === c.id}
+                                    title={activo ? 'Quitar' : `Marcar: ${v.label}`}
+                                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors disabled:opacity-40 ${
+                                      activo ? 'bg-foreground text-background border-foreground' : 'bg-card border-border text-muted-foreground/70 hover:text-foreground hover:border-border-mid'
+                                    }`}
+                                  >
+                                    {v.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))}
                         </div>
                       </div>
 

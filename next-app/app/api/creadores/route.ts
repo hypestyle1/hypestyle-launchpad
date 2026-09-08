@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     tutor_nombre: limpio(body.tutor_nombre),
     tutor_contacto: limpio(body.tutor_contacto),
     // Opcional. Sirve para que el panel separe creadoras y creadores.
-    genero: (GENEROS as readonly string[]).includes(limpio(body.genero)) ? limpio(body.genero) : '',
+    genero: GENEROS.includes(limpio(body.genero) as (typeof GENEROS)[number]) ? limpio(body.genero) : '',
     // En qué idioma estaba el formulario y qué declara el navegador. Se guardan
     // los dos porque no siempre coinciden con el idioma en que efectivamente
     // escribió: alguien puede tener el formulario en inglés y contestar en
