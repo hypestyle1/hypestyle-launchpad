@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 
 // Live search de productos Woo — server-side. NUNCA expone las WC keys al browser
 // ni carga todo el catálogo: busca por nombre/SKU con paginación real contra
@@ -13,7 +13,7 @@ const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('bas
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  if (!adminSecretMatches(req.headers.get('x-admin-key'))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (!(await authorizeAdmin(req, 'creadores'))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
   const sp = req.nextUrl.searchParams;
   const search = (sp.get('search') || sp.get('q') || '').trim();

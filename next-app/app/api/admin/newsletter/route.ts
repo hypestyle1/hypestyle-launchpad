@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 
 const BREVO_KEY    = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const NEWSLETTER_LIST_ID = 3;
@@ -9,12 +9,12 @@ const SENDER = { name: 'Hypestyle', email: 'info@hypestyle.com.ar' };
 const REPLY_TO_EMAIL = 'hypestylearg@gmail.com';
 
 const authed = (req: NextRequest) => {
-  return adminSecretMatches(req.headers.get('x-admin-key'));
+  return authorizeAdmin(req, 'newsletter');
 };
 
 // Cantidad de suscriptores de la lista (para mostrar en el composer).
 export async function GET(req: NextRequest) {
-  if (!authed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (!(await authed(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   const res = await fetch(`https://api.brevo.com/v3/contacts/lists/${NEWSLETTER_LIST_ID}`, {
     headers: { 'api-key': BREVO_KEY }, cache: 'no-store',
   });
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
 // Envía una prueba (test=email) o lanza la campaña a toda la lista.
 export async function POST(req: NextRequest) {
-  if (!authed(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (!(await authed(req))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
   const { subject, html, test, draft } = await req.json();
   if (!subject || !html) return NextResponse.json({ error: 'subject y html requeridos' }, { status: 400 });

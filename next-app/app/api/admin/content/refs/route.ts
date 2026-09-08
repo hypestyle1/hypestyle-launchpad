@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 
 // Referencias para los selectores del drawer: responsables (admin-profiles) y
 // creadores (CPT existente). Reusa las fuentes reales — no duplica identidades.
@@ -16,7 +16,7 @@ async function wp(path: string) {
 }
 
 export async function GET(req: NextRequest) {
-  if (!adminSecretMatches(req.headers.get('x-admin-key'))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  if (!(await authorizeAdmin(req, 'creadores'))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   const [profiles, creators, campaigns] = await Promise.all([wp('admin-profiles'), wp('creadores'), wp('campaigns')]);
   const responsibles = Array.isArray(profiles?.profiles)
     ? profiles.profiles.map((p: any) => ({ id: String(p.id ?? p.username ?? p.email ?? ''), name: p.name || p.username || p.email || 'Perfil' }))

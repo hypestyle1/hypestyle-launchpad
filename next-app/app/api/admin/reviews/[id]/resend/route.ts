@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminSecretMatches } from '@/lib/admin-auth';
+import { authorizeAdmin } from '@/lib/admin-auth';
 
 const WP_URL            = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const HS_REVIEWS_SECRET = process.env.HS_REVIEWS_SECRET  || '';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
+  if (!(await authorizeAdmin(req, 'reviews'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
