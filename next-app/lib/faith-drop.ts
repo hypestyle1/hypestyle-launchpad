@@ -27,7 +27,7 @@ export const FAITH_DROP_ITEMS: FaithDropItem[] = [
   { slug: 'hs-co-green-hoodie', live: true }, // colorway nuevo — stock cargado 29/08, New In
   { slug: 'hs-co-grey-hoodie', live: true },
   { slug: 'find-jesus-longsleeve-black', preSale: true }, // despacha desde el 10/09
-  { slug: 'longsleeve-waffle-horses', preSale: true }, // molde nuevo 28/08; 2do mas vendido (16u)
+  { slug: 'longsleeve-waffle-horses', live: true }, // preventa cumplida, ya en stock; 2do mas vendido (16u)
   // — Por ventas 60d (relevado 29/08) —
   { slug: 'lamb-of-god-pink-tee', live: true }, // 21u, el mas vendido del drop
   // Only God sumadas el 29/08: con 16 items la grilla cierra en filas justas
