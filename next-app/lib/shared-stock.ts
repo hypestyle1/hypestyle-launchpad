@@ -54,6 +54,8 @@ export const COLOR_LABEL: Record<string, string> = {
   boxy_gris_topo: 'Blank remera boxy gris topo',
   boxy_crop_blanco: 'Blank remera boxy crop blanco',
   hoodie_negro: 'Blank hoodie negro',
+  ranglan_blanco: 'Blank remera oversize ranglan blanco',
+  ranglan_azul_noche: 'Blank remera oversize ranglan azul noche',
 };
 
 function wpHeaders(extra?: Record<string, string>): Record<string, string> {
