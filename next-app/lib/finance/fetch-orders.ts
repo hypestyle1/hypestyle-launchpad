@@ -4,26 +4,17 @@
 // browser sólo ve agregados.
 
 import type { OrderInput } from './calculations';
-import type { GatewayFeeSnapshot } from './types';
+import { parseGatewaySnapshot } from './gateway-snapshot';
 import { fetchOrderPages, rangeParams } from '@/lib/dashboard/wc-paginate';
 
 export const PAID_STATUSES = new Set(['processing', 'completed', 'enviado']);
-export const GATEWAY_FEE_META = '_hs_gateway_fee';
+// El parser y la constante viven en gateway-snapshot.ts (acepta v1 y v2).
+export { GATEWAY_FEE_META } from './gateway-snapshot';
 
 // El engine sí necesita line_items (COGS por producto) y meta_data (el snapshot
 // de fee exacto), así que acá no hay proyección liviana que valga: lo que se
 // gana es el paralelismo del recorrido.
 const FIELDS = 'id,number,status,date_created_gmt,total,refunds,shipping_total,payment_method,payment_method_title,line_items,billing,meta_data';
-
-function parseSnapshot(meta: any[]): GatewayFeeSnapshot | null {
-  const m = (meta || []).find((x) => x.key === GATEWAY_FEE_META);
-  if (!m) return null;
-  try {
-    const v = typeof m.value === 'string' ? JSON.parse(m.value) : m.value;
-    if (v && typeof v.gatewayFee === 'number' && typeof v.netReceived === 'number') return v as GatewayFeeSnapshot;
-  } catch { /* ignora snapshot corrupto → cae a configured */ }
-  return null;
-}
 
 export interface FinanceOrderRaw extends OrderInput {
   status: string;
@@ -57,7 +48,7 @@ export async function fetchFinanceOrders(
         productId: Number(li.product_id), quantity: Number(li.quantity) || 0,
         lineTotal: parseFloat(li.total) || 0, name: li.name || '',
       })),
-      snapshot: parseSnapshot(o.meta_data),
+      snapshot: parseGatewaySnapshot(o.meta_data),
     });
   }
   return { orders, truncated };
