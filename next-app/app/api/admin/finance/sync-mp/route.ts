@@ -1,142 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
-import { GATEWAY_FEE_META } from '@/lib/finance/fetch-orders';
-import { providerOf } from '@/lib/finance/fees';
-import type { GatewayFeeSnapshot } from '@/lib/finance/types';
+import { wcConfigured } from '@/lib/wc-admin';
+import { mpClient, runMpSync, loadOrdersById, loadOrdersInRange, type SyncOptions } from '@/lib/finance/mp-sync';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
-// MP FEE SYNC — READ-ONLY sobre Mercado Pago.
+// MP FEE SYNC v2 — READ-ONLY sobre Mercado Pago.
 //
-// Para pedidos de MP (tarjeta/wallet) con transaction_id y SIN snapshot, consulta
-// GET /v1/payments/{id} (sólo lectura, no toca preferencias/checkout/webhooks) y
-// persiste el fee REAL en la meta del pedido `_hs_gateway_fee`. Idempotente
-// (saltea los ya sincronizados), por lotes, con manejo de error por pedido.
+// Consulta `GET /v1/payments/{id}` para los pedidos de MP cobrados y persiste el
+// snapshot v2 (`_hs_gateway_fee`) + estado del intento (`_hs_gateway_fee_sync`).
+// La lógica vive en lib/finance/mp-sync.ts; acá sólo auth y parámetros.
 //
-// El token MP se lee server-side (MP_ACCESS_TOKEN, la misma cuenta productiva del
-// checkout). Nunca se expone ni se loguea.
+//   POST (panel, `x-admin-key`)   corrida manual: por pedido, lista o rango.
+//   GET  (Vercel Cron, CRON_SECRET) corrida diaria con la política de resync.
 //
-// `dryRun=1` → consulta MP y devuelve lo que escribiría, SIN escribir en Woo.
+// Parámetros comunes:
+//   orderId=3147            un pedido        | orderIds=3147,3140,3101  varios
+//   after=ISO&before=ISO    rango de creación | days=60                 últimos N días
+//   limit=50                máx. pedidos a consultar en MP (cap 300)
+//   force=1                 re-sincronizar aunque el snapshot esté estable
+//   dryRun=1                consulta MP y arma el reporte SIN escribir en Woo
+//   samples=25              cuántos ejemplos incluir en el reporte
+//
+// El token MP sólo se lee server-side y nunca se devuelve ni se loguea.
 
-const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
-const WC_KEY = (process.env.WC_CONSUMER_KEY || '').trim();
-const WC_SEC = (process.env.WC_CONSUMER_SECRET || '').trim();
 const MP_TOKEN = (process.env.MP_ACCESS_TOKEN || '').trim();
-const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
+const CRON_SECRET = (process.env.CRON_SECRET || '').trim();
 
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-const MP_METHODS = new Set(['tarjeta', 'mercadopago', 'woo-mercado-pago-basic']);
+const int = (v: string | null, def: number, min: number, max: number) => {
+  const n = parseInt(v || '', 10);
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
+};
 
-async function mpPayment(id: string, tries = 2): Promise<any | null> {
-  for (let i = 0; i < tries; i++) {
-    try {
-      const res = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(id)}`, {
-        headers: { Authorization: `Bearer ${MP_TOKEN}` }, cache: 'no-store',
-      });
-      if (res.status === 429) { await new Promise((r) => setTimeout(r, 500 * (i + 1))); continue; } // rate limit → backoff
-      if (!res.ok) return null;
-      return await res.json();
-    } catch { await new Promise((r) => setTimeout(r, 300)); }
-  }
-  return null;
-}
+async function run(req: NextRequest, defaults: { limit: number; days: number }) {
+  if (!MP_TOKEN) return NextResponse.json({ error: 'MP_ACCESS_TOKEN no configurado' }, { status: 503 });
+  if (!wcConfigured()) return NextResponse.json({ error: 'WC_CONSUMER_KEY/SECRET no configurados' }, { status: 503 });
 
-/** Arma el snapshot desde el payment de MP, usando SÓLO campos que MP devuelve. */
-function toSnapshot(pay: any, provider: any): GatewayFeeSnapshot | null {
-  const gross = Number(pay.transaction_amount);
-  if (!Number.isFinite(gross)) return null;
-  const fees = Array.isArray(pay.fee_details) ? pay.fee_details : [];
-  const gatewayFee = round2(fees.reduce((s: number, f: any) => s + (Number(f.amount) || 0), 0));
-  const net = Number(pay?.transaction_details?.net_received_amount);
-  const netReceived = Number.isFinite(net) ? round2(net) : round2(gross - gatewayFee);
-  // Deducciones que NO son fee económico (retenciones/impuestos): gross − net − fee.
-  const otherCashDeduction = round2(gross - netReceived - gatewayFee);
-  return {
-    provider,
-    transactionId: String(pay.id),
-    grossAmount: round2(gross),
-    gatewayFee,
-    netReceived,
-    breakdown: fees.map((f: any) => ({ type: String(f.type || 'fee'), amount: round2(Number(f.amount) || 0) })),
-    otherCashDeduction: otherCashDeduction > 0 ? otherCashDeduction : 0,
-    currency: String(pay.currency_id || 'ARS'),
-    syncedAt: new Date().toISOString(),
-    source: 'exact',
+  const sp = req.nextUrl.searchParams;
+  const opts: SyncOptions = {
+    dryRun: sp.get('dryRun') === '1' || sp.get('dry') === '1',
+    force: sp.get('force') === '1',
+    limit: int(sp.get('limit'), defaults.limit, 1, 300),
+    samples: int(sp.get('samples'), 25, 0, 100),
   };
+
+  const idList = [sp.get('orderId'), sp.get('orderIds')].filter(Boolean).join(',')
+    .split(',').map((s) => parseInt(s.trim(), 10)).filter((n) => Number.isFinite(n) && n > 0);
+
+  let candidates, truncated = false, missing: number[] = [];
+  let scope: string;
+  if (idList.length) {
+    const r = await loadOrdersById([...new Set(idList)]);
+    candidates = r.orders; missing = r.missing;
+    scope = `pedidos ${idList.join(',')}`;
+    if (!candidates.length) return NextResponse.json({ error: `Pedido(s) no encontrado(s): ${missing.join(',')}` }, { status: 404 });
+  } else {
+    const days = int(sp.get('days'), defaults.days, 1, 400);
+    const before = sp.get('before') || new Date().toISOString();
+    const after = sp.get('after') || new Date(Date.parse(before) - days * 86400_000).toISOString();
+    const r = await loadOrdersInRange(after, before);
+    candidates = r.orders; truncated = r.truncated;
+    scope = `rango ${after.slice(0, 10)} → ${before.slice(0, 10)}`;
+  }
+
+  const report = await runMpSync(candidates, mpClient(MP_TOKEN), opts, truncated);
+  report.mode = `${report.mode} · ${scope}`;
+  return NextResponse.json(missing.length ? { ...report, notFound: missing } : report);
 }
 
+/** Corrida manual desde el panel. */
 export async function POST(req: NextRequest) {
   if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
-  if (!MP_TOKEN) return NextResponse.json({ error: 'MP_ACCESS_TOKEN no configurado' }, { status: 400 });
+  return run(req, { limit: 50, days: 60 });
+}
 
-  const sp = req.nextUrl.searchParams;
-  const dryRun = sp.get('dryRun') === '1';
-  const force = sp.get('force') === '1';           // re-sincronizar aunque ya haya snapshot
-  const orderId = sp.get('orderId');               // sincronizar UN pedido puntual (prueba)
-  const after = sp.get('after') || '2026-05-10T00:00:00';
-  const limit = Math.min(200, Math.max(1, parseInt(sp.get('limit') || '5')));
-
-  // Universo de candidatos: un pedido puntual, o el listado MP pagado.
-  let list: any[];
-  if (orderId) {
-    const one = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${encodeURIComponent(orderId)}?_fields=id,payment_method,transaction_id,meta_data&_cb=${Date.now()}`, { headers: { Authorization: wcAuth() }, cache: 'no-store' });
-    if (!one.ok) return NextResponse.json({ error: `Pedido ${orderId} no encontrado` }, { status: 404 });
-    list = [await one.json()];
-  } else {
-    const params = new URLSearchParams({
-      status: 'processing,completed', per_page: '100', orderby: 'date', order: 'desc',
-      after, _fields: 'id,payment_method,transaction_id,meta_data', _cb: String(Date.now()),
-    });
-    const listRes = await fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, { headers: { Authorization: wcAuth() }, cache: 'no-store' });
-    if (!listRes.ok) return NextResponse.json({ error: 'WC list error' }, { status: 502 });
-    list = (await listRes.json()) as any[];
+/** Corrida diaria (Vercel Cron). Acepta ?secret=, x-cron-secret o el Bearer de Vercel. */
+export async function GET(req: NextRequest) {
+  const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const provided = req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret') || bearer;
+  // Fail closed: sin CRON_SECRET cargado el endpoint no se abre solo.
+  if (!CRON_SECRET || provided !== CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  // Idempotencia: sólo pedidos MP con transaction_id y SIN snapshot (salvo force).
-  const pending = list.filter((o) => {
-    if (!MP_METHODS.has(o.payment_method) || !o.transaction_id) return false;
-    const has = (o.meta_data || []).some((m: any) => m.key === GATEWAY_FEE_META);
-    return force ? true : !has;
-  }).slice(0, limit);
-
-  const alreadySynced = list.filter((o) => (o.meta_data || []).some((m: any) => m.key === GATEWAY_FEE_META)).length;
-
-  const report = {
-    mode: dryRun ? 'preview (no escribe)' : (orderId ? `pedido #${orderId}` : `batch de ${pending.length}`),
-    candidates: pending.length, alreadySynced, synced: 0, wouldWrite: 0, failed: [] as any[],
-    dryRun, force, meta: GATEWAY_FEE_META, samples: [] as any[],
-  };
-
-  // Lotes de 5 para no saturar MP.
-  for (let i = 0; i < pending.length; i += 5) {
-    const batch = pending.slice(i, i + 5);
-    await Promise.all(batch.map(async (o) => {
-      const pay = await mpPayment(String(o.transaction_id));
-      if (!pay) { report.failed.push({ order: o.id, reason: 'MP no respondió / sin datos' }); return; }
-      const snap = toSnapshot(pay, providerOf(o.payment_method));
-      if (!snap) { report.failed.push({ order: o.id, reason: 'payment sin transaction_amount' }); return; }
-      const sample = {
-        order: o.id, transactionId: snap.transactionId, gross: snap.grossAmount, gatewayFee: snap.gatewayFee,
-        netReceived: snap.netReceived, otherCashDeduction: snap.otherCashDeduction,
-        effectiveFeeRate: snap.grossAmount > 0 ? Math.round((snap.gatewayFee / snap.grossAmount) * 10000) / 100 : 0,
-        breakdown: snap.breakdown,
-      };
-
-      if (dryRun) {
-        report.wouldWrite++;
-        if (report.samples.length < 10) report.samples.push(sample);
-        return;
-      }
-      const put = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${o.id}`, {
-        method: 'PUT', headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ meta_data: [{ key: GATEWAY_FEE_META, value: JSON.stringify(snap) }] }),
-      });
-      if (put.ok) { report.synced++; if (report.samples.length < 10) report.samples.push(sample); }
-      else report.failed.push({ order: o.id, reason: `WC write ${put.status}` });
-    }));
-  }
-
-  return NextResponse.json(report);
+  return run(req, { limit: 150, days: 60 });
 }
