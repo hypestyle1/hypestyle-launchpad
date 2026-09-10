@@ -25,7 +25,7 @@ ver `docs/reviews-api.md` y `next-app/lib/reviews/public.ts`).
 | SKU | Recomendado | Vía principal de asociación al producto (ver abajo). |
 | Compra verificada | No | Si Nuby la marca como verificada en origen, se preserva esa señal — no se recalcula contra pedidos de Hypestyle salvo que el email matchee un pedido real. |
 | Fuente original | Sí | Se guarda en `_hs_review_source` (ver metas abajo). |
-| Fotos | No | Si existen, se suben a la biblioteca de medios de WP y se asocian al comentario (no se muestran en el MVP público, se preparan para una fase posterior). |
+| Fotos | No | Campo `photos` (array de URLs https). Desde 1.3.0 se descargan a la biblioteca de medios (`HS_Reviews_Photos::sideload_from_urls()`) y se cuelgan de la reseña; el endpoint público las devuelve cuando la reseña se aprueba. Si la fila ya estaba importada y la reseña no tiene fotos, una corrida nueva con `photos` las completa sin tocar nada más. |
 | Respuesta de la tienda | No | Si existe, se crea como un comentario hijo (reply) del mismo hilo, marcado con el mismo `_hs_review_source`. |
 
 ## Qué genera el importador por cada fila válida
@@ -85,9 +85,14 @@ siguientes y se reporta el detalle al final.
 
 ## Estado de implementación
 
-Pendiente. Cuando Nuby entregue el archivo real, se implementa un script
-PHP puntual (WP-CLI command o script one-off, siguiendo el mismo patrón que
-el resto del backend en `PHP/hypestyle-reviews/`) que seguía esta
-especificación, se prueba contra una copia de staging antes de correr en
-producción, y se documenta el resultado real del import (cuántas filas
-importadas/omitidas/fallidas) antes de aprobar las reseñas para publicación.
+Implementado en `HS_Reviews_Import` + `POST /wp-json/hypestyle-reviews/v1/import-reviews`
+(plugin 1.1.1; fotos desde 1.3.0). Acepta `manage_woocommerce` (Application
+Password) o el secreto `X-HS-Reviews-Secret`. Máximo 200 filas por llamada.
+
+**Corrida real — 10/09/2026, export de Nuby `Review_202609100843.csv`
+(21 filas, feb–abr 2026):** 16 importadas (comentarios 2325–2340), 1 omitida
+(producto ya no existe en Woo), 2 fallidas por texto vacío, 2 excluidas por
+estar `rejected` en Nuby. Los `product_id` de Nuby son de Tiendanube: el
+mapeo a Woo se hizo a mano por nombre y se pasó como `product_id` explícito.
+Las 16 se aprobaron el mismo día a pedido del usuario. Reporte, payload y
+las fotos originales quedaron en `NUEVAS IMPLEMENTACIONES/REVIEWS/`.

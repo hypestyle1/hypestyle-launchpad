@@ -17,6 +17,7 @@ type Product = {
   moderation: 'approved' | 'pending' | 'spam' | 'trash' | null;
   moderation_label: string | null;
   wp_admin_edit_url: string | null;
+  photos?: { id: number; thumb: string; full: string }[];
 };
 
 type Coupon = {
@@ -242,6 +243,16 @@ export default function ReviewDetailPage() {
                           )}
                         </div>
                         {p.text && <p className="text-[12px] text-muted-foreground mt-1">{p.text}</p>}
+                        {p.photos && p.photos.length > 0 && (
+                          <div className="flex gap-1.5 mt-2">
+                            {p.photos.map(photo => (
+                              <a key={photo.id} href={photo.full} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-[5px] overflow-hidden border border-border bg-bg-alt">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={photo.thumb} alt="" className="w-full h-full object-cover" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
                         {p.wp_admin_edit_url && (
                           <a href={p.wp_admin_edit_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-600 hover:underline mt-1 inline-block">
                             Ver/moderar en WordPress →

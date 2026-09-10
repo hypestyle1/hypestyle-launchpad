@@ -1,41 +1,24 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { imgSrc } from '@/lib/img';
 import type { PublicReview } from '@/lib/reviews/types';
 import StarRating from './StarRating';
-
-/**
- * La zona horaria va FIJA a propósito, no se deja librada a la del visitante.
- *
- * Esta card se renderiza en el servidor (las reseñas del home vienen por props
- * desde app/page.tsx). Sin `timeZone`, `toLocaleDateString` usa la zona de quien
- * ejecuta: en Vercel eso es UTC y en el visitante argentino es UTC−3. Toda
- * reseña creada entre las 00:00 y las 03:00 UTC se renderizaba con un día en el
- * HTML del servidor y con el día anterior al hidratar.
- *
- * Ese texto distinto es un error de hidratación (React #425), y como ocurre
- * fuera de un Suspense boundary React responde tirando a la basura TODO el HTML
- * del servidor y volviendo a renderizar el home entero en el cliente (#423).
- * El resultado visible era que la página se armaba, se desarmaba y se volvía a
- * armar sola durante los primeros segundos — y si el usuario scrolleaba en esa
- * ventana, el contenido le saltaba abajo del dedo.
- *
- * Verificado: con el navegador en UTC (igual que el servidor) los errores no
- * aparecían; en America/Argentina/Buenos_Aires aparecían los tres, siempre.
- */
-const REVIEW_TZ = 'America/Argentina/Buenos_Aires';
+import ReviewPhotoLightbox from './ReviewPhotoLightbox';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('es-AR', {
-    day: 'numeric', month: 'short', year: 'numeric', timeZone: REVIEW_TZ,
-  });
+  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function ReviewCard({ review, compact = false }: { review: PublicReview; compact?: boolean }) {
   // incentivized/isDemo/verified se mantienen en el modelo (PublicReview) pero
   // no se muestran como badge en la card — solo el aviso general de la página/sección.
   const { customerName, rating, text, createdAt, productName, productSlug, productImage, isDemo } = review;
+  const photos = review.photos ?? [];
+  const [openPhoto, setOpenPhoto] = useState<number | null>(null);
 
   return (
     <article className="border border-border rounded-[10px] p-5 bg-white flex flex-col gap-3 h-full">
@@ -49,10 +32,28 @@ export default function ReviewCard({ review, compact = false }: { review: Public
 
       <p className={`text-[13px] text-foreground/80 leading-relaxed ${compact ? 'line-clamp-3' : ''}`}>{text}</p>
 
+      {photos.length > 0 && (
+        <div className="flex gap-2">
+          {photos.slice(0, 3).map((photo, i) => (
+            <button
+              key={photo.thumb}
+              type="button"
+              onClick={() => setOpenPhoto(i)}
+              aria-label={`Ver foto ${i + 1} de ${photos.length}`}
+              className={`${compact ? 'w-14 h-14' : 'w-20 h-20'} rounded-[6px] bg-bg-alt overflow-hidden flex-shrink-0 border border-border/70 hover:opacity-90 transition-opacity`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={photo.thumb} alt="" loading="lazy" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
       {productName && (
         <div className="mt-auto pt-3 border-t border-border/70 flex items-center gap-2.5">
           {productImage && (
             <div className="w-9 h-9 rounded-[5px] bg-bg-alt overflow-hidden flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imgSrc(productImage)}
                 alt=""
@@ -69,6 +70,10 @@ export default function ReviewCard({ review, compact = false }: { review: Public
             <span className="text-[12px] text-foreground/60 truncate">{productName}</span>
           )}
         </div>
+      )}
+
+      {openPhoto !== null && (
+        <ReviewPhotoLightbox photos={photos} index={openPhoto} onClose={() => setOpenPhoto(null)} />
       )}
     </article>
   );

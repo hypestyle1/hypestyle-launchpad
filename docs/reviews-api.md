@@ -38,9 +38,12 @@ Namespace REST: **`hypestyle-reviews/v1`** — namespace propio, separado de `hy
   "items": [
     { "order_item_id": 5510, "product_id": 231, "name": "Jersey LA NUESTRA", "image": "https://.../thumb.jpg", "already_reviewed": false }
   ],
-  "incentive": { "type": "percent", "value": 10, "label": "10% OFF en tu próxima compra" }
+  "incentive": { "type": "percent", "value": 10, "label": "10% OFF en tu próxima compra" },
+  "photos": { "enabled": true, "max": 3, "max_bytes": 8388608, "accept": ["image/jpeg", "image/png", "image/webp", "image/gif"] }
 }
 ```
+
+`photos` (1.3.0) le dice al formulario si puede pedir fotos y cuántas — ver `POST .../photos` más abajo.
 
 `items` ya viene **deduplicado por producto padre** (`HS_Reviews_Eligibility::get_reviewable_items()`, ver `docs/reviews-headless-architecture.md` §7) — si la orden tenía 2 variaciones del mismo producto, acá aparece una sola entrada. El `order_item_id` devuelto es el de la línea elegida internamente para esa entrada; el frontend no necesita saber que hubo una deduplicación.
 
@@ -60,11 +63,23 @@ Nunca se incluye: email, dirección, total, método de pago, otros productos no 
 ```json
 {
   "reviews": [
-    { "order_item_id": 5510, "rating": 5, "text": "Excelente calidad, llegó rápido." }
+    { "order_item_id": 5510, "rating": 5, "text": "Excelente calidad, llegó rápido.", "photo_ids": [8123, 8124] }
   ]
 }
 ```
 Filas con `rating: 0`/ausente = el cliente eligió no reseñar ese producto.
+
+`photo_ids` (1.3.0, opcional): IDs de attachments devueltos por `POST .../photos` para **este mismo token**. Se aceptan hasta 3 por fila; cualquier ID que no haya sido subido con esta solicitud, o que ya haya sido reclamado por otra fila, se descarta en silencio — una foto inválida nunca invalida la reseña (`HS_Reviews_Photos::claim_for_comment()`). Al pasar la solicitud a `responded` se borran los attachments subidos para ella que ninguna fila reclamó.
+
+### `POST /wp-json/hypestyle-reviews/v1/reviews/{token}/photos` (1.3.0)
+
+**Headers requeridos:** `X-HS-Reviews-Secret`. **Body:** `multipart/form-data`, campo `file` (una foto por request). Llamado desde el navegador vía `/api/reviews/[token]/photos` (proxy Next.js) apenas el cliente elige una foto, antes del submit; el navegador la reduce a 1600px JPEG antes de mandarla (`lib/reviews/photos.ts`).
+
+Mismas condiciones de token que el GET (`sent`/`failed`, no vencido). Sin el rate-limit por IP compartido (todo llega desde la IP del proxy): límite propio de 30 subidas por solicitud por hora. Validación server-side: ≤ 8 MB, `getimagesize()` real, solo JPG/PNG/WEBP/GIF, nombre de archivo neutro, EXIF/GPS vaciados de la metadata.
+
+**Respuesta 200:** `{ "id": 8123, "url": "https://.../review-42-x.jpg", "thumb": "https://.../review-42-x-300x225.jpg" }` — el attachment queda en la biblioteca con `_hs_review_request_id` + `_hs_review_photo_pending` hasta que un submit lo reclame.
+
+**Errores:** `400` sin archivo · `404` token inválido · `413` demasiado pesada · `415` no es una imagen válida · `429` demasiadas subidas · `500` falló el guardado.
 
 ### 1.2 Flujo interno del submit — reclamo atómico con recuperación por etapa
 
@@ -169,11 +184,14 @@ Devuelve únicamente reseñas `comment_type=review`, `comment_approved=1`, con `
 {
   "summary": { "average": 4.8, "total": 126, "distribution": { "5": 108, "4": 14, "3": 3, "2": 1, "1": 0 } },
   "reviews": [
-    { "id": "review-123", "customerName": "Lucía M.", "rating": 5, "text": "Excelente calidad.", "createdAt": "2026-07-10", "productId": 456, "productName": "Hoodie Faith", "productSlug": "hoodie-faith", "productImage": "https://...", "verified": true, "incentivized": true }
+    { "id": "review-123", "customerName": "Lucía M.", "rating": 5, "text": "Excelente calidad.", "createdAt": "2026-07-10", "productId": 456, "productName": "Hoodie Faith", "productSlug": "hoodie-faith", "productImage": "https://...", "verified": true, "incentivized": true,
+      "photos": [ { "thumb": "https://...-300x225.jpg", "full": "https://...-1024x768.jpg", "width": 1024, "height": 768 } ] }
   ],
   "pagination": { "page": 1, "pages": 13, "total": 126 }
 }
 ```
+
+`photos` (1.3.0): fotos que subió el cliente (`HS_Reviews_Photos::get_urls()`), `thumb` = tamaño `medium`, `full` = `large`. Se leen únicamente de reseñas ya aprobadas (misma query): una foto se publica junto con su reseña, nunca antes. Array vacío si no hay.
 
 Verificado con 25 checks de integración real (sección B de la auditoría final) + `tests/class-hs-reviews-public-rest-test.php` — ver `NUEVAS IMPLEMENTACIONES/REVIEWS/release/wc107-integration-test-output-1.1.0.txt`.
 

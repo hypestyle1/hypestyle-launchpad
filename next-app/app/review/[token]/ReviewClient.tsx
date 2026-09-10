@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { MAX_PHOTOS, downscaleForUpload, validatePhotoFile } from '@/lib/reviews/photos';
 
 type Item = {
   order_item_id: number;
@@ -12,13 +13,27 @@ type Item = {
 
 type Incentive = { type: string; value: number; label: string } | null;
 
+type PhotosConfig = { enabled: boolean; max: number; max_bytes: number; accept: string[] } | null;
+
 type ReviewData = {
   order_number: string;
   items: Item[];
   incentive: Incentive;
+  photos?: PhotosConfig;
 };
 
-type RowState = { rating: number; text: string };
+type PhotoState = {
+  /** Clave local, estable mientras la foto sube. */
+  key: string;
+  /** Vista previa local (object URL) — se revoca al sacar la foto. */
+  preview: string;
+  status: 'uploading' | 'ready' | 'error';
+  /** ID del attachment en WordPress, cuando ya subió. */
+  id?: number;
+  error?: string;
+};
+
+type RowState = { rating: number; text: string; photos: PhotoState[] };
 
 type Coupon = { id: number; code: string; value: number; type: string; expires_at: string | null } | null;
 
@@ -64,6 +79,134 @@ function Stars({ value, onChange }: { value: number; onChange: (n: number) => vo
   );
 }
 
+/**
+ * Selector de fotos por producto. Cada foto se reduce en el navegador y se
+ * sube apenas se elige (a /api/reviews/{token}/photos); el submit manda solo
+ * los IDs que devolvió el servidor. Si una subida falla, la foto queda
+ * marcada y el cliente la puede sacar o reintentar — nunca bloquea la reseña.
+ */
+function PhotoPicker({
+  token,
+  photos,
+  max,
+  onChange,
+}: {
+  token: string;
+  photos: PhotoState[];
+  max: number;
+  onChange: (updater: (prev: PhotoState[]) => PhotoState[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pickError, setPickError] = useState('');
+
+  async function upload(key: string, file: File) {
+    try {
+      const reduced = await downscaleForUpload(file);
+      const fd = new FormData();
+      fd.append('file', reduced, reduced.name);
+      const res = await fetch(`/api/reviews/${token}/photos`, { method: 'POST', body: fd });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload?.id) {
+        throw new Error(payload?.message || 'No pudimos subir la foto.');
+      }
+      onChange(prev => prev.map(p => (p.key === key ? { ...p, status: 'ready', id: Number(payload.id), error: undefined } : p)));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'No pudimos subir la foto.';
+      onChange(prev => prev.map(p => (p.key === key ? { ...p, status: 'error', error: message } : p)));
+    }
+  }
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    setPickError('');
+    let count = photos.length;
+    for (const file of files) {
+      const check = validatePhotoFile(file, count);
+      if (!check.ok) {
+        setPickError(check.reason || 'No pudimos agregar esa foto.');
+        break;
+      }
+      count += 1;
+      const key = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const preview = URL.createObjectURL(file);
+      onChange(prev => [...prev, { key, preview, status: 'uploading' }]);
+      void upload(key, file);
+    }
+  }
+
+  function remove(key: string) {
+    onChange(prev => {
+      const target = prev.find(p => p.key === key);
+      if (target) URL.revokeObjectURL(target.preview);
+      return prev.filter(p => p.key !== key);
+    });
+  }
+
+  const canAdd = photos.length < max;
+
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap gap-2">
+        {photos.map(photo => (
+          <div key={photo.key} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photo.preview} alt="" className={`w-full h-full object-cover ${photo.status === 'ready' ? '' : 'opacity-50'}`} />
+            {photo.status === 'uploading' && (
+              <span className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-700 bg-white/40">Subiendo…</span>
+            )}
+            {photo.status === 'error' && (
+              <span className="absolute inset-0 flex items-center justify-center text-[10px] text-red-600 bg-white/70 text-center px-1 leading-tight">Falló</span>
+            )}
+            <button
+              type="button"
+              onClick={() => remove(photo.key)}
+              aria-label="Quitar foto"
+              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-white text-[11px] leading-none flex items-center justify-center"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {canAdd && (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="w-16 h-16 rounded-lg border border-dashed border-gray-300 text-gray-500 flex flex-col items-center justify-center gap-0.5 hover:border-gray-500 hover:text-gray-700 transition-colors"
+            aria-label="Agregar foto"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M4 7h3l2-2h6l2 2h3v12H4z" />
+              <circle cx="12" cy="13" r="3.5" />
+            </svg>
+            <span className="text-[10px]">Foto</span>
+          </button>
+        )}
+      </div>
+      <p className="text-[11px] text-gray-400 mt-1.5">
+        {photos.length === 0
+          ? `Sumá hasta ${max} fotos con la prenda puesta (opcional).`
+          : `${photos.length} de ${max} fotos.`}
+      </p>
+      {pickError && <p className="text-[11px] text-red-500 mt-1">{pickError}</p>}
+      {photos.some(p => p.status === 'error') && (
+        <p className="text-[11px] text-red-500 mt-1">
+          {photos.find(p => p.status === 'error')?.error} Sacala y probá de nuevo.
+        </p>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        capture={undefined}
+        className="hidden"
+        onChange={onPick}
+      />
+    </div>
+  );
+}
+
 export default function ReviewClient({ token }: { token: string }) {
   const [status, setStatus] = useState<ViewStatus>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -98,7 +241,7 @@ export default function ReviewClient({ token }: { token: string }) {
       setData(payload as ReviewData);
       const initialRows: Record<number, RowState> = {};
       (payload.items || []).forEach((item: Item) => {
-        initialRows[item.order_item_id] = { rating: 0, text: '' };
+        initialRows[item.order_item_id] = { rating: 0, text: '', photos: [] };
       });
       setRows(initialRows);
       setStatus('ready');
@@ -109,14 +252,27 @@ export default function ReviewClient({ token }: { token: string }) {
   }
 
   function setRating(itemId: number, rating: number) {
-    setRows(prev => ({ ...prev, [itemId]: { rating, text: prev[itemId]?.text || '' } }));
+    setRows(prev => ({ ...prev, [itemId]: { ...(prev[itemId] || { text: '', photos: [] }), rating } }));
   }
 
   function setText(itemId: number, text: string) {
-    setRows(prev => ({ ...prev, [itemId]: { rating: prev[itemId]?.rating || 0, text } }));
+    setRows(prev => ({ ...prev, [itemId]: { ...(prev[itemId] || { rating: 0, photos: [] }), text } }));
+  }
+
+  function setPhotos(itemId: number, updater: (prev: PhotoState[]) => PhotoState[]) {
+    setRows(prev => {
+      const row = prev[itemId] || { rating: 0, text: '', photos: [] };
+      return { ...prev, [itemId]: { ...row, photos: updater(row.photos) } };
+    });
   }
 
   const anyRated = Object.values(rows).some(r => r.rating > 0);
+  const anyUploading = Object.values(rows).some(r => r.photos.some(p => p.status === 'uploading'));
+
+  // Con reseñas de 1 solo producto y sin fotos, la config vieja (sin
+  // `photos`) también funciona: el picker se muestra si el backend lo habilita.
+  const photosEnabled = Boolean(data?.photos?.enabled);
+  const photosMax = data?.photos?.max || MAX_PHOTOS;
 
   async function submit() {
     setErrorMsg('');
@@ -124,7 +280,12 @@ export default function ReviewClient({ token }: { token: string }) {
 
     const reviews = Object.entries(rows)
       .filter(([, r]) => r.rating > 0)
-      .map(([orderItemId, r]) => ({ order_item_id: Number(orderItemId), rating: r.rating, text: r.text }));
+      .map(([orderItemId, r]) => ({
+        order_item_id: Number(orderItemId),
+        rating: r.rating,
+        text: r.text,
+        photo_ids: r.photos.filter(p => p.status === 'ready' && p.id).map(p => p.id as number),
+      }));
 
     try {
       const res = await fetch(`/api/reviews/${token}/submit`, {
@@ -238,6 +399,14 @@ export default function ReviewClient({ token }: { token: string }) {
                     value={rows[item.order_item_id]?.text || ''}
                     onChange={e => setText(item.order_item_id, e.target.value)}
                   />
+                  {photosEnabled && (
+                    <PhotoPicker
+                      token={token}
+                      photos={rows[item.order_item_id]?.photos || []}
+                      max={photosMax}
+                      onChange={updater => setPhotos(item.order_item_id, updater)}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -258,10 +427,10 @@ export default function ReviewClient({ token }: { token: string }) {
       {reviewableItems.length > 0 && (
         <button
           onClick={submit}
-          disabled={!anyRated || status === 'submitting'}
+          disabled={!anyRated || anyUploading || status === 'submitting'}
           className="w-full mt-6 bg-black text-white rounded-lg py-3 text-sm font-semibold disabled:opacity-40"
         >
-          {status === 'submitting' ? 'Enviando...' : 'Enviar reseña'}
+          {status === 'submitting' ? 'Enviando...' : anyUploading ? 'Subiendo fotos...' : 'Enviar reseña'}
         </button>
       )}
     </div>

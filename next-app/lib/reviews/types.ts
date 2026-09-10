@@ -1,3 +1,12 @@
+export interface PublicReviewPhoto {
+  /** Miniatura (~300px) para la card. */
+  thumb: string;
+  /** Versión grande (~1024px) para el visor. */
+  full: string;
+  width?: number | null;
+  height?: number | null;
+}
+
 export interface PublicReview {
   id: string;
   customerName: string;
@@ -11,6 +20,8 @@ export interface PublicReview {
   verified: boolean;
   incentivized: boolean;
   isDemo?: boolean;
+  /** Fotos que subió el cliente. Solo llegan con reseñas ya aprobadas. */
+  photos?: PublicReviewPhoto[];
 }
 
 export interface PublicReviewDistribution {
