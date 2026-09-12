@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Home, Package, PackagePlus, Calculator, Store, MessageSquare,
   Users, Star, Mail, BarChart3, UserCog, ListChecks, Settings,
-  Wallet, TrendingUp, SlidersHorizontal, Bot, Receipt, Megaphone, Plug, LineChart, CalendarDays, Rocket, Boxes, Instagram,
+  Wallet, TrendingUp, SlidersHorizontal, Bot, Receipt, Megaphone, Plug, LineChart, CalendarDays, Rocket, Boxes, Instagram, Globe,
 } from 'lucide-react';
 
 export type Seccion =
@@ -39,6 +39,7 @@ export const GRUPOS: NavGrupo[] = [
     titulo: 'Analytics',
     items: [
       { label: 'Performance', href: '/admin/performance', seccion: 'costos', match: '/admin/performance', Icono: LineChart },
+      { label: 'Tráfico', href: '/admin/trafico', seccion: 'costos', match: '/admin/trafico', Icono: Globe },
     ],
   },
   {

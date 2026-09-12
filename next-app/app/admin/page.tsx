@@ -17,6 +17,7 @@ import {
 import type { FinanceSummary, SummaryComparison } from '@/lib/dashboard/finance';
 import { breakevenSignal } from '@/lib/meta/metrics';
 import type { Granularity } from '@/lib/dashboard/periods';
+import type { AnalyticsSummaryResponse } from '@/lib/ga4/summary';
 
 interface SummaryResponse {
   current: FinanceSummary;
@@ -52,6 +53,7 @@ export default function AdminInicio() {
   const [botItem, setBotItem] = useState<AttentionItem | null>(null);
   const [metaBlock, setMetaBlock] = useState<any | null>(null);
   const [metaConn, setMetaConn] = useState<any | null>(null);
+  const [traffic, setTraffic] = useState<AnalyticsSummaryResponse | null>(null);
   const [metric, setMetric] = useState<MetricKey>('profit');
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
@@ -78,6 +80,10 @@ export default function AdminInicio() {
     setMetaBlock(null);
     fetch(`/api/admin/meta/summary?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
       .then((res3) => (res3.ok ? res3.json() : null)).then((d) => d && d.connected && d.summary && setMetaBlock(d.summary)).catch(() => {});
+    // Tráfico (GA4): cacheado 10 min server-side; si no está conectado se muestra la franja de conexión.
+    setTraffic(null);
+    fetch(`/api/admin/analytics/summary?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
+      .then((res4) => (res4.ok || res4.status === 502 ? res4.json() : null)).then((d) => d && setTraffic(d)).catch(() => {});
     // Clientes nuevos vs recurrentes: depende del período, carga aparte.
     setCustomers(null);
     fetch(`/api/admin/dashboard/customers?start=${encodeURIComponent(r.range.startUTC)}&end=${encodeURIComponent(r.range.endUTC)}`, { headers: headers() })
@@ -162,6 +168,7 @@ export default function AdminInicio() {
   const ts = summary?.timeseries || [];
   const mb = metaBlock;
   const metaConnected: boolean | null = metaConn ? (metaConn.state === 'connected' || metaConn.state === 'stale') : null;
+  const tr = traffic?.connected && traffic.report ? traffic.report : null;
   const roasFmt = (n: number | null) => (n == null ? '—' : `${n.toFixed(2).replace('.', ',')}×`);
   const beLabel = (sig: string) => (sig === 'above' ? 'sobre breakeven' : sig === 'below' ? 'bajo breakeven' : sig === 'near' ? 'en breakeven' : '');
 
@@ -240,6 +247,25 @@ export default function AdminInicio() {
               Meta no conectado — Spend, ROAS, MER y la rentabilidad después de publicidad aparecen en gris.
               <Link href="/admin/integraciones" className="ml-auto text-foreground hover:underline font-medium">Conectar →</Link>
             </div>
+          )}
+
+          {/* Fila 4 — Tráfico (GA4). Lo que pasó en el sitio, no lo que atribuye nadie. */}
+          {traffic && traffic.connected === false ? (
+            <div className="mt-3 flex items-center gap-2 bg-muted text-muted-foreground rounded-lg px-3.5 py-2.5 text-[12.5px]">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+              Google Analytics no conectado — sesiones, usuarios e interacción del sitio quedan fuera del panel.
+              <Link href="/admin/integraciones" className="ml-auto text-foreground hover:underline font-medium">Conectar →</Link>
+            </div>
+          ) : (
+            <>
+              <SectionTitle right={<Link href="/admin/trafico" className="text-[12px] text-muted-foreground hover:text-foreground">Ver Tráfico →</Link>}>Tráfico del sitio</SectionTitle>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <KpiCard label="Sesiones" value={tr ? tr.totals.sessions.toLocaleString('es-AR') : '—'} spark={tr ? tr.daily.map((d) => d.sessions) : undefined} sub={tr ? `${tr.totals.pageViews.toLocaleString('es-AR')} páginas vistas` : undefined} info="Visitas al sitio en el período. Fuente: GA4." />
+                <KpiCard label="Usuarios activos" value={tr ? tr.totals.activeUsers.toLocaleString('es-AR') : '—'} spark={tr ? tr.daily.map((d) => d.activeUsers) : undefined} sub={tr ? `${tr.totals.newUsers.toLocaleString('es-AR')} nuevos` : undefined} info="Personas distintas que interactuaron con el sitio. Fuente: GA4." />
+                <KpiCard label="Tasa de interacción" value={tr ? `${(tr.totals.engagementRate * 100).toFixed(1).replace('.', ',')}%` : '—'} sub={tr && tr.totals.sessions > 0 ? `${(tr.funnel.addToCart / tr.totals.sessions * 100).toFixed(1).replace('.', ',')}% agregan al carrito` : undefined} info="Sesiones con más de 10 s, una conversión o 2+ páginas. Bajo = rebote." />
+                <KpiCard label="Ahora en el sitio" value={traffic?.realtimeUsers == null ? '—' : traffic.realtimeUsers.toLocaleString('es-AR')} sub="últimos 30 minutos" info="Usuarios activos en tiempo real según GA4." />
+              </div>
+            </>
           )}
 
           {/* Chart principal */}
