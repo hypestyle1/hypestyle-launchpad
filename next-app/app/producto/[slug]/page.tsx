@@ -21,7 +21,10 @@ export async function generateStaticParams() {
  * componente piden el mismo producto y sale una sola llamada a WPGraphQL.
  */
 async function getProduct(slug: string) {
-  return fetchProductDetail(slug, { server: true }).catch(() => undefined);
+  // Sin .catch(): undefined es SOLO "el slug no existe" (fetchProductDetail ya
+  // distingue ese caso). Un WP caído lanza y Next conserva la última página
+  // buena en vez de cachear un 404 durante una hora.
+  return fetchProductDetail(slug, { server: true });
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {

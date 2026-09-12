@@ -381,8 +381,26 @@ async function resolveColorwayImages(product: Product): Promise<void> {
 const SERVER_REVALIDATE = 60;
 
 /**
+ * WPGraphQL responde con un error (no con `product: null`) cuando el slug no
+ * existe. Es el ÚNICO error que significa "no encontrado"; cualquier otro
+ * (timeout, 504, WP redirigiendo a install.php, JSON inválido) es WP caído y
+ * tiene que propagarse, no convertirse en 404.
+ */
+export function isProductNotFoundError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err ?? '');
+  return /no product id was found corresponding to the slug/i.test(msg);
+}
+
+/**
  * Trae un producto por slug, ya normalizado. Devuelve undefined si no existe
  * (eso es lo que dispara el 404 real en la ficha de producto).
+ *
+ * Si WordPress falla, LANZA. La ficha de producto no atrapa ese error a
+ * propósito: durante la caída de WP del 11-12/09/2026 cualquier fallo del
+ * fetch terminaba en notFound(), Vercel guardaba ese 404 como página ISR
+ * (revalidate = 3600) y 81 de 110 productos quedaron en "Página no encontrada"
+ * una hora después de que WP volvió. Con el error propagado, Next mantiene la
+ * última versión buena de la página mientras WP no responde.
  *
  * Con opts.server se cachea el fetch para no pegarle a WPGraphQL en cada
  * request; en el browser la opción se ignora y manda el staleTime de React Query.
@@ -391,12 +409,18 @@ export async function fetchProductDetail(
   slug: string,
   opts: { server?: boolean } = {},
 ): Promise<Product | undefined> {
-  const data = await fetchGraphQL<{ product: any }>(
-    GET_PRODUCT,
-    { slug },
-    undefined,
-    opts.server ? { revalidate: SERVER_REVALIDATE } : undefined,
-  );
+  let data: { product: any } | undefined;
+  try {
+    data = await fetchGraphQL<{ product: any }>(
+      GET_PRODUCT,
+      { slug },
+      undefined,
+      opts.server ? { revalidate: SERVER_REVALIDATE } : undefined,
+    );
+  } catch (err) {
+    if (isProductNotFoundError(err)) return undefined;
+    throw err;
+  }
   if (!data?.product) return undefined;
   const product = fromWPNode(data.product);
   await resolveColorwayImages(product);
