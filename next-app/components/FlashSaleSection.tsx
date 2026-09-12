@@ -41,7 +41,9 @@ export default function FlashSaleSection() {
   const [status, setStatus] = useState<SaleStatus | null>(null);
 
   useEffect(() => {
-    setActive(isFlashSaleActive());
+    // Misma regla que FlashSaleBar: fuera del sale no se muestra ni consulta.
+    if (!isFlashSaleActive()) return;
+    setActive(true);
 
     const tick = setInterval(() => {
       const t = getTimeLeft();

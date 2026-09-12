@@ -27,7 +27,11 @@ export default function FlashSaleBar() {
   const [status, setStatus] = useState<SaleStatus | null>(null);
 
   useEffect(() => {
-    setActive(isFlashSaleActive());
+    // Fuera de la ventana del sale la barra no se muestra y no tiene nada que
+    // consultar: sin este corte seguía pidiendo /api/flash-sale-status (una
+    // consulta a wc/v3/orders) cada 30 s por visitante, meses después del sale.
+    if (!isFlashSaleActive()) return;
+    setActive(true);
 
     const tick = setInterval(() => {
       const t = getTimeLeft();
