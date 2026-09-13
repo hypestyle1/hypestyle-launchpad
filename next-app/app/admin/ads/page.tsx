@@ -240,6 +240,7 @@ export default function AdsPage() {
           </div>
           <p className="text-[11px] text-muted-foreground/70 mt-3">
             La señal compara <strong className="text-foreground">Meta ROAS</strong> vs el <strong className="text-foreground">breakeven del negocio</strong> ({roas(b!.breakevenRoas)}, derivado del margen de contribución). No es profit contable por campaña — Meta atribuye compras, no asigna el profit real de Woo.
+            Qué hizo en el sitio el tráfico de cada campaña (sesiones, interacción, carritos) está en <Link href="/admin/trafico" className="underline hover:text-foreground">Tráfico</Link>.
           </p>
         </>
       )}

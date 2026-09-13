@@ -6,6 +6,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { fmtRelative } from '@/lib/admin-format';
 import { StatusBadge, type BadgeTone } from '@/components/admin/ui';
 import type { MetaConnection } from '@/lib/meta/connection';
+import type { Ga4Connection } from '@/lib/ga4/connection';
 
 const STATE: Record<string, { label: string; tone: BadgeTone }> = {
   connected: { label: 'Conectado', tone: 'success' },
@@ -23,14 +24,20 @@ export default function IntegracionesPage() {
   const { autorizado, headers, puede, ingresarConClave } = useAdminAuth();
   const [keyInput, setKeyInput] = useState('');
   const [meta, setMeta] = useState<MetaConnection | null>(null);
+  const [ga4, setGa4] = useState<Ga4Connection | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async (refresh = false) => {
     if (!puede('costos')) return;
     setLoading(true);
+    const qs = refresh ? '?refresh=1' : '';
     try {
-      const res = await fetch(`/api/admin/meta/status${refresh ? '?refresh=1' : ''}`, { headers: headers() });
-      if (res.ok) setMeta(await res.json());
+      const [rm, rg] = await Promise.all([
+        fetch(`/api/admin/meta/status${qs}`, { headers: headers() }),
+        fetch(`/api/admin/analytics/status${qs}`, { headers: headers() }),
+      ]);
+      if (rm.ok) setMeta(await rm.json());
+      if (rg.ok) setGa4(await rg.json());
     } finally { setLoading(false); }
   }, [headers, puede]);
 
@@ -51,6 +58,13 @@ export default function IntegracionesPage() {
   }
 
   const st = meta ? (STATE[meta.state] || STATE.disconnected) : null;
+  const gst = ga4 ? (STATE[ga4.state] || STATE.disconnected) : null;
+  const gaRows: [string, string][] = ga4 && ga4.state !== 'disconnected' ? [
+    ['Propiedad', ga4.propertyId ? `properties/${ga4.propertyId}` : '—'],
+    ['Acceso', 'Service account · Lector'],
+    ['API', 'Analytics Data API v1beta'],
+    ['Última sync', ga4.lastSync ? (fmtRelative(ga4.lastSync) || '—') : '—'],
+  ] : [];
   const rows: [string, string][] = meta && meta.account ? [
     ['Cuenta', meta.account.name],
     ['Ad Account', maskAccount(meta.account.id)],
@@ -106,6 +120,47 @@ export default function IntegracionesPage() {
 
           <p className="text-[11px] text-muted-foreground/70 mt-4 pt-3 border-t border-border">
             Credenciales administradas de forma segura en el servidor (Vercel). El token nunca llega al navegador. Read-only: no puede pausar, editar ni crear campañas.
+          </p>
+        </div>
+      )}
+
+      {puede('costos') && (
+        <div className="bg-card border border-border rounded-lg p-5 mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-lg bg-muted grid place-items-center text-[15px] font-bold text-foreground">G</div>
+              <div>
+                <p className="text-[14px] font-semibold text-foreground">Google Analytics 4</p>
+                <p className="text-[12px] text-muted-foreground">Data API · read-only</p>
+              </div>
+            </div>
+            {gst ? <StatusBadge tone={gst.tone}>{gst.label}</StatusBadge> : <span className="h-5 w-20 bg-muted/60 rounded-full animate-pulse" />}
+          </div>
+
+          {ga4 && ga4.state === 'disconnected' && ga4.reason === 'not_configured' ? (
+            <div className="text-[12.5px] text-muted-foreground space-y-1.5">
+              <p>Para conectar hacen falta tres pasos del lado de Google, y dos variables en Vercel:</p>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>En Google Cloud, crear un <strong className="text-foreground">service account</strong> y habilitar la <strong className="text-foreground">Google Analytics Data API</strong>.</li>
+                <li>En GA4 → Admin → Acceso a la propiedad, agregar el mail del service account como <strong className="text-foreground">Lector</strong>.</li>
+                <li>Cargar en Vercel <code className="bg-muted px-1 rounded">GA4_PROPERTY_ID</code> (Admin → Configuración de la propiedad, el ID numérico) y <code className="bg-muted px-1 rounded">GA4_SERVICE_ACCOUNT_JSON</code> (el contenido del .json descargado).</li>
+              </ol>
+            </div>
+          ) : ga4 && ga4.state === 'disconnected' && ga4.reason === 'auth' ? (
+            <p className="text-[12.5px] text-warning">Google rechazó la credencial. Revisá que el service account siga con rol Lector en la propiedad y que la Data API esté habilitada en el proyecto.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
+              {gaRows.map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <span className="text-[12px] text-muted-foreground">{k}</span>
+                  <span className="text-[12.5px] text-foreground tabular-nums">{v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-[11px] text-muted-foreground/70 mt-4 pt-3 border-t border-border">
+            La clave privada del service account vive sólo en Vercel. Read-only: el panel lee reportes, no puede tocar la propiedad.
           </p>
         </div>
       )}
