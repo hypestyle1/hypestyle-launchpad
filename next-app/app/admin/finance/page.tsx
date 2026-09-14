@@ -7,11 +7,12 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { fmtARS } from '@/lib/admin-format';
 import { KpiCard, SectionTitle } from '@/components/admin/dashboard/blocks';
 import { DateRangePicker, makeRangeState, type RangeState } from '@/components/admin/DateRangePicker';
-import { Waterfall, GatewayTable, DataToComplete, DataQualityCard, FinanceSectionTitle, pct, type WaterfallRow, type GatewayRow, type QualityRow } from '@/components/admin/finance/blocks';
+import { Waterfall, GatewayTable, DataToComplete, DataQualityCard, FinanceSectionTitle, DeductionsTable, DateBaseToggle, pct, type WaterfallRow, type GatewayRow, type QualityRow, type DeductionRow, type DateBaseId } from '@/components/admin/finance/blocks';
 import type { FinanceSummary } from '@/lib/finance/calculations';
 import type { OperatingSummary } from '@/lib/finance/operating-costs';
 
 interface SummaryResp {
+  base?: DateBaseId;
   summary: FinanceSummary;
   previous: FinanceSummary | null;
   gateways: GatewayRow[];
@@ -22,16 +23,17 @@ export default function FinanceResumen() {
   const { autorizado, headers, puede, ingresarConClave } = useAdminAuth();
   const [keyInput, setKeyInput] = useState('');
   const [range, setRange] = useState<RangeState>(() => makeRangeState('last30', true));
+  const [base, setBase] = useState<DateBaseId>('sale');
   const [data, setData] = useState<SummaryResp | null>(null);
   const [op, setOp] = useState<OperatingSummary | null>(null);
   const [meta, setMeta] = useState<any | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
 
-  const load = useCallback(async (r: RangeState) => {
+  const load = useCallback(async (r: RangeState, b: DateBaseId) => {
     if (!puede('costos')) return;
     setState('loading');
     try {
-      const qs = new URLSearchParams({ start: r.range.startUTC, end: r.range.endUTC, compare: r.compare ? '1' : '0' });
+      const qs = new URLSearchParams({ start: r.range.startUTC, end: r.range.endUTC, compare: r.compare ? '1' : '0', base: b });
       const res = await fetch(`/api/admin/finance/summary?${qs}`, { headers: headers() });
       if (!res.ok) throw new Error();
       setData(await res.json());
@@ -46,7 +48,7 @@ export default function FinanceResumen() {
       .then((x) => (x.ok ? x.json() : null)).then((d) => d && d.connected && d.summary && setMeta(d.summary)).catch(() => {});
   }, [headers, puede]);
 
-  useEffect(() => { if (autorizado) load(range); }, [autorizado, range, load]);
+  useEffect(() => { if (autorizado) load(range, base); }, [autorizado, range, base, load]);
 
   if (autorizado === false) {
     return (
@@ -74,10 +76,20 @@ export default function FinanceResumen() {
     { label: 'Net Revenue', amount: s.netRevenue, kind: 'subtotal' },
     { label: 'COGS', amount: s.cogs, kind: 'subtract', source: dq && dq.coverage.cogs >= 1 ? 'configured' : 'configured', hint: dq ? `cobertura ${pct(dq.coverage.cogs)}` : undefined },
     { label: 'Gross Profit', amount: s.grossProfit, kind: 'subtotal', hint: `margen bruto ${pct(s.grossMargin)}` },
-    { label: 'Payment Fees', amount: s.paymentFees, kind: 'subtract', source: (dq && dq.feeCoverage.exact > 0) ? 'exact' : 'configured', hint: dq ? `exacto ${pct(dq.feeCoverage.exact)} · configurado ${pct(dq.feeCoverage.configured)} · fee ef. ${pct(s.effectiveFeeRate)}` : undefined },
+    { label: 'Comisión de pasarela', amount: s.deductions.gateway + s.deductions.other, kind: 'subtract', source: (dq && dq.feeCoverage.exact > 0) ? 'exact' : 'configured', hint: dq ? `exacto ${pct(dq.feeCoverage.exact)} · configurado ${pct(dq.feeCoverage.configured)} · fee ef. ${pct(s.effectiveFeeRate)}` : undefined },
+    { label: 'Financiación', amount: s.deductions.financing > 0 ? s.deductions.financing : null, kind: 'subtract', source: s.deductions.financing > 0 ? 'exact' : 'missing', hint: 'cuotas sin interés absorbidas · sólo con dato exacto de MP' },
+    { label: 'Retenciones', amount: s.taxWithholdings > 0 ? s.taxWithholdings : null, kind: 'subtract', source: s.taxWithholdings > 0 ? 'exact' : 'missing', hint: 'IIBB / SIRTAC descontado por la pasarela · se trata como costo' },
     { label: 'Shipping Absorbed', amount: dq && dq.coverage.shipping > 0 ? s.shippingAbsorbed : null, kind: 'subtract', source: dq && dq.coverage.shipping > 0 ? 'configured' : 'missing' },
     { label: 'Variable Costs', amount: dq && dq.coverage.variable > 0 ? s.variableCosts : null, kind: 'subtract', source: dq && dq.coverage.variable > 0 ? 'configured' : 'missing' },
     { label: 'Contribution Profit', amount: s.contributionProfit, kind: 'result', hint: `margen de contribución ${pct(s.contributionMargin)} · estimado` },
+  ] : [];
+
+  const deductionRows: DeductionRow[] = s ? [
+    { label: 'Comisión Mercado Pago y otras pasarelas', amount: s.deductions.gateway, share: s.revenue > 0 ? s.deductions.gateway / s.revenue : 0, source: dq && dq.feeCoverage.exact >= 0.99 ? 'exact' : 'configured', hint: dq && dq.feeCoverage.configured > 0 ? `${pct(dq.feeCoverage.configured)} del bruto estimado por regla` : undefined },
+    { label: 'Financiación de cuotas', amount: s.deductions.financing, share: s.revenue > 0 ? s.deductions.financing / s.revenue : 0, source: 'exact', hint: 'Intereses de cuotas sin interés que absorbe Hype' },
+    { label: 'Retención de Ingresos Brutos', amount: s.deductions.taxWithholdings, share: s.revenue > 0 ? s.deductions.taxWithholdings / s.revenue : 0, source: 'exact', hint: 'SIRTAC, descontada por MP en cada cobro desde fines de agosto 2026' },
+    { label: 'Otros cargos de pasarela', amount: s.deductions.other, share: s.revenue > 0 ? s.deductions.other / s.revenue : 0, source: 'exact' },
+    { label: 'Reembolsos', amount: s.deductions.refunds, share: s.revenue > 0 ? s.deductions.refunds / s.revenue : 0, source: 'exact' },
   ] : [];
 
   const qualityRows: QualityRow[] = dq ? [
@@ -102,9 +114,10 @@ export default function FinanceResumen() {
           <h1 className="text-[22px] sm:text-[26px] font-bold tracking-tight text-foreground">Finanzas</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Qué entra, qué cuesta y qué queda.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <DateBaseToggle value={base} onChange={setBase} />
           <DateRangePicker value={range} onChange={setRange} />
-          <button onClick={() => load(range)} title="Actualizar" className="h-9 w-9 grid place-items-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:border-border-mid transition-colors">
+          <button onClick={() => load(range, base)} title="Actualizar" className="h-9 w-9 grid place-items-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:border-border-mid transition-colors">
             <RefreshCw size={14} className={state === 'loading' ? 'animate-spin' : ''} />
           </button>
         </div>
@@ -116,15 +129,31 @@ export default function FinanceResumen() {
         <div className="bg-card border border-border rounded-lg p-8 text-center text-[13px] text-destructive">No se pudo calcular Finanzas. Reintentá.</div>
       ) : (
         <>
+          {/* Qué entra: bruto vs neto real, con la cobertura del dato exacto */}
+          <SectionTitle>Ingresos</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <KpiCard label="Facturación bruta" value={s ? fmtARS(s.revenue) : '—'} delta={delta(s?.revenue, cmp?.revenue)} compare={cmp ? `vs ${fmtARS(cmp.revenue)}` : undefined} emphasis
+              sub={s ? `${s.orders} pedidos${base === 'release' ? ' · por acreditación' : ''}` : undefined}
+              info={base === 'release' ? 'Total de los pedidos cuya plata quedó disponible en el período (fecha de liberación de la pasarela).' : 'Total de los pedidos pagados creados en el período. Fuente: WooCommerce.'} />
+            <KpiCard label="Ingreso neto real" value={s ? fmtARS(s.netIncome) : '—'} delta={delta(s?.netIncome, cmp?.netIncome)} compare={cmp ? `vs ${fmtARS(cmp.netIncome)}` : undefined} emphasis
+              estimated={!!dq && dq.feeCoverage.exact < 0.99}
+              sub={s && dq ? `${pct(s.netIncomeRate)} del bruto · ${pct(dq.feeCoverage.exact)} con dato exacto` : undefined}
+              info="Lo que quedó disponible después de comisión, financiación, retenciones y reembolsos. Con snapshot de Mercado Pago es el neto que informó MP; el resto se estima por regla configurada." />
+          </div>
+
+          <FinanceSectionTitle>Deducciones del período</FinanceSectionTitle>
+          {s && <DeductionsTable rows={deductionRows} gross={s.revenue} net={s.netIncome} exactShare={dq ? dq.feeCoverage.exact : 0} />}
+
           {/* KPIs — Contribution primero, con protagonismo */}
           <SectionTitle>Resultado</SectionTitle>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard label="Contribution Profit" value={s ? fmtARS(s.contributionProfit) : '—'} delta={delta(s?.contributionProfit, cmp?.contributionProfit)} estimated emphasis
               sub={s ? `${pct(s.contributionMargin)} margen` : undefined} compare={cmp ? `vs ${fmtARS(cmp.contributionProfit)}` : undefined}
-              info="Net Revenue − COGS − Payment Fees − Shipping Absorbed − Variable Costs. Estimado mientras falten costos. Todavía NO incluye Ads ni Operating Expenses." />
-            <KpiCard label="Revenue" value={s ? fmtARS(s.revenue) : '—'} delta={delta(s?.revenue, cmp?.revenue)} compare={cmp ? `vs ${fmtARS(cmp.revenue)}` : undefined} info="Facturación de pedidos pagados en el período." />
+              info="Net Revenue − COGS − Comisión − Financiación − Retenciones − Shipping Absorbed − Variable Costs. Estimado mientras falten costos. Todavía NO incluye Ads ni Operating Expenses." />
             <KpiCard label="Gross Profit" value={s ? fmtARS(s.grossProfit) : '—'} delta={delta(s?.grossProfit, cmp?.grossProfit)} sub={s ? `${pct(s.grossMargin)} bruto` : undefined} info="Net Revenue − COGS." />
-            <KpiCard label="Net Collected" value={s ? fmtARS(s.netCollected) : '—'} info="Dinero efectivamente acreditado por las pasarelas (Gross Collected − deducciones). Distinto de Contribution Profit." />
+            <KpiCard label="Costo de cobrar" value={s ? fmtARS(s.paymentFees + s.taxWithholdings) : '—'} sub={s && s.revenue > 0 ? `${pct((s.paymentFees + s.taxWithholdings) / s.revenue)} del bruto` : undefined} positiveIsGood={false}
+              info="Comisión + financiación + otros cargos + retenciones. Lo que se va entre que el cliente paga y la plata queda disponible." />
+            <KpiCard label="Net Collected" value={s ? fmtARS(s.netCollected) : '—'} info="Dinero acreditado por las pasarelas antes de reembolsos fuera de snapshot. Igual a Ingreso neto real salvo reembolsos manuales." />
           </div>
 
           <FinanceSectionTitle>De Revenue a Contribution Profit</FinanceSectionTitle>

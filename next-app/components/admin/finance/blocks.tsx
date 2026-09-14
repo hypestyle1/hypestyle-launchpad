@@ -187,3 +187,75 @@ export function FinanceSectionTitle({ children, right }: { children: ReactNode; 
     </div>
   );
 }
+
+// ── Deducciones del período por concepto (bruto → neto real) ──
+export interface DeductionRow {
+  label: string;
+  amount: number;
+  /** Sobre la facturación bruta del período. */
+  share: number;
+  hint?: string;
+  source?: DataSource;
+}
+
+export function DeductionsTable({ rows, gross, net, exactShare }: { rows: DeductionRow[]; gross: number; net: number; exactShare: number }) {
+  const visible = rows.filter((r) => r.amount > 0);
+  return (
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <tbody>
+            <tr className="border-b border-border bg-muted/30">
+              <td className="px-4 py-2.5 font-semibold text-foreground">Facturación bruta</td>
+              <td className="px-3 py-2.5 w-20" />
+              <td className="px-4 py-2.5 text-right font-bold text-foreground tabular-nums">{fmtARS(gross)}</td>
+            </tr>
+            {visible.length === 0 && (
+              <tr className="border-b border-border"><td colSpan={3} className="px-4 py-3 text-muted-foreground text-[12px]">Sin deducciones registradas en el período.</td></tr>
+            )}
+            {visible.map((r) => (
+              <tr key={r.label} className="border-b border-border">
+                <td className="px-4 py-2.5 pl-8 text-muted-foreground">
+                  {r.label}
+                  {r.hint && <span className="block text-[11px] text-muted-foreground/60">{r.hint}</span>}
+                </td>
+                <td className="px-3 py-2.5 text-center w-20">{r.source && <SourceBadge source={r.source} />}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-destructive">
+                  −{fmtARS(r.amount)}
+                  <span className="ml-2 text-[11px] text-muted-foreground/70">{gross > 0 ? pct(r.amount / gross) : ''}</span>
+                </td>
+              </tr>
+            ))}
+            <tr className="bg-foreground text-background">
+              <td className="px-4 py-3.5">
+                <span className="text-[10.5px] uppercase tracking-[0.08em] opacity-80 font-medium">Ingreso neto real</span>
+                <span className="block text-[11px] opacity-70">{gross > 0 ? pct(net / gross) : ''} del bruto · {pct(exactShare)} con dato exacto de la pasarela</span>
+              </td>
+              <td className="px-3 py-3.5 w-20" />
+              <td className="px-4 py-3.5 text-right font-bold text-[19px] tabular-nums">{fmtARS(net)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Base de fecha del período: venta vs acreditación ──
+export type DateBaseId = 'sale' | 'release';
+export function DateBaseToggle({ value, onChange }: { value: DateBaseId; onChange: (v: DateBaseId) => void }) {
+  const opts: { id: DateBaseId; label: string; title: string }[] = [
+    { id: 'sale', label: 'Por venta', title: 'Pedidos creados en el período' },
+    { id: 'release', label: 'Por acreditación', title: 'Pedidos cuya plata quedó disponible en el período (fecha de liberación de la pasarela; si no hay, la fecha de pago)' },
+  ];
+  return (
+    <div className="inline-flex h-9 rounded-lg border border-border bg-card p-0.5 text-[12px]">
+      {opts.map((o) => (
+        <button key={o.id} type="button" title={o.title} onClick={() => onChange(o.id)}
+          className={`px-3 rounded-md transition-colors ${value === o.id ? 'bg-foreground text-background font-semibold' : 'text-muted-foreground hover:text-foreground'}`}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}

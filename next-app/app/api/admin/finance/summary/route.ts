@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { getCostMap } from '@/lib/dashboard/cost-map';
-import { fetchFinanceOrders } from '@/lib/finance/fetch-orders';
+import { fetchFinanceOrders, type DateBase } from '@/lib/finance/fetch-orders';
 import { loadFinanceConfig } from '@/lib/finance/load-config';
 import { computeOrderProfit, aggregateFinance, type OrderProfit } from '@/lib/finance/calculations';
 import { aggregateByGateway, feeCoverageBreakdown, type OrderFeeRow } from '@/lib/finance/fees';
@@ -26,14 +26,16 @@ export async function GET(req: NextRequest) {
   const range = parseRange(req.nextUrl.searchParams);
   if (!range) return NextResponse.json({ error: 'Rango inválido' }, { status: 400 });
   const wantCompare = req.nextUrl.searchParams.get('compare') === '1';
+  // Base de fecha: venta (default) o acreditación (cuándo quedó disponible la plata).
+  const base: DateBase = req.nextUrl.searchParams.get('base') === 'release' ? 'release' : 'sale';
 
   try {
     const [cfg, costMap] = await Promise.all([loadFinanceConfig(), getCostMap()]);
     const costOf = costMap.costOf;
 
     const [cur, prev] = await Promise.all([
-      fetchFinanceOrders(range.startUTC, range.endUTC),
-      wantCompare ? fetchFinanceOrders(previousRange(range).startUTC, previousRange(range).endUTC) : Promise.resolve(null),
+      fetchFinanceOrders(range.startUTC, range.endUTC, base),
+      wantCompare ? fetchFinanceOrders(previousRange(range).startUTC, previousRange(range).endUTC, base) : Promise.resolve(null),
     ]);
 
     const profits: OrderProfit[] = cur.orders.map((o) => computeOrderProfit(o, costOf, cfg));
@@ -48,7 +50,7 @@ export async function GET(req: NextRequest) {
     const g = granularityFor(range);
     const byBucket = new Map<string, OrderProfit[]>();
     for (const p of profits) {
-      const k = bucketKey(p.dateISO, g);
+      const k = bucketKey(base === 'release' && p.accreditedISO ? p.accreditedISO : p.dateISO, g);
       (byBucket.get(k) || byBucket.set(k, []).get(k)!).push(p);
     }
     const timeseries = emptyBuckets(range, g).map((bucket) => {
@@ -57,7 +59,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      range, granularity: g,
+      range, granularity: g, base,
       summary, previous, gateways, timeseries,
       dataQuality: {
         coverage: summary.coverage,

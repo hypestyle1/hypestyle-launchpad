@@ -70,17 +70,37 @@ export interface GatewayFeeSnapshot {
   source: 'exact';
 }
 
+/** Desglose por concepto de lo que la pasarela descontó de un cobro. Con
+ *  snapshot v2 cada línea es real; con v1 sólo se conoce el total (va a
+ *  `gateway`) y la retención (`taxWithholdings` = otherCashDeduction); con regla
+ *  configurada todo el estimado va a `gateway`. */
+export interface FeeBreakdown {
+  /** Comisión de la pasarela por procesar el pago. */
+  gateway: number;
+  /** Costo de financiación (cuotas sin interés absorbidas por el vendedor). */
+  financing: number;
+  /** Otros cargos de la pasarela que no son comisión ni financiación. */
+  other: number;
+  /** Retenciones impositivas aplicadas en la misma operación (IIBB/SIRTAC). */
+  taxWithholdings: number;
+}
+
 /** Resultado del cálculo de fee de un pedido. */
 export interface OrderFee {
   provider: Provider;
   group: ProviderGroup;
-  /** Costo económico de la pasarela (lo que resta a Contribution Profit). */
+  /** Costo económico de la pasarela (comisión + financiación + otros cargos). */
   economicCost: number;
   /** Neto efectivamente acreditado (para Net Collected / cash). */
   netReceived: number;
   /** Deducciones de caja no económicas (retenciones), 0 si no aplica. */
   otherCashDeduction: number;
   source: DataSource;
+  breakdown: FeeBreakdown;
+  /** Cuotas del pago, si la pasarela lo informó (snapshot v2). */
+  installments: number | null;
+  /** Fecha de acreditación informada por la pasarela (snapshot v2), ISO con offset. */
+  moneyReleaseDate: string | null;
 }
 
 // ─── Snapshot v2 (Fase 1, 09/2026) ────────────────────────────────────────────
