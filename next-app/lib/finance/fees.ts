@@ -1,6 +1,7 @@
 import type {
-  Provider, ProviderGroup, FeeRule, OrderFee, GatewayFeeSnapshot, DataSource,
+  Provider, ProviderGroup, FeeRule, OrderFee, GatewayFeeSnapshot, DataSource, FeeBreakdown,
 } from './types';
+import { isSnapshotV2 } from './gateway-snapshot';
 
 // Motor de fees por pasarela. Jerarquía por pedido:
 //   snapshot exacto (de MP) → regla configurada con vigencia → missing (nunca 0).
@@ -72,12 +73,19 @@ export function computeOrderFee(input: FeeInput, rules: FeeRule[]): OrderFee {
   // 1) Snapshot exacto.
   if (input.snapshot && input.snapshot.provider) {
     const s = input.snapshot;
+    // v2 trae cada concepto separado; v1 sólo el total de fees y la retención.
+    const breakdown: FeeBreakdown = isSnapshotV2(s)
+      ? { gateway: round2(s.feeGateway), financing: round2(s.feeFinancing), other: round2(s.feeOther), taxWithholdings: round2(s.taxWithholdingTotal) }
+      : { gateway: round2(s.gatewayFee), financing: 0, other: 0, taxWithholdings: round2(s.otherCashDeduction) };
     return {
       provider, group,
       economicCost: round2(s.gatewayFee),
       netReceived: round2(s.netReceived),
       otherCashDeduction: round2(s.otherCashDeduction),
       source: 'exact',
+      breakdown,
+      installments: isSnapshotV2(s) ? s.installments : null,
+      moneyReleaseDate: isSnapshotV2(s) ? s.moneyReleaseDate : null,
     };
   }
 
@@ -91,11 +99,17 @@ export function computeOrderFee(input: FeeInput, rules: FeeRule[]): OrderFee {
       netReceived: round2(input.gross - economic),
       otherCashDeduction: 0,
       source: 'configured',
+      breakdown: { gateway: economic, financing: 0, other: 0, taxWithholdings: 0 },
+      installments: null,
+      moneyReleaseDate: null,
     };
   }
 
   // 3) Missing — nunca 0. economicCost queda null-conceptual; se representa con source.
-  return { provider, group, economicCost: 0, netReceived: input.gross, otherCashDeduction: 0, source: 'missing' };
+  return {
+    provider, group, economicCost: 0, netReceived: input.gross, otherCashDeduction: 0, source: 'missing',
+    breakdown: { gateway: 0, financing: 0, other: 0, taxWithholdings: 0 }, installments: null, moneyReleaseDate: null,
+  };
 }
 
 // ─── Agregación por pasarela ──────────────────────────────────────────────────

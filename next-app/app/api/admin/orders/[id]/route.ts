@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
+import { parseGatewaySnapshot, isSnapshotV2, GATEWAY_SYNC_META } from '@/lib/finance/gateway-snapshot';
+import { providerOf, groupOf } from '@/lib/finance/fees';
+import type { GatewaySyncStatus } from '@/lib/finance/types';
+import { mpActivityUrl } from '@/lib/finance/mp-links';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -35,6 +39,38 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const getMeta = (key: string) =>
     (o.meta_data as any[])?.find((m: any) => m.key === key)?.value || '';
+
+  // Cobro: id de pago de la pasarela + snapshot del desglose (comisión,
+  // financiación, retenciones, neto) si el sync de MP ya lo guardó.
+  const transactionId = String(o.transaction_id || '').trim();
+  const snapshot = parseGatewaySnapshot(o.meta_data);
+  let gatewaySync: GatewaySyncStatus | null = null;
+  const rawSync = getMeta(GATEWAY_SYNC_META);
+  if (rawSync) { try { gatewaySync = typeof rawSync === 'string' ? JSON.parse(rawSync) : rawSync; } catch { gatewaySync = null; } }
+  const provider = providerOf(o.payment_method || '');
+  const paymentId = (isSnapshotV2(snapshot) ? snapshot.paymentId : snapshot?.transactionId) || transactionId || '';
+  const gateway = snapshot ? {
+    version: isSnapshotV2(snapshot) ? 2 : 1,
+    quality: isSnapshotV2(snapshot) ? snapshot.quality : 'real',
+    gross: isSnapshotV2(snapshot) ? snapshot.gross : snapshot.grossAmount,
+    feeGateway: isSnapshotV2(snapshot) ? snapshot.feeGateway : snapshot.gatewayFee,
+    feeFinancing: isSnapshotV2(snapshot) ? snapshot.feeFinancing : 0,
+    feeOther: isSnapshotV2(snapshot) ? snapshot.feeOther : 0,
+    taxWithholdings: isSnapshotV2(snapshot) ? snapshot.taxWithholdings : [],
+    taxWithholdingTotal: isSnapshotV2(snapshot) ? snapshot.taxWithholdingTotal : snapshot.otherCashDeduction,
+    refunded: isSnapshotV2(snapshot) ? snapshot.refunded : 0,
+    netReceived: snapshot.netReceived,
+    installments: isSnapshotV2(snapshot) ? snapshot.installments : null,
+    paymentMethodId: isSnapshotV2(snapshot) ? snapshot.paymentMethodId : null,
+    paymentTypeId: isSnapshotV2(snapshot) ? snapshot.paymentTypeId : null,
+    status: isSnapshotV2(snapshot) ? snapshot.status : null,
+    dateApproved: isSnapshotV2(snapshot) ? snapshot.dateApproved : null,
+    moneyReleaseDate: isSnapshotV2(snapshot) ? snapshot.moneyReleaseDate : null,
+    moneyReleaseStatus: isSnapshotV2(snapshot) ? snapshot.moneyReleaseStatus : null,
+    discrepancy: isSnapshotV2(snapshot) ? snapshot.discrepancy : null,
+    warnings: isSnapshotV2(snapshot) ? snapshot.warnings : [],
+    syncedAt: snapshot.syncedAt,
+  } : null;
 
   // Historial del cliente: otros pedidos del mismo email (no hay customer_id, son todos guest checkout).
   let customerHistory = { orderCount: 0, totalSpent: 0, firstOrderDate: '' };
@@ -124,6 +160,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     isGift: getMeta('_es_regalo') === 'true',
     payment_method:       o.payment_method,
     payment_method_title: o.payment_method_title,
+    payment: {
+      provider,
+      group: groupOf(provider),
+      transactionId,
+      paymentId,
+      mpUrl: groupOf(provider) === 'mercadopago' && paymentId ? mpActivityUrl(paymentId) : null,
+      gateway,
+      sync: gatewaySync,
+    },
     customer_note:        o.customer_note,
     adminNote:            getMeta('_hs_admin_note'),
     order_key:            o.order_key,

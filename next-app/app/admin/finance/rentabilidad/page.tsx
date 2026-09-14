@@ -13,7 +13,8 @@ import type { DataSource } from '@/lib/finance/types';
 interface OrderRow {
   id: number; number: string; date: string; customerName?: string; paymentMethod: string; paymentTitle: string;
   revenue: number; refunds: number; netRevenue: number; cogs: number; cogsSource: DataSource; grossProfit: number;
-  fee: { group: string; economicCost: number; netReceived: number; otherCashDeduction: number; source: DataSource };
+  fee: { group: string; economicCost: number; netReceived: number; otherCashDeduction: number; source: DataSource; breakdown: { gateway: number; financing: number; other: number; taxWithholdings: number }; installments: number | null };
+  taxWithholdings: number;
   shipping: { charged: number; realCost: number | null; absorbed: number; difference: number | null; realSource: DataSource };
   variableCosts: { total: number; source: DataSource; items: { label: string; amount: number }[] };
   contributionProfit: number; contributionMargin: number; grossCollected: number; netCollected: number; complete: boolean;
@@ -198,8 +199,16 @@ export default function Rentabilidad() {
             <div className="bg-card border border-border rounded-lg p-4 mt-3">
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground/80 mb-2">Caja — {sel.fee.group}</p>
               <div className="flex justify-between text-[13px] py-1"><span className="text-muted-foreground">Gross Collected</span><span className="tabular-nums text-foreground">{fmtARS(sel.grossCollected)}</span></div>
-              <div className="flex justify-between text-[13px] py-1"><span className="text-muted-foreground">Costo pasarela</span><span className="tabular-nums text-destructive">−{fmtARS(sel.fee.economicCost)}</span></div>
-              {sel.fee.otherCashDeduction > 0 && <div className="flex justify-between text-[13px] py-1"><span className="text-muted-foreground">Otras deducciones (retenciones)</span><span className="tabular-nums text-destructive">−{fmtARS(sel.fee.otherCashDeduction)}</span></div>}
+              {sel.fee.breakdown && sel.fee.breakdown.financing > 0 ? (
+                <>
+                  <div className="flex justify-between text-[13px] py-1"><span className="text-muted-foreground">Comisión pasarela</span><span className="tabular-nums text-destructive">−{fmtARS(sel.fee.breakdown.gateway)}</span></div>
+                  <div className="flex justify-between text-[13px] py-1"><span className="text-muted-foreground">Financiación{sel.fee.installments ? ` · ${sel.fee.installments} cuotas` : ''}</span><span className="tabular-nums text-destructive">−{fmtARS(sel.fee.breakdown.financing)}</span></div>
+                  {sel.fee.breakdown.other > 0 && <div className="flex justify-between text-[13px] py-1"><span className="text-muted-foreground">Otros cargos</span><span className="tabular-nums text-destructive">−{fmtARS(sel.fee.breakdown.other)}</span></div>}
+                </>
+              ) : (
+                <div className="flex justify-between text-[13px] py-1"><span className="text-muted-foreground">Costo pasarela</span><span className="tabular-nums text-destructive">−{fmtARS(sel.fee.economicCost)}</span></div>
+              )}
+              {sel.fee.otherCashDeduction > 0 && <div className="flex justify-between text-[13px] py-1"><span className="text-muted-foreground">Retenciones (IIBB)</span><span className="tabular-nums text-destructive">−{fmtARS(sel.fee.otherCashDeduction)}</span></div>}
               <div className="flex justify-between text-[13px] py-1 border-t border-border mt-1 pt-2 font-semibold"><span className="text-foreground">Net Collected</span><span className="tabular-nums text-foreground">{fmtARS(sel.netCollected)}</span></div>
             </div>
             <Link href={`/admin/pedidos/${sel.id}`} className="block text-center text-[13px] text-foreground border border-border rounded-lg py-2 mt-3 hover:bg-muted">Ver pedido completo</Link>
@@ -217,7 +226,9 @@ function orderWaterfall(o: OrderRow): WaterfallRow[] {
     { label: 'Net Revenue', amount: o.netRevenue, kind: 'subtotal' },
     { label: 'COGS', amount: o.cogsSource === 'missing' ? null : o.cogs, kind: 'subtract', source: o.cogsSource },
     { label: 'Gross Profit', amount: o.grossProfit, kind: 'subtotal' },
-    { label: 'Payment Fee', amount: o.fee.source === 'missing' ? null : o.fee.economicCost, kind: 'subtract', source: o.fee.source },
+    { label: 'Payment Fee', amount: o.fee.source === 'missing' ? null : o.fee.economicCost, kind: 'subtract', source: o.fee.source,
+      hint: o.fee.breakdown && o.fee.breakdown.financing > 0 ? `comisión ${fmtARS(o.fee.breakdown.gateway)} · financiación ${fmtARS(o.fee.breakdown.financing)}${o.fee.installments ? ` (${o.fee.installments} cuotas)` : ''}` : undefined },
+    ...(o.taxWithholdings > 0 ? [{ label: 'Retenciones', amount: o.taxWithholdings, kind: 'subtract' as const, source: o.fee.source, hint: 'IIBB / SIRTAC, se trata como costo' }] : []),
     { label: 'Shipping Absorbed', amount: o.shipping.realSource === 'missing' ? null : o.shipping.absorbed, kind: 'subtract', source: o.shipping.realSource },
     { label: 'Variable Costs', amount: o.variableCosts.source === 'missing' ? null : o.variableCosts.total, kind: 'subtract', source: o.variableCosts.source },
     { label: 'Contribution Profit', amount: o.contributionProfit, kind: 'result', hint: `${pct(o.contributionMargin)} margen` },

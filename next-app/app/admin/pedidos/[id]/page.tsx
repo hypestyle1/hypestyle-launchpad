@@ -11,6 +11,20 @@ type Item = { id: number; name: string; quantity: number; price: number; total: 
 type Address = { address_1: string; address_2: string; city: string; state: string; postcode: string };
 type Note = { id: number; note: string; date: string };
 type CustomerHistory = { orderCount: number; totalSpent: number; firstOrderDate: string };
+type GatewayInfo = {
+  version: 1 | 2; quality: 'real' | 'calculated';
+  gross: number; feeGateway: number; feeFinancing: number; feeOther: number;
+  taxWithholdings: { name: string; regime: string | null; jurisdiction: string | null; amount: number }[];
+  taxWithholdingTotal: number; refunded: number; netReceived: number;
+  installments: number | null; paymentMethodId: string | null; paymentTypeId: string | null; status: string | null;
+  dateApproved: string | null; moneyReleaseDate: string | null; moneyReleaseStatus: string | null;
+  discrepancy: { delta: number; notes: string[] } | null; warnings: string[]; syncedAt: string;
+};
+type PaymentInfo = {
+  provider: string; group: string; transactionId: string; paymentId: string; mpUrl: string | null;
+  gateway: GatewayInfo | null;
+  sync: { at: string; ok: boolean; error: string | null } | null;
+};
 type Order = {
   id: number; number: string; status: string; date: string; datePaid: string; dateModified: string;
   customer: { first_name: string; last_name: string; email: string; phone: string; dni: string; instagram: string };
@@ -23,6 +37,7 @@ type Order = {
   isMayorista: boolean;
   isGift: boolean;
   payment_method: string; payment_method_title: string;
+  payment?: PaymentInfo;
   customer_note: string; order_key: string;
   adminNote: string;
   viaCargoSucursal: string;
@@ -806,11 +821,8 @@ export default function OrderDetailPage() {
               )}
             </div>
 
-            {/* Payment */}
-            <div className="bg-card rounded-lg border border-border px-5 py-4">
-              <h2 className="text-[13px] font-semibold text-foreground mb-2">Pago</h2>
-              <div className="text-[13px] text-muted-foreground">{order.payment_method_title}</div>
-            </div>
+            {/* Cobro: método + id de pago + desglose real de la pasarela */}
+            <CobroCard order={order} />
 
             {/* Customer note */}
             {order.customer_note && (
@@ -1198,6 +1210,104 @@ export default function OrderDetailPage() {
             </a>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Cobro: qué pagó el cliente, qué descontó la pasarela y qué quedó ─────────
+// Con snapshot de MP muestra el desglose real (comisión, financiación,
+// retenciones) y el link a la operación. Sin snapshot muestra el método y, si
+// el sync lo intentó y falló, el motivo. Nunca inventa un neto.
+const GROUP_LABEL: Record<string, string> = {
+  mercadopago: 'Mercado Pago', talo: 'Talo / transferencia', gocuotas: 'GOcuotas',
+  paypal: 'PayPal', manual: 'Manual', mayorista: 'Mayorista', other: 'Otro',
+};
+function fmtDateTimeAR(s: string | null | undefined): string {
+  if (!s) return '';
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
+  return d.toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function pctOf(part: number, total: number): string {
+  return total > 0 ? `${((part / total) * 100).toFixed(2).replace('.', ',')}%` : '';
+}
+function CobroRow({ label, amount, gross, negative, sub }: { label: string; amount: number; gross: number; negative?: boolean; sub?: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 text-[12.5px] py-1">
+      <span className="text-muted-foreground min-w-0">
+        {label}
+        {sub && <span className="block text-[11px] text-muted-foreground/70">{sub}</span>}
+      </span>
+      <span className="shrink-0 text-right">
+        <span className={`tabular-nums ${negative ? 'text-destructive' : 'text-foreground'}`}>{negative ? '−' : ''}{fmt(Math.abs(amount))}</span>
+        {negative && gross > 0 && <span className="ml-2 text-[11px] text-muted-foreground/70 tabular-nums">{pctOf(amount, gross)}</span>}
+      </span>
+    </div>
+  );
+}
+function CobroCard({ order }: { order: Order }) {
+  const p = order.payment;
+  const g = p?.gateway || null;
+  const isMp = p?.group === 'mercadopago';
+  const badge = g
+    ? (g.quality === 'real' ? { text: 'Exacto', cls: 'bg-green-100 text-green-700' } : { text: 'Calculado', cls: 'bg-blue-100 text-blue-800' })
+    : (isMp ? { text: 'Sin sincronizar', cls: 'bg-yellow-100 text-yellow-800' } : { text: 'Sin dato de pasarela', cls: 'bg-muted text-muted-foreground' });
+  const consumed = g ? g.gross - g.netReceived : 0;
+  return (
+    <div className="bg-card rounded-lg border border-border px-5 py-4">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <h2 className="text-[13px] font-semibold text-foreground">Cobro</h2>
+        <span className={`text-[10.5px] font-semibold uppercase tracking-wide rounded px-1.5 py-0.5 ${badge.cls}`}>{badge.text}</span>
+      </div>
+      <div className="text-[13px] text-foreground">{order.payment_method_title || (p ? GROUP_LABEL[p.group] : '')}</div>
+      {p?.paymentId && (
+        <div className="mt-1 text-[12px] text-muted-foreground flex flex-wrap items-center gap-x-2">
+          <span>Pago <span className="font-mono text-foreground">{p.paymentId}</span></span>
+          {p.mpUrl && (
+            <a href={p.mpUrl} target="_blank" rel="noopener noreferrer" className="text-foreground underline underline-offset-2 hover:opacity-80">Ver en Mercado Pago</a>
+          )}
+        </div>
+      )}
+      {g && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <CobroRow label="Pagó el cliente" amount={g.gross} gross={g.gross} />
+          <CobroRow label="Comisión de la pasarela" amount={g.feeGateway} gross={g.gross} negative />
+          {g.feeFinancing > 0 && <CobroRow label="Financiación" sub={g.installments ? `${g.installments} cuotas absorbidas` : undefined} amount={g.feeFinancing} gross={g.gross} negative />}
+          {g.feeOther > 0 && <CobroRow label="Otros cargos" amount={g.feeOther} gross={g.gross} negative />}
+          {g.taxWithholdingTotal > 0 && (
+            <CobroRow label="Retención de Ingresos Brutos" sub={g.taxWithholdings.map((t) => [t.regime, t.jurisdiction].filter(Boolean).join(' · ')).filter(Boolean).join(', ') || undefined} amount={g.taxWithholdingTotal} gross={g.gross} negative />
+          )}
+          {g.refunded > 0 && <CobroRow label="Reembolsado" amount={g.refunded} gross={g.gross} negative />}
+          <div className="flex items-baseline justify-between gap-3 text-[13px] py-1.5 mt-1 border-t border-border font-semibold">
+            <span className="text-foreground">Neto acreditado</span>
+            <span className="text-right">
+              <span className="tabular-nums text-foreground">{fmt(g.netReceived)}</span>
+              <span className="ml-2 text-[11px] font-normal text-muted-foreground/70 tabular-nums">{pctOf(consumed, g.gross)} consumido</span>
+            </span>
+          </div>
+          <div className="mt-2 space-y-0.5 text-[11.5px] text-muted-foreground">
+            {g.dateApproved && <div>Aprobado el <span className="text-foreground">{fmtDateTimeAR(g.dateApproved)}</span></div>}
+            {g.moneyReleaseDate && (
+              <div>
+                {g.moneyReleaseStatus === 'released' ? 'Acreditado el ' : 'Se acredita el '}
+                <span className="text-foreground">{fmtDateTimeAR(g.moneyReleaseDate)}</span>
+                {g.moneyReleaseStatus && g.moneyReleaseStatus !== 'released' && <span> · {g.moneyReleaseStatus}</span>}
+              </div>
+            )}
+            {(g.paymentMethodId || g.paymentTypeId) && <div>{[g.paymentTypeId, g.paymentMethodId].filter(Boolean).join(' · ')}{g.status && g.status !== 'approved' ? ` · ${g.status}` : ''}</div>}
+            {g.discrepancy && Math.abs(g.discrepancy.delta) >= 1 && (
+              <div className="text-yellow-700">El neto informado no cierra con el desglose por {fmt(Math.abs(g.discrepancy.delta))}.</div>
+            )}
+            <div className="text-muted-foreground/60">Sincronizado {fmtDateTimeAR(g.syncedAt)}</div>
+          </div>
+        </div>
+      )}
+      {!g && p?.sync && !p.sync.ok && (
+        <div className="mt-2 text-[11.5px] text-yellow-700">El sync con Mercado Pago falló{p.sync.error ? `: ${p.sync.error}` : ''}. Último intento {fmtDateTimeAR(p.sync.at)}.</div>
+      )}
+      {!g && isMp && !p?.sync && (
+        <div className="mt-2 text-[11.5px] text-muted-foreground">El desglose se carga con el sync nocturno de Mercado Pago.</div>
       )}
     </div>
   );
