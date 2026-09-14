@@ -3,7 +3,7 @@ import { adminSecretMatches } from '@/lib/admin-auth';
 import { fetchDailyInsights, fetchInsights, fetchAccount, metaConfigured } from '@/lib/meta/client';
 import { buildAdvertisingSummary, type BusinessInputs } from '@/lib/meta/summary';
 import type { AdvertisingCostRule } from '@/lib/meta/metrics';
-import { previousRange } from '@/lib/dashboard/periods';
+import { previousRange, arDateRange } from '@/lib/dashboard/periods';
 
 // Performance analytics — UN endpoint, agregación server-side, todo en paralelo
 // (no N+1, no 16 fetches del browser). Reusa los endpoints existentes (no duplica
@@ -13,8 +13,6 @@ import { previousRange } from '@/lib/dashboard/periods';
 export const dynamic = 'force-dynamic';
 // Agrega varias paginas de pedidos de Woo: el default de la plataforma queda corto.
 export const maxDuration = 60;
-const AR_OFFSET_MS = 180 * 60_000;
-const arDate = (iso: string) => new Date(Date.parse(iso) - AR_OFFSET_MS).toISOString().slice(0, 10);
 
 async function internal<T>(origin: string, path: string, key: string): Promise<T | null> {
   try { const r = await fetch(`${origin}${path}`, { headers: { 'x-admin-key': key }, cache: 'no-store' }); return r.ok ? (r.json() as Promise<T>) : null; }
@@ -32,6 +30,8 @@ export async function GET(req: NextRequest) {
 
   const origin = req.nextUrl.origin;
   const prev = previousRange({ startUTC: start, endUTC: end });
+  const cur = arDateRange(start, end);
+  const prv = arDateRange(prev.startUTC, prev.endUTC);
   const qs = `start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
   const qsPrev = `start=${encodeURIComponent(prev.startUTC)}&end=${encodeURIComponent(prev.endUTC)}`;
   const t0 = Date.now();
@@ -43,9 +43,9 @@ export async function GET(req: NextRequest) {
   const metaWork = metaOn ? (async () => {
     const [account, accCur, accPrev, daily] = await Promise.all([
       fetchAccount().catch(() => null),
-      fetchInsights('account', arDate(start), arDate(end)).catch(() => []),
-      fetchInsights('account', arDate(prev.startUTC), arDate(prev.endUTC)).catch(() => []),
-      fetchDailyInsights(arDate(start), arDate(end)).catch(() => []),
+      fetchInsights('account', cur.since, cur.until).catch(() => []),
+      fetchInsights('account', prv.since, prv.until).catch(() => []),
+      fetchDailyInsights(cur.since, cur.until).catch(() => []),
     ]);
     return { account, accCur: accCur[0] || null, accPrev: accPrev[0] || null, daily };
   })() : Promise.resolve(null);
@@ -72,10 +72,10 @@ export async function GET(req: NextRequest) {
     metaConnected = true;
     const acct = { name: meta.account.name, currency: meta.account.currency, timezone: meta.account.timezone };
     const bizCur: BusinessInputs = { wooRevenue: dc.revenue ?? 0, netRevenue: nr, contributionProfit: fc.contributionProfit ?? dc.contributionProfit ?? 0, newCustomers: cust?.newCount ?? null, operatingExpenses: opARS, operatingExpensesPartial: opPartial };
-    mc = buildAdvertisingSummary(acct, meta.accCur, [], new Map(), bizCur, rules, arDate(end));
+    mc = buildAdvertisingSummary(acct, meta.accCur, [], new Map(), bizCur, rules, cur.until);
     if (meta.accPrev) {
       const bizPrev: BusinessInputs = { wooRevenue: fp.revenue ?? dp.revenue ?? 0, netRevenue: fp.netRevenue ?? dp.revenue ?? 0, contributionProfit: fp.contributionProfit ?? dp.contributionProfit ?? 0, newCustomers: null, operatingExpenses: opARS, operatingExpensesPartial: opPartial };
-      mp = buildAdvertisingSummary(acct, meta.accPrev, [], new Map(), bizPrev, rules, arDate(prev.endUTC));
+      mp = buildAdvertisingSummary(acct, meta.accPrev, [], new Map(), bizPrev, rules, prv.until);
     }
   }
   const metaDaily = meta?.daily || [];

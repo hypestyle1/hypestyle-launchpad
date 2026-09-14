@@ -47,6 +47,35 @@ export function toARParts(utc: Date): { y: number; m: number; d: number; hh: num
   return { y: shifted.getUTCFullYear(), m: shifted.getUTCMonth(), d: shifted.getUTCDate(), hh: shifted.getUTCHours() };
 }
 
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Fecha de calendario AR (YYYY-MM-DD) de un instante UTC. */
+function arDayOf(ms: number): string {
+  const { y, m, d } = toARParts(new Date(ms));
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/**
+ * Convierte el rango del panel en fechas AR de calendario INCLUSIVAS
+ * `{ since, until }`, que es lo que piden GA4 (dateRanges), Meta (time_range)
+ * y operating-costs (costForRange).
+ *
+ * - Instantes ISO (`startUTC`/`endUTC` de `resolvePreset`): el fin es EXCLUSIVO,
+ *   así que el último día incluido es el del instante anterior. Antes cada ruta
+ *   hacía `arDate(end)` directo y sumaba un día de más ("Ayer" traía también hoy,
+ *   "Mes pasado" el 1° del mes siguiente).
+ * - Fechas planas `YYYY-MM-DD`: se toman como días AR inclusivos tal cual, sin
+ *   pasar por Date.parse (que las lee como medianoche UTC y las corre al día
+ *   anterior en AR).
+ *
+ * Si el rango queda vacío o invertido, `until` se pisa con `since`.
+ */
+export function arDateRange(start: string, end: string): { since: string; until: string } {
+  const since = DATE_ONLY.test(start) ? start : arDayOf(Date.parse(start));
+  const until = DATE_ONLY.test(end) ? end : arDayOf(Date.parse(end) - 1);
+  return { since, until: until < since ? since : until };
+}
+
 /**
  * Resuelve un preset a un rango [startUTC, endUTC). `now` se inyecta (no se usa
  * Date.now() interno) para poder testear determinísticamente.

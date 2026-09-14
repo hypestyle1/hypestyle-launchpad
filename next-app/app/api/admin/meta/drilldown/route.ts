@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { fetchChildInsights, metaConfigured } from '@/lib/meta/client';
 import { metaCpa } from '@/lib/meta/metrics';
+import { arDateRange } from '@/lib/dashboard/periods';
 
 // Drilldown de UNA campaña → ad sets o ads. On-demand (no en el load de la página).
 
 export const dynamic = 'force-dynamic';
-const AR_OFFSET_MS = 180 * 60_000;
-const arDate = (iso: string) => new Date(Date.parse(iso) - AR_OFFSET_MS).toISOString().slice(0, 10);
 
 export async function GET(req: NextRequest) {
   if (!adminSecretMatches(req.headers.get('x-admin-key'))) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -22,7 +21,8 @@ export async function GET(req: NextRequest) {
 
   try {
     // adset → se filtra por campaña; ad → por ad set.
-    const rows = await fetchChildInsights(level, level === 'ad' ? { adsetId } : { campaignId }, arDate(start), arDate(end));
+    const { since, until } = arDateRange(start, end);
+    const rows = await fetchChildInsights(level, level === 'ad' ? { adsetId } : { campaignId }, since, until);
     const enriched = rows.map((r) => ({ ...r, cpa: metaCpa(r.spend, r.purchases) })).sort((a, b) => b.spend - a.spend);
     return NextResponse.json({ rows: enriched });
   } catch (e: any) {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  resolvePreset, previousRange, granularityFor, bucketKey, emptyBuckets, toARParts,
+  resolvePreset, previousRange, granularityFor, bucketKey, emptyBuckets, toARParts, arDateRange,
 } from '@/lib/dashboard/periods';
 
 // Referencia: 26 ago 2026, 13:42 hora argentina = 16:42 UTC.
@@ -78,5 +78,44 @@ describe('periods — buckets', () => {
   it('emptyBuckets de "Últimos 7 días" genera 7 días', () => {
     const r = resolvePreset('last7', NOW);
     expect(emptyBuckets(r, 'day')).toHaveLength(7);
+  });
+});
+
+describe('arDateRange — rango del panel → días AR inclusivos', () => {
+  it('instantes ISO con fin exclusivo: el último día es el anterior al fin', () => {
+    // "Ayer" el 14/09: [13/09 00:00 AR, 14/09 00:00 AR) → solo el 13.
+    expect(arDateRange('2026-09-13T03:00:00.000Z', '2026-09-14T03:00:00.000Z'))
+      .toEqual({ since: '2026-09-13', until: '2026-09-13' });
+  });
+
+  it('"Mes pasado" no incluye el 1° del mes siguiente', () => {
+    const r = resolvePreset('prevMonth', NOW);
+    expect(arDateRange(r.startUTC, r.endUTC)).toEqual({ since: '2026-07-01', until: '2026-07-31' });
+  });
+
+  it('"Hoy" y "Ayer" resuelven a un solo día cada uno', () => {
+    const hoy = resolvePreset('today', NOW);
+    const ayer = resolvePreset('yesterday', NOW);
+    expect(arDateRange(hoy.startUTC, hoy.endUTC)).toEqual({ since: '2026-08-26', until: '2026-08-26' });
+    expect(arDateRange(ayer.startUTC, ayer.endUTC)).toEqual({ since: '2026-08-25', until: '2026-08-25' });
+  });
+
+  it('custom inclusivo 07→13 devuelve exactamente 07→13', () => {
+    const r = resolvePreset('custom', NOW, { start: '2026-09-07', end: '2026-09-13' });
+    expect(arDateRange(r.startUTC, r.endUTC)).toEqual({ since: '2026-09-07', until: '2026-09-13' });
+  });
+
+  it('fechas planas YYYY-MM-DD se toman tal cual, sin correrlas un día', () => {
+    expect(arDateRange('2026-09-07', '2026-09-13')).toEqual({ since: '2026-09-07', until: '2026-09-13' });
+  });
+
+  it('el rango anterior de "Ayer" es antes de ayer', () => {
+    const prev = previousRange(resolvePreset('yesterday', NOW));
+    expect(arDateRange(prev.startUTC, prev.endUTC)).toEqual({ since: '2026-08-24', until: '2026-08-24' });
+  });
+
+  it('rango vacío o invertido no devuelve until < since', () => {
+    expect(arDateRange('2026-09-13T03:00:00.000Z', '2026-09-13T03:00:00.000Z'))
+      .toEqual({ since: '2026-09-13', until: '2026-09-13' });
   });
 });
