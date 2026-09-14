@@ -11,12 +11,15 @@ const sections = [
   {
     title: "¿Cómo solicitar un cambio?",
     content: (
-      <ol className="list-decimal list-inside space-y-2 text-[15px] leading-relaxed">
-        <li>Ingresá tu número de orden y email en el formulario de cambios.</li>
-        <li>Seleccioná el o los productos que querés cambiar.</li>
-        <li>Elegí el método de envío: podés acercarlo a nuestras oficinas, coordinar un retiro, u optar por otra modalidad disponible.</li>
-        <li>Recibís una hoja de ruta de Correo Argentino para imprimir y adjuntar al paquete.</li>
-      </ol>
+      <div className="space-y-4 text-[15px] leading-relaxed">
+        <ol className="list-decimal list-inside space-y-2">
+          <li>Escribinos por WhatsApp o Instagram con tu número de pedido y el producto que querés cambiar.</li>
+          <li>Te confirmamos si hay stock del talle nuevo y lo reservamos.</li>
+          <li>Nos enviás la prenda por Andreani (te pasamos los datos del punto de despacho). El envío corre por tu cuenta.</li>
+          <li>Cuando la recibimos y la revisamos, despachamos el talle nuevo.</li>
+        </ol>
+        <p>No tenemos local ni showroom: la venta y los cambios son únicamente online.</p>
+      </div>
     ),
   },
   {
@@ -106,7 +109,7 @@ const sections = [
     content: (
       <div className="space-y-3 text-[15px] leading-relaxed">
         <p>Toda consulta o gestión debe realizarse exclusivamente a través de nuestros canales oficiales. Las cuentas personales de los integrantes del equipo no son canales válidos de atención.</p>
-        <p>Canal oficial: <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground/70 transition-colors">@hypestylearg</a> en Instagram.</p>
+        <p>Canales oficiales: <a href="https://wa.me/5491178292430" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground/70 transition-colors">WhatsApp</a> e Instagram <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground/70 transition-colors">@hypestylearg</a>.</p>
       </div>
     ),
   },

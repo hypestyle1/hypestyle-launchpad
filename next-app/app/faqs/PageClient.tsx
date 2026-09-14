@@ -65,7 +65,7 @@ const faqs = [
     items: [
       {
         q: "¿Puedo cambiar mi pedido?",
-        a: "Aceptamos cambios dentro de los 10 días de recibido el producto, siempre que esté sin uso y con etiquetas. Consultá nuestra política de devoluciones.",
+        a: "Aceptamos cambios por talle dentro de los 30 días corridos desde la compra, siempre que la prenda esté sin uso y con etiquetas y haya stock del talle nuevo. Escribinos por WhatsApp o Instagram con tu número de pedido. Consultá nuestra política de cambios.",
       },
       {
         q: "¿Qué hago si recibí un producto defectuoso?",
