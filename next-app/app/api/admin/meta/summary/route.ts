@@ -3,14 +3,13 @@ import { adminSecretMatches } from '@/lib/admin-auth';
 import { getMetaData, metaConfigured, metaAccountId } from '@/lib/meta/client';
 import { buildAdvertisingSummary, type BusinessInputs } from '@/lib/meta/summary';
 import type { AdvertisingCostRule } from '@/lib/meta/metrics';
+import { arDateRange } from '@/lib/dashboard/periods';
 
 // Cruce server-side: Meta (cache 10min) + Finance + Operating + Customers, todo
 // reusando los endpoints existentes (sin duplicar fórmulas). La cuenta es ARS/AR,
 // así que las fechas del rango se pasan como YYYY-MM-DD AR-local.
 
 export const dynamic = 'force-dynamic';
-const AR_OFFSET_MS = 180 * 60_000;
-const arDate = (iso: string) => new Date(Date.parse(iso) - AR_OFFSET_MS).toISOString().slice(0, 10);
 
 async function internal<T>(origin: string, path: string, key: string): Promise<T | null> {
   try {
@@ -30,7 +29,7 @@ export async function GET(req: NextRequest) {
   const start = req.nextUrl.searchParams.get('start');
   const end = req.nextUrl.searchParams.get('end');
   if (!start || !end) return NextResponse.json({ error: 'start y end requeridos' }, { status: 400 });
-  const since = arDate(start), until = arDate(end);
+  const { since, until } = arDateRange(start, end);
   const force = req.nextUrl.searchParams.get('refresh') === '1';
   const origin = req.nextUrl.origin;
   const qs = `start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
