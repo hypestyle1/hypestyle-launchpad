@@ -23,11 +23,11 @@ const sections = [
     ),
   },
   {
-    title: "Producto con falla",
+    title: "Producto con falla o error nuestro",
     content: (
       <div className="space-y-3 text-[15px] leading-relaxed">
-        <p>Si el producto presenta una falla de fabricación, el cambio se realiza sin costo para vos.</p>
-        <p>Para gestionar el cambio, contactanos preferentemente por Instagram con fotos o videos que muestren claramente el defecto. Nosotros nos encargamos del retiro y del envío del producto de reemplazo.</p>
+        <p>Si el producto presenta una falla de fabricación, o te enviamos un talle o producto distinto al que pediste, el cambio se realiza sin costo para vos.</p>
+        <p>Para gestionar el cambio, contactanos por WhatsApp o Instagram con fotos o videos que muestren claramente el defecto o el error. Nosotros nos encargamos del retiro y del envío del producto de reemplazo.</p>
       </div>
     ),
   },
@@ -37,7 +37,7 @@ const sections = [
       <div className="space-y-3 text-[15px] leading-relaxed">
         <p>Los cambios por talle aplican únicamente para el mismo producto y están sujetos a disponibilidad de stock.</p>
         <p>El artículo debe ser devuelto en perfectas condiciones: sin uso, sin manchas, sin olores, con todas sus etiquetas y en su empaque original.</p>
-        <p className="font-medium">Los costos de envío del cambio (Andreani o moto) corren por cuenta del comprador.</p>
+        <p className="font-medium">Cuando el cambio es por una elección de talle del comprador, los costos de envío del cambio (Andreani o moto) corren por su cuenta. Si el error fue nuestro o la prenda tiene falla, el cambio es sin costo.</p>
       </div>
     ),
   },
