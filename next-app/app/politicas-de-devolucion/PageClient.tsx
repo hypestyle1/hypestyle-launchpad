@@ -15,19 +15,19 @@ const sections = [
         <ol className="list-decimal list-inside space-y-2">
           <li>Escribinos por WhatsApp o Instagram con tu número de pedido y el producto que querés cambiar.</li>
           <li>Te confirmamos si hay stock del talle nuevo y lo reservamos.</li>
-          <li>Nos enviás la prenda por Andreani (te pasamos los datos del punto de despacho). El envío corre por tu cuenta.</li>
-          <li>Cuando la recibimos y la revisamos, despachamos el talle nuevo.</li>
+          <li>Generamos la etiqueta de Andreani y te despachamos el talle nuevo. El cambio se hace en el momento: cuando lo recibís, entregás ahí mismo el paquete con la prenda a cambiar. El envío corre por tu cuenta y te pasamos el monto exacto antes de confirmar.</li>
+          <li>Si estás en CABA o alrededores, también podemos coordinar el cambio con una moto.</li>
         </ol>
         <p>No tenemos local ni showroom: la venta y los cambios son únicamente online.</p>
       </div>
     ),
   },
   {
-    title: "Producto con falla",
+    title: "Producto con falla o error nuestro",
     content: (
       <div className="space-y-3 text-[15px] leading-relaxed">
-        <p>Si el producto presenta una falla de fabricación, el cambio se realiza sin costo para vos.</p>
-        <p>Para gestionar el cambio, contactanos preferentemente por Instagram con fotos o videos que muestren claramente el defecto. Nosotros nos encargamos del retiro y del envío del producto de reemplazo.</p>
+        <p>Si el producto presenta una falla de fabricación, o te enviamos un talle o producto distinto al que pediste, el cambio se realiza sin costo para vos.</p>
+        <p>Para gestionar el cambio, contactanos por WhatsApp o Instagram con fotos o videos que muestren claramente el defecto o el error. Nosotros nos encargamos del retiro y del envío del producto de reemplazo.</p>
       </div>
     ),
   },
@@ -37,7 +37,7 @@ const sections = [
       <div className="space-y-3 text-[15px] leading-relaxed">
         <p>Los cambios por talle aplican únicamente para el mismo producto y están sujetos a disponibilidad de stock.</p>
         <p>El artículo debe ser devuelto en perfectas condiciones: sin uso, sin manchas, sin olores, con todas sus etiquetas y en su empaque original.</p>
-        <p className="font-medium">Los costos de envío — tanto el envío hacia nosotros como el reenvío hacia vos — corren por cuenta del comprador (doble movimiento).</p>
+        <p className="font-medium">Cuando el cambio es por una elección de talle del comprador, los costos de envío del cambio (Andreani o moto) corren por su cuenta. Si el error fue nuestro o la prenda tiene falla, el cambio es sin costo.</p>
       </div>
     ),
   },
