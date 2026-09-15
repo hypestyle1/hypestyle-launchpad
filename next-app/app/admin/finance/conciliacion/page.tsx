@@ -30,7 +30,7 @@ type Resp = {
   kpis: {
     grossSales: number; netPaymentApi: number; netReconciled: number; unlinkedNet: number;
     unlinkedByKind: Record<string, { count: number; credit: number; debit: number; net: number }>;
-    pendingDifference: number; coverageCount: number; coverageAmount: number; counts: Record<Status, number>; payments: number; missingPayments: number;
+    pendingDifference: number; coverageCount: number; coverageAmount: number; counts: Record<Status, number>; payments: number; salesNoOrder: number; missingPayments: number;
   } | null;
   movements: Row[]; settlement: Row[];
   missingPayments: { id: number; number: string; status: string; transactionId: string | null; total: number; datePaid: string | null }[];
@@ -159,12 +159,12 @@ export default function ConciliacionPage() {
 
       {k && (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-5">
-          <KpiCard label="Ventas brutas MP" value={fmt(k.grossSales)} sub={`${k.payments} pagos liberados`} />
+          <KpiCard label="Ventas brutas MP" value={fmt(k.grossSales)} sub={`${k.payments} con pedido · ${k.salesNoOrder} sin pedido`} />
           <KpiCard label="Neto según Payment API" value={fmt(k.netPaymentApi)} sub="pedidos con snapshot" />
           <KpiCard label="Neto conciliado" value={fmt(k.netReconciled)} sub="ventas conciliadas − refunds/contracargos" />
-          <KpiCard label="Movimientos sin pedido" value={fmt(k.unlinkedNet)} sub={Object.entries(k.unlinkedByKind).map(([kind, v]) => `${KIND_LABEL[kind] || kind} ${v.count}`).join(' · ') || 'ninguno'} />
-          <KpiCard label="Diferencia pendiente" value={fmt(k.pendingDifference)} sub={`${k.counts.DIFERENCIA} diferencias · ${k.counts.SIN_PEDIDO} sin pedido · ${k.missingPayments} sin pago`} />
-          <KpiCard label="Cobertura conciliada" value={`${k.coverageCount}%`} sub={`${k.coverageAmount}% del neto de ventas`} />
+          <KpiCard label="Movimientos sin pedido" value={fmt(k.unlinkedNet)} sub={Object.entries(k.unlinkedByKind).map(([kind, v]) => `${kind === 'payment' ? 'Venta sin pedido' : (KIND_LABEL[kind] || kind)} ${v.count}`).join(' · ') || 'ninguno'} />
+          <KpiCard label="Diferencia pendiente" value={fmt(k.pendingDifference)} sub={`${k.counts.DIFERENCIA} diferencias · ${k.counts.PENDIENTE} pendientes · ${k.counts.REFUND_SIN_REGISTRO} refunds sin registro · ${k.missingPayments} sin pago`} />
+          <KpiCard label="Cobertura conciliada" value={`${k.coverageCount}%`} sub={`${k.coverageAmount}% del neto de ventas con pedido`} />
         </div>
       )}
 

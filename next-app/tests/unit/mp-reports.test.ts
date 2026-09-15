@@ -242,7 +242,9 @@ describe('computeKpis', () => {
     const orders = new Map([[2999, order(2999)], [2950, order(2950)], [2951, order(2951)]]);
     const results = new Map(reconcileAll(rel.movements, orders).map((r) => [r.uniqueKey, r]));
     const k = computeKpis(rel.movements, results, orders, 1);
-    expect(k.payments).toBe(2);
+    // 2 ventas en el reporte: una con pedido (2999) y una sin pedido (CVU).
+    expect(k.payments).toBe(1);
+    expect(k.salesNoOrder).toBe(1);
     expect(k.grossSales).toBe(151085.03);
     expect(k.netPaymentApi).toBe(100538.42);
     // conciliado: la venta 2999 (100538.42) menos su refund (10000) y menos contracargo (50000) y disputa (30000)
@@ -250,12 +252,15 @@ describe('computeKpis', () => {
     expect(k.counts.CONCILIADO).toBe(1);
     expect(k.counts.SIN_PEDIDO).toBe(1);
     expect(k.counts.REFUND_SIN_REGISTRO).toBe(1);
-    expect(k.coverageCount).toBe(50);
+    // la cobertura se mide sobre las ventas con pedido: 1/1
+    expect(k.coverageCount).toBe(100);
     expect(k.unlinkedByKind.payout.debit).toBe(401599);
     expect(k.unlinkedByKind.reserve.net).toBe(0);
     expect(k.unlinkedByKind.tax_monthly.debit).toBe(5000);
-    expect(k.unlinkedNet).toBe(-401599 - 5000 + 132.35 - 46281.87 + 46281.87);
-    expect(k.pendingDifference).toBe(20000 + 10000);
+    // la venta sin pedido entra como movimiento sin pedido, no como diferencia
+    expect(k.unlinkedByKind.payment).toEqual({ count: 1, credit: 20000, debit: 0, net: 20000 });
+    expect(k.unlinkedNet).toBe(-401599 - 5000 + 132.35 - 46281.87 + 46281.87 + 20000);
+    expect(k.pendingDifference).toBe(10000);
     expect(k.missingPayments).toBe(1);
   });
 });

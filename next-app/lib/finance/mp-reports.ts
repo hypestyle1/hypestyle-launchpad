@@ -407,7 +407,10 @@ export interface ReconKpis {
   coverageCount: number;
   coverageAmount: number;
   counts: Record<ReconStatus, number>;
+  /** Ventas del reporte atadas a un pedido de Woo (base de la cobertura). */
   payments: number;
+  /** Ventas del reporte SIN pedido (transferencias recibidas, cobros manuales). */
+  salesNoOrder: number;
   /** Pedidos MP cobrados en el período sin fila `payment` en el reporte. */
   missingPayments: number;
 }
@@ -419,22 +422,31 @@ export function computeKpis(
   missingPayments: number,
 ): ReconKpis {
   const counts = Object.fromEntries(Object.keys(RECON_LABEL).map((k) => [k, 0])) as Record<ReconStatus, number>;
-  let grossSales = 0, netPaymentApi = 0, netReconciled = 0, pendingDifference = 0, payments = 0, reconciled = 0, reconciledAmount = 0, paymentsAmount = 0;
+  let grossSales = 0, netPaymentApi = 0, netReconciled = 0, pendingDifference = 0, payments = 0, reconciled = 0, reconciledAmount = 0, paymentsAmount = 0, salesNoOrder = 0;
   const unlinkedByKind: ReconKpis['unlinkedByKind'] = {};
   let unlinkedNet = 0;
+  const addUnlinked = (k: string, m: Movement) => {
+    unlinkedByKind[k] ??= { count: 0, credit: 0, debit: 0, net: 0 };
+    unlinkedByKind[k].count += 1; unlinkedByKind[k].credit += m.credit; unlinkedByKind[k].debit += m.debit; unlinkedByKind[k].net += m.netAmount;
+    unlinkedNet += m.netAmount;
+  };
   for (const m of movements) {
     const r = results.get(m.uniqueKey);
     const status = r?.status ?? (m.reconciliationStatus as ReconStatus | undefined) ?? 'PENDIENTE';
     counts[status] = (counts[status] ?? 0) + 1;
     if (m.kind === 'payment') {
-      payments += 1;
       grossSales += m.grossAmount;
+      // Una venta sin pedido de Woo (transferencia recibida por CVU, cobro
+      // manual) no es una diferencia: es un ingreso que entra por su cuenta y
+      // hay que atribuir. Va al universo "sin pedido", no a la cobertura.
+      if (!m.orderId || status === 'SIN_PEDIDO') { salesNoOrder += 1; addUnlinked('payment', m); continue; }
+      payments += 1;
       paymentsAmount += m.netAmount;
-      const o = m.orderId ? orders.get(m.orderId) : undefined;
+      const o = orders.get(m.orderId);
       if (o?.snapshot) netPaymentApi += snapshotNetBeforeRefunds(o.snapshot);
       if (status === 'CONCILIADO') { reconciled += 1; reconciledAmount += m.netAmount; netReconciled += m.netAmount; }
       else if (status === 'DIFERENCIA') pendingDifference += Math.abs(r?.delta ?? m.netAmount);
-      else if (status === 'PENDIENTE' || status === 'SIN_PEDIDO' || status === 'LIQUIDACION_PENDIENTE') pendingDifference += Math.abs(m.netAmount);
+      else if (status === 'PENDIENTE' || status === 'LIQUIDACION_PENDIENTE') pendingDifference += Math.abs(m.netAmount);
       continue;
     }
     if (m.kind === 'refund' || m.kind === 'chargeback' || m.kind === 'dispute' || m.kind === 'tax_operation') {
@@ -443,10 +455,7 @@ export function computeKpis(
       continue;
     }
     // Movimientos sin pedido: entran a la caja por su cuenta.
-    const k = m.kind;
-    unlinkedByKind[k] ??= { count: 0, credit: 0, debit: 0, net: 0 };
-    unlinkedByKind[k].count += 1; unlinkedByKind[k].credit += m.credit; unlinkedByKind[k].debit += m.debit; unlinkedByKind[k].net += m.netAmount;
-    unlinkedNet += m.netAmount;
+    addUnlinked(m.kind, m);
   }
   for (const k of Object.keys(unlinkedByKind)) { const u = unlinkedByKind[k]; u.credit = round2(u.credit); u.debit = round2(u.debit); u.net = round2(u.net); }
   return {
@@ -454,7 +463,7 @@ export function computeKpis(
     unlinkedNet: round2(unlinkedNet), unlinkedByKind, pendingDifference: round2(pendingDifference),
     coverageCount: payments ? Math.round((reconciled / payments) * 1000) / 10 : 0,
     coverageAmount: paymentsAmount ? Math.round((reconciledAmount / paymentsAmount) * 1000) / 10 : 0,
-    counts, payments, missingPayments,
+    counts, payments, salesNoOrder, missingPayments,
   };
 }
 
