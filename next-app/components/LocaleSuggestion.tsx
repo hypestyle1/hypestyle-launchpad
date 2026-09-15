@@ -25,6 +25,21 @@ const COPY: Record<Language, { title: string; note: string; dismiss: string }> =
     note: "Você pode mudar quando quiser.",
     dismiss: "Manter assim",
   },
+  DE: {
+    title: "Sprache und Währung wählen",
+    note: "Du kannst das jederzeit ändern.",
+    dismiss: "So lassen",
+  },
+  FR: {
+    title: "Choisis ta langue et ta devise",
+    note: "Tu peux changer quand tu veux.",
+    dismiss: "Garder ainsi",
+  },
+  IT: {
+    title: "Scegli la tua lingua e valuta",
+    note: "Puoi cambiare quando vuoi.",
+    dismiss: "Lascia così",
+  },
 };
 
 export default function LocaleSuggestion() {

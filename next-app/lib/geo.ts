@@ -17,7 +17,14 @@ import type { Language, Currency } from '@/context/LocaleContext';
 export const COUNTRY_COOKIE = 'hs-country';
 
 const US_LIKE = ['US', 'CA', 'AU', 'NZ', 'GB', 'IE', 'SG', 'HK'];
-const EUR_ZONE = ['DE', 'FR', 'IT', 'NL', 'BE', 'AT', 'CH', 'PT', 'FI', 'SE', 'NO', 'DK', 'PL', 'GR', 'CZ', 'HU', 'RO', 'ES'];
+// Países con idioma propio en el sitio. Suiza y Bélgica son multilingües:
+// se les sugiere el idioma mayoritario (alemán y francés) y la persona lo
+// cambia desde el selector si no le sirve.
+const DE_ZONE = ['DE', 'AT', 'CH', 'LI'];
+const FR_ZONE = ['FR', 'BE', 'LU', 'MC'];
+const IT_ZONE = ['IT', 'SM', 'VA'];
+// El resto de Europa cae a inglés con euro.
+const EUR_ZONE = ['NL', 'PT', 'FI', 'SE', 'NO', 'DK', 'PL', 'GR', 'CZ', 'HU', 'RO', 'ES'];
 const ES_LATAM = ['MX', 'CO', 'CL', 'PE', 'UY', 'PY', 'BO', 'EC', 'VE', 'CR', 'GT', 'HN', 'SV', 'NI', 'PA', 'DO', 'CU', 'PR'];
 
 export interface LocaleGuess {
@@ -39,6 +46,9 @@ export function localeForCountry(code: string | null | undefined): LocaleGuess |
   if (c === 'BR') return { language: 'PT', currency: 'USD', label: 'Português · Dólar' };
   if (c === 'PT') return { language: 'PT', currency: 'EUR', label: 'Português · Euro' };
   if (US_LIKE.includes(c)) return { language: 'EN', currency: 'USD', label: 'English · US Dollar' };
+  if (DE_ZONE.includes(c)) return { language: 'DE', currency: 'EUR', label: 'Deutsch · Euro' };
+  if (FR_ZONE.includes(c)) return { language: 'FR', currency: 'EUR', label: 'Français · Euro' };
+  if (IT_ZONE.includes(c)) return { language: 'IT', currency: 'EUR', label: 'Italiano · Euro' };
   if (EUR_ZONE.includes(c)) return { language: 'EN', currency: 'EUR', label: 'English · Euro' };
   // España e Hispanoamérica: el idioma ya les sirve, lo que cambia es la moneda.
   if (c === 'ES') return { language: 'ES', currency: 'EUR', label: 'Español · Euro' };

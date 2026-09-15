@@ -4,10 +4,15 @@ import { useState, useRef, useEffect } from "react";
 import { Globe, ChevronDown, Check } from "lucide-react";
 import { useLocale, Language, Currency } from "@/context/LocaleContext";
 
+// Mismo orden que LANGUAGES en LocaleContext; acá solo se agrega el nombre
+// del idioma escrito en ese idioma.
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "ES", label: "Español" },
   { code: "EN", label: "English" },
   { code: "PT", label: "Português" },
+  { code: "DE", label: "Deutsch" },
+  { code: "FR", label: "Français" },
+  { code: "IT", label: "Italiano" },
 ];
 
 const CURRENCIES: { code: Currency; symbol: string; label: string }[] = [
@@ -27,7 +32,7 @@ const glassStyle = {
 export default function LocalePopup({ className = "" }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { language, setLanguage, currency, setCurrency } = useLocale();
+  const { language, setLanguage, currency, setCurrency, t } = useLocale();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -42,7 +47,7 @@ export default function LocalePopup({ className = "" }: { className?: string }) 
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1 px-2 py-1 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150"
-        aria-label="Idioma y moneda"
+        aria-label={t("Idioma y moneda")}
       >
         <Globe className="w-3.5 h-3.5" strokeWidth={1.2} />
         <span className="hidden lg:inline text-[11px] tracking-[0.06em]">{language}</span>
@@ -63,7 +68,7 @@ export default function LocalePopup({ className = "" }: { className?: string }) 
           {/* Idioma */}
           <div className="px-4 pt-3 pb-1">
             <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-2">
-              Idioma
+              {t('Idioma')}
             </p>
             {LANGUAGES.map((lang) => (
               <button
@@ -88,7 +93,7 @@ export default function LocalePopup({ className = "" }: { className?: string }) 
           {/* Moneda */}
           <div className="px-4 pb-3">
             <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-2">
-              Moneda
+              {t('Moneda')}
             </p>
             {CURRENCIES.map((cur) => (
               <button
@@ -100,7 +105,7 @@ export default function LocalePopup({ className = "" }: { className?: string }) 
                 <span>
                   <span className="font-semibold mr-1">{cur.symbol}</span>
                   <span className="font-semibold mr-2">{cur.code}</span>
-                  <span className="font-normal">{cur.label}</span>
+                  <span className="font-normal">{t(cur.label)}</span>
                 </span>
                 {currency === cur.code && (
                   <Check className="w-3 h-3 flex-shrink-0" strokeWidth={2} />
