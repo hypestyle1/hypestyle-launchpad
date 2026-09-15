@@ -1,7 +1,7 @@
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import NewsletterPopup from '@/components/NewsletterPopup';
-import HeroEme from '@/components/HeroEme';
+import HeroHannaDrop from '@/components/HeroHannaDrop';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
 import SaleBanner from '@/components/SaleBanner';
@@ -67,7 +67,7 @@ export default async function Home() {
         <h1 className="sr-only">
           HYPESTYLE — Streetwear argentino. Drops limitados, envíos a todo el mundo.
         </h1>
-        <HeroEme />
+        <HeroHannaDrop />
         {/* Orden estilo EME: producto primero (new in, looks, film, best sellers,
             básicos), editorial después y la prueba social (reseñas) al final. Los
             beneficios (envío, cuotas, cambios) ya están en la barra de avisos, así

@@ -11,10 +11,10 @@ import { gaAddToCart } from "@/lib/ga";
 import { fbAddToCart } from "@/lib/fbpixel";
 import { getColorwaysForSlug } from "@/lib/product-detail";
 
-// Estilo EME: la card muestra primero la foto con modelo (la primera de la
-// galería) y deja el maniquí fantasma (la destacada) para el hover. Si el
-// producto no tiene galería, se ve la destacada como siempre.
-const MODEL_PHOTO_FIRST = true;
+// La primera foto es siempre el mockup (la destacada de Woo): todo el sitio
+// está armado alrededor de eso. Al pasar el mouse aparece la primera foto de
+// la galería, que tiene que ser alguien usando el producto — eso se cuida en
+// Woo, no acá. Se probó invertirlo (modelo primero, estilo EME) y se descartó.
 
 interface ProductCardProps {
   id?: string;
@@ -53,9 +53,7 @@ export default function ProductCard({
   const [liveOutSizes, setLiveOutSizes] = useState<Set<string>>(new Set());
   const wishlisted = id ? has(id) : false;
 
-  const hasGallery = !!images && images.length > 1;
-  const primaryImage = MODEL_PHOTO_FIRST && hasGallery ? images![1] : image;
-  const hoverImage = hasGallery ? (MODEL_PHOTO_FIRST ? image : images![1]) : null;
+  const hoverImage = images && images.length > 1 ? images[1] : null;
   const colorways = id ? getColorwaysForSlug(id) : null;
 
   const handleAddToCart = async (size: string, e: React.MouseEvent) => {
@@ -106,9 +104,9 @@ export default function ProductCard({
     >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
-        {primaryImage ? (
+        {image ? (
           <Image
-            src={imgSrc(primaryImage)}
+            src={imgSrc(image)}
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -130,7 +128,7 @@ export default function ProductCard({
         )}
 
         {outOfStock ? (
-          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[4px] bg-white text-foreground shadow-sm">
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[4px] bg-foreground text-background">
             {t('Sin stock')}
           </span>
         ) : badge ? (
