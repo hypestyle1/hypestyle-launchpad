@@ -1,51 +1,33 @@
-'use client';
+import LazyVideo from './LazyVideo';
 
-import { useEffect, useRef, useState } from 'react';
-
-const VIDEO_ID = 'XXI72CD1qzE'; // "Hype® FW26 — Final Film | Rio de Janeiro, Brasil"
-const EMBED_SRC =
-  `https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${VIDEO_ID}&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&playsinline=1&enablejsapi=1`;
+/**
+ * Film FW26 ("Final Film | Rio de Janeiro") a sangre completa, entre Shop the
+ * Look y Básicos.
+ *
+ * Antes era un iframe de YouTube dentro de un marco 16:9 con max-width. El
+ * film es 4:3, así que YouTube lo encajaba con bandas negras a los lados,
+ * elegía una resolución baja para el autoplay mudo y superponía su título y
+ * logo. Ahora el mp4 se sirve desde nuestro dominio (recomprimido con ffmpeg,
+ * mudo, CRF 30) y `object-cover` lo recorta para llenar el bloque sea cual sea
+ * su proporción — mismo criterio que el hero.
+ *
+ * Proporción del bloque: en mobile 4:3 (la del film, no se recorta nada); en
+ * desktop 16:9, recortando arriba y abajo. Se carga recién al acercarse
+ * (LazyVideo) y en pantallas chicas va la versión de 720p (3 MB vs 6 MB).
+ */
+const VIDEO_DESKTOP = '/video/fw26-final-film-1080.mp4';
+const VIDEO_MOBILE = '/video/fw26-final-film-720.mp4';
+const POSTER = '/video/fw26-final-film-poster.webp';
 
 export default function VideoSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [load, setLoad] = useState(false);
-
-  // El iframe de YouTube se monta recién cuando la sección está por entrar en
-  // pantalla. Montado desde el arranque (como estaba antes) traía ~1,1 MB de
-  // player + ~2,2 MB de video y bloqueaba el hilo principal ~1,1 s, todo antes
-  // de que el usuario llegara siquiera a esta sección — que está a media página
-  // del pliegue. Mientras tanto se ve el poster, que es un frame del mismo
-  // video servido desde nuestro dominio (40 KB en webp).
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    if (typeof IntersectionObserver === 'undefined') { setLoad(true); return; }
-
-    const io = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setLoad(true); io.disconnect(); } },
-      { rootMargin: '300px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
   return (
-    <section
-      ref={sectionRef}
-      className="w-full max-w-[1450px] mx-auto relative overflow-hidden bg-black bg-cover bg-center"
-      style={{ aspectRatio: '16/9', backgroundImage: "url('/video-section-poster.webp')" }}
-    >
-      {load && (
-        <iframe
-          src={EMBED_SRC}
-          title="Hype FW26 — Final Film, Rio de Janeiro"
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          allowFullScreen
-          loading="lazy"
-          className="absolute inset-0 w-full h-full border-0 pointer-events-none"
-          style={{ transform: 'scale(1.05)' }}
-        />
-      )}
+    <section className="relative w-full overflow-hidden bg-black aspect-[4/3] md:aspect-[16/9]">
+      <LazyVideo
+        src={VIDEO_DESKTOP}
+        srcMobile={VIDEO_MOBILE}
+        poster={POSTER}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />

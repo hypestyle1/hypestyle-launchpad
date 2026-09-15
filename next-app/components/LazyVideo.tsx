@@ -19,11 +19,16 @@ import { useEffect, useRef, useState } from 'react';
  */
 export default function LazyVideo({
   src,
+  srcMobile,
   poster,
   className = '',
   posterClassName = 'absolute inset-0 bg-cover bg-center',
 }: {
   src: string;
+  /** Versión más liviana para pantallas chicas (< 768px). Se elige recién al
+   *  montar el <video>, que siempre pasa en el cliente, así que no hay
+   *  desajuste de hidratación. */
+  srcMobile?: string;
   poster: string;
   className?: string;
   posterClassName?: string;
@@ -33,21 +38,26 @@ export default function LazyVideo({
   // ve entrar. El poster, en cambio, ocupa la sección entera.
   const posterRef = useRef<HTMLDivElement>(null);
   const [load, setLoad] = useState(false);
+  const [resolvedSrc, setResolvedSrc] = useState(src);
 
   useEffect(() => {
     const el = posterRef.current;
     if (!el) return;
+    const start = () => {
+      if (srcMobile && window.matchMedia('(max-width: 767px)').matches) setResolvedSrc(srcMobile);
+      setLoad(true);
+    };
     // Sin IntersectionObserver (navegadores viejos) se carga de una: peor
     // performance, pero nunca una sección vacía.
-    if (typeof IntersectionObserver === 'undefined') { setLoad(true); return; }
+    if (typeof IntersectionObserver === 'undefined') { start(); return; }
 
     const io = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setLoad(true); io.disconnect(); } },
+      ([entry]) => { if (entry.isIntersecting) { start(); io.disconnect(); } },
       { rootMargin: '200px' },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [srcMobile]);
 
   return (
     <>
@@ -55,7 +65,7 @@ export default function LazyVideo({
       {load && (
         <video
           className={className}
-          src={src}
+          src={resolvedSrc}
           poster={poster}
           autoPlay
           loop
