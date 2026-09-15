@@ -20,8 +20,8 @@ const TONE_BAR: Record<ScoredSignal['tone'], string> = {
 
 function todayLabel(iso: string): string {
   const d = new Date(iso);
-  const s = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' });
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  // "martes, 15 de septiembre" → "martes 15 de septiembre" (va después de "Hoy,").
+  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires' }).replace(', ', ' ');
 }
 
 function timeLabel(iso: string): string {
