@@ -1,7 +1,7 @@
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import NewsletterPopup from '@/components/NewsletterPopup';
-import HeroHannaDrop from '@/components/HeroHannaDrop';
+import HeroEme from '@/components/HeroEme';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
 import SaleBanner from '@/components/SaleBanner';
@@ -9,7 +9,6 @@ import BasicosSection from '@/components/BasicosSection';
 import MasHypeSection from '@/components/MasHypeSection';
 import NewInFW26 from '@/components/NewInFW26';
 import EditorialBanner from '@/components/EditorialBanner';
-import BenefitsStrip from '@/components/BenefitsStrip';
 import FlashSaleSection from '@/components/FlashSaleSection';
 import Promo3x2Section from '@/components/Promo3x2Section';
 import VideoSection from '@/components/VideoSection';
@@ -68,7 +67,11 @@ export default async function Home() {
         <h1 className="sr-only">
           HYPESTYLE — Streetwear argentino. Drops limitados, envíos a todo el mundo.
         </h1>
-        <HeroHannaDrop />
+        <HeroEme />
+        {/* Orden estilo EME: producto primero (new in, looks, film, best sellers,
+            básicos), editorial después y la prueba social (reseñas) al final. Los
+            beneficios (envío, cuotas, cambios) ya están en la barra de avisos, así
+            que la tira de íconos se sacó. Promo y Flash Sale devuelven null sin campaña. */}
         {/* z-10 + relative + bg-white: efecto cortina, esta sección sube y tapa el hero
             pineado (ver HeroHannaDrop). El fondo opaco es necesario acá (no alcanza con
             el de cada sección individual) para que no se vea el hero de fondo en los
@@ -77,15 +80,14 @@ export default async function Home() {
           <SaleBanner />
           <Promo3x2Section />
           <FlashSaleSection />
-          <BenefitsStrip />
-          <ReviewsHomeSection initial={reviews} />
           <NewInFW26 />
           <ShopTheLook />
           <VideoSection />
-          <BasicosSection />
           <BackInStock />
-          <MasHypeSection />
+          <BasicosSection />
           <EditorialBanner />
+          <MasHypeSection />
+          <ReviewsHomeSection initial={reviews} />
           {/* Último bloque antes del footer, a propósito: Clarity muestra que casi
               nadie llega hasta acá, así que no compite con el producto arriba. */}
           <InstagramFeed />

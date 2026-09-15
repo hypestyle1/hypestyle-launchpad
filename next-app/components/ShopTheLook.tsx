@@ -45,7 +45,7 @@ export default function ShopTheLook() {
   return (
     <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={revealRef}>
       <div className="reveal rd1">
-        <SectionHeader title="Shop the Look" link="/looks/" />
+        <SectionHeader title="Shop the look" link="/looks/" />
       </div>
 
       <div

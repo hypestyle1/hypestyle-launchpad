@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 export default function GroupLabel({ children }: { children: ReactNode }) {
   return (
     <div className="border-b border-border pb-2 mb-[2px]">
-      <span className="text-[11px] uppercase tracking-[0.22em] text-foreground font-semibold">
+      <span className="text-[13px] text-foreground font-medium">
         {children}
       </span>
     </div>

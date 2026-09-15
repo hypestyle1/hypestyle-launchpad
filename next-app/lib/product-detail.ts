@@ -155,6 +155,11 @@ const REGULAR_PACK_COLORWAYS = [
   { label: 'Melange · Navy · White',  value: '#1a2744', slug: 'regular-tees-3-pack-melange-navy-white',  image: `${WP}/2026/08/regular-tees-3-pack-melange-navy-white.png` },
 ];
 
+/** Colorways hermanos de un slug (para los puntitos de color en la card). */
+export function getColorwaysForSlug(slug: string): { label: string; value: string; slug: string }[] | null {
+  return COLORWAYS[slug] ?? null;
+}
+
 const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   ...Object.fromEntries(REGULAR_TEE_COLORWAYS.map(c => [c.slug, REGULAR_TEE_COLORWAYS])),
   ...Object.fromEntries(REGULAR_PACK_COLORWAYS.map(c => [c.slug, REGULAR_PACK_COLORWAYS])),

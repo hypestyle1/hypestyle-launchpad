@@ -63,8 +63,7 @@ export default function ReviewsHomeSection({ initial }: { initial?: HomeReviewsD
     <section className="max-w-[1400px] mx-auto px-4 py-14 md:py-20" ref={ref}>
       <div className="reveal rd1 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-9">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-3">Comunidad</p>
-          <h2 className="text-[26px] md:text-[36px] font-bold uppercase tracking-tight leading-none mb-3">
+          <h2 className="text-[22px] md:text-[28px] font-semibold tracking-[-0.01em] leading-none mb-3">
             Lo que dice nuestra comunidad
           </h2>
           <p className="text-[13px] text-muted-foreground max-w-md">

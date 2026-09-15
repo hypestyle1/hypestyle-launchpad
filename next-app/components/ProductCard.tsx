@@ -9,6 +9,12 @@ import { useWishlist } from "@/context/WishlistContext";
 import { checkStock } from "@/lib/checkStock";
 import { gaAddToCart } from "@/lib/ga";
 import { fbAddToCart } from "@/lib/fbpixel";
+import { getColorwaysForSlug } from "@/lib/product-detail";
+
+// Estilo EME: la card muestra primero la foto con modelo (la primera de la
+// galería) y deja el maniquí fantasma (la destacada) para el hover. Si el
+// producto no tiene galería, se ve la destacada como siempre.
+const MODEL_PHOTO_FIRST = true;
 
 interface ProductCardProps {
   id?: string;
@@ -47,7 +53,10 @@ export default function ProductCard({
   const [liveOutSizes, setLiveOutSizes] = useState<Set<string>>(new Set());
   const wishlisted = id ? has(id) : false;
 
-  const hoverImage = images && images.length > 1 ? images[1] : null;
+  const hasGallery = !!images && images.length > 1;
+  const primaryImage = MODEL_PHOTO_FIRST && hasGallery ? images![1] : image;
+  const hoverImage = hasGallery ? (MODEL_PHOTO_FIRST ? image : images![1]) : null;
+  const colorways = id ? getColorwaysForSlug(id) : null;
 
   const handleAddToCart = async (size: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -73,12 +82,12 @@ export default function ProductCard({
 
   const badgeStyle = () => {
     if (!badge) return "";
-    if (badge === "New In") return "bg-white/40 backdrop-blur-md backdrop-saturate-150 text-black rounded-[6px] border border-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]";
+    if (badge === "New In") return "bg-white text-foreground rounded-[4px] shadow-sm";
     if (badge === "Próximamente") return "bg-black/70 backdrop-blur-md text-white rounded-[6px]";
     if (badge === "Pre-Venta") return "bg-amber-500 text-black rounded-[6px]";
     if (badge === "New") return "bg-bg-dark text-primary-foreground";
     if (badge === "Best Seller") return "bg-muted-foreground text-primary-foreground";
-    if (badge === "Back") return "bg-primary-foreground border border-foreground text-foreground";
+    if (badge === "Back") return "bg-white text-foreground rounded-[4px] shadow-sm";
     if (badge.startsWith("−")) return "bg-sale text-sale-foreground rounded-[6px] font-bold";
     return "bg-bg-dark text-primary-foreground";
   };
@@ -96,10 +105,10 @@ export default function ProductCard({
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image */}
-      <div className="relative aspect-square overflow-hidden rounded-[8px] bg-bg-alt">
-        {image ? (
+      <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
+        {primaryImage ? (
           <Image
-            src={imgSrc(image)}
+            src={imgSrc(primaryImage)}
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -121,7 +130,7 @@ export default function ProductCard({
         )}
 
         {outOfStock ? (
-          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-foreground text-background">
+          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[4px] bg-white text-foreground shadow-sm">
             {t('Sin stock')}
           </span>
         ) : badge ? (
@@ -157,8 +166,7 @@ export default function ProductCard({
 
       {/* Info */}
       <div className="mt-3 px-0.5">
-        <p className="text-[10px] uppercase tracking-[0.15em] text-text-light mb-0.5">{category}</p>
-        <p className="text-[13px] font-medium leading-tight">{name}</p>
+        <p className="text-[13px] leading-tight">{name}</p>
         <div className="flex items-center gap-2 mt-1">
           {/* Sin stock: ocultamos el precio promocional y mostramos el regular en neutro */}
           <span suppressHydrationWarning className={`text-[13px] font-semibold ${originalPrice && !outOfStock && !mutedPrice ? "text-destructive" : ""}`}>
@@ -170,6 +178,20 @@ export default function ProductCard({
             </span>
           )}
         </div>
+
+        {colorways && colorways.length > 1 && (
+          <div className="flex items-center gap-1.5 mt-1.5" aria-label={`${colorways.length} colores`}>
+            {colorways.slice(0, 4).map((c) => (
+              <span
+                key={c.slug}
+                title={c.label}
+                className={`w-[11px] h-[11px] rounded-full border ${c.slug === id ? "ring-1 ring-foreground ring-offset-1 border-transparent" : "border-black/15"}`}
+                style={{ backgroundColor: c.value }}
+              />
+            ))}
+            {colorways.length > 4 && <span className="text-[11px] text-foreground/60">+{colorways.length - 4}</span>}
+          </div>
+        )}
 
         {giftNote && (
           <span className="mt-1.5 inline-block text-[10px] font-bold uppercase tracking-wide bg-green-600/10 text-green-700 px-2 py-0.5 rounded-[4px]">

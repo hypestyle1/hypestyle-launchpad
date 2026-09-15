@@ -32,7 +32,7 @@ export default function BackInStock() {
   return (
     <section id="back-in-stock" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="BEST SELLERS" link="/productos/" linkLabel="Ver todo" />
+        <SectionHeader title="Best sellers" link="/productos/" linkLabel="Ver todo" />
       </div>
       <div className={HOME_GRID}>
         {products.map((p, i) => (
