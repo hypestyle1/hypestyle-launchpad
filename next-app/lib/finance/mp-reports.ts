@@ -35,19 +35,23 @@ export type ReportKind = 'release_report' | 'settlement_report';
 
 export type MovementKind =
   | 'payment' | 'payment_out' | 'refund' | 'refund_in' | 'chargeback' | 'dispute'
-  | 'tax_operation' | 'tax_monthly' | 'reserve' | 'payout' | 'fee' | 'adjustment' | 'other';
+  | 'tax_operation' | 'tax_monthly' | 'reserve' | 'payout' | 'fee' | 'adjustment' | 'other'
+  /** Fila que no se pudo interpretar (monto ilegible, RECORD_TYPE desconocido).
+   *  Se persiste igual, con la fila cruda, para que quede auditable y visible
+   *  como pendiente en vez de perderse en un log. */
+  | 'unclassified';
 
 /** Kinds que pertenecen a un pedido (entran al cruce con Woo). */
 export const ORDER_KINDS: ReadonlySet<MovementKind> = new Set(['payment', 'refund', 'chargeback', 'dispute', 'tax_operation']);
 
 export type ReconStatus =
   | 'CONCILIADO' | 'PENDIENTE' | 'DIFERENCIA' | 'SIN_PEDIDO' | 'SIN_PAGO' | 'LIQUIDACION_PENDIENTE'
-  | 'REFUND' | 'REFUND_SIN_REGISTRO' | 'CHARGEBACK' | 'DISPUTA' | 'AJUSTE';
+  | 'REFUND' | 'REFUND_SIN_REGISTRO' | 'CHARGEBACK' | 'DISPUTA' | 'AJUSTE' | 'SIN_CLASIFICAR';
 
 export const RECON_LABEL: Record<ReconStatus, string> = {
   CONCILIADO: 'Conciliado', PENDIENTE: 'Pendiente', DIFERENCIA: 'Diferencia', SIN_PEDIDO: 'Sin pedido', SIN_PAGO: 'Sin pago',
   LIQUIDACION_PENDIENTE: 'Liquidación pendiente', REFUND: 'Refund', REFUND_SIN_REGISTRO: 'Refund sin registro',
-  CHARGEBACK: 'Chargeback', DISPUTA: 'Disputa', AJUSTE: 'Ajuste',
+  CHARGEBACK: 'Chargeback', DISPUTA: 'Disputa', AJUSTE: 'Ajuste', SIN_CLASIFICAR: 'Sin clasificar',
 };
 
 export interface Movement {
@@ -207,6 +211,26 @@ function makeKey(kind: ReportKind, parts: (string | number | null)[], seen: Map<
   return n === 1 ? key : `${key}#${n}`;
 }
 
+/** Fila que no se pudo interpretar: se persiste como `unclassified` con la
+ *  fila cruda (header → valor) y el motivo. Monto cero para no contaminar
+ *  sumas; el monto real, si existe, queda legible en `rawMetadata.rawRow`. */
+function unclassifiedMovement(kind: ReportKind, fileName: string, header: string[], row: string[], line: number, reason: string, seen: Map<string, number>): Movement {
+  const rawRow: Record<string, string> = {};
+  header.forEach((h, i) => { rawRow[h.trim().toUpperCase() || `COL_${i}`] = row[i] ?? ''; });
+  const date = (rawRow.DATE || rawRow.SETTLEMENT_DATE || rawRow.MONEY_RELEASE_DATE || '').trim() || null;
+  const sourceId = (rawRow.SOURCE_ID || '').trim() || null;
+  return {
+    uniqueKey: makeKey(kind, ['unclassified', reason, sourceId, date, sha256(row.join(';')).slice(0, 16)], seen),
+    reportKind: kind, fileName, recordType: (rawRow.RECORD_TYPE || rawRow.TRANSACTION_TYPE || '').trim(), description: (rawRow.DESCRIPTION || '').trim(),
+    kind: 'unclassified', paymentId: sourceId, orderId: null,
+    grossAmount: 0, feeAmount: 0, financingAmount: 0, taxAmount: 0, credit: 0, debit: 0, netAmount: 0,
+    releaseDate: date, approvalDate: (rawRow.TRANSACTION_APPROVAL_DATE || '').trim() || null,
+    balance: null, currency: (rawRow.CURRENCY || rawRow.TRANSACTION_CURRENCY || '').trim() || 'ARS',
+    sourceHash: sha256(row.join(';')),
+    rawMetadata: { unparsed: true, reason, line, rawRow },
+  };
+}
+
 export function normalizeReleaseReport(text: string, fileName: string): ParsedReport {
   const rows = parseCsv(text, ';');
   const header = rows[0] || [];
@@ -225,10 +249,19 @@ export function normalizeReleaseReport(text: string, fileName: string): ParsedRe
     const fin = parseReportNumber(g(r, 'FINANCING_FEE_AMOUNT'));
     const tax = parseReportNumber(g(r, 'TAXES_AMOUNT'));
     const bal = parseReportNumber(g(r, 'BALANCE_AMOUNT'));
-    if ([credit, debit, gross, fee, fin, tax].some((n) => n === null)) { out.errors.push({ line: i + 1, reason: 'malformed_amount' }); continue; }
+    if ([credit, debit, gross, fee, fin, tax].some((n) => n === null)) {
+      out.errors.push({ line: i + 1, reason: 'malformed_amount' });
+      out.movements.push(unclassifiedMovement('release_report', fileName, header, r, i + 1, 'malformed_amount', seen));
+      continue;
+    }
     if (recordType === 'initial_available_balance') { out.balances.initial = credit; continue; }
     if (recordType === 'total') { out.balances.total = credit; continue; }
-    if (recordType !== 'release') { out.errors.push({ line: i + 1, reason: `unknown_record_type:${recordType || '?'}` }); continue; }
+    if (recordType !== 'release') {
+      const reason = `unknown_record_type:${recordType || '?'}`;
+      out.errors.push({ line: i + 1, reason });
+      out.movements.push(unclassifiedMovement('release_report', fileName, header, r, i + 1, reason, seen));
+      continue;
+    }
     const description = g(r, 'DESCRIPTION').trim();
     const kind = classifyRelease(description, credit!, debit!);
     const sourceId = g(r, 'SOURCE_ID').trim() || null;
@@ -278,7 +311,11 @@ export function normalizeSettlementReport(text: string, fileName: string): Parse
     const fee = parseReportNumber(g(r, 'FEE_AMOUNT'));
     const fin = parseReportNumber(g(r, 'FINANCING_FEE_AMOUNT'));
     const tax = parseReportNumber(g(r, 'TAXES_AMOUNT'));
-    if ([amount, net, fee, fin, tax].some((n) => n === null)) { out.errors.push({ line: i + 1, reason: 'malformed_amount' }); continue; }
+    if ([amount, net, fee, fin, tax].some((n) => n === null)) {
+      out.errors.push({ line: i + 1, reason: 'malformed_amount' });
+      out.movements.push(unclassifiedMovement('settlement_report', fileName, header, r, i + 1, 'malformed_amount', seen));
+      continue;
+    }
     const type = g(r, 'TRANSACTION_TYPE').trim();
     const kind = classifySettlement(type, amount!);
     const sourceId = g(r, 'SOURCE_ID').trim() || null;
@@ -353,6 +390,7 @@ export function snapshotNetBeforeRefunds(s: GatewayFeeSnapshotV2): number {
 
 export function reconcileMovement(m: Movement, orders: Map<number, OrderForRecon>): ReconResult {
   const base = { uniqueKey: m.uniqueKey, orderId: m.orderId, delta: null as number | null };
+  if (m.kind === 'unclassified') return { ...base, status: 'SIN_CLASIFICAR', note: String(m.rawMetadata?.reason || 'fila ilegible') };
   if (!ORDER_KINDS.has(m.kind)) return { ...base, status: 'AJUSTE', note: `${m.kind}:${m.description}` };
 
   const order = m.orderId ? orders.get(m.orderId) : undefined;
