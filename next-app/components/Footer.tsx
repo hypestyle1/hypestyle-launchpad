@@ -96,44 +96,15 @@ export default function Footer() {
 
           {/* Brand */}
           <div>
+            <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-6 w-auto object-contain object-left mb-3" />
             <p className="text-[12px] text-primary-foreground/50 leading-relaxed">
               {t('Streetwear desde Buenos Aires. Drops limitados.')}<br />{t('Envíos a todo el mundo.')}
             </p>
           </div>
         </div>
 
-        {/* Columnas — acordeones en mobile, grilla en desktop */}
-        <div className="md:hidden -mt-4 divide-y divide-primary-foreground/10 border-y border-primary-foreground/10">
-          {[
-            { title: 'Shop', links: shopLinks },
-            { title: 'Info', links: infoLinks },
-            { title: 'Trabajá con Hype', links: trabajaLinks },
-            { title: t('RRSS'), links: rrssLinks },
-          ].map((col) => (
-            <details key={col.title} className="group">
-              <summary className="flex items-center justify-between py-3.5 text-[12px] font-semibold uppercase tracking-[0.15em] text-primary-foreground/70 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                {col.title}
-                <span className="text-primary-foreground/40 text-[16px] leading-none group-open:rotate-45 transition-transform">+</span>
-              </summary>
-              <div className="pb-4">
-                {col.links.map((l) => (
-                  l.href.startsWith('http') ? (
-                    <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
-                      className="block text-[13px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
-                      {t(l.label)}
-                    </a>
-                  ) : (
-                    <Link key={l.label} href={l.href}
-                      className="block text-[13px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
-                      {t(l.label)}
-                    </Link>
-                  )
-                ))}
-              </div>
-            </details>
-          ))}
-        </div>
-        <div className="hidden md:grid grid-cols-3 gap-8">
+        {/* Columnas */}
+        <div className="grid grid-cols-3 gap-8">
           {/* Shop */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Shop</p>
