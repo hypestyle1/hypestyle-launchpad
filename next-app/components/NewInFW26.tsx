@@ -136,7 +136,7 @@ export default function NewInFW26() {
   if (isLoading) {
     return (
       <section id="new-in-fw26" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
-        <SectionHeader title="New In [FW26]" link="/colecciones/fw26/" linkLabel="Ver más" />
+        <SectionHeader title="New in FW26" link="/colecciones/fw26/" linkLabel="Ver más" />
         <div className={GRID}>
           {Array.from({ length: 8 }).map((_, i) => (
             <SkeletonCard key={i} />
@@ -151,7 +151,7 @@ export default function NewInFW26() {
   return (
     <section id="new-in-fw26" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="New In [FW26]" link="/colecciones/fw26/" linkLabel="Ver más" />
+        <SectionHeader title="New in FW26" link="/colecciones/fw26/" linkLabel="Ver más" />
       </div>
 
       {/* ── Conjuntos — 41% del revenue: primera sección, apenas pasa el hero ── */}

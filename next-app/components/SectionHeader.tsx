@@ -15,11 +15,11 @@ export default function SectionHeader({ title, link, linkLabel = "Ver todo", chi
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4 flex-wrap">
-        <h2 className="text-xl md:text-2xl font-bold uppercase tracking-tight">{t(title)}</h2>
+        <h2 className="text-[22px] md:text-[28px] font-semibold tracking-[-0.01em] leading-none">{t(title)}</h2>
         {children}
       </div>
       {link && (
-        <Link href={link} className="nav-link text-[12px] font-medium uppercase tracking-[0.1em] text-muted-foreground pb-0.5">
+        <Link href={link} className="text-[12px] text-foreground underline underline-offset-4 decoration-foreground/40 hover:decoration-foreground transition-colors">
           {t(linkLabel)}
         </Link>
       )}
