@@ -2,7 +2,8 @@
 //
 //   score = impacto ARS × urgencia (1..2) × peso(confianza)
 //
-// Entra lo que supera el piso (o es crítico). Máximo `maxItems`, máximo
+// Entra lo que supera el piso, es crítico o trae una exención explícita del
+// dominio (`floorExempt`). El score nunca se infla para entrar. Máximo `maxItems`, máximo
 // `maxPerDomain` del mismo dominio. Desempate: link interno primero, después
 // el más viejo. Sin piso y sin tope esto sería un feed de alertas.
 
@@ -54,7 +55,7 @@ export function compose(
   const perDomain = new Map<string, number>();
   for (const s of scored) {
     if (items.length >= opts.maxItems) break;
-    const passesFloor = s.impact.amount >= opts.floorARS || s.tone === 'critical';
+    const passesFloor = s.impact.amount >= opts.floorARS || s.tone === 'critical' || !!s.floorExempt;
     if (!passesFloor) continue;
     const n = perDomain.get(s.domain) || 0;
     if (n >= opts.maxPerDomain) continue;

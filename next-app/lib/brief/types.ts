@@ -56,6 +56,12 @@ export interface BriefSignal {
   urgency: number;
   confidence: Confidence;
   tone: Tone;
+  /**
+   * Exime del piso global por un umbral propio del dominio (ej. Meta: gasto real
+   * ≥ mínimo y cero compras). No cambia el score: la señal entra, pero se ordena
+   * por lo que vale de verdad.
+   */
+  floorExempt?: { reason: string };
   observedAt: string;
   entity?: { type: string; id: string | number; label?: string };
   /**

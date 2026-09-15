@@ -1,8 +1,10 @@
 // Conjuntos activos de ventas que gastaron por encima del piso en los últimos
 // N días completos y rinden bajo el breakeven ROAS (derivado del margen real
-// de contribución de Woo, no de benchmarks). El impacto es lo que quemaría en
-// `projectDays` si sigue al ritmo actual: es la plata en juego de la decisión
-// de pausar. ROAS de Meta es atribuido, no venta de Woo: confianza "rule".
+// de contribución de Woo, no de benchmarks). El impacto es el gasto REAL de la
+// ventana (comparable con plata retenida o perdida); la proyección a
+// `projectDays` va solo como evidencia. Un conjunto con gasto ≥ mínimo y cero
+// compras entra aunque no llegue al piso global, sin inflar el score.
+// ROAS de Meta es atribuido, no venta de Woo: confianza "rule".
 // Nunca ejecuta nada: propone pausar o bajar.
 
 import { breakevenRoas } from '@/lib/meta/metrics';
@@ -48,13 +50,14 @@ export const adsetBelowBreakeven: BriefRule = {
         situation: noPurchases
           ? `${name} gastó ${fmtARS(row.spend)} en ${days} días sin una compra`
           : `${name} gastó ${fmtARS(row.spend)} en ${days} días bajo el breakeven`,
-        evidence: `ROAS ${fmtRatio(roas)} contra breakeven ${fmtRatio(be)} · ${row.purchases} compras atribuidas · ${fmtARS(Math.round(daily))}/día, ${fmtARS(projected)} en ${projectDays} días si sigue así${row.campaignName ? ` · ${row.campaignName}` : ''}.`,
+        evidence: `ROAS ${fmtRatio(roas)} contra breakeven ${fmtRatio(be)} · ${row.purchases} compras atribuidas${row.campaignName ? ` · ${row.campaignName}` : ''}. Si sigue así: ${fmtARS(Math.round(daily))}/día, ${fmtARS(projected)} en ${projectDays} días.`,
         action: noPurchases
           ? 'Pausar el conjunto o cambiar el creativo: nadie compró en la ventana.'
           : 'Bajar el presupuesto del conjunto o revisar el creativo.',
         href: '/admin/ads',
         hrefLabel: 'Ver Ads',
-        impact: { amount: projected, currency: 'ARS', kind: 'at_risk' },
+        impact: { amount: Math.round(row.spend), currency: 'ARS', kind: 'at_risk' },
+        floorExempt: noPurchases ? { reason: `gasto real ≥ ${fmtARS(minSpendARS)} sin compras` } : undefined,
         urgency: 1 + gap,
         confidence: 'rule',
         // Crítico saltea el piso: solo cuando gastó el triple del mínimo sin una compra.

@@ -53,8 +53,10 @@ describe('ops.paid-without-label', () => {
   it('los de más de 30 días no suman plata: se mencionan como sin cerrar', () => {
     const [s] = paidWithoutLabel.evaluate({ 'orders.processing': [proc(1579, 107 * 24, 9_334), proc(1715, 93 * 24, 280_000), proc(3127, 8 * 24, 290_000)] }, ctx);
     expect(s.impact.amount).toBe(290_000);
-    expect(plain(s.evidence)).toBe('1 pedido, el más viejo del lun 07/09 (#3127, hace 8 días). Además 2 pedidos de más de 30 días sin cerrar (#1579, #1715).');
+    // Los viejos no aparecen en la card: quedan en sourceRefs y meta.
+    expect(plain(s.evidence)).toBe('1 pedido, el más viejo del lun 07/09 (#3127, hace 8 días).');
     expect(s.sourceRefs.map((r) => r.label)).toEqual(['#3127', '#1579 (sin cerrar)', '#1715 (sin cerrar)']);
+    expect(s.meta?.staleCount).toBe(2);
   });
 
   it('solo pedidos viejos sin cerrar → sin señal de hoy', () => {
@@ -209,9 +211,10 @@ describe('ads.adset-below-breakeven', () => {
     const [a1, a5] = out;
     // breakeven = netRevenue / contribution = 2,0
     expect(plain(a1.situation)).toBe('COLD ARCHIVE broad gastó $ 72.000 en 3 días bajo el breakeven');
-    expect(plain(a1.evidence)).toBe('ROAS 1,40× contra breakeven 2,00× · 3 compras atribuidas · $ 24.000/día, $ 720.000 en 30 días si sigue así · COLD ARCHIVE.');
-    // impacto = gasto proyectado a 30 días: 72.000 / 3 × 30
-    expect(a1.impact).toEqual({ amount: 720_000, currency: 'ARS', kind: 'at_risk' });
+    expect(plain(a1.evidence)).toBe('ROAS 1,40× contra breakeven 2,00× · 3 compras atribuidas · COLD ARCHIVE. Si sigue así: $ 24.000/día, $ 720.000 en 30 días.');
+    // impacto = gasto REAL de la ventana; la proyección es evidencia.
+    expect(a1.impact).toEqual({ amount: 72_000, currency: 'ARS', kind: 'at_risk' });
+    expect(a1.floorExempt).toBeUndefined();
     expect(a1.urgency).toBeCloseTo(1.3, 5);
     expect(a1.tone).toBe('warning');
     expect(a1.confidence).toBe('rule');
@@ -221,6 +224,8 @@ describe('ads.adset-below-breakeven', () => {
     expect(a5.urgency).toBe(2);
     expect(a5.action).toMatch(/^Pausar/);
     expect(plain(a5.situation)).toBe('SIN COMPRAS gastó $ 95.000 en 3 días sin una compra');
+    expect(a5.impact.amount).toBe(95_000);
+    expect(plain(a5.floorExempt?.reason || '')).toBe('gasto real ≥ $ 15.000 sin compras');
   });
 
   it('sin margen de contribución no opina', () => {

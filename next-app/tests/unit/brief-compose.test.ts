@@ -55,6 +55,16 @@ describe('compose', () => {
     expect(r.all).toHaveLength(4);
   });
 
+  it('floorExempt entra sin llegar al piso pero se ordena por su score real', () => {
+    const r = compose([
+      sig({ id: 'grande', amount: 300_000 }),
+      sig({ id: 'ads', domain: 'ads', amount: 26_000, confidence: 'rule', urgency: 2, floorExempt: { reason: 'gasto real sin compras' } }),
+      sig({ id: 'chico', amount: 40_000 }),
+    ], opts);
+    expect(r.items.map((s) => s.id)).toEqual(['grande', 'ads']);
+    expect(r.items[1].score).toBe(36_400);
+  });
+
   it('crítico entra aunque no llegue al piso', () => {
     const r = compose([sig({ id: 'crit', amount: 10_000, tone: 'critical' })], opts);
     expect(r.items.map((s) => s.id)).toEqual(['crit']);

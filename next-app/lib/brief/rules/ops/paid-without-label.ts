@@ -3,7 +3,9 @@
 //
 // Quedan afuera los pedidos sin envío (canjes, retiros y cargas manuales a $0:
 // nunca van a tener rótulo) y los de más de `labelMaxDays`, que no son una
-// urgencia de hoy sino pedidos sin cerrar; esos se mencionan aparte.
+// urgencia de hoy sino pedidos sin cerrar: no suman ni aparecen en la card,
+// pero quedan en sourceRefs/meta para rastrearlos (y siguen contando en
+// "Requiere atención").
 
 import { arDayLabel, fmtAgo, fmtARS, hoursBetween, plural } from '../../format';
 import type { ProcessingOrder } from '@/lib/orders-fulfillment';
@@ -32,16 +34,13 @@ export const paidWithoutLabel: BriefRule = {
     // Urgencia: 1 al cruzar el umbral, 2 cuando el más viejo lo triplica.
     const urgency = 1 + Math.min(1, (maxHours - labelHours) / (labelHours * 2));
     const n = stuck.length;
-    const staleTxt = stale.length
-      ? ` Además ${stale.length} ${plural(stale.length, 'pedido', 'pedidos')} de más de ${labelMaxDays} días sin cerrar (${stale.map((o) => `#${o.number}`).join(', ')}).`
-      : '';
 
     return [{
       id: 'ops:paid-without-label:all',
       domain: 'ops',
       rule: this.id,
       situation: `${fmtARS(amount)} pagados llevan más de ${labelHours} h sin rótulo`,
-      evidence: `${n} ${plural(n, 'pedido', 'pedidos')}, el más viejo del ${arDayLabel(oldest.dateGmt)} (#${oldest.number}, ${fmtAgo(maxHours)}).${staleTxt}`,
+      evidence: `${n} ${plural(n, 'pedido', 'pedidos')}, el más viejo del ${arDayLabel(oldest.dateGmt)} (#${oldest.number}, ${fmtAgo(maxHours)}).`,
       action: 'Generar los rótulos hoy o avisar la demora a los clientes.',
       href: '/admin/pedidos?filter=por-empaquetar',
       hrefLabel: 'Ver pedidos',
@@ -54,7 +53,7 @@ export const paidWithoutLabel: BriefRule = {
         ...stuck.map((o) => ({ type: 'order' as const, id: o.id, label: `#${o.number}` })),
         ...stale.map((o) => ({ type: 'order' as const, id: o.id, label: `#${o.number} (sin cerrar)` })),
       ],
-      meta: { count: n, maxHours: Math.round(maxHours), labelHours, stale: stale.map((o) => o.number) },
+      meta: { count: n, maxHours: Math.round(maxHours), labelHours, labelMaxDays, staleCount: stale.length, stale: stale.map((o) => ({ number: o.number, total: o.total, dateGmt: o.dateGmt })) },
     }];
   },
 };
