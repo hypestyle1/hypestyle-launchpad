@@ -18,6 +18,8 @@ import type { FinanceSummary, SummaryComparison } from '@/lib/dashboard/finance'
 import { breakevenSignal } from '@/lib/meta/metrics';
 import type { Granularity } from '@/lib/dashboard/periods';
 import type { AnalyticsSummaryResponse } from '@/lib/ga4/summary';
+import { Brief } from '@/components/admin/dashboard/Brief';
+import type { BriefResponse } from '@/lib/brief/types';
 
 interface SummaryResponse {
   current: FinanceSummary;
@@ -55,6 +57,8 @@ export default function AdminInicio() {
   const [metaConn, setMetaConn] = useState<any | null>(null);
   const [traffic, setTraffic] = useState<AnalyticsSummaryResponse | null>(null);
   const [metric, setMetric] = useState<MetricKey>('profit');
+  const [brief, setBrief] = useState<BriefResponse | null>(null);
+  const [briefState, setBriefState] = useState<'loading' | 'ok' | 'error'>('loading');
   const router = useRouter();
   const abortRef = useRef<AbortController | null>(null);
 
@@ -92,6 +96,12 @@ export default function AdminInicio() {
 
   const loadOps = useCallback(async () => {
     if (puede('pedidos')) {
+      // Founder Brief ("Hoy"): carga aparte, nunca bloquea el resto de la portada.
+      setBriefState('loading');
+      fetch('/api/admin/dashboard/brief', { headers: headers() })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d && Array.isArray(d.items)) { setBrief(d); setBriefState('ok'); } else setBriefState('error'); })
+        .catch(() => setBriefState('error'));
       fetch('/api/admin/dashboard/attention', { headers: headers() })
         .then((r) => (r.ok ? r.json() : null)).then((d) => d && setAttention({ attention: d.attention || [], opportunities: d.opportunities || [] })).catch(() => {});
       fetch('/api/admin/dashboard/recent-orders?limit=8', { headers: headers() })
@@ -205,6 +215,10 @@ export default function AdminInicio() {
         </div>
       ) : (
         <>
+          {/* Hoy: decisiones con plata adelante. Convive con "Requiere atención"
+              y "Recuperación" durante la primera semana; se comparan después. */}
+          <Brief data={brief} state={briefState} />
+
           {/* Business Performance — Woo + Finance + Meta + Operating en una sola
               lectura ejecutiva. Meta ya no es un módulo aislado. */}
           <SectionTitle right={mb && <Link href="/admin/ads" className="text-[12px] text-muted-foreground hover:text-foreground">Ver Meta Ads →</Link>}>Business performance</SectionTitle>

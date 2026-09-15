@@ -111,6 +111,20 @@ export async function fetchCampaignStatuses(opts: { forceFresh?: boolean } = {})
   return m;
 }
 
+/** effective_status por ad set (Insights no lo trae). Una sola llamada, paginada. */
+export async function fetchAdsetStatuses(opts: { forceFresh?: boolean } = {}): Promise<Map<string, { status: string; goal: string }>> {
+  const m = new Map<string, { status: string; goal: string }>();
+  let path = `/${META_ACCOUNT}/adsets?fields=id,effective_status,optimization_goal&limit=200`;
+  for (let page = 0; page < 10; page++) {
+    const data = await graphGet(path, opts.forceFresh);
+    for (const a of (data.data || [])) m.set(String(a.id), { status: String(a.effective_status || ''), goal: String(a.optimization_goal || '') });
+    const next = data.paging?.next;
+    if (!next) break;
+    path = next.replace(GRAPH, '').replace(/&access_token=[^&]+/, '');
+  }
+  return m;
+}
+
 /** Serie diaria a nivel cuenta (time_increment=1) para sparklines de Meta. Una
  *  sola llamada agregada, cacheada por el Data Cache. */
 export async function fetchDailyInsights(since: string, until: string): Promise<{ date: string; spend: number; roas: number | null; purchaseValue: number }[]> {

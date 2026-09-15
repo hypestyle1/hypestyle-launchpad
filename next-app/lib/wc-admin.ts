@@ -20,6 +20,12 @@ function auth(): string {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 }
 
+/** Header de auth y base del sitio para rutas fuera de wc/v3 (ej. wc-analytics). */
+export function wcAuthHeader(): Record<string, string> {
+  return { Authorization: auth() };
+}
+export const WC_WP_URL = WP_URL;
+
 export async function wcGet<T = any>(path: string): Promise<T | null> {
   if (!wcConfigured()) return null;
   const res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
