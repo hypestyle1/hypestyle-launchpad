@@ -41,10 +41,29 @@ type GraphMedia = {
   id?: string;
   permalink?: string;
   media_type?: string;
+  media_product_type?: string; // FEED | REELS | STORY | AD
+  is_shared_to_feed?: boolean; // solo viene en reels
   media_url?: string;
   thumbnail_url?: string;
   caption?: string;
 };
+
+// Cuántos pedir a la API antes de filtrar. Los trial reels se publican de a
+// tandas (el 15/09 fueron 19 en veinte minutos), así que con pedir justo los
+// que se muestran la tira quedaría vacía o corta.
+const FETCH_LIMIT = 50;
+
+/**
+ * Solo lo que está en la grilla del perfil. La API devuelve también los
+ * trial reels (los que Instagram muestra solo a no seguidores y no aparecen
+ * en el perfil) y los reels que se publicaron sin compartir al feed. En los
+ * dos casos vienen como REELS con `is_shared_to_feed: false`; las fotos y
+ * carruseles no traen el campo.
+ */
+function isOnProfileGrid(media: GraphMedia): boolean {
+  if (media.media_product_type === 'REELS' && media.is_shared_to_feed === false) return false;
+  return true;
+}
 
 /**
  * La URL de imagen utilizable según el tipo de post:
@@ -82,10 +101,10 @@ export async function getInstagramPosts(limit = 12): Promise<InstagramPost[] | n
   if (!token) return null;
 
   const userId = process.env.INSTAGRAM_USER_ID || DEFAULT_IG_USER_ID;
-  const fields = 'id,permalink,media_type,media_url,thumbnail_url,caption';
+  const fields = 'id,permalink,media_type,media_product_type,is_shared_to_feed,media_url,thumbnail_url,caption';
   const url =
     `https://graph.facebook.com/${GRAPH_VERSION}/${userId}/media` +
-    `?fields=${fields}&limit=${limit}&access_token=${encodeURIComponent(token)}`;
+    `?fields=${fields}&limit=${FETCH_LIMIT}&access_token=${encodeURIComponent(token)}`;
 
   try {
     const res = await withTimeout(
@@ -102,6 +121,7 @@ export async function getInstagramPosts(limit = 12): Promise<InstagramPost[] | n
 
     const json = (await res.json()) as { data?: GraphMedia[] };
     const posts = (json.data ?? [])
+      .filter(isOnProfileGrid)
       .map((media): InstagramPost | null => {
         const imageUrl = pickImageUrl(media);
         if (!media.id || !media.permalink || !imageUrl) return null;
@@ -113,7 +133,8 @@ export async function getInstagramPosts(limit = 12): Promise<InstagramPost[] | n
           isVideo: media.media_type === 'VIDEO',
         };
       })
-      .filter((p): p is InstagramPost => p !== null);
+      .filter((p): p is InstagramPost => p !== null)
+      .slice(0, limit);
 
     return posts.length > 0 ? posts : null;
   } catch (err) {
