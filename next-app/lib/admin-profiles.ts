@@ -19,9 +19,12 @@ const SESSION_SECRET = (process.env.ADMIN_SESSION_SECRET || process.env.WP_SECRE
 export const ADMIN_COOKIE = 'hype_admin_session';
 const SESSION_HOURS = 12;
 
+// 'reembolsos' es una capability aparte de 'pedidos': devolver plata es una
+// acción financiera y no alcanza con poder editar el pedido. Hoy sólo owner.
 export const SECCIONES = [
   'pedidos', 'costos', 'mayoristas', 'creadores',
   'reviews', 'newsletter', 'conversaciones', 'email-metrics', 'perfiles',
+  'reembolsos',
 ] as const;
 export type Seccion = (typeof SECCIONES)[number];
 

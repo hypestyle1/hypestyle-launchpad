@@ -50,6 +50,28 @@ export async function wcPut(path: string, body: unknown): Promise<boolean> {
   return res.ok;
 }
 
+/** Resultado completo de una escritura: status + body. Existe para las rutas
+ *  que necesitan el id de lo que crearon (un refund de Woo, por ejemplo) y no
+ *  sólo saber si salió bien. */
+export interface WcResult<T = any> { ok: boolean; status: number; body: T | null; error: string | null }
+
+export async function wcRequest<T = any>(method: 'POST' | 'PUT', path: string, body: unknown): Promise<WcResult<T>> {
+  if (!wcConfigured()) return { ok: false, status: 0, body: null, error: 'wc_not_configured' };
+  try {
+    const res = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
+      method,
+      headers: { Authorization: auth(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    });
+    const json: any = await res.json().catch(() => null);
+    if (!res.ok) return { ok: false, status: res.status, body: json, error: String(json?.message || json?.code || `wc_http_${res.status}`) };
+    return { ok: true, status: res.status, body: json as T, error: null };
+  } catch (e) {
+    return { ok: false, status: 0, body: null, error: e instanceof Error ? e.message : 'network' };
+  }
+}
+
 /** Meta donde queda el id de la orden de PayPal apenas se crea. Sin esto no hay
  *  forma de saber, ni después, si el cliente llegó a aprobar el pago. */
 export const PAYPAL_ORDER_META = '_paypal_order_id';

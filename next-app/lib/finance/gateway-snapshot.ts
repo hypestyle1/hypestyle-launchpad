@@ -177,10 +177,24 @@ export function normalizeMpPayment(pay: any, opts: NormalizeOptions): GatewayFee
     warnings.push(`refunds_mismatch:transaction_amount_refunded=${refundedTx}:refunds=${round2(refundedList)}`);
   }
 
-  const calculatedNet = round2(gross - feeGateway - feeFinancing - feeOther - taxWithholdingTotal - refunded + adjustments);
-  const reportedNet = num(pay?.transaction_details?.net_received_amount);
-  const quality: GatewayFeeSnapshotV2['quality'] = reportedNet === null ? 'calculated' : 'real';
-  if (reportedNet === null) warnings.push('net_received_amount_missing:calculated');
+  // Neto ANTES de refunds (la economía original del pago) y DESPUÉS (caja real).
+  // La historia original nunca se pisa: gross, fees, financiación y retenciones
+  // quedan tal cual; el refund entra como línea propia.
+  const netBeforeRefunds = round2(gross - feeGateway - feeFinancing - feeOther - taxWithholdingTotal);
+  const calculatedNet = round2(netBeforeRefunds - refunded + adjustments);
+  const reportedNetRaw = num(pay?.transaction_details?.net_received_amount);
+  const quality: GatewayFeeSnapshotV2['quality'] = reportedNetRaw === null ? 'calculated' : 'real';
+  if (reportedNetRaw === null) warnings.push('net_received_amount_missing:calculated');
+
+  // Con refunds MP puede informar `net_received_amount` sin descontarlos (el
+  // neto original del cobro). Si el neto informado coincide con el neto antes
+  // de refunds, la caja real es ese neto menos lo devuelto más los cargos que
+  // MP reintegró; se anota y no se cuenta como discrepancia.
+  let reportedNet = reportedNetRaw;
+  if (reportedNet !== null && refunded > 0 && Math.abs(reportedNet - netBeforeRefunds) <= EPS) {
+    warnings.push(`net_reported_before_refunds:${round2(reportedNet)}`);
+    reportedNet = round2(reportedNet - refunded + adjustments);
+  }
   const netCashReceived = round2(reportedNet ?? calculatedNet);
 
   let discrepancy: SnapshotDiscrepancy | null = null;
