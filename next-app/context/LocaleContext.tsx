@@ -5,19 +5,20 @@ import { translate } from '@/lib/i18n';
 import { FxRates, FX_FALLBACK } from '@/lib/fx';
 import { readCountryCookie, localeForCountry } from '@/lib/geo';
 
-export type Language = 'ES' | 'EN' | 'PT';
+export type Language = 'ES' | 'EN' | 'PT' | 'DE' | 'FR' | 'IT';
 export type Currency = 'ARS' | 'USD' | 'EUR';
 
 /**
  * Idiomas que el sitio realmente traduce. Los selectores (Footer, LocalePopup)
  * tienen que salir de acá y no de una lista propia: el Footer llegó a ofrecer
  * DE/FR/IT, que no existían ni en el tipo Language ni en el diccionario, así
- * que se veían, se podían clickear y no pasaba nada.
+ * que se veían, se podían clickear y no pasaba nada. Desde el 15/09/2026 los
+ * tres existen de verdad, con su columna completa en lib/i18n.ts.
  *
  * Sumar un idioma = agregarlo al tipo, a esta lista Y completar su columna en
  * lib/i18n.ts. Si falta lo último, cae a español sin avisar.
  */
-export const LANGUAGES: Language[] = ['ES', 'EN', 'PT'];
+export const LANGUAGES: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
 
 const SYMBOLS: Record<Currency, string> = { ARS: '$', USD: 'US$', EUR: '€' };
 const NUMBER_LOCALES: Record<Currency, string> = { ARS: 'es-AR', USD: 'en-US', EUR: 'de-DE' };
@@ -97,6 +98,14 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     if (storedCurr) { setCurrencyState(storedCurr); setCurrencyChosen(true); }
     else if (guess) setCurrencyState(guess.currency);
   }, []);
+
+  // El server siempre manda <html lang="es"> porque la elección vive en
+  // localStorage. Acá se corrige después de hidratar, para lectores de
+  // pantalla y para que el navegador no ofrezca traducir una página que ya
+  // está en el idioma de la persona.
+  useEffect(() => {
+    document.documentElement.lang = language.toLowerCase();
+  }, [language]);
 
   // Cotización en vivo, la misma con la que después cobra PayPal.
   useEffect(() => {
