@@ -20,6 +20,10 @@
     {
       "path": "/api/admin/finance/sync-mp",
       "schedule": "15 6 * * *"
+    },
+    {
+      "path": "/api/admin/finance/mp-reports",
+      "schedule": "0 7 * * *"
     }
   ]
 }
