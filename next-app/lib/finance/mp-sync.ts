@@ -382,3 +382,14 @@ export async function runMpSync(candidates: CandidateOrder[], client: MpClient, 
 
   return report;
 }
+
+/**
+ * Sync forzado de UN pedido (después de un refund, o cuando el webhook avisa
+ * que el pago cambió). Escribe el snapshot v2 fresco y devuelve el reporte.
+ * `null` si el pedido no existe o no es un candidato (no MP / no cobrado).
+ */
+export async function syncOrderNow(orderId: number, client: MpClient, now = new Date()): Promise<SyncReport | null> {
+  const { orders } = await loadOrdersById([orderId]);
+  if (!orders.length) return null;
+  return runMpSync(orders, client, { dryRun: false, force: true, limit: 1, samples: 1, now });
+}

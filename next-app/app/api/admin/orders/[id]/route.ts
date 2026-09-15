@@ -4,6 +4,7 @@ import { parseGatewaySnapshot, isSnapshotV2, GATEWAY_SYNC_META } from '@/lib/fin
 import { providerOf, groupOf } from '@/lib/finance/fees';
 import type { GatewaySyncStatus } from '@/lib/finance/types';
 import { mpActivityUrl } from '@/lib/finance/mp-links';
+import { parseRefundsMeta, parseRefundLock } from '@/lib/finance/mp-refund';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -168,6 +169,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       mpUrl: groupOf(provider) === 'mercadopago' && paymentId ? mpActivityUrl(paymentId) : null,
       gateway,
       sync: gatewaySync,
+      // Refunds: historial propio (`_hs_refunds`), lo que Woo registró y si hay
+      // un intento en curso. El "disponible" canónico lo da GET .../refund
+      // (fresco de MP); esto es lo persistido, para pintar sin esperar a MP.
+      refunds: parseRefundsMeta(o.meta_data),
+      wooRefunds: ((o.refunds as any[]) || []).map((r: any) => ({ id: Number(r.id), total: Math.abs(Number(r.total) || 0), reason: String(r.reason || '') })),
+      refundLock: parseRefundLock(o.meta_data),
     },
     customer_note:        o.customer_note,
     adminNote:            getMeta('_hs_admin_note'),

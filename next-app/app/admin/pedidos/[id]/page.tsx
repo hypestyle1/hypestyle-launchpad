@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { MpRefundBlock } from '@/components/admin/MpRefund';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 const SITE_URL = 'https://hypestyle.com.ar';
@@ -840,8 +841,8 @@ export default function OrderDetailPage() {
               )}
             </div>
 
-            {/* Cobro: método + id de pago + desglose real de la pasarela */}
-            <CobroCard order={order} />
+            {/* Cobro: método + id de pago + desglose real de la pasarela + refunds MP */}
+            <CobroCard order={order} adminKey={adminKey} onChanged={reloadOrder} />
 
             {/* Customer note */}
             {order.customer_note && (
@@ -1316,7 +1317,7 @@ function CobroRow({ label, amount, gross, negative, sub }: { label: string; amou
     </div>
   );
 }
-function CobroCard({ order }: { order: Order }) {
+function CobroCard({ order, adminKey, onChanged }: { order: Order; adminKey: string; onChanged: () => void }) {
   const p = order.payment;
   const g = p?.gateway || null;
   const isMp = p?.group === 'mercadopago';
@@ -1334,7 +1335,7 @@ function CobroCard({ order }: { order: Order }) {
       {p?.paymentId && (
         <div className="mt-1 text-[12px] text-muted-foreground flex flex-wrap items-center gap-x-2">
           <span>Pago <span className="font-mono text-foreground">{p.paymentId}</span></span>
-          {p.mpUrl && (
+          {p.mpUrl && !isMp && (
             <a href={p.mpUrl} target="_blank" rel="noopener noreferrer" className="text-foreground underline underline-offset-2 hover:opacity-80">Ver en Mercado Pago</a>
           )}
         </div>
@@ -1379,6 +1380,15 @@ function CobroCard({ order }: { order: Order }) {
       {!g && isMp && !p?.sync && (
         <div className="mt-2 text-[11.5px] text-muted-foreground">El desglose se carga con el sync nocturno de Mercado Pago.</div>
       )}
+      {/* Reembolsos: estado fresco de MP, historial y acciones */}
+      <MpRefundBlock
+        orderId={order.id}
+        orderNumber={order.number}
+        adminKey={adminKey}
+        mpUrl={p?.mpUrl || null}
+        isMp={!!isMp && !!p?.paymentId}
+        onChanged={onChanged}
+      />
     </div>
   );
 }
