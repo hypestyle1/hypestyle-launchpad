@@ -7,10 +7,15 @@ import type { PublicReview } from '@/lib/reviews/types';
 import StarRating from './StarRating';
 import ReviewPhotoLightbox from './ReviewPhotoLightbox';
 
+// timeZone fijo: el server corre en UTC y el visitante en UTC-3. Sin esto, una
+// reseña creada entre las 00:00 y las 03:00 UTC sale con un día distinto en el
+// HTML del servidor y al hidratar, React descarta todo el HTML del home y lo
+// re-renderiza (#425 → #418 → #423). Ya pasó en agosto (cc418fc) y volvió a
+// pasar cuando f43b9f3 reescribió esta función sin el parámetro.
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' });
 }
 
 export default function ReviewCard({ review, compact = false }: { review: PublicReview; compact?: boolean }) {
