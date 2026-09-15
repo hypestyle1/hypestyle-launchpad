@@ -28,6 +28,8 @@ export const maxDuration = 60;
 // La lógica vive en lib/finance/mp-refund.ts; acá sólo auth, I/O y actor.
 
 const MP_TOKEN = (process.env.MP_ACCESS_TOKEN || '').trim();
+/** Ejecutar refunds desde el panel: apagado salvo HS_REFUNDS_ENABLED=1. */
+const REFUNDS_ENABLED = (process.env.HS_REFUNDS_ENABLED || '').trim();
 const ORDER_FIELDS = 'id,number,status,payment_method,transaction_id,total,billing,meta_data,refunds';
 
 async function actorOf(req: NextRequest): Promise<string> {
@@ -161,6 +163,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   if (action !== 'refund') return NextResponse.json({ error: 'Acción inválida' }, { status: 400 });
+  // Decisión 15/09/2026: los reembolsos se ejecutan en el panel de Mercado
+  // Pago, no desde acá. Cualquiera con la clave del panel podría devolver un
+  // pedido ya entregado. La ejecución queda detrás de un flag apagado; el
+  // panel sólo REGISTRA en Woo lo que MP ya devolvió (action 'repair').
+  if (REFUNDS_ENABLED !== '1') {
+    return NextResponse.json({ ok: false, code: 'refunds_disabled', error: 'Los reembolsos se hacen desde Mercado Pago. Acá sólo se registran.' }, { status: 403 });
+  }
   const r = await executeRefund(deps(), {
     orderId, mode: body?.mode, amount: body?.amount, idempotencyKey: body?.idempotencyKey, actor,
     reason: typeof body?.reason === 'string' ? body.reason.slice(0, 200) : undefined,
