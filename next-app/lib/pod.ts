@@ -9,6 +9,8 @@
 // mapa puede pasar a leerse del snapshot de /api/admin/shared-stock; hasta
 // entonces vive acá para que la pantalla funcione sin esperar al backend.
 
+import { fulfillmentStage } from '@/lib/orders-fulfillment';
+
 export interface PodDesign {
   /** product_id del diseño en WooCommerce. */
   productId: number;
@@ -98,15 +100,10 @@ export interface PodOrderLike {
 
 // Mismo criterio que /api/admin/orders/counts: el rótulo de Andreani se genera
 // al empaquetar y la guía aparece al despachar. Cualquiera de los dos significa
-// que la prenda ya está hecha, así que sale de la cola sola.
-const PACKAGED_KEYS = ['_order_andreani_pedido_id', '_order_andreani_numero_interno', '_andreani_tracking_number'];
-
-function tieneMeta(meta: PodOrderLike['meta_data'], keys: string[]): boolean {
-  return (meta || []).some(m => keys.includes(String(m.key)) && String(m.value ?? '').trim() !== '');
-}
-
+// que la prenda ya está hecha, así que sale de la cola sola. La clasificación
+// vive en lib/orders-fulfillment, compartida con los conteos y el Founder Brief.
 export function estaPorEmpaquetar(order: PodOrderLike): boolean {
-  return !tieneMeta(order.meta_data, ['_tracking_number']) && !tieneMeta(order.meta_data, PACKAGED_KEYS);
+  return fulfillmentStage(order.meta_data) === 'sin_rotulo';
 }
 
 /** Talle de una línea: la meta que deja la variación, o SIN_TALLE si no hay. */
