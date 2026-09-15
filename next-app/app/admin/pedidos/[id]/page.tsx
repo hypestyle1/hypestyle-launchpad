@@ -71,12 +71,30 @@ function fmtDate(s: string) {
   });
 }
 
-function waLink(phone: string, name: string, orderNum: string) {
+function waNumber(phone: string) {
   const digits = phone.replace(/\D/g, '');
   const clean  = digits.startsWith('0') ? digits.slice(1) : digits;
-  const intl   = clean.startsWith('54') ? clean : '549' + clean;
-  const msg    = encodeURIComponent(`Hola ${name}, te escribimos en relación a tu pedido #${orderNum} en Hypestyle. `);
-  return `https://wa.me/${intl}?text=${msg}`;
+  return clean.startsWith('54') ? clean : '549' + clean;
+}
+
+function waLink(phone: string, name: string, orderNum: string) {
+  const msg = encodeURIComponent(`Hola ${name}, te escribimos en relación a tu pedido #${orderNum} en Hypestyle. `);
+  return `https://wa.me/${waNumber(phone)}?text=${msg}`;
+}
+
+// Link público de /seguimiento: muestra el estado del pedido aunque todavía no
+// tenga número de Andreani (queda en "Preparando tu pedido"). Sirve para
+// responder al cliente que pregunta por el envío antes del despacho.
+function trackingPageUrl(order: Pick<Order, 'id' | 'order_key'>) {
+  return `${SITE_URL}/seguimiento?pedido=${order.id}&clave=${encodeURIComponent(order.order_key)}`;
+}
+
+function waTrackingLink(phone: string, name: string, orderNum: string, url: string) {
+  const msg = encodeURIComponent(
+    `Hola ${name}! Tu pedido #${orderNum} en Hypestyle está en preparación. `
+    + `Desde este link podés ver el estado en todo momento, y ahí mismo va a aparecer el número de envío de Andreani cuando lo despachemos: ${url}`,
+  );
+  return `https://wa.me/${waNumber(phone)}?text=${msg}`;
 }
 
 export default function OrderDetailPage() {
@@ -96,6 +114,7 @@ export default function OrderDetailPage() {
   const [tracking, setTracking] = useState('');
   const [trackSaving, setTrackSaving]   = useState(false);
   const [trackMsg, setTrackMsg] = useState('');
+  const [linkCopiado, setLinkCopiado] = useState(false);
   const [syncingAndreani, setSyncingAndreani] = useState(false);
   const [emailMsg, setEmailMsg] = useState('');
   const [dispatchLoading, setDispatchLoading] = useState(false);
@@ -1035,6 +1054,57 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
+            {/* Link público de seguimiento — siempre disponible, con o sin Andreani */}
+            <div className="bg-card rounded-lg border border-border px-5 py-4">
+              <h2 className="text-[13px] font-semibold text-foreground mb-1">Link de seguimiento</h2>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                Página pública con el estado del pedido. Se lo podés pasar al cliente aunque todavía no esté despachado.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={trackingPageUrl(order)}
+                  onFocus={e => e.currentTarget.select()}
+                  className="flex-1 min-w-0 border border-border rounded-lg px-3 py-2 text-[11px] font-mono text-muted-foreground bg-muted/40 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(trackingPageUrl(order));
+                      setLinkCopiado(true);
+                      window.setTimeout(() => setLinkCopiado(false), 2000);
+                    } catch { /* sin permiso de portapapeles: el input queda seleccionable */ }
+                  }}
+                  className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-[12px] font-semibold hover:opacity-90 whitespace-nowrap"
+                >
+                  {linkCopiado ? 'Copiado' : 'Copiar'}
+                </button>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <a
+                  href={trackingPageUrl(order)}
+                  target="_blank" rel="noopener noreferrer"
+                  className="text-[11px] text-blue-600 hover:underline"
+                >
+                  Abrir seguimiento →
+                </a>
+                {order.customer.phone && (
+                  <>
+                    <span className="text-muted-foreground/50">·</span>
+                    <a
+                      href={waTrackingLink(order.customer.phone, order.customer.first_name, order.number, trackingPageUrl(order))}
+                      target="_blank" rel="noopener noreferrer"
+                      className="text-[11px] text-green-600 hover:underline"
+                    >
+                      Enviar por WhatsApp →
+                    </a>
+                  </>
+                )}
+              </div>
+            </div>
+
             {/* Tracking */}
             <div className="bg-card rounded-lg border border-border px-5 py-4">
               <h2 className="text-[13px] font-semibold text-foreground mb-2">Seguimiento Andreani</h2>
@@ -1083,7 +1153,7 @@ export default function OrderDetailPage() {
                   </a>
                   <span className="text-muted-foreground/50">·</span>
                   <a
-                    href={`${SITE_URL}/seguimiento?pedido=${order.id}&clave=${order.order_key}`}
+                    href={trackingPageUrl(order)}
                     target="_blank" rel="noopener noreferrer"
                     className="text-[11px] text-blue-600 hover:underline"
                   >
