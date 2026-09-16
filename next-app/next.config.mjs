@@ -81,6 +81,14 @@ const nextConfig = {
       { protocol: "https", hostname: "lightpink-rook-704850.hostingersite.com" },
     ],
   },
+  // El build prerenderiza /mayoristas, /api/products y las fichas contra
+  // WPGraphQL. Con el default de 60 s por página, una tarde de WP lento (15/09
+  // 19:20: cayeron a la vez el deploy de main, el del PR #444 y otro preview con
+  // "Static page generation for /mayoristas is still timing out") tira abajo
+  // el deploy entero aunque WP responda. fetchWithRetry puede tardar hasta
+  // ~65 s por pedido (4 intentos de 15 s + backoff) y el catálogo son 2 páginas,
+  // así que 180 s cubre el peor caso con WP vivo pero lento.
+  staticPageGenerationTimeout: 180,
   experimental: {
     workerThreads: false,
     cpus: 1,

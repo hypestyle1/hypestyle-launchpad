@@ -156,17 +156,35 @@ describe('normalizeReleaseReport', () => {
     expect(d.movements).toHaveLength(2);
     expect(d.movements[1].uniqueKey).toBe(`${d.movements[0].uniqueKey}#2`);
   });
-  it('un monto ilegible descarta la fila y lo informa', () => {
+  it('un monto ilegible NO se descarta: se persiste como unclassified con la fila cruda y queda en errores', () => {
     const bad = [REL_HEADER, REL_ROWS[1].replace('100538.42', '100.538,42')].join('\n');
     const b = normalizeReleaseReport(bad, 'bad.csv');
-    expect(b.movements).toHaveLength(0);
     expect(b.errors).toEqual([{ line: 2, reason: 'malformed_amount' }]);
+    expect(b.movements).toHaveLength(1);
+    const m = b.movements[0];
+    expect(m.kind).toBe('unclassified');
+    expect(m.credit).toBe(0); expect(m.debit).toBe(0); expect(m.netAmount).toBe(0);
+    expect(m.paymentId).toBe('175662774659');
+    expect(m.releaseDate).toBe('2026-08-31T22:39:50.000-03:00');
+    expect((m.rawMetadata as any).unparsed).toBe(true);
+    expect((m.rawMetadata as any).rawRow.NET_CREDIT_AMOUNT).toBe('100.538,42');
+    expect(reconcileMovement(m, new Map()).status).toBe('SIN_CLASIFICAR');
+    // clave estable entre corridas
+    expect(normalizeReleaseReport(bad, 'bad-2.csv').movements[0].uniqueKey).toBe(m.uniqueKey);
   });
-  it('un RECORD_TYPE desconocido no se inventa como movimiento', () => {
+  it('un RECORD_TYPE desconocido no se inventa como movimiento normal: queda unclassified y auditable', () => {
     const x = [REL_HEADER, REL_ROWS[1].replace(';release;', ';misterio;')].join('\n');
     const b = normalizeReleaseReport(x, 'x.csv');
-    expect(b.movements).toHaveLength(0);
     expect(b.errors[0].reason).toBe('unknown_record_type:misterio');
+    expect(b.movements).toHaveLength(1);
+    expect(b.movements[0]).toMatchObject({ kind: 'unclassified', recordType: 'misterio', netAmount: 0 });
+    expect((b.movements[0].rawMetadata as any).reason).toBe('unknown_record_type:misterio');
+  });
+  it('en el settlement un monto ilegible también se persiste como unclassified', () => {
+    const bad = [SET_HEADER, SET_ROWS[0].replace('100538.42', 'x')].join('\n');
+    const b = normalizeSettlementReport(bad, 'bad.csv');
+    expect(b.movements).toHaveLength(1);
+    expect(b.movements[0].kind).toBe('unclassified');
   });
 });
 
@@ -290,7 +308,8 @@ function fakeStore(initialFiles: any[] = []) {
   const store: SyncDeps['store'] = {
     listFiles: async () => ({ ok: true, status: 200, body: { files: [...files.values()] }, error: null }),
     getFile: async (name, raw) => files.has(name) ? { ok: true, status: 200, body: { file: raw ? files.get(name) : { ...files.get(name), raw: undefined } }, error: null } : { ok: false, status: 404, body: null, error: 'not_found' },
-    upsertFile: async (f) => { const prev = files.get(f.fileName) || {}; files.set(f.fileName, { ...prev, file_name: f.fileName, report_kind: f.reportKind, status: f.status, sha256: f.sha256 ?? prev.sha256, raw: f.raw ?? prev.raw, begin_date: f.beginDate ?? prev.begin_date, end_date: f.endDate ?? prev.end_date }); return { ok: true, status: 200, body: { ok: true, id: 1, created: !prev.file_name }, error: null }; },
+    // Emula el update parcial del PHP 1.36.1: sólo pisa lo que viene.
+    upsertFile: async (f) => { const prev = files.get(f.fileName) || {}; files.set(f.fileName, { ...prev, file_name: f.fileName, report_kind: f.reportKind, status: f.status, sha256: f.sha256 ?? prev.sha256, raw: f.raw ?? prev.raw, begin_date: f.beginDate ?? prev.begin_date, end_date: f.endDate ?? prev.end_date, row_count: f.rows ?? prev.row_count, error: f.error === undefined ? prev.error : f.error }); return { ok: true, status: 200, body: { ok: true, id: 1, created: !prev.file_name }, error: null }; },
     listMovements: async () => ({ ok: true, status: 200, body: { movements: [] }, error: null }),
     upsertMovements: async (list) => { let inserted = 0, updated = 0; for (const m of list) { if (movements.has(m.uniqueKey)) updated++; else inserted++; movements.set(m.uniqueKey, m); } return { ok: true, inserted, updated, errors: [] }; },
     setStatuses: async (s) => { for (const x of s) { const m = movements.get(x.uniqueKey); if (m) m.reconciliationStatus = x.status; } return { ok: true, updated: s.length, errors: [] }; },
@@ -381,6 +400,48 @@ describe('syncReports', () => {
     expect(s.files.get('weird.csv').status).toBe('error');
     expect(s.movements.size).toBe(0);
     expect(sum.errors.some((e) => e.includes('header_missing'))).toBe(true);
+  });
+
+  it('el registro del archivo conserva filas, período y hash después del segundo guardado', async () => {
+    const s = fakeStore();
+    const { client } = fakeClient([{ kind: 'release_report', fileName: 'rel-aug.csv', text: REL_CSV, begin: '2026-08-01T03:00:00Z' }]);
+    await syncReports(client as any, { runKind: 'manual' }, deps(s.store, new Map()));
+    const f = s.files.get('rel-aug.csv');
+    expect(f.status).toBe('processed');
+    expect(f.row_count).toBe(REL_ROWS.length);
+    expect(f.begin_date).toBe('2026-08-01T03:00:00Z');
+    expect(f.sha256).toHaveLength(64);
+    expect(f.raw).toBe(REL_CSV);
+  });
+
+  it('un archivo en error no se vuelve a bajar en la corrida siguiente (sólo con force)', async () => {
+    const s = fakeStore();
+    const { client, download } = fakeClient([{ kind: 'release_report', fileName: 'weird.csv', text: 'FOO;BAR\n1;2\n', begin: '2026-08-01T03:00:00Z' }]);
+    const d = deps(s.store, new Map());
+    await syncReports(client as any, { runKind: 'manual' }, d);
+    expect(download).toHaveBeenCalledTimes(1);
+    const second = await syncReports(client as any, { runKind: 'cron' }, d);
+    expect(download).toHaveBeenCalledTimes(1);
+    expect(second.filesSkipped).toBe(1);
+    expect(second.files[0]).toMatchObject({ fileName: 'weird.csv', status: 'error' });
+    await syncReports(client as any, { runKind: 'manual', force: true }, d);
+    expect(download).toHaveBeenCalledTimes(2);
+  });
+
+  it('las filas ilegibles llegan al ledger como unclassified y cuentan en la corrida', async () => {
+    const s = fakeStore();
+    const text = [REL_HEADER, REL_ROWS[1], REL_ROWS[1].replace('100538.42', 'abc'), REL_ROWS[7].replace(';release;', ';raro;')].join('\n');
+    const { client } = fakeClient([{ kind: 'release_report', fileName: 'mixed.csv', text, begin: '2026-08-01T03:00:00Z' }]);
+    const sum = await syncReports(client as any, { runKind: 'manual' }, deps(s.store, new Map([[2999, order(2999)]])));
+    expect(s.movements.size).toBe(3);
+    const un = [...s.movements.values()].filter((m: any) => m.kind === 'unclassified');
+    expect(un).toHaveLength(2);
+    expect(un.every((m: any) => m.reconciliationStatus === 'SIN_CLASIFICAR')).toBe(true);
+    expect(sum.errors.filter((e) => e.includes('malformed_amount') || e.includes('unknown_record_type'))).toHaveLength(2);
+    expect(sum.matched).toBe(1);
+    // idempotente también para las ilegibles
+    await syncReports(client as any, { runKind: 'manual', force: true }, deps(s.store, new Map([[2999, order(2999)]])));
+    expect(s.movements.size).toBe(3);
   });
 
   it('sin backend (404 en el ledger) no simula nada', async () => {

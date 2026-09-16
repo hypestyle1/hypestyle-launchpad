@@ -12,12 +12,14 @@ const GET_PRODUCTS = `
         ... on SimpleProduct {
           price regularPrice salePrice stockStatus stockQuantity
           image { sourceUrl }
+          galleryImages(first: 3) { nodes { sourceUrl } }
           productCategories { nodes { name } }
           productTags { nodes { slug } }
         }
         ... on VariableProduct {
           price regularPrice
           image { sourceUrl }
+          galleryImages(first: 3) { nodes { sourceUrl } }
           productCategories { nodes { name } }
           productTags { nodes { slug } }
           variations(first: 20) {

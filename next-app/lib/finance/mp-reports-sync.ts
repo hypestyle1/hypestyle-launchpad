@@ -171,7 +171,12 @@ export async function processReportText(
 
   await reconcileMovements(parsed.movements, deps, summary);
 
-  const done = await deps.store.upsertFile({ reportKind: kind, fileName, processedAt: deps.now().toISOString(), status: up.ok ? 'processed' : 'partial', error: up.ok ? null : up.errors.slice(0, 5).join('; ') });
+  // Se reenvían filas, fechas y hash: el backend hace update parcial, pero así
+  // el registro queda completo aunque corra contra un PHP viejo.
+  const done = await deps.store.upsertFile({
+    reportKind: kind, fileName, beginDate: meta.beginDate, endDate: meta.endDate, sha256: parsed.sha256, rows: parsed.rowCount,
+    processedAt: deps.now().toISOString(), status: up.ok ? 'processed' : 'partial', error: up.ok ? null : up.errors.slice(0, 5).join('; '),
+  });
   if (!done.ok) summary.errors.push(`file_done:${fileName}:${done.error}`);
   summary.files.push({ fileName, kind, rows: parsed.rowCount, status: up.ok ? 'processed' : 'partial' });
   return parsed;
@@ -212,6 +217,10 @@ export async function syncReports(client: MpReportsClient, opts: SyncOptions = {
       const fileName = entry.fileName!;
       const prev = knownByName.get(fileName);
       if (prev && prev.status === 'processed' && !opts.force) { summary.filesSkipped += 1; continue; }
+      // Un archivo que ya falló (encabezado inválido, config vieja) no se vuelve
+      // a bajar cada día: queda visible en la tabla Reportes con su error y se
+      // reintenta sólo con force (o reprocesando a mano).
+      if (prev && prev.status === 'error' && !opts.force) { summary.filesSkipped += 1; summary.files.push({ fileName, kind, rows: prev.row_count, status: 'error', error: prev.error }); continue; }
       if (processed >= limit) { summary.filesPending += 1; continue; }
       const dl = await client.download(kind, fileName);
       if (!dl.ok) { summary.errors.push(`download:${fileName}:http_${dl.status}`); continue; }

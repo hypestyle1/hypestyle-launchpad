@@ -10,7 +10,7 @@ import { RefreshCw } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { KpiCard } from '@/components/admin/dashboard/blocks';
 
-type Status = 'CONCILIADO' | 'PENDIENTE' | 'DIFERENCIA' | 'SIN_PEDIDO' | 'SIN_PAGO' | 'LIQUIDACION_PENDIENTE' | 'REFUND' | 'REFUND_SIN_REGISTRO' | 'CHARGEBACK' | 'DISPUTA' | 'AJUSTE';
+type Status = 'CONCILIADO' | 'PENDIENTE' | 'DIFERENCIA' | 'SIN_PEDIDO' | 'SIN_PAGO' | 'LIQUIDACION_PENDIENTE' | 'REFUND' | 'REFUND_SIN_REGISTRO' | 'CHARGEBACK' | 'DISPUTA' | 'AJUSTE' | 'SIN_CLASIFICAR';
 
 type Row = {
   uniqueKey: string; reportKind: string; fileName: string; description: string; kind: string; paymentId: string | null; orderId: number | null;
@@ -42,15 +42,17 @@ const STATUS_TONE: Record<Status, string> = {
   CONCILIADO: 'bg-green-100 text-green-700', PENDIENTE: 'bg-muted text-muted-foreground', DIFERENCIA: 'bg-red-100 text-red-700',
   SIN_PEDIDO: 'bg-yellow-100 text-yellow-800', SIN_PAGO: 'bg-yellow-100 text-yellow-800', LIQUIDACION_PENDIENTE: 'bg-blue-100 text-blue-800',
   REFUND: 'bg-purple-100 text-purple-700', REFUND_SIN_REGISTRO: 'bg-red-100 text-red-700', CHARGEBACK: 'bg-red-100 text-red-700', DISPUTA: 'bg-orange-100 text-orange-800', AJUSTE: 'bg-muted text-muted-foreground',
+  SIN_CLASIFICAR: 'bg-yellow-100 text-yellow-800',
 };
-const STATUS_ORDER: Status[] = ['CONCILIADO', 'DIFERENCIA', 'PENDIENTE', 'SIN_PEDIDO', 'SIN_PAGO', 'LIQUIDACION_PENDIENTE', 'REFUND', 'REFUND_SIN_REGISTRO', 'CHARGEBACK', 'DISPUTA', 'AJUSTE'];
+const STATUS_ORDER: Status[] = ['CONCILIADO', 'DIFERENCIA', 'PENDIENTE', 'SIN_PEDIDO', 'SIN_PAGO', 'LIQUIDACION_PENDIENTE', 'REFUND', 'REFUND_SIN_REGISTRO', 'CHARGEBACK', 'DISPUTA', 'AJUSTE', 'SIN_CLASIFICAR'];
 const STATUS_LABEL: Record<Status, string> = {
   CONCILIADO: 'Conciliado', PENDIENTE: 'Pendiente', DIFERENCIA: 'Diferencia', SIN_PEDIDO: 'Sin pedido', SIN_PAGO: 'Sin pago', LIQUIDACION_PENDIENTE: 'Liquidación pendiente',
-  REFUND: 'Refund', REFUND_SIN_REGISTRO: 'Refund sin registro', CHARGEBACK: 'Chargeback', DISPUTA: 'Disputa', AJUSTE: 'Ajuste',
+  REFUND: 'Refund', REFUND_SIN_REGISTRO: 'Refund sin registro', CHARGEBACK: 'Chargeback', DISPUTA: 'Disputa', AJUSTE: 'Ajuste', SIN_CLASIFICAR: 'Sin clasificar',
 };
 const KIND_LABEL: Record<string, string> = {
   payment: 'Venta', payment_out: 'Pago nuestro', refund: 'Refund de venta', refund_in: 'Devolución recibida', chargeback: 'Contracargo', dispute: 'Disputa',
   tax_operation: 'Retención por operación', tax_monthly: 'Percepción / impuesto', reserve: 'Reserva', payout: 'Retiro', fee: 'Fee', adjustment: 'Ajuste', other: 'Otro',
+  unclassified: 'Fila ilegible',
 };
 
 const fmt = (n: number | null | undefined) => n === null || n === undefined ? '—' : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
