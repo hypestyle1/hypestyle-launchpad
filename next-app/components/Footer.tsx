@@ -43,6 +43,17 @@ const rrssLinks = [
 // el sitio no traduce — se mostraban en el selector y clickearlos no hacía nada.
 const languages = LANGUAGES;
 
+// Un link del footer: externo abre en pestaña nueva, interno va por <Link>.
+// Lo usan el acordeón mobile y la grilla desktop, así el estilo es uno solo.
+function FooterLink({ link, t }: { link: { label: string; href: string }; t: (s: string) => string }) {
+  const cls = "block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5";
+  return link.href.startsWith("http") ? (
+    <a href={link.href} target="_blank" rel="noopener noreferrer" className={cls}>{t(link.label)}</a>
+  ) : (
+    <Link href={link.href} className={cls}>{t(link.label)}</Link>
+  );
+}
+
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -103,8 +114,30 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Columnas */}
-        <div className="grid grid-cols-3 gap-8">
+        {/* Columnas — en mobile las 3 columnas no entran en 360px (se apilan
+            palabras cortadas), así que van como acordeón cerrado por defecto:
+            un renglón por sección, se abre al tocar. Desde md, grilla de 3. */}
+        <div className="md:hidden -mt-2 border-y border-primary-foreground/10 divide-y divide-primary-foreground/10">
+          {[
+            { title: 'Shop', links: shopLinks },
+            { title: 'Info', links: infoLinks },
+            { title: 'Trabajá con Hype', links: trabajaLinks },
+            { title: 'RRSS', links: rrssLinks },
+          ].map((col) => (
+            <details key={col.title} className="group">
+              <summary className="flex items-center justify-between py-4 text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/60 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+                {t(col.title)}
+                <span aria-hidden className="text-primary-foreground/40 text-[18px] leading-none transition-transform duration-200 group-open:rotate-45">+</span>
+              </summary>
+              <div className="pb-3">
+                {col.links.map((l) => <FooterLink key={l.href} link={l} t={t} />)}
+              </div>
+            </details>
+          ))}
+        </div>
+
+        {/* Columnas — desktop */}
+        <div className="hidden md:grid grid-cols-3 gap-8">
           {/* Shop */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Shop</p>
