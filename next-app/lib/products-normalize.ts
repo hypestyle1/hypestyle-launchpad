@@ -65,6 +65,11 @@ export function fromWPNode(node: any): NormalizedProduct {
 
   const images: string[] = [];
   if (node.image?.sourceUrl) images.push(node.image.sourceUrl);
+  // Galería (hasta 3): la primera es la foto del hover de la card (alguien
+  // usando el producto) — ver ProductCard.
+  for (const g of node.galleryImages?.nodes ?? []) {
+    if (g?.sourceUrl && !images.includes(g.sourceUrl)) images.push(g.sourceUrl);
+  }
   if (!images.length) images.push('');
 
   const sizes: string[] = [];

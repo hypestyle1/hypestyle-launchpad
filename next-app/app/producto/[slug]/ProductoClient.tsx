@@ -471,8 +471,8 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
 
             {/* Info */}
             <div className="flex flex-col">
-              <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-1">{product.category}</p>
-              <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-tight mb-3">{product.name}</h1>
+              <p className="text-[11px] tracking-[0.02em] text-muted-foreground mb-1">{product.category}</p>
+              <h1 className="text-[22px] md:text-[26px] font-semibold tracking-[-0.01em] mb-3">{product.name}</h1>
               <div className="mb-1">
                 <div className="flex items-center gap-3">
                   <span className="text-[22px] font-bold text-foreground">

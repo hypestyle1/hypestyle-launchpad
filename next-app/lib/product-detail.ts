@@ -155,6 +155,79 @@ const REGULAR_PACK_COLORWAYS = [
   { label: 'Melange · Navy · White',  value: '#1a2744', slug: 'regular-tees-3-pack-melange-navy-white',  image: `${WP}/2026/08/regular-tees-3-pack-melange-navy-white.png` },
 ];
 
+// Grupos agregados el 15/09/2026 para los puntitos de color de las cards y el
+// selector de la ficha. Son productos separados en Woo con el mismo modelo en
+// distinto color. Las imágenes son la destacada de cada uno (se re-resuelven
+// en runtime igual, ver resolveColorwayImages).
+const HSTARS_HOODIE_COLORWAYS = [
+  { label: 'Black', value: '#1a1a1a', slug: 'hoodie-black-hstars', image: `${WP}/2026/09/hoodie-black-hstars-destacada-v2.png` },
+  { label: 'Grey', value: '#c9c9c9', slug: 'hoodie-grey-hstars', image: `${WP}/2026/05/HOODIE-GREY-2.png` },
+  { label: 'Pink', value: '#f28ac4', slug: 'hoodie-pink', image: `${WP}/2026/04/pink-hoodie-frente-1f0912fdd95870e13717766491947793-1024-1024.png` },
+];
+const HSTARS_PANT_COLORWAYS = [
+  { label: 'Black', value: '#1a1a1a', slug: 'sweatpant-black-hstars', image: `${WP}/2026/07/buzo-Recuperado-Recuperado.png` },
+  { label: 'Grey', value: '#c9c9c9', slug: 'sweatpant-grey-hstars', image: `${WP}/2026/05/PANT.png` },
+  { label: 'Pink', value: '#f28ac4', slug: 'sweatpant-pink', image: `${WP}/2026/04/pink-pant-frente-d2aece9f35633cd72f17766492253841-1024-1024.png` },
+  { label: 'Camo', value: '#5b6b3a', slug: 'sweatpant-camo', image: `${WP}/2026/04/pantcamo_frente-694798096206866e2a17752460835900-1024-1024.png` },
+];
+const ZIP_HOODIE_COLORWAYS = [
+  { label: 'Camo', value: '#5b6b3a', slug: 'zip-hoodie-camo', image: `${WP}/2026/04/zipcamo_frente-f2a08e52e942c03cff17752461590807-1024-1024.png` },
+  { label: 'Pink', value: '#f28ac4', slug: 'zip-hoodie-pink', image: `${WP}/2026/04/pink-zip-frente-fb1312b6e42f00f03717766492551864-1024-1024.png` },
+];
+const HS_CO_HOODIE_COLORWAYS = [
+  { label: 'Melange', value: '#d6d6d6', slug: 'hs-co-green-hoodie', image: `${WP}/2026/08/hs-Co-melange-y-verde-esmeralda-2.png` },
+  { label: 'Grey', value: '#4a4a4a', slug: 'hs-co-grey-hoodie', image: `${WP}/2026/07/hs-Co-Gris.png` },
+];
+const HE_DIED_HOODIE_COLORWAYS = [
+  { label: 'Melange', value: '#d6d6d6', slug: 'he-died-so-i-could-live-melange-hoodie', image: `${WP}/2026/09/he-died-so-i-could-live-melange-hoodie-destacada-v2.png` },
+  { label: 'Grey', value: '#4a4a4a', slug: 'he-die-so-i-could-live-hoodie', image: `${WP}/2026/09/he-die-so-i-could-live-hoodie-destacada-v2.png` },
+];
+const HYPESTATION_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'hypestation-white-tee', image: `${WP}/2026/09/hypestation-white-tee-destacada-v2.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'hypestation-black-tee', image: `${WP}/2026/04/hypestation-1-9ed04132246e349e5017679050958668-1024-1024.png` },
+];
+const HONDA_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'honda-white-tee', image: `${WP}/2026/09/honda-white-tee-destacada-v2.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'honda-black-tee', image: `${WP}/2026/04/mesa-de-trabajo-2-copia-4-e2b7c6f9677c0d637017683315099660-1024-1024.png` },
+];
+const PER_ASPERA_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'per-aspera-ad-astra-white-tee', image: `${WP}/2026/09/per-aspera-ad-astra-white-tee-destacada-v2.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'per-aspera-ad-astra-black-tee', image: `${WP}/2026/04/sb-5a25a1218ca4cfd06f17679048948960-1024-1024.png` },
+];
+const SLEEVELESS_RANGLAN_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'sleeveless-ranglan-white', image: `${WP}/2026/04/mesa-de-trabajo-9-copia-2-ac04d165f7e6bb696617724912313365-1024-1024.png` },
+  { label: 'Militar Green', value: '#5a6b45', slug: 'sleeveless-ranglan-militar-green', image: `${WP}/2026/04/mesa-de-trabajo-9-copia-5-c965515e970b12576c17724912477374-1024-1024.png` },
+  { label: 'Grey', value: '#6e6e6e', slug: 'sleeveless-ranglan-grey', image: `${WP}/2026/04/mesa-de-trabajo-9-copia-7-b90c03102c0f90233f17724911900741-1024-1024.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'sleeveless-ranglan-black', image: `${WP}/2026/04/mesa-de-trabajo-9-3d92443419f72ce77417724912112541-1024-1024.png` },
+];
+const WAFFLE_CREST_COLORWAYS = [
+  { label: 'Earth Brown', value: '#6b4a3a', slug: 'waffle-crest-sleeveless-earth-brown', image: `${WP}/2026/04/marron-wafle-1-0f0d66c9385edb2a5d17662581874282-1024-1024.png` },
+  { label: 'Pearl Grey', value: '#5f5f5f', slug: 'waffle-crest-sleeveless-pearl-grey', image: `${WP}/2026/04/wafle-gris-a6369ecb409b8e70de17662582045223-1024-1024.png` },
+];
+const MESH_TEE_COLORWAYS = [
+  { label: 'Camo Blue', value: '#3a7fc4', slug: 'mesh-camo-blue-tee', image: `${WP}/2026/04/mesh-corregidos-hsmesa-de-trabajo-1-copia-2-39be235813ac4d3cfc17648639164974-1024-1024.png` },
+  { label: 'Camo Grey', value: '#8a8f96', slug: 'mesh-camo-grey-tee', image: `${WP}/2026/04/mesh-corregidos-hsmesa-de-trabajo-1-copia-3-dd659729689bdfbad317648639425340-1024-1024.png` },
+  { label: 'RealTree', value: '#8c8468', slug: 'mesh-realtree-tee', image: `${WP}/2026/04/mesh-corregidos-hsmesa-de-trabajo-1-copia-4-7dd25656d1ce7e335f17648638607842-1024-1024.png` },
+  { label: 'RealTree Pink', value: '#d99bb0', slug: 'mesh-realtree-pink-tee', image: `${WP}/2026/04/mesh-corregidos-hsmesa-de-trabajo-1-1f8ea6ed864faa441c17648638960971-1024-1024.png` },
+];
+const JORT_CARGO_COLORWAYS = [
+  { label: 'RealTree Beige', value: '#b8a98a', slug: 'jort-cargo-realtree-beige', image: `${WP}/2026/04/camufladasmesa-de-trabajo-1-bb238d21049bb3746c17705672844954-1024-1024.png` },
+  { label: 'RealTree Pink', value: '#d9a8b8', slug: 'jort-cargo-realtree-pink', image: `${WP}/2026/04/camufladasmesa-de-trabajo-3-56748a2b37abdc560717705671603162-1024-1024.png` },
+];
+const LETTERING_JORT_COLORWAYS = [
+  { label: 'Graphite', value: '#3f4148', slug: 'lettering-graphite-jort', image: `${WP}/2026/04/mockup-jort-rustico-topo-frente-d1125bede86cfd3f8817612674654803-1024-1024.png` },
+  { label: 'Melange', value: '#d6d6d6', slug: 'lettering-melange-jort', image: `${WP}/2026/04/front-jort-fd270058fd8b75e21f17603942535477-1024-1024.png` },
+  { label: 'Pink', value: '#f28ac4', slug: 'lettering-pink-jort', image: `${WP}/2026/04/jort-lettering-v4-pink-f7d6a3ce40c84a043217705731602927-1024-1024.png` },
+];
+const CREWNECK_HYPED_COLORWAYS = [
+  { label: 'Grey', value: '#d6d6d6', slug: 'crewneck-hyped-up-grey', image: `${WP}/2026/04/mockup-hyped-up-1-6d8ae45c4e6a3a25c917566770897901-1024-1024.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'crewneck-hyped-up-black', image: `${WP}/2026/09/crewneck-hyped-up-black-destacada-v2.png` },
+];
+/** Colorways hermanos de un slug (para los puntitos de color en la card). */
+export function getColorwaysForSlug(slug: string): { label: string; value: string; slug: string }[] | null {
+  return COLORWAYS[slug] ?? null;
+}
+
 const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   ...Object.fromEntries(REGULAR_TEE_COLORWAYS.map(c => [c.slug, REGULAR_TEE_COLORWAYS])),
   ...Object.fromEntries(REGULAR_PACK_COLORWAYS.map(c => [c.slug, REGULAR_PACK_COLORWAYS])),
@@ -173,6 +246,42 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'only-god-can-judge-me-negra':  ONLY_GOD_COLORWAYS,
   'napoli-tee-azul':   NAPOLI_TEE_COLORWAYS,
   'napoli-tee-blanca': NAPOLI_TEE_COLORWAYS,
+  'hoodie-black-hstars': HSTARS_HOODIE_COLORWAYS,
+  'hoodie-grey-hstars': HSTARS_HOODIE_COLORWAYS,
+  'hoodie-pink': HSTARS_HOODIE_COLORWAYS,
+  'sweatpant-black-hstars': HSTARS_PANT_COLORWAYS,
+  'sweatpant-grey-hstars': HSTARS_PANT_COLORWAYS,
+  'sweatpant-pink': HSTARS_PANT_COLORWAYS,
+  'sweatpant-camo': HSTARS_PANT_COLORWAYS,
+  'zip-hoodie-camo': ZIP_HOODIE_COLORWAYS,
+  'zip-hoodie-pink': ZIP_HOODIE_COLORWAYS,
+  'hs-co-green-hoodie': HS_CO_HOODIE_COLORWAYS,
+  'hs-co-grey-hoodie': HS_CO_HOODIE_COLORWAYS,
+  'he-died-so-i-could-live-melange-hoodie': HE_DIED_HOODIE_COLORWAYS,
+  'he-die-so-i-could-live-hoodie': HE_DIED_HOODIE_COLORWAYS,
+  'hypestation-white-tee': HYPESTATION_COLORWAYS,
+  'hypestation-black-tee': HYPESTATION_COLORWAYS,
+  'honda-white-tee': HONDA_COLORWAYS,
+  'honda-black-tee': HONDA_COLORWAYS,
+  'per-aspera-ad-astra-white-tee': PER_ASPERA_COLORWAYS,
+  'per-aspera-ad-astra-black-tee': PER_ASPERA_COLORWAYS,
+  'sleeveless-ranglan-white': SLEEVELESS_RANGLAN_COLORWAYS,
+  'sleeveless-ranglan-militar-green': SLEEVELESS_RANGLAN_COLORWAYS,
+  'sleeveless-ranglan-grey': SLEEVELESS_RANGLAN_COLORWAYS,
+  'sleeveless-ranglan-black': SLEEVELESS_RANGLAN_COLORWAYS,
+  'waffle-crest-sleeveless-earth-brown': WAFFLE_CREST_COLORWAYS,
+  'waffle-crest-sleeveless-pearl-grey': WAFFLE_CREST_COLORWAYS,
+  'mesh-camo-blue-tee': MESH_TEE_COLORWAYS,
+  'mesh-camo-grey-tee': MESH_TEE_COLORWAYS,
+  'mesh-realtree-tee': MESH_TEE_COLORWAYS,
+  'mesh-realtree-pink-tee': MESH_TEE_COLORWAYS,
+  'jort-cargo-realtree-beige': JORT_CARGO_COLORWAYS,
+  'jort-cargo-realtree-pink': JORT_CARGO_COLORWAYS,
+  'lettering-graphite-jort': LETTERING_JORT_COLORWAYS,
+  'lettering-melange-jort': LETTERING_JORT_COLORWAYS,
+  'lettering-pink-jort': LETTERING_JORT_COLORWAYS,
+  'crewneck-hyped-up-grey': CREWNECK_HYPED_COLORWAYS,
+  'crewneck-hyped-up-black': CREWNECK_HYPED_COLORWAYS,
 };
 
 const FIT_KEYWORDS: [string, string][] = [
