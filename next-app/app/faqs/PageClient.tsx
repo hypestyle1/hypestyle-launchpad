@@ -6,74 +6,9 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useReveal } from "@/hooks/useReveal";
+import { useLocale } from "@/context/LocaleContext";
+import { FAQS } from "@/lib/pages/faqs";
 import { ChevronDown } from "lucide-react";
-
-const faqs = [
-  {
-    category: "Pedidos & Pagos",
-    items: [
-      {
-        q: "¿Cómo hago un pedido?",
-        a: "Elegí tu producto, seleccioná talle y color, y agregalo al carrito. Luego completá los datos de envío y elegí tu método de pago.",
-      },
-      {
-        q: "¿Qué métodos de pago aceptan?",
-        a: "Aceptamos transferencia bancaria (con 10% de descuento), MercadoPago y tarjetas de crédito/débito.",
-      },
-      {
-        q: "¿Cuándo se confirma mi pedido?",
-        a: "Una vez acreditado el pago, te confirmamos el pedido por WhatsApp o email dentro de las 24 hs.",
-      },
-    ],
-  },
-  {
-    category: "Envíos",
-    items: [
-      {
-        q: "¿Cuánto tarda el envío dentro de Argentina?",
-        a: "Entre 3 y 7 días hábiles dependiendo de la provincia. CABA y GBA suelen ser más rápidos.",
-      },
-      {
-        q: "¿Hacen envíos internacionales?",
-        a: "Sí, enviamos a todo el mundo. Consultá los tiempos y costos en nuestra página de Envíos Internacionales.",
-      },
-      {
-        q: "¿Puedo rastrear mi pedido?",
-        a: "Sí. Una vez despachado te mandamos el número de seguimiento por WhatsApp.",
-      },
-    ],
-  },
-  {
-    category: "Productos & Talles",
-    items: [
-      {
-        q: "¿Cómo sé qué talle elegir?",
-        a: "Cada producto tiene una guía de talles en la página de producto. Si tenés dudas, escribinos por WhatsApp.",
-      },
-      {
-        q: "¿Los productos son limitados?",
-        a: "Sí. Lanzamos drops con stock limitado. Una vez agotado un talle, no se repone hasta el próximo drop.",
-      },
-      {
-        q: "¿Cómo cuido mis prendas?",
-        a: "Lavado a mano o máquina en frío, del revés. No usar secadora. Ver las instrucciones de cuidado específicas en cada producto.",
-      },
-    ],
-  },
-  {
-    category: "Devoluciones & Cambios",
-    items: [
-      {
-        q: "¿Puedo cambiar mi pedido?",
-        a: "Aceptamos cambios por talle dentro de los 30 días corridos desde la compra, siempre que la prenda esté sin uso y con etiquetas y haya stock del talle nuevo. Escribinos por WhatsApp o Instagram con tu número de pedido. Consultá nuestra política de cambios.",
-      },
-      {
-        q: "¿Qué hago si recibí un producto defectuoso?",
-        a: "Escribinos de inmediato a nuestro WhatsApp o Instagram con fotos del problema. Lo resolvemos.",
-      },
-    ],
-  },
-];
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -95,6 +30,9 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export default function FAQs() {
   const ref = useReveal();
+  const { language } = useLocale();
+  // Las preguntas viven en lib/pages/faqs.ts, un objeto por idioma.
+  const c = FAQS[language];
 
   return (
     <>
@@ -104,17 +42,18 @@ export default function FAQs() {
 
         {/* Hero */}
         <section className="bg-bg-dark text-primary-foreground text-center py-28 px-6">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-4">Ayuda</p>
-          <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none">FAQs</h1>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-4">{c.heroLabel}</p>
+          <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none">{c.heroTitle}</h1>
         </section>
 
         {/* Preguntas */}
         <section className="max-w-[720px] mx-auto px-4 py-16 md:py-20" ref={ref}>
-          {faqs.map((cat, i) => (
-            <div key={cat.category} className={`reveal rd${i + 1} mb-12`}>
+          {c.categories.map((cat, i) => (
+            <div key={i} className={`reveal rd${i + 1} mb-12`}>
               <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-4">{cat.category}</p>
-              {cat.items.map((item) => (
-                <FaqItem key={item.q} {...item} />
+              {cat.items.map((item, j) => (
+                // La clave lleva el idioma para que el acordeón se cierre al cambiarlo.
+                <FaqItem key={`${language}-${i}-${j}`} {...item} />
               ))}
             </div>
           ))}
@@ -122,9 +61,9 @@ export default function FAQs() {
 
         {/* CTA */}
         <section className="text-center pb-16 px-6">
-          <p className="text-[14px] text-muted-foreground mb-6">¿No encontrás lo que buscás?</p>
+          <p className="text-[14px] text-muted-foreground mb-6">{c.ctaQuestion}</p>
           <Button asChild variant="hype" size="ctaLg">
-            <a href="/contacto/">Contactanos</a>
+            <a href="/contacto/">{c.ctaButton}</a>
           </Button>
         </section>
 

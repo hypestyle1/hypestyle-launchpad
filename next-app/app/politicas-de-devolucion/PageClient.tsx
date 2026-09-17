@@ -5,123 +5,10 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import { buttonVariants } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { Blocks } from "@/components/RichText";
 import { useReveal } from "@/hooks/useReveal";
-
-const sections = [
-  {
-    title: "¿Cómo solicitar un cambio?",
-    content: (
-      <div className="space-y-4 text-[15px] leading-relaxed">
-        <ol className="list-decimal list-inside space-y-2">
-          <li>Escribinos por WhatsApp o Instagram con tu número de pedido y el producto que querés cambiar.</li>
-          <li>Te confirmamos si hay stock del talle nuevo y lo reservamos.</li>
-          <li>Generamos la etiqueta de Andreani y te despachamos el talle nuevo. El cambio se hace en el momento: cuando lo recibís, entregás ahí mismo el paquete con la prenda a cambiar. El envío corre por tu cuenta y te pasamos el monto exacto antes de confirmar.</li>
-          <li>Si estás en CABA o alrededores, también podemos coordinar el cambio con una moto.</li>
-        </ol>
-        <p>No tenemos local ni showroom: la venta y los cambios son únicamente online.</p>
-      </div>
-    ),
-  },
-  {
-    title: "Producto con falla o error nuestro",
-    content: (
-      <div className="space-y-3 text-[15px] leading-relaxed">
-        <p>Si el producto presenta una falla de fabricación, o te enviamos un talle o producto distinto al que pediste, el cambio se realiza sin costo para vos.</p>
-        <p>Para gestionar el cambio, contactanos por WhatsApp o Instagram con fotos o videos que muestren claramente el defecto o el error. Nosotros nos encargamos del retiro y del envío del producto de reemplazo.</p>
-      </div>
-    ),
-  },
-  {
-    title: "Cambios por talle",
-    content: (
-      <div className="space-y-3 text-[15px] leading-relaxed">
-        <p>Los cambios por talle aplican únicamente para el mismo producto y están sujetos a disponibilidad de stock.</p>
-        <p>El artículo debe ser devuelto en perfectas condiciones: sin uso, sin manchas, sin olores, con todas sus etiquetas y en su empaque original.</p>
-        <p className="font-medium">Cuando el cambio es por una elección de talle del comprador, los costos de envío del cambio (Andreani o moto) corren por su cuenta. Si el error fue nuestro o la prenda tiene falla, el cambio es sin costo.</p>
-      </div>
-    ),
-  },
-  {
-    title: "Productos en Sale / Outlet / Promociones",
-    content: (
-      <div className="space-y-3 text-[15px] leading-relaxed">
-        <p>Los productos adquiridos en SALE, OUTLET o con descuentos especiales <strong>no tienen cambio ni devolución</strong>, salvo por falla de fabricación comprobable.</p>
-      </div>
-    ),
-  },
-  {
-    title: "Drops limitados y ediciones especiales",
-    content: (
-      <div className="space-y-3 text-[15px] leading-relaxed">
-        <p>Los drops limitados y ediciones especiales no tienen garantía de reposición.</p>
-        <p>No aplica cambio ni devolución, excepto en caso de defectos de fabricación.</p>
-      </div>
-    ),
-  },
-  {
-    title: "Variaciones de medidas",
-    content: (
-      <p className="text-[15px] leading-relaxed">
-        Las prendas pueden presentar variaciones de 1 a 2 cm respecto a la tabla de talles, propias del proceso de confección. Estas variaciones no son consideradas falla de fabricación.
-      </p>
-    ),
-  },
-  {
-    title: "Condiciones del producto",
-    content: (
-      <div className="space-y-2 text-[15px] leading-relaxed">
-        <p>Para que un cambio sea aceptado, el producto debe cumplir todas estas condiciones:</p>
-        <ul className="list-disc list-inside space-y-1 mt-2">
-          <li>Sin uso ni desgaste visible</li>
-          <li>Sin manchas ni olores</li>
-          <li>Con todas sus etiquetas originales</li>
-          <li>En su empaque original</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    title: "Plazos",
-    content: (
-      <p className="text-[15px] leading-relaxed">
-        Tenés hasta <strong>30 días corridos</strong> desde la fecha de compra para solicitar un cambio. Pasado ese plazo no se aceptarán solicitudes.
-      </p>
-    ),
-  },
-  {
-    title: "Entregas no concretadas / Reenvíos",
-    content: (
-      <p className="text-[15px] leading-relaxed">
-        Si el envío no pudo concretarse por dirección incorrecta o ausencia del destinatario, el costo del segundo intento de envío corre por cuenta del cliente.
-      </p>
-    ),
-  },
-  {
-    title: "Costos no reembolsables",
-    content: (
-      <p className="text-[15px] leading-relaxed">
-        Los gastos de envío originales no se devuelven bajo ningún concepto, independientemente del motivo del cambio.
-      </p>
-    ),
-  },
-  {
-    title: "Canales oficiales de atención",
-    content: (
-      <div className="space-y-3 text-[15px] leading-relaxed">
-        <p>Toda consulta o gestión debe realizarse exclusivamente a través de nuestros canales oficiales. Las cuentas personales de los integrantes del equipo no son canales válidos de atención.</p>
-        <p>Canales oficiales: <a href="https://wa.me/5491178292430" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground/70 transition-colors">WhatsApp</a> e Instagram <a href="https://instagram.com/hypestylearg" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground/70 transition-colors">@hypestylearg</a>.</p>
-      </div>
-    ),
-  },
-  {
-    title: "Sobre devoluciones de dinero",
-    content: (
-      <p className="text-[15px] leading-relaxed">
-        Actualmente no realizamos devoluciones de dinero. Todos los casos se resuelven mediante cambio de producto.
-      </p>
-    ),
-  },
-];
+import { useLocale } from "@/context/LocaleContext";
+import { POLITICAS } from "@/lib/pages/politicas";
 
 function AccordionItem({ title, content, isOpen, onToggle }: {
   title: string;
@@ -161,6 +48,9 @@ export default function Politicas() {
   const heroRef = useReveal();
   const contentRef = useReveal();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const { language } = useLocale();
+  // El texto de la página vive en lib/pages/politicas.ts, un objeto por idioma.
+  const c = POLITICAS[language];
 
   const toggle = (i: number) => setOpenIndex(openIndex === i ? null : i);
 
@@ -181,10 +71,10 @@ export default function Politicas() {
               HYPESTYLE®
             </p>
             <h1 className="reveal rd2 text-[24px] md:text-[36px] font-semibold leading-[1.2] text-primary-foreground uppercase tracking-tight">
-              Políticas de cambios,<br />devoluciones y envíos
+              {c.heroTitle}
             </h1>
             <p className="reveal rd3 text-[14px] text-primary-foreground/55 mt-6 leading-[1.8] max-w-[560px] mx-auto">
-              En HYPESTYLE® trabajamos para que cada pedido llegue correctamente desde el primer envío. A continuación detallamos nuestras políticas de cambios, devoluciones y envíos. Te pedimos que las leas atentamente antes de realizar tu compra.
+              {c.heroText}
             </p>
           </div>
         </section>
@@ -192,11 +82,11 @@ export default function Politicas() {
         {/* Accordion */}
         <section ref={contentRef} className="max-w-[760px] mx-auto px-4 py-16 md:py-24">
           <div className="reveal rd1 border-t border-border">
-            {sections.map((s, i) => (
+            {c.sections.map((s, i) => (
               <AccordionItem
-                key={s.title}
+                key={i}
                 title={s.title}
-                content={s.content}
+                content={<Blocks blocks={s.blocks} />}
                 isOpen={openIndex === i}
                 onToggle={() => toggle(i)}
               />
@@ -206,17 +96,17 @@ export default function Politicas() {
           {/* Aceptación de políticas */}
           <div className="reveal rd2 mt-16 border border-border p-6 md:p-8">
             <p className="text-[11px] uppercase tracking-[0.15em] text-muted-foreground mb-3">
-              Aceptación de políticas
+              {c.acceptanceLabel}
             </p>
             <p className="text-[14px] leading-[1.8] text-foreground/70">
-              Al realizar una compra en HYPESTYLE®, el cliente declara haber leído y aceptado todas las políticas de cambios, devoluciones y envíos aquí detalladas.
+              {c.acceptanceText}
             </p>
           </div>
 
           {/* CTA contacto */}
           <div className="reveal rd3 mt-8 text-center">
             <p className="text-[13px] text-muted-foreground mb-4">
-              ¿Tenés una consulta puntual?
+              {c.ctaQuestion}
             </p>
             <a
               href="https://instagram.com/hypestylearg"
@@ -224,7 +114,7 @@ export default function Politicas() {
               rel="noopener noreferrer"
               className={buttonVariants({ variant: 'hypeOutline', size: 'cta' })}
             >
-              Contactarnos por Instagram
+              {c.ctaButton}
             </a>
           </div>
         </section>
