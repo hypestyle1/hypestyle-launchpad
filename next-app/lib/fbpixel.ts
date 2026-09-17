@@ -23,6 +23,7 @@
  */
 
 import { getFbCookies } from '@/lib/fbtracking';
+import { isTrackableHost } from '@/lib/tracking-host';
 
 export interface FbItem {
   /** Hoy es el slug. Ver nota sobre content_ids arriba. */
@@ -85,6 +86,9 @@ const CONSENT_KEY = 'hy_cookie_consent';
  */
 function trackingAllowed(): boolean {
   if (typeof window === 'undefined') return false;
+  // Fuera del dominio real no sale nada, tampoco por CAPI: el relay server-side
+  // no depende de que fbq haya cargado, así que necesita su propio corte.
+  if (!isTrackableHost()) return false;
   try {
     return localStorage.getItem(CONSENT_KEY) !== 'necessary';
   } catch {
@@ -220,6 +224,7 @@ export function fbCompleteRegistration(user?: FbUserData): void {
   // CompleteRegistration en el pixel contra 5 solicitudes reales en Woo, y
   // ninguna atribuida a la campaña. Con el camino server-side y los datos del
   // comercio (mail, teléfono, ciudad) Meta puede matchear el evento al click.
+  if (!trackingAllowed()) return;
   const eventId = newEventId();
   fbTrack('CompleteRegistration', customData, eventId);
   sendCapi('CompleteRegistration', eventId, customData, user);

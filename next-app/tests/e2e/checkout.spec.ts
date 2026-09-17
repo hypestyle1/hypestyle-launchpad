@@ -4,6 +4,7 @@ import {
   seedCart,
   acceptCookies,
   blockHeavyMedia,
+  blockTrackers,
   ANDREANI_RATES,
 } from './mocks';
 
@@ -41,12 +42,13 @@ async function completarInformacion(page: Page) {
 async function irAlCheckout(page: Page) {
   await acceptCookies(page);
   await blockHeavyMedia(page);
+  const { trackerHits } = await blockTrackers(page);
   await seedCart(page);
   const mocks = await mockCheckoutServices(page);
   // `networkidle` cuelga acá: el checkout hace polling. Se espera un elemento concreto.
   await page.goto('/checkout', { waitUntil: 'domcontentloaded' });
   await expect(page.getByPlaceholder('Email')).toBeVisible({ timeout: 20_000 });
-  return mocks;
+  return { ...mocks, trackerHits };
 }
 
 test('el checkout recorre los tres pasos hasta pago', async ({ page }) => {
@@ -143,4 +145,18 @@ test('ningún test dispara un cobro real', async ({ page }) => {
   // Llegar al paso de pago no debe, por sí solo, crear ningún pedido.
   expect(paymentAttempts).toEqual([]);
   expect(page.url()).toContain('/checkout');
+});
+
+test('ningún test le manda eventos a la medición de producción', async ({ page }) => {
+  const { trackerHits } = await irAlCheckout(page);
+
+  // El pixel carga diferido con un tope de 2 s (lib/defer-third-party.ts) y el
+  // InitiateCheckout reintenta hasta encontrar fbq: se espera más que eso.
+  await page.waitForTimeout(4_000);
+
+  // Fuera de hypestyle.com.ar no se carga ningún tracker ni se llama al relay de
+  // CAPI, aunque las cookies estén aceptadas. Ver lib/tracking-host.ts.
+  expect(await page.evaluate(() => typeof window.fbq)).toBe('undefined');
+  expect(await page.evaluate(() => typeof window.gtag)).toBe('undefined');
+  expect(trackerHits).toEqual([]);
 });

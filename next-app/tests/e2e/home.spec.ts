@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { acceptCookies, blockHeavyMedia } from './mocks';
+import { acceptCookies, blockHeavyMedia, blockTrackers } from './mocks';
 
 /**
  * Smoke del home y del catálogo. Lo que cubre es el modo de falla más caro que
@@ -10,6 +10,7 @@ import { acceptCookies, blockHeavyMedia } from './mocks';
 test.beforeEach(async ({ page }) => {
   await acceptCookies(page);
   await blockHeavyMedia(page);
+  await blockTrackers(page);
 });
 
 test('el home carga con su contenido principal', async ({ page }) => {
