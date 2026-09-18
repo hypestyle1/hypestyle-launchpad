@@ -1,7 +1,7 @@
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import NewsletterPopup from '@/components/NewsletterPopup';
-import HeroHannaDrop from '@/components/HeroHannaDrop';
+import HeroLookbookFW26 from '@/components/HeroLookbookFW26';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
 import SaleBanner from '@/components/SaleBanner';
@@ -9,7 +9,6 @@ import BasicosSection from '@/components/BasicosSection';
 import MasHypeSection from '@/components/MasHypeSection';
 import NewInFW26 from '@/components/NewInFW26';
 import EditorialBanner from '@/components/EditorialBanner';
-import LookbookFW26 from '@/components/LookbookFW26';
 import FlashSaleSection from '@/components/FlashSaleSection';
 import Promo3x2Section from '@/components/Promo3x2Section';
 import VideoSection from '@/components/VideoSection';
@@ -21,8 +20,8 @@ import { fetchAllProducts } from '@/lib/products-server';
 import { fetchHomeReviews } from '@/lib/reviews/server';
 import { buildMetadata } from '@/lib/seo';
 
-// Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra) siguen en el
-// repo, sin usar, por si hay que volver. Hoy el hero principal es HeroHannaDrop.
+// Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra, HeroHannaDrop)
+// siguen en el repo, sin usar, por si hay que volver. Hoy el hero es HeroLookbookFW26.
 
 // rawTitle: el título de la home se define entero acá, sin el sufijo de marca
 // que lleva el resto del sitio (quedaría "…| HYPESTYLE" duplicando "Hype").
@@ -68,7 +67,7 @@ export default async function Home() {
         <h1 className="sr-only">
           HYPESTYLE — Streetwear argentino. Drops limitados, envíos a todo el mundo.
         </h1>
-        <HeroHannaDrop />
+        <HeroLookbookFW26 />
         {/* Orden estilo EME: producto primero (new in, looks, film, best sellers,
             básicos), editorial después y la prueba social (reseñas) al final. Los
             beneficios (envío, cuotas, cambios) ya están en la barra de avisos, así
@@ -87,8 +86,6 @@ export default async function Home() {
           <BackInStock />
           <BasicosSection />
           <EditorialBanner />
-          {/* Lookbook FW26: la produ de Rio con el producto y el acceso directo debajo de cada foto. */}
-          <LookbookFW26 />
           <MasHypeSection />
           <ReviewsHomeSection initial={reviews} />
           {/* Último bloque antes del footer, a propósito: Clarity muestra que casi
