@@ -9,6 +9,7 @@ import BasicosSection from '@/components/BasicosSection';
 import MasHypeSection from '@/components/MasHypeSection';
 import NewInFW26 from '@/components/NewInFW26';
 import EditorialBanner from '@/components/EditorialBanner';
+import LookbookFW26 from '@/components/LookbookFW26';
 import FlashSaleSection from '@/components/FlashSaleSection';
 import Promo3x2Section from '@/components/Promo3x2Section';
 import VideoSection from '@/components/VideoSection';
@@ -86,6 +87,8 @@ export default async function Home() {
           <BackInStock />
           <BasicosSection />
           <EditorialBanner />
+          {/* Lookbook FW26: la produ de Rio con el producto y el acceso directo debajo de cada foto. */}
+          <LookbookFW26 />
           <MasHypeSection />
           <ReviewsHomeSection initial={reviews} />
           {/* Último bloque antes del footer, a propósito: Clarity muestra que casi
