@@ -118,6 +118,38 @@ export async function acceptCookies(page: Page) {
   await page.addInitScript(() => window.localStorage.setItem('hy_cookie_consent', 'all'));
 }
 
+/** Todo lo que mide: pixel de Meta, GA4, Clarity y nuestro relay de CAPI. */
+const TRACKER_ROUTES = [
+  '**/connect.facebook.net/**',
+  '**/www.facebook.com/tr**',
+  '**/www.googletagmanager.com/**',
+  '**/www.google-analytics.com/**',
+  '**/www.clarity.ms/**',
+  '**/api/capi',
+];
+
+/**
+ * Ningún test le habla a la medición de producción.
+ *
+ * Hasta el 17/09/2026 cada test de checkout mandaba un PageView y un
+ * InitiateCheckout reales al pixel con el que optimizan las campañas (el ID de
+ * producción es el default y `acceptCookies` habilita el tracking): los días con
+ * corridas de la suite el InitiateCheckout del pixel se iba a 60-150 contra 12-34
+ * de un día normal. El sitio ya no carga trackers fuera de su dominio
+ * (lib/tracking-host.ts); esto es la segunda barrera, y `trackerHits` permite
+ * afirmar que la primera funciona.
+ */
+export async function blockTrackers(page: Page) {
+  const trackerHits: string[] = [];
+  for (const pattern of TRACKER_ROUTES) {
+    await page.route(pattern, (route) => {
+      trackerHits.push(route.request().url());
+      return route.abort();
+    });
+  }
+  return { trackerHits };
+}
+
 /**
  * Corta la descarga de videos e imágenes.
  *

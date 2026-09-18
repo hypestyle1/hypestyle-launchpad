@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useCookieConsent } from '@/context/CookieContext';
 import { onIdle } from '@/lib/defer-third-party';
+import { isTrackableHost } from '@/lib/tracking-host';
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '412944573148639';
 
@@ -33,11 +34,14 @@ export default function MetaPixel() {
   // el usuario no decide). Solo NO cargamos el pixel si eligió explícitamente
   // "Solo necesarias". Antes era opt-in puro (consent === 'all'), lo que dejaba
   // sin PageView/AddToCart a casi todo el tráfico (default + quienes rechazan).
-  const trackingAllowed = consent !== 'necessary';
+  // Y solo desde el dominio real: local, e2e y previews no le hablan al pixel de
+  // producción. Ver lib/tracking-host.ts.
+  const trackingAllowed = consent !== 'necessary' && isTrackableHost();
 
   useEffect(() => {
     if (!trackingAllowed) {
       // Si ya se había cargado y luego el usuario opta por salir, revocamos.
+      // (Fuera del dominio real nunca se cargó, así que fbq no existe.)
       if (window.fbq) window.fbq('consent', 'revoke');
       return;
     }

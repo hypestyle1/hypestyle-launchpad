@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useCookieConsent } from '@/context/CookieContext';
+import { isTrackableHost } from '@/lib/tracking-host';
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID || 'xvnqh1tj9v';
 
@@ -21,8 +22,9 @@ function loadClarity() {
 export default function MicrosoftClarity() {
   const { consent } = useCookieConsent();
   // Mismo modelo opt-out que MetaPixel: trackeamos salvo que el usuario haya
-  // elegido explícitamente "Solo necesarias".
-  const trackingAllowed = consent !== 'necessary';
+  // elegido explícitamente "Solo necesarias". Y solo desde el dominio real
+  // (lib/tracking-host.ts): las corridas locales y los e2e grababan sesiones.
+  const trackingAllowed = consent !== 'necessary' && isTrackableHost();
 
   useEffect(() => {
     if (!trackingAllowed) {

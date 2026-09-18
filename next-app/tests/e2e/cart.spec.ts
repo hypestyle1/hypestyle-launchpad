@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   acceptCookies,
   blockHeavyMedia,
+  blockTrackers,
   mockCheckoutServices,
   seedCart,
   TEST_ITEM,
@@ -15,6 +16,7 @@ import {
 test.beforeEach(async ({ page }) => {
   await acceptCookies(page);
   await blockHeavyMedia(page);
+  await blockTrackers(page);
   // El carrito se mira dentro de /checkout, que llama a WP y a Andreani apenas
   // monta. Sin mockearlos esas requests quedan colgadas y el test se vuelve lento
   // e inestable.

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
+import { isProductionUrl } from '@/lib/tracking-host';
 
 /**
  * Conversions API — eventos de mitad de embudo (InitiateCheckout, AddPaymentInfo).
@@ -104,6 +105,13 @@ export async function POST(req: NextRequest) {
   const eventName = String(body.event_name || '');
   if (!ALLOWED_EVENTS.has(eventName)) {
     return NextResponse.json({ ok: false, error: 'evento no permitido' }, { status: 400 });
+  }
+  // Solo eventos del sitio real. El navegador ya corta antes (lib/fbpixel.ts), pero
+  // la ruta es pública y un `next start` local con el token en .env.local mandaba
+  // los InitiateCheckout de los e2e al pixel de producción (audit del 17/09/2026).
+  // 204 y no 4xx: no es un error del cliente, simplemente no hay nada que medir.
+  if (!isProductionUrl(body.event_source_url)) {
+    return new NextResponse(null, { status: 204 });
   }
   if (!body.event_id) {
     // Sin event_id no se puede deduplicar contra el pixel del browser: el evento

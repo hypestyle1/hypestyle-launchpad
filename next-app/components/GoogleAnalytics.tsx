@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useCookieConsent } from '@/context/CookieContext';
 import { onIdle } from '@/lib/defer-third-party';
+import { isTrackableHost } from '@/lib/tracking-host';
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
@@ -33,8 +34,9 @@ function loadGA(initialPath: string) {
 export default function GoogleAnalytics() {
   const { consent } = useCookieConsent();
   const pathname = usePathname();
-  // Mismo modelo opt-out que MetaPixel/Clarity.
-  const trackingAllowed = consent !== 'necessary';
+  // Mismo modelo opt-out que MetaPixel/Clarity, y solo desde el dominio real
+  // (lib/tracking-host.ts).
+  const trackingAllowed = consent !== 'necessary' && isTrackableHost();
 
   // El diferido puede disparar después de una navegación, así que la ruta se
   // lee al ejecutar y no al programar.
