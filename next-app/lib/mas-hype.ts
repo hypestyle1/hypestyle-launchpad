@@ -54,10 +54,15 @@ export const MAS_HYPE_SLUGS = MAS_HYPE_GROUPS.flatMap(g => g.slugs);
 // que es el bloque más visto del home. Entra CROP TOPs en su lugar — con stock
 // y la única musculosa de la vidriera, así no quedan 5 remeras seguidas.
 // LA NUESTRA sigue listada en MAS_HYPE_GROUPS, o sea en la página /mas-hype.
+// La Trucker Cap 1/1 x Randal salió de acá el 18/09: está agotada y pasó a
+// Accesorios de NEW IN, donde lo agotado se muestra con badge. Entra BABY COME
+// BACK TEES, la pieza de Más Hype con más stock (22 por talle).
+// CROP TOPs ya no existe en el catálogo (18/09): con 7 productos filasCompletas
+// recortaba la vidriera a 4. Entra TANKTOPS, que sigue siendo la única musculosa.
 export const MAS_HYPE_HOME_SLUGS = [
-  'crop-tops',
+  'tanktops',
   'regular-tee-11-x-art-by-randal',
-  'trucker-cap-11-x-art-by-randal',
+  'baby-come-back-tees',
   'hs-ring-silver-925',
   'race-tee-gris',
   'per-aspera-ad-astra-white-tee',

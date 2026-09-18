@@ -23,7 +23,8 @@ export const BEST_SELLERS_SLUGS = [
   'no-service-for-the-faithless-green',
   'baby-come-back-black',
   'no-love-only-style-tops',
-  'trucker-cap-baby-come-back',
+  // trucker-cap-baby-come-back salió de acá el 18/09: pasó a Accesorios de NEW IN
+  // (fw26.ts). Al cargarle stock se repetía en dos secciones del mismo scroll.
   'lettering-pink-jort',
   'lettering-graphite-hoodie',
   'lettering-graphite-jort',
