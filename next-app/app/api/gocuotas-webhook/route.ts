@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fulfillOrder } from '@/lib/order-fulfill';
 import { verifyGocuotasWebhookToken } from '@/lib/gocuotas-webhook-token';
+import { gocuotasWebhookNote } from '@/lib/gocuotas-webhook-note';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY    || '';
@@ -47,11 +48,26 @@ export async function POST(req: NextRequest) {
       console.error('[gocuotas-webhook] pedido inexistente:', orderId, orderRes.status);
       return NextResponse.json({ ok: false, error: 'order not found' }, { status: 404 });
     }
-    const order = await orderRes.json() as { payment_method?: string; status?: string };
+    const order = await orderRes.json() as { payment_method?: string; status?: string; date_created_gmt?: string };
     const method = String(order.payment_method || '').toLowerCase();
     if (!method.includes('gocuotas')) {
       console.error('[gocuotas-webhook] el pedido', orderId, 'no es de GOcuotas (', method, ')');
       return NextResponse.json({ ok: false, error: 'payment method mismatch' }, { status: 409 });
+    }
+
+    // Lo que mandó GOcuotas queda anotado en el pedido (estado, id de la operación,
+    // cuotas, minutos desde la creación). Sin esto un `failed` no se puede leer:
+    // no se sabe si fue un rechazo o un checkout que venció sin que nadie pagara.
+    // Si la nota falla no se corta nada: el cambio de estado es lo que importa.
+    try {
+      const noteRes = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${orderId}/notes`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+        body:    JSON.stringify({ note: gocuotasWebhookNote(body, order.date_created_gmt) }),
+      });
+      if (!noteRes.ok) console.error('[gocuotas-webhook] nota no guardada:', noteRes.status);
+    } catch (e) {
+      console.error('[gocuotas-webhook] nota no guardada:', e);
     }
 
     // Igual que el plugin oficial de WooCommerce de GOcuotas: 'approved' pasa la
