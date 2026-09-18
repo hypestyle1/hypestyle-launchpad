@@ -3,6 +3,7 @@ import { FW26_GROUPS, FW26_SLUGS } from '@/lib/fw26';
 import { filasCompletas } from '@/lib/home-grid';
 import { BASICOS_HOME_ORDER } from '@/lib/regular-tees';
 import { MAS_HYPE_HOME_SLUGS } from '@/lib/mas-hype';
+import { BEST_SELLERS_SLUGS } from '@/lib/best-sellers';
 
 // D3: el home se ordena por contribución. Estos tests fijan las decisiones que
 // tomamos con datos, para que un reordenamiento futuro no las pise sin querer.
@@ -37,6 +38,22 @@ describe('FW26_GROUPS — orden por contribución', () => {
   it('Half-Zip Navy se mantiene: su tasa de pago baja es de PayPal, no del producto', () => {
     const abrigo = FW26_GROUPS.find(g => g.label === 'Abrigo y Polos');
     expect(abrigo?.slugs).toContain('half-zip-polo-navy');
+  });
+
+  it('Accesorios abre con la Trucker Cap NO FAITH y conserva lo agotado (sale con badge "Sin stock")', () => {
+    const accesorios = FW26_GROUPS.find(g => g.label === 'Accesorios');
+    expect(accesorios?.slugs[0]).toBe('trucker-cap-no-faith-no-glory');
+    expect(accesorios?.slugs).toEqual(expect.arrayContaining([
+      'trucker-cap-baby-come-back', 'beanie-camo', 'pack-x3-medias-hype',
+    ]));
+  });
+
+  it('los accesorios de NEW IN no se repiten en Best Sellers ni en la vidriera de Más Hype', () => {
+    const accesorios = FW26_GROUPS.find(g => g.label === 'Accesorios')?.slugs ?? [];
+    for (const s of accesorios) {
+      expect(BEST_SELLERS_SLUGS, s).not.toContain(s);
+      expect(MAS_HYPE_HOME_SLUGS, s).not.toContain(s);
+    }
   });
 
   it('no quedan slugs duplicados entre secciones', () => {
