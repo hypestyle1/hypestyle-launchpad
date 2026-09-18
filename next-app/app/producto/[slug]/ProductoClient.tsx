@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useLocale } from '@/context/LocaleContext';
 import { useProduct } from '@/hooks/useProduct';
 import { useProducts } from '@/hooks/useProducts';
+import { useProductTranslation } from '@/hooks/useProductTranslation';
 import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
 import { isFlashSaleActive } from '@/lib/flash-sale';
@@ -76,10 +77,11 @@ const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-c
 const NAPOLI_SLUGS = ['napoli-tee-blanca', 'napoli-tee-azul'];
 
 function ThankYouMessage() {
+  const { t } = useLocale();
   return (
     <div className="mt-3 mb-1 rounded-[10px] border border-[#9cc7e8] border-t-[3px] border-t-[#c9a227] bg-[#eaf5fd] px-4 py-3">
       <p className="text-[13px] text-[#1c4f7a]">
-        Gracias por bancar a la Selección hasta el final. La Nuestra queda con <span className="font-bold text-[#96731a]">50% OFF</span>.
+        {t('Gracias por bancar a la Selección hasta el final. La Nuestra queda con')} <span className="font-bold text-[#96731a]">50% OFF</span>.
       </p>
     </div>
   );
@@ -96,17 +98,18 @@ function GoalDiscountCorner({ d }: { d: GoalDiscount | null }) {
 }
 
 function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string }) {
+  const { t } = useLocale();
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div className="bg-white w-full max-w-[520px] shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-          <h2 className="text-[14px] font-bold uppercase tracking-wider">Guía de talles</h2>
+          <h2 className="text-[14px] font-bold uppercase tracking-wider">{t('Guía de talles')}</h2>
           <button onClick={onClose} className="text-foreground/30 hover:text-foreground transition-colors">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 1l12 12M13 1L1 13" /></svg>
           </button>
         </div>
         <div className="relative w-full">
-          <Image src={image} alt="Guía de talles" width={520} height={600} className="w-full h-auto" />
+          <Image src={image} alt={t('Guía de talles')} width={520} height={600} className="w-full h-auto" />
         </div>
       </div>
     </div>
@@ -157,10 +160,13 @@ function ModelInfo({ html }: { html: string }) {
 
 export default function ProductoClient({ slug, initialProduct, initialGoalDiscount = null }: { slug: string; initialProduct?: Product; initialGoalDiscount?: GoalDiscount | null }) {
   const router = useRouter();
-  const { formatPrice, currency } = useLocale();
+  const { formatPrice, currency, language, t } = useLocale();
   // initialProduct viene del servidor (page.tsx): el primer render ya sale con
   // el producto puesto, así el <h1> y el precio están en el HTML servido.
   const { data: product, isLoading } = useProduct(slug, initialProduct);
+  // Descripción y ficha del modelo en el idioma elegido: IA, cacheada en el
+  // servidor. Mientras carga o si falla se ve el español de Woo.
+  const traduccion = useProductTranslation(product?.slug, language);
   const { data: allProducts = [] } = useProducts(20);
   const related = useMemo(() => {
     if (!product) return [];
@@ -281,8 +287,8 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   if (!product) return (
     <><AnnouncementBar /><Navbar />
     <main className="pt-[var(--offset)] flex flex-col items-center justify-center min-h-[60vh]">
-      <p className="text-[14px] text-muted-foreground mb-4">Producto no encontrado.</p>
-      <button onClick={() => router.push('/')} className="text-[12px] underline hover:text-foreground transition-colors">Volver al inicio</button>
+      <p className="text-[14px] text-muted-foreground mb-4">{t('Producto no encontrado.')}</p>
+      <button onClick={() => router.push('/')} className="text-[12px] underline hover:text-foreground transition-colors">{t('Volver al inicio')}</button>
     </main><Footer /></>
   );
 
@@ -396,7 +402,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       <main className={`pt-[var(--offset)] ${isLaNuestra ? 'bg-gradient-to-b from-[#eaf5fd] via-white to-white' : isNapoli ? 'bg-gradient-to-b from-[#eaf6fd] via-white to-white' : ''}`}>
         <div className="max-w-[1400px] mx-auto px-4 py-3">
           <p className="text-[11px] text-muted-foreground">
-            <a href="/" className="hover:text-foreground transition-colors">Inicio</a>
+            <a href="/" className="hover:text-foreground transition-colors">{t('Inicio')}</a>
             {' / '}
             <a href="/productos/" className="hover:text-foreground transition-colors">Shop</a>
             {' / '}
@@ -414,7 +420,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   // La miniatura solo contiene la imagen (alt=""), así que sin
                   // aria-label un lector de pantalla anuncia "botón" y nada más.
                   <button key={img} onClick={() => setSelectedImage(i)}
-                    aria-label={`${isVideo(img) ? 'Ver video' : `Ver imagen ${i + 1}`} de ${product.name}`}
+                    aria-label={`${isVideo(img) ? t('Ver video') : `${t('Ver imagen')} ${i + 1}`} — ${product.name}`}
                     aria-current={i === selectedImage}
                     className={`relative w-full aspect-square overflow-hidden border-[1.5px] transition-colors ${i === selectedImage ? 'border-foreground' : 'border-transparent'}`}>
                     {isVideo(img)
@@ -436,13 +442,13 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                         style={{ transform: zoomPos ? 'scale(2)' : 'scale(1)', transformOrigin: zoomPos ? `${zoomPos.x}% ${zoomPos.y}%` : 'center', transition: zoomPos ? 'transform 0.1s ease' : 'transform 0.3s ease', animation: 'fadeIn 0.25s ease' }} />}
                   {selectedImage > 0 && (
                     <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p - 1); }}
-                      className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm" aria-label="Anterior">
+                      className="md:hidden absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm" aria-label={t('Anterior')}>
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M10 3L5 8l5 5" /></svg>
                     </button>
                   )}
                   {selectedImage < galleryImages.length - 1 && (
                     <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p + 1); }}
-                      className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm" aria-label="Siguiente">
+                      className="md:hidden absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm" aria-label={t('Siguiente')}>
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M6 3l5 5-5 5" /></svg>
                     </button>
                   )}
@@ -451,11 +457,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   </span>
                   {!zoomPos && (
                     <span className="hidden md:block absolute bottom-3 left-3 text-[10px] text-white bg-black/35 backdrop-blur-sm px-2 py-0.5 pointer-events-none">
-                      Passá el cursor para hacer zoom
+                      {t('Passá el cursor para hacer zoom')}
                     </span>
                   )}
                   <span className="md:hidden absolute bottom-3 left-3 text-[10px] text-white bg-black/35 backdrop-blur-sm px-2 py-0.5 pointer-events-none">
-                    Tocá para ampliar
+                    {t('Tocá para ampliar')}
                   </span>
                   <GoalDiscountCorner d={flashActive ? null : goalDiscount} />
                 </div>
@@ -463,7 +469,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   {galleryImages.map((_, i) => (
                     <button key={i} onClick={() => setSelectedImage(i)}
                       className={`transition-all duration-200 rounded-full ${i === selectedImage ? 'w-4 h-1.5 bg-foreground' : 'w-1.5 h-1.5 bg-foreground/25'}`}
-                      aria-label={`Imagen ${i + 1}`} />
+                      aria-label={`${t('Imagen')} ${i + 1}`} />
                   ))}
                 </div>
               </div>
@@ -471,7 +477,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
 
             {/* Info */}
             <div className="flex flex-col">
-              <p className="text-[11px] tracking-[0.02em] text-muted-foreground mb-1">{product.category}</p>
+              <p className="text-[11px] tracking-[0.02em] text-muted-foreground mb-1">{t(product.category)}</p>
               <h1 className="text-[22px] md:text-[26px] font-semibold tracking-[-0.01em] mb-3">{product.name}</h1>
               <div className="mb-1">
                 <div className="flex items-center gap-3">
@@ -487,11 +493,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 {mounted && currency === 'ARS' && (
                   <>
                     <p className="text-[12px] text-muted-foreground mt-1">
-                      O <span className="font-semibold text-foreground">{formatPrice(transferPrice)}</span> con Transferencia o depósito bancario{' '}
+                      {t('O')} <span className="font-semibold text-foreground">{formatPrice(transferPrice)}</span> {t('con Transferencia o depósito bancario')}{' '}
                       <span className="text-green-700 font-semibold">(+{transferRate}% off)</span>
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      O hasta 3 cuotas sin interés de {formatPrice(Math.round(displayPrice / 3))}
+                      {t('O hasta 3 cuotas sin interés de')} {formatPrice(Math.round(displayPrice / 3))}
                     </p>
                   </>
                 )}
@@ -501,14 +507,14 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
 
               {product.modelInfo && (
                 <div className="bg-[#f8f8f6] border border-border px-5 py-5 mt-3 mb-4 rounded-[10px]">
-                  <ModelInfo html={product.modelInfo} />
+                  <ModelInfo html={traduccion.textos?.modelInfo || product.modelInfo} />
                 </div>
               )}
 
               {product.colors.length > 1 && (
                 <div className="mb-4 mt-4">
                   <div className="flex items-center gap-2 mb-2.5">
-                    <span className="text-[12px] font-semibold uppercase tracking-wider">Color</span>
+                    <span className="text-[12px] font-semibold uppercase tracking-wider">{t('Color')}</span>
                     <span className="text-[12px] text-muted-foreground">— {selectedColor}</span>
                   </div>
                   {/* wrap: los 3-packs tienen 8 colorways y a 44px no entran
@@ -530,13 +536,13 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 <div className="flex items-center gap-2 mb-4">
                   {isColorVariant ? (
                     <>
-                      <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Talle</span>
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] border border-border px-2.5 py-1 rounded-[10px]">Único</span>
+                      <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">{t('Talle')}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] border border-border px-2.5 py-1 rounded-[10px]">{t('Único')}</span>
                     </>
                   ) : (
                     <>
                       <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Fit</span>
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] border border-border px-2.5 py-1 rounded-[10px]">{product.fit}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] border border-border px-2.5 py-1 rounded-[10px]">{t(product.fit)}</span>
                     </>
                   )}
                 </div>
@@ -548,11 +554,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] font-semibold uppercase tracking-wider">
-                    {isColorVariant ? 'Color' : 'Talle'} {selectedSize && <span className="font-bold">— {selectedSize}</span>}
+                    {t(isColorVariant ? 'Color' : 'Talle')} {selectedSize && <span className="font-bold">— {selectedSize}</span>}
                   </span>
                   <button onClick={() => setSizeGuideOpen(true)}
                     className="text-[11px] underline text-muted-foreground hover:text-foreground transition-colors">
-                    Guía de talles
+                    {t('Guía de talles')}
                   </button>
                 </div>
                 <div className="flex gap-2 flex-wrap">
@@ -580,13 +586,13 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   })}
                 </div>
                 {stockLabel === 'low' && !liveOutSizes.has(selectedSize!) && (
-                  <p className="text-[11px] text-amber-600 font-medium mt-1.5">Últimas unidades disponibles</p>
+                  <p className="text-[11px] text-amber-600 font-medium mt-1.5">{t('Últimas unidades disponibles')}</p>
                 )}
                 {(stockLabel === 'out' || liveOutSizes.has(selectedSize!)) && (
-                  <p className="text-[11px] text-destructive mt-1.5">{isColorVariant ? 'Color agotado' : 'Talle agotado'}</p>
+                  <p className="text-[11px] text-destructive mt-1.5">{t(isColorVariant ? 'Color agotado' : 'Talle agotado')}</p>
                 )}
-                {stockError && <p className="text-[11px] text-destructive mt-1">{isColorVariant ? 'Este color ya no tiene stock disponible' : 'Este talle ya no tiene stock disponible'}</p>}
-                {sizeError && !stockError && <p className="text-[11px] text-destructive mt-1">{isColorVariant ? 'Seleccioná un color para continuar' : 'Seleccioná un talle para continuar'}</p>}
+                {stockError && <p className="text-[11px] text-destructive mt-1">{t(isColorVariant ? 'Este color ya no tiene stock disponible' : 'Este talle ya no tiene stock disponible')}</p>}
+                {sizeError && !stockError && <p className="text-[11px] text-destructive mt-1">{t(isColorVariant ? 'Seleccioná un color para continuar' : 'Seleccioná un talle para continuar')}</p>}
               </div>
               )}
 
@@ -595,7 +601,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
               {product.sizes.length === 1 && !isColorVariant && (
                 <div className="mb-4">
                   <span className="text-[12px] font-semibold uppercase tracking-wider">
-                    Talle <span className="font-bold">— Único{product.sizeEquivalent ? ` · equivale a un ${product.sizeEquivalent}` : ''}</span>
+                    {t('Talle')} <span className="font-bold">— {t('Único')}{product.sizeEquivalent ? ` · ${t('equivale a un')} ${product.sizeEquivalent}` : ''}</span>
                   </span>
                 </div>
               )}
@@ -604,12 +610,12 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 <button
                   onClick={() => router.push(`/personalizar/${product.slug}/${selectedSize ? `?talle=${selectedSize}` : ''}`)}
                   className="flex items-center gap-4 w-full border-2 border-foreground px-4 py-3 mb-3 rounded-[10px] hover:bg-foreground hover:text-background transition-colors group text-left">
-                  <Image src="/products/argentina-jersey/preview-sample-espalda.png" alt="Ejemplo de dorsal personalizado" width={64} height={64}
+                  <Image src="/products/argentina-jersey/preview-sample-espalda.png" alt={t('Ejemplo de dorsal personalizado')} width={64} height={64}
                     className="w-16 h-16 object-cover rounded-[8px] bg-white flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground group-hover:text-background/60 transition-colors">Edición especial</p>
-                    <p className="text-[14px] font-bold uppercase tracking-[0.06em]">Personalizá tu dorsal</p>
-                    <p className="text-[11px] text-muted-foreground group-hover:text-background/70 transition-colors mt-0.5">Tu nombre y número — vista previa en tiempo real</p>
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground group-hover:text-background/60 transition-colors">{t('Edición especial')}</p>
+                    <p className="text-[14px] font-bold uppercase tracking-[0.06em]">{t('Personalizá tu dorsal')}</p>
+                    <p className="text-[11px] text-muted-foreground group-hover:text-background/70 transition-colors mt-0.5">{t('Tu nombre y número — vista previa en tiempo real')}</p>
                   </div>
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" className="flex-shrink-0"><path d="M4 9h10M9 4l5 5-5 5" /></svg>
                 </button>
@@ -621,14 +627,18 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
               <Button ref={addBtnRef} onClick={handleAdd} disabled={stockChecking}
                 variant="hype" size="ctaFull"
                 className={`${primaryBtnClass} text-[13px] mb-4 rounded-[10px] disabled:cursor-not-allowed`}>
-                {stockChecking ? 'Verificando stock...' : 'Agregar al carrito'}
+                {stockChecking ? t('Verificando stock...') : t('Agregar al carrito')}
               </Button>
 
               <div className="border-b border-border">
-                <Accordion title="Descripción">{product.description}</Accordion>
+                <Accordion title={t('Descripción')}>
+                  <span className={`block transition-opacity duration-300 ${traduccion.cargando ? 'opacity-40' : ''}`}>
+                    {traduccion.textos?.description || product.description}
+                  </span>
+                </Accordion>
                 {(product.measurementsTable || product.measurements) && (
-                  <Accordion title="Calce y medidas">
-                    <p className="font-semibold text-foreground">Medidas de la prenda</p>
+                  <Accordion title={t('Calce y medidas')}>
+                    <p className="font-semibold text-foreground">{t('Medidas de la prenda')}</p>
                     {product.measurementsTable ? (
                       <div className="mt-2 overflow-x-auto">
                         <table className="text-[12px] border-collapse">
@@ -643,7 +653,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                           <tbody>
                             {([['Ancho (axila a axila)', 'ancho'], ['Largo (hombro a ruedo)', 'largo'], ['Manga (raglán)', 'manga']] as const).map(([label, key]) => (
                               <tr key={key} className="border-t border-border/60">
-                                <td className="pr-5 py-1.5 text-foreground/65">{label}</td>
+                                <td className="pr-5 py-1.5 text-foreground/65">{t(label)}</td>
                                 {product.measurementsTable!.map(r => (
                                   <td key={r.size} className="px-4 py-1.5 text-center font-medium text-foreground">{r[key] ? `${r[key]} cm` : '—'}</td>
                                 ))}
@@ -654,53 +664,53 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                       </div>
                     ) : (
                       <div className="mt-1.5 space-y-1">
-                        {product.measurements!.ancho && <div className="flex justify-between max-w-[220px]"><span>Ancho (axila a axila)</span><span className="font-medium text-foreground">{product.measurements!.ancho} cm</span></div>}
-                        {product.measurements!.largo && <div className="flex justify-between max-w-[220px]"><span>Largo (hombro a ruedo)</span><span className="font-medium text-foreground">{product.measurements!.largo} cm</span></div>}
-                        {product.measurements!.manga && <div className="flex justify-between max-w-[220px]"><span>Manga (raglán)</span><span className="font-medium text-foreground">{product.measurements!.manga} cm</span></div>}
+                        {product.measurements!.ancho && <div className="flex justify-between max-w-[220px]"><span>{t('Ancho (axila a axila)')}</span><span className="font-medium text-foreground">{product.measurements!.ancho} cm</span></div>}
+                        {product.measurements!.largo && <div className="flex justify-between max-w-[220px]"><span>{t('Largo (hombro a ruedo)')}</span><span className="font-medium text-foreground">{product.measurements!.largo} cm</span></div>}
+                        {product.measurements!.manga && <div className="flex justify-between max-w-[220px]"><span>{t('Manga (raglán)')}</span><span className="font-medium text-foreground">{product.measurements!.manga} cm</span></div>}
                       </div>
                     )}
-                    <p className="text-[11px] text-foreground/45 mt-1.5">Medido en plano · puede variar ±2 cm.</p>
+                    <p className="text-[11px] text-foreground/45 mt-1.5">{t('Medido en plano · puede variar ±2 cm.')}</p>
 
-                    <p className="font-semibold text-foreground mt-4">Cómo calza según tu altura</p>
+                    <p className="font-semibold text-foreground mt-4">{t('Cómo calza según tu altura')}</p>
                     <div className="mt-1.5 space-y-1">
-                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,70 m</span><span>fit oversize amplio</span></div>
-                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,80 m</span><span>fit oversize estándar</span></div>
-                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,90 m</span><span>fit regular</span></div>
+                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,70 m</span><span>{t('fit oversize amplio')}</span></div>
+                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,80 m</span><span>{t('fit oversize estándar')}</span></div>
+                      <div className="flex gap-2"><span className="text-foreground font-medium w-[52px]">1,90 m</span><span>{t('fit regular')}</span></div>
                     </div>
 
-                    <p className="text-[12px] mt-4">Tip: compará estas medidas con una remera oversize que ya tengas y te quede como buscás.</p>
+                    <p className="text-[12px] mt-4">{t('Tip: compará estas medidas con una remera oversize que ya tengas y te quede como buscás.')}</p>
                   </Accordion>
                 )}
-                <Accordion title="Guía de cuidado de ropa">
+                <Accordion title={t('Guía de cuidado de ropa')}>
                   <ul className="space-y-2.5">
                     {product.careItems.map((item, i) => (
                       <li key={item.icon + "-" + i} className="flex items-center gap-3">
                         <CareIcon type={item.icon} />
-                        <span>{item.text}</span>
+                        <span>{t(item.text)}</span>
                       </li>
                     ))}
                   </ul>
                   {product.careNote && (
-                    <p className="mt-3 text-[12px] text-foreground/55">{product.careNote}</p>
+                    <p className="mt-3 text-[12px] text-foreground/55">{t(product.careNote)}</p>
                   )}
                 </Accordion>
-                <Accordion title="Envíos y devoluciones">
-                  <p className="font-semibold text-foreground">Procesamiento</p>
-                  <p>Preparamos y despachamos tu pedido una vez confirmado el pago. Los fines de semana y feriados no se cuentan como días hábiles.</p>
+                <Accordion title={t('Envíos y devoluciones')}>
+                  <p className="font-semibold text-foreground">{t('Procesamiento')}</p>
+                  <p>{t('Preparamos y despachamos tu pedido una vez confirmado el pago. Los fines de semana y feriados no se cuentan como días hábiles.')}</p>
 
-                  <p className="font-semibold text-foreground mt-3">Envíos en Argentina</p>
-                  <p>A todo el país vía Andreani; el costo se calcula en el checkout. El tiempo de entrega estimado es de 5 a 10 días hábiles, y en algunos casos puede extenderse hasta 15 días hábiles según la zona y la demanda.</p>
+                  <p className="font-semibold text-foreground mt-3">{t('Envíos en Argentina')}</p>
+                  <p>{t('A todo el país vía Andreani; el costo se calcula en el checkout. El tiempo de entrega estimado es de 5 a 10 días hábiles, y en algunos casos puede extenderse hasta 15 días hábiles según la zona y la demanda.')}</p>
 
-                  <p className="font-semibold text-foreground mt-3">Preventa</p>
-                  <p>Los productos en PREVENTA se despachan según la fecha estimada indicada en la página del producto y pueden demorar algo más de lo estipulado. Si tu compra incluye un producto en preventa, el pedido se envía completo cuando esté disponible.</p>
+                  <p className="font-semibold text-foreground mt-3">{t('Preventa')}</p>
+                  <p>{t('Los productos en PREVENTA se despachan según la fecha estimada indicada en la página del producto y pueden demorar algo más de lo estipulado. Si tu compra incluye un producto en preventa, el pedido se envía completo cuando esté disponible.')}</p>
 
-                  <p className="font-semibold text-foreground mt-3">Envíos internacionales</p>
-                  <p>Enviamos a todo el mundo vía FedEx, puerta a puerta, con seguimiento y seguro. El costo se calcula en el checkout según lo que lleves y a qué país va, y se paga junto con el pedido. Los impuestos y aranceles aduaneros del país de destino quedan a cargo de quien recibe.</p>
+                  <p className="font-semibold text-foreground mt-3">{t('Envíos internacionales')}</p>
+                  <p>{t('Enviamos a todo el mundo vía FedEx, puerta a puerta, con seguimiento y seguro. El costo se calcula en el checkout según lo que lleves y a qué país va, y se paga junto con el pedido. Los impuestos y aranceles aduaneros del país de destino quedan a cargo de quien recibe.')}</p>
 
-                  <p className="font-semibold text-foreground mt-3">Cambios y devoluciones</p>
-                  <p>Aceptamos cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.</p>
+                  <p className="font-semibold text-foreground mt-3">{t('Cambios y devoluciones')}</p>
+                  <p>{t('Aceptamos cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.')}</p>
 
-                  <a href="/politicas-de-devolucion/" className="underline text-foreground hover:text-foreground/70 transition-colors mt-3 block">Ver políticas completas →</a>
+                  <a href="/politicas-de-devolucion/" className="underline text-foreground hover:text-foreground/70 transition-colors mt-3 block">{t('Ver políticas completas →')}</a>
                 </Accordion>
               </div>
             </div>
@@ -708,7 +718,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
         </div>
 
         <section className="max-w-[1400px] mx-auto px-4 pb-20">
-          <h2 className="text-lg font-bold uppercase tracking-tight mb-6">Completa el Look</h2>
+          <h2 className="text-lg font-bold uppercase tracking-tight mb-6">{t('Completa el look')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
             {related.map(p => (
               <ProductCard key={p.slug} {...p} />
@@ -723,12 +733,12 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
         style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-semibold truncate">{product.name}</p>
-          <p className="text-[11px] text-muted-foreground">{mounted ? formatPrice(displayPrice) : '—'}{selectedSize && <span> · Talle {selectedSize}</span>}</p>
+          <p className="text-[11px] text-muted-foreground">{mounted ? formatPrice(displayPrice) : '—'}{selectedSize && <span> · {t('Talle')} {selectedSize}</span>}</p>
         </div>
         <button onClick={handleAdd} disabled={stockChecking}
           className={`flex-shrink-0 ${primaryBtnClass} text-primary-foreground px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5`}>
           {stockChecking && <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>}
-          Agregar
+          {t('Agregar')}
         </button>
       </div>
 
@@ -745,7 +755,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
               </div>
               <div className="flex-1">
                 <p className="text-[13px] font-semibold">{product.name}</p>
-                <p suppressHydrationWarning className="text-[11px] text-muted-foreground mt-0.5">Talle: {selectedSize} · {formatPrice(displayPrice)}</p>
+                <p suppressHydrationWarning className="text-[11px] text-muted-foreground mt-0.5">{t('Talle')}: {selectedSize} · {formatPrice(displayPrice)}</p>
               </div>
               <button onClick={() => setAdded(false)} className="text-foreground/30 hover:text-foreground transition-colors">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 1l12 12M13 1L1 13" /></svg>
@@ -754,11 +764,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
             <div className="p-5 space-y-2">
               <button onClick={() => { setAdded(false); setDrawerOpen(true); }}
                 className={`w-full ${primaryBtnClass} text-primary-foreground py-3 text-[12px] font-bold uppercase tracking-[0.08em] transition-colors rounded-[10px]`}>
-                Ver carrito
+                {t('Ver carrito')}
               </button>
               <button onClick={() => setAdded(false)}
                 className="w-full text-center text-[12px] text-foreground/40 hover:text-foreground transition-colors py-1">
-                Ignorar y continuar
+                {t('Ignorar y continuar')}
               </button>
             </div>
           </div>
@@ -807,22 +817,22 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
                   {selectedImage > 0 && (
                     <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p - 1); }}
-                      className="pointer-events-auto w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg transition-transform active:scale-95" aria-label="Anterior">
+                      className="pointer-events-auto w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg transition-transform active:scale-95" aria-label={t('Anterior')}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
                   )}
                   <div />
                   {selectedImage < galleryImages.length - 1 && (
                     <button onClick={(e) => { e.stopPropagation(); setSelectedImage(p => p + 1); }}
-                      className="pointer-events-auto w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg transition-transform active:scale-95" aria-label="Siguiente">
+                      className="pointer-events-auto w-10 h-10 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg transition-transform active:scale-95" aria-label={t('Siguiente')}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </button>
                   )}
                 </div>
 
                 <div className="absolute bottom-10 left-0 right-0 text-center pointer-events-none">
-                  <p className="text-[11px] text-white/50 uppercase tracking-[0.2em] mb-2">Deslizá para navegar</p>
-                  <p className="text-[10px] text-white/30 uppercase tracking-[0.1em]">Tocá para hacer zoom</p>
+                  <p className="text-[11px] text-white/50 uppercase tracking-[0.2em] mb-2">{t('Deslizá para navegar')}</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-[0.1em]">{t('Tocá para hacer zoom')}</p>
                 </div>
               </>
             )}

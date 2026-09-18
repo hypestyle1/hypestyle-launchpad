@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLocale } from '@/context/LocaleContext';
 import { getPublicReviewSummary, getPublicReviews } from '@/lib/reviews/public';
 import { Button } from '@/components/ui/button';
 import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
@@ -15,6 +16,7 @@ const HIDDEN_PREFIXES = ['/checkout', '/admin', '/mayoristas', '/review/', '/rev
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export default function ReviewsDrawer() {
+  const { t } = useLocale();
   const pathname = usePathname() ?? '';
   const [open, setOpen] = useState(false);
   const [summary, setSummary] = useState<PublicReviewSummary | null>(null);
@@ -92,13 +94,13 @@ export default function ReviewsDrawer() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={`Reseñas — promedio ${summary.average?.toFixed(1)} de 5`}
+        aria-label={`${t('Reseñas')} — ${t('promedio')} ${summary.average?.toFixed(1)} / 5`}
         className="hidden sm:flex fixed z-[90] right-0 top-1/2 -translate-y-1/2 items-center gap-2 bg-white border border-border border-r-0 shadow-lg rounded-l-[10px] px-2.5 py-4 hover:px-3.5 transition-all"
         style={{ writingMode: 'vertical-rl' }}
       >
         <span className="text-[12px] font-bold tabular-nums">{summary.average?.toFixed(1)}</span>
         <span aria-hidden="true" className="text-[13px]">★</span>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">Reseñas</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">{t('Reseñas')}</span>
       </button>
 
       {/* Mobile: botón fijo compacto, encima del botón de WhatsApp */}
@@ -112,7 +114,7 @@ export default function ReviewsDrawer() {
       >
         <StarRating rating={summary.average ?? 0} size={12} />
         <span className="text-[12px] font-semibold tabular-nums">{summary.average?.toFixed(1)}</span>
-        <span className="text-[11px] text-muted-foreground">Reseñas</span>
+        <span className="text-[11px] text-muted-foreground">{t('Reseñas')}</span>
       </button>
 
       {open && (
@@ -126,13 +128,13 @@ export default function ReviewsDrawer() {
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Reseñas de la tienda"
+            aria-label={t('Reseñas de la tienda')}
             className="fixed z-[160] bg-white shadow-2xl flex flex-col animate-in fade-in duration-300
               inset-x-0 bottom-0 max-h-[85vh] rounded-t-[16px]
               sm:inset-x-auto sm:right-0 sm:top-0 sm:bottom-0 sm:max-h-none sm:h-full sm:w-full sm:max-w-[400px] sm:rounded-t-none"
           >
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-              <span className="text-[13px] font-semibold uppercase tracking-wider">Reseñas</span>
+              <span className="text-[13px] font-semibold uppercase tracking-wider">{t('Reseñas')}</span>
               <button
                 ref={closeRef}
                 type="button"
@@ -152,7 +154,7 @@ export default function ReviewsDrawer() {
                 <div className="flex flex-col gap-1">
                   <StarRating rating={summary.average ?? 0} size={14} />
                   <span className="text-[11px] text-muted-foreground">
-                    {summary.total} {summary.total === 1 ? 'reseña' : 'reseñas'}
+                    {summary.total} {t(summary.total === 1 ? 'reseña' : 'reseñas')}
                   </span>
                 </div>
               </div>
@@ -167,7 +169,7 @@ export default function ReviewsDrawer() {
 
             <div className="px-6 py-5 border-t border-border">
               <Button asChild variant="hype" size="ctaFull" className="py-3.5 rounded-[10px]">
-                <Link href="/reviews/" onClick={close}>Ver todas las reseñas</Link>
+                <Link href="/reviews/" onClick={close}>{t('Ver todas las reseñas')}</Link>
               </Button>
             </div>
           </div>

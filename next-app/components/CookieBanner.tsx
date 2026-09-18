@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useCookieConsent } from "@/context/CookieContext";
+import { useLocale } from "@/context/LocaleContext";
 
 export default function CookieBanner() {
   const { consent, acceptAll, acceptNecessary } = useCookieConsent();
+  const { t } = useLocale();
   const [dismissed, setDismissed] = useState(false);
   const pathname = usePathname();
 
@@ -33,21 +35,21 @@ export default function CookieBanner() {
       >
         <div className="flex items-start justify-between gap-3 mb-2 md:mb-3">
           <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-white">
-            Cookies
+            {t('Cookies')}
           </p>
           <button
             onClick={() => { acceptNecessary(); setDismissed(true); }}
             className="text-white/30 hover:text-white/70 transition-colors flex-shrink-0 -mt-0.5"
-            aria-label="Cerrar"
+            aria-label={t('Cerrar')}
           >
             <X className="w-3.5 h-3.5" strokeWidth={1.5} />
           </button>
         </div>
 
         <p className="text-[12px] text-white/50 leading-snug md:leading-relaxed mb-2.5 md:mb-4">
-          Usamos cookies para mejorar tu experiencia y medir el rendimiento del sitio.{" "}
+          {t('Usamos cookies para mejorar tu experiencia y medir el rendimiento del sitio.')}{" "}
           <Link href="/politicas-de-devolucion/" className="underline underline-offset-2 text-white/60 hover:text-white transition-colors">
-            Más info
+            {t('Más info')}
           </Link>
           .
         </p>
@@ -57,13 +59,13 @@ export default function CookieBanner() {
             onClick={acceptAll}
             className="flex-1 text-[11px] font-semibold uppercase tracking-[0.1em] bg-white text-black rounded-[8px] py-2 md:py-2.5 hover:bg-white/90 transition-colors"
           >
-            Aceptar todo
+            {t('Aceptar todo')}
           </button>
           <button
             onClick={acceptNecessary}
             className="flex-1 text-[11px] font-medium uppercase tracking-[0.1em] text-white/50 hover:text-white border border-white/10 hover:border-white/25 rounded-[8px] py-2 md:py-2.5 transition-colors"
           >
-            Solo necesarias
+            {t('Solo necesarias')}
           </button>
         </div>
       </div>
