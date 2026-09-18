@@ -84,6 +84,8 @@ function FotoBox({ foto, aspect, sizes, priority = false }: { foto: Foto; aspect
         fill
         sizes={sizes}
         priority={priority}
+        // next/image recomprime a 75 por defecto y sobre un webp ya comprimido se notaba: las fotos salían lavadas.
+        quality={90}
         className="object-cover"
       />
     </div>

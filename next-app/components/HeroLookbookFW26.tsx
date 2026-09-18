@@ -7,6 +7,9 @@ import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+// Recorte mudo de 10 s del film FW26 de Rio (el mismo de VideoSection, que
+// dura 24 s): a 1152 px pesa 1,5 MB. Va detrás del card en desktop.
+const VIDEO_SRC = '/hero/rio-film-bg.mp4';
 const SLIDE_MS = 4500;
 
 // Lookbook FW26: la produ de Rio de Janeiro (fotos de Fili, mayo 2026), sin
@@ -198,18 +201,17 @@ export default function HeroLookbookFW26() {
         más abajo) ya se ve contenido real (Envío Internacional, Reseñas) sin
         scrollear nada, no solo un borde en blanco. Desktop queda en 100dvh. */}
     <section ref={sectionRef} className="relative w-full h-[80dvh] md:h-[100dvh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
-      {/* Fondo — solo desktop. En mobile queda el bg-bg-dark de la sección, que
-          solo se llega a ver en el borde mientras corre la animación de entrada. */}
+      {/* Fondo (video + su gradiente) — solo desktop. En mobile queda el bg-bg-dark
+          de la sección, que solo se ve en el borde durante la animación de entrada. */}
       {desktop && (
         <>
-          {/* La foto del slide actual, desenfocada y ampliada: el borde del card
-              se funde con su propio color en vez de con un video de otra produ. */}
-          <div
-            className="absolute inset-0 bg-cover bg-center scale-110 blur-2xl transition-[background-image] duration-[1200ms]"
-            style={{ backgroundImage: `url('${current.img}')` }}
-            aria-hidden
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/55 pointer-events-none" />
+          {/* El film de Rio de fondo, mudo y en loop. Se monta solo en desktop:
+              en mobile el card ocupa la sección entera y el mp4 competiría con
+              la foto del primer slide, que es el LCP. */}
+          <video className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline aria-hidden>
+            <source src={VIDEO_SRC} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/55 pointer-events-none" />
         </>
       )}
 
