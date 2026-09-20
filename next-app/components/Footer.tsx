@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useReveal } from "@/hooks/useReveal";
 import { useLocale, LANGUAGES } from "@/context/LocaleContext";
+import { CURRENCIES } from "@/lib/currency";
 
 const shopLinks = [
   { label: "Arriba",     href: "/arriba/" },
@@ -57,7 +58,7 @@ function FooterLink({ link, t }: { link: { label: string; href: string }; t: (s:
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const { language, setLanguage, t } = useLocale();
+  const { language, setLanguage, currency, setCurrency, t } = useLocale();
   const ref = useReveal();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -209,6 +210,30 @@ export default function Footer() {
               </button>
               {i < languages.length - 1 && (
                 <span className="text-primary-foreground/15 text-[10px]">·</span>
+              )}
+            </span>
+          ))}
+        </div>
+
+        {/* Selector de moneda: misma lista que el navbar (lib/currency.ts). En
+            mobile van sin el punto separador, que con ocho códigos no entra. */}
+        <div className="flex flex-wrap items-center justify-center gap-x-3 sm:gap-x-4 gap-y-2" aria-label={t('Moneda')} role="group">
+          {CURRENCIES.map((cur, i) => (
+            <span key={cur.code} className="flex items-center gap-x-3 sm:gap-x-4">
+              <button
+                onClick={() => setCurrency(cur.code)}
+                title={t(cur.label)}
+                aria-pressed={currency === cur.code}
+                className={`text-[11px] uppercase tracking-[0.12em] transition-colors ${
+                  currency === cur.code
+                    ? "text-primary-foreground font-semibold"
+                    : "text-primary-foreground/30 hover:text-primary-foreground/60"
+                }`}
+              >
+                {cur.code}
+              </button>
+              {i < CURRENCIES.length - 1 && (
+                <span className="hidden sm:inline text-primary-foreground/15 text-[10px]">·</span>
               )}
             </span>
           ))}

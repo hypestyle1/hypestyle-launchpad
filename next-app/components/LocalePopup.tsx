@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Globe, ChevronDown, Check } from "lucide-react";
-import { useLocale, Language, Currency } from "@/context/LocaleContext";
+import { useLocale, Language } from "@/context/LocaleContext";
+import { CURRENCIES } from "@/lib/currency";
 
 // Mismo orden que LANGUAGES en LocaleContext; acá solo se agrega el nombre
 // del idioma escrito en ese idioma.
@@ -13,12 +14,6 @@ const LANGUAGES: { code: Language; label: string }[] = [
   { code: "DE", label: "Deutsch" },
   { code: "FR", label: "Français" },
   { code: "IT", label: "Italiano" },
-];
-
-const CURRENCIES: { code: Currency; symbol: string; label: string }[] = [
-  { code: "ARS", symbol: "$", label: "Pesos argentinos" },
-  { code: "USD", symbol: "US$", label: "Dólares" },
-  { code: "EUR", symbol: "€", label: "Euros" },
 ];
 
 const glassStyle = {
@@ -62,7 +57,8 @@ export default function LocalePopup({ className = "" }: { className?: string }) 
 
       {open && (
         <div
-          className="absolute top-full right-0 mt-2 w-[210px] animate-in fade-in duration-150 rounded-[12px] overflow-hidden z-50"
+          data-testid="locale-popup"
+          className="absolute top-full right-0 mt-2 w-[236px] max-h-[calc(100vh-72px)] overflow-y-auto animate-in fade-in duration-150 rounded-[12px] z-50"
           style={glassStyle}
         >
           {/* Idioma */}

@@ -19,6 +19,9 @@
 
 import type { FxRates } from '@/lib/fx';
 
+/** Los costos operativos solo se cargan en pesos, dólares o euros. */
+type CostFx = Pick<FxRates, 'USD' | 'EUR'>;
+
 export type Currency = 'ARS' | 'USD' | 'EUR';
 export type CostType = 'fixed' | 'variable' | 'semi_variable' | 'one_off';
 export type Frequency = 'monthly' | 'annual' | 'weekly' | 'daily' | 'usage' | 'one_off';
@@ -139,7 +142,7 @@ export function costForRange(cost: OperatingCost, startISO: string, endISO: stri
 }
 
 // ── FX: original → ARS ───────────────────────────────────────────────────────
-export function convertToARS(byCurrency: Record<Currency, number>, fx: FxRates): number {
+export function convertToARS(byCurrency: Record<Currency, number>, fx: CostFx): number {
   return byCurrency.ARS + byCurrency.USD * fx.USD + byCurrency.EUR * fx.EUR;
 }
 
@@ -197,7 +200,7 @@ function primaryCurrency(byCurrency: Record<Currency, number>): { amount: number
   return null; // mezcla de monedas → no hay "original" único
 }
 
-export function aggregateOperating(costs: OperatingCost[], startISO: string, endISO: string, fx: FxRates): OperatingSummary {
+export function aggregateOperating(costs: OperatingCost[], startISO: string, endISO: string, fx: CostFx): OperatingSummary {
   const items: ComputedCost[] = [];
   let totalARS = 0, fixedARS = 0, variableARS = 0, saasInfraARS = 0, missingCount = 0;
   let knownCount = 0, activeCount = 0;
@@ -261,7 +264,7 @@ export function aggregateOperating(costs: OperatingCost[], startISO: string, end
 }
 
 // ── Bot Economics (dinero, NO capacity) ──────────────────────────────────────
-export function botEconomics(items: ComputedCost[], fx: FxRates): BotEconomics {
+export function botEconomics(items: ComputedCost[], fx: CostFx): BotEconomics {
   const botItems = items.filter((i) => i.bot);
   const totalARS = botItems.reduce((s, i) => s + i.ars, 0);
   const fixedARS = botItems.filter((i) => i.costType === 'fixed').reduce((s, i) => s + i.ars, 0);

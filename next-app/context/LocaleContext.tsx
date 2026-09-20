@@ -2,11 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { translate } from '@/lib/i18n';
-import { FxRates, FX_FALLBACK } from '@/lib/fx';
+import { FxRates, FX_FALLBACK, mergeRates } from '@/lib/fx';
+import { Currency, formatMoney, isCurrency } from '@/lib/currency';
 import { readCountryCookie, localeForCountry } from '@/lib/geo';
 
 export type Language = 'ES' | 'EN' | 'PT' | 'DE' | 'FR' | 'IT';
-export type Currency = 'ARS' | 'USD' | 'EUR';
+// Las monedas viven en lib/currency.ts (lista, símbolos y formato, con tests).
+export type { Currency };
 
 /**
  * Idiomas que el sitio realmente traduce. Los selectores (Footer, LocalePopup)
@@ -19,9 +21,6 @@ export type Currency = 'ARS' | 'USD' | 'EUR';
  * lib/i18n.ts. Si falta lo último, cae a español sin avisar.
  */
 export const LANGUAGES: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
-
-const SYMBOLS: Record<Currency, string> = { ARS: '$', USD: 'US$', EUR: '€' };
-const NUMBER_LOCALES: Record<Currency, string> = { ARS: 'es-AR', USD: 'en-US', EUR: 'de-DE' };
 
 interface LocaleContextValue {
   language: Language;
@@ -36,6 +35,12 @@ interface LocaleContextValue {
   /** True si la persona eligió moneda a mano alguna vez (localStorage). */
   currencyChosen: boolean;
   formatPrice: (arsAmount: number) => string;
+  /**
+   * Igual que formatPrice pero en una moneda puntual. El checkout lo usa para
+   * decir cuánto se cobra de verdad (pesos o dólares) cuando la persona está
+   * mirando los precios en otra moneda.
+   */
+  formatPriceIn: (arsAmount: number, c: Currency) => string;
   /** Traduce un texto de interfaz al idioma activo (cae a español si falta). */
   t: (text: string) => string;
   /**
@@ -77,7 +82,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   // pasa acá, después de hidratar.
   useEffect(() => {
     const storedLang = localStorage.getItem('hs-language') as Language | null;
-    const storedCurr = localStorage.getItem('hs-currency') as Currency | null;
+    const storedRaw = localStorage.getItem('hs-currency');
+    const storedCurr = isCurrency(storedRaw) ? storedRaw : null;
 
     const detected = readCountryCookie();
     setCountry(detected);
@@ -112,8 +118,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     fetch('/api/fx-rate')
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: FxRates | null) => {
-        if (!cancelled && data && data.USD > 0 && data.EUR > 0) setRates(data);
+      .then((data: unknown) => {
+        // Moneda por moneda: lo que falte o venga roto se queda con el respaldo.
+        if (!cancelled && data) setRates(mergeRates(data));
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -132,13 +139,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  function formatPriceIn(arsAmount: number, c: Currency): string {
+    return formatMoney(arsAmount, c, rates);
+  }
+
   function formatPrice(arsAmount: number): string {
-    if (currency === 'ARS') {
-      // Deterministic ARS format: integer with dot as thousands separator
-      return `$ ${Math.round(arsAmount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
-    }
-    const converted = arsAmount / rates[currency];
-    return `${SYMBOLS[currency]} ${converted.toFixed(2)}`;
+    return formatMoney(arsAmount, currency, rates);
   }
 
   function t(text: string): string {
@@ -146,7 +152,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <LocaleContext.Provider value={{ language, setLanguage, currency, setCurrency, currencyChosen, formatPrice, t, country }}>
+    <LocaleContext.Provider value={{ language, setLanguage, currency, setCurrency, currencyChosen, formatPrice, formatPriceIn, t, country }}>
       {children}
     </LocaleContext.Provider>
   );
