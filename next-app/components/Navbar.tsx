@@ -27,6 +27,7 @@ const navLinks = [
 const menuColecciones = [
   { label: 'Ver colecciones',   href: '/colecciones/' },
   { label: 'Lookbook FW26 — Rio de Janeiro', href: '/lookbook-fw26/' },
+  { label: 'Lookbook — Faith Is The Real Hype', href: '/lookbook-faith/' },
 ];
 const menuContacto = [
   { label: 'Escribinos',              href: '/contacto/' },
@@ -492,6 +493,7 @@ export default function Navbar() {
                   {[
                     { label: 'Colecciones',   href: '/colecciones/' },
                     { label: 'Lookbook FW26', href: '/lookbook-fw26/' },
+                    { label: 'Lookbook Faith', href: '/lookbook-faith/' },
                     { label: 'Reseñas',       href: '/reviews/' },
 
                     { label: 'FAQs',          href: '/faqs/' },

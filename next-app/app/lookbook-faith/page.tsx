@@ -2,22 +2,22 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Lookbook from '@/components/Lookbook';
-import { FW26 } from '@/lib/lookbooks/fw26';
+import { FAITH } from '@/lib/lookbooks/faith';
 import { buildMetadata } from '@/lib/seo';
 
 export const metadata = buildMetadata({
-  title: 'Lookbook FW26',
-  description: 'La colección FW26 de HYPESTYLE® puesta, en Rio de Janeiro. Cada foto con acceso directo al producto.',
-  path: '/lookbook-fw26/',
+  title: 'Lookbook — Faith Is The Real Hype',
+  description: 'La colección Faith Is The Real Hype de HYPESTYLE® puesta, en Buenos Aires. Cada foto con acceso directo al producto.',
+  path: '/lookbook-faith/',
 });
 
-export default function LookbookFW26Page() {
+export default function LookbookFaithPage() {
   return (
     <>
       <AnnouncementBar />
       <Navbar />
       <main className="pt-[var(--offset)]">
-        <Lookbook data={FW26} />
+        <Lookbook data={FAITH} />
       </main>
       <Footer />
     </>
