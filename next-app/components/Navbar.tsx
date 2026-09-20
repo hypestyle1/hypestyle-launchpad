@@ -411,9 +411,13 @@ export default function Navbar() {
         )}
       </nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu. z-[100]: por encima de los flotantes (WhatsApp, reseñas y
+          player van en z-[90]; la barra sticky de la ficha en z-50). Con z-50
+          quedaban pintados sobre el menú abierto y tapaban sus últimas filas y
+          las del selector de idioma y moneda. Sigue por debajo del carrito
+          (z-[150]) y de los modales. */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden"
+        <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
           style={{ background: 'rgba(240, 238, 232, 0.96)', backdropFilter: 'blur(32px) saturate(200%)', WebkitBackdropFilter: 'blur(32px) saturate(200%)' }}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/8"
             style={{ paddingTop: 'calc(var(--announce-h) + 16px)' }}>

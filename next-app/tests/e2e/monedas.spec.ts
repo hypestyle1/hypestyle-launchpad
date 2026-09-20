@@ -110,10 +110,50 @@ test('el selector ofrece las ocho monedas y cambia los precios', async ({ page }
 
   // Sin geo, el sitio toma el idioma del navegador: en CI es inglés.
   await page.getByRole('button', { name: /Idioma y moneda|Language and currency/ }).first().click();
+  const popup = page.getByTestId('locale-popup');
   for (const code of Object.keys(TOTAL_ESPERADO)) {
-    // Por texto y no por nombre accesible: símbolo, código y nombre son spans pegados.
-    await expect(page.getByRole('button').filter({ hasText: code }).last()).toBeVisible();
+    // Por texto y no por nombre accesible: símbolo, código y nombre son spans
+    // pegados. Regex porque un string ignora mayúsculas y "ARS" matchea "US dollars".
+    await expect(popup.getByRole('button').filter({ hasText: new RegExp(code) })).toBeVisible();
   }
-  await page.getByRole('button').filter({ hasText: 'CLP' }).last().click();
+  await popup.getByRole('button').filter({ hasText: 'CLP' }).click();
   expect(await page.evaluate(() => window.localStorage.getItem('hs-currency'))).toBe('CLP');
+});
+
+test('el Footer ofrece las mismas ocho monedas y queda sincronizado con el navbar', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await abrirCheckout(page, {});
+  await page.goto('/faqs', { waitUntil: 'domcontentloaded' });
+
+  const footer = page.getByRole('group', { name: /Moneda|Currency/ });
+  await expect(footer.getByRole('button')).toHaveText(Object.keys(TOTAL_ESPERADO));
+
+  await footer.getByRole('button', { name: 'BRL' }).click();
+  await expect(footer.getByRole('button', { name: 'BRL' })).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => window.localStorage.getItem('hs-currency'))).toBe('BRL');
+  // El botón del navbar muestra la moneda activa.
+  await expect(page.getByRole('button', { name: /Idioma y moneda|Language and currency/ }).first()).toContainText('BRL');
+});
+
+test('mobile: el menú abierto queda por encima de los flotantes y el selector se puede tocar entero', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 });
+  await abrirCheckout(page, {});
+  await page.goto('/faqs', { waitUntil: 'domcontentloaded' });
+
+  const whatsapp = page.getByRole('link', { name: /WhatsApp/ }).first();
+  await expect(whatsapp).toBeVisible();
+  const { x, y, width, height } = (await whatsapp.boundingBox())!;
+
+  await page.getByRole('button', { name: /men/i }).first().click();
+  // En el punto donde estaba el botón de WhatsApp ahora manda el menú.
+  const arriba = await page.evaluate(([px, py]) => {
+    const el = document.elementFromPoint(px, py);
+    return !!el?.closest('[class*="z-[100]"]');
+  }, [x + width / 2, y + height / 2]);
+  expect(arriba).toBe(true);
+
+  await page.getByRole('button', { name: /Idioma y moneda|Language and currency/ }).filter({ visible: true }).first().click();
+  // La última fila era la que quedaba tapada. Sin trial: el click tiene que llegar.
+  await page.getByTestId('locale-popup').filter({ visible: true }).getByRole('button').filter({ hasText: 'UYU' }).click();
+  expect(await page.evaluate(() => window.localStorage.getItem('hs-currency'))).toBe('UYU');
 });

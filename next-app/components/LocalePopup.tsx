@@ -57,6 +57,7 @@ export default function LocalePopup({ className = "" }: { className?: string }) 
 
       {open && (
         <div
+          data-testid="locale-popup"
           className="absolute top-full right-0 mt-2 w-[236px] max-h-[calc(100vh-72px)] overflow-y-auto animate-in fade-in duration-150 rounded-[12px] z-50"
           style={glassStyle}
         >
