@@ -9,11 +9,13 @@ const JERSEY: Producto = { producto: 'La Nuestra — Jersey Mundial 26', href: '
 const MESH: Producto = { producto: 'Mesh Camo Blue Tee', href: '/producto/mesh-camo-blue-tee/' };
 const VENEZUELA: Producto = { producto: 'Stars For Venezuela Hoodie', href: '/producto/stars-for-venezuela-hoodie/' };
 const HOODIE_PINK: Producto = { producto: 'Hoodie Pink', href: '/producto/hoodie-pink/' };
-// Piezas de la produ que aún no están cargadas en el catálogo.
-const GREY: Producto = { producto: 'Grey HStars Set' };
+// Look gris: el polo en los planos cortos, el sweatpant en los de cuerpo entero.
+const POLO_GREY: Producto = { producto: 'Half-Zip Polo Melange', href: '/producto/half-zip-polo-melange/' };
+const PANT_GREY: Producto = { producto: 'SweatPant Grey HStars', href: '/producto/sweatpant-grey-hstars/' };
+const OGCJM_WHITE: Producto = { producto: 'Only God Can Judge Me — Blanca', href: '/producto/only-god-can-judge-me-blanca/' };
+const OGCJM_BLACK: Producto = { producto: 'Only God Can Judge Me — Negra', href: '/producto/only-god-can-judge-me-negra/' };
+// Pieza de la produ que aún no está cargada en el catálogo.
 const WHITE_TOP: Producto = { producto: 'White Crop Top' };
-const WHITE_TEE: Producto = { producto: 'White Tee' };
-const DUO: Producto = { producto: 'White Tee + Black Tee' };
 
 export const FW26: Lookbook = {
   dir: '/lookbook-fw26/book',
@@ -22,9 +24,9 @@ export const FW26: Lookbook = {
   intro: 'La colección FW26 puesta, en Rio de Janeiro. Fotos de Fili.',
   bloques: [
     { tipo: 'full', foto: f('6209', CAMO) },
-    { tipo: 'tres', fotos: [f('6198', CAMO), f('6296', GREY), f('6309', GREY)] },
-    { tipo: 'full', foto: f('6316', GREY) },
-    { tipo: 'dos', fotos: [f('6335', GREY), f('6351', GREY)] },
+    { tipo: 'tres', fotos: [f('6198', CAMO), f('6296', POLO_GREY), f('6309', PANT_GREY)] },
+    { tipo: 'full', foto: f('6316', POLO_GREY) },
+    { tipo: 'dos', fotos: [f('6335', POLO_GREY), f('6351', PANT_GREY)] },
     { tipo: 'tres', fotos: [f('6372', WHITE_TOP), f('6385', VENEZUELA), f('6416', VENEZUELA)] },
     { tipo: 'full', foto: f('6428', VENEZUELA) },
     { tipo: 'tres', fotos: [f('6439', VENEZUELA), f('6456', VENEZUELA), f('6458', VENEZUELA)] },
@@ -34,8 +36,8 @@ export const FW26: Lookbook = {
     { tipo: 'tres', fotos: [f('6540', PINK), f('6572', PINK), f('6592', PINK)] },
     { tipo: 'full', foto: f('6697', JORT) },
     { tipo: 'tres', fotos: [f('6718', MESH), f('6725', MESH), f('6720', MESH)] },
-    { tipo: 'tres', fotos: [f('6765', WHITE_TEE), f('6781', WHITE_TEE), f('6794', WHITE_TEE)] },
-    { tipo: 'dos', fotos: [f('6837', DUO), f('6841', DUO)] },
+    { tipo: 'tres', fotos: [f('6765', OGCJM_WHITE), f('6781', OGCJM_WHITE), f('6794', OGCJM_WHITE)] },
+    { tipo: 'dos', fotos: [f('6837', OGCJM_BLACK), f('6841', OGCJM_WHITE)] },
     { tipo: 'tres', fotos: [f('6857', HOODIE_PINK), f('6862', HOODIE_PINK), f('6852', HOODIE_PINK)] },
     { tipo: 'full', foto: f('6947', JERSEY) },
     { tipo: 'tres', fotos: [f('6898', JERSEY), f('6908', JERSEY), f('6929', JERSEY)] },
