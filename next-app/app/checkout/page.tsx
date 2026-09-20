@@ -10,6 +10,7 @@ import { computeChampionDiscount } from '@/lib/promo-champion';
 import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
 import { useLocale } from '@/context/LocaleContext';
 import { localeForCountry, readCountryCookie } from '@/lib/geo';
+import { chargeCurrency } from '@/lib/currency';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
@@ -270,7 +271,7 @@ export default function Checkout() {
   const soloGift = purchasableItems.length > 0 && fisicos.length === 0;
   const subtotalGift = giftItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const router = useRouter();
-  const { formatPrice, currency, setCurrency, currencyChosen, country } = useLocale();
+  const { formatPrice, formatPriceIn, currency, setCurrency, currencyChosen, country } = useLocale();
   const [step, setStep] = useState<Step>('info');
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
@@ -301,6 +302,11 @@ export default function Checkout() {
   const [loadingBranches, setLoadingBranches] = useState(false);
 
   const isInternational = info.pais !== 'AR';
+  // El sitio muestra precios en ocho monedas pero cobra en dos: pesos si el
+  // envío es a Argentina, dólares si es afuera (PayPal y wire). Cuando la
+  // persona mira los precios en otra moneda, el resumen lo aclara.
+  const cobro = chargeCurrency(info.pais, pago.metodo);
+  const cobroDistinto = currency !== cobro;
 
   // Envío internacional: el precio se cierra acá, con el tarifario de Boxfly.
   // La categoría y el peso salen del catálogo ya cargado, y el servidor rehace
@@ -408,6 +414,8 @@ export default function Checkout() {
   const descuento = cuponDescuento + promo3x2Descuento + championDescuento;
   const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
   const totalFinal = subtotal - descuento + envioEnPaso;
+  // Lo que dice la línea "Total" del resumen: sin envío hasta que haya uno elegido.
+  const totalMostrado = step === 'info' || !shippingReady ? subtotal - descuento : totalFinal;
   // El 10% de transferencia va sobre lo físico; la gift card se paga entera.
   const transferTotal = Math.round((subtotal - subtotalGift) * 0.90) + subtotalGift - descuento + envioEnPaso;
 
@@ -744,7 +752,7 @@ export default function Checkout() {
     !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency !== 'ARS' ? '' : soloGift ? 'Sin descuento sobre gift cards' : `Pagás ${formatPrice(transferTotal)} (10% off)` },
     !isInternational && { id: 'mercadopago',   label: 'Mercado Pago',                       sub: '' },
     !isInternational && { id: 'paypal',        label: 'PayPal',                             sub: 'Solo con saldo disponible en tu cuenta de PayPal' },
-    isInternational  && { id: 'paypal',        label: 'PayPal',                             sub: 'Credit card, debit or PayPal balance' },
+    isInternational  && { id: 'paypal',        label: 'PayPal',                             sub: 'Credit card, debit or PayPal balance · charged in USD' },
     isInternational  && { id: 'transferencia', label: 'Bank transfer (USD wire)',             sub: 'Lead Bank · USD ACH/Wire · details shown after order' },
   ].filter(Boolean) as { id: string; label: string; sub: string }[];
 
@@ -1127,7 +1135,8 @@ export default function Checkout() {
                     <div className="space-y-3">
                       <div className="flex items-baseline justify-between gap-4 font-mono text-[12px]">
                         <span className="text-white/60">{purchasableItems.length} {purchasableItems.length === 1 ? 'producto' : 'productos'}</span>
-                        <strong className="text-[14px]">{formatPrice(totalFinal)}</strong>
+                        {/* Acá ya se está cobrando: va en la moneda del cobro, no en la de vitrina. */}
+                        <strong className="text-[14px]">{formatPriceIn(totalFinal, cobro)}</strong>
                       </div>
                       <ReceiptPrinter.Status>
                         {isInternational ? 'Creating your order' : 'Creando tu pedido'}
@@ -1259,9 +1268,18 @@ export default function Checkout() {
                     transferencia: el número viejo se descifra en el nuevo en vez
                     de saltar. Al cargar se muestra directo. */}
                 <ScrambleText animateOnMount={false} intervalMs={16} numeric className="tabular-nums">
-                  {formatPrice(step === 'info' || !shippingReady ? subtotal - descuento : totalFinal)}
+                  {formatPrice(totalMostrado)}
                 </ScrambleText>
               </div>
+              {cobroDistinto && (
+                <p data-testid="aviso-moneda-cobro" className="text-[11px] text-muted-foreground mt-1 text-right">
+                  {isInternational
+                    ? <>Prices in {currency} are for reference. You pay in US dollars: <strong className="text-foreground">{formatPriceIn(totalMostrado, 'USD')}</strong> at today&apos;s rate.</>
+                    : cobro === 'USD'
+                      ? <>PayPal cobra en dólares: <strong className="text-foreground">{formatPriceIn(totalMostrado, 'USD')}</strong> a la cotización del día.</>
+                      : <>Los precios en {currency} son de referencia. El pago se hace en pesos argentinos: <strong className="text-foreground">{formatPriceIn(step === 'pago' && pago.metodo === 'transferencia' ? transferTotal : totalMostrado, 'ARS')}</strong>.</>}
+                </p>
+              )}
               {step === 'pago' && pago.metodo === 'transferencia' && !isInternational && (
                 <p className="text-[11px] text-green-700 font-semibold mt-1 text-right">Con transferencia pagás {formatPrice(transferTotal)}</p>
               )}

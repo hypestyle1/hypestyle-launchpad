@@ -292,6 +292,11 @@ const DICT: Dict = {
   'Pesos argentinos': { EN: 'Argentine pesos', PT: 'Pesos argentinos', DE: 'Argentinische Pesos', FR: 'Pesos argentins', IT: 'Pesos argentini' },
   'Dólares': { EN: 'US dollars', PT: 'Dólares', DE: 'US-Dollar', FR: 'Dollars américains', IT: 'Dollari USA' },
   'Euros': { EN: 'Euros', PT: 'Euros', DE: 'Euro', FR: 'Euros', IT: 'Euro' },
+  'Reales brasileños': { EN: 'Brazilian reais', PT: 'Reais', DE: 'Brasilianische Real', FR: 'Réals brésiliens', IT: 'Real brasiliani' },
+  'Libras esterlinas': { EN: 'British pounds', PT: 'Libras esterlinas', DE: 'Britische Pfund', FR: 'Livres sterling', IT: 'Sterline' },
+  'Pesos mexicanos': { EN: 'Mexican pesos', PT: 'Pesos mexicanos', DE: 'Mexikanische Pesos', FR: 'Pesos mexicains', IT: 'Pesos messicani' },
+  'Pesos chilenos': { EN: 'Chilean pesos', PT: 'Pesos chilenos', DE: 'Chilenische Pesos', FR: 'Pesos chiliens', IT: 'Pesos cileni' },
+  'Pesos uruguayos': { EN: 'Uruguayan pesos', PT: 'Pesos uruguaios', DE: 'Uruguayische Pesos', FR: 'Pesos uruguayens', IT: 'Pesos uruguaiani' },
 
   // — Ficha de producto (app/producto/[slug]) —
   // Categorías de Woo: el nombre llega en español desde productCategories. Las
