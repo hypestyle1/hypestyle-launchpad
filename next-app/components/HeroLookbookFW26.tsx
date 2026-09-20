@@ -22,7 +22,7 @@ const SLIDES = [
   { img: '/lookbook-fw26/hero/6209.webp', imgMobile: '/lookbook-fw26/hero/6198.webp', name1: 'Camo', name2: 'Full Set', slug: 'camo-full-set-combo', pos: '58%', posMobile: '35%' },
   { img: '/lookbook-fw26/hero/6428.webp', imgMobile: '/lookbook-fw26/hero/6442.webp', name1: 'Stars For Venezuela', name2: 'Hoodie', slug: 'stars-for-venezuela-hoodie', pos: '45%', posMobile: '30%' },
   { img: '/lookbook-fw26/hero/6519.webp', imgMobile: '/lookbook-fw26/hero/6606.webp', name1: 'Zip Hoodie', name2: 'Pink', slug: 'zip-hoodie-pink', pos: '50%', posMobile: '30%' },
-  { img: '/lookbook-fw26/hero/6697.webp', imgMobile: '/lookbook-fw26/hero/6529.webp', name1: 'Lettering Pink', name2: 'Jort', slug: 'lettering-pink-jort', pos: '50%', posMobile: '40%' },
+  { img: '/lookbook-fw26/hero/6316.webp', imgMobile: '/lookbook-fw26/hero/6319.webp', name1: 'Half-Zip Polo', name2: 'Melange', slug: 'half-zip-polo-melange', pos: '90%', posMobile: '30%' },
   { img: '/lookbook-fw26/hero/6947.webp', imgMobile: '/lookbook-fw26/hero/6908.webp', name1: 'La Nuestra', name2: 'Jersey Mundial 26', slug: 'la-nuestra-jersey-mundial-26', pos: '40%', posMobile: '30%' },
 ];
 
