@@ -11,9 +11,10 @@ import type { Foto, Lookbook as LookbookData, Producto } from '@/lib/lookbooks/t
  * propósito, como un lookbook impreso: horizontales a sangre, verticales
  * solas, filas de tres en 4:5 y pares altos en 9:16. Debajo de cada foto, qué
  * lleva puesto y el acceso directo a la ficha; las piezas que todavía no
- * están en Woo quedan con nombre y "Próximamente".
+ * están en Woo quedan con nombre y "Próximamente" (o la `nota` del lookbook,
+ * "Agotado" en los de archivo).
  */
-function Caption({ producto, href }: Producto) {
+function Caption({ producto, href, nota }: Producto) {
   return (
     <figcaption className="mt-2.5 flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
       <span className="text-[12px] md:text-[13px] font-medium leading-tight">{producto}</span>
@@ -22,7 +23,7 @@ function Caption({ producto, href }: Producto) {
           Ver producto
         </Link>
       ) : (
-        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Próximamente</span>
+        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{nota ?? 'Próximamente'}</span>
       )}
     </figcaption>
   );
@@ -46,7 +47,7 @@ function FotoBox({ dir, foto, aspect, sizes, priority = false }: { dir: string; 
   return (
     <figure className="reveal">
       {foto.href ? <Link href={foto.href}>{img}</Link> : img}
-      <Caption producto={foto.producto} href={foto.href} />
+      <Caption producto={foto.producto} href={foto.href} nota={foto.nota} />
     </figure>
   );
 }

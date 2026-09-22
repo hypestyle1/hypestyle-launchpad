@@ -2,9 +2,10 @@
  * Lookbooks: una página por shooting profesional de colección (ver el menú
  * Colecciones del navbar). Cada uno es una lista de bloques con fotos y, debajo
  * de cada foto, el producto que lleva puesto con el acceso directo a la ficha.
- * Sin `href` cuando la pieza todavía no está cargada en Woo ("Próximamente").
+ * Sin `href` cuando la pieza no tiene ficha en Woo: la caption muestra `nota`
+ * ("Agotado" en los lookbooks de archivo) o "Próximamente" por defecto.
  */
-export type Producto = { producto: string; href?: string };
+export type Producto = { producto: string; href?: string; nota?: string };
 
 export type Foto = Producto & { n: string };
 
