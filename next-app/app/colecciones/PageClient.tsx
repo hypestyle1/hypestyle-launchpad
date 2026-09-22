@@ -106,6 +106,16 @@ const drops: Drop[] = [
     cta: "Ver lookbook",
   },
   {
+    name: "Tie Dye Hoodie Drop x Ferpa",
+    season: "Colab — Septiembre 2020",
+    description: "Cuarenta buzos tie dye, ninguno a la venta: se repartieron entre los streamers y creadores del momento.",
+    image: "ferpa-drop-banner.webp",
+    href: "/lookbook-ferpa/",
+    products: 1,
+    status: "not for sale",
+    cta: "Ver lookbook",
+  },
+  {
     name: "Regular Tees",
     season: "Colección permanente",
     description: "Básicos que no son básicos. 100% algodón, corte perfecto, siempre disponible.",

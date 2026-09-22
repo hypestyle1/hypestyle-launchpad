@@ -17,7 +17,10 @@ export type Bloque =
   // El film de la colección, a sangre en 16:9. Arranca como una foto (`poster`,
   // un webp propio en la misma carpeta) y recién al tocarla carga el iframe de
   // YouTube: así la página no se trae el player en cada visita.
-  | { tipo: 'video'; youtube: string; poster: string; titulo: string };
+  | { tipo: 'video'; youtube: string; poster: string; titulo: string }
+  // Lo mismo para un reel vertical propio (9:16), servido desde public/ en vez
+  // de YouTube: `mp4` es el nombre del archivo, al lado del poster.
+  | { tipo: 'reel'; mp4: string; poster: string; titulo: string };
 
 export type Lookbook = {
   /** Carpeta en public/ donde viven los webp: `/lookbook-fw26/book`. */

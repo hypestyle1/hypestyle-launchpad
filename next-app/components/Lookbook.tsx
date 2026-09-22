@@ -7,6 +7,7 @@ import { useReveal } from '@/hooks/useReveal';
 import type { Bloque, Foto, Lookbook as LookbookData, Producto } from '@/lib/lookbooks/types';
 
 type BloqueVideo = Extract<Bloque, { tipo: 'video' }>;
+type BloqueReel = Extract<Bloque, { tipo: 'reel' }>;
 
 /**
  * Página de lookbook: el resumen de un shooting profesional de colección
@@ -55,28 +56,24 @@ function FotoBox({ dir, foto, aspect, sizes, priority = false }: { dir: string; 
   );
 }
 
-
 /**
  * El film de la colección. Se ve como una foto más hasta que la tocás: recién
- * ahí entra el iframe de YouTube, para que la página no cargue el player (y
- * las cookies de YouTube) en cada visita.
+ * ahí entra el player, para que la página no cargue el video (ni las cookies
+ * de YouTube, cuando es de YouTube) en cada visita.
  */
-function VideoBox({ dir, b }: { dir: string; b: BloqueVideo }) {
+function Reproductor({
+  poster, titulo, aspect, sizes, nota, children,
+}: {
+  poster: string; titulo: string; aspect: string; sizes: string; nota: string;
+  children: React.ReactNode;
+}) {
   const [play, setPlay] = useState(false);
   return (
     <figure className="reveal">
-      <div className="relative aspect-video overflow-hidden bg-black">
-        {play ? (
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${b.youtube}?autoplay=1&rel=0&modestbranding=1`}
-            title={b.titulo}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="absolute inset-0 h-full w-full"
-          />
-        ) : (
-          <button type="button" onClick={() => setPlay(true)} aria-label={`Reproducir ${b.titulo}`} className="group absolute inset-0 h-full w-full cursor-pointer">
-            <Image src={`${dir}/${b.poster}.webp`} alt={b.titulo} fill sizes="100vw" priority quality={90} className="object-cover" />
+      <div className={`relative overflow-hidden bg-black ${aspect}`}>
+        {play ? children : (
+          <button type="button" onClick={() => setPlay(true)} aria-label={`Reproducir ${titulo}`} className="group absolute inset-0 h-full w-full cursor-pointer">
+            <Image src={poster} alt={titulo} fill sizes={sizes} priority quality={90} className="object-cover" />
             <span className="absolute inset-0 flex items-center justify-center">
               <span className="flex h-16 w-16 items-center justify-center bg-background/85 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 md:h-20 md:w-20">
                 {/* Triángulo de play, en el color del texto y sin radius, como el resto del tema. */}
@@ -87,12 +84,43 @@ function VideoBox({ dir, b }: { dir: string; b: BloqueVideo }) {
         )}
       </div>
       <figcaption className="mt-2.5 flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
-        <span className="text-[12px] md:text-[13px] font-medium leading-tight">{b.titulo}</span>
-        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">El film</span>
+        <span className="text-[12px] md:text-[13px] font-medium leading-tight">{titulo}</span>
+        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{nota}</span>
       </figcaption>
     </figure>
   );
 }
+
+function VideoBox({ dir, b }: { dir: string; b: BloqueVideo }) {
+  return (
+    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} aspect="aspect-video" sizes="100vw" nota="El film">
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${b.youtube}?autoplay=1&rel=0&modestbranding=1`}
+        title={b.titulo}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="absolute inset-0 h-full w-full"
+      />
+    </Reproductor>
+  );
+}
+
+function ReelBox({ dir, b }: { dir: string; b: BloqueReel }) {
+  return (
+    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} aspect="aspect-[9/16]" sizes="(max-width: 768px) 100vw, 30vw" nota="El reel">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption -- reel de campaña, sin diálogo que subtitular */}
+      <video
+        src={`${dir}/${b.mp4}.mp4`}
+        poster={`${dir}/${b.poster}.webp`}
+        autoPlay
+        controls
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+    </Reproductor>
+  );
+}
+
 export default function Lookbook({ data }: { data: LookbookData }) {
   const ref = useReveal();
   const { dir, bloques } = data;
@@ -107,6 +135,13 @@ export default function Lookbook({ data }: { data: LookbookData }) {
 
       <div className="px-4 md:px-8 pb-20 md:pb-28 space-y-10 md:space-y-16">
         {bloques.map((b, i) => {
+          if (b.tipo === 'reel') {
+            return (
+              <div key={b.mp4} className="md:px-[35%]">
+                <ReelBox dir={dir} b={b} />
+              </div>
+            );
+          }
           if (b.tipo === 'video') {
             return <VideoBox key={b.youtube} dir={dir} b={b} />;
           }

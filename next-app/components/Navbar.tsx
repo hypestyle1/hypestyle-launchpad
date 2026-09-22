@@ -31,6 +31,7 @@ const menuColecciones = [
   { label: 'Lookbook — Neo Pistea x Hypestyle', href: '/lookbook-neo/' },
   { label: 'Lookbook — La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir/' },
   { label: 'Lookbook — Fileteado Porteño x Alfredo Genovese', href: '/lookbook-genovese/' },
+  { label: 'Lookbook — Tie Dye Hoodie Drop x Ferpa', href: '/lookbook-ferpa/' },
 ];
 const menuContacto = [
   { label: 'Escribinos',              href: '/contacto/' },
@@ -504,6 +505,7 @@ export default function Navbar() {
                     { label: 'Lookbook Neo Pistea', href: '/lookbook-neo/' },
                     { label: 'Lookbook La Ciudad del Pop', href: '/lookbook-mir/' },
                     { label: 'Lookbook Fileteado Porteño', href: '/lookbook-genovese/' },
+                    { label: 'Lookbook Tie Dye x Ferpa', href: '/lookbook-ferpa/' },
                     { label: 'Reseñas',       href: '/reviews/' },
 
                     { label: 'FAQs',          href: '/faqs/' },
