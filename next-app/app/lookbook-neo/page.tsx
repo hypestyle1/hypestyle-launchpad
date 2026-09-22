@@ -6,7 +6,7 @@ import { NEO } from '@/lib/lookbooks/neo';
 import { buildMetadata } from '@/lib/seo';
 
 export const metadata = buildMetadata({
-  title: 'Lookbook — Neo Pistea x Hypestyle',
+  title: 'Lookbook — CULTO x Neo Pistea',
   description: 'El merch oficial de CULTO: la colaboración de HYPESTYLE® con Neo Pistea, en el shooting de Buenos Aires y en vivo en Mar del Plata.',
   path: '/lookbook-neo/',
 });

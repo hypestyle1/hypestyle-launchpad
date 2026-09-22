@@ -96,9 +96,9 @@ const drops: Drop[] = [
     cta: "Ver lookbook",
   },
   {
-    name: "Neo Pistea x Hypestyle",
+    name: "CULTO x Neo Pistea",
     season: "Colab — Verano 2025",
-    description: "El merch oficial de CULTO. Tres remeras con Neo Pistea, agotadas: queda el lookbook del shooting y de la noche en Mar del Plata.",
+    description: "El merch oficial del disco. Tres remeras con Neo Pistea, agotadas: queda el lookbook del shooting y de la noche en Mar del Plata.",
     image: "neo-pistea-drop-banner.webp",
     href: "/lookbook-neo/",
     products: 3,

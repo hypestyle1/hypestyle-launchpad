@@ -6,8 +6,8 @@ import { foto as f, type Lookbook, type Producto } from './types';
 // Hypestyle. Tres gráficas, cada una en negra y blanca; como la de Neo, la
 // tirada se agotó sin quedar cargada en Woo, así que todas van con "Agotado".
 const AGOTADO = { nota: 'Agotado' };
-const CIUDAD: Producto = { producto: 'Ciudad Tee — La Ciudad del Pop x Mir Nicolás', ...AGOTADO };
-const GRAFFITI: Producto = { producto: 'Graffiti Tee — La Ciudad del Pop x Mir Nicolás', ...AGOTADO };
+const CIUDAD: Producto = { producto: 'Ciudad Tee — x Mir Nicolás', ...AGOTADO };
+const GRAFFITI: Producto = { producto: 'Graffiti Tee — x Mir Nicolás', ...AGOTADO };
 const POP: Producto = { producto: 'La Ciudad del Pop Tee — x Mir Nicolás', ...AGOTADO };
 const COLECCION: Producto = { producto: 'La Ciudad del Pop x Mir Nicolás — la colección', ...AGOTADO };
 

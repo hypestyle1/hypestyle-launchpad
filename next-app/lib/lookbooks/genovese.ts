@@ -15,7 +15,7 @@ export const GENOVESE: Lookbook = {
   title: 'Fileteado Porteño x Alfredo Genovese',
   intro: 'El jersey fileteado por Alfredo Genovese, en la cancha de la Villa 31. Filete porteño sobre una camiseta de fútbol. Diciembre de 2025.',
   bloques: [
-    { tipo: 'video', youtube: 'WKox7VQJKYM', poster: 'film', titulo: 'Hypestyle x Fileteado Porteño — Villa 31' },
+    { tipo: 'video', youtube: 'WKox7VQJKYM', poster: 'film', titulo: 'Fileteado Porteño x Alfredo Genovese — el film en la Villa 31' },
     { tipo: 'uno', foto: f('06447', JERSEY) },
     { tipo: 'tres', fotos: [f('06684', JERSEY), f('06686', JERSEY), f('06708', JERSEY)] },
     { tipo: 'dos', fotos: [f('06685', JERSEY), f('06700', JERSEY)] },
