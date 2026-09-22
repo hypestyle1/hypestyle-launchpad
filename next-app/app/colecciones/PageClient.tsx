@@ -4,7 +4,14 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-const drops = [
+// Los drops de archivo (una colab agotada, sin fichas en Woo) llevan a su
+// lookbook en vez de a un listado vacío, y con `cta` cambian el texto del link.
+type Drop = {
+  name: string; season: string; description: string; image: string;
+  href: string; products: number; status: string; cta?: string;
+};
+
+const drops: Drop[] = [
   {
     name: "Napoli",
     season: "Drop — Agosto 2026",
@@ -67,6 +74,46 @@ const drops = [
     href: "/colecciones/race/",
     products: 4,
     status: "disponible",
+  },
+  {
+    name: "Fileteado Porteño x Alfredo Genovese",
+    season: "Colab — Diciembre 2025",
+    description: "Filete porteño sobre una camiseta de fútbol. El jersey fileteado por Alfredo Genovese, filmado en la cancha de la Villa 31.",
+    image: "genovese-drop-banner.webp",
+    href: "/lookbook-genovese/",
+    products: 1,
+    status: "disponible",
+    cta: "Ver lookbook",
+  },
+  {
+    name: "La Ciudad del Pop x Mir Nicolás",
+    season: "Colab — Octubre 2025",
+    description: "Arte inspirado en el universo visual de Mir Nicolás y la cultura urbana japonesa. Tres gráficas en negro y en blanco, con pop-up en Vorterix.",
+    image: "mir-nicolas-drop-banner.webp",
+    href: "/lookbook-mir/",
+    products: 6,
+    status: "agotado",
+    cta: "Ver lookbook",
+  },
+  {
+    name: "Neo Pistea x Hypestyle",
+    season: "Colab — Verano 2025",
+    description: "El merch oficial de CULTO. Tres remeras con Neo Pistea, agotadas: queda el lookbook del shooting y de la noche en Mar del Plata.",
+    image: "neo-pistea-drop-banner.webp",
+    href: "/lookbook-neo/",
+    products: 3,
+    status: "agotado",
+    cta: "Ver lookbook",
+  },
+  {
+    name: "Tie Dye Hoodie Drop x Ferpa",
+    season: "Colab — Septiembre 2020",
+    description: "Cuarenta buzos tie dye, ninguno a la venta: se repartieron entre los streamers y creadores del momento.",
+    image: "ferpa-drop-banner.webp",
+    href: "/lookbook-ferpa/",
+    products: 1,
+    status: "not for sale",
+    cta: "Ver lookbook",
   },
   {
     name: "Regular Tees",
@@ -152,9 +199,9 @@ export default function Colecciones() {
                     </p>
                   </div>
                   <div className="flex items-center justify-between mt-8">
-                    <p className="text-[12px] text-muted-foreground">{drop.products} productos</p>
+                    <p className="text-[12px] text-muted-foreground">{drop.products} {drop.products === 1 ? "producto" : "productos"}</p>
                     <span className="text-[12px] font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                      Ver colección
+                      {drop.cta ?? "Ver colección"}
                       <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                     </span>
                   </div>

@@ -27,6 +27,14 @@ const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[numb
   { path: '/colecciones/race/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/colecciones/regular-tees/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/colecciones/mas-hype/', changeFrequency: 'weekly', priority: 0.7 },
+  // Los lookbooks nunca habían entrado al sitemap: son páginas indexables con
+  // el archivo visual de cada colección.
+  { path: '/lookbook-fw26/', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/lookbook-faith/', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/lookbook-neo/', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/lookbook-mir/', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/lookbook-genovese/', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/lookbook-ferpa/', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/arriba/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/abajo/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/accesorios/', changeFrequency: 'weekly', priority: 0.7 },

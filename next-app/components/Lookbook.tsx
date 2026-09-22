@@ -2,8 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState } from 'react';
 import { useReveal } from '@/hooks/useReveal';
-import type { Foto, Lookbook as LookbookData, Producto } from '@/lib/lookbooks/types';
+import type { Bloque, Foto, Lookbook as LookbookData, Producto } from '@/lib/lookbooks/types';
+
+type BloqueVideo = Extract<Bloque, { tipo: 'video' }>;
+type BloqueReel = Extract<Bloque, { tipo: 'reel' }>;
 
 /**
  * Página de lookbook: el resumen de un shooting profesional de colección
@@ -11,9 +15,10 @@ import type { Foto, Lookbook as LookbookData, Producto } from '@/lib/lookbooks/t
  * propósito, como un lookbook impreso: horizontales a sangre, verticales
  * solas, filas de tres en 4:5 y pares altos en 9:16. Debajo de cada foto, qué
  * lleva puesto y el acceso directo a la ficha; las piezas que todavía no
- * están en Woo quedan con nombre y "Próximamente".
+ * están en Woo quedan con nombre y "Próximamente" (o la `nota` del lookbook,
+ * "Agotado" en los de archivo).
  */
-function Caption({ producto, href }: Producto) {
+function Caption({ producto, href, nota }: Producto) {
   return (
     <figcaption className="mt-2.5 flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
       <span className="text-[12px] md:text-[13px] font-medium leading-tight">{producto}</span>
@@ -22,7 +27,7 @@ function Caption({ producto, href }: Producto) {
           Ver producto
         </Link>
       ) : (
-        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Próximamente</span>
+        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{nota ?? 'Próximamente'}</span>
       )}
     </figcaption>
   );
@@ -46,8 +51,73 @@ function FotoBox({ dir, foto, aspect, sizes, priority = false }: { dir: string; 
   return (
     <figure className="reveal">
       {foto.href ? <Link href={foto.href}>{img}</Link> : img}
-      <Caption producto={foto.producto} href={foto.href} />
+      <Caption producto={foto.producto} href={foto.href} nota={foto.nota} />
     </figure>
+  );
+}
+
+/**
+ * El film de la colección. Se ve como una foto más hasta que la tocás: recién
+ * ahí entra el player, para que la página no cargue el video (ni las cookies
+ * de YouTube, cuando es de YouTube) en cada visita.
+ */
+function Reproductor({
+  poster, titulo, aspect, sizes, nota, children,
+}: {
+  poster: string; titulo: string; aspect: string; sizes: string; nota: string;
+  children: React.ReactNode;
+}) {
+  const [play, setPlay] = useState(false);
+  return (
+    <figure className="reveal">
+      <div className={`relative overflow-hidden bg-black ${aspect}`}>
+        {play ? children : (
+          <button type="button" onClick={() => setPlay(true)} aria-label={`Reproducir ${titulo}`} className="group absolute inset-0 h-full w-full cursor-pointer">
+            <Image src={poster} alt={titulo} fill sizes={sizes} priority quality={90} className="object-cover" />
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="flex h-16 w-16 items-center justify-center bg-background/85 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 md:h-20 md:w-20">
+                {/* Triángulo de play, en el color del texto y sin radius, como el resto del tema. */}
+                <span className="ml-1 border-y-[11px] border-l-[18px] border-y-transparent border-l-foreground md:ml-1.5 md:border-y-[13px] md:border-l-[21px]" />
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
+      <figcaption className="mt-2.5 flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
+        <span className="text-[12px] md:text-[13px] font-medium leading-tight">{titulo}</span>
+        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{nota}</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function VideoBox({ dir, b }: { dir: string; b: BloqueVideo }) {
+  return (
+    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} aspect="aspect-video" sizes="100vw" nota="El film">
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${b.youtube}?autoplay=1&rel=0&modestbranding=1`}
+        title={b.titulo}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="absolute inset-0 h-full w-full"
+      />
+    </Reproductor>
+  );
+}
+
+function ReelBox({ dir, b }: { dir: string; b: BloqueReel }) {
+  return (
+    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} aspect="aspect-[9/16]" sizes="(max-width: 768px) 100vw, 30vw" nota="El reel">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption -- reel de campaña, sin diálogo que subtitular */}
+      <video
+        src={`${dir}/${b.mp4}.mp4`}
+        poster={`${dir}/${b.poster}.webp`}
+        autoPlay
+        controls
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+    </Reproductor>
   );
 }
 
@@ -65,6 +135,16 @@ export default function Lookbook({ data }: { data: LookbookData }) {
 
       <div className="px-4 md:px-8 pb-20 md:pb-28 space-y-10 md:space-y-16">
         {bloques.map((b, i) => {
+          if (b.tipo === 'reel') {
+            return (
+              <div key={b.mp4} className="md:px-[35%]">
+                <ReelBox dir={dir} b={b} />
+              </div>
+            );
+          }
+          if (b.tipo === 'video') {
+            return <VideoBox key={b.youtube} dir={dir} b={b} />;
+          }
           if (b.tipo === 'full') {
             return <FotoBox key={b.foto.n} dir={dir} foto={b.foto} aspect="aspect-[3/2]" sizes="100vw" priority={i === 0} />;
           }
