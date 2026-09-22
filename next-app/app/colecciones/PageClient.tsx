@@ -76,6 +76,16 @@ const drops: Drop[] = [
     status: "disponible",
   },
   {
+    name: "Fileteado Porteño x Alfredo Genovese",
+    season: "Colab — Diciembre 2025",
+    description: "Filete porteño sobre una camiseta de fútbol. El jersey fileteado por Alfredo Genovese, filmado en la cancha de la Villa 31.",
+    image: "genovese-drop-banner.webp",
+    href: "/lookbook-genovese/",
+    products: 1,
+    status: "disponible",
+    cta: "Ver lookbook",
+  },
+  {
     name: "La Ciudad del Pop x Mir Nicolás",
     season: "Colab — Octubre 2025",
     description: "Arte inspirado en el universo visual de Mir Nicolás y la cultura urbana japonesa. Tres gráficas en negro y en blanco, con pop-up en Vorterix.",
@@ -179,7 +189,7 @@ export default function Colecciones() {
                     </p>
                   </div>
                   <div className="flex items-center justify-between mt-8">
-                    <p className="text-[12px] text-muted-foreground">{drop.products} productos</p>
+                    <p className="text-[12px] text-muted-foreground">{drop.products} {drop.products === 1 ? "producto" : "productos"}</p>
                     <span className="text-[12px] font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                       {drop.cta ?? "Ver colección"}
                       <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>

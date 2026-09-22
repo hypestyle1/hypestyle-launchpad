@@ -30,6 +30,7 @@ const menuColecciones = [
   { label: 'Lookbook — Faith Is The Real Hype', href: '/lookbook-faith/' },
   { label: 'Lookbook — Neo Pistea x Hypestyle', href: '/lookbook-neo/' },
   { label: 'Lookbook — La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir/' },
+  { label: 'Lookbook — Fileteado Porteño x Alfredo Genovese', href: '/lookbook-genovese/' },
 ];
 const menuContacto = [
   { label: 'Escribinos',              href: '/contacto/' },
@@ -502,6 +503,7 @@ export default function Navbar() {
                     { label: 'Lookbook Faith', href: '/lookbook-faith/' },
                     { label: 'Lookbook Neo Pistea', href: '/lookbook-neo/' },
                     { label: 'Lookbook La Ciudad del Pop', href: '/lookbook-mir/' },
+                    { label: 'Lookbook Fileteado Porteño', href: '/lookbook-genovese/' },
                     { label: 'Reseñas',       href: '/reviews/' },
 
                     { label: 'FAQs',          href: '/faqs/' },
