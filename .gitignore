@@ -20,6 +20,10 @@ dist-ssr
 .secrets/
 **/.secrets/
 
+# Dumps de la API de Vercel (pueden traer nombres de env vars y logs)
+vercel_*.json
+vercel_*.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
