@@ -32,6 +32,7 @@ const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[numb
   { path: '/lookbook-fw26/', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/lookbook-faith/', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/lookbook-neo/', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/lookbook-mir/', changeFrequency: 'monthly', priority: 0.6 },
   { path: '/arriba/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/abajo/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/accesorios/', changeFrequency: 'weekly', priority: 0.7 },

@@ -29,6 +29,7 @@ const menuColecciones = [
   { label: 'Lookbook FW26 — Rio de Janeiro', href: '/lookbook-fw26/' },
   { label: 'Lookbook — Faith Is The Real Hype', href: '/lookbook-faith/' },
   { label: 'Lookbook — Neo Pistea x Hypestyle', href: '/lookbook-neo/' },
+  { label: 'Lookbook — La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir/' },
 ];
 const menuContacto = [
   { label: 'Escribinos',              href: '/contacto/' },
@@ -500,6 +501,7 @@ export default function Navbar() {
                     { label: 'Lookbook FW26', href: '/lookbook-fw26/' },
                     { label: 'Lookbook Faith', href: '/lookbook-faith/' },
                     { label: 'Lookbook Neo Pistea', href: '/lookbook-neo/' },
+                    { label: 'Lookbook La Ciudad del Pop', href: '/lookbook-mir/' },
                     { label: 'Reseñas',       href: '/reviews/' },
 
                     { label: 'FAQs',          href: '/faqs/' },

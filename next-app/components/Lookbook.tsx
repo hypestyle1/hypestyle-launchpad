@@ -2,8 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState } from 'react';
 import { useReveal } from '@/hooks/useReveal';
-import type { Foto, Lookbook as LookbookData, Producto } from '@/lib/lookbooks/types';
+import type { Bloque, Foto, Lookbook as LookbookData, Producto } from '@/lib/lookbooks/types';
+
+type BloqueVideo = Extract<Bloque, { tipo: 'video' }>;
 
 /**
  * Página de lookbook: el resumen de un shooting profesional de colección
@@ -52,6 +55,44 @@ function FotoBox({ dir, foto, aspect, sizes, priority = false }: { dir: string; 
   );
 }
 
+
+/**
+ * El film de la colección. Se ve como una foto más hasta que la tocás: recién
+ * ahí entra el iframe de YouTube, para que la página no cargue el player (y
+ * las cookies de YouTube) en cada visita.
+ */
+function VideoBox({ dir, b }: { dir: string; b: BloqueVideo }) {
+  const [play, setPlay] = useState(false);
+  return (
+    <figure className="reveal">
+      <div className="relative aspect-video overflow-hidden bg-black">
+        {play ? (
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${b.youtube}?autoplay=1&rel=0&modestbranding=1`}
+            title={b.titulo}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full"
+          />
+        ) : (
+          <button type="button" onClick={() => setPlay(true)} aria-label={`Reproducir ${b.titulo}`} className="group absolute inset-0 h-full w-full cursor-pointer">
+            <Image src={`${dir}/${b.poster}.webp`} alt={b.titulo} fill sizes="100vw" priority quality={90} className="object-cover" />
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="flex h-16 w-16 items-center justify-center bg-background/85 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 md:h-20 md:w-20">
+                {/* Triángulo de play, en el color del texto y sin radius, como el resto del tema. */}
+                <span className="ml-1 border-y-[11px] border-l-[18px] border-y-transparent border-l-foreground md:ml-1.5 md:border-y-[13px] md:border-l-[21px]" />
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
+      <figcaption className="mt-2.5 flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
+        <span className="text-[12px] md:text-[13px] font-medium leading-tight">{b.titulo}</span>
+        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">El film</span>
+      </figcaption>
+    </figure>
+  );
+}
 export default function Lookbook({ data }: { data: LookbookData }) {
   const ref = useReveal();
   const { dir, bloques } = data;
@@ -66,6 +107,9 @@ export default function Lookbook({ data }: { data: LookbookData }) {
 
       <div className="px-4 md:px-8 pb-20 md:pb-28 space-y-10 md:space-y-16">
         {bloques.map((b, i) => {
+          if (b.tipo === 'video') {
+            return <VideoBox key={b.youtube} dir={dir} b={b} />;
+          }
           if (b.tipo === 'full') {
             return <FotoBox key={b.foto.n} dir={dir} foto={b.foto} aspect="aspect-[3/2]" sizes="100vw" priority={i === 0} />;
           }

@@ -76,6 +76,16 @@ const drops: Drop[] = [
     status: "disponible",
   },
   {
+    name: "La Ciudad del Pop x Mir Nicolás",
+    season: "Colab — Octubre 2025",
+    description: "Arte inspirado en el universo visual de Mir Nicolás y la cultura urbana japonesa. Tres gráficas en negro y en blanco, con pop-up en Vorterix.",
+    image: "mir-nicolas-drop-banner.webp",
+    href: "/lookbook-mir/",
+    products: 6,
+    status: "agotado",
+    cta: "Ver lookbook",
+  },
+  {
     name: "Neo Pistea x Hypestyle",
     season: "Colab — Verano 2025",
     description: "El merch oficial de CULTO. Tres remeras con Neo Pistea, agotadas: queda el lookbook del shooting y de la noche en Mar del Plata.",
