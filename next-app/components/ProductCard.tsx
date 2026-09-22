@@ -15,6 +15,11 @@ import { getColorwaysForSlug } from "@/lib/product-detail";
 // está armado alrededor de eso. Al pasar el mouse aparece la primera foto de
 // la galería, que tiene que ser alguien usando el producto — eso se cuida en
 // Woo, no acá. Se probó invertirlo (modelo primero, estilo EME) y se descartó.
+//
+// El mockup va con object-top (es cuadrado, no se recorta) y la foto del hover
+// con object-center: son verticales (3:4, 9:16) y la card es cuadrada, así que
+// anclarlas arriba dejaba la cara ocupando el cuadro y la estampa cortada abajo.
+// Centrado, la prenda entra entera — revisado contra las 16 fotos del drop Faith.
 
 interface ProductCardProps {
   id?: string;
@@ -121,7 +126,7 @@ export default function ProductCard({
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            className={`object-cover object-top transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
+            className={`object-cover object-center transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
               hovered ? "opacity-100" : "opacity-0"
             }`}
           />
