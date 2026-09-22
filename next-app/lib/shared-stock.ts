@@ -56,6 +56,7 @@ export const COLOR_LABEL: Record<string, string> = {
   hoodie_negro: 'Blank hoodie negro',
   ranglan_blanco: 'Blank remera oversize ranglan blanco',
   ranglan_azul_noche: 'Blank remera oversize ranglan azul noche',
+  longsleeve_negro: 'Blank longsleeve negra',
 };
 
 function wpHeaders(extra?: Record<string, string>): Record<string, string> {
