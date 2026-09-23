@@ -55,11 +55,19 @@ function buildHtml(order: {
   paymentMethod?: string;
   talo?: { alias: string | null; cvu: string | null; beneficiario: string | null; cuit: string | null; banco: string | null } | null;
 }) {
+  // La gift card es digital: no se despacha. El código sale en un mail aparte
+  // (/api/gift-card-mail) cuando el pago se acredita. Un pedido de solo gift
+  // cards no puede prometer Andreani ni "te avisamos cuando esté en camino".
+  const esGift = (name: string) => /gift card/i.test(name);
+  const soloGift = order.items.length > 0 && order.items.every(i => esGift(i.name));
+  const hayGift  = order.items.some(i => esGift(i.name));
+  const pagoPendiente = order.paymentMethod === 'transferencia';
+
   const rows = order.items.map(item => `
     <tr>
       <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
         <span style="font-size:13px;color:#111;font-weight:600;">${item.name}</span><br/>
-        <span style="font-size:12px;color:#888;">Talle: ${item.size} · Cant: ${item.quantity}</span>
+        <span style="font-size:12px;color:#888;">${esGift(item.name) ? 'Digital' : `Talle: ${item.size}`} · Cant: ${item.quantity}</span>
         ${dorsalText(item.customization) ? `<br/><span style="font-size:12px;color:#888;">Dorsal: ${dorsalText(item.customization)}</span>` : ''}
       </td>
       <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;text-align:right;font-size:13px;color:#111;white-space:nowrap;">
@@ -108,8 +116,10 @@ function buildHtml(order: {
             <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:#999;">Pedido #${order.orderNum}</p>
             <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;color:#111;">¡Gracias por tu compra!</h1>
             <p style="margin:0 0 28px;font-size:14px;color:#555;line-height:1.6;">
-              Hola ${order.nombre}, recibimos tu pedido y ya estamos trabajando en él.
-              Te avisamos cuando esté en camino.
+              ${soloGift
+                ? `Hola ${order.nombre}, recibimos tu pedido. ${pagoPendiente ? 'Cuando se acredite el pago te' : 'Te'} llega en un mail aparte el código de tu gift card, listo para usar o reenviar.`
+                : `Hola ${order.nombre}, recibimos tu pedido y ya estamos trabajando en él.
+              Te avisamos cuando esté en camino.`}
             </p>
             ${transferNote}
             <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #f0f0f0;">
@@ -122,15 +132,17 @@ function buildHtml(order: {
               </tr>
             </table>
             <p style="margin:24px 0 0;font-size:12px;color:#888;background:#f8f8f8;border-radius:6px;padding:12px 16px;">
-              Envío por Andreani — 5 a 10 días hábiles a partir de la confirmación del pago.
+              ${soloGift
+                ? 'La gift card es digital: no tiene envío. El código llega por mail con el asunto "Tu gift card de Hypestyle" y también lo ves en "Ver mi pedido".'
+                : `Envío por Andreani — 5 a 10 días hábiles a partir de la confirmación del pago.${hayGift ? ' La gift card no viaja en el paquete: el código te llega por mail aparte.' : ''}`}
             </p>
             ${order.wcOrderId && order.orderKey ? `
             <div style="margin-top:24px;text-align:center;">
               <a href="${SITE_URL}/seguimiento?pedido=${order.wcOrderId}&clave=${order.orderKey}"
                  style="display:inline-block;background:#0a0a0a;color:#fff;text-decoration:none;padding:13px 28px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-radius:2px;">
-                Seguir mi pedido →
+                ${soloGift ? 'Ver mi pedido' : 'Seguir mi pedido'} →
               </a>
-              <p style="margin:8px 0 0;font-size:11px;color:#aaa;">El estado se actualiza cuando el envío es despachado.</p>
+              ${soloGift ? '' : '<p style="margin:8px 0 0;font-size:11px;color:#aaa;">El estado se actualiza cuando el envío es despachado.</p>'}
             </div>
             ` : ''}
           </td>
