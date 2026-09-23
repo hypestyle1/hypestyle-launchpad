@@ -98,7 +98,7 @@ export const CATEGORY_MAP: Record<string, CategoryConfig> = {
     title: 'Tees',
     subtitle: 'Remeras y tops',
     seoDescription: 'Remeras y tops de HYPESTYLE. Boxy fit y regular fit, 100% algodón, estampas de edición limitada.',
-    categories: ['Tee', 'Top'],
+    categories: ['Tee', 'Longsleeve', 'Top'],
   },
   '/hoodies': {
     title: 'Hoodies',
