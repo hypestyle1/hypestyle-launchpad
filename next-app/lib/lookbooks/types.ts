@@ -20,7 +20,12 @@ export type Bloque =
   | { tipo: 'video'; youtube: string; poster: string; titulo: string }
   // Lo mismo para un reel vertical propio (9:16), servido desde public/ en vez
   // de YouTube: `mp4` es el nombre del archivo, al lado del poster.
-  | { tipo: 'reel'; mp4: string; poster: string; titulo: string };
+  | { tipo: 'reel'; mp4: string; poster: string; titulo: string }
+  // Un posteo de Instagram embebido (el shortcode va en `ig`). Igual que los
+  // otros: hasta que no la tocás es una foto, así que Instagram no entra en la
+  // página sola. Trae el marco de IG —cabecera y pie— y por eso necesita más
+  // alto que un 9:16 pelado.
+  | { tipo: 'instagram'; ig: string; poster: string; titulo: string };
 
 export type Lookbook = {
   /** Carpeta en public/ donde viven los webp: `/lookbook-fw26/book`. */
@@ -28,6 +33,11 @@ export type Lookbook = {
   eyebrow: string;
   title: string;
   intro: string;
+  /**
+   * El artista de la colab, para quien no lo conoce: bajo la intro va su
+   * nombre con el link a su Instagram. Las colecciones propias lo omiten.
+   */
+  artista?: { nombre: string; instagram: string };
   bloques: Bloque[];
 };
 

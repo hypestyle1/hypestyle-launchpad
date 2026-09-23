@@ -13,8 +13,12 @@ export const GENOVESE: Lookbook = {
   dir: '/lookbook-genovese',
   eyebrow: 'Style&Culture',
   title: 'Fileteado Porteño x Alfredo Genovese',
+  artista: { nombre: 'Alfredo Genovese', instagram: 'fileteado' },
   intro: 'El jersey fileteado por Alfredo Genovese, en la cancha de la Villa 31. Filete porteño sobre una camiseta de fútbol. Diciembre de 2025.',
   bloques: [
+    // El reel de @hypestylearg que cuenta quién es Genovese va primero: es la
+    // puerta de entrada para quien no lo conoce.
+    { tipo: 'instagram', ig: 'DT01RVNEoMO', poster: 'quien-es', titulo: '¿Quién es Alfredo Genovese?' },
     { tipo: 'video', youtube: 'WKox7VQJKYM', poster: 'film', titulo: 'Fileteado Porteño x Alfredo Genovese — el film en la Villa 31' },
     { tipo: 'uno', foto: f('06447', JERSEY) },
     { tipo: 'tres', fotos: [f('06684', JERSEY), f('06686', JERSEY), f('06708', JERSEY)] },
