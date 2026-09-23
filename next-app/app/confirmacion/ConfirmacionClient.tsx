@@ -200,6 +200,10 @@ export default function ConfirmacionClient() {
   const estado          = paymentStateFrom(mpStatus);
   const isRejected      = estado === 'rejected';
   const isPending       = estado === 'pending';
+  // Gift card = digital, sin envío: no se promete Andreani ni FedEx.
+  const esGift          = (i: { id?: string; name: string }) => i.id === GIFT_CARD_SLUG || /gift card/i.test(i.name);
+  const soloGift        = !!order?.items.length && order.items.every(esGift);
+  const hayGift         = !!order?.items.some(esGift);
 
   const t = {
     orderLabel:   isIntl ? 'Order'            : 'Pedido',
@@ -216,18 +220,25 @@ export default function ConfirmacionClient() {
         ? (isIntl
             ? 'Your order was created and the payment is still being processed. As soon as it clears we will send you the confirmation by email.'
             : 'Tu pedido quedó registrado y el pago todavía se está procesando. Apenas se acredite te mandamos el mail de confirmación.')
-        : (isIntl
-            ? "We've received your order and sent a confirmation to your email. It ships within 2 to 3 business days and you'll get the FedEx tracking number by email."
-            : 'Te enviamos un email con la confirmación y los detalles del pedido. Preparamos tu orden y te avisamos cuando esté en camino.'),
+        : soloGift
+          ? (isIntl
+              ? "We've received your order. Your gift card code is below and we also emailed it to you, ready to use or forward."
+              : 'Recibimos tu pedido. El código de tu gift card está acá abajo y también te lo mandamos por mail, listo para usar o reenviar.')
+          : (isIntl
+              ? "We've received your order and sent a confirmation to your email. It ships within 2 to 3 business days and you'll get the FedEx tracking number by email."
+              : 'Te enviamos un email con la confirmación y los detalles del pedido. Preparamos tu orden y te avisamos cuando esté en camino.'),
     retry:   isIntl ? 'Try the payment again' : 'Reintentar el pago',
     contact: isIntl ? 'Questions? Chat with us on ' : 'Ante cualquier duda escribinos por ',
     sectionTitle: isIntl ? 'Order details'   : 'Información del pedido',
     orderNumber:  isIntl ? 'Order number'    : 'Número de pedido',
     date:         isIntl ? 'Date'            : 'Fecha',
     shipping:     isIntl ? 'Shipping'        : 'Envío',
-    shippingVal:  isIntl
-      ? 'FedEx International — tracked and insured'
-      : 'Andreani — 5 a 10 días hábiles',
+    shippingVal:  soloGift
+      ? (isIntl ? 'Digital gift card — no shipping, delivered by email' : 'Gift card digital — sin envío, llega por mail')
+      : (isIntl
+          ? 'FedEx International — tracked and insured'
+          : 'Andreani — 5 a 10 días hábiles')
+        + (hayGift ? (isIntl ? '. The gift card arrives by email.' : '. La gift card llega por mail aparte.') : ''),
     // Quien acaba de comprar no quiere volver a comprar ya: vuelve al home.
     cta:          isIntl ? 'Back to home' : 'Volver al home',
   };
@@ -344,7 +355,7 @@ export default function ConfirmacionClient() {
                     </div>
                     <div className="flex justify-between gap-4">
                       <dt className="text-black/60">{t.shipping}</dt>
-                      <dd>{envio > 0 ? money(envio) : (isIntl ? 'Included' : 'Incluido')}</dd>
+                      <dd>{envio > 0 ? money(envio) : soloGift ? (isIntl ? 'Not applicable' : 'No aplica') : (isIntl ? 'Included' : 'Incluido')}</dd>
                     </div>
                     <div className="flex justify-between gap-4 pt-1 text-[14px] font-bold">
                       <dt>Total</dt>
@@ -356,7 +367,7 @@ export default function ConfirmacionClient() {
 
               <div className="my-4 border-t border-dashed border-black/30" />
               <p className="text-[11px] text-black/60 leading-relaxed">{t.shippingVal}</p>
-              {isIntl && (
+              {isIntl && !soloGift && (
                 <p className="mt-2 text-[11px] text-black/60 leading-relaxed">
                   Shipping is included. Import duties at destination are paid by the recipient.
                 </p>
