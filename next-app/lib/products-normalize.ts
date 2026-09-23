@@ -38,6 +38,7 @@ function sortSizes(sizes: string[]): string[] {
 
 const WP_CAT: Record<string, string> = {
   remera:    'Tee',
+  longsleeve: 'Longsleeve',
   hoodie:    'Hoodie',
   short:     'Jort',
   musculosa: 'Top',

@@ -91,6 +91,7 @@ export function zoneForCountry(countryCode: string): IntlZone {
 const VOLUME_CM3_BY_CATEGORY: Record<string, number> = {
   remera: 2400,
   tee: 2400,
+  longsleeve: 3000,
   musculosa: 1800,
   top: 1800,
   polo: 2600,
