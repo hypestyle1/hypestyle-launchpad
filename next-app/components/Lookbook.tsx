@@ -3,11 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useLocale } from '@/context/LocaleContext';
 import { useReveal } from '@/hooks/useReveal';
 import type { Bloque, Foto, Lookbook as LookbookData, Producto } from '@/lib/lookbooks/types';
 
 type BloqueVideo = Extract<Bloque, { tipo: 'video' }>;
 type BloqueReel = Extract<Bloque, { tipo: 'reel' }>;
+type BloqueInstagram = Extract<Bloque, { tipo: 'instagram' }>;
 
 /**
  * Página de lookbook: el resumen de un shooting profesional de colección
@@ -19,15 +21,16 @@ type BloqueReel = Extract<Bloque, { tipo: 'reel' }>;
  * "Agotado" en los de archivo).
  */
 function Caption({ producto, href, nota }: Producto) {
+  const { t } = useLocale();
   return (
     <figcaption className="mt-2.5 flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
-      <span className="text-[12px] md:text-[13px] font-medium leading-tight">{producto}</span>
+      <span className="text-[12px] md:text-[13px] font-medium leading-tight">{t(producto)}</span>
       {href ? (
         <Link href={href} className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] underline underline-offset-4 hover:text-foreground/60 transition-colors">
-          Ver producto
+          {t('Ver producto')}
         </Link>
       ) : (
-        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{nota ?? 'Próximamente'}</span>
+        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{t(nota ?? 'Próximamente')}</span>
       )}
     </figcaption>
   );
@@ -62,18 +65,19 @@ function FotoBox({ dir, foto, aspect, sizes, priority = false }: { dir: string; 
  * de YouTube, cuando es de YouTube) en cada visita.
  */
 function Reproductor({
-  poster, titulo, aspect, sizes, nota, children,
+  poster, titulo, caja, sizes, nota, children,
 }: {
-  poster: string; titulo: string; aspect: string; sizes: string; nota: string;
+  poster: string; titulo: string; /** Clases que le dan tamaño al bloque: una proporción, o un alto fijo cuando el player trae su propio marco. */ caja: string; sizes: string; nota: string;
   children: React.ReactNode;
 }) {
+  const { t } = useLocale();
   const [play, setPlay] = useState(false);
   return (
     <figure className="reveal">
-      <div className={`relative overflow-hidden bg-black ${aspect}`}>
+      <div className={`relative overflow-hidden bg-black ${caja}`}>
         {play ? children : (
-          <button type="button" onClick={() => setPlay(true)} aria-label={`Reproducir ${titulo}`} className="group absolute inset-0 h-full w-full cursor-pointer">
-            <Image src={poster} alt={titulo} fill sizes={sizes} priority quality={90} className="object-cover" />
+          <button type="button" onClick={() => setPlay(true)} aria-label={`${t('Reproducir')} ${t(titulo)}`} className="group absolute inset-0 h-full w-full cursor-pointer">
+            <Image src={poster} alt={t(titulo)} fill sizes={sizes} priority quality={90} className="object-cover" />
             <span className="absolute inset-0 flex items-center justify-center">
               <span className="flex h-16 w-16 items-center justify-center bg-background/85 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 md:h-20 md:w-20">
                 {/* Triángulo de play, en el color del texto y sin radius, como el resto del tema. */}
@@ -84,19 +88,20 @@ function Reproductor({
         )}
       </div>
       <figcaption className="mt-2.5 flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between md:gap-3">
-        <span className="text-[12px] md:text-[13px] font-medium leading-tight">{titulo}</span>
-        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{nota}</span>
+        <span className="text-[12px] md:text-[13px] font-medium leading-tight">{t(titulo)}</span>
+        <span className="shrink-0 text-[10px] md:text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{t(nota)}</span>
       </figcaption>
     </figure>
   );
 }
 
 function VideoBox({ dir, b }: { dir: string; b: BloqueVideo }) {
+  const { t } = useLocale();
   return (
-    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} aspect="aspect-video" sizes="100vw" nota="El film">
+    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} caja="aspect-video" sizes="100vw" nota="El film">
       <iframe
         src={`https://www.youtube-nocookie.com/embed/${b.youtube}?autoplay=1&rel=0&modestbranding=1`}
-        title={b.titulo}
+        title={t(b.titulo)}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         className="absolute inset-0 h-full w-full"
@@ -107,7 +112,7 @@ function VideoBox({ dir, b }: { dir: string; b: BloqueVideo }) {
 
 function ReelBox({ dir, b }: { dir: string; b: BloqueReel }) {
   return (
-    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} aspect="aspect-[9/16]" sizes="(max-width: 768px) 100vw, 30vw" nota="El reel">
+    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} caja="aspect-[9/16]" sizes="(max-width: 768px) 100vw, 30vw" nota="El reel">
       {/* eslint-disable-next-line jsx-a11y/media-has-caption -- reel de campaña, sin diálogo que subtitular */}
       <video
         src={`${dir}/${b.mp4}.mp4`}
@@ -121,20 +126,60 @@ function ReelBox({ dir, b }: { dir: string; b: BloqueReel }) {
   );
 }
 
+function InstagramBox({ dir, b }: { dir: string; b: BloqueInstagram }) {
+  const { t } = useLocale();
+  // El embed de Instagram suma su propio marco (cabecera con la cuenta y pie
+  // con el link al posteo) arriba y abajo del video, así que el bloque va más
+  // alto que el 9:16 del reel propio para que entre sin recortar ni scrollear.
+  return (
+    <Reproductor poster={`${dir}/${b.poster}.webp`} titulo={b.titulo} caja="h-[770px] md:h-[745px]" sizes="(max-width: 768px) 100vw, 30vw" nota="En Instagram">
+      <iframe
+        src={`https://www.instagram.com/reel/${b.ig}/embed/`}
+        title={t(b.titulo)}
+        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
+        allowFullScreen
+        scrolling="no"
+        className="absolute inset-0 h-full w-full border-0 bg-white"
+      />
+    </Reproductor>
+  );
+}
 export default function Lookbook({ data }: { data: LookbookData }) {
   const ref = useReveal();
-  const { dir, bloques } = data;
+  const { t } = useLocale();
+  const { dir, bloques, artista } = data;
 
   return (
     <div ref={ref}>
       <section className="px-4 md:px-8 pt-10 md:pt-16 pb-8 md:pb-12">
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-2">{data.eyebrow}</p>
         <h1 className="text-[34px] md:text-[56px] font-semibold tracking-[-0.02em] leading-none">{data.title}</h1>
-        <p className="mt-4 max-w-[520px] text-[14px] text-muted-foreground leading-relaxed">{data.intro}</p>
+        <p className="mt-4 max-w-[520px] text-[14px] text-muted-foreground leading-relaxed">{t(data.intro)}</p>
+        {artista && (
+          // Para quien no conoce al artista de la colab: su nombre y el acceso
+          // directo a su Instagram. Sale de la página, así que va con target y
+          // rel, no con <Link>.
+          <a
+            href={`https://www.instagram.com/${artista.instagram}/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 inline-flex items-baseline gap-2 text-[11px] uppercase tracking-[0.14em] underline underline-offset-4 hover:text-foreground/60 transition-colors"
+          >
+            <span>{artista.nombre}</span>
+            <span className="normal-case text-muted-foreground">@{artista.instagram} ↗</span>
+          </a>
+        )}
       </section>
 
       <div className="px-4 md:px-8 pb-20 md:pb-28 space-y-10 md:space-y-16">
         {bloques.map((b, i) => {
+          if (b.tipo === 'instagram') {
+            return (
+              <div key={b.ig} className="md:px-[35%]">
+                <InstagramBox dir={dir} b={b} />
+              </div>
+            );
+          }
           if (b.tipo === 'reel') {
             return (
               <div key={b.mp4} className="md:px-[35%]">
