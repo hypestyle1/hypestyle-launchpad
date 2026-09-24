@@ -9,6 +9,13 @@ import { Button } from '@/components/ui/button';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart, lineKey, MayoristaCartItem } from '@/context/MayoristaCartContext';
 import { METODOS_ENVIO, METODO_DEFAULT, metodoDef, validarEnvio, type MetodoEnvio } from '@/lib/mayorista-envio';
+import MayoristaMinBar from './MayoristaMinBar';
+import { completarMinimo } from '@/lib/mayorista-completar-minimo';
+import type { MayoristaProduct } from '@/lib/mayorista-products';
+
+// Precio normal y campaña por línea, según lo que devolvió el servidor
+// (/api/mayorista/disponibilidad). El carrito guarda solo el precio vigente.
+type LineInfo = { wsRegular: number; campaign?: { id: string; name: string; group: string; discount: number; badge: string } };
 
 function csvEscape(value: string | number): string {
   const s = String(value ?? '');
@@ -126,8 +133,9 @@ const EMPTY_SHIPPING: ShippingForm = {
   dni: '', envio_metodo: METODO_DEFAULT, envio_destino: '',
 };
 
-export default function MayoristaCartPage() {
-  const { items, remove, setQty, clear, replace, total, hydrated } = useMayoristaCart();
+export default function MayoristaCartPage({ catalog = [], campaignName = null }: { catalog?: MayoristaProduct[]; campaignName?: string | null }) {
+  const { items, add, remove, setQty, clear, replace, total, hydrated } = useMayoristaCart();
+  const [lineInfo, setLineInfo] = useState<Record<string, LineInfo>>({});
   const [step, setStep] = useState<'cart' | 'shipping'>('cart');
   const [shipping, setShipping] = useState<ShippingForm>(EMPTY_SHIPPING);
   // Destino guardado por método (la sucursal de Via Cargo de siempre, el
@@ -140,7 +148,7 @@ export default function MayoristaCartPage() {
   // 409 PRICE_CHANGED de /api/mayorista/pedido: precios vigentes + total nuevo,
   // a la espera de que el cliente confirme.
   const [priceChange, setPriceChange] = useState<{ changes: PriceChange[]; total: number } | null>(null);
-  const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number } | null>(null);
+  const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number; campaign?: { name: string; discountTotal: number } | null } | null>(null);
   const [minOrder, setMinOrder] = useState<number | null>(null);
   // Saldo a favor de la cuenta (nota de crédito): se descuenta solo del pedido.
   const [credit, setCredit] = useState(0);
@@ -171,8 +179,9 @@ export default function MayoristaCartPage() {
       if (!res.ok) return candidate; // si no se pudo verificar, el pedido igual se frena al confirmar
       const data = await res.json() as {
         unavailable: { slug: string; size: string; color?: string; reason: string; available?: number; message: string }[];
-        prices?: { slug: string; size: string; color?: string; unitPrice: number }[];
+        prices?: { slug: string; size: string; color?: string; unitPrice: number; wsRegular?: number; campaign?: LineInfo['campaign'] }[];
       };
+      setLineInfo(Object.fromEntries((data.prices ?? []).map(p => [lineKey(p), { wsRegular: p.wsRegular ?? p.unitPrice, ...(p.campaign ? { campaign: p.campaign } : {}) }])));
       const byKey = new Map((data.unavailable ?? []).map(u => [lineKey(u), u]));
       // El precio guardado en el carrito es una foto de cuando se agregó el
       // ítem; el vigente lo calcula el servidor. Se actualiza acá para que el
@@ -341,7 +350,7 @@ export default function MayoristaCartPage() {
       const chargedItems: MayoristaCartItem[] = Array.isArray(data.items)
         ? items.map(i => { const s = data.items.find((x: any) => lineKey(x) === lineKey(i)); return s ? { ...i, price: Number(s.price), quantity: Number(s.quantity) } : i; })
         : items;
-      setConfirmed({ orderNumber: data.wcOrderNumber, items: chargedItems, total: Number(data.total) || total, creditUsed: Number(data.creditUsed) || 0 });
+      setConfirmed({ orderNumber: data.wcOrderNumber, items: chargedItems, total: Number(data.total) || total, creditUsed: Number(data.creditUsed) || 0, campaign: data.campaign ?? null });
       clear();
       // El borrador ya se convirtió en pedido: se elimina para que la lista
       // muestre solo lo que falta confirmar.
@@ -418,6 +427,12 @@ export default function MayoristaCartPage() {
               </div>
             ))}
           </div>
+          {confirmed.campaign && confirmed.campaign.discountTotal > 0 && (
+            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[13px]">
+              <span className="text-foreground/80">Ahorraste con {confirmed.campaign.name}</span>
+              <span className="font-medium">−{formatArs(confirmed.campaign.discountTotal)}</span>
+            </div>
+          )}
           {confirmed.creditUsed > 0 && (
             <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[13px]">
               <span className="text-foreground/80">Saldo a favor aplicado</span>
@@ -600,7 +615,17 @@ export default function MayoristaCartPage() {
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium truncate">{item.name}</p>
               <p className="text-[11px] text-text-light">{item.color ? `${item.color} · ` : ''}Talle {item.size}</p>
-              <p className="text-[13px] font-semibold mt-0.5">{formatArs(item.price)}</p>
+              {(() => {
+                const info = lineInfo[lineKey(item)];
+                const promo = info?.campaign && info.wsRegular > item.price;
+                return promo ? (
+                  <p className="text-[13px] mt-0.5 flex items-baseline gap-2">
+                    <span className="font-semibold">{formatArs(item.price)}</span>
+                    <span className="text-[11px] text-text-light line-through">{formatArs(info.wsRegular)}</span>
+                    <span className="text-[10px] uppercase tracking-wide text-foreground/60">{info.campaign!.badge} −{Math.round(info.campaign!.discount * 100)}%</span>
+                  </p>
+                ) : <p className="text-[13px] font-semibold mt-0.5">{formatArs(item.price)}</p>;
+              })()}
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => setQty(item, item.quantity - 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">−</button>
@@ -612,28 +637,83 @@ export default function MayoristaCartPage() {
         ))}
       </div>
 
-      <div className="mt-6 border-t border-border pt-4 flex items-center justify-between">
-        <span className="text-[13px] uppercase tracking-wide text-muted-foreground">{creditUsed > 0 ? 'Subtotal' : 'Total'}</span>
-        <span className={creditUsed > 0 ? 'text-[15px] font-semibold' : 'text-xl font-bold'}>{formatArs(total)}</span>
-      </div>
-      {creditUsed > 0 && (
-        <>
-          <div className="mt-2 flex items-center justify-between text-[13px]">
-            <span className="text-foreground/80">Saldo a favor</span>
-            <span className="font-medium">−{formatArs(creditUsed)}</span>
+      {(() => {
+        // Subtotal a mayorista normal y descuento de campaña, desde lo que
+        // devolvió el servidor por línea. Sin campaña, solo el total.
+        const subtotalNormal = items.reduce((s, i) => s + (lineInfo[lineKey(i)]?.wsRegular ?? i.price) * i.quantity, 0);
+        const campaignDiscount = Math.max(0, subtotalNormal - total);
+        const name = items.map(i => lineInfo[lineKey(i)]?.campaign?.name).find(Boolean) ?? campaignName ?? 'Liquidación';
+        return (
+          <div className="mt-6 border-t border-border pt-4 space-y-2">
+            {campaignDiscount > 0 && (
+              <>
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-muted-foreground">Subtotal a precio mayorista</span>
+                  <span className="tabular-nums">{formatArs(subtotalNormal)}</span>
+                </div>
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-foreground/80">{name}</span>
+                  <span className="font-medium tabular-nums">−{formatArs(campaignDiscount)}</span>
+                </div>
+              </>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] uppercase tracking-wide text-muted-foreground">{creditUsed > 0 ? 'Subtotal' : 'Total'}</span>
+              <span className={creditUsed > 0 ? 'text-[15px] font-semibold' : 'text-xl font-bold'}>{formatArs(total)}</span>
+            </div>
+            {campaignDiscount > 0 && <p className="text-[12px] text-foreground/70">Ahorrás {formatArs(campaignDiscount)} con {name}.</p>}
+            {creditUsed > 0 && (
+              <>
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-foreground/80">Saldo a favor</span>
+                  <span className="font-medium">−{formatArs(creditUsed)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] uppercase tracking-wide text-muted-foreground">Total a pagar</span>
+                  <span className="text-xl font-bold">{formatArs(toPay)}</span>
+                </div>
+              </>
+            )}
           </div>
-          <div className="mt-2 flex items-center justify-between">
-            <span className="text-[13px] uppercase tracking-wide text-muted-foreground">Total a pagar</span>
-            <span className="text-xl font-bold">{formatArs(toPay)}</span>
-          </div>
-        </>
-      )}
+        );
+      })()}
 
-      {belowMin && (
-        <p className="mt-3 text-[12px] text-orange-600">
-          Pedido mínimo {formatArs(minOrder!)} — te faltan {formatArs(minOrder! - total)}.
-        </p>
-      )}
+      <div className="mt-4">
+        <MayoristaMinBar total={total} minOrder={minOrder} />
+      </div>
+
+      {belowMin && catalog.length > 0 && (() => {
+        const missing = minOrder! - total;
+        const suggestions = completarMinimo(catalog, new Set(items.map(i => i.slug)), missing);
+        if (!suggestions.length) return null;
+        return (
+          <div className="mt-4 rounded-[12px] border border-border p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Completá el mínimo</p>
+            <p className="text-[12px] text-foreground/70 mt-0.5">Te faltan {formatArs(missing)}. Estos suman rápido:</p>
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {suggestions.map(s => (
+                <button
+                  key={s.slug}
+                  onClick={() => add({ slug: s.slug, name: s.name, price: s.unitPrice, image: s.image, size: s.size, ...(s.color ? { color: s.color } : {}), quantity: 1 })}
+                  className="text-left rounded-[10px] border border-border p-2 hover:border-foreground transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-10 h-10 rounded-[6px] overflow-hidden bg-bg-alt shrink-0">
+                      {s.image && <Image src={imgSrc(s.image)} alt="" fill sizes="40px" className="object-cover object-top" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-medium truncate">{s.name}</p>
+                      <p className="text-[11px] text-text-light">Talle {s.size}{s.color ? ` · ${s.color}` : ''}</p>
+                      <p className="text-[12px] font-semibold tabular-nums">{formatArs(s.unitPrice)}{s.promo && <span className="ml-1 text-[10px] font-normal uppercase tracking-wide text-foreground/60">liquidación</span>}</p>
+                    </div>
+                  </div>
+                  <span className="mt-1.5 block text-[10px] uppercase tracking-wide text-foreground/60">+ Agregar</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <Button variant="hype" size="ctaFull" onClick={() => setStep('shipping')} disabled={belowMin || checkingStock} className="mt-6 py-3 rounded-full disabled:cursor-not-allowed">
         {checkingStock ? 'Verificando stock…' : 'Continuar'}
