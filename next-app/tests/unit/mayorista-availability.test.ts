@@ -63,19 +63,19 @@ import { findUnavailable, findVariation, type ResolvedProduct } from '@/lib/mayo
 
 describe('findUnavailable', () => {
   const hoodie: ResolvedProduct = {
-    product_id: 2351,
+    product_id: 2351, regularPrice: null,
     stock: { status: 'private', stockStatus: 'outofstock', manageStock: false, stockQuantity: null },
     variations: [
-      { id: 2355, options: ['m', 'boxy'], stock: { stockStatus: 'outofstock', manageStock: true, stockQuantity: 0 } },
-      { id: 2356, options: ['l', 'boxy'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 3 } },
+      { id: 2355, options: ['m', 'boxy'], stock: { stockStatus: 'outofstock', manageStock: true, stockQuantity: 0 }, regularPrice: null },
+      { id: 2356, options: ['l', 'boxy'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 3 }, regularPrice: null },
     ],
   };
   const tee: ResolvedProduct = {
-    product_id: 1,
+    product_id: 1, regularPrice: null,
     stock: { status: 'publish', stockStatus: 'instock', manageStock: false, stockQuantity: null },
     variations: [
-      { id: 11, options: ['l', 'negra'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 2 } },
-      { id: 12, options: ['l', 'blanca'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 10 } },
+      { id: 11, options: ['l', 'negra'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 2 }, regularPrice: null },
+      { id: 12, options: ['l', 'blanca'], stock: { stockStatus: 'instock', manageStock: true, stockQuantity: 10 }, regularPrice: null },
     ],
   };
   const resolved = new Map<string, ResolvedProduct | null>([['shoot-for-the-stars', hoodie], ['tee', tee], ['borrado', null]]);

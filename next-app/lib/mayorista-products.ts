@@ -2,9 +2,9 @@
 // regular_price (precio de lista), ignorando cualquier promo/sale_price vigente.
 
 import { fetchWithRetry } from './fetch-retry';
+import { wholesalePrice } from './mayorista-pricing';
 
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
-const WHOLESALE_FACTOR = 0.5;
 
 const GET_PRODUCTS = `
   query GetProductsMayorista($first: Int, $after: String) {
@@ -154,7 +154,9 @@ function isFullyOut(p: MayoristaProduct): boolean {
 
 export function normalizeMayoristaNode(node: any): MayoristaProduct {
   const regularPrice = parsePrice(node.regularPrice);
-  const wholesalePrice = Math.round(regularPrice * WHOLESALE_FACTOR);
+  // Lo que ve el catálogo es orientativo: el precio que se cobra se recalcula
+  // en el servidor al confirmar (lib/mayorista-pricing.ts), con la misma regla.
+  const wholesale = wholesalePrice(regularPrice);
 
   const images: string[] = [];
   if (node.image?.sourceUrl) images.push(node.image.sourceUrl);
@@ -216,7 +218,7 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
     slug: node.slug,
     category: node.productCategories?.nodes?.[0]?.name ?? '',
     shortDescription: stripHtml(node.shortDescription),
-    wholesalePrice,
+    wholesalePrice: wholesale,
     regularPrice,
     image: images[0] ?? '',
     images,

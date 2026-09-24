@@ -41,11 +41,19 @@ export async function wcGet(path: string) {
   throw lastError;
 }
 
-export interface ResolvedVariation { id: number; options: string[]; stock: StockInfo }
+// `regularPrice` es el PVP real de Woo (nunca el sale_price): de ahí sale el
+// precio mayorista al confirmar el pedido (lib/mayorista-pricing.ts).
+export interface ResolvedVariation { id: number; options: string[]; stock: StockInfo; regularPrice: number | null }
 export interface ResolvedProduct {
   product_id: number;
   stock: StockInfo;
+  regularPrice: number | null;
   variations: ResolvedVariation[];
+}
+
+function regularPrice(x: any): number | null {
+  const n = Number(x?.regular_price);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 function stockInfo(x: any): StockInfo {
@@ -63,21 +71,24 @@ function stockInfo(x: any): StockInfo {
 async function resolveProduct(slug: string): Promise<ResolvedProduct | null> {
   // status=any: queremos encontrar también el producto privado/borrador para
   // poder decirle al cliente por qué no va.
-  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&status=any&_fields=id,type,status,stock_status,manage_stock,stock_quantity&per_page=1`);
+  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&status=any&_fields=id,type,status,stock_status,manage_stock,stock_quantity,regular_price&per_page=1`);
   if (!products.length) return null;
   const { id: productId, type } = products[0];
   const stock = stockInfo(products[0]);
+  const parentRegular = regularPrice(products[0]);
 
-  if (type !== 'variable') return { product_id: productId, stock, variations: [] };
+  if (type !== 'variable') return { product_id: productId, stock, regularPrice: parentRegular, variations: [] };
 
-  const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes,stock_status,manage_stock,stock_quantity`);
+  const variations = await wcGet(`products/${productId}/variations?per_page=100&_fields=id,attributes,stock_status,manage_stock,stock_quantity,regular_price`);
   return {
     product_id: productId,
     stock,
+    regularPrice: parentRegular,
     variations: variations.map((v: any) => ({
       id: v.id,
       options: (v.attributes ?? []).map((a: any) => String(a.option ?? '').toLowerCase().trim()),
       stock: stockInfo(v),
+      regularPrice: regularPrice(v),
     })),
   };
 }
