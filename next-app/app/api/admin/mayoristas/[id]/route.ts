@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMayoristaById, sendNewPasswordEmail, sendAprobacionEmail } from '@/lib/mayorista-account';
+import { getMayoristaById, sendNewPasswordEmail, sendAprobacionEmail, sendCreditEmail } from '@/lib/mayorista-account';
+import { parseCredit, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { adminSecretMatches } from '@/lib/admin-auth';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
@@ -16,7 +17,46 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
-  const { active, minOrder, password, approve } = body as { active?: boolean; minOrder?: number | null; password?: string; approve?: boolean };
+  const { active, minOrder, password, approve, credito } = body as {
+    active?: boolean; minOrder?: number | null; password?: string; approve?: boolean;
+    credito?: { monto: number; motivo: string; orden?: string };
+  };
+
+  // Nota de crédito: suma (o corrige, con monto negativo) el saldo a favor que
+  // se descuenta solo del próximo pedido. Va aparte del resto porque tiene que
+  // leer el saldo actual antes de escribir.
+  if (credito !== undefined) {
+    const monto = Number(credito?.monto);
+    const motivo = String(credito?.motivo ?? '').trim();
+    if (!Number.isFinite(monto) || monto === 0 || !motivo) {
+      return NextResponse.json({ message: 'Crédito inválido: hace falta monto y motivo' }, { status: 400 });
+    }
+    const cur = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${params.id}?_fields=id,meta_data`, {
+      headers: { Authorization: wcAuth() },
+      cache: 'no-store',
+    });
+    if (!cur.ok) return NextResponse.json({ message: `Error de WooCommerce (${cur.status})` }, { status: 502 });
+    const next = addMovement(parseCredit((await cur.json()).meta_data), {
+      fecha: new Date().toISOString(),
+      monto,
+      motivo,
+      ...(credito.orden ? { orden: String(credito.orden) } : {}),
+    });
+    const put = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${params.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+      body: JSON.stringify({ meta_data: [creditMetaEntry(next)] }),
+    });
+    if (!put.ok) return NextResponse.json({ message: `Error de WooCommerce (${put.status})` }, { status: 502 });
+
+    // Solo las cargas avisan al cliente; una corrección para abajo no.
+    let emailSent = false;
+    if (monto > 0) {
+      const account = await getMayoristaById(Number(params.id));
+      if (account) emailSent = await sendCreditEmail(account, monto, next.saldo, motivo);
+    }
+    return NextResponse.json({ ok: true, credit: next.saldo, emailSent });
+  }
 
   if (active === undefined && minOrder === undefined && password === undefined) {
     return NextResponse.json({ message: 'Nada para actualizar' }, { status: 400 });

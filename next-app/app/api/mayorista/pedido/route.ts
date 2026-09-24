@@ -3,6 +3,7 @@ import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
 import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
 import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '@/lib/mayorista-stock';
+import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
@@ -31,6 +32,15 @@ interface ShippingInfo {
   dni: string; via_cargo_sucursal: string;
 }
 
+// Líneas de total de los mails: si se usó saldo a favor, se muestra el
+// subtotal, el descuento y lo que queda a pagar.
+function totalsHtml(total: number, credit: number): string {
+  if (!credit) return `<p style="font-size:13px;margin-top:10px">Total: <b>${formatArs(total)}</b></p>`;
+  return `<p style="font-size:13px;margin-top:10px;margin-bottom:2px">Subtotal: ${formatArs(total)}</p>
+    <p style="font-size:13px;margin:2px 0">Saldo a favor aplicado: −${formatArs(credit)}</p>
+    <p style="font-size:13px;margin-top:2px">Total a pagar: <b>${formatArs(total - credit)}</b></p>`;
+}
+
 // Guarda la dirección/DNI/sucursal cargados en este pedido como perfil del
 // cliente, para que /api/mayorista/perfil los precargue de ahí en adelante
 // — así los tiene que tipear una vez por cuenta (y puede corregirlos en
@@ -53,7 +63,7 @@ async function saveCustomerProfile(customerId: number, billing: Record<string, u
   if (!res.ok) console.error('[mayorista/pedido] no se pudo guardar el perfil del cliente:', res.status);
 }
 
-async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, orderNumber: string) {
+async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, credit: number, orderNumber: string) {
   if (!BREVO_API_KEY) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
@@ -76,7 +86,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="font-size:13px;margin-top:10px">Total: <b>${formatArs(total)}</b></p>
+    ${totalsHtml(total, credit)}
     <p style="font-size:12px;color:#888">Orden WooCommerce #${orderNumber} (on-hold).</p>
   </div>`;
 
@@ -95,7 +105,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 // Copia del resumen para el cliente — así queda guardado en su propio mail
 // (el carrito no persiste después de confirmar, y no hay checkout/pago para
 // que quede un comprobante de esa instancia).
-async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, orderNumber: string) {
+async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string) {
   if (!BREVO_API_KEY || !toEmail) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
@@ -116,7 +126,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="font-size:13px;margin-top:10px">Total: <b>${formatArs(total)}</b></p>
+    ${totalsHtml(total, credit)}
   </div>`;
 
   await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -189,6 +199,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: `El pedido mínimo es ${formatArs(minOrder)}` }, { status: 400 });
     }
 
+    // Saldo a favor (nota de crédito): se descuenta solo, hasta cubrir el
+    // pedido. El mínimo se sigue midiendo sobre el pedido bruto.
+    const credit = parseCredit(customer.meta_data);
+    const creditUsed = creditToApply(credit.saldo, total);
+
     const label = shipping.company || `${shipping.first_name} ${shipping.last_name}`.trim();
 
     const billing = {
@@ -213,7 +228,11 @@ export async function POST(req: NextRequest) {
       billing,
       shipping:              { ...billing, phone: undefined },
       line_items:            lineItems,
+      // Fee negativo: WC lo resta del total de la orden y queda a la vista en
+      // el detalle del pedido.
+      ...(creditUsed ? { fee_lines: [{ name: 'Saldo a favor', total: String(-creditUsed), tax_status: 'none' }] } : {}),
       meta_data: [
+        ...(creditUsed ? [{ key: '_mayorista_credito_aplicado', value: String(creditUsed) }] : []),
         { key: '_es_mayorista', value: 'true' },
         { key: '_billing_dni', value: shipping.dni },
         { key: '_via_cargo_sucursal', value: shipping.via_cargo_sucursal },
@@ -234,13 +253,31 @@ export async function POST(req: NextRequest) {
 
     const wcOrder = await res.json() as { id: number; number: string };
 
+    // Con la orden ya creada, se descuenta el saldo usado. Si falla, la orden
+    // queda igual (el crédito ya se aplicó en ella) y se avisa en el log para
+    // corregir el saldo a mano.
+    if (creditUsed) {
+      const next = addMovement(credit, {
+        fecha: new Date().toISOString(),
+        monto: -creditUsed,
+        motivo: 'Aplicado a pedido',
+        orden: String(wcOrder.number),
+      });
+      const upd = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${customerId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+        body: JSON.stringify({ meta_data: [creditMetaEntry(next)] }),
+      }).catch(() => null);
+      if (!upd?.ok) console.error(`[mayorista/pedido] orden #${wcOrder.number} usó ${creditUsed} de saldo pero no se pudo descontar del cliente ${customerId}`);
+    }
+
     await Promise.all([
-      sendAdminEmail(label, shipping, items, total, String(wcOrder.number)),
-      sendCustomerEmail(customer.email, items, total, String(wcOrder.number)),
+      sendAdminEmail(label, shipping, items, total, creditUsed, String(wcOrder.number)),
+      sendCustomerEmail(customer.email, items, total, creditUsed, String(wcOrder.number)),
       saveCustomerProfile(customerId, billing, shipping.dni, shipping.via_cargo_sucursal),
     ]);
 
-    return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number) });
+    return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number), creditUsed });
   } catch (err) {
     console.error('[mayorista/pedido]', err);
     return NextResponse.json({ message: 'Error al crear el pedido. Tu pedido sigue cargado: esperá unos segundos e intentá de nuevo.' }, { status: 500 });

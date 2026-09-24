@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
+import { parseCredit } from '@/lib/mayorista-credit';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -32,5 +33,6 @@ export async function GET(req: NextRequest) {
     minOrder,
     dni: metaVal('dni'),
     viaCargoSucursal: metaVal('via_cargo_sucursal'),
+    credit: parseCredit(meta).saldo,
   });
 }

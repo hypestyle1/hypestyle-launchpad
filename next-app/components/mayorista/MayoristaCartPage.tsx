@@ -127,8 +127,10 @@ export default function MayoristaCartPage() {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number } | null>(null);
+  const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number } | null>(null);
   const [minOrder, setMinOrder] = useState<number | null>(null);
+  // Saldo a favor de la cuenta (nota de crédito): se descuenta solo del pedido.
+  const [credit, setCredit] = useState(0);
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   // Si el pedido actual salió de un borrador, "guardar" lo pisa en vez de duplicarlo,
   // y al confirmar el pedido ese borrador se elimina solo.
@@ -242,6 +244,7 @@ export default function MayoristaCartPage() {
       .then(data => {
         if (!data) return;
         if (typeof data.minOrder === 'number') setMinOrder(data.minOrder);
+        if (typeof data.credit === 'number') setCredit(data.credit);
         if (data.email) setEmail(data.email);
         const b = data.billing;
         setShipping(s => ({
@@ -262,6 +265,8 @@ export default function MayoristaCartPage() {
   }, []);
 
   const belowMin = minOrder != null && total < minOrder;
+  const creditUsed = Math.min(credit, total);
+  const toPay = total - creditUsed;
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -275,7 +280,7 @@ export default function MayoristaCartPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'No se pudo enviar el pedido');
-      setConfirmed({ orderNumber: data.wcOrderNumber, items, total });
+      setConfirmed({ orderNumber: data.wcOrderNumber, items, total, creditUsed: Number(data.creditUsed) || 0 });
       clear();
       // El borrador ya se convirtió en pedido: se elimina para que la lista
       // muestre solo lo que falta confirmar.
@@ -352,9 +357,15 @@ export default function MayoristaCartPage() {
               </div>
             ))}
           </div>
+          {confirmed.creditUsed > 0 && (
+            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[13px]">
+              <span className="text-foreground/80">Saldo a favor aplicado</span>
+              <span className="font-medium">−{formatArs(confirmed.creditUsed)}</span>
+            </div>
+          )}
           <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-            <span className="text-[13px] font-semibold uppercase tracking-wide">Total</span>
-            <span className="text-[15px] font-bold">{formatArs(confirmed.total)}</span>
+            <span className="text-[13px] font-semibold uppercase tracking-wide">{confirmed.creditUsed > 0 ? 'Total a pagar' : 'Total'}</span>
+            <span className="text-[15px] font-bold">{formatArs(confirmed.total - confirmed.creditUsed)}</span>
           </div>
         </div>
 
@@ -449,7 +460,7 @@ export default function MayoristaCartPage() {
         {error && <p className="mt-4 text-[12px] text-destructive">{error}</p>}
 
         <Button type="submit" variant="hype" size="ctaFull" disabled={sending} className="mt-8 py-3 rounded-full">
-          {sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(total)}`}
+          {sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(toPay)}`}
         </Button>
       </form>
     );
@@ -491,9 +502,21 @@ export default function MayoristaCartPage() {
       </div>
 
       <div className="mt-6 border-t border-border pt-4 flex items-center justify-between">
-        <span className="text-[13px] uppercase tracking-wide text-muted-foreground">Total</span>
-        <span className="text-xl font-bold">{formatArs(total)}</span>
+        <span className="text-[13px] uppercase tracking-wide text-muted-foreground">{creditUsed > 0 ? 'Subtotal' : 'Total'}</span>
+        <span className={creditUsed > 0 ? 'text-[15px] font-semibold' : 'text-xl font-bold'}>{formatArs(total)}</span>
       </div>
+      {creditUsed > 0 && (
+        <>
+          <div className="mt-2 flex items-center justify-between text-[13px]">
+            <span className="text-foreground/80">Saldo a favor</span>
+            <span className="font-medium">−{formatArs(creditUsed)}</span>
+          </div>
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-[13px] uppercase tracking-wide text-muted-foreground">Total a pagar</span>
+            <span className="text-xl font-bold">{formatArs(toPay)}</span>
+          </div>
+        </>
+      )}
 
       {belowMin && (
         <p className="mt-3 text-[12px] text-orange-600">
