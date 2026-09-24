@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const v = validateCampaign(body?.campaign);
   if (!v.campaign) return NextResponse.json({ error: 'Campaña inválida', problems: v.problems }, { status: 400 });
   try {
-    const products = await loadPreviewProducts();
+    const products = await loadPreviewProducts(v.campaign.items.map(i => i.productId));
     return NextResponse.json({ campaign: v.campaign, preview: campaignPreview(v.campaign, products), productsLoaded: products.length });
   } catch (err) {
     console.error('[wholesale-campaigns/preview]', err);
