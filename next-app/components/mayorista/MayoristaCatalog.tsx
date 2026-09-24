@@ -9,7 +9,7 @@ const HELP_DISMISSED_KEY = 'hype_mayorista_help_dismissed';
 const STEPS = [
   { title: 'Elegí tus productos', text: 'Buscá o filtrá por categoría y sumá cada talle que necesites al pedido.' },
   { title: 'Revisá tu pedido', text: 'Arriba a la derecha, en "Pedido", ajustás cantidades o sacás productos antes de confirmar.' },
-  { title: 'Cargá los datos de envío', text: 'Nombre, DNI y la sucursal de Via Cargo donde lo recibís — solo hace falta la primera vez, después queda guardado.' },
+  { title: 'Cargá los datos de envío', text: 'Nombre, DNI y cómo lo recibís: Via Cargo, Andreani (domicilio o sucursal) o un expreso a coordinar. Solo hace falta la primera vez, después queda guardado.' },
   { title: 'Confirmá', text: 'Te contactamos para coordinar preparación y entrega. Podés descargar el resumen en PDF o Excel.' },
 ];
 

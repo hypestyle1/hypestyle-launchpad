@@ -17,6 +17,7 @@ type Order = {
   isGift: boolean;
   payment_method: string; payment_method_title: string;
   viaCargoSucursal: string;
+  envio?: { metodo: string | null; destino: string; resumen: string };
   customer_note: string;
 };
 
@@ -138,8 +139,8 @@ export default function DetallePedidoPage() {
                   {order.shipping.city}, {order.shipping.state} {order.shipping.postcode}
                 </div>
               )}
-              {order.viaCargoSucursal && (
-                <div className="text-[12px] text-muted-foreground mt-0.5">Sucursal Via Cargo: {order.viaCargoSucursal}</div>
+              {(order.envio?.resumen || order.viaCargoSucursal) && (
+                <div className="text-[12px] text-muted-foreground mt-0.5">Envío: {order.envio?.resumen || `Via Cargo — a sucursal · ${order.viaCargoSucursal}`}</div>
               )}
             </div>
           </div>

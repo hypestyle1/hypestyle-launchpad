@@ -4,6 +4,7 @@ import { formatArs } from '@/lib/mayorista-format';
 import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
 import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '@/lib/mayorista-stock';
 import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
+import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
@@ -29,7 +30,11 @@ interface ShippingInfo {
   first_name: string; last_name: string; company?: string;
   address_1: string; address_2?: string; city: string; state?: string;
   postcode?: string; country?: string; phone: string;
-  dni: string; via_cargo_sucursal: string;
+  dni: string;
+  // Cómo lo quiere recibir (ver lib/mayorista-envio). via_cargo_sucursal queda
+  // por compatibilidad con un carrito viejo abierto antes del cambio.
+  envio_metodo?: MetodoEnvio; envio_destino?: string;
+  via_cargo_sucursal?: string;
 }
 
 // Líneas de total de los mails: si se usó saldo a favor, se muestra el
@@ -41,13 +46,19 @@ function totalsHtml(total: number, credit: number): string {
     <p style="font-size:13px;margin-top:2px">Total a pagar: <b>${formatArs(total - credit)}</b></p>`;
 }
 
+// Normaliza el envío: un carrito viejo solo manda via_cargo_sucursal.
+function envioDe(shipping: ShippingInfo): { metodo: MetodoEnvio; destino: string } {
+  if (shipping.envio_metodo) return { metodo: shipping.envio_metodo, destino: (shipping.envio_destino ?? '').trim() };
+  return { metodo: METODO_DEFAULT, destino: (shipping.via_cargo_sucursal ?? '').trim() };
+}
+
 // Guarda la dirección/DNI/sucursal cargados en este pedido como perfil del
 // cliente, para que /api/mayorista/perfil los precargue de ahí en adelante
 // — así los tiene que tipear una vez por cuenta (y puede corregirlos en
 // cualquier pedido posterior, el formulario sigue editable). dni/sucursal
 // van sin guión bajo en meta_data: WC descarta en silencio los meta
 // "protegidos" al actualizar un customer por REST.
-async function saveCustomerProfile(customerId: number, billing: Record<string, unknown>, dni: string, viaCargoSucursal: string) {
+async function saveCustomerProfile(customerId: number, billing: Record<string, unknown>, dni: string, envio: { metodo: MetodoEnvio; destino: string }) {
   const res = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${customerId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
@@ -56,7 +67,11 @@ async function saveCustomerProfile(customerId: number, billing: Record<string, u
       shipping: { ...billing, phone: undefined },
       meta_data: [
         { key: 'dni', value: dni },
-        { key: 'via_cargo_sucursal', value: viaCargoSucursal },
+        { key: 'mayorista_envio_metodo', value: envio.metodo },
+        { key: 'mayorista_envio_destino', value: envio.destino },
+        // La sucursal de Via Cargo se guarda aparte para no pisarla si un
+        // pedido suelto sale por otro lado.
+        ...(envio.metodo === 'via_cargo' ? [{ key: 'via_cargo_sucursal', value: envio.destino }] : []),
       ],
     }),
   });
@@ -76,7 +91,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Pedido mayorista — Hype.</h2>
     <p style="font-size:13px">Cliente: <b>${label}</b> — DNI ${shipping.dni}</p>
     <p style="font-size:12px;color:#444">${shipping.address_1}, ${shipping.city} ${shipping.state ?? ''} — ${shipping.phone}</p>
-    <p style="font-size:12px;color:#444">Sucursal Via Cargo: <b>${shipping.via_cargo_sucursal}</b></p>
+    <p style="font-size:12px;color:#444">Envío: <b>${envioResumen(envioDe(shipping).metodo, envioDe(shipping).destino)}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
         <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
@@ -105,7 +120,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 // Copia del resumen para el cliente — así queda guardado en su propio mail
 // (el carrito no persiste después de confirmar, y no hay checkout/pago para
 // que quede un comprobante de esa instancia).
-async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string) {
+async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string, envio: string) {
   if (!BREVO_API_KEY || !toEmail) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
@@ -117,6 +132,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Hype. — Resumen de tu pedido</h2>
     <p style="font-size:13px">Recibimos tu pedido <b>#${orderNumber}</b>. Te contactamos para coordinar preparación y entrega.</p>
+    <p style="font-size:12px;color:#444">Envío: <b>${envio}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
         <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
@@ -150,9 +166,14 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
     }
-    if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone || !shipping?.dni || !shipping?.via_cargo_sucursal) {
+    if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone || !shipping?.dni) {
       return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
     }
+    const envio = envioDe(shipping);
+    const envioError = validarEnvio(envio.metodo, envio.destino);
+    if (envioError) return NextResponse.json({ message: envioError }, { status: 400 });
+    // Andreani a domicilio no lleva destino: que no se cuele uno viejo.
+    if (!metodoDef(envio.metodo)?.destinoLabel) envio.destino = '';
 
     const resolvedBySlug = await resolveProducts(items.map(i => i.slug));
 
@@ -235,7 +256,7 @@ export async function POST(req: NextRequest) {
         ...(creditUsed ? [{ key: '_mayorista_credito_aplicado', value: String(creditUsed) }] : []),
         { key: '_es_mayorista', value: 'true' },
         { key: '_billing_dni', value: shipping.dni },
-        { key: '_via_cargo_sucursal', value: shipping.via_cargo_sucursal },
+        ...envioOrderMeta(envio.metodo, envio.destino),
       ],
     };
 
@@ -273,8 +294,8 @@ export async function POST(req: NextRequest) {
 
     await Promise.all([
       sendAdminEmail(label, shipping, items, total, creditUsed, String(wcOrder.number)),
-      sendCustomerEmail(customer.email, items, total, creditUsed, String(wcOrder.number)),
-      saveCustomerProfile(customerId, billing, shipping.dni, shipping.via_cargo_sucursal),
+      sendCustomerEmail(customer.email, items, total, creditUsed, String(wcOrder.number), envioResumen(envio.metodo, envio.destino)),
+      saveCustomerProfile(customerId, billing, shipping.dni, envio),
     ]);
 
     return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number), creditUsed });

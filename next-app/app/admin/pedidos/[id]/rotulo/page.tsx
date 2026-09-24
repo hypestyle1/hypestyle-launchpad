@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { metodoDef } from '@/lib/mayorista-envio';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -10,6 +11,7 @@ type Order = {
   customer: { first_name: string; last_name: string; phone: string; dni: string };
   shipping: { first_name: string; last_name: string; address_1: string; address_2: string; city: string; state: string; postcode: string };
   viaCargoSucursal: string;
+  envio?: { metodo: string | null; destino: string; resumen: string };
   items: { name: string; quantity: number; size: string; color?: string }[];
 };
 
@@ -71,6 +73,13 @@ export default function RotuloPage() {
   if (loading) return <div className="flex items-center justify-center py-32 text-[13px] text-muted-foreground/70">Cargando rótulo...</div>;
   if (!order) return <div className="flex items-center justify-center py-32 text-[13px] text-red-500">No se pudo cargar el pedido</div>;
 
+  // Bloque destacado del envío: el servicio y, si hay, la sucursal o el
+  // expreso. Una orden vieja con solo la sucursal se lee como Via Cargo.
+  const envioDef = metodoDef(order.envio?.metodo ?? (order.viaCargoSucursal ? 'via_cargo' : null));
+  const envioDestino = order.envio?.destino || order.viaCargoSucursal || '';
+
+  const unidades = order.items.reduce((n, i) => n + i.quantity, 0);
+
   const itemsSummary = order.items.map(i => {
     const detail = [i.size, i.color].filter(Boolean).join(' ');
     return `${i.quantity}× ${i.name}${detail ? ` (${detail})` : ''}`;
@@ -123,16 +132,24 @@ export default function RotuloPage() {
             )}
           </div>
 
-          {order.viaCargoSucursal && (
+          {envioDef && (
             <div className="mt-6 border-2 border-foreground p-4">
-              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Sucursal Via Cargo</div>
-              <div className="text-[22px] font-bold leading-tight">{order.viaCargoSucursal}</div>
+              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Envío</div>
+              <div className="text-[22px] font-bold leading-tight">{envioDef.label}</div>
+              {envioDestino && envioDef.destinoLabel && (
+                <div className="text-[18px] leading-snug mt-1">{envioDestino}</div>
+              )}
             </div>
           )}
 
-          <div className="mt-6 flex-1">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Contenido</div>
-            <div className="text-[15px] text-foreground/80 leading-relaxed">{itemsSummary}</div>
+          {/* Un pedido mayorista trae 20+ prendas: el detalle se corta a las
+              líneas que entran y la cantidad total queda siempre a la vista,
+              sin empujar el pie fuera del rótulo. */}
+          <div className="mt-6 flex-1 min-h-0 overflow-hidden">
+            <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">
+              Contenido · {unidades} {unidades === 1 ? 'unidad' : 'unidades'}
+            </div>
+            <div className="text-[15px] text-foreground/80 leading-relaxed line-clamp-4">{itemsSummary}</div>
           </div>
 
           <div className="pt-4 mt-auto border-t border-border-mid flex items-center justify-between">
@@ -146,12 +163,15 @@ export default function RotuloPage() {
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; }
+          /* Se imprime la misma caja de 480×720 px escalada a 100×150 mm
+             (377,95 px / 480 = 0,7874). Antes se achicaba la caja pero no las
+             letras (nombre a 28 px, dirección a 20 px) y el contenido se
+             desbordaba del rótulo. */
           .rotulo {
-            width: 100mm !important;
-            height: 150mm !important;
-            border-width: 1.5px !important;
+            zoom: 0.7874;
             box-shadow: none !important;
             margin: 0 !important;
+            overflow: hidden;
           }
           @page { size: 100mm 150mm; margin: 0; }
         }
