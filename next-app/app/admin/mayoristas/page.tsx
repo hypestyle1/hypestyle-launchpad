@@ -399,6 +399,7 @@ Monto a favor en pesos (negativo para corregir):`);
       <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-[14px] font-semibold text-foreground">Clientes mayoristas</span>
+          <a href="/admin/mayoristas/campanas" className="text-[12px] font-medium text-muted-foreground hover:text-foreground underline underline-offset-4">Campañas →</a>
         </div>
         <button
           onClick={() => setShowForm(s => !s)}

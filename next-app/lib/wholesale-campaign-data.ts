@@ -69,6 +69,19 @@ async function fetchStock(products: any[]): Promise<Map<number, number | null>> 
   return out;
 }
 
+/** Costo unitario conocido por producto (null = sin perfil confiable). Para
+ *  los resultados de campaña: sin stock ni precios, 2 llamadas. */
+export async function loadCostIndex(): Promise<Map<number, number | null>> {
+  const [wcProducts, costs] = await Promise.all([fetchWcProducts(), fetchCostByProfile()]);
+  const out = new Map<number, number | null>();
+  for (const p of wcProducts) {
+    const profileId = String((p.meta_data as any[])?.find((m: any) => m.key === '_hs_cost_profile_id')?.value || '');
+    const cost = profileId ? costs.get(profileId) : undefined;
+    out.set(p.id, cost?.reliable ? cost.unitCost : null);
+  }
+  return out;
+}
+
 /** Productos para el preview. Con `onlyIds` trae el stock exacto solo de esos
  *  (los de la campaña): ~35 llamadas en vez de ~100. */
 export async function loadPreviewProducts(onlyIds?: number[]): Promise<PreviewProduct[]> {

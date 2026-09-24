@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
-import { validateCampaign, effectiveStatus, overlappingProducts, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
-import { readCampaigns } from '@/lib/wholesale-campaigns-store';
+import { validateCampaign, effectiveStatus, overlappingProducts, campaignPreview, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
+import { readCampaigns, writeCampaigns } from '@/lib/wholesale-campaigns-store';
+import { loadPreviewProducts } from '@/lib/wholesale-campaign-data';
 
 // Campañas mayoristas: lista y upsert. La option vive en WP
 // (hs_wholesale_campaigns, PHP 1.38.0); acá se valida con la misma lib que
@@ -9,10 +10,14 @@ import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 // ended) que ve el admin.
 //
 //   GET                       → { campaigns: [...con effectiveStatus], overlaps }
-//   POST { campaigns: [raw], deleteIds?: [] } → { campaigns }  (400 con problems si algo no valida)
+//   POST { campaigns: [raw], deleteIds?: [] } → { campaigns }
+//     400 con problems si algo no valida.
+//     409 con blockers si se intenta ACTIVAR con productos CRITICAL sin
+//     confirmación: el gate corre el preview financiero con Woo en vivo y,
+//     si pasa, deja en history la foto de stock de ese momento (para medir
+//     "stock liquidado").
 
-const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
-const WP_SECRET = process.env.WP_SECRET || '';
+export const maxDuration = 60;
 
 function checkAuth(req: NextRequest) { return adminSecretMatches(req.headers.get('x-admin-key')); }
 
@@ -46,15 +51,28 @@ export async function POST(req: NextRequest) {
   }
   if (problems.length) return NextResponse.json({ error: 'Campaña inválida', problems }, { status: 400 });
 
-  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/wholesale-campaigns`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Hypestyle-Secret': WP_SECRET },
-    body: JSON.stringify({ campaigns, deleteIds }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return NextResponse.json({ error: err.message || 'WP error' }, { status: 502 });
+  try {
+    // Gate de activación: solo cuando una campaña pasa a `active`.
+    let current: WholesaleCampaign[] | null = null;
+    for (const c of campaigns) {
+      if (c.status !== 'active') continue;
+      current ??= await readCampaigns();
+      const prev = current.find(x => x.id === c.id);
+      if (prev?.status === 'active') continue;
+      const products = await loadPreviewProducts(c.items.map(i => i.productId));
+      const preview = campaignPreview(c, products);
+      if (preview.activationBlockers.length) {
+        return NextResponse.json({ error: 'No se puede activar: productos CRITICAL sin confirmación', blockers: preview.activationBlockers, critical: preview.critical }, { status: 409 });
+      }
+      const at = new Date().toISOString();
+      const stockSnapshot: Record<string, number | null> = {};
+      for (const r of preview.rows) stockSnapshot[String(r.productId)] = r.stock;
+      c.history = [...c.history, { at, from: prev?.status ?? 'draft', to: 'active', by: 'admin', note: 'stockSnapshot', ...({ stockSnapshot } as object) } as any];
+    }
+    const saved = await writeCampaigns(campaigns, deleteIds);
+    return NextResponse.json(decorate(saved));
+  } catch (err) {
+    console.error('[wholesale-campaigns] POST', err);
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'WP error' }, { status: 502 });
   }
-  const data = await res.json();
-  return NextResponse.json(decorate(Array.isArray(data?.campaigns) ? data.campaigns : []));
 }

@@ -28,6 +28,10 @@
     {
       "path": "/api/admin/mayorista-precios-audit",
       "schedule": "45 7 * * *"
+    },
+    {
+      "path": "/api/admin/wholesale-campaigns/expire",
+      "schedule": "50 7 * * *"
     }
   ]
 }
