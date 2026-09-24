@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { statusFromMeta } from '@/lib/mayorista-account';
 import { adminSecretMatches } from '@/lib/admin-auth';
+import { parseCredit } from '@/lib/mayorista-credit';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -128,6 +129,7 @@ export async function GET(req: NextRequest) {
       lastOrderAt,
       lastLogin: metaVal(meta, 'mayorista_last_login') || null,
       loginCount: Number(metaVal(meta, 'mayorista_login_count')) || 0,
+      credit: parseCredit(meta).saldo,
     };
   });
 

@@ -18,6 +18,7 @@ type Mayorista = {
   orderCount: number; totalSpent: number;
   pendingCount: number; pendingTotal: number;
   lastOrderAt: string | null; lastLogin: string | null; loginCount: number;
+  credit?: number;
 };
 
 type HealthCheck = { ok: boolean; label: string; detail: string };
@@ -124,6 +125,7 @@ export default function MayoristasAdminPage() {
   const [mayoristas, setMayoristas]   = useState<Mayorista[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [togglingId, setTogglingId]   = useState<number | null>(null);
+  const [creditingId, setCreditingId] = useState<number | null>(null);
   const [minInputs, setMinInputs]     = useState<Record<number, string>>({});
   const [savingMinId, setSavingMinId] = useState<number | null>(null);
   const [resettingId, setResettingId] = useState<number | null>(null);
@@ -286,6 +288,35 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
       }
     } finally {
       setDecidingId(null);
+    }
+  }
+
+  // Nota de crédito: el monto queda a favor y se descuenta solo del próximo
+  // pedido. Al cliente le llega un mail con el saldo.
+  async function cargarCredito(m: Mayorista) {
+    const label = m.company || m.name || m.email;
+    const montoRaw = prompt(`Nota de crédito para ${label}
+
+Monto a favor en pesos (negativo para corregir):`);
+    if (!montoRaw) return;
+    const monto = Number(montoRaw.replace(/[^0-9-]/g, ''));
+    if (!Number.isFinite(monto) || monto === 0) { alert('Monto inválido'); return; }
+    const motivo = prompt('Motivo (lo ve el cliente en el mail):', 'Prenda con falla');
+    if (!motivo?.trim()) return;
+    const orden = prompt('Pedido relacionado (opcional):', '') ?? '';
+    setCreditingId(m.id);
+    try {
+      const res = await fetch(`/api/admin/mayoristas/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ credito: { monto, motivo: motivo.trim(), ...(orden.trim() ? { orden: orden.trim() } : {}) } }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(data.message || 'No se pudo cargar el crédito'); return; }
+      setMayoristas(prev => prev.map(x => x.id === m.id ? { ...x, credit: data.credit } : x));
+      alert(`Saldo a favor: ${fmt(data.credit)}${monto > 0 ? (data.emailSent ? ` — mail enviado a ${m.email}` : ' — el mail NO salió, avisale a mano') : ''}`);
+    } finally {
+      setCreditingId(null);
     }
   }
 
@@ -680,6 +711,14 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                       <td className="px-1 py-1.5 lg:px-4 lg:py-3 lg:text-right block lg:table-cell">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            onClick={() => cargarCredito(m)}
+                            disabled={creditingId === m.id}
+                            title="Carga saldo a favor que se descuenta solo del próximo pedido"
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-border-mid text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
+                          >
+                            {creditingId === m.id ? '...' : 'Crédito'}
+                          </button>
+                          <button
                             onClick={() => resetPasswordFor(m)}
                             disabled={resettingId === m.id}
                             title="Genera una contraseña nueva sin tocar el historial ni el acceso mayorista"
@@ -697,6 +736,9 @@ La anterior deja de funcionar en el acto. La nueva se muestra una sola vez: copi
                             {togglingId === m.id ? '...' : m.active ? 'Revocar' : 'Reactivar'}
                           </button>
                         </div>
+                        {(m.credit ?? 0) > 0 && (
+                          <p className="mt-1 text-[10px] text-green-700 font-semibold">Saldo a favor {fmt(m.credit!)}</p>
+                        )}
                         {resetPassword?.id === m.id && (
                           <div className="mt-2 text-left bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
                             <p className="text-[10px] text-amber-800 font-semibold uppercase tracking-wide">Contraseña nueva</p>

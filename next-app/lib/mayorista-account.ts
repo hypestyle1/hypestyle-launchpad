@@ -195,6 +195,33 @@ export async function sendNewPasswordEmail(account: MayoristaAccount, password: 
   );
 }
 
+/** Nota de crédito cargada desde el panel: el monto queda a favor para el próximo pedido. */
+export async function sendCreditEmail(
+  account: MayoristaAccount,
+  monto: number,
+  saldo: number,
+  motivo: string,
+): Promise<boolean> {
+  const ars = (n: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
+  return send(
+    { email: account.email, name: account.label },
+    `Tenés ${ars(saldo)} a favor en tu cuenta de Hype`,
+    shell(
+      'Nota de crédito',
+      `
+      <p style="font-size:14px;line-height:1.6">Hola ${account.label}, te cargamos una nota de crédito en tu cuenta mayorista.</p>
+      <table style="font-size:14px;border-collapse:collapse;margin:18px 0;width:100%">
+        <tr><td style="padding:6px 10px;color:#888;width:130px">Motivo</td><td style="padding:6px 10px">${motivo}</td></tr>
+        <tr><td style="padding:6px 10px;color:#888">Monto</td><td style="padding:6px 10px;font-weight:bold">${ars(monto)}</td></tr>
+        <tr><td style="padding:6px 10px;color:#888">Saldo a favor</td><td style="padding:6px 10px;font-weight:bold">${ars(saldo)}</td></tr>
+      </table>
+      <p style="font-size:13px;line-height:1.6;color:#555">No tenés que hacer nada: se descuenta solo de tu próximo pedido desde el catálogo, y lo vas a ver en el carrito antes de confirmar.</p>
+      <p style="margin:22px 0"><a href="${SITE_URL}/mayoristas" style="background:#111;color:#fff;text-decoration:none;font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;padding:12px 22px;border-radius:999px;display:inline-block">Ver el catálogo</a></p>
+    `,
+    ),
+  );
+}
+
 /** Link de recuperación pedido por el propio cliente desde el login. */
 export async function sendResetLinkEmail(account: MayoristaAccount, token: string): Promise<boolean> {
   const link = `${SITE_URL}/mayoristas/reset?token=${encodeURIComponent(token)}`;
