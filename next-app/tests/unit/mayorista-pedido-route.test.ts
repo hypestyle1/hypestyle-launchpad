@@ -34,6 +34,10 @@ vi.mock('@/lib/mayorista-stock', async (importOriginal) => {
   };
 });
 
+// La ruta real importa medio lib/: con la suite entera corriendo en paralelo
+// el primer import puede pasar los 5 s por defecto.
+vi.setConfig({ testTimeout: 20000 });
+
 const wcOrderPosts: any[] = [];
 beforeEach(() => {
   wcOrderPosts.length = 0;
