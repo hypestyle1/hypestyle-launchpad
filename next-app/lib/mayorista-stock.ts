@@ -103,11 +103,29 @@ export interface StockLine { slug: string; name: string; size: string; color?: s
 
 /** La variación de Woo que corresponde a talle + color elegidos (si hay). */
 export function findVariation(resolved: ResolvedProduct, line: Pick<StockLine, 'size' | 'color'>): ResolvedVariation | undefined {
-  const color = (line.color ?? '').trim();
+  const size = (line.size ?? '').toLowerCase().trim();
+  const color = (line.color ?? '').toLowerCase().trim();
+  // "Única" no es un atributo de Woo, no se exige.
+  const wantedSize = size && size !== 'única' ? size : '';
+  const { variations } = resolved;
+
   // Con Color + Talle como ejes, buscar solo por talle devolvía la primera del
-  // color que fuera. "Única" no es un atributo de Woo, no se exige.
-  const wanted = [line.size, color].map(s => s.toLowerCase().trim()).filter(s => s && s !== 'única');
-  return resolved.variations.find(v => wanted.every(w => v.options.includes(w)));
+  // color que fuera: primero se exige talle y color juntos.
+  const wanted = [wantedSize, color].filter(Boolean);
+  const exact = variations.find(v => wanted.every(w => v.options.includes(w)));
+  if (exact || !color) return exact;
+
+  // Sin match con color: en AERO y ONLY GOD el Color es un atributo informativo
+  // (variation=false), las variaciones solo llevan Talle, y el color viaja como
+  // dato del pedido. Si NINGUNA variación tiene un segundo eje, el color no
+  // puede matchear nunca y se resuelve por talle. Si las variaciones sí llevan
+  // color (RANGLAN, TOPs) y el pedido trae uno que no existe, no hay variación:
+  // el cliente tiene que elegir otro color. (24/09: por exigir el color en
+  // productos de color informativo, ONLY GOD quedaba sin variación, sin precio
+  // y el pedido no se podía confirmar.)
+  const hasColorAxis = variations.some(v => v.options.length > 1);
+  if (hasColorAxis) return undefined;
+  return variations.find(v => !wantedSize || v.options.includes(wantedSize));
 }
 
 export interface UnavailableLine {
