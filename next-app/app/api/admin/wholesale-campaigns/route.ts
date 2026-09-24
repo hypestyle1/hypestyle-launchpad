@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { validateCampaign, effectiveStatus, overlappingProducts, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
+import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 
 // Campañas mayoristas: lista y upsert. La option vive en WP
 // (hs_wholesale_campaigns, PHP 1.38.0); acá se valida con la misma lib que
@@ -14,14 +15,6 @@ const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.
 const WP_SECRET = process.env.WP_SECRET || '';
 
 function checkAuth(req: NextRequest) { return adminSecretMatches(req.headers.get('x-admin-key')); }
-
-export async function readCampaigns(): Promise<WholesaleCampaign[]> {
-  // _cb: la CDN de Hostinger cachea los GET por URL exacta.
-  const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/wholesale-campaigns?_cb=${Date.now()}`, { headers: { 'X-Hypestyle-Secret': WP_SECRET }, cache: 'no-store' });
-  if (!res.ok) throw new Error(`WP ${res.status} leyendo campañas`);
-  const data = await res.json();
-  return Array.isArray(data?.campaigns) ? data.campaigns : [];
-}
 
 function decorate(list: WholesaleCampaign[]) {
   const now = Date.now();
