@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
+import { fetchMayoristaPriceIndex } from '@/lib/mayorista-products';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -31,16 +32,30 @@ async function fetchAllProducts() {
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
 
-  const products = await fetchAllProducts();
+  // El PVP real (regular_price) de un producto variable vive en sus
+  // variaciones y WC REST no lo trae en el listado; WPGraphQL sí. De ahí sale
+  // también si el producto está en el catálogo mayorista y a cuánto. Si
+  // GraphQL falla, el panel sigue funcionando sin la columna Mayorista.
+  const [products, priceIndex] = await Promise.all([
+    fetchAllProducts(),
+    fetchMayoristaPriceIndex().catch((e) => { console.error('[product-costs] price index:', e); return new Map<number, { regularPrice: number; wholesale: boolean; wholesalePrice: number }>(); }),
+  ]);
 
   const list = products.map((p) => {
     const profileId = (p.meta_data as any[])?.find((m: any) => m.key === '_hs_cost_profile_id')?.value || '';
+    const idx = priceIndex.get(p.id);
+    const regularFromRest = parseFloat(p.regular_price || '0') || 0;
     return {
       id:         p.id,
       name:       p.name,
       image:      p.images?.[0]?.src || '',
       categories: (p.categories as any[])?.map((c: any) => c.name) || [],
+      // `price` es lo que cobra hoy el minorista (con sale). Se mantiene por
+      // compatibilidad; el margen mayorista se mide contra `regularPrice`.
       price:      parseFloat(p.price || p.regular_price || '0'),
+      regularPrice:   idx?.regularPrice || regularFromRest || null,
+      wholesale:      idx?.wholesale ?? false,
+      wholesalePrice: idx?.wholesalePrice ?? null,
       profileId:  String(profileId),
     };
   });

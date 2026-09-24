@@ -24,6 +24,10 @@
     {
       "path": "/api/admin/finance/mp-reports",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/admin/mayorista-precios-audit",
+      "schedule": "45 7 * * *"
     }
   ]
 }

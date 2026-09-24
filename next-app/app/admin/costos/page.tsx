@@ -5,10 +5,29 @@ import {
   CostProfile, CostComponent, unitCostOf, isConfigured, hasIncompleteComponent,
   normalizeProfiles, newComponentId, COST_TEMPLATES, profileFromTemplate,
 } from '@/lib/cost-profiles';
+import { wholesaleMarginRisk, costProfileLooksProvisional, type WholesaleRiskLevel } from '@/lib/wholesale-margin-risk';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
-type Product = { id: number; name: string; image: string; categories: string[]; price: number; profileId: string };
+type Product = {
+  id: number; name: string; image: string; categories: string[];
+  /** Precio que cobra hoy el minorista (con sale). */
+  price: number;
+  /** PVP real (regular_price). Contra esto se mide el margen mayorista. */
+  regularPrice: number | null;
+  wholesale: boolean;
+  wholesalePrice: number | null;
+  profileId: string;
+};
+
+// WHOLESALE_MARGIN_RISK: solo alerta. CRITICAL < 3,33x · RISK < 3,5x · COST_UNKNOWN.
+const RISK_STYLE: Record<WholesaleRiskLevel, string> = {
+  OK:            'bg-success-soft text-success border-success/30',
+  RISK:          'bg-warning-soft text-warning border-warning/40',
+  CRITICAL:      'bg-destructive/10 text-destructive border-destructive/40',
+  COST_UNKNOWN:  'bg-muted text-muted-foreground border-border',
+  NOT_WHOLESALE: 'text-muted-foreground/50 border-transparent',
+};
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 type ProfileFilter = 'all' | 'configured' | 'nocost' | 'incomplete';
 
@@ -41,6 +60,7 @@ export default function CostosPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [search, setSearch]                 = useState('');
   const [onlyUnassigned, setOnlyUnassigned] = useState(false);
+  const [onlyRisk, setOnlyRisk] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -161,12 +181,26 @@ export default function CostosPage() {
     return [...set].sort();
   }, [products]);
 
+  // Riesgo de margen mayorista por producto (alerta, no cambia nada).
+  const riskOf = useCallback((p: Product) => {
+    const profile = profiles.find(x => x.id === p.profileId);
+    const costReliable = !!profile && isConfigured(profile) && !hasIncompleteComponent(profile) && !costProfileLooksProvisional(profile.name);
+    return wholesaleMarginRisk({ regularPrice: p.regularPrice, cost: profile?.unitCost ?? null, costReliable, wholesale: p.wholesale });
+  }, [profiles]);
+
   const visibleProducts = useMemo(() => products.filter(p => {
     if (categoryFilter !== 'all' && !p.categories.includes(categoryFilter)) return false;
     if (onlyUnassigned && p.profileId) return false;
+    if (onlyRisk && !['RISK', 'CRITICAL', 'COST_UNKNOWN'].includes(riskOf(p).level)) return false;
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  }), [products, categoryFilter, onlyUnassigned, search]);
+  }), [products, categoryFilter, onlyUnassigned, onlyRisk, riskOf, search]);
+
+  const riskCount = useMemo(() => {
+    const c = { RISK: 0, CRITICAL: 0, COST_UNKNOWN: 0 };
+    products.forEach(p => { const l = riskOf(p).level; if (l in c) c[l as keyof typeof c]++; });
+    return c;
+  }, [products, riskOf]);
 
   const assignedCount = products.filter(p => p.profileId).length;
   const usageCount = useMemo(() => {
@@ -398,6 +432,11 @@ export default function CostosPage() {
                       className={`text-[12px] font-medium px-2.5 py-1.5 rounded-[8px] border ${onlyUnassigned ? 'bg-warning-soft border-warning/40 text-warning' : 'border-border text-muted-foreground hover:border-border-mid'}`}>
                       Sin costo
                     </button>
+                    <button onClick={() => setOnlyRisk(v => !v)}
+                      title="WHOLESALE_MARGIN_RISK: productos donde el 50% mayorista deja poco margen o el costo no es confiable. Solo alerta."
+                      className={`text-[12px] font-medium px-2.5 py-1.5 rounded-[8px] border ${onlyRisk ? 'bg-destructive/10 border-destructive/40 text-destructive' : 'border-border text-muted-foreground hover:border-border-mid'}`}>
+                      Riesgo mayorista{riskCount.CRITICAL + riskCount.RISK + riskCount.COST_UNKNOWN > 0 && ` · ${riskCount.CRITICAL} crit · ${riskCount.RISK} risk · ${riskCount.COST_UNKNOWN} s/costo`}
+                    </button>
                   </div>
                 </div>
 
@@ -418,11 +457,11 @@ export default function CostosPage() {
                   </div>
                 )}
 
-                <div className="hidden lg:grid grid-cols-[32px_56px_1.5fr_110px_90px_1fr_90px_64px] gap-3 px-4 py-2 border-b border-border bg-muted/40">
+                <div className="hidden lg:grid grid-cols-[32px_56px_1.5fr_110px_90px_1fr_90px_64px_118px] gap-3 px-4 py-2 border-b border-border bg-muted/40">
                   <div><input type="checkbox" checked={selected.size > 0 && selected.size === visibleProducts.length} onChange={toggleSelectAll} className="cursor-pointer" /></div>
                   <div />
-                  {['Producto', 'Categoría', 'Precio', 'Perfil de costo', 'Margen $', 'Margen %'].map((h, i) => (
-                    <div key={h} className={`text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider ${i >= 2 && i !== 3 ? 'text-right' : ''} ${i === 2 || i === 4 ? '' : ''}`}>{h}</div>
+                  {['Producto', 'Categoría', 'Precio', 'Perfil de costo', 'Margen $', 'Margen %', 'Mayorista'].map((h, i) => (
+                    <div key={h} className={`text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider ${i >= 2 && i !== 3 ? 'text-right' : ''}`} title={h === 'Mayorista' ? 'Riesgo de margen al 50% del PVP: CRITICAL < 3,33x · RISK < 3,5x el costo' : undefined}>{h}</div>
                   ))}
                 </div>
 
@@ -432,9 +471,13 @@ export default function CostosPage() {
                   const cost = profile?.unitCost ?? 0;
                   const margin = hasCost ? product.price - cost : null;
                   const marginPct = margin !== null && product.price > 0 ? (margin / product.price) * 100 : null;
+                  const risk = riskOf(product);
+                  const riskTitle = risk.level === 'NOT_WHOLESALE' ? 'Fuera del catálogo mayorista'
+                    : risk.level === 'COST_UNKNOWN' ? 'Costo no confiable: sin perfil, incompleto o "a confirmar"'
+                    : `PVP ${fmt(product.regularPrice ?? 0)} = ${risk.multiple!.toFixed(2)}x el costo · mayorista ${fmt(risk.wholesalePrice ?? 0)} deja ${(risk.wholesaleMargin! * 100).toFixed(0)}%`;
                   return (
                     <div key={product.id}
-                      className={`grid grid-cols-[24px_40px_1fr_auto] gap-x-3 gap-y-1 lg:gap-y-0 lg:grid-cols-[32px_56px_1.5fr_110px_90px_1fr_90px_64px] px-4 py-2.5 items-center border-b border-border hover:bg-muted/40 ${!product.profileId ? 'bg-warning-soft/30' : ''}`}>
+                      className={`grid grid-cols-[24px_40px_1fr_auto] gap-x-3 gap-y-1 lg:gap-y-0 lg:grid-cols-[32px_56px_1.5fr_110px_90px_1fr_90px_64px_118px] px-4 py-2.5 items-center border-b border-border hover:bg-muted/40 ${!product.profileId ? 'bg-warning-soft/30' : ''}`}>
                       <input type="checkbox" checked={selected.has(product.id)} onChange={() => toggleSelect(product.id)} className="cursor-pointer col-start-1 row-start-1 lg:col-start-auto lg:row-start-auto" />
                       {product.image
                         ? <img src={product.image} alt="" className="w-9 h-9 rounded-[6px] object-cover border border-border col-start-2 row-start-1 row-span-2 lg:row-span-1 lg:col-start-auto lg:row-start-auto" />
@@ -449,6 +492,12 @@ export default function CostosPage() {
                       </select>
                       <div className={`text-[12.5px] text-right font-medium tabular-nums col-start-3 row-start-4 lg:col-start-auto lg:row-start-auto ${margin === null ? 'text-muted-foreground/50' : margin < 0 ? 'text-destructive' : 'text-foreground'}`}>{margin === null ? '—' : fmt(margin)}</div>
                       <div className={`text-[12.5px] text-right font-medium tabular-nums col-start-4 row-start-4 lg:col-start-auto lg:row-start-auto ${marginPct === null ? 'text-muted-foreground/50' : marginPct < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>{marginPct === null ? '—' : `${marginPct.toFixed(0)}%`}</div>
+                      <div className="text-right col-start-3 col-span-2 row-start-5 lg:col-span-1 lg:col-start-auto lg:row-start-auto" title={riskTitle}>
+                        <span className={`inline-block text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-[6px] border ${RISK_STYLE[risk.level]}`}>
+                          {risk.level === 'NOT_WHOLESALE' ? '—' : risk.level}
+                        </span>
+                        {risk.wholesaleMargin != null && <span className="ml-1.5 text-[10.5px] text-muted-foreground tabular-nums">{(risk.wholesaleMargin * 100).toFixed(0)}%</span>}
+                      </div>
                     </div>
                   );
                 })}

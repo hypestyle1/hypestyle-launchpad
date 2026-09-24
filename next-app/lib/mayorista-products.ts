@@ -11,7 +11,7 @@ const GET_PRODUCTS = `
     products(first: $first, after: $after, where: { status: "publish", orderby: { field: DATE, order: ASC } }) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        id name slug shortDescription
+        id databaseId name slug shortDescription
         ... on SimpleProduct {
           regularPrice stockStatus stockQuantity
           image { sourceUrl }
@@ -137,6 +137,13 @@ export function isExcludedFromMayorista(node: any): boolean {
   return isCombo(node) || EXCLUDED_SLUGS.has(node.slug);
 }
 
+/** Misma regla, para un producto leído por WC REST (`categories[].slug`). */
+export function isExcludedFromMayoristaRest(product: { slug?: string; status?: string; categories?: { slug: string }[] }): boolean {
+  if (product.status && product.status !== 'publish') return true;
+  if (EXCLUDED_SLUGS.has(product.slug ?? '')) return true;
+  return (product.categories ?? []).some((c) => EXCLUDED_CATEGORY_SLUGS.has(c.slug));
+}
+
 // Productos puntuales que el negocio decidió no ofrecer a mayoristas
 // (a mano, no hay una regla automática detrás — pedido explícito).
 const EXCLUDED_SLUGS = new Set(['hs-ring-silver-925', 'zip-hoodie-pink']);
@@ -230,7 +237,37 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
   };
 }
 
+/** PVP real (regular_price) y pertenencia al catálogo mayorista de TODOS los
+ *  productos publicados, por id de Woo. Para el panel (/admin/costos): la
+ *  misma lectura que el catálogo, sin el filtro de stock. */
+export async function fetchMayoristaPriceIndex(): Promise<Map<number, { regularPrice: number; wholesale: boolean; wholesalePrice: number }>> {
+  const nodes = await fetchMayoristaNodes();
+  const out = new Map<number, { regularPrice: number; wholesale: boolean; wholesalePrice: number }>();
+  for (const n of nodes) {
+    const id = Number(n.databaseId);
+    if (!id) continue;
+    const regularPrice = parsePrice(n.regularPrice);
+    out.set(id, { regularPrice, wholesale: !isExcludedFromMayorista(n) && regularPrice > 0, wholesalePrice: wholesalePrice(regularPrice) });
+  }
+  return out;
+}
+
 export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
+  const products = (await fetchMayoristaNodes())
+    .filter((n: any) => !isExcludedFromMayorista(n))
+    .map(normalizeMayoristaNode)
+    .filter((p: MayoristaProduct) => p.regularPrice > 0 && !isFullyOut(p));
+
+  // Estable: entre productos con el mismo puntaje de stock, se mantiene el
+  // orden que ya traían (fecha de alta, ver la query).
+  return products
+    .map((p, i) => ({ p, i }))
+    .sort((a, b) => stockScore(a.p) - stockScore(b.p) || a.i - b.i)
+    .map(({ p }) => p);
+}
+
+/** Todos los nodos publicados de WPGraphQL, paginados y deduplicados. */
+async function fetchMayoristaNodes(): Promise<any[]> {
   const allNodes: any[] = [];
   let after: string | null = null;
 
@@ -261,23 +298,11 @@ export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
   // productos enteros del resultado total. El dedupe de abajo queda como
   // resguardo, pero la causa real era el sort key no-único.
   const seenIds = new Set<string>();
-  const dedupedNodes = allNodes.filter((n: any) => {
+  return allNodes.filter((n: any) => {
     if (seenIds.has(n.id)) return false;
     seenIds.add(n.id);
     return true;
   });
-
-  const products = dedupedNodes
-    .filter((n: any) => !isExcludedFromMayorista(n))
-    .map(normalizeMayoristaNode)
-    .filter((p: MayoristaProduct) => p.regularPrice > 0 && !isFullyOut(p));
-
-  // Estable: entre productos con el mismo puntaje de stock, se mantiene el
-  // orden que ya traían (menu_order del sitio).
-  return products
-    .map((p, i) => ({ p, i }))
-    .sort((a, b) => stockScore(a.p) - stockScore(b.p) || a.i - b.i)
-    .map(({ p }) => p);
 }
 
 export async function fetchMayoristaProduct(slug: string): Promise<MayoristaProduct | null> {
