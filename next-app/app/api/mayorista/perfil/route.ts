@@ -33,6 +33,10 @@ export async function GET(req: NextRequest) {
     minOrder,
     dni: metaVal('dni'),
     viaCargoSucursal: metaVal('via_cargo_sucursal'),
+    // Último método de envío elegido. Las cuentas viejas no lo tienen: el
+    // checkout arranca en Via Cargo con la sucursal que ya tenían.
+    envioMetodo: metaVal('mayorista_envio_metodo'),
+    envioDestino: metaVal('mayorista_envio_destino'),
     credit: parseCredit(meta).saldo,
   });
 }

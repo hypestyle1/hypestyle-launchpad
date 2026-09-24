@@ -42,6 +42,7 @@ type Order = {
   customer_note: string; order_key: string;
   adminNote: string;
   viaCargoSucursal: string;
+  envio?: { metodo: string | null; destino: string; resumen: string };
   tracking: string; notified: string; andreani: string; pedido_id: string;
   hsDispatchedAt: string; hsDispatchedSource: string;
   notes: Note[];
@@ -1018,10 +1019,10 @@ export default function OrderDetailPage() {
                     <div>{order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}</div>
                     <div>{order.shipping.city}, {order.shipping.state} {order.shipping.postcode}</div>
                   </div>
-                  {order.viaCargoSucursal && (
+                  {(order.envio?.resumen || order.viaCargoSucursal) && (
                     <div className="mt-2 pt-2 border-t border-border text-[12px]">
-                      <span className="text-muted-foreground/70">Sucursal Via Cargo:</span>{' '}
-                      <span className="font-medium text-foreground">{order.viaCargoSucursal}</span>
+                      <span className="text-muted-foreground/70">Envío:</span>{' '}
+                      <span className="font-medium text-foreground">{order.envio?.resumen || `Via Cargo — a sucursal · ${order.viaCargoSucursal}`}</span>
                     </div>
                   )}
                 </>

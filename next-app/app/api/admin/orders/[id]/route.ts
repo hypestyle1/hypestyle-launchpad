@@ -5,6 +5,7 @@ import { providerOf, groupOf } from '@/lib/finance/fees';
 import type { GatewaySyncStatus } from '@/lib/finance/types';
 import { mpActivityUrl } from '@/lib/finance/mp-links';
 import { parseRefundsMeta, parseRefundLock } from '@/lib/finance/mp-refund';
+import { envioDeOrden } from '@/lib/mayorista-envio';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -180,6 +181,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     adminNote:            getMeta('_hs_admin_note'),
     order_key:            o.order_key,
     viaCargoSucursal: getMeta('_via_cargo_sucursal'),
+    // Método de envío mayorista (Via Cargo / Andreani / expreso). Las órdenes
+    // viejas con solo la sucursal de Via Cargo salen como Via Cargo.
+    envio: envioDeOrden(getMeta),
     tracking:   getMeta('_tracking_number'),
     notified:   getMeta('_tracking_notified'),
     andreani:   getMeta('_andreani_numero_de_envio') || getMeta('_andreani_remito'),

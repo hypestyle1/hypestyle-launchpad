@@ -8,6 +8,7 @@ import { imgSrc } from '@/lib/img';
 import { Button } from '@/components/ui/button';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart, lineKey, MayoristaCartItem } from '@/context/MayoristaCartContext';
+import { METODOS_ENVIO, METODO_DEFAULT, metodoDef, validarEnvio, type MetodoEnvio } from '@/lib/mayorista-envio';
 
 function csvEscape(value: string | number): string {
   const s = String(value ?? '');
@@ -112,18 +113,23 @@ function fmtDraftDate(iso: string) {
 interface ShippingForm {
   first_name: string; last_name: string; company: string;
   address_1: string; city: string; state: string; postcode: string; phone: string;
-  dni: string; via_cargo_sucursal: string;
+  dni: string;
+  envio_metodo: MetodoEnvio; envio_destino: string;
 }
 
 const EMPTY_SHIPPING: ShippingForm = {
   first_name: '', last_name: '', company: '', address_1: '', city: '', state: '', postcode: '', phone: '',
-  dni: '', via_cargo_sucursal: '',
+  dni: '', envio_metodo: METODO_DEFAULT, envio_destino: '',
 };
 
 export default function MayoristaCartPage() {
   const { items, remove, setQty, clear, replace, total, hydrated } = useMayoristaCart();
   const [step, setStep] = useState<'cart' | 'shipping'>('cart');
   const [shipping, setShipping] = useState<ShippingForm>(EMPTY_SHIPPING);
+  // Destino guardado por método (la sucursal de Via Cargo de siempre, el
+  // último expreso, etc.): al cambiar de método se precarga el que corresponde
+  // en vez de arrastrar la sucursal de otro servicio.
+  const savedDestinos = useRef<Partial<Record<MetodoEnvio, string>>>({});
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -258,8 +264,12 @@ export default function MayoristaCartPage() {
           postcode:   b?.postcode   || s.postcode,
           phone:      b?.phone      || s.phone,
           dni:              data.dni              || s.dni,
-          via_cargo_sucursal: data.viaCargoSucursal || s.via_cargo_sucursal,
         }));
+        if (data.viaCargoSucursal) savedDestinos.current.via_cargo = data.viaCargoSucursal;
+        const metodo = metodoDef(data.envioMetodo)?.id;
+        if (metodo && data.envioDestino) savedDestinos.current[metodo] = data.envioDestino;
+        const inicial = metodo ?? METODO_DEFAULT;
+        setShipping(s => ({ ...s, envio_metodo: inicial, envio_destino: savedDestinos.current[inicial] ?? '' }));
       })
       .catch(() => {});
   }, []);
@@ -268,8 +278,20 @@ export default function MayoristaCartPage() {
   const creditUsed = Math.min(credit, total);
   const toPay = total - creditUsed;
 
+  function elegirEnvio(metodo: MetodoEnvio) {
+    setShipping(s => {
+      // Lo tipeado para el método actual no se pierde si vuelve a elegirlo.
+      savedDestinos.current[s.envio_metodo] = s.envio_destino;
+      return { ...s, envio_metodo: metodo, envio_destino: savedDestinos.current[metodo] ?? '' };
+    });
+  }
+
+  const envioDef = metodoDef(shipping.envio_metodo);
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
+    const envioError = validarEnvio(shipping.envio_metodo, shipping.envio_destino);
+    if (envioError) { setError(envioError); return; }
     setSending(true);
     setError('');
     try {
@@ -451,10 +473,42 @@ export default function MayoristaCartPage() {
             CP
             <input {...field('postcode')} className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
           </label>
-          <label className="col-span-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-            Sucursal de Via Cargo donde querés que lo despachemos
-            <input required {...field('via_cargo_sucursal')} placeholder="Ej: Via Cargo Comodoro Rivadavia centro" className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors" />
-          </label>
+          <fieldset className="col-span-2 mt-3">
+            <legend className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Cómo querés recibirlo</legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {METODOS_ENVIO.map((m) => (
+                <label
+                  key={m.id}
+                  className={`flex items-center gap-2 rounded-[10px] border px-3 py-2.5 text-[13px] cursor-pointer transition-colors ${
+                    shipping.envio_metodo === m.id ? 'border-foreground bg-bg-alt/60 font-medium' : 'border-border hover:border-foreground/50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="envio_metodo"
+                    value={m.id}
+                    checked={shipping.envio_metodo === m.id}
+                    onChange={() => elegirEnvio(m.id)}
+                    className="accent-foreground"
+                  />
+                  {m.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {envioDef?.destinoLabel ? (
+            <label className="col-span-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+              {envioDef.destinoLabel}{envioDef.destinoRequerido ? '' : ' (opcional)'}
+              <input
+                required={envioDef.destinoRequerido}
+                {...field('envio_destino')}
+                placeholder={envioDef.destinoPlaceholder}
+                className="mt-1 w-full bg-transparent border-b border-border px-1 py-2 text-sm focus:outline-none focus:border-foreground transition-colors"
+              />
+            </label>
+          ) : (
+            <p className="col-span-2 text-[12px] text-muted-foreground">Lo mandamos a la dirección de arriba.</p>
+          )}
         </div>
 
         {error && <p className="mt-4 text-[12px] text-destructive">{error}</p>}
