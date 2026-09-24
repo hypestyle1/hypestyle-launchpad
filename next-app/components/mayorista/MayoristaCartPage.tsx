@@ -110,6 +110,10 @@ function fmtDraftDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', timeZone: 'America/Argentina/Buenos_Aires' });
 }
 
+// Una línea cuyo precio cambió entre el carrito y el servidor (misma forma que
+// `PriceChange` de lib/mayorista-pricing.ts).
+interface PriceChange { slug: string; name: string; size: string; color?: string; quantity: number; before: number | null; after: number }
+
 interface ShippingForm {
   first_name: string; last_name: string; company: string;
   address_1: string; city: string; state: string; postcode: string; phone: string;
@@ -133,6 +137,9 @@ export default function MayoristaCartPage() {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  // 409 PRICE_CHANGED de /api/mayorista/pedido: precios vigentes + total nuevo,
+  // a la espera de que el cliente confirme.
+  const [priceChange, setPriceChange] = useState<{ changes: PriceChange[]; total: number } | null>(null);
   const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number } | null>(null);
   const [minOrder, setMinOrder] = useState<number | null>(null);
   // Saldo a favor de la cuenta (nota de crédito): se descuenta solo del pedido.
@@ -162,21 +169,31 @@ export default function MayoristaCartPage() {
         body: JSON.stringify({ items: candidate.map(i => ({ slug: i.slug, name: i.name, size: i.size, color: i.color, quantity: i.quantity })) }),
       });
       if (!res.ok) return candidate; // si no se pudo verificar, el pedido igual se frena al confirmar
-      const data = await res.json() as { unavailable: { slug: string; size: string; color?: string; reason: string; available?: number; message: string }[] };
-      if (!data.unavailable?.length) { setStockNotice([]); return candidate; }
-      const byKey = new Map(data.unavailable.map(u => [lineKey(u), u]));
+      const data = await res.json() as {
+        unavailable: { slug: string; size: string; color?: string; reason: string; available?: number; message: string }[];
+        prices?: { slug: string; size: string; color?: string; unitPrice: number }[];
+      };
+      const byKey = new Map((data.unavailable ?? []).map(u => [lineKey(u), u]));
+      // El precio guardado en el carrito es una foto de cuando se agregó el
+      // ítem; el vigente lo calcula el servidor. Se actualiza acá para que el
+      // total que ve el cliente sea el que se va a cobrar.
+      const priceByKey = new Map((data.prices ?? []).map(p => [lineKey(p), p.unitPrice]));
       const notices: string[] = [];
+      let repriced = 0;
       const next: MayoristaCartItem[] = [];
       for (const item of candidate) {
         const u = byKey.get(lineKey(item));
-        if (!u) { next.push(item); continue; }
+        const current = priceByKey.get(lineKey(item));
+        const withPrice = typeof current === 'number' && current > 0 && current !== item.price ? (repriced++, { ...item, price: current }) : item;
+        if (!u) { next.push(withPrice); continue; }
         if (u.reason === 'insufficient' && typeof u.available === 'number' && u.available > 0) {
-          next.push({ ...item, quantity: u.available });
+          next.push({ ...withPrice, quantity: u.available });
           notices.push(`${u.message} Se ajustó la cantidad.`);
         } else {
           notices.push(`${u.message} Se sacó del pedido.`);
         }
       }
+      if (repriced) notices.push(`Se actualizó el precio de ${repriced} ${repriced === 1 ? 'producto' : 'productos'} al vigente.`);
       setStockNotice(notices);
       return next;
     } catch {
@@ -189,7 +206,9 @@ export default function MayoristaCartPage() {
   useEffect(() => {
     if (!hydrated || checkedOnHydrate.current) return;
     checkedOnHydrate.current = true;
-    pruneUnavailable(items).then((next) => { if (next.length !== items.length || next.some((n, i) => n.quantity !== items[i].quantity)) replace(next); });
+    pruneUnavailable(items).then((next) => {
+      if (next.length !== items.length || next.some((n, i) => n.quantity !== items[i].quantity || n.price !== items[i].price)) replace(next);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
@@ -290,6 +309,13 @@ export default function MayoristaCartPage() {
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
+    await submitOrder(false);
+  }
+
+  // El servidor cobra siempre el precio vigente (50% del PVP de Woo). Si el
+  // carrito traía otro, responde 409 PRICE_CHANGED con el total nuevo: se le
+  // muestra al cliente y recién con su confirmación se vuelve a mandar.
+  async function submitOrder(confirmPrices: boolean) {
     const envioError = validarEnvio(shipping.envio_metodo, shipping.envio_destino);
     if (envioError) { setError(envioError); return; }
     setSending(true);
@@ -298,11 +324,24 @@ export default function MayoristaCartPage() {
       const res = await fetch('/api/mayorista/pedido', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, shipping }),
+        body: JSON.stringify({ items, shipping, ...(confirmPrices ? { confirmPrices: true } : {}) }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.code === 'PRICE_CHANGED') {
+        const changes = (data.changes ?? []) as PriceChange[];
+        // El carrito pasa a los precios vigentes, así el total en pantalla es
+        // el que se va a cobrar cuando el cliente confirme.
+        const byKey = new Map(changes.map(c => [lineKey(c), c.after]));
+        replace(items.map(i => byKey.has(lineKey(i)) ? { ...i, price: byKey.get(lineKey(i))! } : i));
+        setPriceChange({ changes, total: Number(data.total) || 0 });
+        return;
+      }
       if (!res.ok) throw new Error(data.message || 'No se pudo enviar el pedido');
-      setConfirmed({ orderNumber: data.wcOrderNumber, items, total, creditUsed: Number(data.creditUsed) || 0 });
+      setPriceChange(null);
+      const chargedItems: MayoristaCartItem[] = Array.isArray(data.items)
+        ? items.map(i => { const s = data.items.find((x: any) => lineKey(x) === lineKey(i)); return s ? { ...i, price: Number(s.price), quantity: Number(s.quantity) } : i; })
+        : items;
+      setConfirmed({ orderNumber: data.wcOrderNumber, items: chargedItems, total: Number(data.total) || total, creditUsed: Number(data.creditUsed) || 0 });
       clear();
       // El borrador ya se convirtió en pedido: se elimina para que la lista
       // muestre solo lo que falta confirmar.
@@ -513,7 +552,25 @@ export default function MayoristaCartPage() {
 
         {error && <p className="mt-4 text-[12px] text-destructive">{error}</p>}
 
-        <Button type="submit" variant="hype" size="ctaFull" disabled={sending} className="mt-8 py-3 rounded-full">
+        {priceChange && (
+          <div className="mt-6 rounded-[12px] border border-foreground p-4">
+            <p className="text-[13px] font-semibold">Los precios cambiaron desde que armaste el pedido</p>
+            <ul className="mt-2 space-y-1 text-[12px] text-muted-foreground">
+              {priceChange.changes.map((c) => (
+                <li key={lineKey(c)}>
+                  {c.name} · {c.color ? `${c.size} · ${c.color}` : c.size} × {c.quantity}:{' '}
+                  {c.before != null ? <><s>{formatArs(c.before)}</s> → </> : null}<span className="text-foreground font-medium">{formatArs(c.after)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-[13px]">Total actualizado: <b>{formatArs(priceChange.total)}</b></p>
+            <Button type="button" variant="hype" size="ctaFull" disabled={sending} onClick={() => submitOrder(true)} className="mt-4 py-3 rounded-full">
+              {sending ? 'Enviando…' : 'Confirmar con los precios actualizados'}
+            </Button>
+          </div>
+        )}
+
+        <Button type="submit" variant="hype" size="ctaFull" disabled={sending || !!priceChange} className="mt-8 py-3 rounded-full">
           {sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(toPay)}`}
         </Button>
       </form>

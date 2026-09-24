@@ -3,6 +3,7 @@ import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
 import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
 import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '@/lib/mayorista-stock';
+import { priceLines } from '@/lib/mayorista-pricing';
 import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
 
@@ -162,8 +163,8 @@ export async function POST(req: NextRequest) {
   if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
 
   try {
-    const { items, shipping } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo };
-    if (!Array.isArray(items) || items.length === 0) {
+    const { items: rawItems, shipping, confirmPrices } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo; confirmPrices?: boolean };
+    if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
     }
     if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone || !shipping?.dni) {
@@ -174,6 +175,19 @@ export async function POST(req: NextRequest) {
     if (envioError) return NextResponse.json({ message: envioError }, { status: 400 });
     // Andreani a domicilio no lleva destino: que no se cuele uno viejo.
     if (!metodoDef(envio.metodo)?.destinoLabel) envio.destino = '';
+
+    // Del body solo se usan slug/talle/color/cantidad. El precio y cualquier
+    // id de variación que venga del navegador NO se usan para cobrar: el
+    // producto y la variación se resuelven acá contra Woo y el precio se
+    // calcula acá (lib/mayorista-pricing.ts).
+    const items: PedidoItem[] = rawItems.map((i: any) => ({
+      slug: String(i?.slug ?? ''),
+      name: String(i?.name ?? i?.slug ?? ''),
+      size: String(i?.size ?? ''),
+      ...(i?.color ? { color: String(i.color) } : {}),
+      quantity: Math.max(1, Math.floor(Number(i?.quantity) || 1)),
+      price: Number(i?.price),
+    }));
 
     const resolvedBySlug = await resolveProducts(items.map(i => i.slug));
 
@@ -189,30 +203,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const lineItems = items.map((item) => {
-      const resolved = resolvedBySlug.get(item.slug)!;
-      const color = (item.color ?? '').trim();
-      const hit = findVariation(resolved, item);
-      const lineTotal = String(Math.round(item.price * item.quantity));
+    const pricing = priceLines(items, resolvedBySlug);
+    if (pricing.unpriced.length) {
+      // Sin regular_price en Woo no hay precio mayorista: no se inventa uno.
+      return NextResponse.json(
+        { message: `${pricing.unpriced.map(u => `${u.name} (${u.size}) no tiene precio cargado.`).join(' ')} Avisanos y lo resolvemos.`, unpriced: pricing.unpriced },
+        { status: 409 },
+      );
+    }
+    // El carrito traía otro precio (borrador viejo, cambio de PVP, o alguien
+    // tocó el request): se devuelve el total vigente y se pide confirmación.
+    // Con `confirmPrices: true` el pedido sigue, siempre con los precios del
+    // servidor.
+    if (pricing.changes.length && confirmPrices !== true) {
+      return NextResponse.json(
+        {
+          code: 'PRICE_CHANGED',
+          message: 'Los precios de tu pedido cambiaron desde que lo armaste. Revisá el total actualizado y confirmá.',
+          changes: pricing.changes,
+          total: pricing.total,
+        },
+        { status: 409 },
+      );
+    }
+
+    // Para los mails: las líneas con el precio que efectivamente se cobra.
+    const pricedItems: PedidoItem[] = pricing.lines.map(l => ({
+      slug: l.slug, name: l.name, size: l.size, ...(l.color ? { color: l.color } : {}), quantity: l.quantity, price: l.unitPrice,
+    }));
+
+    const lineItems = pricing.lines.map((line) => {
+      const resolved = resolvedBySlug.get(line.slug)!;
+      const color = line.color ?? '';
+      const hit = findVariation(resolved, line);
+      const lineTotal = String(line.lineTotal);
       // Lo que no quedó representado por la variación va como meta visible en
       // la orden: el talle si no matcheó ninguna, y el color siempre que la
       // variación no lo lleve (caso AERO: una sola entrada en Woo, el color es
       // un dato del pedido). Antes se perdía en silencio y el admin no sabía
       // qué talle era.
       const meta: { key: string; value: string }[] = [];
-      if (!hit) meta.push({ key: 'Talle', value: item.size });
+      if (!hit) meta.push({ key: 'Talle', value: line.size });
       if (color && !(hit && hit.options.includes(color.toLowerCase()))) meta.push({ key: 'Color', value: color });
       return {
-        product_id: resolved.product_id,
-        ...(hit ? { variation_id: hit.id } : {}),
-        quantity: item.quantity,
+        product_id: line.productId,
+        ...(line.variationId ? { variation_id: line.variationId } : {}),
+        quantity: line.quantity,
         subtotal: lineTotal,
         total: lineTotal,
         ...(meta.length ? { meta_data: meta } : {}),
       };
     });
 
-    const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const total = pricing.total;
 
     const customer = await wcGet(`customers/${customerId}?_fields=meta_data,email`);
     const minOrder = customerMinOrderOverride(customer.meta_data) ?? await getGlobalMinOrder();
@@ -293,12 +336,17 @@ export async function POST(req: NextRequest) {
     }
 
     await Promise.all([
-      sendAdminEmail(label, shipping, items, total, creditUsed, String(wcOrder.number)),
-      sendCustomerEmail(customer.email, items, total, creditUsed, String(wcOrder.number), envioResumen(envio.metodo, envio.destino)),
+      sendAdminEmail(label, shipping, pricedItems, total, creditUsed, String(wcOrder.number)),
+      sendCustomerEmail(customer.email, pricedItems, total, creditUsed, String(wcOrder.number), envioResumen(envio.metodo, envio.destino)),
       saveCustomerProfile(customerId, billing, shipping.dni, envio),
     ]);
 
-    return NextResponse.json({ wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number), creditUsed });
+    return NextResponse.json({
+      wcOrderId: wcOrder.id, wcOrderNumber: String(wcOrder.number), creditUsed,
+      // Lo que se cobró, para que la confirmación en pantalla muestre lo mismo
+      // que la orden aunque el carrito tuviera otro precio.
+      total, items: pricedItems,
+    });
   } catch (err) {
     console.error('[mayorista/pedido]', err);
     return NextResponse.json({ message: 'Error al crear el pedido. Tu pedido sigue cargado: esperá unos segundos e intentá de nuevo.' }, { status: 500 });
