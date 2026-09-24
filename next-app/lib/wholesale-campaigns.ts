@@ -47,6 +47,10 @@ export interface WholesaleCampaign {
   badge: string;
   headline: string;
   text: string;
+  /** Texto del botón principal del hero (default "Ver la liquidación"). */
+  cta?: string;
+  /** Línea secundaria del hero (ej. "Next drop 04.10"). */
+  secondary?: string;
   /** Mínimo de pedido propio de la campaña (null = el general). */
   minOrder: number | null;
   groups: CampaignGroup[];
@@ -136,6 +140,8 @@ export function validateCampaign(raw: any): { campaign: WholesaleCampaign | null
       badge: String(raw?.badge ?? '').trim(),
       headline: String(raw?.headline ?? '').trim(),
       text: String(raw?.text ?? '').trim(),
+      cta: String(raw?.cta ?? '').trim(),
+      secondary: String(raw?.secondary ?? '').trim(),
       minOrder,
       groups, items,
       createdAt: raw?.createdAt ? String(raw.createdAt) : now,

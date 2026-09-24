@@ -57,7 +57,8 @@
    },
    {
     "productId": 611,
-    "group": "10"
+    "group": "10",
+    "note": "sin-reposicion"
    },
    {
     "productId": 1046,
@@ -81,7 +82,8 @@
    },
    {
     "productId": 629,
-    "group": "10"
+    "group": "10",
+    "note": "sin-reposicion"
    },
    {
     "productId": 575,
@@ -101,7 +103,8 @@
    },
    {
     "productId": 726,
-    "group": "10"
+    "group": "10",
+    "note": "sin-reposicion"
    },
    {
     "productId": 337,
@@ -137,19 +140,23 @@
    },
    {
     "productId": 1571,
-    "group": "20"
+    "group": "20",
+    "note": "sin-reposicion"
    },
    {
     "productId": 815,
-    "group": "20"
+    "group": "20",
+    "note": "sin-reposicion"
    },
    {
     "productId": 713,
-    "group": "20"
+    "group": "20",
+    "note": "sin-reposicion"
    },
    {
     "productId": 29,
-    "group": "20"
+    "group": "20",
+    "note": "sin-reposicion"
    },
    {
     "productId": 882,
@@ -170,7 +177,9 @@
   ],
   "createdAt": "2026-09-24T17:00:00-03:00",
   "updatedAt": "2026-09-24T17:00:00-03:00",
-  "history": []
+  "history": [],
+  "cta": "Ver la liquidación",
+  "secondary": "Next drop 04.10"
  },
  "products": [
   {

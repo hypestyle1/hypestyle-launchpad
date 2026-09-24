@@ -3,6 +3,7 @@
 
 import { fetchWithRetry } from './fetch-retry';
 import { wholesalePrice } from './mayorista-pricing';
+import type { ProductPromo } from './mayorista-campaign-view';
 
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
@@ -39,6 +40,8 @@ const GET_PRODUCTS = `
 
 export interface MayoristaProduct {
   id: string;
+  /** id de Woo (databaseId): es la clave de campañas, costos y órdenes. */
+  productId: number;
   name: string;
   slug: string;
   category: string;
@@ -60,6 +63,9 @@ export interface MayoristaProduct {
   // Clave = stockKey(product, size, color).
   stock: Record<string, 'ok' | 'low' | 'out'>;
   stockQty: Record<string, number | null>;
+  // Promo de la campaña mayorista vigente (lib/mayorista-campaign-view.ts).
+  // Solo para mostrar: el precio que se cobra lo recalcula el servidor.
+  promo?: ProductPromo;
 }
 
 /** Clave del stock de una combinación talle/color. */
@@ -221,6 +227,7 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
 
   return {
     id: node.slug,
+    productId: Number(node.databaseId) || 0,
     name: node.name,
     slug: node.slug,
     category: node.productCategories?.nodes?.[0]?.name ?? '',
