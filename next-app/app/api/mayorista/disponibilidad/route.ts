@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { resolveProducts, findUnavailable, type StockLine } from '@/lib/mayorista-stock';
 import { priceLines } from '@/lib/mayorista-pricing';
+import { applyCampaign } from '@/lib/wholesale-campaigns';
+import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 
 // POST { items: [{ slug, name, size, color?, quantity, price? }] }
 //   -> { unavailable: [{ slug, size, color?, reason, available?, message }],
-//        prices: [{ slug, size, color?, unitPrice }] }
+//        prices: [{ slug, size, color?, unitPrice, wsRegular, campaign? }] }
 //
 // El carrito lo llama al hidratar y al cargar un borrador: lo que ya no está
 // publicado o quedó sin stock se saca (o se recorta) antes de que el cliente
@@ -13,9 +15,10 @@ import { priceLines } from '@/lib/mayorista-pricing';
 // para que el cliente no se entere recién al final.
 //
 // `prices` trae el precio mayorista vigente de cada línea (50% del
-// regular_price de Woo, calculado en el servidor) para que un carrito o
-// borrador viejo se actualice solo. El precio que guarda el carrito nunca se
-// cobra: /api/mayorista/pedido vuelve a calcularlo.
+// regular_price de Woo, con el descuento de campaña si hay una vigente),
+// calculado en el servidor, para que un carrito o borrador viejo se actualice
+// solo. El precio que guarda el carrito nunca se cobra: /api/mayorista/pedido
+// vuelve a calcularlo.
 export async function POST(req: NextRequest) {
   const customerId = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
   if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
@@ -40,10 +43,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const resolved = await resolveProducts(lines.map(l => l.slug));
-    const priced = priceLines(lines, resolved);
+    // Acá una falla leyendo campañas no frena nada: es un aviso previo. El
+    // pedido sí exige leerlas.
+    const campaigns = await readCampaigns().catch((e) => { console.error('[mayorista/disponibilidad] campañas:', e); return []; });
+    const priced = applyCampaign(priceLines(lines, resolved), campaigns);
     return NextResponse.json({
       unavailable: findUnavailable(lines, resolved),
-      prices: priced.lines.map(l => ({ slug: l.slug, size: l.size, ...(l.color ? { color: l.color } : {}), unitPrice: l.unitPrice })),
+      prices: priced.lines.map(l => ({
+        slug: l.slug, size: l.size, ...(l.color ? { color: l.color } : {}),
+        unitPrice: l.unitPrice, wsRegular: l.wsRegular,
+        ...(l.campaign ? { campaign: { id: l.campaign.campaignId, name: l.campaign.campaignName, group: l.campaign.group, discount: l.campaign.discount, badge: l.campaign.badge } } : {}),
+      })),
     });
   } catch (err) {
     console.error('[mayorista/disponibilidad]', err);

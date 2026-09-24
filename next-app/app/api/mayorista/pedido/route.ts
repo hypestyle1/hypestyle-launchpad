@@ -4,6 +4,8 @@ import { formatArs } from '@/lib/mayorista-format';
 import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
 import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '@/lib/mayorista-stock';
 import { priceLines } from '@/lib/mayorista-pricing';
+import { applyCampaign, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
+import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
 
@@ -20,11 +22,25 @@ interface PedidoItem {
   // Color elegido en el catálogo (productos con atributo Color en Woo).
   color?: string;
   quantity: number;
+  // Solo en las líneas ya cobradas (para los mails): mayorista normal y, si
+  // hubo campaña, el descuento aplicado.
+  wsRegular?: number;
+  campaignDiscount?: number;
+  campaignName?: string;
 }
 
 // Celda "Talle" de los mails: talle y, si lo hay, color.
 function sizeLabel(it: PedidoItem): string {
   return it.color ? `${it.size} · ${it.color}` : it.size;
+}
+
+// Celda "Precio" de los mails: con campaña, el mayorista normal tachado y el
+// precio cobrado con el % extra.
+function priceCell(it: PedidoItem): string {
+  if (it.wsRegular && it.campaignDiscount && it.wsRegular > it.price) {
+    return `<s style="color:#888">${formatArs(it.wsRegular)}</s> <b>${formatArs(it.price)}</b> <span style="color:#888;font-size:11px">−${Math.round(it.campaignDiscount * 100)}%</span>`;
+  }
+  return formatArs(it.price);
 }
 
 interface ShippingInfo {
@@ -40,9 +56,15 @@ interface ShippingInfo {
 
 // Líneas de total de los mails: si se usó saldo a favor, se muestra el
 // subtotal, el descuento y lo que queda a pagar.
-function totalsHtml(total: number, credit: number): string {
-  if (!credit) return `<p style="font-size:13px;margin-top:10px">Total: <b>${formatArs(total)}</b></p>`;
-  return `<p style="font-size:13px;margin-top:10px;margin-bottom:2px">Subtotal: ${formatArs(total)}</p>
+function totalsHtml(total: number, credit: number, campaign?: { name: string; discountTotal: number }): string {
+  // Con campaña: el subtotal a mayorista normal, el descuento de la campaña y
+  // el total ya con descuento (que es `total`).
+  const campaignRows = campaign && campaign.discountTotal > 0
+    ? `<p style="font-size:13px;margin-top:10px;margin-bottom:2px">Subtotal a precio mayorista: ${formatArs(total + campaign.discountTotal)}</p>
+    <p style="font-size:13px;margin:2px 0">${campaign.name}: −${formatArs(campaign.discountTotal)}</p>`
+    : '';
+  if (!credit) return `${campaignRows}<p style="font-size:13px;margin-top:${campaignRows ? 2 : 10}px">Total: <b>${formatArs(total)}</b></p>`;
+  return `${campaignRows}<p style="font-size:13px;margin-top:${campaignRows ? 2 : 10}px;margin-bottom:2px">Subtotal: ${formatArs(total)}</p>
     <p style="font-size:13px;margin:2px 0">Saldo a favor aplicado: −${formatArs(credit)}</p>
     <p style="font-size:13px;margin-top:2px">Total a pagar: <b>${formatArs(total - credit)}</b></p>`;
 }
@@ -79,13 +101,15 @@ async function saveCustomerProfile(customerId: number, billing: Record<string, u
   if (!res.ok) console.error('[mayorista/pedido] no se pudo guardar el perfil del cliente:', res.status);
 }
 
-async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, credit: number, orderNumber: string) {
+type CampaignSummary = { id: string; name: string; discountTotal: number } | null;
+
+async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, credit: number, orderNumber: string, campaign: CampaignSummary) {
   if (!BREVO_API_KEY) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${sizeLabel(it)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
-    <td style="padding:6px 8px;border:1px solid #eee">${formatArs(it.price)}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${priceCell(it)}</td>
   </tr>`).join('');
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
@@ -102,7 +126,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    ${totalsHtml(total, credit)}
+    ${totalsHtml(total, credit, campaign)}
     <p style="font-size:12px;color:#888">Orden WooCommerce #${orderNumber} (on-hold).</p>
   </div>`;
 
@@ -121,13 +145,13 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 // Copia del resumen para el cliente — así queda guardado en su propio mail
 // (el carrito no persiste después de confirmar, y no hay checkout/pago para
 // que quede un comprobante de esa instancia).
-async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string, envio: string) {
+async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string, envio: string, campaign: CampaignSummary) {
   if (!BREVO_API_KEY || !toEmail) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${sizeLabel(it)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
-    <td style="padding:6px 8px;border:1px solid #eee">${formatArs(it.price)}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${priceCell(it)}</td>
   </tr>`).join('');
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
@@ -143,7 +167,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    ${totalsHtml(total, credit)}
+    ${totalsHtml(total, credit, campaign)}
   </div>`;
 
   await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -203,18 +227,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const pricing = priceLines(items, resolvedBySlug);
-    if (pricing.unpriced.length) {
+    const basePricing = priceLines(items, resolvedBySlug);
+    if (basePricing.unpriced.length) {
       // Sin regular_price en Woo no hay precio mayorista: no se inventa uno.
       return NextResponse.json(
-        { message: `${pricing.unpriced.map(u => `${u.name} (${u.size}) no tiene precio cargado.`).join(' ')} Avisanos y lo resolvemos.`, unpriced: pricing.unpriced },
+        { message: `${basePricing.unpriced.map(u => `${u.name} (${u.size}) no tiene precio cargado.`).join(' ')} Avisanos y lo resolvemos.`, unpriced: basePricing.unpriced },
         { status: 409 },
       );
     }
-    // El carrito traía otro precio (borrador viejo, cambio de PVP, o alguien
-    // tocó el request): se devuelve el total vigente y se pide confirmación.
-    // Con `confirmPrices: true` el pedido sigue, siempre con los precios del
-    // servidor.
+
+    // Campañas mayoristas (Wholesale Campaigns): el descuento extra se aplica
+    // acá, sobre el mayorista normal, con la vigencia decidida ahora mismo. Si
+    // WP no responde no se asume "sin campaña": cobrar precio normal en medio
+    // de una liquidación es un error comercial, mejor pedir reintento.
+    let campaigns: WholesaleCampaign[];
+    try {
+      campaigns = await readCampaigns();
+    } catch (err) {
+      console.error('[mayorista/pedido] no se pudieron leer las campañas:', err);
+      return NextResponse.json({ message: 'No pudimos verificar las promociones vigentes. Esperá unos segundos e intentá de nuevo.' }, { status: 502 });
+    }
+    const pricing = applyCampaign(basePricing, campaigns);
+
+    // El carrito traía otro precio (borrador viejo, cambio de PVP, campaña que
+    // arrancó o venció, o alguien tocó el request): se devuelve el total
+    // vigente y se pide confirmación. Con `confirmPrices: true` el pedido
+    // sigue, siempre con los precios del servidor.
     if (pricing.changes.length && confirmPrices !== true) {
       return NextResponse.json(
         {
@@ -222,14 +260,23 @@ export async function POST(req: NextRequest) {
           message: 'Los precios de tu pedido cambiaron desde que lo armaste. Revisá el total actualizado y confirmá.',
           changes: pricing.changes,
           total: pricing.total,
+          discountTotal: pricing.discountTotal,
+          campaignIds: pricing.campaignIds,
         },
         { status: 409 },
       );
     }
 
+    const appliedCampaign = pricing.lines.find(l => l.campaign)?.campaign ?? null;
+    const campaignSummary: CampaignSummary = appliedCampaign
+      ? { id: appliedCampaign.campaignId, name: appliedCampaign.campaignName, discountTotal: pricing.discountTotal }
+      : null;
+
     // Para los mails: las líneas con el precio que efectivamente se cobra.
     const pricedItems: PedidoItem[] = pricing.lines.map(l => ({
       slug: l.slug, name: l.name, size: l.size, ...(l.color ? { color: l.color } : {}), quantity: l.quantity, price: l.unitPrice,
+      wsRegular: l.wsRegular,
+      ...(l.campaign ? { campaignDiscount: l.campaign.discount, campaignName: l.campaign.campaignName } : {}),
     }));
 
     const lineItems = pricing.lines.map((line) => {
@@ -245,20 +292,32 @@ export async function POST(req: NextRequest) {
       const meta: { key: string; value: string }[] = [];
       if (!hit) meta.push({ key: 'Talle', value: line.size });
       if (color && !(hit && hit.options.includes(color.toLowerCase()))) meta.push({ key: 'Color', value: color });
+      // Trazabilidad de precio por línea (con guión bajo: no se muestra al
+      // cliente en Woo, la lee el admin y la medición de campañas).
+      meta.push({ key: '_ws_regular', value: String(line.wsRegular) });
+      meta.push({ key: '_ws_final', value: String(line.unitPrice) });
+      if (line.campaign) {
+        meta.push({ key: '_ws_campaign_id', value: line.campaign.campaignId });
+        meta.push({ key: '_ws_campaign_group', value: line.campaign.group });
+        meta.push({ key: '_ws_campaign_discount', value: String(line.campaign.discount) });
+      }
       return {
         product_id: line.productId,
         ...(line.variationId ? { variation_id: line.variationId } : {}),
         quantity: line.quantity,
         subtotal: lineTotal,
         total: lineTotal,
-        ...(meta.length ? { meta_data: meta } : {}),
+        meta_data: meta,
       };
     });
 
     const total = pricing.total;
 
     const customer = await wcGet(`customers/${customerId}?_fields=meta_data,email`);
-    const minOrder = customerMinOrderOverride(customer.meta_data) ?? await getGlobalMinOrder();
+    // Mínimo: el override del cliente manda; si no, el mínimo propio de la
+    // campaña aplicada; si no, el general.
+    const campaignMin = appliedCampaign ? campaigns.find(c => c.id === appliedCampaign.campaignId)?.minOrder ?? null : null;
+    const minOrder = customerMinOrderOverride(customer.meta_data) ?? campaignMin ?? await getGlobalMinOrder();
     if (total < minOrder) {
       return NextResponse.json({ message: `El pedido mínimo es ${formatArs(minOrder)}` }, { status: 400 });
     }
@@ -297,6 +356,11 @@ export async function POST(req: NextRequest) {
       ...(creditUsed ? { fee_lines: [{ name: 'Saldo a favor', total: String(-creditUsed), tax_status: 'none' }] } : {}),
       meta_data: [
         ...(creditUsed ? [{ key: '_mayorista_credito_aplicado', value: String(creditUsed) }] : []),
+        ...(campaignSummary ? [
+          { key: '_wholesale_campaign_id', value: campaignSummary.id },
+          { key: '_wholesale_campaign_name', value: campaignSummary.name },
+          { key: '_wholesale_campaign_discount_total', value: String(campaignSummary.discountTotal) },
+        ] : []),
         { key: '_es_mayorista', value: 'true' },
         { key: '_billing_dni', value: shipping.dni },
         ...envioOrderMeta(envio.metodo, envio.destino),
@@ -336,8 +400,8 @@ export async function POST(req: NextRequest) {
     }
 
     await Promise.all([
-      sendAdminEmail(label, shipping, pricedItems, total, creditUsed, String(wcOrder.number)),
-      sendCustomerEmail(customer.email, pricedItems, total, creditUsed, String(wcOrder.number), envioResumen(envio.metodo, envio.destino)),
+      sendAdminEmail(label, shipping, pricedItems, total, creditUsed, String(wcOrder.number), campaignSummary),
+      sendCustomerEmail(customer.email, pricedItems, total, creditUsed, String(wcOrder.number), envioResumen(envio.metodo, envio.destino), campaignSummary),
       saveCustomerProfile(customerId, billing, shipping.dni, envio),
     ]);
 
@@ -346,6 +410,7 @@ export async function POST(req: NextRequest) {
       // Lo que se cobró, para que la confirmación en pantalla muestre lo mismo
       // que la orden aunque el carrito tuviera otro precio.
       total, items: pricedItems,
+      campaign: campaignSummary,
     });
   } catch (err) {
     console.error('[mayorista/pedido]', err);
