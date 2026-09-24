@@ -1,0 +1,577 @@
+{
+ "campaign": {
+  "id": "wc_2026-09_private-stock-sale",
+  "name": "Private Stock Sale",
+  "status": "active",
+  "startsAt": "2026-09-24T18:00:00-03:00",
+  "endsAt": "2026-10-02T23:59:59-03:00",
+  "badge": "LIQUIDACIÓN",
+  "headline": "HYPE WHOLESALE — PRIVATE STOCK SALE",
+  "text": "UP TO 20% EXTRA. Selected archive pieces. Limited units. Ends 02.10. New Drop 04.10.",
+  "minOrder": null,
+  "groups": [
+   {
+    "key": "20",
+    "label": "20% EXTRA",
+    "discount": 0.2
+   },
+   {
+    "key": "15",
+    "label": "15% EXTRA",
+    "discount": 0.15
+   },
+   {
+    "key": "10",
+    "label": "10% EXTRA",
+    "discount": 0.1
+   }
+  ],
+  "items": [
+   {
+    "productId": 774,
+    "group": "10"
+   },
+   {
+    "productId": 588,
+    "group": "10"
+   },
+   {
+    "productId": 694,
+    "group": "10"
+   },
+   {
+    "productId": 542,
+    "group": "10"
+   },
+   {
+    "productId": 519,
+    "group": "10"
+   },
+   {
+    "productId": 508,
+    "group": "10"
+   },
+   {
+    "productId": 475,
+    "group": "10"
+   },
+   {
+    "productId": 611,
+    "group": "10"
+   },
+   {
+    "productId": 1046,
+    "group": "10"
+   },
+   {
+    "productId": 684,
+    "group": "10"
+   },
+   {
+    "productId": 601,
+    "group": "10"
+   },
+   {
+    "productId": 47,
+    "group": "10"
+   },
+   {
+    "productId": 743,
+    "group": "10"
+   },
+   {
+    "productId": 629,
+    "group": "10"
+   },
+   {
+    "productId": 575,
+    "group": "10"
+   },
+   {
+    "productId": 564,
+    "group": "10"
+   },
+   {
+    "productId": 553,
+    "group": "10"
+   },
+   {
+    "productId": 531,
+    "group": "10"
+   },
+   {
+    "productId": 726,
+    "group": "10"
+   },
+   {
+    "productId": 337,
+    "group": "10"
+   },
+   {
+    "productId": 1606,
+    "group": "10"
+   },
+   {
+    "productId": 841,
+    "group": "15"
+   },
+   {
+    "productId": 2460,
+    "group": "15"
+   },
+   {
+    "productId": 2928,
+    "group": "15"
+   },
+   {
+    "productId": 859,
+    "group": "15"
+   },
+   {
+    "productId": 2114,
+    "group": "15"
+   },
+   {
+    "productId": 754,
+    "group": "15"
+   },
+   {
+    "productId": 1571,
+    "group": "20"
+   },
+   {
+    "productId": 815,
+    "group": "20"
+   },
+   {
+    "productId": 713,
+    "group": "20"
+   },
+   {
+    "productId": 29,
+    "group": "20"
+   },
+   {
+    "productId": 882,
+    "group": "20"
+   },
+   {
+    "productId": 358,
+    "group": "20"
+   },
+   {
+    "productId": 1387,
+    "group": "20"
+   },
+   {
+    "productId": 2328,
+    "group": "20"
+   }
+  ],
+  "createdAt": "2026-09-24T17:00:00-03:00",
+  "updatedAt": "2026-09-24T17:00:00-03:00",
+  "history": []
+ },
+ "products": [
+  {
+   "id": 774,
+   "name": "HONDA WHITE - TEE",
+   "slug": null,
+   "stock": 40,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 588,
+   "name": "PER ASPERA AD ASTRA - BLACK TEE",
+   "slug": null,
+   "stock": 40,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 694,
+   "name": "SLEEVELESS RANGLAN - WHITE",
+   "slug": null,
+   "stock": 22,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 542,
+   "name": "SLEEVELESS RANGLAN - MILITAR GREEN",
+   "slug": null,
+   "stock": 20,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 519,
+   "name": "SLEEVELESS RANGLAN - GREY",
+   "slug": null,
+   "stock": 23,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 508,
+   "name": "SLEEVELESS RANGLAN - BLACK",
+   "slug": null,
+   "stock": 20,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 475,
+   "name": "TRUCKER CAP - NO FAITH, NO GLORY",
+   "slug": null,
+   "stock": 32,
+   "regularPrice": 32000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 611,
+   "name": "AEROBLUE – TEEs",
+   "slug": null,
+   "stock": 97,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 1046,
+   "name": "SLEEVELESS RANGLAN",
+   "slug": null,
+   "stock": 36,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 684,
+   "name": "Mesh Camo Grey – Tee",
+   "slug": null,
+   "stock": 11,
+   "regularPrice": 62000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 601,
+   "name": "PER ASPERA AD ASTRA - WHITE TEE",
+   "slug": null,
+   "stock": 18,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 47,
+   "name": "TANKTOPS",
+   "slug": null,
+   "stock": 10,
+   "regularPrice": 40000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 743,
+   "name": "HONDA BLACK - TEE",
+   "slug": null,
+   "stock": 32,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 629,
+   "name": "AEROPINK - TEEs",
+   "slug": null,
+   "stock": 103,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 575,
+   "name": "HYPESTATION - WHITE TEE",
+   "slug": null,
+   "stock": 18,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 564,
+   "name": "HYPESTATION - BLACK TEE",
+   "slug": null,
+   "stock": 16,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 553,
+   "name": "SKYLINE TEE",
+   "slug": null,
+   "stock": 11,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 531,
+   "name": "JERSEY FILETEADO – x ALFREDO GENOVESE",
+   "slug": null,
+   "stock": 17,
+   "regularPrice": 98000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 726,
+   "name": "AEROGREY - TEEs",
+   "slug": null,
+   "stock": 105,
+   "regularPrice": 45000,
+   "cost": null,
+   "costReliable": false,
+   "wholesale": true
+  },
+  {
+   "id": 337,
+   "name": "Regular Tee - White",
+   "slug": null,
+   "stock": 36,
+   "regularPrice": 26000,
+   "cost": 5221.29,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 1606,
+   "name": "Regular Tee - Black",
+   "slug": null,
+   "stock": 36,
+   "regularPrice": 26000,
+   "cost": 5221.29,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 841,
+   "name": "NO SERVICE FOR THE FAITHLESS - HOODIE",
+   "slug": null,
+   "stock": 11,
+   "regularPrice": 79000,
+   "cost": 21846.07,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 2460,
+   "name": "NAPOLI TEE - AZURRO",
+   "slug": null,
+   "stock": 103,
+   "regularPrice": 38000,
+   "cost": 10387.5,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 2928,
+   "name": "HS CO - MELANGE HOODIE",
+   "slug": null,
+   "stock": 14,
+   "regularPrice": 79000,
+   "cost": 21846.07,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 859,
+   "name": "NO SERVICE FOR THE FAITHLESS - WHITE",
+   "slug": null,
+   "stock": 16,
+   "regularPrice": 68000,
+   "cost": 15100,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 2114,
+   "name": "HS CO - GREY HOODIE",
+   "slug": null,
+   "stock": 11,
+   "regularPrice": 79000,
+   "cost": 21846.07,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 754,
+   "name": "HOODIE - STAY HUSTLE.",
+   "slug": null,
+   "stock": 8,
+   "regularPrice": 88000,
+   "cost": 21846.07,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 1571,
+   "name": "LA NUESTRA - JERSEY MUNDIAL 26'",
+   "slug": null,
+   "stock": 42,
+   "regularPrice": 95000,
+   "cost": 19150,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 815,
+   "name": "BABY COME BACK - WHITE",
+   "slug": null,
+   "stock": 88,
+   "regularPrice": 68000,
+   "cost": 15100,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 713,
+   "name": "FIND JESUS - LONGSLEEVE BLACK",
+   "slug": null,
+   "stock": 78,
+   "regularPrice": 67000,
+   "cost": 13405,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 29,
+   "name": "LADYTRIBAL BLACK - LONGSLEEVE",
+   "slug": null,
+   "stock": 30,
+   "regularPrice": 67000,
+   "cost": 13405,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 882,
+   "name": "RACE TEE - GREEN & GREY TEE",
+   "slug": null,
+   "stock": 7,
+   "regularPrice": 68000,
+   "cost": 15100,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 358,
+   "name": "Regular Tee - Melange",
+   "slug": null,
+   "stock": 15,
+   "regularPrice": 26000,
+   "cost": 5221.29,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 1387,
+   "name": "NO SERVICE FOR THE FAITHLESS - GREEN",
+   "slug": null,
+   "stock": 5,
+   "regularPrice": 68000,
+   "cost": 15100,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 2328,
+   "name": "Regular Tee - Navy",
+   "slug": null,
+   "stock": 35,
+   "regularPrice": 26000,
+   "cost": 5221.29,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 2107,
+   "name": "LAMB OF GOD PINK TEE",
+   "stock": 34,
+   "regularPrice": 45000,
+   "cost": 10387.5,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 2044,
+   "name": "SWEATER DISTRESSED HS CO.",
+   "stock": 11,
+   "regularPrice": 89000,
+   "cost": 31600,
+   "costReliable": true,
+   "wholesale": true
+  },
+  {
+   "id": 415,
+   "name": "Regular Tees - 3 PACK (Black, Melange, White)",
+   "stock": 15,
+   "regularPrice": 102000,
+   "cost": 15663.87,
+   "costReliable": true,
+   "wholesale": false
+  }
+ ],
+ "expected": {
+  "units": 1206,
+  "valueNormal": 30282500,
+  "valuePromo": 26074200,
+  "discountTotal": 4208300,
+  "cogsKnown": 6671777,
+  "marginKnown": 5534773,
+  "costUnknown": 19,
+  "groups": {
+   "10": {
+    "units": 743,
+    "valuePromo": 14710050
+   },
+   "15": {
+    "units": 163,
+    "valuePromo": 3633750
+   },
+   "20": {
+    "units": 300,
+    "valuePromo": 7730400
+   }
+  }
+ }
+}
