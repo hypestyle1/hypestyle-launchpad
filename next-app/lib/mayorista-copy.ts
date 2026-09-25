@@ -14,7 +14,9 @@ export const NEXT_DROP_TEXT = NEXT_DROP_LABEL ? `Próximo drop ${NEXT_DROP_LABEL
 export const WHATSAPP_NUMBER = '5491178292430';
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola, escribo por el catálogo mayorista de Hype.')}`;
 
-export const MIN_ORDER_LABEL = '$500.000';
+// El monto del pedido mínimo NO va en textos fijos: cambia seguido y puede
+// ser distinto por cliente. Lo muestra el portal (barra del pedido) con el
+// valor real de la cuenta.
 
 /** Los seis pilares. Van en el catálogo (fila) y en la página pública.
  *  Lo que un local compara cuando elige marca (aprendido del catálogo de
@@ -23,7 +25,7 @@ export const WHOLESALE_HOW_IT_WORKS = [
   { title: '50% OFF PVP', text: 'Comprás a la mitad del precio de venta al público, en todo el catálogo. Marcás 100% sobre tu costo.' },
   { title: 'Stock en vivo', text: 'Lo que ves es lo que hay en depósito, por talle. Sin sorpresas al confirmar.' },
   { title: 'Surtido libre', text: 'Talles y modelos sueltos, sin mínimo por modelo. Armás el pedido como lo vende tu local.' },
-  { title: `Pedido mínimo ${MIN_ORDER_LABEL}`, text: 'A precio mayorista. La barra del pedido te muestra cuánto falta.' },
+  { title: 'Sale esta semana', text: 'Pedís hoy, lo preparamos en la semana y te avisamos con el seguimiento.' },
   { title: 'Drops antes que el público', text: `Tiradas cortas, sin reposición asegurada. Los mayoristas activos piden primero.${NEXT_DROP_LABEL ? ` Próximo: ${NEXT_DROP_LABEL}.` : ''}` },
   { title: 'Material para tus redes', text: 'Fotos de producto y de campaña listas para publicar. Las pedís por WhatsApp.' },
 ] as const;
@@ -62,7 +64,7 @@ export const HOW_IT_WORKS_SECTIONS = [
       'Ves el catálogo completo con tu precio (50% del PVP) y el stock real por talle.',
       'Ves el PVP al lado de tu precio, así sabés de entrada cuánto marcás por prenda.',
       'Sumás talles sueltos desde la card o la ficha. Podés guardar borradores y retomarlos después.',
-      `El pedido mínimo es ${MIN_ORDER_LABEL} a precio mayorista; la barra te muestra cuánto falta y el carrito te sugiere cómo completarlo.`,
+      'Hay un pedido mínimo a precio mayorista: lo ves en tu cuenta, la barra te muestra cuánto falta y el carrito te sugiere cómo completarlo.',
       'Al confirmar, cargás los datos de envío una sola vez y te llega el resumen por mail, con PDF y planilla.',
     ],
   },
@@ -135,7 +137,6 @@ export const HOW_IT_WORKS_SECTIONS = [
 
 export const FOOTER_CONDITIONS = [
   '50% del PVP en todo el catálogo',
-  `Pedido mínimo ${MIN_ORDER_LABEL} a precio mayorista`,
   'Surtido libre, sin mínimo por modelo',
   'Pago por transferencia · e-cheq a coordinar',
   'Envío por Via Cargo, Andreani o expreso, a pagar en destino',

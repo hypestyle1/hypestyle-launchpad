@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import MayoristaHowItWorks from '@/components/mayorista/MayoristaHowItWorks';
-import { HOW_IT_WORKS_SECTIONS, WHATSAPP_URL, MIN_ORDER_LABEL } from '@/lib/mayorista-copy';
+import { HOW_IT_WORKS_SECTIONS, WHATSAPP_URL } from '@/lib/mayorista-copy';
 
 // Página pública (sin sesión, ver middleware): la lee quien todavía no tiene
 // cuenta. Explica el programa completo y lleva a pedir acceso o a ingresar.
@@ -60,7 +60,7 @@ export default function ComoFuncionaPage() {
           <p className="text-[10px] uppercase tracking-[0.25em] text-primary-foreground/60">Empezá</p>
           <h2 className="text-2xl font-bold tracking-tight mt-2">Pedí tu cuenta mayorista</h2>
           <p className="text-[13px] text-primary-foreground/70 mt-2 max-w-xl">
-            Sin costo, sin exclusividades por adelantado. Pedido mínimo {MIN_ORDER_LABEL} a precio mayorista.
+            Sin costo y sin exclusividades por adelantado. Aprobamos a mano y te avisamos por mail.
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-5">
             <Link href="/mayoristas/solicitud" className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide rounded-full bg-primary-foreground text-bg-dark hover:bg-primary-foreground/90 transition-colors">Pedir acceso →</Link>
