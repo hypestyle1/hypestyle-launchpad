@@ -65,7 +65,7 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
             Sin stock
           </span>
         ) : product.promo && (
-          <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-foreground text-background">
+          <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-sale text-sale-foreground">
             {product.promo.badge} · −{Math.round(product.promo.discount * 100)}%
           </span>
         )}
@@ -106,7 +106,7 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-[14px] font-semibold">{formatArs(product.promo.price)}</span>
               <span className="text-[12px] text-text-light line-through">{formatArs(product.wholesalePrice)}</span>
-              <span className="text-[10px] uppercase tracking-wide text-foreground/60">{product.promo.label}</span>
+              <span className="text-[10px] uppercase tracking-wide text-sale">{product.promo.label}</span>
             </div>
             <p className="text-[11px] text-text-light mt-0.5">PVP {formatArs(product.regularPrice)} · {PROMO_TAG_LABEL[product.promo.tag]}</p>
           </>

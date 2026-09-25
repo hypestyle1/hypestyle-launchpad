@@ -45,13 +45,13 @@ describe('decorateCatalog', () => {
 describe('campaignBanner', () => {
   it('arma el hero con HASTA 20%, fechas, CTA por defecto y conteo por grupo sobre el catálogo', () => {
     const b = campaignBanner(catalog, [PSS], DURING)!;
-    expect(b).toMatchObject({ id: PSS.id, badge: 'LIQUIDACIÓN', headline: 'HYPE WHOLESALE — PRIVATE STOCK SALE', maxDiscount: 0.2, cta: 'Ver la liquidación', productCount: 3 });
+    expect(b).toMatchObject({ id: PSS.id, badge: 'LIQUIDACIÓN', headline: PSS.headline, maxDiscount: 0.2, cta: 'Ver la liquidación', productCount: 3 });
     expect(b.groups).toEqual([
       { key: '20', label: '20% EXTRA', discount: 0.2, count: 1 },
       { key: '15', label: '15% EXTRA', discount: 0.15, count: 1 },
       { key: '10', label: '10% EXTRA', discount: 0.1, count: 1 },
     ]);
-    expect(b.secondary).toBe('Next drop 04.10');
+    expect(b.secondary).toBe('Próximo drop 04.10');
   });
   it('null sin campaña vigente (futura, vencida, draft)', () => {
     expect(campaignBanner(catalog, [PSS], AFTER)).toBeNull();

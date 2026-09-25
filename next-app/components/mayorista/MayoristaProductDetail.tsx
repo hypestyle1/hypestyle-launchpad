@@ -54,14 +54,14 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
           {product.promo ? (
             <div className="mt-4">
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <span className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] rounded-[6px] bg-foreground text-background">{product.promo.badge} · {product.promo.label}</span>
+                <span className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] rounded-[6px] bg-sale text-sale-foreground">{product.promo.badge} · {product.promo.label}</span>
                 <span className="text-[11px] uppercase tracking-wide text-text-light">{PROMO_TAG_LABEL[product.promo.tag]}</span>
               </div>
               <div className="flex items-baseline gap-3">
                 <p className="text-[26px] font-semibold">{formatArs(product.promo.price)}</p>
                 <p className="text-[14px] text-text-light line-through">{formatArs(product.wholesalePrice)}</p>
               </div>
-              <p className="text-[12px] text-foreground/70 mt-1">Ahorrás {formatArs(product.promo.saving)} por unidad sobre tu precio mayorista.</p>
+              <p className="text-[12px] mt-1 text-sale">Ahorrás {formatArs(product.promo.saving)} por unidad sobre tu precio mayorista.</p>
               <p className="text-[12px] text-text-light mt-0.5">PVP sugerido {formatArs(product.regularPrice)} · tu margen sobre PVP {Math.round((1 - product.promo.price / product.regularPrice) * 100)}%</p>
             </div>
           ) : (

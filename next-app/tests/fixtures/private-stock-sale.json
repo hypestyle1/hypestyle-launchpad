@@ -1,13 +1,13 @@
 {
  "campaign": {
   "id": "wc_2026-09_private-stock-sale",
-  "name": "Private Stock Sale",
+  "name": "Liquidación privada",
   "status": "active",
   "startsAt": "2026-09-24T18:00:00-03:00",
   "endsAt": "2026-10-02T23:59:59-03:00",
   "badge": "LIQUIDACIÓN",
-  "headline": "HYPE WHOLESALE — PRIVATE STOCK SALE",
-  "text": "UP TO 20% EXTRA. Selected archive pieces. Limited units. Ends 02.10. New Drop 04.10.",
+  "headline": "Liquidación privada para locales",
+  "text": "Piezas seleccionadas de archivo. Unidades limitadas. Sin reposición.",
   "minOrder": null,
   "groups": [
    {
@@ -179,7 +179,7 @@
   "updatedAt": "2026-09-24T17:00:00-03:00",
   "history": [],
   "cta": "Ver la liquidación",
-  "secondary": "Next drop 04.10"
+  "secondary": "Próximo drop 04.10"
  },
  "products": [
   {

@@ -7,7 +7,7 @@
 
 import type { MayoristaProduct } from './mayorista-products';
 import { campaignDiscountFor, liveCampaigns, discountOfItem, type WholesaleCampaign } from './wholesale-campaigns';
-import { NEXT_DROP_LABEL } from './mayorista-copy';
+import { NEXT_DROP_TEXT } from './mayorista-copy';
 
 /** Etiqueta de escasez por producto: `note: 'sin-reposicion'` en el ítem de
  *  la campaña la fuerza; el resto de la campaña dice "Unidades limitadas". */
@@ -82,7 +82,7 @@ export function campaignBanner(products: MayoristaProduct[], campaigns: Wholesal
   }));
   return {
     id: c.id, name: c.name, badge: c.badge || 'LIQUIDACIÓN', headline: c.headline || c.name, text: c.text,
-    cta: c.cta || 'Ver la liquidación', secondary: c.secondary || (NEXT_DROP_LABEL ? `Next drop ${NEXT_DROP_LABEL}` : ''),
+    cta: c.cta || 'Ver la liquidación', secondary: c.secondary || NEXT_DROP_TEXT,
     startsAt: c.startsAt, endsAt: c.endsAt,
     maxDiscount: Math.max(0, ...c.items.map(i => discountOfItem(c, i))),
     groups,

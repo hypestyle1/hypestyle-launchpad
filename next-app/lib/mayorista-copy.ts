@@ -16,8 +16,11 @@ export const WHOLESALE_HOW_IT_WORKS = [
 ] as const;
 
 export const BRAND_HERO = {
-  eyebrow: 'HYPE WHOLESALE',
+  eyebrow: 'HYPE MAYORISTAS',
   headline: 'Tu precio: 50% del PVP.',
   text: 'Stock en vivo, surtido libre. Pedís hoy, lo preparamos esta semana.',
   cta: 'Ver catálogo',
 } as const;
+
+/** Línea secundaria del hero: "Próximo drop 04.10". */
+export const NEXT_DROP_TEXT = NEXT_DROP_LABEL ? `Próximo drop ${NEXT_DROP_LABEL}` : '';
