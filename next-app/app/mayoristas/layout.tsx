@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { MayoristaCartProvider } from '@/context/MayoristaCartContext';
+import MayoristaFooter from '@/components/mayorista/MayoristaFooter';
 
 export const metadata: Metadata = {
   title: 'Mayoristas — Hype.',
@@ -11,6 +12,7 @@ export default function MayoristasLayout({ children }: { children: React.ReactNo
     <div className="min-h-screen bg-background text-foreground font-sans">
       <MayoristaCartProvider>
         {children}
+        <MayoristaFooter />
       </MayoristaCartProvider>
     </div>
   );

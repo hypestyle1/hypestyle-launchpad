@@ -29,7 +29,7 @@ const infoLinks = [
 // propia columna: no son links de tienda ni de ayuda, son propuestas.
 const trabajaLinks = [
   { label: "Crea contenido con Hype", href: "/creadores/" },
-  { label: "Sumá Hype a tu local", href: "/mayoristas/solicitud/" },
+  { label: "Sumá Hype a tu local", href: "/mayoristas/como-funciona/" },
 ];
 
 const rrssLinks = [
