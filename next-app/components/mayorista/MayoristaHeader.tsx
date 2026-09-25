@@ -51,6 +51,9 @@ export default function MayoristaHeader() {
             {name}
           </Link>
         )}
+        <Link href="/mayoristas/como-funciona" className="text-foreground/50 hover:text-foreground transition-colors hidden md:inline">
+          Cómo funciona
+        </Link>
         <Link href="/mayoristas/pedidos" className="text-foreground/70 hover:text-foreground transition-colors">
           Mis pedidos
         </Link>

@@ -55,6 +55,8 @@ async function handle(request: NextRequest) {
       pathname.startsWith('/mayoristas/login') ||
       pathname.startsWith('/mayoristas/reset') ||
       pathname.startsWith('/mayoristas/solicitud') ||
+      // Página pública "Cómo funciona": la lee quien todavía no tiene cuenta.
+      pathname.startsWith('/mayoristas/como-funciona') ||
       pathname.startsWith('/api/mayorista/login') ||
       pathname.startsWith('/api/mayorista/forgot') ||
       pathname.startsWith('/api/mayorista/reset') ||

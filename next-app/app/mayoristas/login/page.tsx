@@ -225,6 +225,9 @@ export default function MayoristaLoginPage() {
                   Pedí tu acceso
                 </Link>
               </p>
+              <Link href="/mayoristas/como-funciona" className="inline-block mt-3 text-[11px] uppercase tracking-wide text-foreground/50 hover:text-foreground transition-colors">
+                ¿Cómo funciona? →
+              </Link>
             </div>
           </form>
           )}

@@ -197,9 +197,12 @@ export default function SolicitudMayoristaPage() {
                   {loading ? 'Enviando...' : 'Enviar solicitud'}
                 </Button>
 
-                <div className="text-center !mt-5">
+                <div className="text-center !mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2">
                   <Link href="/mayoristas/login" className="text-[11px] uppercase tracking-wide text-foreground/50 hover:text-foreground transition-colors">
                     Ya tengo cuenta
+                  </Link>
+                  <Link href="/mayoristas/como-funciona" className="text-[11px] uppercase tracking-wide text-foreground/50 hover:text-foreground transition-colors">
+                    ¿Cómo funciona? →
                   </Link>
                 </div>
               </form>
