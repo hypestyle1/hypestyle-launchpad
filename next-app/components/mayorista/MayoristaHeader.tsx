@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
+import MayoristaMinBar from './MayoristaMinBar';
 
 const glassBar = {
   background: 'rgba(255, 255, 255, 0.82)',
@@ -15,13 +16,15 @@ const glassBar = {
 
 export default function MayoristaHeader() {
   const router = useRouter();
-  const { count } = useMayoristaCart();
+  const { count, total, hydrated } = useMayoristaCart();
   const [name, setName] = useState('');
+  const [minOrder, setMinOrder] = useState<number | null>(null);
 
   useEffect(() => {
     fetch('/api/mayorista/perfil')
       .then(res => res.ok ? res.json() : null)
       .then(data => {
+        if (typeof data?.minOrder === 'number') setMinOrder(data.minOrder);
         const b = data?.billing;
         if (!b) return;
         setName(b.company || `${b.first_name} ${b.last_name}`.trim());
@@ -42,6 +45,7 @@ export default function MayoristaHeader() {
         <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/40 hidden sm:inline">Mayoristas</span>
       </Link>
       <nav className="flex items-center gap-5 text-[12px] uppercase tracking-wide">
+        {hydrated && count > 0 && <MayoristaMinBar total={total} minOrder={minOrder} compact />}
         {name && (
           <Link href="/mayoristas/cuenta" className="text-foreground/50 normal-case tracking-normal hidden sm:inline hover:text-foreground transition-colors">
             {name}
