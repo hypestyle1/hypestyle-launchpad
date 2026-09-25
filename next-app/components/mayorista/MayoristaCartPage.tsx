@@ -622,7 +622,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
                   <p className="text-[13px] mt-0.5 flex items-baseline gap-2">
                     <span className="font-semibold">{formatArs(item.price)}</span>
                     <span className="text-[11px] text-text-light line-through">{formatArs(info.wsRegular)}</span>
-                    <span className="text-[10px] uppercase tracking-wide text-foreground/60">{info.campaign!.badge} −{Math.round(info.campaign!.discount * 100)}%</span>
+                    <span className="text-[10px] uppercase tracking-wide text-sale">{info.campaign!.badge} −{Math.round(info.campaign!.discount * 100)}%</span>
                   </p>
                 ) : <p className="text-[13px] font-semibold mt-0.5">{formatArs(item.price)}</p>;
               })()}
@@ -651,8 +651,8 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
                   <span className="text-muted-foreground">Subtotal a precio mayorista</span>
                   <span className="tabular-nums">{formatArs(subtotalNormal)}</span>
                 </div>
-                <div className="flex items-center justify-between text-[13px]">
-                  <span className="text-foreground/80">{name}</span>
+                <div className="flex items-center justify-between text-[13px] text-sale">
+                  <span>{name}</span>
                   <span className="font-medium tabular-nums">−{formatArs(campaignDiscount)}</span>
                 </div>
               </>
@@ -661,7 +661,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
               <span className="text-[13px] uppercase tracking-wide text-muted-foreground">{creditUsed > 0 ? 'Subtotal' : 'Total'}</span>
               <span className={creditUsed > 0 ? 'text-[15px] font-semibold' : 'text-xl font-bold'}>{formatArs(total)}</span>
             </div>
-            {campaignDiscount > 0 && <p className="text-[12px] text-foreground/70">Ahorrás {formatArs(campaignDiscount)} con {name}.</p>}
+            {campaignDiscount > 0 && <p className="text-[12px] text-sale">Ahorrás {formatArs(campaignDiscount)} con {name}.</p>}
             {creditUsed > 0 && (
               <>
                 <div className="flex items-center justify-between text-[13px]">
@@ -704,7 +704,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
                     <div className="min-w-0">
                       <p className="text-[12px] font-medium truncate">{s.name}</p>
                       <p className="text-[11px] text-text-light">Talle {s.size}{s.color ? ` · ${s.color}` : ''}</p>
-                      <p className="text-[12px] font-semibold tabular-nums">{formatArs(s.unitPrice)}{s.promo && <span className="ml-1 text-[10px] font-normal uppercase tracking-wide text-foreground/60">liquidación</span>}</p>
+                      <p className="text-[12px] font-semibold tabular-nums">{formatArs(s.unitPrice)}{s.promo && <span className="ml-1 text-[10px] font-normal uppercase tracking-wide text-sale">liquidación</span>}</p>
                     </div>
                   </div>
                   <span className="mt-1.5 block text-[10px] uppercase tracking-wide text-foreground/60">+ Agregar</span>
