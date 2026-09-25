@@ -25,7 +25,7 @@ export const WHOLESALE_HOW_IT_WORKS = [
   { title: 'Surtido libre', text: 'Talles y modelos sueltos, sin mínimo por modelo. Armás el pedido como lo vende tu local.' },
   { title: `Pedido mínimo ${MIN_ORDER_LABEL}`, text: 'A precio mayorista. La barra del pedido te muestra cuánto falta.' },
   { title: 'Drops antes que el público', text: `Tiradas cortas, sin reposición asegurada. Los mayoristas activos piden primero.${NEXT_DROP_LABEL ? ` Próximo: ${NEXT_DROP_LABEL}.` : ''}` },
-  { title: 'Material para tus redes', text: 'Fotos de producto y de campaña listas para publicar, con cada pedido.' },
+  { title: 'Material para tus redes', text: 'Fotos de producto y de campaña listas para publicar. Las pedís por WhatsApp.' },
 ] as const;
 
 export const BRAND_HERO = {
@@ -98,8 +98,8 @@ export const HOW_IT_WORKS_SECTIONS = [
     id: 'material',
     title: 'Material para tus redes',
     items: [
-      'Con cada pedido te pasamos las fotos de producto y de campaña de lo que compraste, listas para publicar.',
-      'Logo y lineamientos de marca para tu local, vidriera y redes. Los pedís por WhatsApp.',
+      'Fotos de producto y de campaña de lo que compraste, listas para publicar. Las pedís por WhatsApp y te las mandamos.',
+      'Logo y lineamientos de marca para tu local, vidriera y redes, también a pedido.',
       'Si nos etiquetás, compartimos: tu local aparece en nuestras redes.',
     ],
   },
@@ -107,10 +107,10 @@ export const HOW_IT_WORKS_SECTIONS = [
     id: 'exclusividad',
     title: 'Exclusividad por ciudad',
     items: [
-      'Se gana pidiendo seguido, no con un pedido grande: tres pedidos pagados, uno por mes.',
+      'Sujeta a volumen y recurrencia: se gana pidiendo seguido, no con un pedido grande.',
       'Se sostiene pidiendo en cada drop. Si dejás de pedir, se libera.',
       'Vale para tu ciudad y frena altas nuevas ahí; las cuentas que ya existen siguen comprando.',
-      'Hoy la administramos a mano: consultanos por WhatsApp cuando quieras saber cómo estás.',
+      'Consultá las condiciones por WhatsApp.',
     ],
   },
   {
