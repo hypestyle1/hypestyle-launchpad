@@ -3,7 +3,9 @@
 // (/admin/mayoristas/campanas); acá va lo que no cambia con cada campaña.
 // Castellano rioplatense, simple, sin lenguaje de outlet.
 
-/** Teaser del próximo drop. Se muestra como línea secundaria del hero de
+/** Teaser del próximo drop. Es coyuntural: SOLO va en el hero del portal
+ *  (con sesión), nunca en textos públicos ni en los pilares. Se muestra como
+ *  línea secundaria del hero de
  *  marca y, si la campaña no trae `secondary`, también en el hero de
  *  campaña. Vacío = no se muestra. */
 export const NEXT_DROP_LABEL = '04.10';
@@ -26,7 +28,7 @@ export const WHOLESALE_HOW_IT_WORKS = [
   { title: 'Stock en vivo', text: 'Lo que ves es lo que hay en depósito, por talle. Sin sorpresas al confirmar.' },
   { title: 'Surtido libre', text: 'Talles y modelos sueltos, sin mínimo por modelo. Armás el pedido como lo vende tu local.' },
   { title: 'Sale esta semana', text: 'Pedís hoy, lo preparamos en la semana y te avisamos con el seguimiento.' },
-  { title: 'Drops antes que el público', text: `Tiradas cortas, sin reposición asegurada. Los mayoristas activos piden primero.${NEXT_DROP_LABEL ? ` Próximo: ${NEXT_DROP_LABEL}.` : ''}` },
+  { title: 'Drops antes que el público', text: 'Tiradas cortas, sin reposición asegurada. Los mayoristas activos piden primero.' },
   { title: 'Material para tus redes', text: 'Fotos de producto y de campaña listas para publicar. Las pedís por WhatsApp.' },
 ] as const;
 
@@ -92,7 +94,7 @@ export const HOW_IT_WORKS_SECTIONS = [
     title: 'Drops y reposición',
     items: [
       'Lanzamos en tiradas cortas. Lo que se agota no siempre vuelve: si una pieza te funciona, pedila en el drop.',
-      `Los mayoristas activos ven y piden cada drop antes del lanzamiento al público.${NEXT_DROP_LABEL ? ` Próximo drop: ${NEXT_DROP_LABEL}.` : ''}`,
+      'Los mayoristas activos ven y piden cada drop antes del lanzamiento al público.',
       'Cuando hay reposición de un básico, avisamos primero a quienes lo pidieron.',
     ],
   },
