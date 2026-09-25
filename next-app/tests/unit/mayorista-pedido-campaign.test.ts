@@ -67,7 +67,7 @@ describe('pedido bajo campaña activa', () => {
   it('orden de prueba: Find Jesus ×3 al 20% EXTRA — metas de orden y de línea', async () => {
     const r = await post({ items: [{ slug: 'find-jesus', name: 'FIND JESUS', size: 'M', quantity: 3, price: 26800 }], shipping });
     expect(r.status).toBe(200);
-    expect(r.data).toMatchObject({ wcOrderNumber: '6001', total: 80400, campaign: { id: 'wc_2026-09_private-stock-sale', name: 'Private Stock Sale', discountTotal: 20100 } });
+    expect(r.data).toMatchObject({ wcOrderNumber: '6001', total: 80400, campaign: { id: 'wc_2026-09_private-stock-sale', name: fixture.campaign.name, discountTotal: 20100 } });
     const o = wcOrderPosts[0];
     expect(o.line_items[0]).toMatchObject({ product_id: 713, variation_id: 714, quantity: 3, subtotal: '80400', total: '80400' });
     expect(metaOf(o.line_items[0], '_ws_regular')).toBe('33500');
@@ -76,14 +76,14 @@ describe('pedido bajo campaña activa', () => {
     expect(metaOf(o.line_items[0], '_ws_campaign_group')).toBe('20');
     expect(metaOf(o.line_items[0], '_ws_campaign_discount')).toBe('0.2');
     expect(orderMeta(o, '_wholesale_campaign_id')).toBe('wc_2026-09_private-stock-sale');
-    expect(orderMeta(o, '_wholesale_campaign_name')).toBe('Private Stock Sale');
+    expect(orderMeta(o, '_wholesale_campaign_name')).toBe(fixture.campaign.name);
     expect(orderMeta(o, '_wholesale_campaign_discount_total')).toBe('20100');
     expect(orderMeta(o, '_es_mayorista')).toBe('true');
     // Mails: precio normal tachado, descuento y total.
     expect(brevoPosts).toHaveLength(2);
     for (const m of brevoPosts) {
       expect(m.htmlContent).toContain('<s style="color:#888">$33.500</s> <b>$26.800</b>');
-      expect(m.htmlContent).toContain('Private Stock Sale: −$20.100');
+      expect(m.htmlContent).toContain(`${fixture.campaign.name}: −$20.100`);
       expect(m.htmlContent).toContain('Subtotal a precio mayorista: $100.500');
       expect(m.htmlContent).toContain('Total: <b>$80.400</b>');
     }
@@ -159,7 +159,7 @@ describe('campaña vencida / futura / WP caído', () => {
     expect(metaOf(line, '_ws_final')).toBe('33500');
     expect(metaOf(line, '_ws_campaign_id')).toBeUndefined();
     expect(orderMeta(wcOrderPosts[0], '_wholesale_campaign_id')).toBeUndefined();
-    expect(brevoPosts[0].htmlContent).not.toContain('Private Stock Sale');
+    expect(brevoPosts[0].htmlContent).not.toContain(fixture.campaign.name);
   });
 
   it('futura (24/09 17:59 AR): precio normal, sin campaña', async () => {

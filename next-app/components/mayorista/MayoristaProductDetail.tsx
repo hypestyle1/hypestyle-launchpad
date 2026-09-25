@@ -7,6 +7,7 @@ import { imgSrc } from '@/lib/img';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import { stockKey, type MayoristaProduct } from '@/lib/mayorista-products';
+import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
 
 export default function MayoristaProductDetail({ product }: { product: MayoristaProduct }) {
   const router = useRouter();
@@ -24,7 +25,8 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
 
   function handleAdd() {
     if (!size || needsColor || selectedStock === 'out') return;
-    add({ slug: product.slug, name: product.name, price: product.wholesalePrice, image: product.image, size, ...(color ? { color } : {}), quantity: 1 });
+    // Precio orientativo (promo si hay campaña): el servidor lo recalcula al confirmar.
+    add({ slug: product.slug, name: product.name, price: product.promo?.price ?? product.wholesalePrice, image: product.image, size, ...(color ? { color } : {}), quantity: 1 });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }
@@ -49,10 +51,26 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
             <p className="text-[13px] text-text-light mt-1">{product.shortDescription}</p>
           )}
 
-          <div className="mt-4">
-            <p className="text-[24px] font-semibold">{formatArs(product.wholesalePrice)}</p>
-            <p className="text-[13px] text-text-light line-through">precio de lista {formatArs(product.regularPrice)}</p>
-          </div>
+          {product.promo ? (
+            <div className="mt-4">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] rounded-[6px] bg-sale text-sale-foreground">{product.promo.badge} · {product.promo.label}</span>
+                <span className="text-[11px] uppercase tracking-wide text-text-light">{PROMO_TAG_LABEL[product.promo.tag]}</span>
+              </div>
+              <div className="flex items-baseline gap-3">
+                <p className="text-[26px] font-semibold">{formatArs(product.promo.price)}</p>
+                <p className="text-[14px] text-text-light line-through">{formatArs(product.wholesalePrice)}</p>
+              </div>
+              <p className="text-[12px] mt-1 text-sale">Ahorrás {formatArs(product.promo.saving)} por unidad sobre tu precio mayorista.</p>
+              <p className="text-[12px] text-text-light mt-0.5">PVP sugerido {formatArs(product.regularPrice)} · tu margen sobre PVP {Math.round((1 - product.promo.price / product.regularPrice) * 100)}%</p>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <p className="text-[24px] font-semibold">{formatArs(product.wholesalePrice)}</p>
+              <p className="text-[13px] text-text-light line-through">precio de lista {formatArs(product.regularPrice)}</p>
+              <p className="text-[12px] text-text-light mt-0.5">tu margen sobre PVP 50%</p>
+            </div>
+          )}
 
           {hasColors && (
             <div className="mt-6">

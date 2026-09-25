@@ -1,13 +1,13 @@
 {
  "campaign": {
   "id": "wc_2026-09_private-stock-sale",
-  "name": "Private Stock Sale",
+  "name": "Liquidación privada",
   "status": "active",
   "startsAt": "2026-09-24T18:00:00-03:00",
   "endsAt": "2026-10-02T23:59:59-03:00",
   "badge": "LIQUIDACIÓN",
-  "headline": "HYPE WHOLESALE — PRIVATE STOCK SALE",
-  "text": "UP TO 20% EXTRA. Selected archive pieces. Limited units. Ends 02.10. New Drop 04.10.",
+  "headline": "Liquidación privada para locales",
+  "text": "Piezas seleccionadas de archivo. Unidades limitadas. Sin reposición.",
   "minOrder": null,
   "groups": [
    {
@@ -57,7 +57,8 @@
    },
    {
     "productId": 611,
-    "group": "10"
+    "group": "10",
+    "note": "sin-reposicion"
    },
    {
     "productId": 1046,
@@ -81,7 +82,8 @@
    },
    {
     "productId": 629,
-    "group": "10"
+    "group": "10",
+    "note": "sin-reposicion"
    },
    {
     "productId": 575,
@@ -101,7 +103,8 @@
    },
    {
     "productId": 726,
-    "group": "10"
+    "group": "10",
+    "note": "sin-reposicion"
    },
    {
     "productId": 337,
@@ -137,19 +140,23 @@
    },
    {
     "productId": 1571,
-    "group": "20"
+    "group": "20",
+    "note": "sin-reposicion"
    },
    {
     "productId": 815,
-    "group": "20"
+    "group": "20",
+    "note": "sin-reposicion"
    },
    {
     "productId": 713,
-    "group": "20"
+    "group": "20",
+    "note": "sin-reposicion"
    },
    {
     "productId": 29,
-    "group": "20"
+    "group": "20",
+    "note": "sin-reposicion"
    },
    {
     "productId": 882,
@@ -170,7 +177,9 @@
   ],
   "createdAt": "2026-09-24T17:00:00-03:00",
   "updatedAt": "2026-09-24T17:00:00-03:00",
-  "history": []
+  "history": [],
+  "cta": "Ver la liquidación",
+  "secondary": "Próximo drop 04.10"
  },
  "products": [
   {
