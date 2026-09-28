@@ -12,15 +12,11 @@ import GiftProgressBar from "@/components/GiftProgressBar";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/envio";
 import { ScrollFadeList } from "@/components/ui/scroll-fade-list";
 import { Button } from "@/components/ui/button";
+import { suggestForCart } from "@/lib/cart-suggestions";
 
-function shuffled<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+// Mismo 10% que aplica el checkout al pagar por transferencia.
+const TRANSFER_RATE = 10;
+const CUOTAS = 3;
 
 // Mismo vidrio que el navbar (Navbar.tsx), un poco más transparente para que
 // el fondo se note en un panel de este tamaño. A cambio el texto secundario va
@@ -39,13 +35,16 @@ const drawerGlassStyle = {
 
 export default function CartDrawer() {
   const { items, drawerOpen, setDrawerOpen, remove, increment, decrement, total, count, add } = useCart();
-  const { formatPrice, t } = useLocale();
+  const { formatPrice, currency, t } = useLocale();
   const router = useRouter();
   const { data: allProducts = [] } = useProducts(0);
+  // Se recalcula al abrir y cuando cambia qué hay en el carrito (no la
+  // cantidad): si sumás el hoodie, lo siguiente que se ofrece ya es otra cosa.
+  const cartKey = items.map(i => i.id).join('|');
   const suggested = useMemo(
-    () => shuffled(allProducts.filter(p => !items.find(i => i.id === p.slug))).slice(0, 4),
+    () => suggestForCart(items, allProducts, 4),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [drawerOpen, allProducts.length]
+    [drawerOpen, allProducts.length, cartKey]
   );
   const [suggestedSizes, setSuggestedSizes] = useState<Record<string, string>>({});
 
@@ -62,6 +61,17 @@ export default function CartDrawer() {
 
   const promo3x2Discount = promo3x2Active ? compute3x2Discount(purchasableItems) : 0;
   const promo3x2Faltan = promo3x2Active ? unitsToNext3x2(purchasableItems) : 0;
+
+  // Formas de pago, con las mismas cuentas que el checkout: el 10% de
+  // transferencia va sobre lo físico (la gift card se paga entera) y después
+  // del 3x2. El envío se suma recién en el checkout.
+  const giftCardSubtotal = items
+    .filter(item => item.id === 'gift-card')
+    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const payable = Math.max(total - promo3x2Discount, 0);
+  const physical = Math.max(payable - giftCardSubtotal, 0);
+  const transferTotal = Math.round(physical * (1 - TRANSFER_RATE / 100)) + giftCardSubtotal;
+  const showPayments = currency === 'ARS' && payable > 0;
 
   return (
     <>
@@ -282,6 +292,19 @@ export default function CartDrawer() {
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-green-700">3x2</span>
                 <span className="text-[14px] font-semibold text-green-700">−{formatPrice(promo3x2Discount)}</span>
+              </div>
+            )}
+            {showPayments && (
+              <div className="space-y-0.5">
+                {physical > 0 && (
+                  <p className="text-[12px] text-muted-foreground">
+                    {t('O')} <span className="font-semibold text-foreground">{formatPrice(transferTotal)}</span> {t('con Transferencia o depósito bancario')}{' '}
+                    <span className="text-green-700 font-semibold">(+{TRANSFER_RATE}% off)</span>
+                  </p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  {t('O hasta 3 cuotas sin interés de')} {formatPrice(Math.round(payable / CUOTAS))}
+                </p>
               </div>
             )}
             <p className="text-[11px] text-muted-foreground">
