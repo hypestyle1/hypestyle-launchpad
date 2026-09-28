@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Home, Package, PackagePlus, Calculator, Store, MessageSquare,
   Users, Star, Mail, BarChart3, UserCog, ListChecks, Settings,
-  Wallet, TrendingUp, SlidersHorizontal, Bot, Receipt, Megaphone, Plug, LineChart, CalendarDays, Rocket, Boxes, Instagram, Globe, Scale,
+  Wallet, TrendingUp, SlidersHorizontal, Bot, Receipt, Megaphone, Plug, LineChart, CalendarDays, Rocket, Boxes, Instagram, Globe, Scale, BellRing,
 } from 'lucide-react';
 
 export type Seccion =
@@ -23,6 +23,7 @@ export const GRUPOS: NavGrupo[] = [
     items: [
       { label: 'Pedidos', href: '/admin/pedidos', seccion: 'pedidos', match: '/admin/pedidos', Icono: Package },
       { label: 'Stock compartido', href: '/admin/stock', seccion: 'pedidos', match: '/admin/stock', Icono: Boxes },
+      { label: 'Avisos de stock', href: '/admin/avisos-stock', seccion: 'pedidos', match: '/admin/avisos-stock', Icono: BellRing },
     ],
   },
   {

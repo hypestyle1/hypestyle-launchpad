@@ -15,6 +15,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useProductTranslation } from '@/hooks/useProductTranslation';
 import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
+import StockAlertForm from '@/components/StockAlertForm';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
 import { gaViewItem, gaAddToCart } from '@/lib/ga';
@@ -594,6 +595,15 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 {stockError && <p className="text-[11px] text-destructive mt-1">{t(isColorVariant ? 'Este color ya no tiene stock disponible' : 'Este talle ya no tiene stock disponible')}</p>}
                 {sizeError && !stockError && <p className="text-[11px] text-destructive mt-1">{t(isColorVariant ? 'Seleccioná un color para continuar' : 'Seleccioná un talle para continuar')}</p>}
               </div>
+              )}
+
+              {!product.customizable && (
+                <StockAlertForm
+                  key={product.slug}
+                  slug={product.slug}
+                  sizes={product.sizes.filter(s => product.stock[s] === 'out' || liveOutSizes.has(s))}
+                  isColorVariant={isColorVariant}
+                />
               )}
 
               {/* Talle único (ej. accesorios): sin variante para elegir, así que no
