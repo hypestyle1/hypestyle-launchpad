@@ -310,6 +310,7 @@ export default function HeroLookbookFW26() {
           <Image
             src="/STYLE&CULTURE WHITE.png"
             alt="Style & Culture"
+            data-intro-target
             width={1778}
             height={113}
             className="w-full h-auto [filter:drop-shadow(0_2px_16px_rgba(0,0,0,0.6))]"

@@ -1,43 +1,95 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const SESSION_KEY = 'hs-intro-seen';
 
-export default function LoadingScreen() {
-  const [phase, setPhase] = useState<'enter' | 'visible' | 'exit' | 'done'>('enter');
+// El logo se arma con franjas verticales del mismo PNG, para que el enfoque lo
+// recorra de izquierda a derecha. Los tiempos van de la mano con los de
+// globals.css ("Intro de marca").
+const STRIPS = 14;
+const STRIP_FIRST_MS = 150;
+const STRIP_STEP_MS = 55;
+const EXIT_AT_MS = 1700;
+const DONE_AT_MS = 2800;
 
-  // La intro duraba 3,7 s en la primera visita de cada sesión, y en todo ese
-  // rato lo único que se ve del sitio es un fondo opaco — el LCP no puede
-  // ocurrir hasta que se va. Se bajó a ~1,5 s y quedó demasiado corta: el
-  // logo terminaba de revelarse y 150 ms después ya estaba fundiendo, así
-  // que no se llegaba a leer. Ahora dura ~2,7 s, con el logo quieto y entero
-  // durante casi un segundo.
-  // Los tiempos están encadenados con las transiciones de abajo: el reveal
-  // termina a los ~1.100 ms, el logo queda a la vista hasta los 2.000 ms, ahí
-  // arranca el fade de 0,7 s y a los 2.700 ms el overlay ya no existe.
+// A dónde viaja el logo al terminar: el STYLE&CULTURE del hero.
+const TARGET = '[data-intro-target]';
+
+type Phase = 'idle' | 'run' | 'travel' | 'fade' | 'done';
+
+/**
+ * Intro de marca. Se muestra una vez por sesión, sobre un vidrio que deja ver
+ * el sitio desenfocado.
+ *
+ *  1. El enfoque recorre el logo letra por letra.
+ *  2. En el home, el logo viaja hasta el STYLE&CULTURE del hero y pasa de
+ *     negro a blanco mientras el vidrio se disuelve: la intro termina siendo
+ *     el logo del sitio llegando a su lugar.
+ *  3. En cualquier otra página no hay logo al que llegar: se desenfoca donde
+ *     está y el vidrio se disuelve igual.
+ *
+ * La intro tapa el sitio ~2,8 s en la primera carga de cada sesión, y el LCP de
+ * esa carga no puede ocurrir antes. Llegó a durar 1,5 s y no se alcanzaba a
+ * leer el logo.
+ */
+export default function LoadingScreen() {
+  const [phase, setPhase] = useState<Phase>('idle');
+  const logoRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (sessionStorage.getItem(SESSION_KEY)) { setPhase('done'); return; }
-    const t1 = setTimeout(() => setPhase('visible'), 60);
-    const t2 = setTimeout(() => setPhase('exit'), 2000);
-    const t3 = setTimeout(() => { sessionStorage.setItem(SESSION_KEY, '1'); setPhase('done'); }, 2700);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const start = setTimeout(() => setPhase('run'), 60);
+    const exit = setTimeout(() => {
+      const from = logoRef.current;
+      const to = document.querySelector<HTMLElement>(TARGET);
+      const a = from?.getBoundingClientRect();
+      const b = to?.getBoundingClientRect();
+      // Sin destino, con el destino fuera de pantalla (alguien scrolleó) o con
+      // "reducir movimiento" activado, el logo no viaja.
+      const reachable = a && b && b.width > 0 && b.bottom > 0 && b.top < window.innerHeight;
+      if (reduced || !from || !reachable) { setPhase('fade'); return; }
+      from.style.transform = `translate3d(${b.left - a.left}px, ${b.top - a.top}px, 0) scale(${b.width / a.width})`;
+      setPhase('travel');
+    }, EXIT_AT_MS);
+    const done = setTimeout(() => {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      setPhase('done');
+    }, DONE_AT_MS);
+
+    return () => { clearTimeout(start); clearTimeout(exit); clearTimeout(done); };
   }, []);
 
   if (phase === 'done') return null;
 
-  const revealed = phase === 'visible';
-  const exiting  = phase === 'exit';
-
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center"
-      style={{ background: '#F0EEE8', opacity: exiting ? 0 : 1, transition: exiting ? 'opacity 0.7s cubic-bezier(0.4,0,0.2,1)' : 'none' }}>
-      {/* Al salir el logo queda revelado: si volviera a recortarse, se borraría
-          justo mientras funde. */}
-      <div style={{ clipPath: revealed || exiting ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)', transition: revealed ? 'clip-path 1s cubic-bezier(0.76,0,0.24,1) 0.05s' : 'none' }}>
-        <img src="/STYLE&CULTURE BLACK.png" alt="Style & Culture"
-          className="w-auto select-none h-[14px] md:h-[28px]" draggable={false} />
+    <>
+      <div id="hs-intro" className="hs-intro" data-phase={phase} aria-hidden="true" suppressHydrationWarning>
+        <div className="hs-intro-glass" />
+        <div className="hs-intro-logo" ref={logoRef}>
+          {Array.from({ length: STRIPS }, (_, i) => (
+            <div
+              key={i}
+              className="hs-intro-strip"
+              style={{
+                backgroundPosition: `${(i / (STRIPS - 1)) * 100}% 0`,
+                animationDelay: `${STRIP_FIRST_MS + i * STRIP_STEP_MS}ms`,
+              }}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+      {/* El HTML llega con la intro puesta, y React tarda en arrancar. Si la
+          sesión ya la vio, se esconde acá mismo, antes de que se llegue a
+          pintar: si no, cada página mostraría un instante de vidrio. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `try{if(sessionStorage.getItem('${SESSION_KEY}'))document.getElementById('hs-intro').style.display='none'}catch(e){}`,
+        }}
+      />
+    </>
   );
 }

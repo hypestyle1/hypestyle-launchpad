@@ -649,6 +649,81 @@
   background: rgba(10, 10, 10, 0.94);
 }
 
+/* ─── Intro de marca ─────────────────────────────────────────────────────────
+   LoadingScreen.tsx. Un vidrio sobre el sitio, el logo que se enfoca letra por
+   letra y, en el home, viaja hasta el STYLE&CULTURE del hero. `data-phase`
+   lo maneja el componente: idle → run → travel | fade.
+   El logo mide lo mismo que el del diseño original: 14 px de alto en el
+   celular, 28 px desde 768 px. El PNG es 15,735 veces más ancho que alto. */
+.hs-intro {
+  --h: 14px;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (min-width: 768px) { .hs-intro { --h: 28px; } }
+
+.hs-intro-glass {
+  position: absolute;
+  inset: 0;
+  background: rgba(240, 238, 232, 0.6);
+  -webkit-backdrop-filter: blur(44px) saturate(180%);
+  backdrop-filter: blur(44px) saturate(180%);
+  transition: background 1000ms cubic-bezier(0.4, 0, 0.2, 1),
+              -webkit-backdrop-filter 1000ms cubic-bezier(0.4, 0, 0.2, 1),
+              backdrop-filter 1000ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hs-intro[data-phase="travel"] .hs-intro-glass,
+.hs-intro[data-phase="fade"] .hs-intro-glass {
+  background: rgba(240, 238, 232, 0);
+  -webkit-backdrop-filter: blur(0) saturate(100%);
+  backdrop-filter: blur(0) saturate(100%);
+}
+
+.hs-intro-logo {
+  position: relative;
+  display: flex;
+  height: var(--h);
+  width: calc(var(--h) * 15.735);
+  transform-origin: top left;
+  transition: transform 1000ms cubic-bezier(0.76, 0, 0.24, 1),
+              filter 1000ms linear,
+              opacity 700ms cubic-bezier(0.4, 0, 1, 1);
+}
+/* Llega al hero en blanco y con la misma sombra que el logo que lo espera. */
+.hs-intro[data-phase="travel"] .hs-intro-logo {
+  filter: invert(1) drop-shadow(0 2px 16px rgba(0, 0, 0, 0.6));
+}
+.hs-intro[data-phase="fade"] .hs-intro-logo {
+  transform-origin: center;
+  transform: scale(0.98);
+  filter: blur(10px);
+  opacity: 0;
+}
+
+.hs-intro-strip {
+  flex: 1;
+  background: url("/STYLE&CULTURE BLACK.png") no-repeat;
+  background-size: 1400% 100%;
+  opacity: 0;
+}
+.hs-intro:not([data-phase="idle"]) .hs-intro-strip {
+  animation: hs-intro-focus 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes hs-intro-focus {
+  from { opacity: 0; filter: blur(9px); transform: translate3d(14px, 0, 0); }
+  to   { opacity: 1; filter: blur(0); transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-intro:not([data-phase="idle"]) .hs-intro-strip { animation: none; opacity: 1; }
+  .hs-intro-glass { transition-duration: 400ms; }
+  .hs-intro[data-phase="fade"] .hs-intro-logo { transform: none; filter: none; transition: opacity 400ms linear; }
+}
+
 /* ─── Drawer del carrito: entrada y salida ───────────────────────────────────
    El panel entra deslizando desde la derecha con una curva que frena largo
    , con el movimiento repartido a lo largo del recorrido para que se llegue a ver, y sale más rápido de lo que entró: abrir se
