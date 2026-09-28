@@ -3,6 +3,8 @@
 // cambia acá hay que cambiarlo allá.
 
 export const GIFT_CARD_SLUG = 'gift-card';
+/** Id del producto `gift-card` en Woo. Las líneas de un pedido no traen el slug. */
+export const GIFT_CARD_PRODUCT_ID = 3012;
 /** Foto de producto en Woo (id 3134): la tarjeta 3D del video, 1024x1024 transparente. */
 export const GIFT_CARD_IMAGE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/09/gift-card-hype.png';
 export const GIFT_CARD_MIN = 50000;

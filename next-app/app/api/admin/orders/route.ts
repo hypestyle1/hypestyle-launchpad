@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
+import { esSoloDigital } from '@/lib/orders-fulfillment';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -89,6 +90,8 @@ export async function GET(req: NextRequest) {
       andreani,
       packaged,
       shipped,
+      // Sólo gift cards: el código sale por mail, no hay nada que empaquetar.
+      digital:       esSoloDigital(o.line_items),
       notified:      String(mv('_tracking_notified')).trim(),
       order_key:     o.order_key,
       customer_note: o.customer_note || '',
