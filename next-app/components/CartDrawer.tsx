@@ -22,6 +22,21 @@ function shuffled<T>(arr: T[]): T[] {
   return a;
 }
 
+// Mismo vidrio que el navbar (Navbar.tsx), un poco más transparente para que
+// el fondo se note en un panel de este tamaño. A cambio el texto secundario va
+// más oscuro que en el resto del sitio, así se lee sobre cualquier fondo. La
+// tarjeta del regalo por compra se vuelve translúcida para no tapar el efecto.
+const drawerGlassStyle = {
+  background: 'rgba(240, 238, 232, 0.55)',
+  '--muted-foreground': '0 0% 26%',
+  backdropFilter: 'blur(32px) saturate(200%)',
+  WebkitBackdropFilter: 'blur(32px) saturate(200%)',
+  borderLeft: '1px solid rgba(255,255,255,0.45)',
+  boxShadow: '-8px 0 32px rgba(0,0,0,0.18), inset 1px 0 0 rgba(255,255,255,0.6)',
+  '--hpg-card-bg': 'hsl(142 45% 96% / 0.5)',
+  '--hpg-card-border': 'hsl(142 30% 60% / 0.35)',
+} as React.CSSProperties;
+
 export default function CartDrawer() {
   const { items, drawerOpen, setDrawerOpen, remove, increment, decrement, total, count, add } = useCart();
   const { formatPrice, t } = useLocale();
@@ -50,17 +65,21 @@ export default function CartDrawer() {
 
   return (
     <>
-      {/* Overlay */}
+      {/* Overlay. Termina donde empieza el drawer: si lo oscureciera por detrás,
+          el vidrio desenfocaría una imagen ya apagada y quedaría gris. */}
       <div
-        className="fixed inset-0 z-[150] bg-black/40"
+        className="fixed inset-0 min-[420px]:right-[420px] z-[150] bg-black/40"
         onClick={() => setDrawerOpen(false)}
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 z-[160] w-full max-w-[420px] bg-white flex flex-col shadow-2xl">
+      <div
+        className="fixed right-0 top-0 bottom-0 z-[160] w-full max-w-[420px] flex flex-col"
+        style={drawerGlassStyle}
+      >
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-black/10">
           <span className="text-[13px] font-semibold uppercase tracking-wider">
             {t('Carrito')} ({count})
           </span>
@@ -75,7 +94,7 @@ export default function CartDrawer() {
         </div>
 
         {/* Barra envío gratis */}
-        <div className="px-6 pt-3 pb-2 border-b border-border">
+        <div className="px-6 pt-3 pb-2 border-b border-black/10">
           {freeShipping ? (
             <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
               {t('¡Conseguiste envío gratis!')}
@@ -100,12 +119,12 @@ export default function CartDrawer() {
 
         {/* Barra regalo por compra */}
         {items.length > 0 && (
-          <GiftProgressBar className="px-6 pt-2 pb-2 border-b border-border" />
+          <GiftProgressBar className="px-6 pt-2 pb-2 border-b border-black/10" />
         )}
 
         {/* Barra 3x2 */}
         {promo3x2Active && items.length > 0 && (promo3x2Discount > 0 || promo3x2Faltan < 3) && (
-          <div className="px-6 pt-2 pb-2 border-b border-border">
+          <div className="px-6 pt-2 pb-2 border-b border-black/10">
             {promo3x2Discount > 0 ? (
               <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
                 3x2 aplicado — ahorrás {formatPrice(promo3x2Discount)}
@@ -121,10 +140,12 @@ export default function CartDrawer() {
 
         {/* Items. El scroll se difumina contra los bordes en vez de cortar en
             seco: con 3 o más productos avisa que la lista sigue sin flecha ni
-            sombra. El fondo del degradado tiene que ser el del drawer (blanco). */}
+            sombra. El drawer es de vidrio, así que no hay un color de fondo
+            contra el cual degradar: se apaga el degradado y el mismo alto se
+            usa como máscara sobre la lista. */}
         <ScrollFadeList
-          className="flex-1 min-h-0 [--scroll-fade-bg:#fff]"
-          scrollClassName="h-full overflow-y-auto overscroll-contain px-6 py-4 space-y-5"
+          className="flex-1 min-h-0 [--scroll-fade-bg:transparent]"
+          scrollClassName="h-full overflow-y-auto overscroll-contain px-6 py-4 space-y-5 [mask-image:linear-gradient(to_bottom,transparent,#000_var(--top-fade-height),#000_calc(100%_-_var(--bottom-fade-height)),transparent)]"
         >
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
@@ -180,14 +201,14 @@ export default function CartDrawer() {
                     <div className="flex items-center gap-3 mt-2">
                       <button
                         onClick={() => decrement(item.id, item.size, item.customization)}
-                        className="w-6 h-6 border border-border flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
+                        className="w-6 h-6 border border-black/10 flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
                       >
                         −
                       </button>
                       <span className="text-[13px] tabular-nums">{item.quantity}</span>
                       <button
                         onClick={() => increment(item.id, item.size, item.customization)}
-                        className="w-6 h-6 border border-border flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
+                        className="w-6 h-6 border border-black/10 flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
                       >
                         +
                       </button>
@@ -206,7 +227,7 @@ export default function CartDrawer() {
 
           {/* Completa el look */}
           {items.length > 0 && (
-            <div className="pt-4 border-t border-border">
+            <div className="pt-4 border-t border-black/10">
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3">{t('Completa el look')}</p>
               <div className="grid grid-cols-2 gap-3">
                 {suggested.map((p) => {
@@ -227,7 +248,7 @@ export default function CartDrawer() {
                               type="button"
                               onClick={() => setSuggestedSizes(prev => ({ ...prev, [p.slug]: s }))}
                               className={`text-[9px] font-semibold px-1.5 py-[2px] border rounded-[4px] transition-colors leading-none ${
-                                size === s ? 'border-foreground bg-foreground text-white' : 'border-border text-foreground/55 hover:border-foreground/50'
+                                size === s ? 'border-foreground bg-foreground text-white' : 'border-black/10 text-foreground/55 hover:border-foreground/50'
                               }`}
                             >
                               {s}
@@ -252,7 +273,7 @@ export default function CartDrawer() {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="px-6 py-5 border-t border-border space-y-3">
+          <div className="px-6 py-5 border-t border-black/10 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-muted-foreground">{t('Subtotal')}</span>
               <span className="text-[14px] font-semibold">{formatPrice(total)}</span>
