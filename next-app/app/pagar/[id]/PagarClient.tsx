@@ -125,21 +125,19 @@ export default function PagarClient({ view, vuelta }: { view: RepagoView | null;
           Transferí el monto exacto a estos datos. Cuando nos llega el comprobante aprobamos el pedido y te mandamos la confirmación por mail.
         </p>
         <div className="bg-[#f8f8f6] border border-border p-4 space-y-3">
-          <Row label="Banco" value={view.account.banco} />
-          <div className="h-px bg-border" />
-          <Row label="Titular" value={view.account.titular} />
+          <Row label="Cuenta" value={view.account.banco} />
           <div className="h-px bg-border" />
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">CVU</p>
-              <p className="text-[13px] font-mono font-semibold tracking-wider break-all">{view.account.cvu}</p>
+              <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground mb-0.5">Alias</p>
+              <p className="text-[13px] font-mono font-semibold tracking-wider break-all">{view.account.alias}</p>
             </div>
             <DynamicButton
-              onClick={() => navigator.clipboard.writeText(view.account.cvu).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); })}
+              onClick={() => navigator.clipboard.writeText(view.account.alias).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); })}
               icon={copied ? <Check className="h-[13px] w-[13px]" strokeWidth={3} /> : <Copy className="h-[13px] w-[13px]" />}
               className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider border rounded-[8px] flex-shrink-0 ${copied ? 'border-green-600 text-green-700 bg-green-50' : 'border-foreground text-foreground hover:bg-foreground hover:text-white'}`}
             >
-              {copied ? 'Copiado' : 'Copiar CVU'}
+              {copied ? 'Copiado' : 'Copiar alias'}
             </DynamicButton>
           </div>
           <div className="h-px bg-border" />

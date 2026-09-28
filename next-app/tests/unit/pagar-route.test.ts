@@ -294,12 +294,12 @@ describe('pago del mismo pedido', () => {
     expect((await post('mercadopago')).status).toBe(200);
   });
 
-  it('transferencia: agrega el 10%, deja el pedido pendiente y devuelve el CVU', async () => {
+  it('transferencia: agrega el 10%, deja el pedido pendiente y devuelve el alias', async () => {
     const s = setup();
     const r = await post('transferencia');
     expect(r.status).toBe(200);
     expect(r.data.total).toBe(102000);
-    expect(r.data.account.cvu).toMatch(/^\d{22}$/);
+    expect(r.data.account).toEqual({ alias: 'Hypestle2', banco: 'Mercado Pago' });
     expect(r.data.redirect).toBeUndefined();
 
     const put = s.puts()[0].body;

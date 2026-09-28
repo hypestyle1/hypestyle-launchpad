@@ -50,11 +50,11 @@ export const METHOD_FIELDS: Record<RepagoMethod, { payment_method: string; payme
   mercadopago:   { payment_method: 'mercadopago',   payment_method_title: 'Mercado Pago' },
 };
 
-/** Datos para transferir. Los mismos que muestra /pendiente-de-pago. */
+/** Datos para transferir: alias fijo de la cuenta de Mercado Pago. No depende
+ *  de Talo ni de ningún webhook: el pedido se aprueba a mano con el comprobante. */
 export const TRANSFER_ACCOUNT = {
-  cvu: '0000069707170407909550',
-  titular: 'Valentin Pozzi',
-  banco: 'Garpa S.A.',
+  alias: 'Hypestle2',
+  banco: 'Mercado Pago',
 };
 
 export type RepagoState =
