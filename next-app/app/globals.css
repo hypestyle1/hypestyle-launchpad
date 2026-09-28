@@ -649,6 +649,106 @@
   background: rgba(10, 10, 10, 0.94);
 }
 
+/* ─── Drawer del carrito: entrada y salida ───────────────────────────────────
+   El panel entra deslizando desde la derecha con una curva que frena largo
+   , con el movimiento repartido a lo largo del recorrido para que se llegue a ver, y sale más rápido de lo que entró: abrir se
+   disfruta, cerrar no tiene que hacer esperar. Encima del movimiento van tres
+   capas: el contenido entra escalonado detrás del panel, un reflejo cruza el
+   vidrio una sola vez, y los números hacen un pequeño salto al cambiar.
+   `--d` es el retraso de cada bloque; lo pone CartDrawer.tsx. */
+.hs-drawer-overlay {
+  opacity: 0;
+  transition: opacity 380ms cubic-bezier(0.4, 0, 1, 1);
+}
+.hs-drawer-overlay[data-open="true"] {
+  opacity: 1;
+  transition: opacity 900ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.hs-drawer {
+  /* 104%: el 4% de más saca también la sombra de la pantalla. */
+  transform: translate3d(104%, 0, 0);
+  transition: transform 420ms cubic-bezier(0.5, 0, 0.9, 0.6);
+  will-change: transform;
+  overflow: hidden;
+}
+.hs-drawer[data-open="true"] {
+  transform: translate3d(0, 0, 0);
+  transition: transform 950ms cubic-bezier(0.5, 0, 0.1, 1);
+}
+
+/* Reflejo que cruza el vidrio al abrir. */
+.hs-drawer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.34) 50%, transparent 62%);
+  transform: translate3d(-120%, 0, 0);
+}
+.hs-drawer[data-open="true"]::after {
+  animation: hs-drawer-sheen 1700ms 550ms cubic-bezier(0.45, 0, 0.25, 1) both;
+}
+@keyframes hs-drawer-sheen {
+  0%   { opacity: 0; transform: translate3d(-120%, 0, 0); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(120%, 0, 0); }
+}
+
+/* Cada bloque del drawer, y cada producto que se suma con el drawer abierto. */
+.hs-drawer-in {
+  animation: hs-drawer-in 850ms cubic-bezier(0.25, 1, 0.4, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes hs-drawer-in {
+  from { opacity: 0; transform: translate3d(56px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* Producto que se elimina: se apaga y cede su lugar antes de irse. El margen
+   negativo compensa el espacio entre filas (space-y-5). */
+.hs-cart-line {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.4, 0, 0.2, 1),
+              margin 420ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 300ms ease-out,
+              transform 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hs-cart-line > * { min-height: 0; overflow: hidden; }
+.hs-cart-line[data-leaving="true"] {
+  grid-template-rows: 0fr;
+  margin-bottom: -1.25rem;
+  opacity: 0;
+  transform: translate3d(24px, 0, 0);
+}
+
+/* Un número que cambia (cantidad, subtotal). Se dispara al cambiar la key. */
+.hs-tick {
+  display: inline-block;
+  animation: hs-tick 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes hs-tick {
+  from { opacity: 0; transform: translate3d(0, 7px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-drawer,
+  .hs-drawer[data-open="true"] {
+    transform: none;
+    opacity: 0;
+    transition: opacity 160ms linear;
+  }
+  .hs-drawer[data-open="true"] { opacity: 1; }
+  .hs-drawer[data-open="true"]::after,
+  .hs-drawer-in,
+  .hs-tick { animation: none; }
+  .hs-cart-line { transition: opacity 160ms linear; }
+  .hs-cart-line[data-leaving="true"] { transform: none; }
+}
+
 /* ─── Gift card: patrón y relieve ────────────────────────────────────────────
    Patrón geométrico de líneas finas (arcos concéntricos en dos esquinas y
    rayado diagonal en las otras dos), como el guilloché de una tarjeta bancaria.
