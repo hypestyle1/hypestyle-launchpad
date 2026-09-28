@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fulfillmentStage, splitProcessing, normalizeProcessingOrder, hasMeta } from '@/lib/orders-fulfillment';
+import { fulfillmentStage, splitProcessing, normalizeProcessingOrder, hasMeta, esSoloDigital } from '@/lib/orders-fulfillment';
 import { estaPorEmpaquetar } from '@/lib/pod';
 
 const meta = (obj: Record<string, unknown>) => Object.entries(obj).map(([key, value]) => ({ key, value }));
@@ -18,6 +18,28 @@ describe('fulfillmentStage', () => {
   });
   it('hasMeta ignora claves ajenas', () => {
     expect(hasMeta(meta({ otra: 'x' }), ['_tracking_number'])).toBe(false);
+  });
+});
+
+describe('pedidos digitales (sólo gift cards)', () => {
+  const gift = { product_id: 3012 };
+  const prenda = { product_id: 2950 };
+  it('sólo gift cards es digital', () => {
+    expect(esSoloDigital([gift])).toBe(true);
+    expect(esSoloDigital([gift, gift])).toBe(true);
+    expect(fulfillmentStage(meta({}), [gift])).toBe('digital');
+  });
+  it('con una prenda hay que empaquetar igual', () => {
+    expect(esSoloDigital([gift, prenda])).toBe(false);
+    expect(fulfillmentStage(meta({}), [gift, prenda])).toBe('sin_rotulo');
+  });
+  it('sin líneas no se asume digital', () => {
+    expect(esSoloDigital([])).toBe(false);
+    expect(esSoloDigital(undefined)).toBe(false);
+  });
+  it('no cuenta en ninguna etapa de despacho ni en la cola de estampado', () => {
+    expect(splitProcessing([{ stage: 'digital' }, { stage: 'sin_rotulo' }])).toEqual({ sinEmpaquetar: 1, empaquetados: 0, enviados: 0 });
+    expect(estaPorEmpaquetar({ id: 1, number: 1, meta_data: meta({}), line_items: [{ product_id: 3012, quantity: 1 }] })).toBe(false);
   });
 });
 

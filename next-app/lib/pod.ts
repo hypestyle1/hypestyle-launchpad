@@ -103,7 +103,7 @@ export interface PodOrderLike {
 // que la prenda ya está hecha, así que sale de la cola sola. La clasificación
 // vive en lib/orders-fulfillment, compartida con los conteos y el Founder Brief.
 export function estaPorEmpaquetar(order: PodOrderLike): boolean {
-  return fulfillmentStage(order.meta_data) === 'sin_rotulo';
+  return fulfillmentStage(order.meta_data, order.line_items) === 'sin_rotulo';
 }
 
 /** Talle de una línea: la meta que deja la variación, o SIN_TALLE si no hay. */

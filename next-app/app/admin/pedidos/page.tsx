@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import PendienteEstampar from '@/components/admin/PendienteEstampar';
+import GiftCardsPanel from '@/components/admin/GiftCardsPanel';
 import { HoldToConfirm } from '@/components/ui/hold-to-confirm';
 
 const WP_SECRET_KEY = 'hype_admin_key';
@@ -14,6 +15,8 @@ type Order = {
   customer: Customer; items: OrderItem[];
   total: number; shipping_total: number; payment_method_title: string;
   tracking: string; andreani: string; packaged: boolean; shipped: boolean;
+  /** Sólo gift cards: no se empaqueta ni se despacha. */
+  digital: boolean;
   notified: string; order_key: string;
   customer_note: string;
   isMayorista: boolean;
@@ -43,12 +46,13 @@ const STATUS_COLORS: Record<string, string> = {
   failed:     'bg-red-100 text-red-700',
 };
 
-const FILTERS = ['por-empaquetar','empaquetado','enviado-sin-marcar','mayorista','pending','enviado','completed','cancelled','any'];
+const FILTERS = ['por-empaquetar','empaquetado','enviado-sin-marcar','mayorista','gift-cards','pending','enviado','completed','cancelled','any'];
 const FILTER_LABELS: Record<string, string> = {
   'por-empaquetar':     'Por empaquetar',
   'empaquetado':        'Empaquetado',
   'enviado-sin-marcar': 'Enviado sin marcar',
   mayorista:            'Mayoristas',
+  'gift-cards':         'Gift cards',
   any:                  'Todos',
 };
 const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','cancelled'];
@@ -59,6 +63,8 @@ const PROCESSING_SPLIT_FILTERS = ['por-empaquetar', 'empaquetado', 'enviado-sin-
 // 'mayorista' se afina en el cliente por meta _es_mayorista (no por status: el pedido
 // puede pasar de on-hold a processing/completed una vez coordinado el pago).
 const CLIENT_REFINED_FILTERS = [...PROCESSING_SPLIT_FILTERS, 'mayorista'];
+// 'gift-cards' no lista pedidos: muestra las tarjetas emitidas y dónde se usaron.
+const GIFT_CARDS_FILTER = 'gift-cards';
 const apiStatusFor = (f: string) =>
   PROCESSING_SPLIT_FILTERS.includes(f) ? 'processing' : f === 'mayorista' ? 'any' : f;
 
@@ -142,7 +148,7 @@ export default function PedidosPage() {
   }, [authed, adminKey, fetchCounts]);
 
   useEffect(() => {
-    if (!authed || !adminKey) return;
+    if (!authed || !adminKey || filter === GIFT_CARDS_FILTER) return;
     if (searchRef.current) clearTimeout(searchRef.current);
     searchRef.current = setTimeout(() => {
       setPage(1);
@@ -151,7 +157,7 @@ export default function PedidosPage() {
   }, [authed, adminKey, filter, search, fetchOrders]);
 
   useEffect(() => {
-    if (!authed || !adminKey) return;
+    if (!authed || !adminKey || filter === GIFT_CARDS_FILTER) return;
     fetchOrders(adminKey, filter, search, page);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
@@ -258,7 +264,7 @@ export default function PedidosPage() {
 
   // Vista afinada por rótulo/guía para los tabs de empaquetado y envío; el resto muestra lo cargado.
   const visibleOrders = filter === 'por-empaquetar'
-    ? orders.filter(o => !o.packaged)
+    ? orders.filter(o => !o.packaged && !o.digital)
     : filter === 'empaquetado'
       ? orders.filter(o => o.packaged && !o.shipped)
       : filter === 'enviado-sin-marcar'
@@ -267,7 +273,8 @@ export default function PedidosPage() {
           ? orders.filter(o => o.isMayorista)
           : orders;
   const revenue = visibleOrders.reduce((s, o) => s + o.total, 0);
-  const headerCount = CLIENT_REFINED_FILTERS.includes(filter) ? visibleOrders.length : total;
+  const enGiftCards = filter === GIFT_CARDS_FILTER;
+  const headerCount = enGiftCards ? 0 : CLIENT_REFINED_FILTERS.includes(filter) ? visibleOrders.length : total;
 
   if (!authed) {
     return (
@@ -305,7 +312,7 @@ export default function PedidosPage() {
           {/* Stats globales reales */}
           {counts && counts.porEmpaquetar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">{counts.porEmpaquetar} por empaquetar</span>}
           {counts && counts.empaquetados > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{counts.empaquetados} empaquetados</span>}
-          <span className="hidden md:inline text-[11px] text-muted-foreground font-medium">{fmt(revenue)}</span>
+          {!enGiftCards && <span className="hidden md:inline text-[11px] text-muted-foreground font-medium">{fmt(revenue)}</span>}
           <Link
             href="/admin/pedidos/nuevo"
             className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-colors"
@@ -362,17 +369,17 @@ export default function PedidosPage() {
               </button>
             ))}
           </div>
-          <input
+          {!enGiftCards && <input
             type="text"
             className="flex-1 min-w-[180px] border border-border rounded-lg px-3 py-1.5 text-[13px] bg-card focus:outline-none focus:border-border-mid"
             placeholder="Buscar por nombre, email u orden..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-          />
+          />}
         </div>
 
         {/* Bulk action bar */}
-        {selected.size > 0 && (
+        {!enGiftCards && selected.size > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg">
             <span className="text-[13px] font-medium">{selected.size} seleccionado{selected.size > 1 ? 's' : ''}</span>
             <select
@@ -410,7 +417,9 @@ export default function PedidosPage() {
         )}
 
         {/* Table */}
-        {loading ? (
+        {enGiftCards ? (
+          <GiftCardsPanel adminKey={adminKey} />
+        ) : loading ? (
           <div className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando pedidos...</div>
         ) : visibleOrders.length === 0 ? (
           <div className="text-center py-20 text-[13px] text-muted-foreground/70">No hay pedidos</div>
@@ -483,6 +492,8 @@ export default function PedidosPage() {
                     <div className="text-[10px] text-orange-600 font-medium mt-0.5 truncate max-w-[80px]" title={order.andreani}>
                       Empaquetado
                     </div>
+                  ) : order.digital ? (
+                    <div className="text-[10px] text-muted-foreground font-medium mt-0.5">Digital</div>
                   ) : order.status === 'processing' ? (
                     <div className="text-[10px] text-red-600 font-semibold mt-0.5">Sin empaquetar</div>
                   ) : null}
@@ -549,7 +560,7 @@ export default function PedidosPage() {
                   <Link href={`/admin/pedidos/${order.id}`} className="text-[11px] text-muted-foreground/70 hover:text-foreground block">
                     {fmtDate(order.date)}
                   </Link>
-                  {order.status === 'processing' && !order.shipped && (
+                  {order.status === 'processing' && !order.shipped && !order.digital && (
                     <div className={`text-[10px] font-semibold mt-0.5 ${daysSince(order.date) >= 3 ? 'text-red-600' : daysSince(order.date) >= 1 ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
                       hace {daysSince(order.date)}d
                     </div>
@@ -561,7 +572,7 @@ export default function PedidosPage() {
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!enGiftCards && totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-4">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}

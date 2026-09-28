@@ -6,6 +6,11 @@
 // EMPAQUETAR (se generó el rótulo en Andreani). _tracking_number aparece
 // cuando Andreani ya le asignó guía real: recién ahí entró de verdad al
 // circuito de envío (para cuentas Pyme, después de pagar el envío en el portal).
+//
+// Un pedido que sólo lleva gift cards es digital: el código sale por mail al
+// acreditarse el pago y no hay nada que empaquetar ni despachar.
+
+import { GIFT_CARD_PRODUCT_ID } from '@/lib/gift-card';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = (process.env.WC_CONSUMER_KEY || '').trim();
@@ -15,17 +20,26 @@ export const PACKAGED_KEYS = ['_order_andreani_pedido_id', '_order_andreani_nume
 export const TRACKING_KEYS = ['_tracking_number'];
 
 export type MetaLike = { key?: string; value?: unknown }[] | undefined;
+export type LineItemsLike = { product_id?: number | string }[] | undefined;
 
-/** sin_rotulo = pagado y sin empaquetar · con_rotulo = rótulo generado, sin guía · con_guia = Andreani lo tiene. */
-export type FulfillmentStage = 'sin_rotulo' | 'con_rotulo' | 'con_guia';
+/** sin_rotulo = pagado y sin empaquetar · con_rotulo = rótulo generado, sin guía · con_guia = Andreani lo tiene · digital = sólo gift cards, no se despacha. */
+export type FulfillmentStage = 'sin_rotulo' | 'con_rotulo' | 'con_guia' | 'digital';
 
 export function hasMeta(meta: MetaLike, keys: string[]): boolean {
   return (meta || []).some((m) => keys.includes(String(m.key)) && String(m.value ?? '').trim() !== '');
 }
 
-export function fulfillmentStage(meta: MetaLike): FulfillmentStage {
+/** Todas las líneas son gift cards. Con una prenda en el pedido ya hay algo que despachar. */
+export function esSoloDigital(lineItems: LineItemsLike): boolean {
+  const items = lineItems || [];
+  return items.length > 0 && items.every((li) => Number(li.product_id) === GIFT_CARD_PRODUCT_ID);
+}
+
+/** Sin `lineItems` clasifica sólo por la meta de Andreani, como antes. */
+export function fulfillmentStage(meta: MetaLike, lineItems?: LineItemsLike): FulfillmentStage {
   if (hasMeta(meta, TRACKING_KEYS)) return 'con_guia';
   if (hasMeta(meta, PACKAGED_KEYS)) return 'con_rotulo';
+  if (esSoloDigital(lineItems)) return 'digital';
   return 'sin_rotulo';
 }
 
@@ -41,13 +55,13 @@ export interface ProcessingOrder {
   shippingMethod: string;
 }
 
-/** Conteos por etapa; mismo contrato que devolvía el viejo processingSplit. */
+/** Conteos por etapa; mismo contrato que devolvía el viejo processingSplit. Los digitales no entran en ninguna. */
 export function splitProcessing(orders: { stage: FulfillmentStage }[]): { sinEmpaquetar: number; empaquetados: number; enviados: number } {
   let sinEmpaquetar = 0, empaquetados = 0, enviados = 0;
   for (const o of orders) {
     if (o.stage === 'con_guia') enviados++;
     else if (o.stage === 'con_rotulo') empaquetados++;
-    else sinEmpaquetar++;
+    else if (o.stage === 'sin_rotulo') sinEmpaquetar++;
   }
   return { sinEmpaquetar, empaquetados, enviados };
 }
@@ -61,7 +75,7 @@ export function normalizeProcessingOrder(o: any): ProcessingOrder {
     number: String(o.number ?? o.id),
     total: parseFloat(o.total) || 0,
     dateGmt: Number.isFinite(ms) ? new Date(ms).toISOString() : '',
-    stage: fulfillmentStage(o.meta_data),
+    stage: fulfillmentStage(o.meta_data, o.line_items),
     shippingMethod: String((o.shipping_lines || [])[0]?.method_title || '').trim(),
   };
 }
@@ -79,7 +93,7 @@ export async function fetchProcessingOrders(after: string): Promise<ProcessingOr
   for (let page = 1; page <= 40; page++) {
     const res = await fetch(
       `${WP_URL}/wp-json/wc/v3/orders?status=processing&per_page=100&page=${page}&after=${after}`
-      + `&_fields=id,number,total,date_created_gmt,meta_data,shipping_lines&_cb=${Date.now()}`,
+      + `&_fields=id,number,total,date_created_gmt,meta_data,shipping_lines,line_items&_cb=${Date.now()}`,
       { headers: { Authorization: auth }, cache: 'no-store' },
     );
     if (!res.ok) throw new Error(`WC ${res.status} al leer pedidos processing`);
