@@ -12,6 +12,15 @@ const hoodie: ResolvedProduct = {
 };
 const cap: ResolvedProduct = { product_id: 924, stock, regularPrice: 43000, variations: [] };
 const catalog = new Map<string, ResolvedProduct | null>([['faith-hoodie', hoodie], ['camo-cap', cap]]);
+// Últimos pedidos del cliente en Woo (freno al pedido duplicado).
+let recentOrders: any[] = [];
+const wooOrder = (minutesAgo: number, extra: Record<string, unknown> = {}) => ({
+  id: 3324, number: '3324', status: 'on-hold', total: '1018960.00',
+  date_created_gmt: new Date(Date.now() - minutesAgo * 60_000).toISOString().slice(0, 19),
+  line_items: [{ quantity: 40 }, { quantity: 4 }],
+  meta_data: [{ key: '_es_mayorista', value: 'true' }],
+  ...extra,
+});
 
 vi.mock('@/lib/mayorista-auth', () => ({
   MAYORISTA_COOKIE: 'hype_mayorista_session',
@@ -28,6 +37,7 @@ vi.mock('@/lib/mayorista-stock', async (importOriginal) => {
     wcAuth: () => 'Basic test',
     wcGet: vi.fn(async (path: string) => {
       if (path.startsWith('customers/19')) return { email: 'mask@test.com', meta_data: [] };
+      if (path.startsWith('orders?')) return recentOrders;
       throw new Error('wcGet inesperado: ' + path);
     }),
     resolveProducts: vi.fn(async (slugs: string[]) => new Map(slugs.map(s => [s, catalog.get(s) ?? null]))),
@@ -41,6 +51,7 @@ vi.setConfig({ testTimeout: 20000 });
 const wcOrderPosts: any[] = [];
 beforeEach(() => {
   wcOrderPosts.length = 0;
+  recentOrders = [];
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
     if (String(url).includes('/wc/v3/orders')) {
       wcOrderPosts.push(JSON.parse(String(init?.body)));
@@ -129,5 +140,70 @@ describe('POST /api/mayorista/pedido — precio calculado en el servidor', () =>
     expect(r.status).toBe(200);
     expect(r.data.total).toBe(96000 + 21500 * 3);
     expect(wcOrderPosts[0].line_items.map((l: any) => l.total)).toEqual(['96000', '64500']);
+  });
+});
+
+// 28/09/2026: AKASHA confirmó, vio un error (la orden #3324 se había creado
+// igual), recargó y confirmó de nuevo → #3325 duplicada.
+describe('POST /api/mayorista/pedido — pedido duplicado', () => {
+  it('con un pedido de hace 1 minuto: 409 RECENT_ORDER con sus datos y sin crear orden', async () => {
+    recentOrders = [wooOrder(1)];
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(409);
+    expect(r.data.code).toBe('RECENT_ORDER');
+    expect(r.data.order).toMatchObject({ number: '3324', total: 1018960, units: 44, status: 'on-hold' });
+    expect(wcOrderPosts).toHaveLength(0);
+  });
+
+  it('una orden todavía en pending (Woo la está creando) también frena', async () => {
+    recentOrders = [wooOrder(0.5, { status: 'pending' })];
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(409);
+    expect(wcOrderPosts).toHaveLength(0);
+  });
+
+  it('confirmDuplicate: crea la orden igual', async () => {
+    recentOrders = [wooOrder(1)];
+    const r = await post({ items: [hoodieL(48000)], shipping, confirmDuplicate: true });
+    expect(r.status).toBe(200);
+    expect(wcOrderPosts).toHaveLength(1);
+  });
+
+  for (const [caso, order] of [
+    ['de hace 11 minutos', () => wooOrder(11)],
+    ['cancelado', () => wooOrder(1, { status: 'cancelled' })],
+    ['minorista', () => wooOrder(1, { meta_data: [] })],
+  ] as const) {
+    it(`un pedido ${caso} no frena`, async () => {
+      recentOrders = [order()];
+      const r = await post({ items: [hoodieL(48000)], shipping });
+      expect(r.status).toBe(200);
+      expect(wcOrderPosts).toHaveLength(1);
+    });
+  }
+
+  it('el cambio de precio se avisa antes que el duplicado', async () => {
+    recentOrders = [wooOrder(1)];
+    const r = await post({ items: [hoodieL(1)], shipping });
+    expect(r.data.code).toBe('PRICE_CHANGED');
+  });
+
+  it('GET devuelve el pedido reciente para que el carrito verifique', async () => {
+    recentOrders = [wooOrder(2)];
+    const { GET } = await import('@/app/api/mayorista/pedido/route');
+    const res = await GET(new NextRequest('http://localhost/api/mayorista/pedido', { headers: { cookie: 'hype_mayorista_session=ok' } }));
+    expect(res.status).toBe(200);
+    const { recent } = await res.json();
+    expect(recent.number).toBe('3324');
+    // La fecha de Woo viene sin milisegundos.
+    expect(recent.ageSeconds).toBeGreaterThanOrEqual(120);
+    expect(recent.ageSeconds).toBeLessThanOrEqual(121);
+  });
+
+  it('si Woo responde 5xx al crear, la respuesta avisa que la orden pudo entrar', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => String(url).includes('/wc/v3/orders') ? new Response('timeout', { status: 504 }) : new Response('{}', { status: 200 })));
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(502);
+    expect(r.data.maybeCreated).toBe(true);
   });
 });
