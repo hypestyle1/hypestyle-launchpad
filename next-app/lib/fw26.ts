@@ -39,13 +39,16 @@ export const FW26_GROUPS = [
   // Es la más vendida del grupo (19u) y el Mundial es el contexto del momento,
   // así que se gana el 4to lugar. Sale de MAS_HYPE_HOME_SLUGS para no repetirla
   // en el mismo scroll (sigue en la página /mas-hype completa).
-  // Cuando se suba la remera LETTERING reestockeada hay que elegir: entra ella
-  // o queda LA NUESTRA — con 5 la grilla vuelve a recortar a 4.
+  // 28/09: se subió la LETTERING (longsleeve negra, $45.000 desde $67.000) y
+  // ocupa ese 4to lugar. La que sale es LA NUESTRA: entró por el contexto del
+  // Mundial, que ya pasó, y sigue viéndose en /mas-hype y en su ficha. La
+  // LETTERING comparte el blank con FIND JESUS (pila longsleeve_negro), así
+  // que el stock que muestra es el conteo real del depósito.
   {
     label: 'Remeras',
     slugs: [
       'ladytribal-black-longsleeve',
-      'la-nuestra-jersey-mundial-26',
+      'lettering-black-longsleeve',
       'napoli-tee-azul', 'napoli-tee-blanca',
     ],
   },
