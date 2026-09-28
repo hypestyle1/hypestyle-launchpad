@@ -4,9 +4,12 @@ import { normalizeCpAr } from '@/lib/postal-code';
 // Credencial ID del plugin Andreani de WooCommerce (campo hash_andreani).
 // Sirve tanto para el header x-andreani-session de la API vieja como para
 // el Authorization del Login de la API nueva.
-const ANDREANI_HASH =
-  process.env.ANDREANI_SESSION_TOKEN ||
-  'UHltZXx6cE13TnJReG1DWkVMTDhWRjFwNGljdmVXaXRpd1lqcDlJalRBakUxYjFNPQ==';
+//
+// Solo por env var: es la credencial de larga vida de la cuenta Andreani (con
+// ella se emiten accessTokens), así que no lleva fallback hardcodeado. Sin la
+// variable cargada la ruta falla cerrada y el checkout muestra el selector de
+// sucursal vacío — preferible a tener la credencial en el repo.
+const ANDREANI_HASH = process.env.ANDREANI_SESSION_TOKEN;
 
 const API_BASE = 'https://woocommerce-api-acom.andreani.com';
 
@@ -29,6 +32,11 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 const TOKEN_TTL_MS = 45 * 60 * 1000;
 
 async function login(): Promise<string | null> {
+  if (!ANDREANI_HASH) {
+    console.error('[andreani-branches] falta ANDREANI_SESSION_TOKEN — no se consultan sucursales');
+    return null;
+  }
+
   const res = await fetch(`${API_BASE}/api/v1/Login`, {
     method: 'POST',
     headers: { Authorization: ANDREANI_HASH, 'Content-Type': 'application/json' },
