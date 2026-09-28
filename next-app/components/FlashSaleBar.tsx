@@ -52,7 +52,7 @@ export default function FlashSaleBar() {
     return () => { clearInterval(tick); clearInterval(poll); };
   }, []);
 
-  const hideOn = ['/admin', '/checkout', '/pendiente-de-pago', '/confirmacion'];
+  const hideOn = ['/admin', '/checkout', '/pendiente-de-pago', '/confirmacion', '/pagar'];
   if (!active || !time || hideOn.some(p => pathname?.startsWith(p))) return null;
 
   const isFull = status?.full;
