@@ -15,6 +15,7 @@ export const MIR: Lookbook = {
   dir: '/lookbook-mir',
   eyebrow: 'StyleRap&Culture',
   title: 'La Ciudad del Pop x Mir Nicolás',
+  artista: { nombre: 'Mir Nicolás', instagram: 'mirnicolas.vyg' },
   intro: 'Arte exclusivo inspirado en el universo visual de Mir Nicolás y la cultura urbana japonesa. Tres gráficas en negro y en blanco, edición especial. Octubre de 2025.',
   bloques: [
     { tipo: 'video', youtube: 'JV93JQBOkVM', poster: 'film', titulo: 'La Ciudad del Pop — el film' },
