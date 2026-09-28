@@ -299,7 +299,7 @@ describe('pago del mismo pedido', () => {
     const r = await post('transferencia');
     expect(r.status).toBe(200);
     expect(r.data.total).toBe(102000);
-    expect(r.data.account).toEqual({ alias: 'Hypestle2', banco: 'Mercado Pago' });
+    expect(r.data.account).toEqual({ alias: 'Hypestyle2', banco: 'Mercado Pago' });
     expect(r.data.redirect).toBeUndefined();
 
     const put = s.puts()[0].body;

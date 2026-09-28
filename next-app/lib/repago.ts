@@ -53,7 +53,7 @@ export const METHOD_FIELDS: Record<RepagoMethod, { payment_method: string; payme
 /** Datos para transferir: alias fijo de la cuenta de Mercado Pago. No depende
  *  de Talo ni de ningún webhook: el pedido se aprueba a mano con el comprobante. */
 export const TRANSFER_ACCOUNT = {
-  alias: 'Hypestle2',
+  alias: 'Hypestyle2',
   banco: 'Mercado Pago',
 };
 
