@@ -35,10 +35,8 @@ export default function LoadingScreen() {
       {/* Al salir el logo queda revelado: si volviera a recortarse, se borraría
           justo mientras funde. */}
       <div style={{ clipPath: revealed || exiting ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)', transition: revealed ? 'clip-path 1s cubic-bezier(0.76,0,0.24,1) 0.05s' : 'none' }}>
-        {/* El ancho manda (el logo es 16 veces más ancho que alto): ocupa casi
-            todo el ancho en el celular y tiene tope en pantallas grandes. */}
         <img src="/STYLE&CULTURE BLACK.png" alt="Style & Culture"
-          className="h-auto select-none w-[78vw] max-w-[640px]" draggable={false} />
+          className="w-auto select-none h-[14px] md:h-[28px]" draggable={false} />
       </div>
     </div>
   );
