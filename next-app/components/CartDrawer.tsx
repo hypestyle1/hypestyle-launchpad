@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCart, cartLineKey } from "@/context/CartContext";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
@@ -17,6 +17,14 @@ import { suggestForCart } from "@/lib/cart-suggestions";
 // Mismo 10% que aplica el checkout al pagar por transferencia.
 const TRANSFER_RATE = 10;
 const CUOTAS = 3;
+
+// Tiempos de la animación. Los de salida tienen que cubrir las transiciones de
+// globals.css (420 ms el panel y la fila).
+const EXIT_MS = 440;
+const LINE_EXIT_MS = 430;
+const STAGGER_BASE_MS = 380;
+const STAGGER_STEP_MS = 90;
+const STAGGER_MAX = 8;
 
 // Mismo vidrio que el navbar (Navbar.tsx), un poco más transparente para que
 // el fondo se note en un panel de este tamaño. A cambio el texto secundario va
@@ -41,8 +49,14 @@ export default function CartDrawer() {
   // Se recalcula al abrir y cuando cambia qué hay en el carrito (no la
   // cantidad): si sumás el hoodie, lo siguiente que se ofrece ya es otra cosa.
   const cartKey = items.map(i => i.id).join('|');
+  // Al cerrar se conserva lo último que se mostró: el panel sigue a la vista
+  // mientras sale y no tiene que cambiar de contenido en el camino.
+  const lastSuggested = useRef<ReturnType<typeof suggestForCart>>([]);
   const suggested = useMemo(
-    () => suggestForCart(items, allProducts, 4),
+    () => {
+      if (drawerOpen) lastSuggested.current = suggestForCart(items, allProducts, 4);
+      return lastSuggested.current;
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [drawerOpen, allProducts.length, cartKey]
   );
@@ -50,7 +64,59 @@ export default function CartDrawer() {
 
   const { promoActive: promo3x2Active } = usePromo3x2Status();
 
-  if (!drawerOpen) return null;
+  // La animación (globals.css, "Drawer del carrito") necesita dos cosas que un
+  // `return null` no da: que el panel exista un cuadro antes de abrirse, para
+  // que la entrada tenga desde dónde arrancar, y que siga existiendo mientras
+  // sale. `rendered` es si está en el DOM; `open`, si está a la vista.
+  const [rendered, setRendered] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [leaving, setLeaving] = useState<Set<string>>(new Set());
+  // Las filas que ya estaban al abrir entran escalonadas; las que se suman con
+  // el drawer abierto entran en el acto. El retraso de cada fila queda fijo
+  // desde que aparece: cambiarlo con la animación en curso la haría saltar.
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const openedWith = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    if (!drawerOpen) {
+      setOpen(false);
+      const out = setTimeout(() => { setRendered(false); setLeaving(new Set()); }, EXIT_MS);
+      return () => clearTimeout(out);
+    }
+    openedWith.current = new Map(itemsRef.current.map((item, i) => [cartLineKey(item), i]));
+    setRendered(true);
+    let second = 0;
+    const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => setOpen(true)); });
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawerOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [drawerOpen, setDrawerOpen]);
+
+  if (!rendered) return null;
+
+  // Retraso de entrada de cada bloque, de arriba hacia abajo.
+  const stagger = (i: number) => ({
+    '--d': `${STAGGER_BASE_MS + Math.min(i, STAGGER_MAX) * STAGGER_STEP_MS}ms`,
+  }) as React.CSSProperties;
+  const lineStagger = (key: string) => {
+    const i = openedWith.current.get(key);
+    return i === undefined ? ({ '--d': '0ms' } as React.CSSProperties) : stagger(3 + i);
+  };
+
+  // Eliminar espera a que la fila termine de salir.
+  const removeLine = (item: (typeof items)[number]) => {
+    const key = cartLineKey(item);
+    setLeaving(prev => new Set(prev).add(key));
+    setTimeout(() => {
+      remove(item.id, item.size, item.customization);
+      setLeaving(prev => { const next = new Set(prev); next.delete(key); return next; });
+    }, LINE_EXIT_MS);
+  };
 
   // El regalo por compra no es un producto pago: no cuenta para el 3x2.
   const purchasableItems = items.filter(item => !item.isGift);
@@ -78,20 +144,22 @@ export default function CartDrawer() {
       {/* Overlay. Termina donde empieza el drawer: si lo oscureciera por detrás,
           el vidrio desenfocaría una imagen ya apagada y quedaría gris. */}
       <div
-        className="fixed inset-0 min-[420px]:right-[420px] z-[150] bg-black/40"
+        className="hs-drawer-overlay fixed inset-0 min-[420px]:right-[420px] z-[150] bg-black/40"
+        data-open={open}
         onClick={() => setDrawerOpen(false)}
       />
 
       {/* Drawer */}
       <div
-        className="fixed right-0 top-0 bottom-0 z-[160] w-full max-w-[420px] flex flex-col"
+        className="hs-drawer fixed right-0 top-0 bottom-0 z-[160] w-full max-w-[420px] flex flex-col"
+        data-open={open}
         style={drawerGlassStyle}
       >
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-black/10">
+        <div className="hs-drawer-in flex items-center justify-between px-6 py-5 border-b border-black/10" style={stagger(0)}>
           <span className="text-[13px] font-semibold uppercase tracking-wider">
-            {t('Carrito')} ({count})
+            {t('Carrito')} (<span key={count} className="hs-tick">{count}</span>)
           </span>
           <button
             onClick={() => setDrawerOpen(false)}
@@ -104,7 +172,7 @@ export default function CartDrawer() {
         </div>
 
         {/* Barra envío gratis */}
-        <div className="px-6 pt-3 pb-2 border-b border-black/10">
+        <div className="hs-drawer-in px-6 pt-3 pb-2 border-b border-black/10" style={stagger(1)}>
           {freeShipping ? (
             <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
               {t('¡Conseguiste envío gratis!')}
@@ -129,12 +197,14 @@ export default function CartDrawer() {
 
         {/* Barra regalo por compra */}
         {items.length > 0 && (
-          <GiftProgressBar className="px-6 pt-2 pb-2 border-b border-black/10" />
+          <div className="hs-drawer-in" style={stagger(2)}>
+            <GiftProgressBar className="px-6 pt-2 pb-2 border-b border-black/10" />
+          </div>
         )}
 
         {/* Barra 3x2 */}
         {promo3x2Active && items.length > 0 && (promo3x2Discount > 0 || promo3x2Faltan < 3) && (
-          <div className="px-6 pt-2 pb-2 border-b border-black/10">
+          <div className="hs-drawer-in px-6 pt-2 pb-2 border-b border-black/10" style={stagger(2)}>
             {promo3x2Discount > 0 ? (
               <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
                 3x2 aplicado — ahorrás {formatPrice(promo3x2Discount)}
@@ -158,7 +228,7 @@ export default function CartDrawer() {
           scrollClassName="h-full overflow-y-auto overscroll-contain px-6 py-4 space-y-5 [mask-image:linear-gradient(to_bottom,transparent,#000_var(--top-fade-height),#000_calc(100%_-_var(--bottom-fade-height)),transparent)]"
         >
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="hs-drawer-in flex flex-col items-center justify-center h-full text-center" style={stagger(3)}>
               <p className="text-[13px] text-muted-foreground mb-4">{t('Tu carrito está vacío')}</p>
               <button
                 onClick={() => setDrawerOpen(false)}
@@ -180,7 +250,12 @@ export default function CartDrawer() {
             items.map((item) => (
               <div
                 key={cartLineKey(item)}
-                className={`flex gap-4 ${item.isGift ? 'bg-green-50/60 border border-green-100 rounded-[8px] p-2 -mx-2' : ''}`}
+                className={`hs-cart-line ${item.isGift ? '-mx-2' : ''}`}
+                data-leaving={leaving.has(cartLineKey(item))}
+              >
+              <div
+                className={`hs-drawer-in flex gap-4 ${item.isGift ? 'bg-green-50/60 border border-green-100 rounded-[8px] p-2' : ''}`}
+                style={lineStagger(cartLineKey(item))}
               >
                 <div className="w-20 h-24 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[5px]">
                   <img src={imgSrc(item.image)} alt={item.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -215,7 +290,7 @@ export default function CartDrawer() {
                       >
                         −
                       </button>
-                      <span className="text-[13px] tabular-nums">{item.quantity}</span>
+                      <span key={item.quantity} className="hs-tick text-[13px] tabular-nums">{item.quantity}</span>
                       <button
                         onClick={() => increment(item.id, item.size, item.customization)}
                         className="w-6 h-6 border border-black/10 flex items-center justify-center text-[14px] hover:border-foreground transition-colors rounded-[5px]"
@@ -223,7 +298,7 @@ export default function CartDrawer() {
                         +
                       </button>
                       <button
-                        onClick={() => remove(item.id, item.size, item.customization)}
+                        onClick={() => removeLine(item)}
                         className="ml-auto text-[11px] text-muted-foreground hover:text-foreground transition-colors underline"
                       >
                         {t('Eliminar')}
@@ -232,12 +307,13 @@ export default function CartDrawer() {
                   )}
                 </div>
               </div>
+              </div>
             ))
           )}
 
           {/* Completa el look */}
           {items.length > 0 && (
-            <div className="pt-4 border-t border-black/10">
+            <div className="hs-drawer-in pt-4 border-t border-black/10" style={stagger(3 + items.length)}>
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] mb-3">{t('Completa el look')}</p>
               <div className="grid grid-cols-2 gap-3">
                 {suggested.map((p) => {
@@ -283,10 +359,10 @@ export default function CartDrawer() {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="px-6 py-5 border-t border-black/10 space-y-3">
+          <div className="hs-drawer-in px-6 py-5 border-t border-black/10 space-y-3" style={stagger(5)}>
             <div className="flex items-center justify-between">
               <span className="text-[13px] text-muted-foreground">{t('Subtotal')}</span>
-              <span className="text-[14px] font-semibold">{formatPrice(total)}</span>
+              <span key={total} className="hs-tick text-[14px] font-semibold tabular-nums">{formatPrice(total)}</span>
             </div>
             {promo3x2Discount > 0 && (
               <div className="flex items-center justify-between">
