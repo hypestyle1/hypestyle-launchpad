@@ -60,7 +60,7 @@ export default function SaleHero({ maxOff, total }: { maxOff: number; total: num
             <dd className="text-[20px] md:text-[24px] font-bold tracking-[-0.02em]">{SALE_URGENCIA}</dd>
           </div>
           <div>
-            <dt className="text-[10px] uppercase tracking-[0.16em] text-white/60">Envío gratis</dt>
+            <dt className="text-[10px] uppercase tracking-[0.16em] text-white/60">Envío gratis a sucursal</dt>
             <dd className="text-[20px] md:text-[24px] font-bold tracking-[-0.02em] tabular-nums">desde $180.000</dd>
           </div>
           <div>

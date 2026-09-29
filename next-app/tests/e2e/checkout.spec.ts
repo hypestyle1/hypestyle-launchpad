@@ -102,20 +102,22 @@ test('elegir sucursal cambia el costo de envío', async ({ page }) => {
   await expect(page.locator('body')).toContainText('108.000');
 });
 
-test('preselecciona la primera tarifa para no dejar el paso trabado', async ({ page }) => {
+test('preselecciona la sucursal y muestra cuánto se ahorra', async ({ page }) => {
   await irAlCheckout(page);
 
   await completarInformacion(page);
   await page.getByRole('button', { name: 'Continuar con el envío' }).click();
 
-  await expect(page.getByText(ANDREANI_RATES[0].label)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(ANDREANI_RATES[1].label)).toBeVisible({ timeout: 20_000 });
 
-  // El checkout elige la primera tarifa apenas llegan (page.tsx:401), así que el
-  // botón queda habilitado sin que el comprador toque nada, y el total ya la
-  // incluye. Si esto cambiara a "ninguna preseleccionada", el botón quedaría
-  // deshabilitado sin ningún cartel que lo explique.
+  // El checkout elige la sucursal apenas llegan las tarifas (tarifaPorDefecto en
+  // lib/envio), así que el total ya la incluye sin que el comprador toque nada.
+  await expect(page.locator('body')).toContainText('108.000');
+  // 12.000 − 8.000
+  await expect(page.locator('body')).toContainText('Ahorrás $ 4.000');
+  // Con sucursal hay que elegir cuál: recién ahí se habilita el botón.
+  await page.getByText('Sucursal Palermo').click();
   await expect(page.getByRole('button', { name: 'Continuar con el pago' })).toBeEnabled();
-  await expect(page.locator('body')).toContainText('112.000');
 });
 
 test('el email es obligatorio para pasar del primer paso', async ({ page }) => {

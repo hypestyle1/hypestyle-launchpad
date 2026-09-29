@@ -20,7 +20,7 @@ import { imgSrc } from '@/lib/img';
 import { normalizeCpAr } from '@/lib/postal-code';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
-import { FREE_SHIPPING_THRESHOLD } from '@/lib/envio';
+import { FREE_SHIPPING_THRESHOLD, ahorroSucursal, alcanzaUmbral, costoEnvio, modoDeTarifa, ordenarTarifas, tarifaPorDefecto } from '@/lib/envio';
 import { isGiftCardItem } from '@/lib/gift-card';
 import GiftProgressBar from '@/components/GiftProgressBar';
 import { Stepper } from '@/components/ui/stepper';
@@ -390,12 +390,18 @@ export default function Checkout() {
   }, [hydrated]);
 
   const subtotal = total;
-  // El cupón de envío gratis cero-ea Andreani igual que el umbral por monto.
+  // El cupón de envío gratis cubre cualquier modo de entrega; el umbral, solo sucursal.
   const couponFreeShip = !isInternational && !!couponData?.free_shipping;
   // El umbral de envío gratis se mide sobre lo físico: una gift card no viaja.
-  const freeShipping = soloGift || (!isInternational && ((subtotal - subtotalGift) >= FREE_SHIPPING_THRESHOLD || couponFreeShip));
-  const envioCosto = freeShipping ? 0 : (selectedRate?.cost ?? 0);
-  const shippingReady = soloGift ? true : isInternational ? !!selectedRate : freeShipping || !!selectedRate;
+  const envioCtx = { subtotalFisico: subtotal - subtotalGift, cuponEnvioGratis: couponFreeShip, internacional: isInternational };
+  const sobreUmbral = alcanzaUmbral(envioCtx);
+  const costoDe = (rate: ShippingRate) => costoEnvio(rate, shippingRates, envioCtx);
+  const envioCosto = soloGift || !selectedRate ? 0 : costoDe(selectedRate);
+  const freeShipping = soloGift || (!isInternational && envioCosto === 0 && (sobreUmbral || couponFreeShip));
+  const ahorroEnSucursal = ahorroSucursal(shippingRates);
+  // Si el cotizador falla y el carrito ya tenía el envío bonificado, el pedido
+  // sigue sin tarifa elegida en vez de morir en este paso.
+  const shippingReady = soloGift ? true : isInternational ? !!selectedRate : sobreUmbral || couponFreeShip || !!selectedRate;
   // Un cupón de monto fijo (o una gift card) nunca descuenta más que el subtotal:
   // sin este tope una gift card de $250k sobre un carrito de $80k daba negativo.
   const cuponDescuento = couponData ? (
@@ -484,8 +490,11 @@ export default function Checkout() {
       );
       const data: { rates?: ShippingRate[]; error?: string } = await res.json();
       if (data.rates && data.rates.length > 0) {
-        setShippingRates(data.rates);
-        setSelectedRate(data.rates[0]);
+        // Sucursal primero y preseleccionada: es el envío que menos cuesta.
+        const elegida = tarifaPorDefecto(data.rates);
+        setShippingRates(ordenarTarifas(data.rates));
+        setSelectedRate(elegida);
+        if (elegida) fetchBranches(elegida);
       } else {
         setRatesError('No se encontraron opciones de envío para este código postal.');
       }
@@ -963,25 +972,47 @@ export default function Checkout() {
 
                     {!loadingRates && shippingRates.length > 0 && (
                       <div className="space-y-2">
-                        {shippingRates.map(rate => (
-                          <label key={rate.id} className={`flex items-center justify-between border px-4 py-4 cursor-pointer transition-colors rounded-[10px] ${selectedRate?.id === rate.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
-                            <div className="flex items-center gap-3">
-                              <input type="radio" name="envio" checked={selectedRate?.id === rate.id}
-                                onChange={() => handleRateSelect(rate)} className="w-4 h-4 accent-foreground" />
-                              <div>
-                                <p className="text-[13px] font-medium">{rate.label}</p>
+                        {shippingRates.map(rate => {
+                          const esSucursal = modoDeTarifa(rate) === 'sucursal';
+                          const costo = costoDe(rate);
+                          const bonificado = costo < Math.round(rate.cost);
+                          return (
+                            <label key={rate.id} className={`flex items-center justify-between gap-3 border px-4 py-4 cursor-pointer transition-colors rounded-[10px] ${selectedRate?.id === rate.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
+                              <div className="flex items-center gap-3 min-w-0">
+                                <input type="radio" name="envio" checked={selectedRate?.id === rate.id}
+                                  onChange={() => handleRateSelect(rate)} className="w-4 h-4 accent-foreground flex-shrink-0" />
+                                <div>
+                                  <p className="text-[13px] font-medium">{esSucursal ? 'Retiro en sucursal' : 'Envío a domicilio'}</p>
+                                  <p className="text-[11px] text-muted-foreground">{rate.label}</p>
+                                </div>
                               </div>
-                            </div>
-                            {freeShipping ? (
-                              <div className="text-right">
-                                <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
-                                <span className="text-[13px] font-semibold text-green-700">Gratis</span>
+                              <div className="text-right flex-shrink-0 tabular-nums">
+                                {bonificado && (
+                                  <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
+                                )}
+                                {costo === 0 ? (
+                                  <span className="text-[13px] font-semibold text-green-700 block">Gratis</span>
+                                ) : (
+                                  <span className="text-[13px] font-semibold block">{formatPrice(costo)}</span>
+                                )}
+                                {esSucursal && !bonificado && ahorroEnSucursal > 0 && (
+                                  <span className="inline-block mt-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                                    Ahorrás {formatPrice(ahorroEnSucursal)}
+                                  </span>
+                                )}
                               </div>
-                            ) : (
-                              <span className="text-[13px] font-semibold">{formatPrice(rate.cost)}</span>
-                            )}
-                          </label>
-                        ))}
+                            </label>
+                          );
+                        })}
+                        <p className="text-[11px] text-muted-foreground px-0.5 pt-1">
+                          {couponFreeShip ? (
+                            'Cupón de envío gratis aplicado.'
+                          ) : sobreUmbral ? (
+                            <>Tu compra tiene <span className="font-semibold text-foreground">envío gratis a sucursal</span>.</>
+                          ) : (
+                            <>Sumá <span className="font-semibold text-foreground">{formatPrice(FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico)}</span> y el envío a sucursal es gratis.</>
+                          )}
+                        </p>
                       </div>
                     )}
 
@@ -1255,6 +1286,8 @@ export default function Checkout() {
                     <span className="text-muted-foreground">Calculando...</span>
                   ) : freeShipping ? (
                     <><span className="line-through text-muted-foreground mr-1">{selectedRate ? formatPrice(selectedRate.cost) : ''}</span><span className="text-green-700 font-semibold">Gratis</span></>
+                  ) : selectedRate && envioCosto < Math.round(selectedRate.cost) ? (
+                    <><span className="line-through text-muted-foreground mr-1">{formatPrice(selectedRate.cost)}</span>{formatPrice(envioCosto)}</>
                   ) : selectedRate ? (
                     formatPrice(selectedRate.cost)
                   ) : (

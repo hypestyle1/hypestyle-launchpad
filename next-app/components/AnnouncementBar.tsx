@@ -12,8 +12,11 @@ const SALE_ITEMS = [
   SALE_URGENCIA,
 ];
 
+// El envío gratis es solo para Argentina: a quien entra desde afuera no se le muestra.
+const ENVIO_GRATIS = "Envío gratis a sucursal desde $180.000";
+
 const items = [
-  "Envío gratis desde $180.000",
+  ENVIO_GRATIS,
   "Hasta 3 cuotas sin interés",
   "Worldwide Shipping vía FedEx",
   "30 días para cambios y devoluciones",
@@ -21,7 +24,7 @@ const items = [
 ];
 
 export default function AnnouncementBar() {
-  const { t } = useLocale();
+  const { t, country } = useLocale();
   // Igual que SaleBanner: se renderiza en modo sale desde el servidor y el
   // cliente lo apaga si la fecha ya paso, para no parpadear de negro a rojo.
   const [enSale, setEnSale] = useState(true);
@@ -29,7 +32,9 @@ export default function AnnouncementBar() {
 
   // Los mensajes del sale ya llevan el numero adentro, asi que no pasan por t():
   // no son claves del diccionario y traducirlos los dejaria igual.
-  const base = enSale ? [...SALE_ITEMS, ...items.map(t)] : items.map(t);
+  const desdeAfuera = country !== null && country !== 'AR';
+  const fijos = (desdeAfuera ? items.filter((i) => i !== ENVIO_GRATIS) : items).map(t);
+  const base = enSale ? [...SALE_ITEMS, ...fijos] : fijos;
   const repeated = [...base, ...base, ...base, ...base];
 
   return (
