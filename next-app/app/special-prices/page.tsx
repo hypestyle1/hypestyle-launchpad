@@ -2,13 +2,11 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import SaleHero from "@/components/SaleHero";
 import { fetchAllProducts } from "@/lib/products-server";
 import { BEST_SELLERS_SLUGS } from "@/lib/best-sellers";
 import JsonLd from "@/components/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 import { collectionJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
-import { isSaleActive } from "@/lib/sale";
 
 export const revalidate = 60;
 
@@ -40,14 +38,10 @@ function descuento(p: { originalPrice?: number; price: number }) {
 }
 
 /**
- * Cabecera de la pagina SALE fuera de campaña.
- *
- * Misma receta que el resto de las cabeceras de coleccion (fondo oscuro, centrada,
- * volanta + H1 + linea de detalle) en vez del rojo de Cold Archive: sin campaña
- * corriendo, el rojo no significa nada y el sitio tiene que verse como se ve
- * siempre. El heroe rojo sigue en components/SaleHero.tsx para la proxima.
+ * Cabecera de la pagina SALE. Misma receta que el resto de las cabeceras de
+ * coleccion: fondo oscuro, centrada, volanta + H1 + linea de detalle.
  */
-function SaleHeaderNeutro({ maxOff, total }: { maxOff: number; total: number }) {
+function SaleHeader({ maxOff, total }: { maxOff: number; total: number }) {
   return (
     <section className="bg-bg-dark text-primary-foreground py-20 px-6 text-center">
       <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 mb-3">Precios especiales</p>
@@ -99,13 +93,7 @@ export default async function SalePage() {
       <Navbar />
       <main className="pt-[var(--offset)]">
 
-        {/* Con campaña viva manda el heroe rojo de Cold Archive. Sin campaña la
-            pagina sigue existiendo —siempre hay algo rebajado— pero con la
-            cabecera neutra de la casa: el rojo es el acento de campaña, no el
-            del sitio. Se decide en el servidor, igual que el resto de la pagina. */}
-        {isSaleActive()
-          ? <SaleHero maxOff={maxOff} total={total} />
-          : <SaleHeaderNeutro maxOff={maxOff} total={total} />}
+        <SaleHeader maxOff={maxOff} total={total} />
 
         {destacados.length > 0 && (
           <section className="max-w-[1400px] mx-auto px-4 pt-10 md:pt-14">

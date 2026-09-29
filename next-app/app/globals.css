@@ -159,21 +159,6 @@
 }
 
 
-/* Ticker del Winter Sale (components/SaleHero.tsx). La tira se repite tres
-   veces y se desplaza un tercio: al terminar el ciclo el contenido coincide
-   con el inicio, asi que el loop no muestra el corte. */
-@keyframes hs-marquee-x {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-33.333%); }
-}
-.hs-marquee {
-  animation: hs-marquee-x 22s linear infinite;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .hs-marquee { animation: none; }
-}
-
 /* ─── Hype Panel (admin) ─────────────────────────────────────────────────────
    El panel redefine el set semántico dentro de .admin-theme, así el sitio
    público no se entera. El modo oscuro se activa con la clase `dark` en el
