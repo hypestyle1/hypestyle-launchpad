@@ -11,10 +11,11 @@ import { normalizeCpAr } from '@/lib/postal-code';
 import {
   FREE_SHIPPING_THRESHOLD, costoEnvio, modoDeTarifa, ordenarTarifas, type TarifaEnvio,
 } from '@/lib/envio';
-import { DESPACHO_HORAS_HABILES, ENTREGA_DIAS_HABILES, ventanaEntrega, type Modelo } from '@/lib/ficha';
+import { DESPACHO_HORAS_HABILES, ENTREGA_DIAS_HABILES, ventanaEntrega, type Modelo, type FichaVariante } from '@/lib/ficha';
 
 /** Todo lo que una variante necesita de ProductoClient, que sigue siendo dueño del estado. */
 export interface FichaProps {
+  estilo: FichaVariante;
   product: Product;
   galleryImages: string[];
   selectedImage: number;
@@ -89,16 +90,29 @@ export function Precio({ p, grande = false }: { p: FichaProps; grande?: boolean 
 }
 
 /** Cuotas y transferencia en una línea, debajo del precio. */
-export function LineaPagos({ p }: { p: FichaProps }) {
+export function LineaPagos({ p, soloCuotas = false }: { p: FichaProps; soloCuotas?: boolean }) {
   const { formatPrice, currency, t } = useLocale();
   if (!p.mounted || currency !== 'ARS') return null;
   return (
     <p className="text-[12px] text-muted-foreground">
       {t('3 cuotas sin interés de')} <span className="font-semibold text-foreground tabular-nums">{formatPrice(Math.round(p.displayPrice / 3))}</span>
-      {' · '}
-      <span className="font-semibold text-foreground tabular-nums">{formatPrice(p.transferPrice)}</span> {t('por transferencia')}
+      {/* Cuando la ficha ya tiene el botón de transferencia, el importe no se repite acá. */}
+      {!soloCuotas && (
+        <>
+          {' · '}
+          <span className="font-semibold text-foreground tabular-nums">{formatPrice(p.transferPrice)}</span> {t('por transferencia')}
+        </>
+      )}
     </p>
   );
+}
+
+/** "-33%" junto al precio cuando hay precio tachado. */
+export function Descuento({ p }: { p: FichaProps }) {
+  if (!p.mounted || !p.displayOriginal || p.displayOriginal <= p.displayPrice) return null;
+  const pct = Math.round((1 - p.displayPrice / p.displayOriginal) * 100);
+  if (pct < 1) return null;
+  return <span className="text-[12px] font-semibold text-sale tabular-nums">−{pct}%</span>;
 }
 
 /** Medios de pago como tabla. Transferencia primero: es el medio que mejor cobra. */

@@ -22,8 +22,6 @@ import { gaViewItem, gaAddToCart } from '@/lib/ga';
 import { fbViewContent, fbAddToCart } from '@/lib/fbpixel';
 import { leerVariante, modeloPrimero, tieneInterruptorModelo, filtrarPorModelo, modeloInicial, type FichaVariante, type Modelo } from '@/lib/ficha';
 import FichaA from './ficha/FichaA';
-import FichaB from './ficha/FichaB';
-import FichaC from './ficha/FichaC';
 import SelectorVariante from './ficha/SelectorVariante';
 
 function CareIcon({ type }: { type: string }) {
@@ -310,8 +308,8 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // Productos con video: el video va como primer slide de la galería.
   // Las variantes de la ficha no aplican a los personalizables (tienen su propio flujo).
   const fichaVariante = product.customizable ? null : variante;
-  // A y C abren con una persona usando la prenda; la actual y B, con el mockup.
-  const abreConModelo = fichaVariante === 'a' || fichaVariante === 'c';
+  // Las variantes abren con una persona usando la prenda; la actual, con el mockup.
+  const abreConModelo = fichaVariante !== null;
   const conInterruptor = abreConModelo && tieneInterruptorModelo(product.slug, baseImages);
   const modelo: Modelo | null = conInterruptor ? (modeloElegido ?? modeloInicial(product.slug, baseImages)) : null;
   const imagenesOrdenadas = modelo
@@ -487,7 +485,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     </div>
   );
 
-  const Ficha = fichaVariante === 'a' ? FichaA : fichaVariante === 'b' ? FichaB : fichaVariante === 'c' ? FichaC : null;
+  const Ficha = fichaVariante ? FichaA : null;
 
   return (
     <>
@@ -496,6 +494,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       <SelectorVariante actual={fichaVariante} />
       {Ficha ? (
         <Ficha
+          estilo={fichaVariante!}
           product={product}
           galleryImages={galleryImages}
           selectedImage={Math.min(selectedImage, galleryImages.length - 1)}

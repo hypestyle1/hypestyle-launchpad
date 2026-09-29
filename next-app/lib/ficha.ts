@@ -1,19 +1,21 @@
 /**
  * Variantes de la página de producto (prueba en local, 29/09/2026).
  *
- * Tres diseños para comparar contra la ficha actual, elegibles con
- * `?ficha=a|b|c` en la URL. Sin el parámetro la ficha es la de siempre.
+ * Valentín eligió el esquema de tres columnas (info · foto de modelo · compra).
+ * Estas son tres versiones de ese esquema, elegibles con `?ficha=a1|a2|a3`.
+ * Sin el parámetro la ficha es la de siempre. En las tres, nombre y precio van
+ * arriba de la columna de compra.
  *
- *  a — tres columnas: info · foto de modelo · compra
- *  b — la grilla actual con los bloques que faltaban (pago, calce, cuándo llega)
- *  c — ficha larga: galería en grilla y secciones debajo
+ *  a1 — limpia: lo mínimo, como la referencia
+ *  a2 — completa: suma medios de pago, calce y cuándo llega por código postal
+ *  a3 — ficha técnica: la info como tabla de datos, compra anclada abajo
  */
-export type FichaVariante = 'a' | 'b' | 'c';
+export type FichaVariante = 'a1' | 'a2' | 'a3';
 
 export const FICHA_VARIANTES: { id: FichaVariante; nombre: string }[] = [
-  { id: 'a', nombre: 'Tres columnas' },
-  { id: 'b', nombre: 'Actual reforzada' },
-  { id: 'c', nombre: 'Ficha larga' },
+  { id: 'a1', nombre: 'Limpia' },
+  { id: 'a2', nombre: 'Completa' },
+  { id: 'a3', nombre: 'Ficha técnica' },
 ];
 
 const CLAVE_SESION = 'hype_ficha_variante';
@@ -21,11 +23,11 @@ const CLAVE_SESION = 'hype_ficha_variante';
 /**
  * Lee la variante de la URL y la recuerda durante la sesión, para que al pasar
  * de un producto a otro no haya que volver a escribir el parámetro.
- * `?ficha=actual` (o cualquier valor que no sea a/b/c) vuelve a la de siempre.
+ * `?ficha=actual` (o cualquier valor que no sea una variante) vuelve a la de siempre.
  */
 export function leerVariante(): FichaVariante | null {
   if (typeof window === 'undefined') return null;
-  const valida = (v: string | null): v is FichaVariante => v === 'a' || v === 'b' || v === 'c';
+  const valida = (v: string | null): v is FichaVariante => FICHA_VARIANTES.some((f) => f.id === v);
   const deUrl = new URLSearchParams(window.location.search).get('ficha');
   try {
     if (deUrl !== null) {
