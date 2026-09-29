@@ -33,7 +33,7 @@ export const MAS_HYPE_GROUPS = [
   },
   {
     label: 'Musculosas',
-    slugs: ['crop-tops', 'sleeveless-ranglan', 'tanktops'],
+    slugs: ['crop-tops', 'tanktops'],
   },
   {
     label: 'Jort',
