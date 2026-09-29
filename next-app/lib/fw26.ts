@@ -55,8 +55,8 @@ export const FW26_GROUPS = [
   // 4. Accesorios — posición fija al final, la maneja el componente.
   // 18/09: pasa de 4 a 8 (dos filas) y junta TODOS los accesorios del catálogo
   // menos el anillo, que sigue en la vidriera de Más Hype. Abre la Trucker Cap
-  // NO FAITH, NO GLORY (32 unidades en mano) y sigue el Pack x3 Medias, que
-  // vuelve en pre-venta con 75 packs: primera fila = lo que tiene stock para vender.
+  // NO FAITH, NO GLORY (32 unidades en mano) y sigue el Pack x3 Medias (en
+  // pre-venta hasta el 28/09): primera fila = lo que tiene stock para vender.
   // LO AGOTADO NO SE SACA: la sección no filtra por stock y ProductCard le pone
   // el badge "Sin stock" solo. Pedido explícito — con pocas unidades por pieza
   // (beanie 2, caps 6) sacar lo que se agota dejaba la grilla bailando.
@@ -102,9 +102,7 @@ export const FW26_SLUGS = FW26_GROUPS.flatMap(g => g.slugs);
 // Productos de la seccion NEW IN que estan en pre-venta: la card muestra el
 // badge "Pre-Venta" en vez de "New In" (mismo criterio que FaithDrop — se
 // pueden comprar, solo se aclara que el despacho es diferido).
-// Pack x3 Medias (18/09): el reestock está entrando, se cargaron 75 packs en
-// Woo para vender en pre-venta. Sacarlo de acá cuando el stock esté en mano.
+// Pack x3 Medias salió de acá el 28/09: el reestock ya está en mano.
 export const FW26_PRESALE_SLUGS = new Set([
   'ladytribal-black-longsleeve',
-  'pack-x3-medias-hype',
 ]);
