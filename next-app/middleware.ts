@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { COUNTRY_COOKIE } from '@/lib/geo';
+import { ORDER_KEY_RE, REPAGO_COOKIE_MAX_AGE, repagoCookie } from '@/lib/repago-link';
 
 // Hora de early access (close friends) y apertura pública
 const EARLY_START = new Date('2026-06-24T19:00:00-03:00').getTime();
@@ -44,8 +45,37 @@ export async function middleware(request: NextRequest) {
   return withCountry(await handle(request), request);
 }
 
+/**
+ * /pagar/<id>?key=<order_key>: la clave se pasa a una cookie httpOnly y se
+ * redirige a la misma URL sin query, antes de renderizar nada. Así la clave
+ * nunca queda en una URL que vean el pixel, GA4 o Clarity (que mandan
+ * `location.href` por su cuenta). Acá no se valida contra Woo: eso lo hace la
+ * página con el valor de la cookie.
+ */
+function pagarKeyExchange(request: NextRequest): NextResponse | null {
+  const match = /^\/pagar\/(\d{1,10})\/?$/.exec(request.nextUrl.pathname);
+  if (!match || !request.nextUrl.searchParams.has('key')) return null;
+  const key = request.nextUrl.searchParams.get('key') || '';
+  const url = request.nextUrl.clone();
+  url.searchParams.delete('key');
+  const response = NextResponse.redirect(url, 307);
+  if (ORDER_KEY_RE.test(key)) {
+    response.cookies.set(repagoCookie(match[1]), key, {
+      path: '/',
+      httpOnly: true,
+      secure: request.nextUrl.protocol === 'https:',
+      sameSite: 'lax',
+      maxAge: REPAGO_COOKIE_MAX_AGE,
+    });
+  }
+  return response;
+}
+
 async function handle(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const pagar = pagarKeyExchange(request);
+  if (pagar) return pagar;
 
   // Área mayorista: gate propio, independiente del early-access del sitio público.
   if (isUnder(pathname, '/mayoristas') || isUnder(pathname, '/api/mayorista')) {

@@ -32,6 +32,9 @@ const nextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: SECURITY_HEADERS },
+      // /pagar es un link personal a un pedido: al salir hacia la pasarela de
+      // pago no se manda ni el origen.
+      { source: '/pagar/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] },
       // Los archivos de /public los servía Vercel con max-age=0: en cada visita
       // el navegador revalidaba una por una las fotos y los videos del home.
       // No llevan hash en el nombre, así que no se pueden marcar immutable —

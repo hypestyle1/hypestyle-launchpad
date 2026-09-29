@@ -24,7 +24,7 @@ export default function PromoChampionBar() {
   const pathname = usePathname();
   const { phase, promoActive } = usePromoChampionStatus();
 
-  const hideOn = ['/admin', '/checkout', '/pendiente-de-pago', '/confirmacion'];
+  const hideOn = ['/admin', '/checkout', '/pendiente-de-pago', '/confirmacion', '/pagar'];
   if (phase !== 'won' || !promoActive || hideOn.some(p => pathname?.startsWith(p))) return null;
 
   return (
