@@ -3,6 +3,7 @@ import { getPromo3x2Status } from '@/lib/promo-3x2-status';
 import { compute3x2Discount } from '@/lib/promo-3x2';
 import { getPromoChampionStatus } from '@/lib/promo-champion-status';
 import { computeChampionDiscount } from '@/lib/promo-champion';
+import { lineasDeEnvio } from '@/lib/andreani-shipping-line';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -156,11 +157,10 @@ export async function POST(req: NextRequest) {
       shipping:             { ...billing, email: '', phone: '' },
       line_items:           lineItems,
       // Con envío gratis (promo/umbral) "shipping" llega en 0, pero igual hay que
-      // registrar el shipping_line con ese method_id: sin él, Andreani no tiene de
-      // dónde sacar el método de envío y rechaza el pedido al empaquetar.
-      shipping_lines: shippingMethodId
-        ? [{ method_id: shippingMethodId, method_title: shippingLabel ?? shippingMethodId, total: String(shipping ?? 0) }]
-        : [],
+      // registrar el shipping_line: sin él, Andreani no tiene de dónde sacar el
+      // método de envío y rechaza el pedido al empaquetar. El method_id es el del
+      // método de WooCommerce, no la tarifa (ver lib/andreani-shipping-line).
+      shipping_lines: lineasDeEnvio(shippingMethodId, shippingLabel, shipping),
       fee_lines: discountAmount > 0
         ? [{ name: discountLabel || 'Descuento', total: String(-Math.round(discountAmount)), tax_class: '' }]
         : [],
