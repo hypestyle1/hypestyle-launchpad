@@ -22,6 +22,7 @@ import { gaViewItem, gaAddToCart } from '@/lib/ga';
 import { fbViewContent, fbAddToCart } from '@/lib/fbpixel';
 import { ordenarFotos, tieneInterruptorModelo, filtrarPorModelo, modeloInicial, type Modelo } from '@/lib/ficha';
 import Ficha from './ficha/Ficha';
+import { GIFT_CARD_SLUG } from '@/lib/gift-card';
 
 function CareIcon({ type }: { type: string }) {
   const cls = 'w-[18px] h-[18px] flex-shrink-0 text-foreground/70';
@@ -303,9 +304,10 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     : product.images;
   // Productos con video: el video va como primer slide de la galería.
   // La ficha en tres columnas es la de todos los productos. Quedan con el
-  // diseño anterior los personalizables (tienen su propio flujo de dorsal) y los
-  // dos drops con tratamiento visual de campaña.
-  const fichaClasica = !!product.customizable || isLaNuestra || isNapoli;
+  // diseño anterior los personalizables (tienen su propio flujo de dorsal), los
+  // dos drops con tratamiento visual de campaña y la gift card, que es un
+  // producto digital y se mantiene como estaba por decisión de Valentín.
+  const fichaClasica = !!product.customizable || isLaNuestra || isNapoli || product.slug === GIFT_CARD_SLUG;
   // La ficha nueva abre con una persona usando la prenda; la clásica, con el mockup.
   const abreConModelo = !fichaClasica;
   const conInterruptor = abreConModelo && tieneInterruptorModelo(product.slug, baseImages);

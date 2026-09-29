@@ -53,10 +53,10 @@ export function isVideo(src: string): boolean {
   return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(src || '');
 }
 
-export function Foto({ src, alt, sizes, priority, className = 'object-cover object-top' }: { src: string; alt: string; sizes: string; priority?: boolean; className?: string }) {
+export function Foto({ src, alt, sizes, priority, calidad, className = 'object-cover object-top' }: { src: string; alt: string; sizes: string; priority?: boolean; calidad?: number; className?: string }) {
   return isVideo(src)
     ? <video src={imgUrl(src)} autoPlay muted loop playsInline className={`absolute inset-0 w-full h-full ${className}`} />
-    : <Image src={imgUrl(src)} alt={alt} fill sizes={sizes} priority={priority} className={className} />;
+    : <Image src={imgUrl(src)} alt={alt} fill sizes={sizes} priority={priority} quality={calidad} className={className} />;
 }
 
 export function Migas({ product }: { product: Product }) {

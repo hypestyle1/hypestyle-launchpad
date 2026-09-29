@@ -66,7 +66,16 @@ export function filtrarPorModelo(slug: string, imagenes: string[], modelo: Model
   return [...propias, ...neutras];
 }
 
-const FOTOS: Record<string, { mockups: string[]; tablas: string[] }> = fichaFotos;
+const FOTOS: Record<string, { mockups: string[]; tablas: string[]; cuadrada?: boolean }> = fichaFotos;
+
+/**
+ * ¿La imagen que abre la ficha es cuadrada? En mobile el marco la sigue: una
+ * foto cuadrada en un marco vertical se amplía y se recorta a los costados.
+ * Un producto sin clasificar se trata como cuadrado, que es lo más común.
+ */
+export function abreCuadrada(slug: string): boolean {
+  return FOTOS[slug]?.cuadrada ?? true;
+}
 
 const archivo = (url: string) => {
   const ultimo = url.split('/').pop()?.split('?')[0] ?? '';

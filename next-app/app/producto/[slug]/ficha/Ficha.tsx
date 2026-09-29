@@ -2,8 +2,7 @@
 
 import Image from 'next/image';
 import { useLocale } from '@/context/LocaleContext';
-import { composicion, esMockup, resumen } from '@/lib/ficha';
-import { GIFT_CARD_SLUG } from '@/lib/gift-card';
+import { abreCuadrada, composicion, esMockup, resumen } from '@/lib/ficha';
 import {
   type FichaProps, Foto, Migas, Precio, Descuento, TablaPagos, SelectorColor, SelectorTalle,
   LineaDespacho, LineaResenas, BotonComprar, Promesas, CuandoLlega, Desplegable,
@@ -27,9 +26,6 @@ export default function Ficha(p: FichaProps) {
   // Sin un párrafo que sirva de resumen, "Detalles" muestra la descripción entera.
   const intro = resumen(p.descripcion);
   const tieneMedidas = !!(product.measurementsTable || product.measurements);
-  // La gift card es un código que llega por mail: no se envía, no se cambia y
-  // no se lava. Todo lo que habla de un paquete queda afuera.
-  const digital = product.slug === GIFT_CARD_SLUG;
   const actual = galleryImages[selectedImage];
   // La destacada de Woo es un mockup cuadrado sobre fondo transparente: en la
   // columna vertical se muestra entero en vez de recortarlo.
@@ -55,25 +51,21 @@ export default function Ficha(p: FichaProps) {
                 {tela && <p className="text-foreground font-medium">{t('Composición')}: {tela}.</p>}
               </Desplegable>
               {tieneMedidas && <Desplegable titulo={t('Medidas de la prenda')} abierto><TablaMedidas product={product} /></Desplegable>}
-              {!digital && (
-                <>
-                  <Desplegable titulo={t('Envíos')}><TextoEnvios p={p} /></Desplegable>
-                  <Desplegable titulo={t('Cambios y devoluciones')} abierto={!tieneMedidas}><TextoCambios /></Desplegable>
-                  <Desplegable titulo={t('Guía de cuidado de ropa')}>
-                    <ul className="flex flex-col gap-1">
-                      {product.careItems.map((item, i) => <li key={item.icon + '-' + i}>{t(item.text)}</li>)}
-                    </ul>
-                    {product.careNote && <p className="text-[12px] text-foreground/55">{t(product.careNote)}</p>}
-                  </Desplegable>
-                </>
-              )}
+              <Desplegable titulo={t('Envíos')}><TextoEnvios p={p} /></Desplegable>
+              <Desplegable titulo={t('Cambios y devoluciones')} abierto={!tieneMedidas}><TextoCambios /></Desplegable>
+              <Desplegable titulo={t('Guía de cuidado de ropa')}>
+                <ul className="flex flex-col gap-1">
+                  {product.careItems.map((item, i) => <li key={item.icon + '-' + i}>{t(item.text)}</li>)}
+                </ul>
+                {product.careNote && <p className="text-[12px] text-foreground/55">{t(product.careNote)}</p>}
+              </Desplegable>
               {intro && <Desplegable titulo={t('Descripción')}><p className="whitespace-pre-line">{p.descripcion}</p></Desplegable>}
             </div>
           </div>
         </div>
 
         {/* Centro: la foto */}
-        <div className={`group order-1 lg:order-none lg:sticky lg:top-[var(--offset)] ${alto} relative aspect-[4/5] lg:aspect-auto bg-bg-alt overflow-hidden cursor-zoom-in`}
+        <div className={`group order-1 lg:order-none lg:sticky lg:top-[var(--offset)] ${alto} relative ${abreCuadrada(product.slug) ? 'aspect-square' : 'aspect-[4/5]'} lg:aspect-auto bg-bg-alt overflow-hidden cursor-zoom-in`}
           onClick={p.onOpenGallery}
           onTouchStart={e => { (e.currentTarget as HTMLElement).dataset.x = String(e.touches[0].clientX); }}
           onTouchEnd={e => {
@@ -82,8 +74,11 @@ export default function Ficha(p: FichaProps) {
             if (Math.abs(delta) < 40) return;
             p.onSelectImage(Math.max(0, Math.min(galleryImages.length - 1, selectedImage + (delta > 0 ? 1 : -1))));
           }}>
-          <Foto key={actual} src={actual} alt={product.name} priority
-            sizes="(max-width: 1024px) 100vw, 40vw"
+          {/* La columna mide 40vw pero la foto la cubre a lo alto, así que se
+              dibuja más ancha que la columna: con 40vw se pedía una versión
+              chica y se ampliaba. */}
+          <Foto key={actual} src={actual} alt={product.name} priority calidad={90}
+            sizes="(max-width: 1024px) 100vw, 60vw"
             className={entera ? 'object-contain' : 'object-cover object-top'} />
 
           <div onClick={e => e.stopPropagation()}
@@ -139,18 +134,16 @@ export default function Ficha(p: FichaProps) {
 
             <TablaPagos p={p} />
             <SelectorColor p={p} />
-            {!digital && (
-              <div className="flex flex-col gap-3">
-                <SelectorTalle p={p} />
-                {p.modelInfo && <div className="bg-bg-alt rounded-[10px] px-4 py-3">{p.modelInfo}</div>}
-              </div>
-            )}
+            <div className="flex flex-col gap-3">
+              <SelectorTalle p={p} />
+              {p.modelInfo && <div className="bg-bg-alt rounded-[10px] px-4 py-3">{p.modelInfo}</div>}
+            </div>
             <div className="flex flex-col gap-2.5">
-              {!digital && <LineaDespacho />}
+              <LineaDespacho />
               <BotonComprar p={p} />
             </div>
-            {!digital && <CuandoLlega p={p} />}
-            {!digital && <Promesas p={p} />}
+            <CuandoLlega p={p} />
+            <Promesas p={p} />
           </div>
         </div>
       </div>
