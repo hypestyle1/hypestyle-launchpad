@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useLocale } from '@/context/LocaleContext';
-import { composicion, esMockup, resumen } from '@/lib/ficha';
+import { abreCuadrada, composicion, esMockup, resumen } from '@/lib/ficha';
 import { GIFT_CARD_SLUG } from '@/lib/gift-card';
 import {
   type FichaProps, Foto, Migas, Precio, Descuento, TablaPagos, SelectorColor, SelectorTalle,
@@ -73,7 +73,7 @@ export default function Ficha(p: FichaProps) {
         </div>
 
         {/* Centro: la foto */}
-        <div className={`group order-1 lg:order-none lg:sticky lg:top-[var(--offset)] ${alto} relative aspect-[4/5] lg:aspect-auto bg-bg-alt overflow-hidden cursor-zoom-in`}
+        <div className={`group order-1 lg:order-none lg:sticky lg:top-[var(--offset)] ${alto} relative ${abreCuadrada(product.slug) ? 'aspect-square' : 'aspect-[4/5]'} lg:aspect-auto bg-bg-alt overflow-hidden cursor-zoom-in`}
           onClick={p.onOpenGallery}
           onTouchStart={e => { (e.currentTarget as HTMLElement).dataset.x = String(e.touches[0].clientX); }}
           onTouchEnd={e => {
@@ -82,8 +82,11 @@ export default function Ficha(p: FichaProps) {
             if (Math.abs(delta) < 40) return;
             p.onSelectImage(Math.max(0, Math.min(galleryImages.length - 1, selectedImage + (delta > 0 ? 1 : -1))));
           }}>
-          <Foto key={actual} src={actual} alt={product.name} priority
-            sizes="(max-width: 1024px) 100vw, 40vw"
+          {/* La columna mide 40vw pero la foto la cubre a lo alto, así que se
+              dibuja más ancha que la columna: con 40vw se pedía una versión
+              chica y se ampliaba. */}
+          <Foto key={actual} src={actual} alt={product.name} priority calidad={90}
+            sizes="(max-width: 1024px) 100vw, 60vw"
             className={entera ? 'object-contain' : 'object-cover object-top'} />
 
           <div onClick={e => e.stopPropagation()}

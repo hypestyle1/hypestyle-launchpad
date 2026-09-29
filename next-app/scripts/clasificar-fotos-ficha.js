@@ -1,7 +1,8 @@
 // Clasifica las imágenes de cada producto en foto, mockup o tabla de talles,
 // y escribe lib/ficha-fotos.json. La ficha de producto usa ese archivo para
 // ordenar la galería: primero las fotos con persona, después los mockups (el
-// del frente adelante) y al final la tabla de talles.
+// del frente adelante) y al final la tabla de talles. También anota si la
+// imagen que abre la ficha es cuadrada, para elegir el marco en mobile.
 //
 // WooCommerce no guarda qué es cada imagen, así que se mira la imagen:
 //   - borde transparente                          → mockup
@@ -75,7 +76,7 @@ async function clasificar(buf) {
   for (const filtro of ['', ', where: { visibility: HIDDEN }']) {
   let cursor = null;
   do {
-    const query = `query($after: String) { products(first: 100, after: $after${filtro}) { pageInfo { hasNextPage endCursor } nodes { slug image { sourceUrl chica: sourceUrl(size: MEDIUM) } ... on Product { galleryImages(first: 40) { nodes { sourceUrl chica: sourceUrl(size: MEDIUM) } } } } } }`;
+    const query = `query($after: String) { products(first: 100, after: $after${filtro}) { pageInfo { hasNextPage endCursor } nodes { slug image { sourceUrl chica: sourceUrl(size: MEDIUM) mediaDetails { width height } } ... on Product { galleryImages(first: 40) { nodes { sourceUrl chica: sourceUrl(size: MEDIUM) mediaDetails { width height } } } } } } }`;
     const res = await fetch(GRAPHQL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, variables: { after: cursor } }) });
     const json = await res.json();
     if (!json.data) throw new Error('GraphQL: ' + JSON.stringify(json.errors).slice(0, 300));
@@ -92,6 +93,7 @@ async function clasificar(buf) {
     for (const g of p.galleryImages?.nodes ?? []) if (!imagenes.some((i) => i.sourceUrl === g.sourceUrl)) imagenes.push(g);
 
     const mockups = [], tablas = [];
+    let primeraFoto = null;
     for (const [i, im] of imagenes.entries()) {
       if (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(im.sourceUrl)) continue;
       let tipo = CORRECCIONES[p.slug]?.[i];
@@ -104,8 +106,13 @@ async function clasificar(buf) {
       cuenta[tipo]++;
       if (tipo === 'mockup') mockups.push(nombre(im.sourceUrl));
       if (tipo === 'tabla') tablas.push(nombre(im.sourceUrl));
+      if (tipo === 'foto' && !primeraFoto) primeraFoto = im;
     }
-    salida[p.slug] = { mockups, tablas };
+    // La imagen que abre la ficha: la primera foto o, si no hay, la destacada.
+    // En mobile el marco es cuadrado cuando esa imagen lo es, para no ampliarla.
+    const abre = (primeraFoto ?? imagenes[0])?.mediaDetails;
+    const cuadrada = !abre?.width || !abre?.height || abre.width / abre.height >= 0.9;
+    salida[p.slug] = { mockups, tablas, cuadrada };
     process.stdout.write('.');
   }
 

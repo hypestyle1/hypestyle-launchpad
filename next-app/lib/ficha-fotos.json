@@ -4,7 +4,8 @@
       "beanie-camo-destacada-v2.png",
       "generated-image-april-27-2026-1_51pm-270afbb9f01fd3b21a17773217806483-1024-1024.jpg"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "camo-full-set-combo": {
     "mockups": [
@@ -16,28 +17,32 @@
     "tablas": [
       "camo-full-set-combo-9.jpg",
       "camo-full-set-combo-10.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "crewneck-hyped-up-black": {
     "mockups": [
       "crewneck-hyped-up-black-destacada-v2.png",
       "mockup-crewneck-hypedup-back-74cd357d1289c6654e17434492139341-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "crewneck-hyped-up-grey": {
     "mockups": [
       "mockup-hyped-up-1-6d8ae45c4e6a3a25c917566770897901-1024-1024.png",
       "mockup-hyped-up-back-1-fb50fac57846ae0c2a17566771105718-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "deer-sleveless-brown": {
     "mockups": [
       "deer-sleveless-brown-destacada-v2.png",
       "9a91a55c-801e-4115-b6ce-116af41f0fa6-dc7a4107adf7607ef917367001276783-1024-1024.jpeg"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "eye-sleveless-wheat": {
     "mockups": [
@@ -45,21 +50,24 @@
     ],
     "tablas": [
       "465605f2-d8f7-4932-b1ea-162d6c56a000-e0f8ebd20164cb459117367000786541-1024-1024.jpeg"
-    ]
+    ],
+    "cuadrada": true
   },
   "faith-over-everything-camo-hoodie": {
     "mockups": [
       "faith-over-everithing-frontheraldic-mar-3.png",
       "faith-over-everithing-backheraldic-mar-1.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "find-jesus-longsleeve-black": {
     "mockups": [
       "FIND-JESUS-FRONT-HD.png",
       "FIND-JESUS-BACK-HD.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "fleece-jacket-v1-negrogris": {
     "mockups": [
@@ -68,7 +76,8 @@
     ],
     "tablas": [
       "talle-jacket-1-3127dff7a33220a58d17567609281425-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "floral-silver-cross-longsleeve-black": {
     "mockups": [
@@ -77,48 +86,55 @@
     ],
     "tablas": [
       "talle-long-a7efaa0b85c1b6e9e417606619202334-1024-1024-9cc4b6e381019a1a9a17637697236520-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "gift-card": {
     "mockups": [
       "gift-card-hype.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "half-zip-polo-black": {
     "mockups": [
       "MOCKUPS-HALF-ZIP-1.png",
       "MOCKUPS-HALF-ZIP-3.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "half-zip-polo-melange": {
     "mockups": [
       "MOCKUPS-HALF-ZIP-2-1.png",
       "MOCKUPS-HALF-ZIP-5-1.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "half-zip-polo-navy": {
     "mockups": [
       "MOCKUPS-HALF-ZIP-6-2.png",
       "MOCKUPS-HALF-ZIP-4-1.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "he-die-so-i-could-live-hoodie": {
     "mockups": [
       "he-die-so-i-could-live-hoodie-destacada-v2.png",
       "HE-DIE-SO-I-COULD-LIVE-gris-back.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "he-died-so-i-could-live-melange-hoodie": {
     "mockups": [
       "he-died-so-i-could-live-melange-hoodie-destacada-v2.png",
       "HOODIE-GREY-1.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "honda-black-tee": {
     "mockups": [
@@ -126,27 +142,31 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-65af4c6b51d277430a17683315145866-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "honda-white-tee": {
     "mockups": [
       "honda-white-tee-destacada-v2.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "hoodie-black-hstars": {
     "mockups": [
       "hoodie-black-hstars-destacada-v2.png",
       "buzo-CHRIST-REINGS-black-1.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "hoodie-grey-hstars": {
     "mockups": [
       "HOODIE-GREY-2.png",
       "HOODIE-GREY-1-1.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "hoodie-pink": {
     "mockups": [
@@ -156,14 +176,16 @@
     ],
     "tablas": [
       "hoodie-jpg-743f49498ebdffdad217766373708324-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": false
   },
   "hoodie-shield-olive": {
     "mockups": [
       "hoodie-shield-olive-a6cf722077872c89f717468499595077-1024-1024.png",
       "hoodie-shield-olive-back-b78d05a5230eadf42c17468495420241-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "hoodie-stay-hustle": {
     "mockups": [
@@ -172,20 +194,23 @@
     ],
     "tablas": [
       "hoodie-4f4c1c88d8925bfcab17703156461772-1024-1024-1.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "hs-co-green-hoodie": {
     "mockups": [
       "hs-Co-melange-y-verde-esmeralda-2.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "hs-co-grey-hoodie": {
     "mockups": [
       "hs-Co-Gris.png",
       "hs-Co-Gris-back.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "hs-ring-silver-925": {
     "mockups": [
@@ -195,7 +220,8 @@
       "458bd91f-600d-46a5-ba4d-c4086a3b4572-fd53bf4be2e833594317427665237470-1024-1024.png",
       "guiadetalles-288747f1d940a1d47417425230257502-1024-1024.jpg"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "hypestation-black-tee": {
     "mockups": [
@@ -204,7 +230,8 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-2ab552415d32951d6b17679145865335-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "hypestation-white-tee": {
     "mockups": [
@@ -213,21 +240,24 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-f5a5d41bd4f3f2db3317679145471078-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "jersey-fileteado-x-alfredo-genovese": {
     "mockups": [
       "mockup-fileteado-nuevo-front.png",
       "mockup-fileteado-nuevo-back.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "jesus-heart-tee": {
     "mockups": [
       "jesus-heart-tee-destacada-v2.png",
       "REME-JESUS-BACK.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "jort-cargo-realtree-beige": {
     "mockups": [
@@ -236,7 +266,8 @@
     ],
     "tablas": [
       "jort-talles-9ae3e34b7cf0504d6617680822886234-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "jort-cargo-realtree-pink": {
     "mockups": [
@@ -245,19 +276,22 @@
     ],
     "tablas": [
       "jort-talles-6f28451628f6dffacd17680822919620-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "knitted-tshirt-sand": {
     "mockups": [
       "knitted-tshirt-f0e48a48480341e0f717497410226555-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "la-nuestra-jersey-mundial-26": {
     "mockups": [
       "la-nuestra-jersey-mockup-cuadrado.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "ladytribal-black-longsleeve": {
     "mockups": [
@@ -266,21 +300,24 @@
     ],
     "tablas": [
       "04-a72269cec0cef8ec4b17599675874212-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "lamb-of-god-pink-tee": {
     "mockups": [
       "LAMB-OF-GOD-PINK-TEE-2.png",
       "LAMB-OF-GOD-PINK-back-tee.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "lettering-black-longsleeve": {
     "mockups": [
       "LETTERING-LONGSLEEVE-FRONT.png",
       "LETTERING-LONGSLEEVE-BACK.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "lettering-graphite-hoodie": {
     "mockups": [
@@ -289,7 +326,8 @@
     ],
     "tablas": [
       "hoodie-6ee7f834733a3d53f217703156212387-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "lettering-graphite-jort": {
     "mockups": [
@@ -298,7 +336,8 @@
     ],
     "tablas": [
       "talle-jort-1-950adc3a80c77c2cc917618572182474-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "lettering-melange-jort": {
     "mockups": [
@@ -307,7 +346,8 @@
     ],
     "tablas": [
       "talles-jort-1bf83f7d29c7401c9e17704903182488-1024-1024.png"
-    ]
+    ],
+    "cuadrada": true
   },
   "lettering-pink-jort": {
     "mockups": [
@@ -316,35 +356,40 @@
     ],
     "tablas": [
       "talles-jort-26ec8001187217be9817704991052401-1024-1024.png"
-    ]
+    ],
+    "cuadrada": true
   },
   "lion-of-judah-stone-wash-hoodie": {
     "mockups": [
       "heraldic-marbetteheraldic-mar-1.png",
       "heraldic-marbetteheraldic-back.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "longsleeve-waffle-god-gave-me-style": {
     "mockups": [
       "LONGSLEEVE-WAFFLE-GOD-GAVE-ME-STYLE-BACK-1.png",
       "LONGSLEEVE-WAFFLE-GOD-GAVE-ME-STYLE-FRONT.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "longsleeve-waffle-horses": {
     "mockups": [
       "LONGSLEEVE-HORSE-FRONT-v2.png",
       "LONGSLEEVE-HORSE-BACK-v2.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "mesh-camo-blue-tee": {
     "mockups": [
       "mesh-corregidos-hsmesa-de-trabajo-1-copia-2-39be235813ac4d3cfc17648639164974-1024-1024.png",
       "mesh-corregidos-hsmesa-de-trabajo-1-copia-7-75671349d88a29ac9717648639158867-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "mesh-camo-grey-tee": {
     "mockups": [
@@ -353,7 +398,8 @@
     ],
     "tablas": [
       "tablamesh-1-b05ffe850d589c639617638488260528-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "mesh-realtree-pink-tee": {
     "mockups": [
@@ -362,7 +408,8 @@
     ],
     "tablas": [
       "tablamesh-1-09139e051c29675e7617638488464992-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "mesh-realtree-tee": {
     "mockups": [
@@ -371,21 +418,24 @@
     ],
     "tablas": [
       "tablamesh-1-0905d67250c62877db17638488391821-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "napoli-tee-azul": {
     "mockups": [
       "napoli-tee-azul-back.png",
       "napoli-tee-azul-frente.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "napoli-tee-blanca": {
     "mockups": [
       "napoli-tee-blanca-frente-shadow.png",
       "napoli-tee-blanca-back-shadow.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "no-love-only-style-tops": {
     "mockups": [
@@ -396,7 +446,8 @@
     ],
     "tablas": [
       "tank-top-jpg-f08215306db91222a417707585926523-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "no-service-for-the-faithless-black": {
     "mockups": [
@@ -405,7 +456,8 @@
     ],
     "tablas": [
       "oversize-fe6fc9602a08b068f617714307513121-1024-1024-83c2c302a438cbe9fe17739414294619-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": false
   },
   "no-service-for-the-faithless-green": {
     "mockups": [
@@ -414,7 +466,8 @@
     ],
     "tablas": [
       "oversize-fe6fc9602a08b068f617714307513121-1024-1024-83c2c302a438cbe9fe17739414294619-1024-1024-2.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "no-service-for-the-faithless-grey": {
     "mockups": [
@@ -423,7 +476,8 @@
     ],
     "tablas": [
       "oversize-fe6fc9602a08b068f617714307513121-1024-1024-83c2c302a438cbe9fe17739414294619-1024-1024-1.webp"
-    ]
+    ],
+    "cuadrada": false
   },
   "no-service-for-the-faithless-hoodie": {
     "mockups": [
@@ -432,7 +486,8 @@
     ],
     "tablas": [
       "hoodie-1d5e384a98c0121e7117737767487844-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "no-service-for-the-faithless-white": {
     "mockups": [
@@ -441,21 +496,24 @@
     ],
     "tablas": [
       "oversize-fe6fc9602a08b068f617714307513121-1024-1024-83c2c302a438cbe9fe17739414294619-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "only-god-can-judge-me-blanca": {
     "mockups": [
       "MOCKUP-NEGRO.png",
       "WHITE.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "only-god-can-judge-me-negra": {
     "mockups": [
       "MOCKUP-BLANCO.png",
       "BACK_.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "pack-x3-medias-hype": {
     "mockups": [
@@ -464,20 +522,23 @@
       "MEDIAS-HYPESTYLE-GRIS-scaled.png",
       "MEDIAS-HYPESTYLE-NEGRO-scaled.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "pack-x3-medias-hype-white": {
     "mockups": [
       "pack-x3-medias-hype-white.jpg",
       "medias-hype-white-par.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "par-de-medias-hype": {
     "mockups": [
       "MEDIAS-HYPESTYLE-NEGRO-scaled.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "per-aspera-ad-astra-black-tee": {
     "mockups": [
@@ -486,7 +547,8 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-e17ac2e85b2861a9c717679048975487-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "per-aspera-ad-astra-white-tee": {
     "mockups": [
@@ -495,7 +557,8 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-5aba1aee18dfdf828b17679048826463-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "per-aspera-ad-astra-zippo": {
     "mockups": [
@@ -506,7 +569,8 @@
       "zippo-stills_renders-ziippo3-open-0512aaf2ace38e94f217691053132520-1024-1024.png",
       "zippo-stills_renders-ziippo4-804e0abe59b2a7db3e17691053122783-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "race-tee": {
     "mockups": [
@@ -515,7 +579,8 @@
     ],
     "tablas": [
       "oversize-fe6fc9602a08b068f617714307513121-1024-1024-c126b0e8d478798c3117737900816219-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "race-tee-gris": {
     "mockups": [
@@ -524,14 +589,16 @@
     ],
     "tablas": [
       "oversize-fe6fc9602a08b068f617714307513121-1024-1024-c126b0e8d478798c3117737900816219-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": false
   },
   "raglan-tee-tribal-cross": {
     "mockups": [
       "raglan-tee-tribal-cross-destacada-v2.png",
       "02-7d7b38707131edeca617579527501272-1024-1024.jpg"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "regular-tee-11-x-art-by-randal": {
     "mockups": [
@@ -540,7 +607,8 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-8591728ff6cea7dda417719616706507-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tee-black": {
     "mockups": [
@@ -549,7 +617,8 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tee-melange": {
     "mockups": [
@@ -558,14 +627,16 @@
     ],
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-421549c6238a60305317644451616567-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tee-navy": {
     "mockups": [
       "remera-regular-navy-frente.png",
       "remera-regular-navy-espalda.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "regular-tee-white": {
     "mockups": [
@@ -574,7 +645,8 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tees-3-pack-black": {
     "mockups": [
@@ -582,7 +654,8 @@
     ],
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-68b71b834bd3bfdf7e17644447449439-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tees-3-pack-black-melange-navy": {
     "mockups": [
@@ -590,7 +663,8 @@
     ],
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-c63e4f60282d4071a317644447360723-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tees-3-pack-black-navy-white": {
     "mockups": [
@@ -598,7 +672,8 @@
     ],
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-c63e4f60282d4071a317644447360723-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tees-3-pack-black-white-melange": {
     "mockups": [
@@ -609,7 +684,8 @@
     ],
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-c63e4f60282d4071a317644447360723-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tees-3-pack-grey": {
     "mockups": [
@@ -618,7 +694,8 @@
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-ecf5e4e8b295bbe13317644450271787-1024-1024.webp",
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-c63e4f60282d4071a317644447360723-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tees-3-pack-melange-navy-white": {
     "mockups": [
@@ -626,7 +703,8 @@
     ],
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-c63e4f60282d4071a317644447360723-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tees-3-pack-navy": {
     "mockups": [
@@ -636,7 +714,8 @@
     ],
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-c63e4f60282d4071a317644447360723-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "regular-tees-3-pack-white": {
     "mockups": [
@@ -644,14 +723,16 @@
     ],
     "tablas": [
       "regular-talle-post-eb2cea0f212b42f0fc17626596241199-1024-1024-f9f5410401514f5e6b17644447397994-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "rodeo-star-taupe-tee-v2": {
     "mockups": [
       "rodeo-star-taupe-tee-v2-destacada-v2.png",
       "rodeo-star-2-0d137fa2c2bd2c2a6c17495659394311-1024-1024.jpg"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "skyline-tee": {
     "mockups": [
@@ -660,7 +741,8 @@
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-5970909126b8e3f0fc17679160840823-1024-1024.webp"
-    ]
+    ],
+    "cuadrada": true
   },
   "sleeveless-ranglan": {
     "mockups": [
@@ -674,14 +756,16 @@
       "ranglan-493fc3a14189601e5a17705788779076-1024-1024.jpg",
       "ranglan-1484c64ca4229e3b0517705788623609-1024-1024.jpg",
       "ranglan-13d6eead76dd92cfb417705788557134-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "sleeveless-ranglan-black": {
     "mockups": [
       "mesa-de-trabajo-9-3d92443419f72ce77417724912112541-1024-1024.png",
       "mesa-de-trabajo-9-copia-74afedb9a4b66bef4217724912117368-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "sleeveless-ranglan-grey": {
     "mockups": [
@@ -690,7 +774,8 @@
     ],
     "tablas": [
       "ranglan-1484c64ca4229e3b0517705788623609-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "sleeveless-ranglan-militar-green": {
     "mockups": [
@@ -699,7 +784,8 @@
     ],
     "tablas": [
       "ranglan-13d6eead76dd92cfb417705788557134-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "sleeveless-ranglan-white": {
     "mockups": [
@@ -708,28 +794,32 @@
     ],
     "tablas": [
       "ranglan-493fc3a14189601e5a17705788779076-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "stars-for-venezuela-hoodie": {
     "mockups": [
       "front.png",
       "back.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "sweater-distressed-hs-co": {
     "mockups": [
       "buzo-Recuperado.png",
       "buzo-Recuperado-1.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "sweatpant-black-hstars": {
     "mockups": [
       "buzo-Recuperado-Recuperado.png",
       "ChatGPT-Image-28-jul-2026-17_16_35.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "sweatpant-camo": {
     "mockups": [
@@ -739,14 +829,16 @@
     ],
     "tablas": [
       "pant-0e6adf54e96821ebc417754189964661-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": false
   },
   "sweatpant-grey-hstars": {
     "mockups": [
       "PANT.png",
       "PANT-BACK.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": false
   },
   "sweatpant-pink": {
     "mockups": [
@@ -756,7 +848,8 @@
     ],
     "tablas": [
       "pant-jpg-7f4bce841358fc9c7817766376541569-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "sweatpants-bombe-bordo": {
     "mockups": [
@@ -765,7 +858,8 @@
     ],
     "tablas": [
       "talles-1-f275b73900a324466a17567625184085-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "tanktops": {
     "mockups": [
@@ -780,7 +874,8 @@
       "espalda-blanco-45c367b84d5e2599e717329155157598-1024-1024.png",
       "espalda-rojo-439d71d7a88c686e1717329155147276-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "trucker-cap-11-x-art-by-randal": {
     "mockups": [
@@ -788,7 +883,8 @@
       "hype-x-randal-2-f561ac35a0c5f6f43617719619557247-1024-1024.png",
       "hype-x-randal-3-d33663029f7a437a4b17719619574014-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "trucker-cap-baby-come-back": {
     "mockups": [
@@ -796,7 +892,8 @@
       "hat-17e5a19f251fcf062517708518894123-1024-1024.png",
       "hat-1-d40f276d13874d308a17708518890808-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "trucker-cap-no-faith-no-glory": {
     "mockups": [
@@ -804,7 +901,8 @@
       "mesa-de-trabajo-2-67c7321b031572c15617658384904208-1024-1024.png",
       "mesa-de-trabajo-3-3780715e80e06d81e617658384929265-1024-1024.png"
     ],
-    "tablas": []
+    "tablas": [],
+    "cuadrada": true
   },
   "waffle-crest-sleeveless-earth-brown": {
     "mockups": [
@@ -813,7 +911,8 @@
     ],
     "tablas": [
       "ranglan-e5bba3a0f81e1e45f117705789403927-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "waffle-crest-sleeveless-pearl-grey": {
     "mockups": [
@@ -822,7 +921,8 @@
     ],
     "tablas": [
       "ranglan-6806659f9a653ee58d17705788961949-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "zip-hoodie-camo": {
     "mockups": [
@@ -832,7 +932,8 @@
     ],
     "tablas": [
       "zip-2e1db8e7e5c9c3c80817754190070398-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   },
   "zip-hoodie-pink": {
     "mockups": [
@@ -841,6 +942,7 @@
     ],
     "tablas": [
       "zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg"
-    ]
+    ],
+    "cuadrada": true
   }
 }
