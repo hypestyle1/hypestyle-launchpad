@@ -28,7 +28,7 @@ vi.mock('@/lib/mayorista-stock', async (importOriginal) => {
   return {
     ...real,
     wcAuth: () => 'Basic test',
-    wcGet: vi.fn(async (path: string) => { if (path.startsWith('customers/19')) return { email: 'mask@test.com', meta_data: [] }; throw new Error('wcGet inesperado: ' + path); }),
+    wcGet: vi.fn(async (path: string) => { if (path.startsWith('customers/19')) return { email: 'mask@test.com', meta_data: [] }; if (path.startsWith('orders?')) return []; throw new Error('wcGet inesperado: ' + path); }),
     resolveProducts: vi.fn(async (slugs: string[]) => new Map(slugs.map(s => [s, catalog.get(s) ?? null]))),
   };
 });

@@ -12,6 +12,12 @@ import { METODOS_ENVIO, METODO_DEFAULT, metodoDef, validarEnvio, type MetodoEnvi
 import MayoristaMinBar from './MayoristaMinBar';
 import { completarMinimo } from '@/lib/mayorista-completar-minimo';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
+import { agoLabel, type RecentOrder } from '@/lib/mayorista-recent-order';
+
+// Cuánto se espera a que aparezca la orden cuando el envío falló sin respuesta
+// clara: Woo tardó ~57 s en crear una de 42 líneas.
+const VERIFY_ATTEMPTS = 8;
+const VERIFY_INTERVAL_MS = 8000;
 
 // Precio normal y campaña por línea, según lo que devolvió el servidor
 // (/api/mayorista/disponibilidad). El carrito guarda solo el precio vigente.
@@ -148,6 +154,13 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   // 409 PRICE_CHANGED de /api/mayorista/pedido: precios vigentes + total nuevo,
   // a la espera de que el cliente confirme.
   const [priceChange, setPriceChange] = useState<{ changes: PriceChange[]; total: number } | null>(null);
+  // Pedido de hace minutos del mismo cliente: llega como 409 RECENT_ORDER al
+  // confirmar, o al abrir el carrito. El 28/09 un pedido entró dos veces porque
+  // el primer envío dio error (la orden se había creado igual) y el carrito
+  // seguía cargado al recargar la página.
+  const [recentOrder, setRecentOrder] = useState<{ order: RecentOrder; confirmPrices: boolean } | null>(null);
+  const [recentNotice, setRecentNotice] = useState<RecentOrder | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number; campaign?: { name: string; discountTotal: number } | null } | null>(null);
   const [minOrder, setMinOrder] = useState<number | null>(null);
   // Saldo a favor de la cuenta (nota de crédito): se descuenta solo del pedido.
@@ -316,6 +329,50 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
 
   const envioDef = metodoDef(shipping.envio_metodo);
 
+  async function fetchRecentOrder(): Promise<RecentOrder | null> {
+    try {
+      const res = await fetch('/api/mayorista/pedido', { cache: 'no-store' });
+      if (!res.ok) return null;
+      return ((await res.json()) as { recent: RecentOrder | null }).recent ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Al abrir el carrito con productos cargados: si hay un pedido de hace
+  // minutos, se avisa antes de que el cliente lo mande otra vez.
+  useEffect(() => {
+    if (!hydrated || items.length === 0) return;
+    fetchRecentOrder().then(setRecentNotice);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
+  // El envío falló sin respuesta clara: se busca una orden creada desde que
+  // se tocó "Confirmar". Mientras siga en `pending` Woo la está armando.
+  async function findEnteredOrder(startedAt: number): Promise<RecentOrder | null> {
+    let found: RecentOrder | null = null;
+    for (let attempt = 0; attempt < VERIFY_ATTEMPTS; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, VERIFY_INTERVAL_MS));
+      const recent = await fetchRecentOrder();
+      if (recent && recent.ageSeconds * 1000 <= Date.now() - startedAt + 30_000) {
+        found = recent;
+        if (recent.status !== 'pending') break;
+      }
+    }
+    return found;
+  }
+
+  function showConfirmed(order: { orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number; campaign?: { name: string; discountTotal: number } | null }) {
+    setPriceChange(null);
+    setRecentOrder(null);
+    setRecentNotice(null);
+    setConfirmed(order);
+    clear();
+    // El borrador ya se convirtió en pedido: se elimina para que la lista
+    // muestre solo lo que falta confirmar.
+    if (activeDraftId) deleteDraft(activeDraftId);
+  }
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     await submitOrder(false);
@@ -324,18 +381,41 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   // El servidor cobra siempre el precio vigente (50% del PVP de Woo). Si el
   // carrito traía otro, responde 409 PRICE_CHANGED con el total nuevo: se le
   // muestra al cliente y recién con su confirmación se vuelve a mandar.
-  async function submitOrder(confirmPrices: boolean) {
+  async function submitOrder(confirmPrices: boolean, confirmDuplicate = false) {
     const envioError = validarEnvio(shipping.envio_metodo, shipping.envio_destino);
     if (envioError) { setError(envioError); return; }
     setSending(true);
     setError('');
+    const startedAt = Date.now();
     try {
-      const res = await fetch('/api/mayorista/pedido', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, shipping, ...(confirmPrices ? { confirmPrices: true } : {}) }),
-      });
-      const data = await res.json();
+      let res: Response | null = null;
+      let data: any = null;
+      try {
+        res = await fetch('/api/mayorista/pedido', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, shipping, ...(confirmPrices ? { confirmPrices: true } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
+        });
+        data = await res.json();
+      } catch {
+        // Corte de red o respuesta que no es JSON (timeout del servidor).
+      }
+      // Sin respuesta clara el pedido puede haber entrado igual: se verifica
+      // antes de mostrar un error que invite a mandarlo de nuevo.
+      if (!res || !data || data.maybeCreated) {
+        setVerifying(true);
+        const entered = await findEnteredOrder(startedAt);
+        setVerifying(false);
+        if (entered) {
+          showConfirmed({ orderNumber: entered.number, items, total: entered.total, creditUsed: 0, campaign: null });
+          return;
+        }
+        throw new Error('No pudimos confirmar si tu pedido entró. Antes de enviarlo de nuevo, revisá "Mis pedidos" o escribinos.');
+      }
+      if (res.status === 409 && data.code === 'RECENT_ORDER') {
+        setRecentOrder({ order: data.order as RecentOrder, confirmPrices });
+        return;
+      }
       if (res.status === 409 && data.code === 'PRICE_CHANGED') {
         const changes = (data.changes ?? []) as PriceChange[];
         // El carrito pasa a los precios vigentes, así el total en pantalla es
@@ -346,18 +426,14 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         return;
       }
       if (!res.ok) throw new Error(data.message || 'No se pudo enviar el pedido');
-      setPriceChange(null);
       const chargedItems: MayoristaCartItem[] = Array.isArray(data.items)
         ? items.map(i => { const s = data.items.find((x: any) => lineKey(x) === lineKey(i)); return s ? { ...i, price: Number(s.price), quantity: Number(s.quantity) } : i; })
         : items;
-      setConfirmed({ orderNumber: data.wcOrderNumber, items: chargedItems, total: Number(data.total) || total, creditUsed: Number(data.creditUsed) || 0, campaign: data.campaign ?? null });
-      clear();
-      // El borrador ya se convirtió en pedido: se elimina para que la lista
-      // muestre solo lo que falta confirmar.
-      if (activeDraftId) deleteDraft(activeDraftId);
+      showConfirmed({ orderNumber: data.wcOrderNumber, items: chargedItems, total: Number(data.total) || total, creditUsed: Number(data.creditUsed) || 0, campaign: data.campaign ?? null });
     } catch (e: any) {
       setError(e.message || 'Error al enviar el pedido');
     } finally {
+      setVerifying(false);
       setSending(false);
     }
   }
@@ -585,8 +661,30 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
           </div>
         )}
 
-        <Button type="submit" variant="hype" size="ctaFull" disabled={sending || !!priceChange} className="mt-8 py-3 rounded-full">
-          {sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(toPay)}`}
+        {recentOrder && (
+          <div className="mt-6 rounded-[12px] border border-foreground p-4">
+            <p className="text-[13px] font-semibold">Ya recibimos tu pedido #{recentOrder.order.number}</p>
+            <p className="mt-2 text-[12px] text-muted-foreground">
+              Entró {agoLabel(recentOrder.order.ageSeconds)}: {recentOrder.order.units} {recentOrder.order.units === 1 ? 'unidad' : 'unidades'} por <span className="text-foreground font-medium">{formatArs(recentOrder.order.total)}</span>. Si viste un error al enviarlo, quedó registrado igual y no hace falta mandarlo de nuevo.
+            </p>
+            <Button asChild variant="hype" size="ctaFull" className="mt-4 py-3 rounded-full">
+              <Link href="/mayoristas/pedidos">Ver mis pedidos</Link>
+            </Button>
+            <button
+              type="button"
+              disabled={sending}
+              onClick={() => { const { confirmPrices } = recentOrder; setRecentOrder(null); submitOrder(confirmPrices, true); }}
+              className="mt-3 w-full text-[11px] uppercase tracking-wide text-text-light hover:text-foreground transition-colors py-2 disabled:opacity-50"
+            >
+              Es un pedido distinto: enviarlo igual
+            </button>
+          </div>
+        )}
+
+        {verifying && <p className="mt-4 text-[12px] text-muted-foreground">El envío está tardando. Estamos verificando si tu pedido entró: dejá esta página abierta.</p>}
+
+        <Button type="submit" variant="hype" size="ctaFull" disabled={sending || !!priceChange || !!recentOrder} className="mt-8 py-3 rounded-full">
+          {verifying ? 'Verificando…' : sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(toPay)}`}
         </Button>
       </form>
     );
@@ -595,6 +693,20 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   return (
     <div className="max-w-2xl mx-auto px-5 sm:px-8 py-8">
       <h1 className="text-2xl font-bold tracking-tight mb-6">Mi pedido</h1>
+
+      {recentNotice && (
+        <div className="mb-4 rounded-[12px] border border-foreground p-4 text-[12px]">
+          <p className="text-[13px] font-semibold">Ya recibimos tu pedido #{recentNotice.number}</p>
+          <p className="mt-1 text-muted-foreground">
+            Entró {agoLabel(recentNotice.ageSeconds)}: {recentNotice.units} {recentNotice.units === 1 ? 'unidad' : 'unidades'} por {formatArs(recentNotice.total)}. Lo que ves acá abajo quedó cargado en el carrito; si es el mismo pedido, no hace falta enviarlo de nuevo.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[11px] uppercase tracking-wide">
+            <Link href="/mayoristas/pedidos" className="underline">Ver mis pedidos</Link>
+            <button onClick={() => { clear(); setActiveDraftId(null); setDraftSavedAt(null); setRecentNotice(null); }} className="underline uppercase tracking-wide">Vaciar el carrito</button>
+            <button onClick={() => setRecentNotice(null)} className="text-text-light hover:text-foreground transition-colors uppercase tracking-wide">Es otro pedido</button>
+          </div>
+        </div>
+      )}
 
       {stockNotice.length > 0 && (
         <div className="mb-4 rounded-[12px] border border-orange-300 bg-orange-50 p-4 text-[12px] text-orange-800">

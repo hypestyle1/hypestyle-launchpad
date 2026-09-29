@@ -8,6 +8,11 @@ import { applyCampaign, type WholesaleCampaign } from '@/lib/wholesale-campaigns
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
+import { pickRecentOrder, recentOrdersPath, agoLabel } from '@/lib/mayorista-recent-order';
+
+// Woo puede tardar cerca de un minuto en crear una orden grande. Si la función
+// se corta antes, la orden queda creada pero el cliente ve un error.
+export const maxDuration = 300;
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
@@ -182,12 +187,26 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
   }).catch((e) => console.error('[mayorista/pedido] customer email error:', e));
 }
 
+// El último pedido del cliente si es de hace minutos. Lo consulta el carrito
+// cuando el envío falló sin respuesta clara, para saber si igual entró.
+export async function GET(req: NextRequest) {
+  const customerId = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
+  if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
+  try {
+    const recent = pickRecentOrder(await wcGet(recentOrdersPath(customerId)), Date.now());
+    return NextResponse.json({ recent }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (err) {
+    console.error('[mayorista/pedido] no se pudo leer el último pedido:', err);
+    return NextResponse.json({ message: 'No se pudo verificar el pedido' }, { status: 502 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   const customerId = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
   if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
 
   try {
-    const { items: rawItems, shipping, confirmPrices } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo; confirmPrices?: boolean };
+    const { items: rawItems, shipping, confirmPrices, confirmDuplicate } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo; confirmPrices?: boolean; confirmDuplicate?: boolean };
     if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
     }
@@ -327,6 +346,31 @@ export async function POST(req: NextRequest) {
     const credit = parseCredit(customer.meta_data);
     const creditUsed = creditToApply(credit.saldo, total);
 
+    // Pedido duplicado: si el cliente ya tiene una orden de hace minutos, lo
+    // más probable es que sea un reintento después de un error. Se le muestra
+    // esa orden y recién con `confirmDuplicate: true` se crea otra. Va lo más
+    // cerca posible de la creación para achicar la ventana entre dos envíos.
+    if (confirmDuplicate !== true) {
+      let recentOrders: any[];
+      try {
+        recentOrders = await wcGet(recentOrdersPath(customerId));
+      } catch (err) {
+        console.error('[mayorista/pedido] no se pudo verificar si hay un pedido reciente:', err);
+        return NextResponse.json({ message: 'No pudimos verificar tu pedido. Esperá unos segundos e intentá de nuevo.' }, { status: 502 });
+      }
+      const recent = pickRecentOrder(recentOrders, Date.now());
+      if (recent) {
+        return NextResponse.json(
+          {
+            code: 'RECENT_ORDER',
+            message: `Ya recibimos tu pedido #${recent.number} ${agoLabel(recent.ageSeconds)} por ${formatArs(recent.total)}. No hace falta que lo envíes de nuevo.`,
+            order: recent,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     const label = shipping.company || `${shipping.first_name} ${shipping.last_name}`.trim();
 
     const billing = {
@@ -376,7 +420,9 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const txt = await res.text();
       console.error('[mayorista/pedido] WC error:', res.status, txt);
-      return NextResponse.json({ message: `Error de WooCommerce (${res.status})` }, { status: 502 });
+      // Un 5xx de WP no garantiza que la orden no se haya creado: el carrito
+      // lo verifica antes de ofrecer el reintento.
+      return NextResponse.json({ message: `Error de WooCommerce (${res.status})`, ...(res.status >= 500 ? { maybeCreated: true } : {}) }, { status: 502 });
     }
 
     const wcOrder = await res.json() as { id: number; number: string };
@@ -414,6 +460,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('[mayorista/pedido]', err);
-    return NextResponse.json({ message: 'Error al crear el pedido. Tu pedido sigue cargado: esperá unos segundos e intentá de nuevo.' }, { status: 500 });
+    return NextResponse.json({ message: 'Error al crear el pedido. Tu pedido sigue cargado: esperá unos segundos e intentá de nuevo.', maybeCreated: true }, { status: 500 });
   }
 }
