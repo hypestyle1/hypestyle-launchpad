@@ -20,6 +20,11 @@ import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
 import { gaViewItem, gaAddToCart } from '@/lib/ga';
 import { fbViewContent, fbAddToCart } from '@/lib/fbpixel';
+import { leerVariante, modeloPrimero, tieneInterruptorModelo, filtrarPorModelo, modeloInicial, type FichaVariante, type Modelo } from '@/lib/ficha';
+import FichaA from './ficha/FichaA';
+import FichaB from './ficha/FichaB';
+import FichaC from './ficha/FichaC';
+import SelectorVariante from './ficha/SelectorVariante';
 
 function CareIcon({ type }: { type: string }) {
   const cls = 'w-[18px] h-[18px] flex-shrink-0 text-foreground/70';
@@ -203,6 +208,9 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const [isGalleryOpen, setIsGalleryOpen]   = useState(false);
   const [galleryZoom, setGalleryZoom]       = useState(1);
   const [galleryOffset, setGalleryOffset]   = useState({ x: 0, y: 0 });
+  // Variantes de la ficha en prueba (?ficha=a|b|c). null = la ficha de siempre.
+  const [variante, setVariante]             = useState<FichaVariante | null>(null);
+  const [modeloElegido, setModeloElegido]   = useState<Modelo | null>(null);
 
   const touchStartX  = useRef<number | null>(null);
   const panStartRef  = useRef<{ x: number; y: number; offX: number; offY: number } | null>(null);
@@ -210,7 +218,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const addBtnRef    = useRef<HTMLButtonElement>(null);
   const { add, setDrawerOpen } = useCart();
 
-  useEffect(() => { setMounted(true); setFlashActive(isFlashSaleActive()); }, []);
+  useEffect(() => { setMounted(true); setFlashActive(isFlashSaleActive()); setVariante(leerVariante()); }, []);
 
   // El zoom de hover (scale 2x) es solo para desktop con mouse. En táctiles el navegador
   // sintetiza un "hover" al tocar y disparaba un zoom que recortaba la foto.
@@ -226,6 +234,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       setSelectedImage(0);
       // auto-select if only one size (talle único)
       setSelectedSize(product.sizes.length === 1 ? product.sizes[0] : null);
+      setModeloElegido(null);
     }
   }, [product?.slug]);
 
@@ -276,7 +285,8 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     const observer = new IntersectionObserver(([entry]) => setShowSticky(!entry.isIntersecting), { threshold: 0 });
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+    // Cada variante monta su propio botón de compra: hay que volver a observar.
+  }, [variante]);
 
   if (isLoading && !product) return (
     <><AnnouncementBar /><Navbar />
@@ -298,7 +308,16 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     ? [...product.images, 'products/argentina-jersey/preview-sample-espalda.png', 'products/argentina-jersey/preview-sample-frente.png']
     : product.images;
   // Productos con video: el video va como primer slide de la galería.
-  const galleryImages = product.video ? [product.video, ...baseImages] : baseImages;
+  // Las variantes de la ficha no aplican a los personalizables (tienen su propio flujo).
+  const fichaVariante = product.customizable ? null : variante;
+  // A y C abren con una persona usando la prenda; la actual y B, con el mockup.
+  const abreConModelo = fichaVariante === 'a' || fichaVariante === 'c';
+  const conInterruptor = abreConModelo && tieneInterruptorModelo(product.slug, baseImages);
+  const modelo: Modelo | null = conInterruptor ? (modeloElegido ?? modeloInicial(product.slug, baseImages)) : null;
+  const imagenesOrdenadas = modelo
+    ? filtrarPorModelo(product.slug, baseImages, modelo)
+    : abreConModelo ? modeloPrimero(baseImages) : baseImages;
+  const galleryImages = product.video ? [product.video, ...imagenesOrdenadas] : imagenesOrdenadas;
   // Imagen "de portada" (no-video) para carrito y miniaturas fijas.
   const coverImage = galleryImages.find(g => !isVideo(g)) ?? galleryImages[0];
 
@@ -357,7 +376,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const transferRate  = 10;
   const transferPrice = Math.round(displayPrice * (1 - transferRate / 100));
 
-  const handleAdd = async () => {
+  const handleAdd = async (opciones?: { irAlCheckout?: boolean }) => {
     if (!selectedSize) {
       if (product.customizable) { router.push(`/personalizar/${product.slug}/`); return; }
       setSizeError(true);
@@ -380,6 +399,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       price: displayPrice,
       quantity: 1,
     });
+    if (opciones?.irAlCheckout) { router.push('/checkout/'); return; }
     setAdded(true);
   };
 
@@ -396,25 +416,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const stockLabel = selectedSize ? product.stock[selectedSize] : null;
   const isColorVariant = !!product.colorVariant;
 
-  return (
-    <>
-      <AnnouncementBar />
-      <Navbar />
-      <main className={`pt-[var(--offset)] ${isLaNuestra ? 'bg-gradient-to-b from-[#eaf5fd] via-white to-white' : isNapoli ? 'bg-gradient-to-b from-[#eaf6fd] via-white to-white' : ''}`}>
-        <div className="max-w-[1400px] mx-auto px-4 py-3">
-          <p className="text-[11px] text-muted-foreground">
-            <a href="/" className="hover:text-foreground transition-colors">{t('Inicio')}</a>
-            {' / '}
-            <a href="/productos/" className="hover:text-foreground transition-colors">Shop</a>
-            {' / '}
-            <span className="text-foreground">{product.name}</span>
-          </p>
-        </div>
-
-        <div className="max-w-[1400px] mx-auto px-4 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-
-            {/* Gallery */}
+  const galeriaClasica = (
             <div className="flex gap-3">
               <div className="hidden md:flex flex-col gap-2 w-[72px] flex-shrink-0">
                 {galleryImages.map((img, i) => (
@@ -475,6 +477,71 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                 </div>
               </div>
             </div>
+  );
+
+  const relacionados = (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
+      {related.map(p => (
+        <ProductCard key={p.slug} {...p} />
+      ))}
+    </div>
+  );
+
+  const Ficha = fichaVariante === 'a' ? FichaA : fichaVariante === 'b' ? FichaB : fichaVariante === 'c' ? FichaC : null;
+
+  return (
+    <>
+      <AnnouncementBar />
+      <Navbar />
+      <SelectorVariante actual={fichaVariante} />
+      {Ficha ? (
+        <Ficha
+          product={product}
+          galleryImages={galleryImages}
+          selectedImage={Math.min(selectedImage, galleryImages.length - 1)}
+          onSelectImage={setSelectedImage}
+          onOpenGallery={() => setIsGalleryOpen(true)}
+          galeriaClasica={galeriaClasica}
+          descripcion={traduccion.textos?.description || product.description}
+          modelInfo={product.modelInfo ? <div><ModelInfo html={traduccion.textos?.modelInfo || product.modelInfo} /></div> : undefined}
+          displayPrice={displayPrice}
+          displayOriginal={displayOriginal}
+          transferPrice={transferPrice}
+          transferRate={transferRate}
+          mounted={mounted}
+          selectedColor={selectedColor}
+          selectedSize={selectedSize}
+          onSelectSize={(s) => { setSelectedSize(s); setSizeError(false); setStockError(false); }}
+          liveOutSizes={liveOutSizes}
+          sizeError={sizeError}
+          stockError={stockError}
+          stockChecking={stockChecking}
+          onAdd={() => handleAdd()}
+          onTransfer={() => handleAdd({ irAlCheckout: true })}
+          onSizeGuide={() => setSizeGuideOpen(true)}
+          sizeGuideImage={product.sizeGuideImage || DEFAULT_SIZE_GUIDE}
+          addBtnRef={addBtnRef}
+          primaryBtnClass={primaryBtnClass}
+          modelo={modelo}
+          onModelo={(m) => { setModeloElegido(m); setSelectedImage(0); }}
+          related={relacionados}
+        />
+      ) : (
+      <main className={`pt-[var(--offset)] ${isLaNuestra ? 'bg-gradient-to-b from-[#eaf5fd] via-white to-white' : isNapoli ? 'bg-gradient-to-b from-[#eaf6fd] via-white to-white' : ''}`}>
+        <div className="max-w-[1400px] mx-auto px-4 py-3">
+          <p className="text-[11px] text-muted-foreground">
+            <a href="/" className="hover:text-foreground transition-colors">{t('Inicio')}</a>
+            {' / '}
+            <a href="/productos/" className="hover:text-foreground transition-colors">Shop</a>
+            {' / '}
+            <span className="text-foreground">{product.name}</span>
+          </p>
+        </div>
+
+        <div className="max-w-[1400px] mx-auto px-4 pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
+
+            {galeriaClasica}
 
             {/* Info */}
             <div className="flex flex-col">
@@ -634,7 +701,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
               {/* Label de texto plano: el Button anima el cambio a "Verificando
                   stock..." (entra desde abajo, el ancho se acomoda) en vez del
                   spinner. Mismo look que antes: negro, 13px, radio 10px. */}
-              <Button ref={addBtnRef} onClick={handleAdd} disabled={stockChecking}
+              <Button ref={addBtnRef} onClick={() => handleAdd()} disabled={stockChecking}
                 variant="hype" size="ctaFull"
                 className={`${primaryBtnClass} text-[13px] mb-4 rounded-[10px] disabled:cursor-not-allowed`}>
                 {stockChecking ? t('Verificando stock...') : t('Agregar al carrito')}
@@ -736,6 +803,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           </div>
         </section>
       </main>
+      )}
       <Footer />
 
       {/* Sticky mobile bar */}
@@ -745,7 +813,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           <p className="text-[12px] font-semibold truncate">{product.name}</p>
           <p className="text-[11px] text-muted-foreground">{mounted ? formatPrice(displayPrice) : '—'}{selectedSize && <span> · {t('Talle')} {selectedSize}</span>}</p>
         </div>
-        <button onClick={handleAdd} disabled={stockChecking}
+        <button onClick={() => handleAdd()} disabled={stockChecking}
           className={`flex-shrink-0 ${primaryBtnClass} text-primary-foreground px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5`}>
           {stockChecking && <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>}
           {t('Agregar')}
