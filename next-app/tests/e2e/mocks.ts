@@ -17,9 +17,11 @@ import type { Page } from '@playwright/test';
  * genere un pedido ni un cobro real.
  */
 
+// Mismos ids, labels y orden que devuelve el cotizador real: domicilio llega
+// primero y el checkout es el que pone la sucursal adelante.
 export const ANDREANI_RATES = [
-  { id: 'domicilio', label: 'Envío a domicilio', cost: 12000 },
-  { id: 'sucursal', label: 'Retiro en sucursal Andreani', cost: 8000 },
+  { id: 'andreani_pyme_estándar', label: 'Andreani (estándar)', cost: 12000 },
+  { id: 'andreani_pyme_sucursal', label: 'Andreani (sucursal)', cost: 8000 },
 ];
 
 /** Producto de prueba: precio redondo para que las cuentas se lean de un vistazo. */

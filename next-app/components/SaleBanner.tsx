@@ -18,7 +18,7 @@ import { SALE_DESCRIPTOR, SALE_MAX_OFF, SALE_NOMBRE, SALE_URGENCIA, isSaleActive
  */
 
 const BENEFICIOS = [
-  'Envío gratis desde $180.000',
+  'Envío gratis a sucursal desde $180.000',
   '10% extra por transferencia',
   '3 cuotas sin interés',
   'Regalo desde $90.000',

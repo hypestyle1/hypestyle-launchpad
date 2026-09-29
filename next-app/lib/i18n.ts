@@ -46,10 +46,10 @@ const DICT: Dict = {
 
   // — CartDrawer —
   'Carrito': { EN: 'Cart', PT: 'Carrinho', DE: 'Warenkorb', FR: 'Panier', IT: 'Carrello' },
-  '¡Conseguiste envío gratis!': { EN: 'You unlocked free shipping!', PT: 'Você ganhou frete grátis!', DE: 'Du hast kostenlosen Versand freigeschaltet!', FR: 'Tu as débloqué la livraison gratuite !', IT: 'Hai sbloccato la spedizione gratuita!' },
+  '¡Conseguiste envío gratis a sucursal!': { EN: 'You unlocked free shipping to a pickup point!', PT: 'Você ganhou frete grátis para retirada!', DE: 'Du hast kostenlosen Versand an eine Abholstelle freigeschaltet!', FR: 'Tu as débloqué la livraison gratuite en point relais !', IT: 'Hai sbloccato la spedizione gratuita al punto di ritiro!' },
   'Añadí': { EN: 'Add', PT: 'Adicione', DE: 'Füge', FR: 'Ajoute', IT: 'Aggiungi' },
   'y conseguí': { EN: 'and get', PT: 'e ganhe', DE: 'hinzu und erhalte', FR: 'et profite de la', IT: 'e ottieni la' },
-  'envío gratis': { EN: 'free shipping', PT: 'frete grátis', DE: 'kostenlosen Versand', FR: 'livraison gratuite', IT: 'spedizione gratuita' },
+  'envío gratis a sucursal': { EN: 'free shipping to a pickup point', PT: 'frete grátis para retirada', DE: 'kostenlosen Versand an eine Abholstelle', FR: 'livraison gratuite en point relais', IT: 'spedizione gratuita al punto di ritiro' },
   'Tu carrito está vacío': { EN: 'Your cart is empty', PT: 'Seu carrinho está vazio', DE: 'Dein Warenkorb ist leer', FR: 'Ton panier est vide', IT: 'Il tuo carrello è vuoto' },
   'Seguir comprando': { EN: 'Continue shopping', PT: 'Continuar comprando', DE: 'Weiter einkaufen', FR: 'Continuer mes achats', IT: 'Continua gli acquisti' },
   'o regalá una gift card': { EN: 'or give a gift card', PT: 'ou presenteie um gift card', DE: 'oder verschenke eine Gift Card', FR: 'ou offre une gift card', IT: 'o regala una gift card' },
@@ -61,12 +61,12 @@ const DICT: Dict = {
   'Eliminar': { EN: 'Remove', PT: 'Remover', DE: 'Entfernen', FR: 'Supprimer', IT: 'Rimuovi' },
   'Completa el look': { EN: 'Complete the look', PT: 'Complete o look', DE: 'Mach den Look komplett', FR: 'Complète le look', IT: 'Completa il look' },
   'Subtotal': { EN: 'Subtotal', PT: 'Subtotal', DE: 'Zwischensumme', FR: 'Sous-total', IT: 'Subtotale' },
-  'Envío gratis aplicado': { EN: 'Free shipping applied', PT: 'Frete grátis aplicado', DE: 'Kostenloser Versand angewendet', FR: 'Livraison gratuite appliquée', IT: 'Spedizione gratuita applicata' },
+  'Envío gratis a sucursal': { EN: 'Free shipping to a pickup point', PT: 'Frete grátis para retirada', DE: 'Kostenloser Versand an eine Abholstelle', FR: 'Livraison gratuite en point relais', IT: 'Spedizione gratuita al punto di ritiro' },
   'Envío calculado en el checkout': { EN: 'Shipping calculated at checkout', PT: 'Frete calculado no checkout', DE: 'Versand wird beim Checkout berechnet', FR: 'Livraison calculée au paiement', IT: 'Spedizione calcolata al checkout' },
   'Iniciar compra': { EN: 'Checkout', PT: 'Finalizar compra', DE: 'Zur Kasse', FR: 'Commander', IT: 'Vai al checkout' },
 
   // — AnnouncementBar —
-  'Envío gratis desde $180.000': { EN: 'Free shipping over $180.000', PT: 'Frete grátis a partir de $180.000', DE: 'Kostenloser Versand ab $180.000', FR: 'Livraison gratuite dès $180.000', IT: 'Spedizione gratuita da $180.000' },
+  'Envío gratis a sucursal desde $180.000': { EN: 'Argentina: free pickup-point shipping over $180.000', PT: 'Argentina: frete grátis para retirada a partir de $180.000', DE: 'Argentinien: kostenloser Versand an eine Abholstelle ab $180.000', FR: 'Argentine : livraison gratuite en point relais dès $180.000', IT: 'Argentina: spedizione gratuita al punto di ritiro da $180.000' },
   'Hasta 3 cuotas sin interés': { EN: 'Up to 3 interest-free installments', PT: 'Até 3x sem juros', DE: 'Bis zu 3 zinsfreie Raten', FR: "Jusqu'à 3 fois sans frais", IT: 'Fino a 3 rate senza interessi' },
   'Worldwide Shipping vía FedEx': { EN: 'Worldwide shipping via FedEx', PT: 'Envio mundial via FedEx', DE: 'Weltweiter Versand mit FedEx', FR: 'Livraison mondiale via FedEx', IT: 'Spedizione in tutto il mondo con FedEx' },
   '30 días para cambios y devoluciones': { EN: '30 days for exchanges & returns', PT: '30 dias para trocas e devoluções', DE: '30 Tage für Umtausch und Rückgabe', FR: '30 jours pour échanges et retours', IT: '30 giorni per cambi e resi' },

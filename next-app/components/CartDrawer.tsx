@@ -43,7 +43,7 @@ const drawerGlassStyle = {
 
 export default function CartDrawer() {
   const { items, drawerOpen, setDrawerOpen, remove, increment, decrement, total, count, add } = useCart();
-  const { formatPrice, currency, t } = useLocale();
+  const { formatPrice, currency, t, country } = useLocale();
   const router = useRouter();
   const { data: allProducts = [] } = useProducts(0);
   // Se recalcula al abrir y cuando cambia qué hay en el carrito (no la
@@ -123,7 +123,10 @@ export default function CartDrawer() {
 
   const remaining = Math.max(FREE_SHIPPING_THRESHOLD - total, 0);
   const progress = Math.min((total / FREE_SHIPPING_THRESHOLD) * 100, 100);
-  const freeShipping = remaining === 0;
+  // El envío gratis es solo para Argentina (y solo a sucursal, ver lib/envio):
+  // a quien compra desde afuera no se le promete nada.
+  const desdeAfuera = country !== null && country !== 'AR';
+  const freeShipping = !desdeAfuera && remaining === 0;
 
   const promo3x2Discount = promo3x2Active ? compute3x2Discount(purchasableItems) : 0;
   const promo3x2Faltan = promo3x2Active ? unitsToNext3x2(purchasableItems) : 0;
@@ -172,10 +175,11 @@ export default function CartDrawer() {
         </div>
 
         {/* Barra envío gratis */}
+        {!desdeAfuera && (
         <div className="hs-drawer-in px-6 pt-3 pb-2 border-b border-black/10" style={stagger(1)}>
           {freeShipping ? (
             <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
-              {t('¡Conseguiste envío gratis!')}
+              {t('¡Conseguiste envío gratis a sucursal!')}
             </p>
           ) : (
             <p className="text-[11px] text-center text-muted-foreground">
@@ -184,7 +188,7 @@ export default function CartDrawer() {
                 {formatPrice(remaining)}
               </span>{" "}
               {t('y conseguí')}{" "}
-              <span className="font-bold uppercase text-foreground">{t('envío gratis')}</span>
+              <span className="font-bold uppercase text-foreground">{t('envío gratis a sucursal')}</span>
             </p>
           )}
           <div className="mt-2 h-[3px] bg-border rounded-full overflow-hidden">
@@ -194,6 +198,7 @@ export default function CartDrawer() {
             />
           </div>
         </div>
+        )}
 
         {/* Barra regalo por compra */}
         {items.length > 0 && (
@@ -385,7 +390,7 @@ export default function CartDrawer() {
             )}
             <p className="text-[11px] text-muted-foreground">
               {freeShipping ? (
-                <span className="text-green-700 font-semibold">{t('Envío gratis aplicado')}</span>
+                <span className="text-green-700 font-semibold">{t('Envío gratis a sucursal')}</span>
               ) : (
                 t('Envío calculado en el checkout')
               )}
