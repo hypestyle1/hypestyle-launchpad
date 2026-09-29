@@ -102,7 +102,13 @@ export async function GET() {
   //
   // gift-card (3012) es la gift card: se compra desde /gift-cards con su propia
   // UI de monto, no desde una card del catálogo.
-  const SLUGS_INTERNOS = new Set(['par-de-medias-hype', 'gift-card']);
+  //
+  // sleeveless-ranglan (1046) junta los cuatro colores en un solo producto con
+  // el mockup blanco de portada. Los cuatro colores ya existen como productos
+  // propios (sleeveless-ranglan-white / -black / -grey / -militar-green), así
+  // que en la grilla la blanca salía dos veces. No se despublica en Woo: se
+  // saca de acá.
+  const SLUGS_INTERNOS = new Set(['par-de-medias-hype', 'gift-card', 'sleeveless-ranglan']);
 
   // La mayoría de los productos comparten menu_order (nunca se seteó a mano por
   // producto), así que el cursor de WPGraphQL no separa las páginas de forma
