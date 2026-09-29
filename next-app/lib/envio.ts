@@ -11,7 +11,7 @@
  * nacional, así que ni el umbral ni un cupón de envío gratis los bonifican.
  *
  * La usan el checkout (costo y selector de envío), el CartDrawer (barra de
- * progreso) y el copy de AnnouncementBar, SaleBanner y SaleHero.
+ * progreso) y el copy de AnnouncementBar.
  *
  * IMPORTANTE: el plugin de Andreani en WooCommerce tiene su propio
  * `envio_gratis_monto` (Ajustes → Envíos → Argentina → Andreani Envios) y no
@@ -22,7 +22,7 @@
  * el domicilio saldría gratis.
  *
  * El número es una decisión comercial: no se cambia sin avisar. Al cambiarlo
- * hay que actualizar el texto visible (AnnouncementBar, SaleBanner, SaleHero y
+ * hay que actualizar el texto visible (AnnouncementBar y
  * lib/i18n.ts).
  */
 export const FREE_SHIPPING_THRESHOLD = 180000;

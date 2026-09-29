@@ -4,7 +4,6 @@ import NewsletterPopup from '@/components/NewsletterPopup';
 import HeroLookbookFW26 from '@/components/HeroLookbookFW26';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
-import SaleBanner from '@/components/SaleBanner';
 import BasicosSection from '@/components/BasicosSection';
 import MasHypeSection from '@/components/MasHypeSection';
 import NewInFW26 from '@/components/NewInFW26';
@@ -77,7 +76,6 @@ export default async function Home() {
             el de cada sección individual) para que no se vea el hero de fondo en los
             huecos entre secciones (ej. NewInFW26, que no trae fondo propio). */}
         <div className="relative z-10 bg-white">
-          <SaleBanner />
           <Promo3x2Section />
           <FlashSaleSection />
           <NewInFW26 />
