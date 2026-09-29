@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { composicion, esMockup, ordenarFotos, resumen, ventanaEntrega } from '@/lib/ficha';
+import { abreCuadrada, composicion, esMockup, ordenarFotos, resumen, ventanaEntrega } from '@/lib/ficha';
 
 const wp = (archivo: string) => `https://wp.test/wp-content/uploads/2026/05/${archivo}`;
 
@@ -72,5 +72,16 @@ describe('ventanaEntrega', () => {
 
   it('nombra los dos meses cuando la ventana cruza de mes', () => {
     expect(ventanaEntrega(new Date(2026, 9, 22))).toBe('29 de octubre al 5 de noviembre');
+  });
+});
+
+describe('abreCuadrada', () => {
+  it('sigue el formato de la foto que abre la ficha', () => {
+    expect(abreCuadrada('camo-full-set-combo')).toBe(true);
+    expect(abreCuadrada('sweatpant-black-hstars')).toBe(false);
+  });
+
+  it('trata como cuadrado un producto sin clasificar', () => {
+    expect(abreCuadrada('producto-que-no-existe')).toBe(true);
   });
 });
