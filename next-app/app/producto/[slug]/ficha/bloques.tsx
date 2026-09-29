@@ -11,18 +11,15 @@ import { normalizeCpAr } from '@/lib/postal-code';
 import {
   FREE_SHIPPING_THRESHOLD, costoEnvio, modoDeTarifa, ordenarTarifas, type TarifaEnvio,
 } from '@/lib/envio';
-import { DESPACHO_HORAS_HABILES, ENTREGA_DIAS_HABILES, ventanaEntrega, type Modelo, type FichaVariante } from '@/lib/ficha';
+import { ventanaEntrega, type Modelo } from '@/lib/ficha';
 
-/** Todo lo que una variante necesita de ProductoClient, que sigue siendo dueño del estado. */
+/** Todo lo que la ficha necesita de ProductoClient, que sigue siendo dueño del estado. */
 export interface FichaProps {
-  estilo: FichaVariante;
   product: Product;
   galleryImages: string[];
   selectedImage: number;
   onSelectImage: (i: number) => void;
   onOpenGallery: () => void;
-  /** La galería de la ficha actual (tira de miniaturas + foto con zoom). */
-  galeriaClasica: ReactNode;
   descripcion: string;
   modelInfo?: ReactNode;
   displayPrice: number;
@@ -38,9 +35,7 @@ export interface FichaProps {
   stockError: boolean;
   stockChecking: boolean;
   onAdd: () => void;
-  onTransfer: () => void;
   onSizeGuide: () => void;
-  sizeGuideImage?: string;
   addBtnRef: RefObject<HTMLButtonElement>;
   primaryBtnClass: string;
   modelo: Modelo | null;
@@ -75,11 +70,11 @@ export function Migas({ product }: { product: Product }) {
   );
 }
 
-export function Precio({ p, grande = false }: { p: FichaProps; grande?: boolean }) {
+export function Precio({ p }: { p: FichaProps }) {
   const { formatPrice } = useLocale();
   return (
     <div className="flex items-baseline gap-3">
-      <span className={`${grande ? 'text-[24px]' : 'text-[20px]'} font-semibold tabular-nums`}>
+      <span className="text-[20px] font-semibold tabular-nums">
         {p.mounted ? formatPrice(p.displayPrice) : '—'}
       </span>
       {p.displayOriginal && p.mounted && (
@@ -89,25 +84,7 @@ export function Precio({ p, grande = false }: { p: FichaProps; grande?: boolean 
   );
 }
 
-/** Cuotas y transferencia en una línea, debajo del precio. */
-export function LineaPagos({ p, soloCuotas = false }: { p: FichaProps; soloCuotas?: boolean }) {
-  const { formatPrice, currency, t } = useLocale();
-  if (!p.mounted || currency !== 'ARS') return null;
-  return (
-    <p className="text-[12px] text-muted-foreground">
-      {t('3 cuotas sin interés de')} <span className="font-semibold text-foreground tabular-nums">{formatPrice(Math.round(p.displayPrice / 3))}</span>
-      {/* Cuando la ficha ya tiene el botón de transferencia, el importe no se repite acá. */}
-      {!soloCuotas && (
-        <>
-          {' · '}
-          <span className="font-semibold text-foreground tabular-nums">{formatPrice(p.transferPrice)}</span> {t('por transferencia')}
-        </>
-      )}
-    </p>
-  );
-}
-
-/** "-33%" junto al precio cuando hay precio tachado. */
+/** "−33%" junto al precio cuando hay precio tachado. */
 export function Descuento({ p }: { p: FichaProps }) {
   if (!p.mounted || !p.displayOriginal || p.displayOriginal <= p.displayPrice) return null;
   const pct = Math.round((1 - p.displayPrice / p.displayOriginal) * 100);
@@ -120,7 +97,7 @@ export function TablaPagos({ p }: { p: FichaProps }) {
   const { formatPrice, currency, t } = useLocale();
   if (!p.mounted || currency !== 'ARS') return null;
   return (
-    <div className="text-[13px]">
+    <div className="text-[13px] border-t border-border">
       <div className="flex justify-between gap-3 py-2.5 border-b border-border">
         <span>{t('Transferencia')} <span className="text-green-700 font-semibold">{p.transferRate}% off</span></span>
         <span className="font-semibold tabular-nums">{formatPrice(p.transferPrice)}</span>
@@ -156,17 +133,21 @@ export function SelectorColor({ p }: { p: FichaProps }) {
   );
 }
 
-export function SelectorTalle({ p, guia = true }: { p: FichaProps; guia?: boolean }) {
+export function SelectorTalle({ p }: { p: FichaProps }) {
   const { t } = useLocale();
   const { product, selectedSize, liveOutSizes } = p;
   const esColor = !!product.colorVariant;
   const agotados = product.sizes.filter(s => product.stock[s] === 'out' || liveOutSizes.has(s));
 
+  // Talle único (ej. accesorios): no hay variante para elegir ni guía que mostrar.
   if (product.sizes.length === 1 && !esColor) {
     return (
-      <p className="text-[12px] text-muted-foreground">
-        {t('Talle')} <span className="text-foreground font-semibold">{t('Único')}{product.sizeEquivalent ? ` · ${t('equivale a un')} ${product.sizeEquivalent}` : ''}</span>
-      </p>
+      <div className="flex flex-col gap-2.5">
+        <p className="text-[12px] text-muted-foreground">
+          {t('Talle')} <span className="text-foreground font-semibold">{t('Único')}{product.sizeEquivalent ? ` · ${t('equivale a un')} ${product.sizeEquivalent}` : ''}</span>
+        </p>
+        {agotados.length > 0 && <StockAlertForm key={product.slug} slug={product.slug} sizes={agotados} />}
+      </div>
     );
   }
 
@@ -178,11 +159,9 @@ export function SelectorTalle({ p, guia = true }: { p: FichaProps; guia?: boolea
           {t(esColor ? 'Color' : 'Talle')}
           {!esColor && product.category !== 'Accesorio' && <> · Fit <span className="text-foreground">{t(product.fit)}</span></>}
         </p>
-        {guia && (
-          <button onClick={p.onSizeGuide} className="text-[12px] underline underline-offset-[3px] text-muted-foreground hover:text-foreground transition-colors">
-            {t('Guía de talles')}
-          </button>
-        )}
+        <button onClick={p.onSizeGuide} className="text-[12px] underline underline-offset-[3px] text-muted-foreground hover:text-foreground transition-colors">
+          {t('Guía de talles')}
+        </button>
       </div>
       <div className="flex gap-2 flex-wrap">
         {product.sizes.map(s => {
@@ -212,38 +191,29 @@ export function SelectorTalle({ p, guia = true }: { p: FichaProps; guia?: boolea
   );
 }
 
-/** El plazo de despacho, pegado al botón de compra. */
+/**
+ * Cuándo sale el pedido, pegado al botón de compra.
+ * Dice lo mismo que ya promete "Envíos y devoluciones". Cuando haya un plazo
+ * de despacho confirmado en horas, va acá.
+ */
 export function LineaDespacho() {
   const { t } = useLocale();
   return (
     <p className="flex items-baseline gap-2 text-[12px] text-muted-foreground">
       <span className="w-[7px] h-[7px] rounded-full bg-green-700 flex-shrink-0 -translate-y-px" />
-      <span>{t('Despachamos dentro de las')} {DESPACHO_HORAS_HABILES} {t('h hábiles de confirmado el pago.')}</span>
+      <span>{t('Preparamos y despachamos tu pedido una vez confirmado el pago.')}</span>
     </p>
   );
 }
 
 /** Agregar al carrito con el precio adentro del botón. */
-export function BotonComprar({ p, conPrecio = true }: { p: FichaProps; conPrecio?: boolean }) {
+export function BotonComprar({ p }: { p: FichaProps }) {
   const { formatPrice, t } = useLocale();
   return (
     <button ref={p.addBtnRef} onClick={p.onAdd} disabled={p.stockChecking}
-      className={`w-full h-[54px] px-5 flex items-center ${conPrecio ? 'justify-between' : 'justify-center'} gap-3 ${p.primaryBtnClass} text-primary-foreground text-[13px] font-bold uppercase tracking-[0.1em] rounded-[10px] transition-[transform,background-color] duration-150 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed`}>
+      className={`w-full h-[54px] px-5 flex items-center justify-between gap-3 ${p.primaryBtnClass} text-primary-foreground text-[13px] font-bold uppercase tracking-[0.1em] rounded-[10px] transition-[transform,background-color] duration-150 active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60 disabled:cursor-not-allowed`}>
       <span>{p.stockChecking ? t('Verificando stock...') : t('Agregar al carrito')}</span>
-      {conPrecio && <span className="tabular-nums tracking-[0.02em]">{p.mounted ? formatPrice(p.displayPrice) : ''}</span>}
-    </button>
-  );
-}
-
-/** Segundo botón: agrega y va directo al checkout para pagar por transferencia. */
-export function BotonTransferencia({ p }: { p: FichaProps }) {
-  const { formatPrice, currency, t } = useLocale();
-  if (!p.mounted || currency !== 'ARS') return null;
-  return (
-    <button onClick={p.onTransfer} disabled={p.stockChecking}
-      className="w-full h-[50px] px-5 flex items-center justify-between gap-3 border border-foreground text-[12px] font-semibold rounded-[10px] transition-colors hover:bg-foreground hover:text-background disabled:opacity-60 disabled:cursor-not-allowed">
-      <span>{t('Pagar por transferencia')}, {p.transferRate}% off</span>
-      <span className="tabular-nums">{formatPrice(p.transferPrice)}</span>
+      <span className="tabular-nums tracking-[0.02em]">{p.mounted ? formatPrice(p.displayPrice) : ''}</span>
     </button>
   );
 }
@@ -263,6 +233,7 @@ function usePromedioResenas(): { promedio: string; total: number } | null {
   return r;
 }
 
+/** Las reseñas son de la tienda, no del producto: el texto lo dice. */
 export function LineaResenas() {
   const { t } = useLocale();
   const r = usePromedioResenas();
@@ -276,10 +247,9 @@ export function LineaResenas() {
 
 const pesosSinCentavos = (n: number) => `$ ${Math.round(n).toLocaleString('es-AR')}`;
 
-/** Tres promesas en texto plano, sin íconos. */
+/** Promesas en texto plano, sin íconos. */
 export function Promesas({ p }: { p: FichaProps }) {
   const { t, currency } = useLocale();
-  const r = usePromedioResenas();
   return (
     <div className="flex flex-col gap-0.5 text-[13px]">
       {currency === 'ARS' && (
@@ -290,30 +260,6 @@ export function Promesas({ p }: { p: FichaProps }) {
         </span>
       )}
       <span>{t('30 días para cambios.')}</span>
-      {r && <span>{r.promedio} {t('de 5 en reseñas de clientes.')}</span>}
-    </div>
-  );
-}
-
-/** Las mismas promesas en caja, con una línea de explicación cada una. */
-export function PromesasCaja({ p, calidad }: { p: FichaProps; calidad?: string | null }) {
-  const { t, currency } = useLocale();
-  const items: { titulo: string; texto: string }[] = [
-    { titulo: t('30 días para cambios'), texto: t('Despachamos el talle nuevo y entregás el anterior al recibirlo.') },
-  ];
-  if (currency === 'ARS') items.push({
-    titulo: t('Envío gratis a sucursal'),
-    texto: p.displayPrice >= FREE_SHIPPING_THRESHOLD ? t('Este pedido ya lo tiene.') : `${t('En compras desde')} ${pesosSinCentavos(FREE_SHIPPING_THRESHOLD)}.`,
-  });
-  if (calidad) items.push({ titulo: t('Hecho para durar'), texto: calidad });
-  return (
-    <div className="flex flex-col sm:flex-row border border-border rounded-[10px] divide-y sm:divide-y-0 sm:divide-x divide-border">
-      {items.map(i => (
-        <div key={i.titulo} className="px-3.5 py-3 min-w-0 sm:flex-1">
-          <p className="text-[13px] font-semibold">{i.titulo}</p>
-          <p className="text-[12px] text-muted-foreground">{i.texto}</p>
-        </div>
-      ))}
     </div>
   );
 }
@@ -324,7 +270,7 @@ const CLAVE_CP = 'hype_cp';
  * Cuándo llega y cuánto sale, por código postal, antes de entrar al checkout.
  * Usa el mismo cotizador y la misma regla de envío gratis que el checkout.
  * Andreani devuelve el costo pero no el plazo: las fechas salen del plazo
- * general que ya promete el sitio.
+ * general que ya promete el sitio, y se muestran como estimadas.
  */
 export function CuandoLlega({ p }: { p: FichaProps }) {
   const { t, currency } = useLocale();
@@ -356,7 +302,7 @@ export function CuandoLlega({ p }: { p: FichaProps }) {
     try { guardado = localStorage.getItem(CLAVE_CP) ?? ''; } catch {}
     if (guardado) { setCp(guardado); cotizar(guardado); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.product.slug]);
+  }, [p.product.slug, p.displayPrice]);
 
   if (currency !== 'ARS') return null;
   const ctx = { subtotalFisico: p.displayPrice };
@@ -394,7 +340,7 @@ export function CuandoLlega({ p }: { p: FichaProps }) {
             );
           })}
           <p className="text-[11px] text-muted-foreground mt-1.5">
-            {t('Fechas estimadas')}: {ENTREGA_DIAS_HABILES.min} {t('a')} {ENTREGA_DIAS_HABILES.max} {t('días hábiles desde el despacho.')}
+            {t('Fechas estimadas, contando de 5 a 10 días hábiles.')}
           </p>
         </div>
       )}
@@ -402,18 +348,17 @@ export function CuandoLlega({ p }: { p: FichaProps }) {
   );
 }
 
-/** Desplegable que puede arrancar abierto. `plano` saca las líneas, como en la variante A. */
-export function Desplegable({ titulo, abierto = false, plano = false, children }: { titulo: string; abierto?: boolean; plano?: boolean; children: ReactNode }) {
+/** Desplegable sin líneas que puede arrancar abierto. */
+export function Desplegable({ titulo, abierto = false, children }: { titulo: string; abierto?: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(abierto);
   return (
-    <div className={plano ? '' : 'border-t border-border'}>
-      <button onClick={() => setOpen(!open)} aria-expanded={open}
-        className={`w-full flex items-center ${plano ? 'gap-2.5 py-2.5' : 'justify-between py-4'} text-left`}>
+    <div>
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="w-full flex items-center gap-2.5 py-2.5 text-left">
         <span className="text-[12px] font-semibold uppercase tracking-[0.1em]">{titulo}</span>
         <span className="text-[15px] leading-none text-foreground/60">{open ? '—' : '+'}</span>
       </button>
       {open && (
-        <div className={`${plano ? 'pb-3' : 'pb-4'} text-[13px] text-foreground/65 leading-relaxed flex flex-col gap-3`}>{children}</div>
+        <div className="pb-3 text-[13px] text-foreground/65 leading-relaxed flex flex-col gap-3">{children}</div>
       )}
     </div>
   );
@@ -424,15 +369,22 @@ export function TextoEnvios({ p }: { p: FichaProps }) {
   const gratis = currency === 'ARS' && p.displayPrice >= FREE_SHIPPING_THRESHOLD;
   return (
     <>
-      <p>
-        - {t('Sucursal Andreani')}: {gratis
-          ? <span className="text-foreground font-medium">{t('gratis en este pedido')}</span>
-          : <>{t('gratis desde')} {pesosSinCentavos(FREE_SHIPPING_THRESHOLD)}</>}
-        <br />- {t('A domicilio: se calcula con tu código postal')}
-        <br />- {t('Todo el país en')} {ENTREGA_DIAS_HABILES.min} {t('a')} {ENTREGA_DIAS_HABILES.max} {t('días hábiles')}
-        <br />- {t('Exterior: FedEx puerta a puerta')}
-      </p>
-      <p>{t('Despachamos una vez confirmado el pago. Fines de semana y feriados no cuentan como días hábiles.')}</p>
+      <p className="font-semibold text-foreground">{t('Envíos en Argentina')}</p>
+      <p>{t('A todo el país vía Andreani; el costo se calcula en el checkout. El tiempo de entrega estimado es de 5 a 10 días hábiles, y en algunos casos puede extenderse hasta 15 días hábiles según la zona y la demanda.')}</p>
+      {currency === 'ARS' && (
+        <p>
+          {gratis
+            ? <span className="text-foreground font-medium">{t('Envío gratis a sucursal en este pedido.')}</span>
+            : <>{t('Envío gratis a sucursal desde')} {pesosSinCentavos(FREE_SHIPPING_THRESHOLD)}.</>}
+        </p>
+      )}
+      <p>{t('Preparamos y despachamos tu pedido una vez confirmado el pago. Los fines de semana y feriados no se cuentan como días hábiles.')}</p>
+
+      <p className="font-semibold text-foreground">{t('Preventa')}</p>
+      <p>{t('Los productos en PREVENTA se despachan según la fecha estimada indicada en la página del producto y pueden demorar algo más de lo estipulado. Si tu compra incluye un producto en preventa, el pedido se envía completo cuando esté disponible.')}</p>
+
+      <p className="font-semibold text-foreground">{t('Envíos internacionales')}</p>
+      <p>{t('Enviamos a todo el mundo vía FedEx, puerta a puerta, con seguimiento y seguro. El costo se calcula en el checkout según lo que lleves y a qué país va, y se paga junto con el pedido. Los impuestos y aranceles aduaneros del país de destino quedan a cargo de quien recibe.')}</p>
     </>
   );
 }
@@ -441,9 +393,8 @@ export function TextoCambios() {
   const { t } = useLocale();
   return (
     <>
-      <p>{t('Tenés 30 días desde la compra para cambiar el talle. La prenda tiene que estar sin uso y con sus etiquetas.')}</p>
-      <p>{t('Despachamos el talle nuevo y, cuando lo recibís, entregás el anterior en el mismo momento.')}</p>
-      <a href="/politicas-de-devolucion/" className="underline underline-offset-[3px] text-foreground hover:text-foreground/70 transition-colors">{t('Ver políticas completas')}</a>
+      <p>{t('Aceptamos cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.')}</p>
+      <a href="/politicas-de-devolucion/" className="underline underline-offset-[3px] text-foreground hover:text-foreground/70 transition-colors">{t('Ver políticas completas →')}</a>
     </>
   );
 }
@@ -467,8 +418,8 @@ export function TablaMedidas({ product }: { product: Product }) {
         <tbody>
           {filas.map(f => (
             <tr key={f.size} className="border-b border-border last:border-b-0">
-              <td className="py-2 pr-4 font-semibold uppercase">{f.size}</td>
-              {columnas.map(([k]) => <td key={k} className="py-2 pr-4 tabular-nums">{f[k] ? `${f[k]} cm` : '—'}</td>)}
+              <td className="py-2 pr-4 font-semibold uppercase text-foreground">{f.size}</td>
+              {columnas.map(([k]) => <td key={k} className="py-2 pr-4 tabular-nums text-foreground">{f[k] ? `${f[k]} cm` : '—'}</td>)}
             </tr>
           ))}
         </tbody>

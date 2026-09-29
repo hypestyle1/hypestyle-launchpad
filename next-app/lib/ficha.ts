@@ -1,52 +1,8 @@
 /**
- * Variantes de la página de producto (prueba en local, 29/09/2026).
- *
- * Valentín eligió el esquema de tres columnas (info · foto de modelo · compra).
- * Estas son tres versiones de ese esquema, elegibles con `?ficha=a1|a2|a3`.
- * Sin el parámetro la ficha es la de siempre. En las tres, nombre y precio van
- * arriba de la columna de compra.
- *
- *  a1 — limpia: lo mínimo, como la referencia
- *  a2 — completa: suma medios de pago, calce y cuándo llega por código postal
- *  a3 — ficha técnica: la info como tabla de datos, compra anclada abajo
+ * Datos y textos que la ficha de producto saca de lo que ya hay cargado:
+ * fechas de entrega, orden de las fotos y composición de la tela.
  */
-export type FichaVariante = 'a1' | 'a2' | 'a3';
-
-export const FICHA_VARIANTES: { id: FichaVariante; nombre: string }[] = [
-  { id: 'a1', nombre: 'Limpia' },
-  { id: 'a2', nombre: 'Completa' },
-  { id: 'a3', nombre: 'Ficha técnica' },
-];
-
-const CLAVE_SESION = 'hype_ficha_variante';
-
-/**
- * Lee la variante de la URL y la recuerda durante la sesión, para que al pasar
- * de un producto a otro no haya que volver a escribir el parámetro.
- * `?ficha=actual` (o cualquier valor que no sea una variante) vuelve a la de siempre.
- */
-export function leerVariante(): FichaVariante | null {
-  if (typeof window === 'undefined') return null;
-  const valida = (v: string | null): v is FichaVariante => FICHA_VARIANTES.some((f) => f.id === v);
-  const deUrl = new URLSearchParams(window.location.search).get('ficha');
-  try {
-    if (deUrl !== null) {
-      if (valida(deUrl)) sessionStorage.setItem(CLAVE_SESION, deUrl);
-      else sessionStorage.removeItem(CLAVE_SESION);
-      return valida(deUrl) ? deUrl : null;
-    }
-    const guardada = sessionStorage.getItem(CLAVE_SESION);
-    return valida(guardada) ? guardada : null;
-  } catch {
-    return valida(deUrl) ? deUrl : null;
-  }
-}
-
-/**
- * A CONFIRMAR con Valentín: horas hábiles entre el pago confirmado y la entrega
- * del paquete a Andreani. 48 es un valor de ejemplo para poder ver el bloque.
- */
-export const DESPACHO_HORAS_HABILES = 48;
+import fichaFotos from './ficha-fotos.json';
 
 /** El plazo que ya promete el sitio en "Envíos y devoluciones". */
 export const ENTREGA_DIAS_HABILES = { min: 5, max: 10 };
@@ -110,14 +66,47 @@ export function filtrarPorModelo(slug: string, imagenes: string[], modelo: Model
   return [...propias, ...neutras];
 }
 
+const FOTOS: Record<string, { mockups: string[]; tablas: string[] }> = fichaFotos;
+
+const archivo = (url: string) => {
+  const ultimo = url.split('/').pop()?.split('?')[0] ?? '';
+  try { return decodeURIComponent(ultimo); } catch { return ultimo; }
+};
+
 /**
- * La destacada de Woo es siempre el mockup. Las variantes A y C abren con una
- * persona usando la prenda, así que el mockup pasa al final.
+ * Orden de la galería en la ficha: primero las fotos con una persona usando la
+ * prenda, después los mockups y al final la tabla de talles.
+ *
+ * Entre los mockups va primero la destacada de Woo, que es siempre el frente:
+ * un producto que solo tiene mockups abre con el frente.
+ *
+ * Qué es cada imagen sale de lib/ficha-fotos.json, que genera
+ * `node scripts/clasificar-fotos-ficha.js`. Un producto que todavía no figura
+ * ahí usa la galería de Woo tal cual, con la destacada al final.
  */
-export function modeloPrimero(imagenes: string[]): string[] {
+export function ordenarFotos(slug: string, imagenes: string[]): string[] {
   if (imagenes.length < 2) return imagenes;
-  const [mockup, ...resto] = imagenes;
-  return [...resto, mockup];
+  const tipos = FOTOS[slug];
+  if (!tipos) {
+    const [destacada, ...resto] = imagenes;
+    return [...resto, destacada];
+  }
+  const mockups = new Set(tipos.mockups);
+  const tablas = new Set(tipos.tablas);
+  // Una imagen nueva que el archivo no conoce se trata como foto.
+  const fotos = imagenes.filter((i) => !mockups.has(archivo(i)) && !tablas.has(archivo(i)));
+  return [
+    ...fotos,
+    ...imagenes.filter((i) => mockups.has(archivo(i))),
+    ...imagenes.filter((i) => tablas.has(archivo(i))),
+  ];
+}
+
+/** ¿Esta imagen es un mockup? La ficha lo muestra entero en vez de recortarlo. */
+export function esMockup(slug: string, imagen: string): boolean {
+  const tipos = FOTOS[slug];
+  const nombre = archivo(imagen);
+  return !!tipos && (tipos.mockups.includes(nombre) || tipos.tablas.includes(nombre));
 }
 
 const limpiar = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -130,42 +119,44 @@ function parrafos(descripcion: string): string[] {
     .filter((p) => p && !/^[•\-–*]/.test(p));
 }
 
-/** Las viñetas ("• Cierres YKK reforzados") de la descripción. */
-export function vinetas(descripcion: string): string[] {
-  return descripcion
-    .split(/\n+/)
-    .map(limpiar)
-    .filter((p) => /^[•\-–*]\s*\S/.test(p))
-    .map((p) => p.replace(/^[•\-–*]\s*/, ''));
-}
-
 /**
- * El primer párrafo con contenido: muchas descripciones abren con el nombre del
- * producto en mayúsculas en una línea sola, que se saltea.
+ * El primer párrafo que se lee como una oración. Las descripciones de Woo
+ * suelen abrir con el nombre del producto en mayúsculas o con un rótulo
+ * ("DETALLES:"), que se saltean. Si no hay ninguno, devuelve vacío y la ficha
+ * muestra la descripción entera.
  */
 export function resumen(descripcion: string): string {
-  const ps = parrafos(descripcion);
-  return ps.find((p) => p.length > 60) ?? ps[0] ?? '';
+  return parrafos(descripcion).find((p) => {
+    if (p.length < 60 || /:$/.test(p)) return false;
+    const letras = p.replace(/[^a-záéíóúñA-ZÁÉÍÓÚÑ]/g, '');
+    const minusculas = letras.replace(/[A-ZÁÉÍÓÚÑ]/g, '');
+    return minusculas.length > letras.length * 0.6;
+  }) ?? '';
 }
+
+const FIBRAS = 'algod[oó]n|poli[eé]ster|nylon|elastano|spandex|lycra|acr[ií]lico|lana|lino|viscosa|modal';
 
 /**
  * Composición de la tela, sacada del texto libre hasta que exista como campo.
- * Busca la primera oración que nombre un porcentaje o una fibra.
+ *
+ * Es estricta a propósito: solo devuelve algo cuando el texto nombra un
+ * porcentaje pegado a una fibra ("100% algodón", "54% poliéster, 20% nylon").
+ * Una descripción que menciona la tela sin porcentaje no muestra composición:
+ * se prefiere el hueco a una frase sacada de contexto.
  */
 export function composicion(descripcion: string): string | null {
-  // Sin lookbehind: Safari viejo lo rechaza al parsear y rompe todo el bundle.
-  const oraciones = descripcion
-    .split(/\n+/)
-    .flatMap((linea) => linea.match(/[^.!?]+[.!?]?/g) ?? [])
-    .map((o) => limpiar(o).replace(/^[•\-–*]\s*/, ''))
-    .filter(Boolean);
-  const conPorcentaje = oraciones.find((o) => /\d{2,3}\s?%/.test(o) && /algod|poli|lana|nylon|acr|elast|lino|viscosa/i.test(o));
-  const candidata = conPorcentaje ?? oraciones.find((o) => /algod[oó]n|poli[eé]ster|gabardina|r[uú]stico|frisa|jersey|waffle/i.test(o));
-  if (!candidata) return null;
-  if (candidata.length <= 120) return candidata.replace(/[.]$/, '');
-  // Oración larga: se queda con el tramo que nombra la tela ("rústico premium 100% algodón").
-  const tramo = candidata.match(/(?:[a-záéíóúñ]+\s){0,3}\d{2,3}\s?%\s?(?:de\s)?[a-záéíóúñ]+/i);
-  if (!tramo) return null;
-  const texto = tramo[0].replace(/^(?:en|con|de|y)\s/i, '');
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
+  const patron = new RegExp(`(\\d{1,3})\\s?%\\s?(?:de\\s)?(${FIBRAS})(\\speinado)?`, 'gi');
+  const partes: string[] = [];
+  let suma = 0;
+  let m: RegExpExecArray | null;
+  while ((m = patron.exec(descripcion)) !== null) {
+    const pct = Number(m[1]);
+    if (pct < 1 || pct > 100 || suma + pct > 100) break;
+    suma += pct;
+    const fibra = m[2].toLowerCase().replace('algodon', 'algodón').replace('poliester', 'poliéster').replace('acrilico', 'acrílico');
+    partes.push(`${pct}% ${fibra}${m[3] ? ' peinado' : ''}`);
+    if (suma === 100) break;
+  }
+  // Una composición que no cierra en 100 quedó cortada o mal escrita.
+  return suma === 100 ? partes.join(', ') : null;
 }

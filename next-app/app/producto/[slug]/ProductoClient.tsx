@@ -20,9 +20,8 @@ import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
 import { gaViewItem, gaAddToCart } from '@/lib/ga';
 import { fbViewContent, fbAddToCart } from '@/lib/fbpixel';
-import { leerVariante, modeloPrimero, tieneInterruptorModelo, filtrarPorModelo, modeloInicial, type FichaVariante, type Modelo } from '@/lib/ficha';
-import FichaA from './ficha/FichaA';
-import SelectorVariante from './ficha/SelectorVariante';
+import { ordenarFotos, tieneInterruptorModelo, filtrarPorModelo, modeloInicial, type Modelo } from '@/lib/ficha';
+import Ficha from './ficha/Ficha';
 
 function CareIcon({ type }: { type: string }) {
   const cls = 'w-[18px] h-[18px] flex-shrink-0 text-foreground/70';
@@ -206,8 +205,6 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const [isGalleryOpen, setIsGalleryOpen]   = useState(false);
   const [galleryZoom, setGalleryZoom]       = useState(1);
   const [galleryOffset, setGalleryOffset]   = useState({ x: 0, y: 0 });
-  // Variantes de la ficha en prueba (?ficha=a|b|c). null = la ficha de siempre.
-  const [variante, setVariante]             = useState<FichaVariante | null>(null);
   const [modeloElegido, setModeloElegido]   = useState<Modelo | null>(null);
 
   const touchStartX  = useRef<number | null>(null);
@@ -216,7 +213,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const addBtnRef    = useRef<HTMLButtonElement>(null);
   const { add, setDrawerOpen } = useCart();
 
-  useEffect(() => { setMounted(true); setFlashActive(isFlashSaleActive()); setVariante(leerVariante()); }, []);
+  useEffect(() => { setMounted(true); setFlashActive(isFlashSaleActive()); }, []);
 
   // El zoom de hover (scale 2x) es solo para desktop con mouse. En táctiles el navegador
   // sintetiza un "hover" al tocar y disparaba un zoom que recortaba la foto.
@@ -283,8 +280,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     const observer = new IntersectionObserver(([entry]) => setShowSticky(!entry.isIntersecting), { threshold: 0 });
     observer.observe(el);
     return () => observer.disconnect();
-    // Cada variante monta su propio botón de compra: hay que volver a observar.
-  }, [variante]);
+  }, []);
 
   if (isLoading && !product) return (
     <><AnnouncementBar /><Navbar />
@@ -306,18 +302,20 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     ? [...product.images, 'products/argentina-jersey/preview-sample-espalda.png', 'products/argentina-jersey/preview-sample-frente.png']
     : product.images;
   // Productos con video: el video va como primer slide de la galería.
-  // Las variantes de la ficha no aplican a los personalizables (tienen su propio flujo).
-  const fichaVariante = product.customizable ? null : variante;
-  // Las variantes abren con una persona usando la prenda; la actual, con el mockup.
-  const abreConModelo = fichaVariante !== null;
+  // La ficha en tres columnas es la de todos los productos. Quedan con el
+  // diseño anterior los personalizables (tienen su propio flujo de dorsal) y los
+  // dos drops con tratamiento visual de campaña.
+  const fichaClasica = !!product.customizable || isLaNuestra || isNapoli;
+  // La ficha nueva abre con una persona usando la prenda; la clásica, con el mockup.
+  const abreConModelo = !fichaClasica;
   const conInterruptor = abreConModelo && tieneInterruptorModelo(product.slug, baseImages);
   const modelo: Modelo | null = conInterruptor ? (modeloElegido ?? modeloInicial(product.slug, baseImages)) : null;
   const imagenesOrdenadas = modelo
-    ? filtrarPorModelo(product.slug, baseImages, modelo)
-    : abreConModelo ? modeloPrimero(baseImages) : baseImages;
+    ? filtrarPorModelo(product.slug, ordenarFotos(product.slug, baseImages), modelo)
+    : abreConModelo ? ordenarFotos(product.slug, baseImages) : baseImages;
   const galleryImages = product.video ? [product.video, ...imagenesOrdenadas] : imagenesOrdenadas;
   // Imagen "de portada" (no-video) para carrito y miniaturas fijas.
-  const coverImage = galleryImages.find(g => !isVideo(g)) ?? galleryImages[0];
+  const coverImage = baseImages.find(g => !isVideo(g)) ?? galleryImages[0];
 
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -374,7 +372,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const transferRate  = 10;
   const transferPrice = Math.round(displayPrice * (1 - transferRate / 100));
 
-  const handleAdd = async (opciones?: { irAlCheckout?: boolean }) => {
+  const handleAdd = async () => {
     if (!selectedSize) {
       if (product.customizable) { router.push(`/personalizar/${product.slug}/`); return; }
       setSizeError(true);
@@ -397,7 +395,6 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       price: displayPrice,
       quantity: 1,
     });
-    if (opciones?.irAlCheckout) { router.push('/checkout/'); return; }
     setAdded(true);
   };
 
@@ -485,22 +482,17 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     </div>
   );
 
-  const Ficha = fichaVariante ? FichaA : null;
-
   return (
     <>
       <AnnouncementBar />
       <Navbar />
-      <SelectorVariante actual={fichaVariante} />
-      {Ficha ? (
+      {!fichaClasica ? (
         <Ficha
-          estilo={fichaVariante!}
           product={product}
           galleryImages={galleryImages}
           selectedImage={Math.min(selectedImage, galleryImages.length - 1)}
           onSelectImage={setSelectedImage}
           onOpenGallery={() => setIsGalleryOpen(true)}
-          galeriaClasica={galeriaClasica}
           descripcion={traduccion.textos?.description || product.description}
           modelInfo={product.modelInfo ? <div><ModelInfo html={traduccion.textos?.modelInfo || product.modelInfo} /></div> : undefined}
           displayPrice={displayPrice}
@@ -516,9 +508,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           stockError={stockError}
           stockChecking={stockChecking}
           onAdd={() => handleAdd()}
-          onTransfer={() => handleAdd({ irAlCheckout: true })}
           onSizeGuide={() => setSizeGuideOpen(true)}
-          sizeGuideImage={product.sizeGuideImage || DEFAULT_SIZE_GUIDE}
           addBtnRef={addBtnRef}
           primaryBtnClass={primaryBtnClass}
           modelo={modelo}
