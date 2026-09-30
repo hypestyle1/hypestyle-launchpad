@@ -11,5 +11,6 @@ export async function ensureWelcomeAttributes(apiKey: string) {
       body: JSON.stringify({ type }),
     }).catch(() => {});
 
-  await Promise.all([create('SIGNUP_DATE', 'text'), create('WELCOME_STEP', 'float')]);
+  // PREFERENCIA: hombre / mujer / todo, lo que eligió en el popup de newsletter.
+  await Promise.all([create('SIGNUP_DATE', 'text'), create('WELCOME_STEP', 'float'), create('PREFERENCIA', 'text')]);
 }

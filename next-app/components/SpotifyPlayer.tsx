@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext';
+import { shiftedBottom } from '@/lib/bottom-shift';
 
 // La playlist oficial de la tienda. Cambiarla = cambiar solo este ID.
 const PLAYLIST_ID = '7DOlr3syXZhNlzxV9SuuKl';
@@ -31,7 +32,7 @@ export default function SpotifyPlayer() {
   }
 
   return (
-    <div className="fixed bottom-6 left-5 z-[90]">
+    <div className="fixed left-5 z-[90]" style={shiftedBottom(24)}>
       {/* Panel — oculto con CSS (no desmontado) para que siga sonando cerrado */}
       {loaded && (
         <div

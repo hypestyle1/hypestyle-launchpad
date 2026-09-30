@@ -1,6 +1,5 @@
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
-import NewsletterPopup from '@/components/NewsletterPopup';
 import HeroLookbookFW26 from '@/components/HeroLookbookFW26';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
@@ -58,7 +57,6 @@ export default async function Home() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <AnnouncementBar />
       <Navbar />
-      <NewsletterPopup />
       <main className="pt-[var(--offset)]">
         {/* El título del hero es una imagen, así que el H1 del documento va acá.
             Oculto a la vista (sr-only) pero presente en el DOM: sin esto la home

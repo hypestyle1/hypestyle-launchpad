@@ -5,6 +5,7 @@ import Providers from '@/components/Providers';
 import CartDrawer from '@/components/CartDrawer';
 import WishlistDrawer from '@/components/WishlistDrawer';
 import CookieBanner from '@/components/CookieBanner';
+import NewsletterPopup from '@/components/NewsletterPopup';
 import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
@@ -103,6 +104,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WishlistDrawer />
           <LocaleSuggestion />
           <CookieBanner />
+          {/* En el layout y no en el home: dispara en las fichas de producto
+              y la barra puede caer en cualquier página (ver lib/newsletter-popup). */}
+          <NewsletterPopup />
           <MetaPixel />
           <MicrosoftClarity />
           <GoogleAnalytics />

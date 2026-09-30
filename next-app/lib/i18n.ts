@@ -442,6 +442,8 @@ const DICT: Dict = {
   'Más info': { EN: 'More info', PT: 'Mais informações', DE: 'Mehr erfahren', FR: 'En savoir plus', IT: 'Maggiori informazioni' },
   'Aceptar todo': { EN: 'Accept all', PT: 'Aceitar tudo', DE: 'Alle akzeptieren', FR: 'Tout accepter', IT: 'Accetta tutto' },
   'Solo necesarias': { EN: 'Only necessary', PT: 'Somente necessários', DE: 'Nur notwendige', FR: 'Nécessaires uniquement', IT: 'Solo necessari' },
+  'Usamos cookies para mejorar tu experiencia y medir el rendimiento de nuestros anuncios.': { EN: 'We use cookies to improve your experience and measure the performance of our ads.', PT: 'Usamos cookies para melhorar sua experiência e medir o desempenho dos nossos anúncios.', DE: 'Wir verwenden Cookies, um dein Erlebnis zu verbessern und die Leistung unserer Anzeigen zu messen.', FR: 'Nous utilisons des cookies pour améliorer votre expérience et mesurer la performance de nos publicités.', IT: 'Usiamo i cookie per migliorare la tua esperienza e misurare il rendimento delle nostre inserzioni.' },
+  'Entendido': { EN: 'Got it', PT: 'Entendi', DE: 'Verstanden', FR: 'Compris', IT: 'Ho capito' },
   // — Ficha de producto en tres columnas —
   'Detalles': { EN: 'Details', PT: 'Detalhes', DE: 'Details', FR: 'Détails', IT: 'Dettagli' },
   'Composición': { EN: 'Composition', PT: 'Composição', DE: 'Material', FR: 'Composition', IT: 'Composizione' },

@@ -5,7 +5,11 @@ const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim
 const NEWSLETTER_LIST_ID = 3;
 const SITE_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 
-function buildWelcomeHtml(name: string) {
+const PREFERENCIAS = new Set(['hombre', 'mujer', 'todo']);
+
+// El popup ya no pide nombre (solo email): el saludo va sin nombre. El nombre
+// real llega con la primera compra (send-confirmation lo carga en NOMBRE).
+function buildWelcomeHtml(name = '') {
   const hola = name ? `Hola ${name}! ` : '';
   return `<!DOCTYPE html>
 <html lang="es">
@@ -71,23 +75,29 @@ function buildWelcomeHtml(name: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, name } = await req.json();
+    const { email, name, preferencia } = await req.json();
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
     }
+    // `name` queda por compatibilidad con formularios viejos; el popup ya no lo manda.
     const firstName = name ? String(name).trim() : '';
+    const pref = PREFERENCIAS.has(String(preferencia)) ? String(preferencia) : '';
 
     await ensureWelcomeAttributes(BREVO_API_KEY);
 
-    // Add to Brevo contacts list (FIRSTNAME para personalizar campañas, SIGNUP_DATE/WELCOME_STEP
-    // para que welcome-sweep sepa cuándo mandar los siguientes pasos de la secuencia).
+    // Alta en la lista. NOMBRE es el atributo de nombre de la cuenta (FIRSTNAME no
+    // existe: Brevo lo descartaba en silencio y la lista quedó sin nombres).
+    // PREFERENCIA (hombre/mujer/todo) es lo que eligió en el popup, para mandar
+    // los drops de mujer solo a quien los pidió. SIGNUP_DATE/WELCOME_STEP son
+    // para que welcome-sweep sepa cuándo mandar los siguientes pasos.
     const contactRes = await fetch('https://api.brevo.com/v3/contacts', {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email,
         attributes: {
-          ...(firstName ? { FIRSTNAME: firstName } : {}),
+          ...(firstName ? { NOMBRE: firstName } : {}),
+          ...(pref ? { PREFERENCIA: pref } : {}),
           SIGNUP_DATE: new Date().toISOString(),
           WELCOME_STEP: 1,
         },

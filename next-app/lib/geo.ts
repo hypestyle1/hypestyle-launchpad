@@ -67,6 +67,21 @@ export function localeForCountry(code: string | null | undefined): LocaleGuess |
   return { language: 'EN', currency: 'USD', label: 'English · US Dollar' };
 }
 
+// Donde rige el RGPD (UE + EEE), más Reino Unido y Suiza, que tienen su
+// equivalente. Solo ahí hace falta el cartel de cookies completo con la opción
+// de rechazar la medición; en Argentina la ley de datos no lo exige y cada
+// "Solo necesarias" es una venta que Meta y GA4 no ven.
+const GDPR = new Set([
+  'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV',
+  'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
+  'IS', 'LI', 'NO', 'GB', 'CH',
+]);
+
+/** Sin país (local, cookie ausente) se asume que no: el default del sitio es Argentina. */
+export function isGdprCountry(code: string | null | undefined): boolean {
+  return !!code && GDPR.has(code.toUpperCase());
+}
+
 /** Solo en el browser. En el server el país se lee del request. */
 export function readCountryCookie(): string | null {
   if (typeof document === 'undefined') return null;

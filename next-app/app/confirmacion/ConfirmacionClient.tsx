@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { clearCartSnapshot } from '@/lib/cart-recovery';
+import { markNewsletterBuyer } from '@/lib/newsletter-popup';
 import { gaPurchase } from '@/lib/ga';
 import { ReceiptPrinter, type ReceiptStage } from '@/components/ReceiptPrinter';
 import { GiftCard } from '@/components/GiftCard';
@@ -86,6 +87,8 @@ export default function ConfirmacionClient() {
     // la optimización de la campaña.
     if (parsed && estado !== 'rejected') {
       sessionStorage.removeItem('hype_order');
+      // A un cliente no se le vuelve a ofrecer el 10% de bienvenida.
+      markNewsletterBuyer();
 
       const purchasePayload = {
         value: parsed.total,
