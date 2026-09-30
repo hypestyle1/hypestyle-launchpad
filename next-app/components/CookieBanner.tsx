@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useCookieConsent } from "@/context/CookieContext";
 import { useLocale } from "@/context/LocaleContext";
-import { isGdprCountry, readCountryCookie } from "@/lib/geo";
 import { useBottomShift } from "@/lib/bottom-shift";
 
 /**
@@ -22,18 +21,13 @@ import { useBottomShift } from "@/lib/bottom-shift";
  * necesarias" y apagaba el pixel a cualquiera que la cerrara sin leer.
  */
 export default function CookieBanner() {
-  const { bannerOpen, acceptAll, acceptNecessary, dismiss } = useCookieConsent();
+  const { bannerOpen, gdpr, acceptAll, acceptNecessary, dismiss } = useCookieConsent();
   const { t } = useLocale();
   const pathname = usePathname();
-  const [gdpr, setGdpr] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const isAdmin = !!pathname?.startsWith("/admin");
   // Mientras el cartel está abajo, WhatsApp, el reproductor y la pastilla de reseñas suben.
   useBottomShift(boxRef, bannerOpen && !isAdmin);
-
-  useEffect(() => {
-    setGdpr(isGdprCountry(readCountryCookie()));
-  }, []);
 
   // El panel es interno y no tiene visitantes a los que pedirles
   // consentimiento. El cartel es fijo al pie, así que desde el teléfono

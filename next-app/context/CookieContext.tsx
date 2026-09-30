@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { isGdprCountry, readCountryCookie } from '@/lib/geo';
 
 type ConsentLevel = 'all' | 'necessary' | null;
 
@@ -11,8 +12,12 @@ interface CookieContextType {
   resetConsent: () => void;
   /** Cerró el cartel sin elegir: no vuelve en esta visita, la medición sigue como estaba. */
   dismiss: () => void;
-  /** El cartel está en pantalla. El popup de newsletter espera a que se vaya. */
+  /** El cartel está en pantalla. */
   bannerOpen: boolean;
+  /** El visitante entra desde donde rige el RGPD: cartel completo, con opción de rechazar. */
+  gdpr: boolean;
+  /** El cartel completo está en pantalla y hay que elegir: el popup de newsletter espera. */
+  bannerBlocking: boolean;
 }
 
 const STORAGE_KEY = 'hy_cookie_consent';
@@ -24,10 +29,12 @@ export function CookieProvider({ children }: { children: ReactNode }) {
   // Hasta leer localStorage no se sabe si hay que mostrar el cartel: en ese
   // instante se considera cerrado para no frenar nada por un render.
   const [ready, setReady] = useState(false);
+  const [gdpr, setGdpr] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     setConsent((saved as ConsentLevel) ?? null);
+    setGdpr(isGdprCountry(readCountryCookie()));
     setReady(true);
   }, []);
 
@@ -36,9 +43,10 @@ export function CookieProvider({ children }: { children: ReactNode }) {
   const resetConsent = () => { localStorage.removeItem(STORAGE_KEY); setConsent(null); setDismissed(false); };
   const dismiss = () => setDismissed(true);
   const bannerOpen = ready && consent === null && !dismissed;
+  const bannerBlocking = bannerOpen && gdpr;
 
   return (
-    <CookieContext.Provider value={{ consent, acceptAll, acceptNecessary, resetConsent, dismiss, bannerOpen }}>
+    <CookieContext.Provider value={{ consent, acceptAll, acceptNecessary, resetConsent, dismiss, bannerOpen, gdpr, bannerBlocking }}>
       {children}
     </CookieContext.Provider>
   );

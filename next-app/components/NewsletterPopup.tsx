@@ -64,9 +64,19 @@ async function subscribe(email: string, preferencia: Preferencia | null) {
 
 export default function NewsletterPopup() {
   const pathname = usePathname() || '/';
-  // Con el cartel de cookies en pantalla no se muestra nada: los dos van abajo
-  // y se pisarían. Lo que estaba por aparecer aparece apenas se cierra.
-  const { bannerOpen } = useCookieConsent();
+  // Con el cartel completo de cookies (RGPD) en pantalla no se muestra nada:
+  // ahí hay que elegir, y los dos van abajo. El aviso corto de Argentina es
+  // solo informativo y casi nadie lo toca: cuando el popup aparece, se cierra
+  // solo, así el popup no queda esperando a un cartel que nadie va a cerrar.
+  const { bannerOpen, bannerBlocking, acceptAll } = useCookieConsent();
+  const bannerRef = useRef({ bannerOpen, bannerBlocking, acceptAll });
+  bannerRef.current = { bannerOpen, bannerBlocking, acceptAll };
+  // Queda como visto (no solo cerrado por esta visita): el aviso ya estuvo en
+  // pantalla y no cambia nada, no tiene sentido que vuelva en cada visita.
+  const closeShortNotice = () => {
+    const b = bannerRef.current;
+    if (b.bannerOpen && !b.bannerBlocking) b.acceptAll();
+  };
   const [shown, setShown] = useState<'modal' | 'bar' | null>(null);
   const shownRef = useRef(shown);
   shownRef.current = shown;
@@ -86,7 +96,11 @@ export default function NewsletterPopup() {
     // Para probarlo sin esperar ni borrar el navegador: ?popup=modal o ?popup=bar
     // lo abre al toque en cualquier página, sin mirar ni tocar lo guardado.
     const forced = new URLSearchParams(location.search).get('popup');
-    if (forced === 'modal' || forced === 'bar') { setShown(forced); return; }
+    if (forced === 'modal' || forced === 'bar') {
+      closeShortNotice();
+      setShown(forced);
+      return;
+    }
 
     const returning = ls.get(STORAGE.visited) === '1';
     ls.set(STORAGE.visited, '1');
@@ -109,6 +123,7 @@ export default function NewsletterPopup() {
       if (done) return;
       done = true;
       fns.forEach((f) => f());
+      closeShortNotice();
       if (plan.kind === 'bar') {
         ss.set(STORAGE.barShown, '1');
         ss.del(STORAGE.barPending);
@@ -149,7 +164,7 @@ export default function NewsletterPopup() {
     ss.del(STORAGE.barPending);
   }, []);
 
-  if (bannerOpen) return null;
+  if (bannerBlocking) return null;
   if (shown === 'modal') return <Modal onClose={closeModal} onSubscribed={onSubscribed} />;
   if (shown === 'bar') return <Bar onClose={closeBar} onSubscribed={onSubscribed} />;
   return null;
