@@ -30,9 +30,11 @@ export async function POST(req: NextRequest) {
   const { subject, html, test, draft } = await req.json();
   if (!subject || !html) return NextResponse.json({ error: 'subject y html requeridos' }, { status: 400 });
 
-  // Tag de personalización: [nombre] → nombre real de cada suscriptor (Brevo FIRSTNAME).
+  // Tag de personalización: [nombre] → nombre real de cada suscriptor. El atributo
+  // de la cuenta es NOMBRE (FIRSTNAME no existe: con él el saludo salía vacío).
+  // Sin nombre cargado queda vacío, así que el copy tiene que funcionar sin él.
   // En la prueba se reemplaza por un nombre de muestra para ver cómo queda.
-  const nameTag = test ? 'Juan' : '{{ contact.FIRSTNAME }}';
+  const nameTag = test ? 'Juan' : '{{ contact.NOMBRE | default: "" }}';
   const subj = String(subject).replace(/\[nombre\]/gi, nameTag);
   const body = String(html).replace(/\[nombre\]/gi, nameTag);
 

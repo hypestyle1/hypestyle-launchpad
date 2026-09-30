@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useLocale } from '@/context/LocaleContext';
 import { getPublicReviewSummary, getPublicReviews } from '@/lib/reviews/public';
 import { Button } from '@/components/ui/button';
+import { shiftedBottom } from '@/lib/bottom-shift';
 import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
 import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
@@ -110,7 +111,8 @@ export default function ReviewsDrawer() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex sm:hidden fixed z-[90] bottom-[92px] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow"
+        className="flex sm:hidden fixed z-[90] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow"
+        style={shiftedBottom(92)}
       >
         <StarRating rating={summary.average ?? 0} size={12} />
         <span className="text-[12px] font-semibold tabular-nums">{summary.average?.toFixed(1)}</span>

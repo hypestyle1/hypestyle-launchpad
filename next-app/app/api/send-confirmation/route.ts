@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUsdRate } from '@/lib/fx';
 import { CUSTOMS_NOTICE } from '@/lib/shipping-intl';
+import { setBrevoContactName } from '@/lib/brevo-contact';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const WP_SECRET     = process.env.WP_SECRET || '';
@@ -448,6 +449,11 @@ export async function POST(req: NextRequest) {
       console.error('[brevo]', err);
       return NextResponse.json({ error: 'Brevo error', detail: err }, { status: 500 });
     }
+
+    // Si ya está suscripto, ahora tenemos su nombre real: el popup no lo pide.
+    // Se espera por lo mismo que el aviso al admin (la función puede congelarse
+    // apenas responde); es un PUT chico y no falla hacia afuera.
+    await setBrevoContactName(BREVO_API_KEY, order.email, String(order.nombre || ''));
 
     const metodoAdmin = METODO_LABEL[order.paymentMethod] || order.paymentMethod || 'Sin método';
     const adminSubject = isIntl

@@ -50,7 +50,7 @@ async function fetchAllContacts(): Promise<any[]> {
 
 async function sendBrevo(to: { email: string; name?: string }, subject: string, html: string, tags?: string[]) {
   // Brevo rechaza el envío si "name" viene como string vacío (contactos sin
-  // FIRSTNAME cargado) — hay que omitir la clave del todo, no mandarla en "".
+  // NOMBRE cargado) — hay que omitir la clave del todo, no mandarla en "".
   const recipient = to.name?.trim() ? { email: to.email, name: to.name } : { email: to.email };
   return fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -203,7 +203,7 @@ export async function GET(req: NextRequest) {
     const step = (forceEmail && [2, 3].includes(forceStep)) ? forceStep : dueStepOf(signupDate, attrs);
     if (step === null) continue;
 
-    const name = String(attrs.FIRSTNAME || '').trim();
+    const name = String(attrs.NOMBRE || '').trim();
     const html = step === 2 ? buildWelcomeStep2Html(name) : buildWelcomeStep3Html(name);
     const subject = step === 2 ? 'Mirá lo más pedido — Hypestyle' : 'Tu 10% off vence pronto — Hypestyle';
     const sendTo = overrideTo || c.email;
