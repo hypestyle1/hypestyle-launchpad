@@ -83,6 +83,11 @@ export default function NewsletterPopup() {
 
     if (cameFromOurEmail(location.search)) ls.set(STORAGE.subscribed, '1');
 
+    // Para probarlo sin esperar ni borrar el navegador: ?popup=modal o ?popup=bar
+    // lo abre al toque en cualquier página, sin mirar ni tocar lo guardado.
+    const forced = new URLSearchParams(location.search).get('popup');
+    if (forced === 'modal' || forced === 'bar') { setShown(forced); return; }
+
     const returning = ls.get(STORAGE.visited) === '1';
     ls.set(STORAGE.visited, '1');
 
