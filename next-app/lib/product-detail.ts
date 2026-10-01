@@ -223,6 +223,15 @@ const CREWNECK_HYPED_COLORWAYS = [
   { label: 'Grey', value: '#d6d6d6', slug: 'crewneck-hyped-up-grey', image: `${WP}/2026/04/mockup-hyped-up-1-6d8ae45c4e6a3a25c917566770897901-1024-1024.png` },
   { label: 'Black', value: '#1a1a1a', slug: 'crewneck-hyped-up-black', image: `${WP}/2026/09/crewneck-hyped-up-black-destacada-v2.png` },
 ];
+// AEROPINK: hasta el 30/09/2026 era UN producto con las tres remeras mezcladas
+// en la galería y stock por talle sin color. Se separó en tres productos; la
+// blanca conserva el slug original (ventas, reseñas y catálogo de Meta).
+const AEROPINK_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'aeropink-tees',       image: `${WP}/2026/04/mesa-de-trabajo-1-copia-d001477687accf22e917679044697808-1024-1024.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'aeropink-tees-black', image: `${WP}/2026/04/mesa-de-trabajo-2-copia-2-3ac91d5e29a9d7b11b17683315737157-1024-1024.png` },
+  { label: 'Grey',  value: '#a9a9a9', slug: 'aeropink-tees-grey',  image: `${WP}/2026/04/mesa-de-trabajo-2-2fa1840f27edb601cf17683315747187-1024-1024.png` },
+];
+
 /** Colorways hermanos de un slug (para los puntitos de color en la card). */
 export function getColorwaysForSlug(slug: string): { label: string; value: string; slug: string }[] | null {
   return COLORWAYS[slug] ?? null;
@@ -282,6 +291,7 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'lettering-pink-jort': LETTERING_JORT_COLORWAYS,
   'crewneck-hyped-up-grey': CREWNECK_HYPED_COLORWAYS,
   'crewneck-hyped-up-black': CREWNECK_HYPED_COLORWAYS,
+  ...Object.fromEntries(AEROPINK_COLORWAYS.map(c => [c.slug, AEROPINK_COLORWAYS])),
 };
 
 const FIT_KEYWORDS: [string, string][] = [
@@ -477,10 +487,13 @@ async function resolveColorwayImages(product: Product): Promise<void> {
     ).join('\n') + `\n}`;
   try {
     const res = await fetchGraphQL<Record<string, { image?: { sourceUrl?: string } } | null>>(q);
-    product.colors = colors.map((c, i) => {
-      const url = res?.[`s${i}`]?.image?.sourceUrl;
-      return url ? { ...c, image: url } : c;
-    });
+    // WPGraphQL devuelve null (sin error) para un producto en borrador o
+    // privado: ese colorway todavía no se vende, así que no se muestra el
+    // swatch (llevaría a un 404). El producto actual siempre queda.
+    product.colors = colors
+      .map((c, i) => ({ c, node: res?.[`s${i}`] }))
+      .filter(({ c, node }) => c.slug === product.slug || node != null)
+      .map(({ c, node }) => node?.image?.sourceUrl ? { ...c, image: node.image.sourceUrl } : c);
   } catch {
     // fallback: se mantienen las imágenes de COLORWAYS
   }

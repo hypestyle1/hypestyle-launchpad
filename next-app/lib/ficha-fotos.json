@@ -1,4 +1,55 @@
 {
+  "aeroblue-tees": {
+    "mockups": [
+      "mesa-de-trabajo-1-copia-2-4c1d77b9283b562e9d17679043646798-1024-1024.png",
+      "mesa-de-trabajo-2-copia-3-2-641053e5dc7fb10bee17683316433329-1024-1024.png",
+      "mesa-de-trabajo-2-copia-3-608d90726cb0ab27d617683316426484-1024-1024.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-c5c24e4d1b91c5feb917683316474953-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "aerogrey-tees": {
+    "mockups": [
+      "aerogrey-tees-destacada-v2.png",
+      "mesa-de-trabajo-1-copia-2-9d2b5c09eda6b292bc17683316106844-1024-1024.png",
+      "mesa-de-trabajo-1-d4f7a7978d2531791117683316133672-1024-1024.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-f2686af59abceddaff17683316156476-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "aeropink-tees": {
+    "mockups": [
+      "mesa-de-trabajo-1-copia-d001477687accf22e917679044697808-1024-1024.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-bb6f33834d40cb661617683315790950-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "baby-come-back-black": {
+    "mockups": [
+      "mesa-de-trabajo-1-2030b3a2d2160f062617708515890031-1024-1024.png",
+      "mesa-de-trabajo-2-f073e449a3f8c2864717708515932804-1024-1024.png"
+    ],
+    "tablas": [
+      "oversize-fe6fc9602a08b068f617714307513121-1024-1024-c126b0e8d478798c3117737900816219-1024-1024.webp"
+    ],
+    "cuadrada": false
+  },
+  "baby-come-back-tees": {
+    "mockups": [
+      "baby-come-back-tees-destacada-v2.png",
+      "mesa-de-trabajo-4-a42a08af271b96abe317708515924137-1024-1024.png"
+    ],
+    "tablas": [
+      "oversize-fe6fc9602a08b068f617714307513121-1024-1024.jpg"
+    ],
+    "cuadrada": true
+  },
   "beanie-camo": {
     "mockups": [
       "beanie-camo-destacada-v2.png",
@@ -6,6 +57,15 @@
     ],
     "tablas": [],
     "cuadrada": false
+  },
+  "camo-cap": {
+    "mockups": [
+      "camo-cap-0.png",
+      "camo-cap-1.png",
+      "camo-cap-2.png"
+    ],
+    "tablas": [],
+    "cuadrada": true
   },
   "camo-full-set-combo": {
     "mockups": [
@@ -19,6 +79,29 @@
       "camo-full-set-combo-10.jpg"
     ],
     "cuadrada": true
+  },
+  "chain-hype": {
+    "mockups": [],
+    "tablas": [
+      "chain-hype-0-1.png"
+    ],
+    "cuadrada": true
+  },
+  "christ-reigns-hoodie": {
+    "mockups": [
+      "buzo-CHRIST-REINGS-black-front.png",
+      "buzo-CHRIST-REINGS-black.png"
+    ],
+    "tablas": [],
+    "cuadrada": false
+  },
+  "christ-reigns-tee": {
+    "mockups": [
+      "remera-CHRIST-REINGS-front.png",
+      "remera-CHRIST-REINGS-back.png"
+    ],
+    "tablas": [],
+    "cuadrada": false
   },
   "crewneck-hyped-up-black": {
     "mockups": [
@@ -922,6 +1005,14 @@
     "tablas": [
       "ranglan-6806659f9a653ee58d17705788961949-1024-1024.jpg"
     ],
+    "cuadrada": true
+  },
+  "worldwide-movement-taupe-tee": {
+    "mockups": [
+      "worldwide-movement-taupe-tee-destacada-v2.png",
+      "worldwide-movemente-taupe-tee-2-d6bcfb3aeb49db403817495658416079-1024-1024.jpg"
+    ],
+    "tablas": [],
     "cuadrada": true
   },
   "zip-hoodie-camo": {
