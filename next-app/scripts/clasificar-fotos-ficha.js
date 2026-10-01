@@ -73,10 +73,13 @@ async function clasificar(buf) {
   // WPGraphQL devuelve 100 por página como máximo: hay que paginar. Los
   // productos ocultos del catálogo (siguen teniendo ficha) van en otra pasada.
   const productos = [];
-  for (const filtro of ['', ', where: { visibility: HIDDEN }']) {
+  // Con la paginación por cursor sin orden explícito WPGraphQL saltea productos
+  // (el 30/09/2026 devolvía 102 de 112 y faltaban, entre otras, las tres Aero):
+  // mismo where que lib/products-server.ts.
+  for (const filtro of ['', ', visibility: HIDDEN']) {
   let cursor = null;
   do {
-    const query = `query($after: String) { products(first: 100, after: $after${filtro}) { pageInfo { hasNextPage endCursor } nodes { slug image { sourceUrl chica: sourceUrl(size: MEDIUM) mediaDetails { width height } } ... on Product { galleryImages(first: 40) { nodes { sourceUrl chica: sourceUrl(size: MEDIUM) mediaDetails { width height } } } } } } }`;
+    const query = `query($after: String) { products(first: 100, after: $after, where: { status: "publish", orderby: { field: DATE, order: ASC }${filtro} }) { pageInfo { hasNextPage endCursor } nodes { slug image { sourceUrl chica: sourceUrl(size: MEDIUM) mediaDetails { width height } } ... on Product { galleryImages(first: 40) { nodes { sourceUrl chica: sourceUrl(size: MEDIUM) mediaDetails { width height } } } } } } }`;
     const res = await fetch(GRAPHQL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, variables: { after: cursor } }) });
     const json = await res.json();
     if (!json.data) throw new Error('GraphQL: ' + JSON.stringify(json.errors).slice(0, 300));
