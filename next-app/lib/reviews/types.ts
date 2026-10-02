@@ -22,6 +22,8 @@ export interface PublicReview {
   isDemo?: boolean;
   /** Fotos que subió el cliente. Solo llegan con reseñas ya aprobadas. */
   photos?: PublicReviewPhoto[];
+  /** Respuesta de la tienda, escrita desde /admin/reviews/moderacion. */
+  reply?: { id: number; text: string; date: string } | null;
 }
 
 export interface PublicReviewDistribution {

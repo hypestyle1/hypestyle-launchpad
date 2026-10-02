@@ -253,11 +253,12 @@ export default function ReviewDetailPage() {
                             ))}
                           </div>
                         )}
-                        {p.wp_admin_edit_url && (
-                          <a href={p.wp_admin_edit_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-600 hover:underline mt-1 inline-block">
-                            Ver/moderar en WordPress →
-                          </a>
-                        )}
+                        <Link
+                          href={`/admin/reviews/moderacion?status=all&search=${detail.order.id}`}
+                          className="text-[11px] text-foreground/70 hover:text-foreground underline mt-1 inline-block"
+                        >
+                          Moderar en el panel →
+                        </Link>
                       </>
                     ) : (
                       <p className="text-[11px] text-muted-foreground/70 mt-1">Sin reseña todavía</p>

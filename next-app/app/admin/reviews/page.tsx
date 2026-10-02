@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import ReviewsTabs from '@/components/admin/reviews/ReviewsTabs';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -275,8 +276,8 @@ function ReviewsDashboard() {
       <div className="bg-card border-b border-border px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-[14px] font-semibold text-foreground">Reseñas</span>
+          <ReviewsTabs />
           {total > 0 && <span className="text-[12px] text-muted-foreground/70 bg-muted px-2 py-0.5 rounded-full">{total}</span>}
-
         </div>
         <button
           onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
