@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { motion } from 'motion/react';
+import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Accordion,
@@ -93,11 +94,15 @@ export default function FrequentlyAskedQuestions({
                 transition={{ duration: 0.35, delay: 0.5 + index * 0.07, ease: 'easeOut' }}
               >
                 <AccordionItem value={`item-${index}`} className="border-border">
-                  <AccordionTrigger className="gap-4 py-5 text-left text-[15px] font-semibold uppercase tracking-wide hover:no-underline hover:text-foreground/70 [&>svg]:text-foreground/40">
+                  {/* El chevron del trigger de shadcn se oculta y se usa un "+" que gira a "x" al abrir. */}
+                  <AccordionTrigger className="gap-4 py-5 text-left text-[15px] font-semibold uppercase tracking-wide hover:no-underline hover:text-foreground/70 [&>.lucide-chevron-down]:hidden [&[data-state=open]>.faq-plus]:rotate-45 [&[data-state=open]]:underline [&[data-state=open]]:underline-offset-4">
                     {item.question}
+                    <Plus className="faq-plus h-4 w-4 shrink-0 text-foreground/40 transition-transform duration-300" strokeWidth={1.5} />
                   </AccordionTrigger>
-                  <AccordionContent className="pb-6 text-foreground/70">
-                    {item.answer}
+                  <AccordionContent className="pb-5">
+                    <div className="border border-border bg-bg-alt px-5 py-4 text-foreground/70 md:px-6 md:py-5">
+                      {item.answer}
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               </motion.div>
