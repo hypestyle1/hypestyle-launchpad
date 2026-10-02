@@ -131,10 +131,10 @@
     "cuadrada": true
   },
   "chain-hype": {
-    "mockups": [],
-    "tablas": [
+    "mockups": [
       "chain-hype-0-1.png"
     ],
+    "tablas": [],
     "cuadrada": true
   },
   "christ-reigns-hoodie": {
@@ -179,11 +179,10 @@
   },
   "eye-sleveless-wheat": {
     "mockups": [
-      "eye-sleveless-wheat-destacada-v2.png"
-    ],
-    "tablas": [
+      "eye-sleveless-wheat-destacada-v2.png",
       "465605f2-d8f7-4932-b1ea-162d6c56a000-e0f8ebd20164cb459117367000786541-1024-1024.jpeg"
     ],
+    "tablas": [],
     "cuadrada": true
   },
   "faith-over-everything-camo-hoodie": {

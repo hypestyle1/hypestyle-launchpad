@@ -84,7 +84,10 @@ const archivo = (url: string) => {
 
 /**
  * Orden de la galería en la ficha: primero las fotos con una persona usando la
- * prenda, después los mockups y al final la tabla de talles.
+ * prenda y después los mockups. La tabla de talles no va en la galería: la
+ * única tabla de la ficha es la del modal "Guía de talles" (atributo
+ * `size-guide` de Woo). Una clienta compró guiándose por el modal y después
+ * vio otra tabla, con otras medidas, entre las fotos.
  *
  * Entre los mockups va primero la destacada de Woo, que es siempre el frente:
  * un producto que solo tiene mockups abre con el frente.
@@ -104,11 +107,9 @@ export function ordenarFotos(slug: string, imagenes: string[]): string[] {
   const tablas = new Set(tipos.tablas);
   // Una imagen nueva que el archivo no conoce se trata como foto.
   const fotos = imagenes.filter((i) => !mockups.has(archivo(i)) && !tablas.has(archivo(i)));
-  return [
-    ...fotos,
-    ...imagenes.filter((i) => mockups.has(archivo(i))),
-    ...imagenes.filter((i) => tablas.has(archivo(i))),
-  ];
+  const ordenadas = [...fotos, ...imagenes.filter((i) => mockups.has(archivo(i)))];
+  // Si la galería fueran solo tablas, mejor mostrarlas que dejar la ficha sin imagen.
+  return ordenadas.length ? ordenadas : imagenes;
 }
 
 /** ¿Esta imagen es un mockup? La ficha lo muestra entero en vez de recortarlo. */
