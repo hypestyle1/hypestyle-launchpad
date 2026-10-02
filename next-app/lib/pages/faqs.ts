@@ -34,7 +34,7 @@ export const FAQS: Localized<FaqsContent> = {
       {
         category: 'Productos & Talles',
         items: [
-          { q: '¿Cómo sé qué talle elegir?', a: 'Cada producto tiene una guía de talles en la página de producto. Si tenés dudas, escribinos por WhatsApp.' },
+          { q: '¿Cómo sé qué talle elegir?', a: 'Cada producto tiene una guía de talles y, en muchos casos, las medidas de la prenda en su página. Si dudás entre dos talles, elegí el más grande: toda prenda tiene un margen de 1 a 2 cm y una remera un poco holgada se usa igual; una que queda chica, no. Y si seguís con dudas, escribinos por WhatsApp.' },
           { q: '¿Los productos son limitados?', a: 'Sí. Lanzamos drops con stock limitado. Una vez agotado un talle, no se repone hasta el próximo drop.' },
           { q: '¿Cómo cuido mis prendas?', a: 'Lavado a mano o máquina en frío, del revés. No usar secadora. Ver las instrucciones de cuidado específicas en cada producto.' },
         ],
@@ -74,7 +74,7 @@ export const FAQS: Localized<FaqsContent> = {
       {
         category: 'Products & Sizes',
         items: [
-          { q: 'How do I know which size to choose?', a: 'Every product has a size guide on its page. If in doubt, message us on WhatsApp.' },
+          { q: 'How do I know which size to choose?', a: 'Every product has a size guide and, in many cases, the garment measurements on its page. If you are torn between two sizes, go for the larger one: every garment has a 1 to 2 cm margin, and a slightly loose tee still gets worn; one that runs small does not. Still unsure? Message us on WhatsApp.' },
           { q: 'Are the products limited?', a: 'Yes. We release drops with limited stock. Once a size sells out, it is not restocked until the next drop.' },
           { q: 'How do I care for my garments?', a: 'Hand or machine wash cold, inside out. Do not tumble dry. See the specific care instructions on each product.' },
         ],
@@ -114,7 +114,7 @@ export const FAQS: Localized<FaqsContent> = {
       {
         category: 'Produtos & Tamanhos',
         items: [
-          { q: 'Como sei qual tamanho escolher?', a: 'Cada produto tem uma guia de tamanhos na página do produto. Se tiver dúvidas, fale conosco pelo WhatsApp.' },
+          { q: 'Como sei qual tamanho escolher?', a: 'Cada produto tem uma guia de tamanhos e, em muitos casos, as medidas da peça na sua página. Na dúvida entre dois tamanhos, escolha o maior: toda peça tem uma margem de 1 a 2 cm e uma camiseta um pouco folgada se usa do mesmo jeito; uma que fica pequena, não. Se ainda tiver dúvidas, fale conosco pelo WhatsApp.' },
           { q: 'Os produtos são limitados?', a: 'Sim. Lançamos drops com estoque limitado. Quando um tamanho esgota, não é reposto até o próximo drop.' },
           { q: 'Como cuido das minhas peças?', a: 'Lavar à mão ou na máquina com água fria, do avesso. Não usar secadora. Veja as instruções de cuidado específicas em cada produto.' },
         ],
@@ -154,7 +154,7 @@ export const FAQS: Localized<FaqsContent> = {
       {
         category: 'Produkte & Größen',
         items: [
-          { q: 'Woher weiß ich, welche Größe ich nehmen soll?', a: 'Jedes Produkt hat eine Größentabelle auf seiner Seite. Bei Zweifeln schreib uns per WhatsApp.' },
+          { q: 'Woher weiß ich, welche Größe ich nehmen soll?', a: 'Jedes Produkt hat eine Größentabelle und oft auch die Maße des Kleidungsstücks auf seiner Seite. Schwankst du zwischen zwei Größen, nimm die größere: jedes Kleidungsstück hat eine Toleranz von 1 bis 2 cm, und ein etwas weiteres T-Shirt trägt man trotzdem, ein zu kleines nicht. Bei weiteren Zweifeln schreib uns per WhatsApp.' },
           { q: 'Sind die Produkte limitiert?', a: 'Ja. Wir veröffentlichen Drops mit begrenztem Bestand. Ist eine Größe ausverkauft, wird sie bis zum nächsten Drop nicht nachproduziert.' },
           { q: 'Wie pflege ich meine Kleidung?', a: 'Hand- oder Maschinenwäsche kalt, auf links. Nicht in den Trockner. Die genauen Pflegehinweise stehen bei jedem Produkt.' },
         ],
@@ -194,7 +194,7 @@ export const FAQS: Localized<FaqsContent> = {
       {
         category: 'Produits & Tailles',
         items: [
-          { q: 'Comment savoir quelle taille choisir ?', a: 'Chaque produit a un guide des tailles sur sa page. En cas de doute, écris-nous sur WhatsApp.' },
+          { q: 'Comment savoir quelle taille choisir ?', a: 'Chaque produit a un guide des tailles et, souvent, les mesures du vêtement sur sa page. Si tu hésites entre deux tailles, prends la plus grande : chaque vêtement a une marge de 1 à 2 cm, et un t-shirt un peu ample se porte quand même, un trop petit, non. Et si tu hésites encore, écris-nous sur WhatsApp.' },
           { q: 'Les produits sont-ils limités ?', a: "Oui. Nous lançons des drops en stock limité. Une fois une taille épuisée, elle n'est pas réassortie avant le prochain drop." },
           { q: "Comment entretenir mes vêtements ?", a: "Lavage à la main ou en machine à froid, à l'envers. Pas de sèche-linge. Voir les instructions d'entretien spécifiques sur chaque produit." },
         ],
@@ -234,7 +234,7 @@ export const FAQS: Localized<FaqsContent> = {
       {
         category: 'Prodotti & Taglie',
         items: [
-          { q: 'Come faccio a sapere quale taglia scegliere?', a: 'Ogni prodotto ha una guida alle taglie nella sua pagina. In caso di dubbi, scrivici su WhatsApp.' },
+          { q: 'Come faccio a sapere quale taglia scegliere?', a: 'Ogni prodotto ha una guida alle taglie e, spesso, le misure del capo nella sua pagina. Se sei indeciso tra due taglie, scegli la più grande: ogni capo ha un margine da 1 a 2 cm e una t-shirt un po’ larga si indossa comunque, una stretta no. Se hai ancora dubbi, scrivici su WhatsApp.' },
           { q: 'I prodotti sono limitati?', a: 'Sì. Lanciamo drop con stock limitato. Quando una taglia si esaurisce, non viene riassortita fino al drop successivo.' },
           { q: 'Come mi prendo cura dei capi?', a: 'Lavaggio a mano o in lavatrice a freddo, al rovescio. Non usare l\'asciugatrice. Vedi le istruzioni di cura specifiche di ogni prodotto.' },
         ],
