@@ -66,6 +66,14 @@ export const POLITICAS: Localized<PoliticasContent> = {
         ],
       },
       {
+        title: 'Cuidado de las prendas',
+        blocks: [
+          { p: 'Las remeras son de algodón y pueden achicarse con el calor. Para que mantengan su medida, lavalas con agua fría, preferentemente a mano o en ciclo suave, y dejalas secar al aire.' },
+          { ul: ['Agua fría, siempre', 'Sin secadora', 'Sin agua caliente ni lavados a alta temperatura'] },
+          { p: 'Si dudás entre dos talles, elegí el más grande. Toda prenda tiene un margen y una remera un poco holgada se usa igual; una que queda chica, no.', strong: true },
+        ],
+      },
+      {
         title: 'Condiciones del producto',
         blocks: [
           { p: 'Para que un cambio sea aceptado, el producto debe cumplir todas estas condiciones:' },
@@ -160,6 +168,14 @@ export const POLITICAS: Localized<PoliticasContent> = {
         title: 'Measurement variations',
         blocks: [
           { p: 'Garments may vary by 1 to 2 cm from the size chart, which is inherent to the manufacturing process. These variations are not considered a manufacturing defect.' },
+        ],
+      },
+      {
+        title: 'Garment care',
+        blocks: [
+          { p: 'Our tees are cotton and can shrink with heat. To keep their size, wash them in cold water, preferably by hand or on a gentle cycle, and let them air dry.' },
+          { ul: ['Cold water, always', 'No tumble dryer', 'No hot water or high-temperature washes'] },
+          { p: 'If you are torn between two sizes, go for the larger one. Every garment has a margin, and a slightly loose tee still gets worn; one that runs small does not.', strong: true },
         ],
       },
       {
@@ -260,6 +276,14 @@ export const POLITICAS: Localized<PoliticasContent> = {
         ],
       },
       {
+        title: 'Cuidados com as peças',
+        blocks: [
+          { p: 'As camisetas são de algodão e podem encolher com o calor. Para manterem a medida, lave com água fria, de preferência à mão ou em ciclo delicado, e deixe secar ao ar livre.' },
+          { ul: ['Água fria, sempre', 'Sem secadora', 'Sem água quente nem lavagens em alta temperatura'] },
+          { p: 'Se estiver em dúvida entre dois tamanhos, escolha o maior. Toda peça tem uma margem, e uma camiseta um pouco folgada se usa do mesmo jeito; uma que fica pequena, não.', strong: true },
+        ],
+      },
+      {
         title: 'Condições do produto',
         blocks: [
           { p: 'Para que uma troca seja aceita, o produto deve cumprir todas estas condições:' },
@@ -354,6 +378,14 @@ export const POLITICAS: Localized<PoliticasContent> = {
         title: 'Maßabweichungen',
         blocks: [
           { p: 'Die Kleidungsstücke können produktionsbedingt um 1 bis 2 cm von der Größentabelle abweichen. Solche Abweichungen gelten nicht als Herstellungsfehler.' },
+        ],
+      },
+      {
+        title: 'Pflege der Kleidung',
+        blocks: [
+          { p: 'Unsere T-Shirts sind aus Baumwolle und können bei Hitze einlaufen. Damit sie ihre Größe behalten, wasche sie kalt, am besten von Hand oder im Schonwaschgang, und lass sie an der Luft trocknen.' },
+          { ul: ['Immer kaltes Wasser', 'Kein Trockner', 'Kein heißes Wasser und keine Wäsche bei hohen Temperaturen'] },
+          { p: 'Wenn du zwischen zwei Größen schwankst, nimm die größere. Jedes Kleidungsstück hat eine Toleranz, und ein etwas weiteres T-Shirt trägt man trotzdem; ein zu kleines nicht.', strong: true },
         ],
       },
       {
@@ -454,6 +486,14 @@ export const POLITICAS: Localized<PoliticasContent> = {
         ],
       },
       {
+        title: 'Entretien des vêtements',
+        blocks: [
+          { p: 'Nos t-shirts sont en coton et peuvent rétrécir avec la chaleur. Pour qu’ils gardent leur taille, lave-les à l’eau froide, de préférence à la main ou en cycle délicat, et laisse-les sécher à l’air libre.' },
+          { ul: ['Eau froide, toujours', 'Pas de sèche-linge', 'Pas d’eau chaude ni de lavage à haute température'] },
+          { p: 'Si tu hésites entre deux tailles, choisis la plus grande. Chaque vêtement a une marge, et un t-shirt un peu ample se porte quand même ; un trop petit, non.', strong: true },
+        ],
+      },
+      {
         title: 'État du produit',
         blocks: [
           { p: "Pour qu'un échange soit accepté, le produit doit remplir toutes ces conditions :" },
@@ -548,6 +588,14 @@ export const POLITICAS: Localized<PoliticasContent> = {
         title: 'Variazioni di misure',
         blocks: [
           { p: 'I capi possono presentare variazioni di 1-2 cm rispetto alla tabella taglie, tipiche del processo di confezione. Queste variazioni non sono considerate difetto di fabbricazione.' },
+        ],
+      },
+      {
+        title: 'Cura dei capi',
+        blocks: [
+          { p: 'Le nostre t-shirt sono in cotone e possono restringersi con il calore. Per mantenere la misura, lavale in acqua fredda, preferibilmente a mano o con ciclo delicato, e lasciale asciugare all’aria.' },
+          { ul: ['Acqua fredda, sempre', 'Niente asciugatrice', 'Niente acqua calda né lavaggi ad alta temperatura'] },
+          { p: 'Se sei indeciso tra due taglie, scegli la più grande. Ogni capo ha un margine, e una t-shirt un po’ larga si indossa comunque; una stretta no.', strong: true },
         ],
       },
       {

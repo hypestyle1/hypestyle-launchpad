@@ -399,6 +399,19 @@ export function TextoCambios() {
   );
 }
 
+/** Cierre de la guía de cuidado: encogimiento, variaciones de medidas y qué talle elegir ante la duda. Mismo texto que /politicas-de-devolucion. */
+export function NotaCuidadoTalles() {
+  const { t } = useLocale();
+  return (
+    <>
+      <p>{t('Las remeras son de algodón y pueden achicarse con el calor: lavalas con agua fría, sin secadora y sin agua caliente, y dejalas secar al aire.')}</p>
+      <p className="font-semibold text-foreground">{t('Variaciones de medidas')}</p>
+      <p>{t('Las prendas pueden presentar variaciones de 1 a 2 cm respecto a la tabla de talles, propias del proceso de confección. Estas variaciones no son consideradas falla de fabricación.')}</p>
+      <p className="text-foreground font-medium">{t('Si dudás entre dos talles, elegí el más grande: una remera un poco holgada se usa igual; una que queda chica, no.')}</p>
+    </>
+  );
+}
+
 /** Medidas por talle en texto. Si el producto no las tiene cargadas, devuelve null. */
 export function TablaMedidas({ product }: { product: Product }) {
   const { t } = useLocale();
@@ -425,6 +438,7 @@ export function TablaMedidas({ product }: { product: Product }) {
         </tbody>
       </table>
       <p className="text-[11px] text-muted-foreground mt-2">{t('Medido en plano · puede variar ±2 cm.')}</p>
+      <p className="text-[12px] text-foreground/70 mt-1">{t('Si dudás entre dos talles, elegí el más grande: una remera un poco holgada se usa igual; una que queda chica, no.')}</p>
     </div>
   );
 }

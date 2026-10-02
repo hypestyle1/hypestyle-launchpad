@@ -37,6 +37,13 @@ export default function ReviewCard({ review, compact = false }: { review: Public
 
       <p className={`text-[13px] text-foreground/80 leading-relaxed ${compact ? 'line-clamp-3' : ''}`}>{text}</p>
 
+      {review.reply?.text && (
+        <div className="border-l-2 border-foreground/20 pl-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-foreground/60">Respuesta de HYPE</p>
+          <p className={`text-[12.5px] text-foreground/70 leading-relaxed mt-0.5 ${compact ? 'line-clamp-2' : ''}`}>{review.reply.text}</p>
+        </div>
+      )}
+
       {photos.length > 0 && (
         <div className="flex gap-2">
           {photos.slice(0, 3).map((photo, i) => (
