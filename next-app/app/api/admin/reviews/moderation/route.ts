@@ -20,6 +20,9 @@ export async function GET(req: NextRequest) {
     if (v) params.set(p, v);
   }
 
+  // _cb: LiteSpeed en Hostinger cachea por URL exacta y guardó el 404 de antes de
+  // instalar el plugin; mismo patrón que el resto de los proxies admin.
+  params.set('_cb', String(Date.now()));
   const res = await fetch(`${WP_URL}/wp-json/hypestyle-reviews/v1/reviews-moderation?${params}`, {
     headers: { 'X-HS-Reviews-Secret': HS_REVIEWS_SECRET },
     cache: 'no-store',
