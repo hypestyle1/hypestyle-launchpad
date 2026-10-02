@@ -100,7 +100,11 @@ export default function FrequentlyAskedQuestions({
                     <Plus className="faq-plus h-4 w-4 shrink-0 text-foreground/40 transition-transform duration-300" strokeWidth={1.5} />
                   </AccordionTrigger>
                   <AccordionContent className="pb-5">
-                    <div className="border border-border bg-bg-alt px-5 py-4 text-foreground/70 md:px-6 md:py-5">
+                    {/* hs-glass (globals.css): vidrio con borde claro y brillo en el canto. El tinte da cuerpo sobre el fondo blanco. */}
+                    <div
+                      className="hs-glass rounded-2xl px-5 py-4 text-foreground/70 md:px-6 md:py-5"
+                      style={{ background: "rgba(0, 0, 0, 0.035)" }}
+                    >
                       {item.answer}
                     </div>
                   </AccordionContent>
