@@ -4,7 +4,7 @@ import { abreCuadrada, composicion, esMockup, ordenarFotos, resumen, ventanaEntr
 const wp = (archivo: string) => `https://wp.test/wp-content/uploads/2026/05/${archivo}`;
 
 describe('ordenarFotos', () => {
-  it('pone las fotos primero, después los mockups y al final la tabla', () => {
+  it('pone las fotos primero, después los mockups, y deja la tabla de talles afuera', () => {
     const galeria = [
       'camo-full-set-combo-0.png', 'camo-9938.png', 'mia-camo-15.png',
       'camo-full-set-combo-6.png', 'camo-full-set-combo-9.jpg',
@@ -12,8 +12,12 @@ describe('ordenarFotos', () => {
     expect(ordenarFotos('camo-full-set-combo', galeria).map(u => u.split('/').pop())).toEqual([
       'camo-9938.png', 'mia-camo-15.png',
       'camo-full-set-combo-0.png', 'camo-full-set-combo-6.png',
-      'camo-full-set-combo-9.jpg',
     ]);
+  });
+
+  it('deja la galería como está si solo tuviera tablas', () => {
+    const galeria = ['camo-full-set-combo-9.jpg', 'camo-full-set-combo-10.jpg'].map(wp);
+    expect(ordenarFotos('camo-full-set-combo', galeria)).toEqual(galeria);
   });
 
   it('abre con el frente cuando el producto solo tiene mockups', () => {
