@@ -88,6 +88,7 @@ export const GRUPOS: NavGrupo[] = [
 // ellas (tandas y settings de reseñas) eran inalcanzables desde la UI.
 export const ACCIONES: NavItem[] = [
   { label: 'Cargar pedido manual', href: '/admin/pedidos/nuevo', seccion: 'pedidos', match: '', Icono: PackagePlus },
+  { label: 'Moderar reseñas', href: '/admin/reviews/moderacion', seccion: 'reviews', match: '', Icono: Star },
   { label: 'Nueva tanda de reseñas', href: '/admin/reviews/nueva-tanda', seccion: 'reviews', match: '', Icono: ListChecks },
   { label: 'Configuración de reseñas', href: '/admin/reviews/settings', seccion: 'reviews', match: '', Icono: Settings },
 ];
