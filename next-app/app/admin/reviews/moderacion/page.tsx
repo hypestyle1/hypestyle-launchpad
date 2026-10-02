@@ -162,6 +162,8 @@ function ModeracionPage() {
   const fetchRows = useCallback(async (p: number) => {
     if (!adminKey) return;
     setLoading(true);
+    // Un error de carga anterior no tiene que quedar pegado; los "✓" de una acción sí.
+    setMsg(m => (m.startsWith('✓') ? m : ''));
     try {
       const params = new URLSearchParams({ page: String(p), per_page: String(perPage), status, sort });
       if (stars) params.set('stars', stars);
