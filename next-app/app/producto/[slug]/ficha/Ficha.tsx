@@ -6,7 +6,7 @@ import { abreCuadrada, composicion, esMockup, resumen } from '@/lib/ficha';
 import {
   type FichaProps, Foto, Migas, Precio, Descuento, TablaPagos, SelectorColor, SelectorTalle,
   LineaDespacho, LineaResenas, BotonComprar, Promesas, CuandoLlega, Desplegable,
-  TextoEnvios, TextoCambios, TablaMedidas, InterruptorModelo, imgUrl, isVideo,
+  TextoEnvios, TextoCambios, TablaMedidas, NotaCuidadoTalles, InterruptorModelo, imgUrl, isVideo,
 } from './bloques';
 
 /**
@@ -58,6 +58,7 @@ export default function Ficha(p: FichaProps) {
                   {product.careItems.map((item, i) => <li key={item.icon + '-' + i}>{t(item.text)}</li>)}
                 </ul>
                 {product.careNote && <p className="text-[12px] text-foreground/55">{t(product.careNote)}</p>}
+                <NotaCuidadoTalles />
               </Desplegable>
               {intro && <Desplegable titulo={t('Descripción')}><p className="whitespace-pre-line">{p.descripcion}</p></Desplegable>}
             </div>
