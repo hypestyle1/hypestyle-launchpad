@@ -223,13 +223,24 @@ const CREWNECK_HYPED_COLORWAYS = [
   { label: 'Grey', value: '#d6d6d6', slug: 'crewneck-hyped-up-grey', image: `${WP}/2026/04/mockup-hyped-up-1-6d8ae45c4e6a3a25c917566770897901-1024-1024.png` },
   { label: 'Black', value: '#1a1a1a', slug: 'crewneck-hyped-up-black', image: `${WP}/2026/09/crewneck-hyped-up-black-destacada-v2.png` },
 ];
-// AEROPINK: hasta el 30/09/2026 era UN producto con las tres remeras mezcladas
-// en la galería y stock por talle sin color. Se separó en tres productos; la
-// blanca conserva el slug original (ventas, reseñas y catálogo de Meta).
+// Aero tees: hasta el 30/09/2026 cada diseño era UN producto con las tres
+// remeras mezcladas en la galería y stock por talle sin color. Se separaron en
+// tres productos; la blanca conserva el slug original (ventas, reseñas y
+// catálogo de Meta). AEROGREY y AEROBLUE el 01/10/2026.
 const AEROPINK_COLORWAYS = [
   { label: 'White', value: '#f5f5f5', slug: 'aeropink-tees',       image: `${WP}/2026/04/mesa-de-trabajo-1-copia-d001477687accf22e917679044697808-1024-1024.png` },
   { label: 'Black', value: '#1a1a1a', slug: 'aeropink-tees-black', image: `${WP}/2026/04/mesa-de-trabajo-2-copia-2-3ac91d5e29a9d7b11b17683315737157-1024-1024.png` },
   { label: 'Grey',  value: '#a9a9a9', slug: 'aeropink-tees-grey',  image: `${WP}/2026/04/mesa-de-trabajo-2-2fa1840f27edb601cf17683315747187-1024-1024.png` },
+];
+const AEROGREY_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'aerogrey-tees',       image: `${WP}/2026/09/aerogrey-tees-destacada-v2.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'aerogrey-tees-black', image: `${WP}/2026/04/mesa-de-trabajo-1-copia-2-9d2b5c09eda6b292bc17683316106844-1024-1024.png` },
+  { label: 'Grey',  value: '#a9a9a9', slug: 'aerogrey-tees-grey',  image: `${WP}/2026/04/mesa-de-trabajo-1-d4f7a7978d2531791117683316133672-1024-1024.png` },
+];
+const AEROBLUE_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'aeroblue-tees',       image: `${WP}/2026/04/mesa-de-trabajo-1-copia-2-4c1d77b9283b562e9d17679043646798-1024-1024.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'aeroblue-tees-black', image: `${WP}/2026/04/mesa-de-trabajo-2-copia-3-608d90726cb0ab27d617683316426484-1024-1024.png` },
+  { label: 'Grey',  value: '#a9a9a9', slug: 'aeroblue-tees-grey',  image: `${WP}/2026/04/mesa-de-trabajo-2-copia-3-2-641053e5dc7fb10bee17683316433329-1024-1024.png` },
 ];
 
 /** Colorways hermanos de un slug (para los puntitos de color en la card). */
@@ -292,6 +303,8 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'crewneck-hyped-up-grey': CREWNECK_HYPED_COLORWAYS,
   'crewneck-hyped-up-black': CREWNECK_HYPED_COLORWAYS,
   ...Object.fromEntries(AEROPINK_COLORWAYS.map(c => [c.slug, AEROPINK_COLORWAYS])),
+  ...Object.fromEntries(AEROGREY_COLORWAYS.map(c => [c.slug, AEROGREY_COLORWAYS])),
+  ...Object.fromEntries(AEROBLUE_COLORWAYS.map(c => [c.slug, AEROBLUE_COLORWAYS])),
 };
 
 const FIT_KEYWORDS: [string, string][] = [

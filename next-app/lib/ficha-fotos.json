@@ -1,9 +1,25 @@
 {
   "aeroblue-tees": {
     "mockups": [
-      "mesa-de-trabajo-1-copia-2-4c1d77b9283b562e9d17679043646798-1024-1024.png",
-      "mesa-de-trabajo-2-copia-3-2-641053e5dc7fb10bee17683316433329-1024-1024.png",
+      "mesa-de-trabajo-1-copia-2-4c1d77b9283b562e9d17679043646798-1024-1024.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-c5c24e4d1b91c5feb917683316474953-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "aeroblue-tees-black": {
+    "mockups": [
       "mesa-de-trabajo-2-copia-3-608d90726cb0ab27d617683316426484-1024-1024.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-c5c24e4d1b91c5feb917683316474953-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "aeroblue-tees-grey": {
+    "mockups": [
+      "mesa-de-trabajo-2-copia-3-2-641053e5dc7fb10bee17683316433329-1024-1024.png"
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-c5c24e4d1b91c5feb917683316474953-1024-1024.webp"
@@ -12,8 +28,24 @@
   },
   "aerogrey-tees": {
     "mockups": [
-      "aerogrey-tees-destacada-v2.png",
-      "mesa-de-trabajo-1-copia-2-9d2b5c09eda6b292bc17683316106844-1024-1024.png",
+      "aerogrey-tees-destacada-v2.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-f2686af59abceddaff17683316156476-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "aerogrey-tees-black": {
+    "mockups": [
+      "mesa-de-trabajo-1-copia-2-9d2b5c09eda6b292bc17683316106844-1024-1024.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-f2686af59abceddaff17683316156476-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "aerogrey-tees-grey": {
+    "mockups": [
       "mesa-de-trabajo-1-d4f7a7978d2531791117683316133672-1024-1024.png"
     ],
     "tablas": [
@@ -24,6 +56,24 @@
   "aeropink-tees": {
     "mockups": [
       "mesa-de-trabajo-1-copia-d001477687accf22e917679044697808-1024-1024.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-bb6f33834d40cb661617683315790950-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "aeropink-tees-black": {
+    "mockups": [
+      "mesa-de-trabajo-2-copia-2-3ac91d5e29a9d7b11b17683315737157-1024-1024.png"
+    ],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-bb6f33834d40cb661617683315790950-1024-1024.webp"
+    ],
+    "cuadrada": true
+  },
+  "aeropink-tees-grey": {
+    "mockups": [
+      "mesa-de-trabajo-2-2fa1840f27edb601cf17683315747187-1024-1024.png"
     ],
     "tablas": [
       "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-bb6f33834d40cb661617683315790950-1024-1024.webp"
