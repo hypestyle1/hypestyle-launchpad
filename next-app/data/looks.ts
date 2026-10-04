@@ -1,86 +1,68 @@
-export interface LookProduct {
-  category: string;
-  name: string;
-  price: number;
-  image: string;
+/**
+ * Shop the look — sesión de estudio SS27 (02/10/2026).
+ *
+ * Acá va solo lo editorial: fotos y slugs. Nombre, precio, tachado, miniatura
+ * y stock salen del catálogo de Woo (la query ['products'] que el home ya
+ * precarga en el servidor), así que no se desactualizan.
+ *
+ * `pendiente`: prendas nuevas que todavía no están cargadas en Woo. Mientras el
+ * slug no aparezca en el catálogo se muestran con este nombre y "Próximamente",
+ * sin precio ni link. Cuando se carga el producto con ese slug, toma los datos
+ * reales sola. Si el slug final en Woo es otro, cambiarlo acá.
+ *
+ * Fotos: 960x1280 (3:4) en public/looks/ss27/, exportadas de los originales de
+ * `Redes & Pauta/CONTENT SS27/ESTUDIO/_SELECCION`. Orden de los ángulos:
+ * frente, perfil, espalda, detalle. El frente es el que se ve en el line-up.
+ */
+
+export type Angulo = 'frente' | 'perfil' | 'espalda' | 'detalle';
+
+export interface LookItem {
   slug: string;
+  pendiente?: { name: string; category: string };
 }
 
 export interface Look {
   id: string;
-  title: string;
-  image: string;
-  products: LookProduct[];
+  modelo: 'ella' | 'el';
+  angulos: Angulo[];
+  /** La primera es la prenda principal: le da el nombre al look. */
+  items: LookItem[];
 }
 
+export const lookFoto = (look: Look, angulo: Angulo) => `/looks/ss27/${look.id}-${angulo}.webp`;
+
+const TODOS: Angulo[] = ['frente', 'perfil', 'espalda', 'detalle'];
+
+const SWEAT_GREY: LookItem = { slug: 'sweatpant-grey-hstars' };
+const SWEAT_BLACK: LookItem = { slug: 'sweatpant-black-hstars' };
+
+const nuevo = (slug: string, name: string, category: string): LookItem => ({ slug, pendiente: { name, category } });
+
+const AD_PINK = nuevo('athletic-dept-longsleeve-pink', 'Athletic Dept Longsleeve Pink', 'Longsleeve');
+const AD_BLUE = nuevo('athletic-dept-longsleeve-blue', 'Athletic Dept Longsleeve Blue', 'Longsleeve');
+const CREST_BLACK = nuevo('varsity-crest-tee-black', 'Varsity Crest Tee Black', 'Remera');
+const EAGLE = nuevo('eagle-18-hoodie-washed-graphite', 'Eagle 18 Hoodie Washed Graphite', 'Hoodie');
+const RAGLAN = nuevo('raglan-crest-longsleeve-olive', 'Raglan Crest Longsleeve Olive', 'Longsleeve');
+const VARSITY_018 = nuevo('hype-018-worn-varsity-boxy-tee-navy', 'Hype 018 Worn Varsity Boxy Tee Navy', 'Remera');
+const WAFFLE = nuevo('hype-department-waffle-longsleeve-washed-black', 'Hype Department Waffle Longsleeve', 'Longsleeve');
+const DISTRESSED = nuevo('hype-distressed-hoodie-washed-grey', 'Hype Distressed Hoodie Washed Grey', 'Hoodie');
+const HEARTS = nuevo('hearts-boxy-tee-white', 'Hearts Boxy Tee White', 'Remera');
+
+/** El orden es el del line-up. */
 export const LOOKS: Look[] = [
-  {
-    id: "look-hstars-grey",
-    title: "HStars Grey Set",
-    image: "stl-hstars-grey.webp",
-    products: [
-      { category: "Hoodie", name: "Hoodie Grey HStars", price: 99990, image: "products/hoodie-grey-hstars-0.png", slug: "hoodie-grey-hstars" },
-      { category: "Pantalón", name: "SweatPant Grey HStars", price: 94000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/PANT.png", slug: "sweatpant-grey-hstars" },
-    ],
-  },
-  {
-    id: "look-pink-set",
-    title: "Pink Set",
-    image: "stl-pink-set.webp",
-    products: [
-      { category: "Hoodie", name: "Zip Hoodie Pink", price: 120000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/sin-titulo-2mesa-de-trabajo-1-jpg-8778ac83aab416038417766405540031-1024-1024.jpg", slug: "zip-hoodie-pink" },
-      { category: "Pantalón", name: "SweatPant Pink", price: 125000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/sin-titulo-2mesa-de-trabajo-3-jpg-cff6d51a6c991ca63617766409766712-1024-1024.jpg", slug: "sweatpant-pink" },
-    ],
-  },
-  {
-    id: "look-camo-set",
-    title: "Camo Set",
-    image: "stl-camo-set.webp",
-    products: [
-      { category: "Hoodie", name: "Zip Hoodie Camo", price: 128000, image: "stl-camo-set.webp", slug: "zip-hoodie-camo" },
-      { category: "Accesorio", name: "Camo Cap", price: 40000, image: "product-camo-cap-orange.webp", slug: "camo-cap" },
-    ],
-  },
-  {
-    id: "look-realtree-pink",
-    title: "Realtree Pink",
-    image: "stl-realtree-pink.webp",
-    products: [
-      { category: "Remera", name: "Mesh Realtree Pink Tee", price: 78000, image: "products/mesh-realtree-pink-tee-0.png", slug: "mesh-realtree-pink-tee" },
-      { category: "Jort", name: "Jort Cargo Realtree Pink", price: 69000, image: "products/jort-cargo-realtree-pink-0.png", slug: "jort-cargo-realtree-pink" },
-    ],
-  },
-  {
-    id: "look-halfzip-polo-navy",
-    title: "Half Zip Polo Navy",
-    image: "stl-halfzip-navy.webp",
-    products: [
-      { category: "Polo", name: "Half Zip Polo — Navy", price: 87000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-6-1.png", slug: "half-zip-polo-navy" },
-    ],
-  },
-  {
-    id: "look-halfzip-polo-melange",
-    title: "Half Zip Polo Melange",
-    image: "stl-halfzip-melange.webp",
-    products: [
-      { category: "Polo", name: "Half Zip Polo — Melange", price: 87000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-2-1.png", slug: "half-zip-polo-melange" },
-    ],
-  },
-  {
-    id: "look-halfzip-polo-black",
-    title: "Half Zip Polo Black",
-    image: "stl-halfzip-black.webp",
-    products: [
-      { category: "Polo", name: "Half Zip Polo — Black", price: 87000, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/05/MOCKUPS-HALF-ZIP-1.png", slug: "half-zip-polo-black" },
-    ],
-  },
-  {
-    id: "look-graphite-set",
-    title: "Graphite Set",
-    image: "stl-look-unknown.webp",
-    products: [
-      { category: "Hoodie", name: "No Service For The Faithless - Hoodie", price: 52800, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/buzo-graphite_-nsftf-8db78fd41cab49461117737767457023-1024-1024.png", slug: "no-service-for-the-faithless-hoodie" },
-      { category: "Short", name: "Lettering Graphite - Jort", price: 55200, image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/mockup-jort-rustico-topo-frente-d1125bede86cfd3f8817612674654803-1024-1024.png", slug: "lettering-graphite-jort" },
-    ],
-  },
+  { id: 'pink-ella',       modelo: 'ella', angulos: TODOS, items: [AD_PINK, SWEAT_BLACK] },
+  { id: 'blue-el',         modelo: 'el',   angulos: TODOS, items: [AD_BLUE] },
+  { id: 'crest-ella',      modelo: 'ella', angulos: TODOS, items: [CREST_BLACK, SWEAT_BLACK] },
+  { id: '018-el',          modelo: 'el',   angulos: TODOS, items: [VARSITY_018, SWEAT_GREY] },
+  { id: 'eagle-ella',      modelo: 'ella', angulos: TODOS, items: [EAGLE] },
+  { id: 'raglan-el',       modelo: 'el',   angulos: TODOS, items: [RAGLAN, SWEAT_BLACK] },
+  { id: 'distressed-ella', modelo: 'ella', angulos: TODOS, items: [DISTRESSED, SWEAT_GREY] },
+  { id: 'waffle-el',       modelo: 'el',   angulos: TODOS, items: [WAFFLE, SWEAT_GREY] },
+  { id: 'blue-ella',       modelo: 'ella', angulos: TODOS, items: [AD_BLUE, SWEAT_GREY] },
+  { id: 'hearts-el',       modelo: 'el',   angulos: TODOS, items: [HEARTS, SWEAT_GREY] },
+  { id: 'waffle-ella',     modelo: 'ella', angulos: TODOS, items: [WAFFLE] },
+  { id: 'crest-el',        modelo: 'el',   angulos: ['frente', 'perfil', 'detalle'], items: [CREST_BLACK, SWEAT_GREY] },
+  { id: 'raglan-ella',     modelo: 'ella', angulos: TODOS, items: [RAGLAN] },
+  { id: 'pink-el',         modelo: 'el',   angulos: TODOS, items: [AD_PINK] },
 ];
