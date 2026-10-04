@@ -34,8 +34,28 @@ export function previewDetails(saleEndsLabel: string, publicOpenLabel: string): 
   ];
 }
 
+/**
+ * El mu-plugin devuelve los precios crudos de Woo ("98000.00"), pero los
+ * normalizadores del catálogo esperan el formato de WPGraphQL ("$98.000") y
+ * tratan el punto como separador de miles: "98000.00" se leía como 9.800.000.
+ * Se pasan a pesos enteros antes de normalizar.
+ */
+export function withPlainPrices<T>(node: T): T {
+  if (!node || typeof node !== 'object') return node;
+  const fix = (v: unknown) => {
+    if (typeof v !== 'string' || !/^\s*\d+(\.\d+)?\s*$/.test(v)) return v;
+    return String(Math.round(parseFloat(v)));
+  };
+  const out: any = { ...(node as any) };
+  for (const k of ['price', 'regularPrice', 'salePrice']) if (k in out) out[k] = fix(out[k]);
+  if (Array.isArray(out.variations?.nodes)) {
+    out.variations = { ...out.variations, nodes: out.variations.nodes.map((v: any) => withPlainPrices(v)) };
+  }
+  return out;
+}
+
 export function fromPrivateNode(node: any, labels: { saleEndsLabel: string; publicOpenLabel: string }): PrivateProduct {
-  const base = fromWPNode(node);
+  const base = fromWPNode(withPlainPrices(node));
   return {
     ...base,
     href: `${PRIVATE_ACCESS_PATH}/${base.slug}`,
