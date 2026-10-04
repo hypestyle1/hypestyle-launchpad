@@ -30,6 +30,7 @@ import { ScrollFadeList } from '@/components/ui/scroll-fade-list';
 import { ReceiptPrinter } from '@/components/ReceiptPrinter';
 import { Button } from '@/components/ui/button';
 import { FloatingInput, FloatingSelect } from '@/components/ui/floating-field';
+import { Check } from '@/components/ui/check';
 import { MedioDePago, type MetodoPago } from '@/components/checkout/MedioDePago';
 import { PagoSeguroBadge, NotaPagoSeguro, FranjaConfianza } from '@/components/checkout/Confianza';
 import { PagoSeguroCard } from '@/components/checkout/PagoSeguro';
@@ -1049,12 +1050,9 @@ export default function Checkout() {
               <Panel icon={Mail} title={isInternational ? 'Contact' : 'Contacto'} sub={isInternational ? 'We send your order updates here' : 'Te mandamos la confirmación y el seguimiento'}>
                 <FloatingInput type="email" label="Email" required autoComplete="email" inputMode="email" value={info.email}
                   onChange={e => setInfo({ ...info, email: e.target.value })} />
-                <label className="flex items-center gap-2.5 mt-3 cursor-pointer">
-                  <input type="checkbox" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })} className="w-4 h-4 accent-foreground" />
-                  <span className="text-[12px] text-muted-foreground">
-                    {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
-                  </span>
-                </label>
+                <Check className="mt-3" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })}>
+                  {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
+                </Check>
               </Panel>
 
               {soloGift ? (
