@@ -1,9 +1,10 @@
 'use client';
 
-import { Check } from 'lucide-react';
+import { Check, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type StepperStep<T extends string> = { id: T; label: string };
+/** `icon` reemplaza al número en los pasos que faltan y en el actual. */
+export type StepperStep<T extends string> = { id: T; label: string; icon?: LucideIcon };
 
 type StepperProps<T extends string> = {
   steps: StepperStep<T>[];
@@ -52,13 +53,14 @@ export function Stepper<T extends string>({ steps, current, onSelect, className 
             >
               <span
                 className={cn(
-                  'grid size-5 place-items-center rounded-full border text-[10px] font-bold transition-colors duration-300',
+                  'grid place-items-center rounded-full border text-[10px] font-bold transition-colors duration-300',
+                  s.icon ? 'size-7' : 'size-5',
                   active && 'border-foreground bg-foreground text-background',
                   done && 'border-foreground bg-foreground text-background group-hover:bg-foreground/80',
                   !active && !done && 'border-border text-muted-foreground',
                 )}
               >
-                {done ? <Check className="h-3 w-3" strokeWidth={3} /> : i + 1}
+                {done ? <Check className="h-3 w-3" strokeWidth={3} /> : s.icon ? <s.icon className="h-3.5 w-3.5" strokeWidth={2} /> : i + 1}
               </span>
               <span
                 className={cn(
