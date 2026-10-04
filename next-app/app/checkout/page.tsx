@@ -37,7 +37,8 @@ import { MedioDePago, type MetodoPago } from '@/components/checkout/MedioDePago'
 import { PagoSeguroBadge, NotaPagoSeguro, FranjaConfianza } from '@/components/checkout/Confianza';
 import { PagoSeguroCard } from '@/components/checkout/PagoSeguro';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowRight, AtSign, ChevronDown, ChevronLeft, CreditCard, Gift, Home, Info, Lock, Mail, MapPin, Plane, ShoppingBag, Store, Tag, Truck, User } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, CreditCard, Gift, Home, Info, Lock, Mail, MapPin, Plane, ShoppingBag, Store, Tag, Truck, User } from 'lucide-react';
+import { CloseFriendsCard, instagramValido } from '@/components/checkout/CloseFriendsCard';
 import { Panel, Recap, RadioCard, BarraEnvioGratis } from '@/components/checkout/Panel';
 import { useSyncExternalStore } from 'react';
 
@@ -347,6 +348,8 @@ export default function Checkout() {
   const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
   const [precargado, setPrecargado] = useState(false);
   const [cuponAbierto, setCuponAbierto] = useState(false);
+  // Lo que hay escrito en Close Friends aunque no hayan tocado "Sumarme".
+  const igBorrador = useRef('');
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
@@ -723,7 +726,9 @@ export default function Checkout() {
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pago.metodo || submitting) return;
-    if (pago.instagram) guardarDatos({ instagram: pago.instagram });
+    // Si escribió un usuario válido y pagó sin tocar "Sumarme", igual se guarda.
+    const instagram = pago.instagram || (instagramValido(igBorrador.current) ? '@' + igBorrador.current : '');
+    if (instagram) guardarDatos({ instagram });
     setSubmitting(true);
     setSubmitError(null);
     const isTransfer      = pago.metodo === 'transferencia';
@@ -736,7 +741,7 @@ export default function Checkout() {
       try {
         orderRes = await createOrderAndPreference({
           items: purchasableItems.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization, gift: item.customization?.gift })),
-          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: cpEnvio, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
+          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: cpEnvio, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram },
           shipping: envioCosto,
           discountAmount: (isLocalTransfer ? Math.round((subtotal - subtotalGift) * 0.10) : 0) + promo3x2Descuento + championDescuento,
           discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
@@ -1485,32 +1490,14 @@ export default function Checkout() {
                 </div>
               )}
 
-              <Panel
-                icon={AtSign}
-                title={<>Instagram <span className="ml-1 text-[10px] font-medium normal-case tracking-normal text-muted-foreground">{isInternational ? '(optional)' : '(opcional)'}</span></>}
-                sub={isInternational ? 'So we can reach you quickly if needed' : 'Para encontrarte rápido si tenemos que escribirte'}
-              >
-                <div className="relative">
-                  <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-foreground/50">@</span>
-                  <input
-                    type="text"
-                    id="instagram-checkout"
-                    aria-label="Instagram"
-                    placeholder={isInternational ? 'username' : 'usuario'}
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    // Se guarda con la @ adelante, igual que llegaba antes cuando
-                    // la escribía la persona; acá la @ es fija y no se tipea.
-                    value={pago.instagram.replace(/^@+/, '')}
-                    onChange={e => {
-                      const v = e.target.value.trim().replace(/^@+/, '');
-                      setPago({ ...pago, instagram: v ? `@${v}` : '' });
-                    }}
-                    className="w-full h-[52px] rounded-[10px] border border-border bg-white pl-[29px] pr-4 text-[13px] focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/70"
-                  />
-                </div>
-              </Panel>
+              {/* Close Friends de @hypestyle: la comunidad. El usuario se suma a
+                  mano después de la compra (panel /admin/content/close-friends). */}
+              <CloseFriendsCard
+                en={isInternational}
+                value={pago.instagram}
+                onChange={ig => setPago(p => ({ ...p, instagram: ig }))}
+                onBorrador={u => { igBorrador.current = u; }}
+              />
 
               <div id="medio-de-pago">
               <Panel icon={CreditCard} title={isInternational ? 'Payment method' : 'Medio de pago'} sub={isInternational ? 'You will finish the payment on the next screen' : 'Terminás de pagar en la pantalla siguiente'}>
