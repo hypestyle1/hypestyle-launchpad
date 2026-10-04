@@ -1340,11 +1340,11 @@ export default function Checkout() {
 
               <Panel icon={AtSign} title="Instagram" sub={isInternational ? 'Optional' : 'Para encontrarte rápido si tenemos que escribirte'}>
                 <div className="relative">
-                  <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-foreground/60">@</span>
+                  <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-foreground/50">@</span>
                   <input
                     type="text"
                     aria-label="Instagram"
-                    placeholder={isInternational ? 'yourusername' : 'tuusuario'}
+                    placeholder={isInternational ? 'username' : 'usuario'}
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
@@ -1356,7 +1356,7 @@ export default function Checkout() {
                       const v = e.target.value.trim().replace(/^@+/, '');
                       setPago({ ...pago, instagram: v ? `@${v}` : '' });
                     }}
-                    className="w-full h-[52px] rounded-[10px] border border-border bg-white pl-9 pr-4 text-[13px] focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/70"
+                    className="w-full h-[52px] rounded-[10px] border border-border bg-white pl-[29px] pr-4 text-[13px] focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/70"
                   />
                 </div>
               </Panel>
