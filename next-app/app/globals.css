@@ -490,18 +490,6 @@
   background: #0e2820;
 }
 
-/* Menta: verde claro para el borde difuminado de Close Friends en el checkout
- (components/checkout/CloseFriendsCard.tsx). Más claro que esmeralda y con el
- arcoíris del film bajo, para que el reflejo se lea verde y no multicolor. */
-.hs-foil-menta {
-  --foil-base-gradient: linear-gradient(135deg, #d4f5e2 0%, #7fd8a8 34%, #22a565 64%, #bdeed3 100%);
-  --film-opacity: 0.16;
-  --pearl-opacity: 0.75;
-  --glare-opacity: 0.5;
-  --surface-inset-shadow: none;
-  background: #6fcf9a;
-}
-
 /* Realce para superficies chicas. La calibración de dqnamo está pensada para
    paneles grandes: en una tarjeta de ~380px el arcoíris no llega a leerse y la
    pieza parece un degradado plano. Subir un poco el film y la saturación la

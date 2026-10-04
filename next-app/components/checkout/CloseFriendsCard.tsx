@@ -1,11 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import type * as React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CountUp } from '@/components/ui/count-up';
-import { IridescentFoil } from '@/components/ui/iridescent-foil';
 import { COMMUNITY_COUNT } from '@/lib/close-friends-config';
 
 /** Usuario de Instagram: letras, números, punto y guion bajo; hasta 30; sin
@@ -14,22 +12,15 @@ export function instagramValido(u: string): boolean {
   return /^(?!.*\.\.)(?!\.)(?!.*\.$)[a-z0-9._]{1,30}$/i.test(u);
 }
 
-/** Máscara del gris: transparente en el borde, opaco a los 16 px. */
-const FADE = 16;
-const BORDE_DIFUMINADO: React.CSSProperties = {
-  WebkitMaskImage: `linear-gradient(to right, transparent, #000 ${FADE}px, #000 calc(100% - ${FADE}px), transparent), linear-gradient(to bottom, transparent, #000 ${FADE}px, #000 calc(100% - ${FADE}px), transparent)`,
-  WebkitMaskComposite: 'source-in',
-  maskImage: `linear-gradient(to right, transparent, #000 ${FADE}px, #000 calc(100% - ${FADE}px), transparent), linear-gradient(to bottom, transparent, #000 ${FADE}px, #000 calc(100% - ${FADE}px), transparent)`,
-  maskComposite: 'intersect',
-};
+const GRIS = '#e2e2e2';
 
 /**
  * Invitación a Close Friends dentro del checkout. Es opcional y tiene que
  * sentirse como un beneficio por comprar, no como un paso más: compacta, gris
- * (se integra con las tarjetas del checkout) y el verde solo como acento: una
- * lámina iridiscente menta que asoma difuminada por los bordes y entra un poco
- * hacia adentro (el brillo sigue al mouse y al scroll), el punto, el contador y
- * el foco del campo.
+ * (se integra con las tarjetas del checkout) y el verde solo como acento: un
+ * resplandor interior suave que entra desde el borde, con una zona más
+ * brillante que recorre el contorno despacio; el punto, el contador y el foco
+ * del campo.
  *
  * Escribir el usuario no confirma nada: recién al tocar "Sumarme" se valida y
  * se muestra "Solicitud enviada". `onChange` recibe el usuario con @ (o '' si
@@ -68,14 +59,27 @@ export function CloseFriendsCard({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[10px]">
-      {/* Lámina menta detrás de toda la tarjeta. */}
-      <div aria-hidden="true" className="absolute inset-0">
-        <IridescentFoil tone="menta" className="h-full w-full" />
-      </div>
-      {/* El gris se difumina en los bordes: ahí asoma la lámina, suave y
-          entrando unos px hacia adentro en vez de una línea dura. */}
-      <div aria-hidden="true" className="absolute inset-0 bg-[#e2e2e2]" style={BORDE_DIFUMINADO} />
+    <div className="relative overflow-hidden rounded-[10px] border border-green-600/25" style={{ background: GRIS }}>
+      {/* Zona brillante que da la vuelta al contorno (8 s), desenfocada. Con
+          animaciones reducidas no se monta y queda solo el resplandor quieto. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[250%] -translate-x-1/2 -translate-y-1/2 animate-spin motion-reduce:hidden"
+        style={{
+          animationDuration: '8s',
+          filter: 'blur(12px)',
+          background: 'conic-gradient(from 0deg, transparent 0deg, transparent 210deg, rgba(34,197,94,0.5) 300deg, rgba(34,197,94,0.7) 330deg, transparent 355deg)',
+        }}
+      />
+      {/* Tapa gris desenfocada: deja ver la zona brillante solo cerca del
+          borde, entrando unos px hacia adentro. */}
+      <div aria-hidden="true" className="pointer-events-none absolute rounded-[8px]" style={{ inset: 7, background: GRIS, filter: 'blur(6px)' }} />
+      {/* Resplandor interior parejo, quieto. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-[10px]"
+        style={{ boxShadow: 'inset 0 0 22px rgba(34,197,94,0.22), inset 0 0 2px rgba(34,197,94,0.3)' }}
+      />
       <section className="relative px-5 py-4 sm:px-6 sm:py-5">
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
