@@ -4,7 +4,7 @@ import { type ComponentPropsWithoutRef, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 /** Metal de base de la lámina. Los estilos viven en globals.css (.hs-foil-*). */
-export type FoilTone = 'plata' | 'oro' | 'esmeralda' | 'negro';
+export type FoilTone = 'plata' | 'oro' | 'esmeralda' | 'negro' | 'menta';
 
 type ScrollProgressMode = 'element' | 'document';
 
@@ -19,6 +19,7 @@ const TONE_CLASS: Record<FoilTone, string> = {
   oro: 'hs-foil-oro',
   esmeralda: 'hs-foil-esmeralda',
   negro: 'hs-foil-negro',
+  menta: 'hs-foil-menta',
 };
 
 function clamp(value: number, min: number, max: number) {

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import type * as React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CountUp } from '@/components/ui/count-up';
-import { BorderBeam } from '@/components/ui/border-beam';
+import { IridescentFoil } from '@/components/ui/iridescent-foil';
 import { COMMUNITY_COUNT } from '@/lib/close-friends-config';
 
 /** Usuario de Instagram: letras, números, punto y guion bajo; hasta 30; sin
@@ -13,11 +14,22 @@ export function instagramValido(u: string): boolean {
   return /^(?!.*\.\.)(?!\.)(?!.*\.$)[a-z0-9._]{1,30}$/i.test(u);
 }
 
+/** Máscara del gris: transparente en el borde, opaco a los 16 px. */
+const FADE = 16;
+const BORDE_DIFUMINADO: React.CSSProperties = {
+  WebkitMaskImage: `linear-gradient(to right, transparent, #000 ${FADE}px, #000 calc(100% - ${FADE}px), transparent), linear-gradient(to bottom, transparent, #000 ${FADE}px, #000 calc(100% - ${FADE}px), transparent)`,
+  WebkitMaskComposite: 'source-in',
+  maskImage: `linear-gradient(to right, transparent, #000 ${FADE}px, #000 calc(100% - ${FADE}px), transparent), linear-gradient(to bottom, transparent, #000 ${FADE}px, #000 calc(100% - ${FADE}px), transparent)`,
+  maskComposite: 'intersect',
+};
+
 /**
  * Invitación a Close Friends dentro del checkout. Es opcional y tiene que
  * sentirse como un beneficio por comprar, no como un paso más: compacta, gris
- * (se integra con las tarjetas del checkout) y el verde solo como acento: el
- * haz que recorre el borde, el punto, el contador y el foco del campo.
+ * (se integra con las tarjetas del checkout) y el verde solo como acento: una
+ * lámina iridiscente menta que asoma difuminada por los bordes y entra un poco
+ * hacia adentro (el brillo sigue al mouse y al scroll), el punto, el contador y
+ * el foco del campo.
  *
  * Escribir el usuario no confirma nada: recién al tocar "Sumarme" se valida y
  * se muestra "Solicitud enviada". `onChange` recibe el usuario con @ (o '' si
@@ -56,8 +68,15 @@ export function CloseFriendsCard({
   };
 
   return (
-    <BorderBeam className="bg-black/[0.08]" innerClassName="bg-[#e2e2e2]" grosor={2} duracion={6}>
-      <section className="px-5 py-4 sm:px-6 sm:py-5">
+    <div className="relative overflow-hidden rounded-[10px]">
+      {/* Lámina menta detrás de toda la tarjeta. */}
+      <div aria-hidden="true" className="absolute inset-0">
+        <IridescentFoil tone="menta" className="h-full w-full" />
+      </div>
+      {/* El gris se difumina en los bordes: ahí asoma la lámina, suave y
+          entrando unos px hacia adentro en vez de una línea dura. */}
+      <div aria-hidden="true" className="absolute inset-0 bg-[#e2e2e2]" style={BORDE_DIFUMINADO} />
+      <section className="relative px-5 py-4 sm:px-6 sm:py-5">
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-foreground/55">
             <span aria-hidden="true" className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-green-600 shadow-[0_0_6px_rgba(22,163,74,0.7)]" />
@@ -134,6 +153,6 @@ export function CloseFriendsCard({
           </>
         )}
       </section>
-    </BorderBeam>
+    </div>
   );
 }
