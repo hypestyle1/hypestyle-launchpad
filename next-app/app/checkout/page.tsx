@@ -37,7 +37,8 @@ import { MedioDePago, type MetodoPago } from '@/components/checkout/MedioDePago'
 import { PagoSeguroBadge, NotaPagoSeguro, FranjaConfianza } from '@/components/checkout/Confianza';
 import { PagoSeguroCard } from '@/components/checkout/PagoSeguro';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowRight, CheckCircle2, ChevronDown, ChevronLeft, CreditCard, Gift, Home, Info, Lock, Mail, MapPin, Plane, ShoppingBag, Store, Tag, Truck, User, Star, Check as CheckIcon } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, CreditCard, Gift, Home, Info, Lock, Mail, MapPin, Plane, ShoppingBag, Store, Tag, Truck, User } from 'lucide-react';
+import { CloseFriendsCard, instagramValido } from '@/components/checkout/CloseFriendsCard';
 import { Panel, Recap, RadioCard, BarraEnvioGratis } from '@/components/checkout/Panel';
 import { useSyncExternalStore } from 'react';
 
@@ -347,6 +348,8 @@ export default function Checkout() {
   const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
   const [precargado, setPrecargado] = useState(false);
   const [cuponAbierto, setCuponAbierto] = useState(false);
+  // Lo que hay escrito en Close Friends aunque no hayan tocado "Sumarme".
+  const igBorrador = useRef('');
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
@@ -723,7 +726,9 @@ export default function Checkout() {
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pago.metodo || submitting) return;
-    if (pago.instagram) guardarDatos({ instagram: pago.instagram });
+    // Si escribió un usuario válido y pagó sin tocar "Sumarme", igual se guarda.
+    const instagram = pago.instagram || (instagramValido(igBorrador.current) ? '@' + igBorrador.current : '');
+    if (instagram) guardarDatos({ instagram });
     setSubmitting(true);
     setSubmitError(null);
     const isTransfer      = pago.metodo === 'transferencia';
@@ -736,7 +741,7 @@ export default function Checkout() {
       try {
         orderRes = await createOrderAndPreference({
           items: purchasableItems.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization, gift: item.customization?.gift })),
-          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: cpEnvio, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram: pago.instagram },
+          customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: cpEnvio, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram },
           shipping: envioCosto,
           discountAmount: (isLocalTransfer ? Math.round((subtotal - subtotalGift) * 0.10) : 0) + promo3x2Descuento + championDescuento,
           discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
@@ -1486,87 +1491,13 @@ export default function Checkout() {
               )}
 
               {/* Close Friends de @hypestyle: la comunidad. El usuario se suma a
-                  mano después de la compra (panel /admin/content/close-friends).
-                  El campo es opcional pero tiene que dar FOMO: es lo único del
-                  checkout en verde y con otro tono. Todo lo que promete pasa de
-                  verdad ahí (drops antes, diseños que se votan antes de producir).
-                  "+260" es el conteo del 08/09/2026 (260 agregados). */}
-              <section className="relative overflow-hidden rounded-[10px] border-2 border-green-600/70 bg-gradient-to-br from-green-50 via-white to-green-50/60">
-                <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-green-400/15 blur-2xl" />
-                <div className="relative px-5 pt-5 pb-5 sm:px-6 sm:pb-6">
-                  <div className="flex items-start gap-3">
-                    <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-green-600 text-white shadow-[0_0_0_4px_rgba(22,163,74,0.15)]">
-                      <Star aria-hidden="true" className="h-[18px] w-[18px] fill-white" strokeWidth={1.5} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-600/10 px-2 py-[3px] text-[10px] font-bold uppercase tracking-[0.12em] text-green-700">
-                        <span className="relative flex h-1.5 w-1.5">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75 motion-reduce:hidden" />
-                          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-600" />
-                        </span>
-                        {isInternational ? 'Hype community' : 'Comunidad Hype'}
-                        <span className="font-semibold normal-case tracking-normal text-green-700/80">· {isInternational ? '+260 inside' : '+260 adentro'}</span>
-                      </span>
-                      <h2 className="mt-2 text-[16px] font-bold uppercase leading-tight tracking-[0.04em]">
-                        {isInternational ? 'Get into our Close Friends' : 'Entrá a nuestro Close Friends'}
-                      </h2>
-                      <p className="mt-1 text-[12px] leading-relaxed text-foreground/70">
-                        {isInternational
-                          ? 'What happens there is not posted anywhere else. Only for people who buy.'
-                          : 'Lo que pasa ahí no se ve en ningún otro lado. Solo para los que compran.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <ul className="mt-4 space-y-2">
-                    {(isInternational
-                      ? ['Drops before anyone else', 'Perks we never post publicly', 'Vote on designs before they are made']
-                      : ['Te enterás de los drops antes que nadie', 'Beneficios que no publicamos en ningún lado', 'Votás los diseños antes de que salgan']
-                    ).map(text => (
-                      <li key={text} className="flex items-center gap-2.5 text-[13px] font-medium">
-                        <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-green-600 text-white">
-                          <CheckIcon aria-hidden="true" className="h-3 w-3" strokeWidth={3} />
-                        </span>
-                        {text}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="relative mt-5">
-                    <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-semibold text-green-700">@</span>
-                    <input
-                      type="text"
-                      id="instagram-checkout"
-                      aria-label={isInternational ? 'Your Instagram username' : 'Tu usuario de Instagram'}
-                      placeholder={isInternational ? 'username' : 'usuario'}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      // Se guarda con la @ adelante, igual que llegaba antes cuando
-                      // la escribía la persona; acá la @ es fija y no se tipea.
-                      value={pago.instagram.replace(/^@+/, '')}
-                      onChange={e => {
-                        const v = e.target.value.trim().replace(/^@+/, '');
-                        setPago({ ...pago, instagram: v ? `@${v}` : '' });
-                      }}
-                      className="w-full h-[54px] rounded-[10px] border-2 border-green-600/40 bg-white pl-[30px] pr-4 text-[14px] font-medium focus:outline-none focus:border-green-600 focus:shadow-[0_0_0_4px_rgba(22,163,74,0.12)] transition-all placeholder:font-normal placeholder:text-foreground/35"
-                    />
-                  </div>
-
-                  <div className="mt-3 px-1">
-                    {pago.instagram ? (
-                      <p className="flex items-start gap-1.5 text-[12px] font-semibold text-green-700">
-                        <CheckCircle2 aria-hidden="true" className="mt-px h-4 w-4 flex-shrink-0" strokeWidth={2} />
-                        {isInternational ? "You're in. We add you in the next few days." : 'Ya estás adentro. Te sumamos en los próximos días.'}
-                      </p>
-                    ) : (
-                      <p className="text-[12px] text-foreground/60">
-                        {isInternational ? 'Leave your @ and you are in.' : 'Dejá tu @ y quedás adentro.'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </section>
+                  mano después de la compra (panel /admin/content/close-friends). */}
+              <CloseFriendsCard
+                en={isInternational}
+                value={pago.instagram}
+                onChange={ig => setPago(p => ({ ...p, instagram: ig }))}
+                onBorrador={u => { igBorrador.current = u; }}
+              />
 
               <div id="medio-de-pago">
               <Panel icon={CreditCard} title={isInternational ? 'Payment method' : 'Medio de pago'} sub={isInternational ? 'You will finish the payment on the next screen' : 'Terminás de pagar en la pantalla siguiente'}>
