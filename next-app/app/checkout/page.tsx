@@ -29,8 +29,41 @@ import { DynamicButton } from '@/components/ui/dynamic-button';
 import { ScrollFadeList } from '@/components/ui/scroll-fade-list';
 import { ReceiptPrinter } from '@/components/ReceiptPrinter';
 import { Button } from '@/components/ui/button';
+import { FloatingInput, FloatingSelect } from '@/components/ui/floating-field';
+import { Check } from '@/components/ui/check';
+import { MedioDePago, type MetodoPago } from '@/components/checkout/MedioDePago';
+import { PagoSeguroBadge, NotaPagoSeguro, FranjaConfianza } from '@/components/checkout/Confianza';
+import { PagoSeguroCard } from '@/components/checkout/PagoSeguro';
+import { AnimatePresence, motion } from 'motion/react';
+import { ArrowRight, AtSign, ChevronDown, ChevronLeft, CreditCard, Gift, Home, Info, Lock, Mail, MapPin, Plane, ShoppingBag, Store, Truck, User } from 'lucide-react';
+import { Panel, Recap, RadioCard, BarraEnvioGratis } from '@/components/checkout/Panel';
+import { useSyncExternalStore } from 'react';
 
 type Step = 'info' | 'envio' | 'pago';
+
+// En desktop el resumen es la columna de la derecha; en mobile pasa a ser una
+// barra colapsable arriba del formulario (antes quedaba debajo del botón de
+// pagar y el cliente confirmaba sin ver qué ni cuánto). El servidor siempre
+// renderiza la vista de carrito vacío, así que no hay riesgo de desajuste.
+const DESKTOP_MQ = '(min-width: 1024px)';
+function useIsDesktop() {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia(DESKTOP_MQ);
+      mq.addEventListener('change', cb);
+      return () => mq.removeEventListener('change', cb);
+    },
+    () => window.matchMedia(DESKTOP_MQ).matches,
+    () => true,
+  );
+}
+
+/** "CABA, CABA" → "CABA": ciudad y provincia suelen coincidir. */
+function lugar(ciudad: string, provincia: string) {
+  const c = ciudad.trim();
+  const p = provincia.trim();
+  return !p || c.toLowerCase() === p.toLowerCase() ? c : `${c}, ${p}`;
+}
 
 const PROVINCIAS = [
   'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
@@ -214,7 +247,7 @@ function UpsellCarousel() {
   };
 
   return (
-    <div className="mt-6 pt-5 border-t border-border">
+    <div className="rounded-[10px] border border-border bg-white p-5">
       <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 mb-3">
         Completá el look
       </p>
@@ -273,6 +306,14 @@ export default function Checkout() {
   const router = useRouter();
   const { formatPrice, formatPriceIn, currency, setCurrency, currencyChosen, country } = useLocale();
   const [step, setStep] = useState<Step>('info');
+  const isDesktop = useIsDesktop();
+  const primerPaso = useRef(true);
+  useEffect(() => {
+    if (primerPaso.current) { primerPaso.current = false; return; }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+  const [resumenAbierto, setResumenAbierto] = useState(false);
+  const [pagoSinMetodo, setPagoSinMetodo] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
@@ -750,6 +791,11 @@ export default function Checkout() {
   );
 
   const stepLabel = (s: Step) => ({ info: 'Información', envio: 'Envío', pago: 'Pago' }[s]);
+  const stepIcon = { info: User, envio: Truck, pago: CreditCard } as const;
+  const unidades = purchasableItems.reduce((n, i) => n + i.quantity, 0);
+  // Lo que dice el botón "Pagar $X": con transferencia local, el total con el
+  // 10% off; en la moneda en que se cobra, no en la de vitrina.
+  const montoAPagar = pago.metodo === 'transferencia' && !isInternational ? transferTotal : totalFinal;
   const steps: Step[] = soloGift ? ['info', 'pago'] : ['info', 'envio', 'pago'];
 
   // Mercado Pago reactivado (12/07/2026): la cuenta fue devuelta tras la suspensión
@@ -758,426 +804,17 @@ export default function Checkout() {
   const paymentMethods = [
     !isInternational && { id: 'tarjeta',       label: 'Tarjeta de crédito o débito',       sub: 'Hasta 3 cuotas sin interés' },
     !isInternational && { id: 'gocuotas',      label: '4 cuotas con débito sin interés',   sub: 'Con tu tarjeta de débito · sin interés' },
-    !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency !== 'ARS' ? '' : soloGift ? 'Sin descuento sobre gift cards' : `Pagás ${formatPrice(transferTotal)} (10% off)` },
+    !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency !== 'ARS' ? '' : soloGift ? 'Sin descuento sobre gift cards' : `Pagás ${formatPrice(transferTotal)}`, badge: soloGift ? undefined : '10% off' },
     !isInternational && { id: 'mercadopago',   label: 'Mercado Pago',                       sub: '' },
     !isInternational && { id: 'paypal',        label: 'PayPal',                             sub: 'Solo con saldo disponible en tu cuenta de PayPal' },
     isInternational  && { id: 'paypal',        label: 'PayPal',                             sub: 'Credit card, debit or PayPal balance · charged in USD' },
     isInternational  && { id: 'transferencia', label: 'Bank transfer (USD wire)',             sub: 'Lead Bank · USD ACH/Wire · details shown after order' },
-  ].filter(Boolean) as { id: string; label: string; sub: string }[];
+  ].filter(Boolean) as MetodoPago[];
 
-  return (
-    <div className={`min-h-screen bg-white${flashActive ? ' pt-[40px]' : ''}`}>
-      <div className="border-b border-border py-5 px-4 text-center">
-        <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto object-contain mx-auto" /></a>
-        {/* Los pasos completados son clickeables para volver; adelantarse no,
-            porque cada paso valida al enviar su formulario. */}
-        <Stepper<Step>
-          className="mt-4"
-          steps={steps.map(s => ({ id: s, label: stepLabel(s) }))}
-          current={step}
-          onSelect={setStep}
-        />
-      </div>
-
-      {recovered && (
-        <div className="max-w-[1100px] mx-auto px-4 pt-6">
-          <div className="border border-amber-300 bg-amber-50 px-4 py-3.5 rounded-[10px]">
-            <p className="text-[13px] font-semibold text-amber-900">
-              {recovered === 'failed' ? 'El pago no se completó' : 'Recuperamos tu carrito'}
-            </p>
-            <p className="text-[12px] text-amber-900/80 leading-relaxed mt-0.5">
-              {recovered === 'failed'
-                ? 'Guardamos tu carrito tal como estaba. Podés intentar el pago de nuevo o elegir otro medio de pago.'
-                : 'Tus productos siguen acá para que puedas terminar la compra.'}
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-[1100px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12">
-        <div>
-          {step === 'info' && (
-            <form onSubmit={handleInfoSubmit} className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-[15px] font-semibold">Contacto</h2>
-                </div>
-                <input type="email" placeholder="Email" required value={info.email}
-                  onChange={e => setInfo({ ...info, email: e.target.value })}
-                  className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                  <input type="checkbox" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })} className="w-4 h-4" />
-                  <span className="text-[12px] text-muted-foreground">
-                    {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
-                  </span>
-                </label>
-              </div>
-
-              {soloGift ? (
-              // Sólo gift cards: nada se envía. Alcanza con nombre y teléfono
-              // para el pedido y el mail; sin dirección, DNI ni código postal.
-              <div>
-                <h2 className="text-[15px] font-semibold mb-3">Tus datos</h2>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input placeholder="Nombre" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                    <input placeholder="Apellido" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                  </div>
-                  <input placeholder="Teléfono (con código de área)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                  <p className="text-[12px] text-muted-foreground leading-relaxed pt-1">
-                    La gift card es digital: te llega por mail apenas se acredita el pago.
-                  </p>
-                </div>
-              </div>
-              ) : (
-              <div>
-                <h2 className="text-[15px] font-semibold mb-3">
-                  {isInternational ? 'Shipping address' : 'Dirección de envío'}
-                </h2>
-                <div className="space-y-2">
-
-                  {/* Country selector */}
-                  <select
-                    value={info.pais}
-                    onChange={e => handleCountryChange(e.target.value)}
-                    className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors bg-white rounded-[10px]"
-                  >
-                    {COUNTRIES.map((c, i) =>
-                      c.code === ''
-                        ? <option key={i} value="" disabled>{c.name}</option>
-                        : <option key={c.code} value={c.code}>{c.name}</option>
-                    )}
-                  </select>
-
-                  {/* International notice */}
-                  {isInternational && (
-                    <div className="bg-foreground/[0.03] border border-border px-4 py-3 rounded-[10px]">
-                      <p className="text-[12px] text-foreground/70 leading-relaxed">
-                        <span className="font-semibold text-foreground">Worldwide shipping available.</span>
-                        {' '}Shipping is calculated on the next step and charged with your order — tracked and
-                        insured, door to door.
-                      </p>
-                    </div>
-                  )}
-
-                  {isInternational ? (
-                    <>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="First name" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input placeholder="Last name" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      </div>
-                      <input placeholder="Address" required value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <input placeholder="Apartment, suite (optional)" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="City" required value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input
-                          placeholder={stateRequired ? 'State / Province' : 'State / Province (optional)'}
-                          required={stateRequired}
-                          value={info.provincia}
-                          onChange={e => setInfo({ ...info, provincia: e.target.value })}
-                          className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      </div>
-                      <input placeholder="Postal / ZIP code" required value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <input placeholder="Phone (with country code)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                    </>
-                  ) : (
-                    <>
-                      <select value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })}
-                        className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors bg-white rounded-[10px]">
-                        {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="Nombre" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input placeholder="Apellido" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      </div>
-                      <input placeholder="DNI" required value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <input placeholder="Dirección y número" required value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <input placeholder="Departamento / Piso (opcional)" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="Código postal" required value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input placeholder="Ciudad" required value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      </div>
-                      <input placeholder="Teléfono (con código de área)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                    </>
-                  )}
-                </div>
-              </div>
-              )}
-
-              <Button type="submit" variant="hype" size="ctaFull" className="rounded-[10px]">
-                {soloGift ? 'Continuar con el pago' : isInternational ? 'Continue to shipping' : 'Continuar con el envío'}
-              </Button>
-            </form>
-          )}
-
-          {step === 'envio' && (
-            <form onSubmit={handleEnvioSubmit} className="space-y-6">
-              <div className="border border-border divide-y divide-border text-[13px] rounded-[10px] overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Contact' : 'Contacto'}</span><span>{info.email}</span></div>
-                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
-                </div>
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Ship to' : 'Enviar a'}</span><span>{info.direccion}, {info.ciudad}{info.provincia ? `, ${info.provincia}` : ''}</span></div>
-                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-[15px] font-semibold mb-3">
-                  {isInternational ? 'Shipping method' : 'Método de envío'}
-                </h2>
-
-                {isInternational ? (
-                  <div className="space-y-3">
-                    <div className="border border-foreground bg-foreground/[0.03] px-4 py-4 rounded-[10px] flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full border-2 border-foreground flex items-center justify-center flex-shrink-0">
-                          <div className="w-1.5 h-1.5 rounded-full bg-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-[13px] font-medium">{selectedRate?.label ?? 'International shipping'}</p>
-                          <p className="text-[11px] text-muted-foreground">Door to door · tracked · insured</p>
-                        </div>
-                      </div>
-                      <span className="text-[13px] font-semibold">
-                        {selectedRate ? formatPrice(selectedRate.cost) : '—'}
-                      </span>
-                    </div>
-                    <div className="bg-foreground/[0.02] border border-border px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
-                      {CUSTOMS_NOTICE}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {loadingRates && (
-                      <div className="border border-border px-4 py-4 rounded-[10px] flex items-center gap-3">
-                        <svg className="animate-spin w-4 h-4 text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                        </svg>
-                        <p className="text-[13px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
-                      </div>
-                    )}
-
-                    {ratesError && !loadingRates && (
-                      <div className="space-y-3">
-                        <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
-                        <button type="button" onClick={fetchRates}
-                          className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
-                          Intentar de nuevo
-                        </button>
-                      </div>
-                    )}
-
-                    {!loadingRates && shippingRates.length > 0 && (
-                      <div className="space-y-2">
-                        {shippingRates.map(rate => {
-                          const esSucursal = modoDeTarifa(rate) === 'sucursal';
-                          const costo = costoDe(rate);
-                          const bonificado = costo < Math.round(rate.cost);
-                          return (
-                            <label key={rate.id} className={`flex items-center justify-between gap-3 border px-4 py-4 cursor-pointer transition-colors rounded-[10px] ${selectedRate?.id === rate.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
-                              <div className="flex items-center gap-3 min-w-0">
-                                <input type="radio" name="envio" checked={selectedRate?.id === rate.id}
-                                  onChange={() => handleRateSelect(rate)} className="w-4 h-4 accent-foreground flex-shrink-0" />
-                                <div>
-                                  <p className="text-[13px] font-medium">{esSucursal ? 'Retiro en sucursal' : 'Envío a domicilio'}</p>
-                                  <p className="text-[11px] text-muted-foreground">{rate.label}</p>
-                                </div>
-                              </div>
-                              <div className="text-right flex-shrink-0 tabular-nums">
-                                {bonificado && (
-                                  <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
-                                )}
-                                {costo === 0 ? (
-                                  <span className="text-[13px] font-semibold text-green-700 block">Gratis</span>
-                                ) : (
-                                  <span className="text-[13px] font-semibold block">{formatPrice(costo)}</span>
-                                )}
-                                {esSucursal && !bonificado && ahorroEnSucursal > 0 && (
-                                  <span className="inline-block mt-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
-                                    Ahorrás {formatPrice(ahorroEnSucursal)}
-                                  </span>
-                                )}
-                              </div>
-                            </label>
-                          );
-                        })}
-                        <p className="text-[11px] text-muted-foreground px-0.5 pt-1">
-                          {couponFreeShip ? (
-                            'Cupón de envío gratis aplicado.'
-                          ) : sobreUmbral ? (
-                            <>Tu compra tiene <span className="font-semibold text-foreground">envío gratis a sucursal</span>.</>
-                          ) : (
-                            <>Sumá <span className="font-semibold text-foreground">{formatPrice(FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico)}</span> y el envío a sucursal es gratis.</>
-                          )}
-                        </p>
-                      </div>
-                    )}
-
-                    {isSucursal && (
-                      <div className="mt-4">
-                        <p className="text-[13px] font-semibold mb-2">Elegí tu sucursal Andreani</p>
-                        {loadingBranches && (
-                          <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
-                            <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
-                            Buscando sucursales cerca de CP {info.cp}...
-                          </div>
-                        )}
-                        {!loadingBranches && branches.length > 0 && (
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {branches.map(b => (
-                              <label key={b.id} className={`flex items-start gap-3 border px-4 py-3 cursor-pointer transition-colors rounded-[10px] ${selectedBranch?.id === b.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
-                                <input type="radio" name="sucursal" checked={selectedBranch?.id === b.id}
-                                  onChange={() => setSelectedBranch(b)} className="w-4 h-4 accent-foreground mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <p className="text-[13px] font-medium">{b.label}</p>
-                                  {b.direccion && <p className="text-[11px] text-muted-foreground">{b.direccion}</p>}
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                        {!loadingBranches && branches.length === 0 && (
-                          <p className="text-[12px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
-                            No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <button type="button" onClick={() => setStep('info')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
-                  {isInternational ? '‹ Back to information' : '‹ Volver a información'}
-                </button>
-                <Button type="submit" variant="hype" size="cta" disabled={loadingRates || !shippingReady || !branchReady}
-                  className="rounded-[10px] disabled:cursor-not-allowed">
-                  {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {step === 'pago' && (
-            <form onSubmit={handlePagoSubmit} className="space-y-6">
-              <div className="border border-border divide-y divide-border text-[13px] rounded-[10px] overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Contact' : 'Contacto'}</span><span>{info.email}</span></div>
-                  <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
-                </div>
-                {soloGift ? (
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex gap-2"><span className="text-muted-foreground">Entrega</span><span>Gift card digital · por mail a {info.email}</span></div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Ship to' : 'Enviar a'}</span><span>{info.direccion}, {info.ciudad}</span></div>
-                    <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
-                  </div>
-                )}
-                {selectedRate && (
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex gap-2 flex-col">
-                      <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Shipping' : 'Envío'}</span><span>{selectedRate.label}</span></div>
-                      {selectedBranch && <span className="text-[11px] text-muted-foreground pl-0">{selectedBranch.label} — {selectedBranch.direccion}</span>}
-                    </div>
-                    <button type="button" onClick={() => setStep('envio')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px] flex-shrink-0 ml-4">{isInternational ? 'Change' : 'Cambiar'}</button>
-                  </div>
-                )}
-              </div>
-
-              {isInternational && (
-                <div className="bg-foreground/[0.02] border border-border px-4 py-3 rounded-[10px]">
-                  <p className="text-[12px] text-foreground/60 leading-relaxed">
-                    {CUSTOMS_NOTICE}
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <p className="text-[13px] font-semibold mb-1">
-                  {isInternational ? 'Instagram (optional)' : <>Instagram <span className="text-destructive">*</span></>}
-                </p>
-                <textarea value={pago.instagram} onChange={e => setPago({ ...pago, instagram: e.target.value })}
-                  placeholder="@yourusername" rows={2} required={!isInternational}
-                  className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors resize-none rounded-[10px]" />
-              </div>
-
-              <div>
-                <h2 className="text-[14px] font-bold uppercase tracking-wider mb-3">
-                  {isInternational ? 'Payment method' : 'Medio de pago'}
-                </h2>
-                <div className="space-y-2">
-                  {paymentMethods.map(m => (
-                    <label key={m.id} className={`flex items-center gap-3 border px-4 py-3.5 cursor-pointer transition-colors rounded-[10px] ${pago.metodo === m.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
-                      <input type="radio" name="metodo" value={m.id} checked={pago.metodo === m.id} onChange={() => handleMetodoChange(m.id)} className="w-4 h-4 accent-foreground" />
-                      <div className="flex-1">
-                        <p className="text-[13px] font-medium">{m.label}</p>
-                        {m.sub && <p className={`text-[11px] ${m.id === 'transferencia' && !isInternational ? 'text-green-700 font-semibold' : 'text-muted-foreground'}`}>{m.sub}</p>}
-                      </div>
-                      <span className="text-foreground/30">›</span>
-                    </label>
-                  ))}
-                </div>
-                {!pago.metodo && <p className="text-[11px] text-destructive mt-1">{isInternational ? 'Select a payment method' : 'Seleccioná un medio de pago'}</p>}
-              </div>
-
-              {submitError && <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{submitError}</p>}
-              <div className="flex items-center justify-between pt-2">
-                <button type="button" onClick={() => setStep(soloGift ? 'info' : 'envio')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
-                  {soloGift ? '‹ Volver' : isInternational ? '‹ Back to shipping' : '‹ Volver al envío'}
-                </button>
-                <DynamicButton
-                  type="submit"
-                  disabled={submitting}
-                  icon={submitting ? (
-                    <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
-                  ) : undefined}
-                  className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {submitting ? (isInternational ? 'Processing' : 'Procesando') : (isInternational ? 'Place order' : 'Realizar pedido')}
-                </DynamicButton>
-              </div>
-            </form>
-          )}
-        </div>
-
-        {/* Order summary */}
-        <div className="lg:border-l lg:border-border lg:pl-10">
-          <div className="sticky top-6">
-            {submitting ? (
-              // Al confirmar, el resumen se convierte en la misma impresora que
-              // después imprime el comprobante en /confirmacion: la orden se está
-              // creando en Woo y armando el pago. Cubre los 2 a 4 segundos que
-              // antes eran un spinner en el botón.
-              <ReceiptPrinter stage="procesando" className="mx-auto">
-                <ReceiptPrinter.Machine>
-                  <ReceiptPrinter.Header>
-                    <img src="/logo-hypestyle-2026.png" alt="" className="h-4 w-auto invert" />
-                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/40">
-                      {isInternational ? 'New order' : 'Nuevo pedido'}
-                    </span>
-                  </ReceiptPrinter.Header>
-                  <ReceiptPrinter.Screen>
-                    <div className="space-y-3">
-                      <div className="flex items-baseline justify-between gap-4 font-mono text-[12px]">
-                        <span className="text-white/60">{purchasableItems.length} {purchasableItems.length === 1 ? 'producto' : 'productos'}</span>
-                        {/* Acá ya se está cobrando: va en la moneda del cobro, no en la de vitrina. */}
-                        <strong className="text-[14px]">{formatPriceIn(totalFinal, cobro)}</strong>
-                      </div>
-                      <ReceiptPrinter.Status>
-                        {isInternational ? 'Creating your order' : 'Creando tu pedido'}
-                      </ReceiptPrinter.Status>
-                    </div>
-                  </ReceiptPrinter.Screen>
-                </ReceiptPrinter.Machine>
-              </ReceiptPrinter>
-            ) : (
-            <>
+  // Productos, cupón y totales. Va en la columna derecha en desktop y dentro
+  // de la barra colapsable en mobile (ver useIsDesktop).
+  const resumen = (
+    <>
             {/* Con muchos productos la lista scrollea dentro de una altura fija
                 y se difumina en los bordes, así el total no se va de la vista. */}
             <ScrollFadeList
@@ -1286,7 +923,7 @@ export default function Checkout() {
                     <span className="text-muted-foreground">Calculando...</span>
                   ) : freeShipping ? (
                     <><span className="line-through text-muted-foreground mr-1">{selectedRate ? formatPrice(selectedRate.cost) : ''}</span><span className="text-green-700 font-semibold">Gratis</span></>
-                  ) : selectedRate && envioCosto < Math.round(selectedRate.cost) ? (
+                  ) : selectedRate && Math.round(envioCosto) < Math.round(selectedRate.cost) ? (
                     <><span className="line-through text-muted-foreground mr-1">{formatPrice(selectedRate.cost)}</span>{formatPrice(envioCosto)}</>
                   ) : selectedRate ? (
                     formatPrice(selectedRate.cost)
@@ -1320,6 +957,502 @@ export default function Checkout() {
                 <p className="text-[11px] text-muted-foreground mt-1">{CUSTOMS_NOTICE}</p>
               )}
             </div>
+    </>
+  );
+
+  return (
+    <div className={`min-h-screen bg-[#f4f4f4]${flashActive ? ' pt-[40px]' : ''}`}>
+      <div className="relative border-b border-border bg-white py-5 px-4 text-center">
+        <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto object-contain mx-auto" /></a>
+        <div className="pointer-events-none absolute inset-x-0 top-[27px] mx-auto flex max-w-[1100px] justify-end px-4">
+          <PagoSeguroBadge en={isInternational} />
+        </div>
+        {/* Los pasos completados son clickeables para volver; adelantarse no,
+            porque cada paso valida al enviar su formulario. */}
+        <Stepper<Step>
+          className="mt-4"
+          steps={steps.map(s => ({ id: s, label: stepLabel(s), icon: stepIcon[s] }))}
+          current={step}
+          onSelect={setStep}
+        />
+      </div>
+
+      {/* Mobile: el resumen arriba, colapsado en una barra con el total.
+          Antes quedaba debajo del botón de pagar. */}
+      {!isDesktop && (
+        <div className="border-b border-border bg-white">
+          <button
+            type="button"
+            onClick={() => setResumenAbierto(o => !o)}
+            aria-expanded={resumenAbierto}
+            aria-controls="resumen-mobile"
+            className="w-full bg-foreground/[0.025] px-4 py-4 flex items-center justify-between gap-3"
+          >
+            <span className="flex items-center gap-2 text-[13px] font-medium">
+              <ShoppingBag className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+              {resumenAbierto
+                ? (isInternational ? 'Hide order summary' : 'Ocultar resumen')
+                : (isInternational ? 'Show order summary' : 'Ver resumen del pedido')}
+              <ChevronDown
+                aria-hidden="true"
+                className={`w-4 h-4 text-foreground/50 transition-transform duration-200 ${resumenAbierto ? 'rotate-180' : ''}`}
+              />
+            </span>
+            <span className="text-[15px] font-bold tabular-nums">{formatPrice(totalMostrado)}</span>
+          </button>
+          <AnimatePresence initial={false}>
+            {resumenAbierto && (
+              <motion.div
+                id="resumen-mobile"
+                key="resumen-mobile"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pt-5 pb-6">{resumen}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
+      {recovered && (
+        <div className="max-w-[1100px] mx-auto px-4 pt-6">
+          <div className="border border-amber-300 bg-amber-50 px-4 py-3.5 rounded-[10px]">
+            <p className="text-[13px] font-semibold text-amber-900">
+              {recovered === 'failed' ? 'El pago no se completó' : 'Recuperamos tu carrito'}
+            </p>
+            <p className="text-[12px] text-amber-900/80 leading-relaxed mt-0.5">
+              {recovered === 'failed'
+                ? 'Guardamos tu carrito tal como estaba. Podés intentar el pago de nuevo o elegir otro medio de pago.'
+                : 'Tus productos siguen acá para que puedas terminar la compra.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-[1100px] mx-auto px-4 py-6 lg:py-10 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 lg:gap-8">
+        <div className="min-w-0">
+          {/* Cada paso entra deslizando desde el costado del avance y sale por el
+              otro. mode="wait": nunca hay dos formularios montados a la vez. */}
+          <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={step}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+          >
+          {step === 'info' && (
+            <form onSubmit={handleInfoSubmit} className="space-y-4">
+              <Panel icon={Mail} title={isInternational ? 'Contact' : 'Contacto'} sub={isInternational ? 'We send your order updates here' : 'Te mandamos la confirmación y el seguimiento'}>
+                <FloatingInput type="email" label="Email" required autoComplete="email" inputMode="email" value={info.email}
+                  onChange={e => setInfo({ ...info, email: e.target.value })} />
+                <Check className="mt-3" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })}>
+                  {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
+                </Check>
+              </Panel>
+
+              {soloGift ? (
+              // Sólo gift cards: nada se envía. Alcanza con nombre y teléfono
+              // para el pedido y el mail; sin dirección, DNI ni código postal.
+              <Panel icon={User} title="Tus datos" sub="La gift card es digital: te llega por mail apenas se acredita el pago">
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <FloatingInput label="Nombre" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                    <FloatingInput label="Apellido" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                  </div>
+                  <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                </div>
+              </Panel>
+              ) : (
+              <Panel icon={MapPin} title={isInternational ? 'Shipping address' : 'Dirección de envío'} sub={isInternational ? 'Where we deliver your order' : 'Donde recibís o desde donde retirás tu pedido'}>
+                <div className="space-y-2.5">
+                  <FloatingSelect
+                    label={isInternational ? 'Country' : 'País'}
+                    autoComplete="country"
+                    value={info.pais}
+                    onChange={e => handleCountryChange(e.target.value)}
+                  >
+                    {COUNTRIES.map((c, i) =>
+                      c.code === ''
+                        ? <option key={i} value="" disabled>{c.name}</option>
+                        : <option key={c.code} value={c.code}>{c.name}</option>
+                    )}
+                  </FloatingSelect>
+
+                  {/* International notice */}
+                  {isInternational && (
+                    <div className="bg-foreground/[0.03] border border-border px-4 py-3 rounded-[10px]">
+                      <p className="text-[12px] text-foreground/70 leading-relaxed">
+                        <span className="font-semibold text-foreground">Worldwide shipping available.</span>
+                        {' '}Shipping is calculated on the next step and charged with your order — tracked and
+                        insured, door to door.
+                      </p>
+                    </div>
+                  )}
+
+                  {isInternational ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="First name" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                        <FloatingInput label="Last name" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                      </div>
+                      <FloatingInput label="Address" required autoComplete="address-line1" value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                      <FloatingInput label="Apartment, suite (optional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="City" required autoComplete="address-level2" value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                        <FloatingInput
+                          label={stateRequired ? 'State / Province' : 'State / Province (optional)'}
+                          required={stateRequired}
+                          autoComplete="address-level1"
+                          value={info.provincia}
+                          onChange={e => setInfo({ ...info, provincia: e.target.value })} />
+                      </div>
+                      <FloatingInput label="Postal / ZIP code" required autoComplete="postal-code" value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
+                      <FloatingInput type="tel" label="Phone (with country code)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                    </>
+                  ) : (
+                    <>
+                      <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })}>
+                        {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
+                      </FloatingSelect>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="Nombre" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                        <FloatingInput label="Apellido" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                      </div>
+                      <FloatingInput label="DNI" required inputMode="numeric" value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
+                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                      <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="Código postal" required autoComplete="postal-code" value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
+                        <FloatingInput label="Ciudad" required autoComplete="address-level2" value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                      </div>
+                      <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                    </>
+                  )}
+                </div>
+              </Panel>
+              )}
+
+              <Button type="submit" variant="hype" size="ctaFull" className="rounded-[10px] gap-2">
+                {soloGift ? 'Continuar con el pago' : isInternational ? 'Continue to shipping' : 'Continuar con el envío'}
+                <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
+              </Button>
+            </form>
+          )}
+
+          {step === 'envio' && (
+            <form onSubmit={handleEnvioSubmit} className="space-y-4">
+              <Recap
+                cambiar={isInternational ? 'Change' : 'Cambiar'}
+                rows={[
+                  { icon: Mail, label: isInternational ? 'Contact' : 'Contacto', value: info.email, onChange: () => setStep('info') },
+                  { icon: MapPin, label: isInternational ? 'Ship to' : 'Enviar a', value: `${info.direccion}, ${lugar(info.ciudad, info.provincia)}`, onChange: () => setStep('info') },
+                ]}
+              />
+
+              <Panel
+                icon={Truck}
+                title={isInternational ? 'Shipping method' : 'Método de envío'}
+                sub={isInternational ? 'Door to door, tracked and insured' : `Opciones de Andreani para CP ${info.cp}`}
+              >
+                {isInternational ? (
+                  <div className="space-y-3">
+                    <RadioCard
+                      name="envio"
+                      checked
+                      onSelect={() => {}}
+                      icon={Plane}
+                      title={selectedRate?.label ?? 'International shipping'}
+                      sub="Door to door · tracked · insured"
+                      right={<span className="text-[13px] font-semibold">{selectedRate ? formatPrice(selectedRate.cost) : '—'}</span>}
+                    />
+                    <div className="bg-foreground/[0.03] px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
+                      {CUSTOMS_NOTICE}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {loadingRates && (
+                      <div className="space-y-2" aria-live="polite">
+                        {[0, 1].map(i => (
+                          <div key={i} className="flex items-center gap-3.5 rounded-[10px] border border-border px-4 py-4">
+                            <span className="h-[18px] w-[18px] rounded-full bg-foreground/[0.06] animate-pulse" />
+                            <span className="h-10 w-10 rounded-[8px] bg-foreground/[0.06] animate-pulse" />
+                            <span className="flex-1 space-y-1.5">
+                              <span className="block h-3 w-1/3 rounded bg-foreground/[0.06] animate-pulse" />
+                              <span className="block h-2.5 w-1/4 rounded bg-foreground/[0.05] animate-pulse" />
+                            </span>
+                            <span className="h-3 w-14 rounded bg-foreground/[0.06] animate-pulse" />
+                          </div>
+                        ))}
+                        <p className="text-[12px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
+                      </div>
+                    )}
+
+                    {ratesError && !loadingRates && (
+                      <div className="space-y-3">
+                        <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
+                        <button type="button" onClick={fetchRates}
+                          className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
+                          Intentar de nuevo
+                        </button>
+                      </div>
+                    )}
+
+                    {!loadingRates && shippingRates.length > 0 && (
+                      <>
+                        <div className="space-y-2">
+                          {shippingRates.map(rate => {
+                            const esSucursal = modoDeTarifa(rate) === 'sucursal';
+                            const costo = costoDe(rate);
+                            // costoEnvio devuelve la tarifa cruda (con centavos) cuando no hay bonificación:
+                            // comparar redondeado, si no $5.555,6 < $5.556 mostraba el mismo precio tachado.
+                            const bonificado = Math.round(costo) < Math.round(rate.cost);
+                            return (
+                              <RadioCard
+                                key={rate.id}
+                                name="envio"
+                                checked={selectedRate?.id === rate.id}
+                                onSelect={() => handleRateSelect(rate)}
+                                icon={esSucursal ? Store : Home}
+                                title={esSucursal ? 'Retiro en sucursal' : 'Envío a domicilio'}
+                                sub={rate.label}
+                                right={
+                                  <>
+                                    {bonificado && (
+                                      <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
+                                    )}
+                                    {costo === 0 ? (
+                                      <span className="text-[13px] font-semibold text-green-700 block">Gratis</span>
+                                    ) : (
+                                      <span className="text-[13px] font-semibold block">{formatPrice(costo)}</span>
+                                    )}
+                                    {esSucursal && !bonificado && ahorroEnSucursal > 0 && (
+                                      <span className="inline-block mt-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                                        Ahorrás {formatPrice(ahorroEnSucursal)}
+                                      </span>
+                                    )}
+                                  </>
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+                        <BarraEnvioGratis
+                          falta={couponFreeShip || sobreUmbral ? 0 : FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico}
+                          progreso={couponFreeShip ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
+                        >
+                          {couponFreeShip ? (
+                            'Cupón de envío gratis aplicado.'
+                          ) : sobreUmbral ? (
+                            <>Tu compra tiene <span className="font-semibold text-foreground">envío gratis a sucursal</span>.</>
+                          ) : (
+                            <>Sumá <span className="font-semibold text-foreground">{formatPrice(FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico)}</span> y el envío a sucursal es gratis.</>
+                          )}
+                        </BarraEnvioGratis>
+                      </>
+                    )}
+
+                    {isSucursal && (
+                      <div className="pt-3">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-2">Elegí tu sucursal Andreani</p>
+                        {loadingBranches && (
+                          <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
+                            <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                            Buscando sucursales cerca de CP {info.cp}...
+                          </div>
+                        )}
+                        {!loadingBranches && branches.length > 0 && (
+                          <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
+                            {branches.map(b => (
+                              <RadioCard
+                                key={b.id}
+                                name="sucursal"
+                                checked={selectedBranch?.id === b.id}
+                                onSelect={() => setSelectedBranch(b)}
+                                title={b.label}
+                                sub={b.direccion || undefined}
+                                className="py-3"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {!loadingBranches && branches.length === 0 && (
+                          <div className="flex gap-3 rounded-[10px] bg-foreground/[0.04] px-4 py-3.5">
+                            <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-foreground/50" strokeWidth={1.75} aria-hidden="true" />
+                            <p className="text-[12px] text-foreground/70 leading-relaxed">
+                              No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Panel>
+
+              <div className="space-y-3 pt-1">
+                <Button type="submit" variant="hype" size="ctaFull" disabled={loadingRates || !shippingReady || !branchReady}
+                  className="rounded-[10px] gap-2 disabled:cursor-not-allowed">
+                  {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
+                </Button>
+                <button type="button" onClick={() => setStep('info')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                  {isInternational ? 'Back to information' : 'Volver a información'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === 'pago' && (
+            <form onSubmit={handlePagoSubmit} className="space-y-4">
+              <Recap
+                cambiar={isInternational ? 'Change' : 'Cambiar'}
+                rows={[
+                  { icon: Mail, label: isInternational ? 'Contact' : 'Contacto', value: info.email, onChange: () => setStep('info') },
+                  ...(soloGift
+                    ? [{ icon: Gift, label: 'Entrega', value: `Gift card digital · por mail a ${info.email}` }]
+                    : [{ icon: MapPin, label: isInternational ? 'Ship to' : 'Enviar a', value: `${info.direccion}, ${lugar(info.ciudad, info.provincia)}`, onChange: () => setStep('info') }]),
+                  ...(selectedRate
+                    ? [{
+                        icon: Truck,
+                        label: isInternational ? 'Shipping' : 'Envío',
+                        value: selectedRate.label,
+                        extra: selectedBranch ? `${selectedBranch.label} — ${selectedBranch.direccion}` : undefined,
+                        onChange: () => setStep('envio'),
+                      }]
+                    : []),
+                ]}
+              />
+
+              {isInternational && (
+                <div className="bg-white border border-border px-4 py-3 rounded-[10px]">
+                  <p className="text-[12px] text-foreground/60 leading-relaxed">
+                    {CUSTOMS_NOTICE}
+                  </p>
+                </div>
+              )}
+
+              <Panel icon={AtSign} title="Instagram" sub={isInternational ? 'Optional' : 'Para encontrarte rápido si tenemos que escribirte'}>
+                <div className="relative">
+                  <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-foreground/50">@</span>
+                  <input
+                    type="text"
+                    aria-label="Instagram"
+                    placeholder={isInternational ? 'username' : 'usuario'}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    required={!isInternational}
+                    // Se guarda con la @ adelante, igual que llegaba antes cuando
+                    // la escribía la persona; acá la @ es fija y no se tipea.
+                    value={pago.instagram.replace(/^@+/, '')}
+                    onChange={e => {
+                      const v = e.target.value.trim().replace(/^@+/, '');
+                      setPago({ ...pago, instagram: v ? `@${v}` : '' });
+                    }}
+                    className="w-full h-[52px] rounded-[10px] border border-border bg-white pl-[29px] pr-4 text-[13px] focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/70"
+                  />
+                </div>
+              </Panel>
+
+              <Panel icon={CreditCard} title={isInternational ? 'Payment method' : 'Medio de pago'} sub={isInternational ? 'You will finish the payment on the next screen' : 'Terminás de pagar en la pantalla siguiente'}>
+                <MedioDePago
+                  metodos={paymentMethods}
+                  value={pago.metodo}
+                  onChange={id => { setPagoSinMetodo(false); handleMetodoChange(id); }}
+                  destacarSub={id => id === 'transferencia' && !isInternational}
+                />
+                {/* El aviso sale recién si intentó pagar sin elegir: antes aparecía
+                    en rojo apenas se entraba al paso, como si ya hubiera un error. */}
+                {pagoSinMetodo && !pago.metodo && <p className="text-[11px] text-destructive mt-2">{isInternational ? 'Select a payment method' : 'Seleccioná un medio de pago'}</p>}
+              </Panel>
+
+              {submitError && <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{submitError}</p>}
+              <div className="space-y-3 pt-1">
+                <DynamicButton
+                  type="submit"
+                  width="full"
+                  disabled={submitting}
+                  onClick={() => { if (!pago.metodo) setPagoSinMetodo(true); }}
+                  icon={submitting ? (
+                    <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                  ) : (
+                    <Lock className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
+                  )}
+                  className="w-full justify-center bg-bg-dark text-primary-foreground px-8 py-4 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitting
+                    ? (isInternational ? 'Processing' : 'Procesando')
+                    : `${isInternational ? 'Pay' : 'Pagar'} ${formatPriceIn(montoAPagar, cobro)}`}
+                </DynamicButton>
+                {isDesktop
+                  ? <NotaPagoSeguro en={isInternational} />
+                  : <PagoSeguroCard en={isInternational} className="bg-white" />}
+                <button type="button" onClick={() => setStep(soloGift ? 'info' : 'envio')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                  {soloGift ? 'Volver' : isInternational ? 'Back to shipping' : 'Volver al envío'}
+                </button>
+              </div>
+            </form>
+          )}
+          </motion.div>
+          </AnimatePresence>
+          <FranjaConfianza en={isInternational} className="mt-10" />
+        </div>
+
+        {/* Order summary */}
+        <div className="min-w-0">
+          <div className="sticky top-6 space-y-4">
+            {submitting ? (
+              // Al confirmar, el resumen se convierte en la misma impresora que
+              // después imprime el comprobante en /confirmacion: la orden se está
+              // creando en Woo y armando el pago. Cubre los 2 a 4 segundos que
+              // antes eran un spinner en el botón.
+              <ReceiptPrinter stage="procesando" className="mx-auto">
+                <ReceiptPrinter.Machine>
+                  <ReceiptPrinter.Header>
+                    <img src="/logo-hypestyle-2026.png" alt="" className="h-4 w-auto invert" />
+                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-white/40">
+                      {isInternational ? 'New order' : 'Nuevo pedido'}
+                    </span>
+                  </ReceiptPrinter.Header>
+                  <ReceiptPrinter.Screen>
+                    <div className="space-y-3">
+                      <div className="flex items-baseline justify-between gap-4 font-mono text-[12px]">
+                        <span className="text-white/60">{purchasableItems.length} {purchasableItems.length === 1 ? 'producto' : 'productos'}</span>
+                        {/* Acá ya se está cobrando: va en la moneda del cobro, no en la de vitrina. */}
+                        <strong className="text-[14px]">{formatPriceIn(totalFinal, cobro)}</strong>
+                      </div>
+                      <ReceiptPrinter.Status>
+                        {isInternational ? 'Creating your order' : 'Creando tu pedido'}
+                      </ReceiptPrinter.Status>
+                    </div>
+                  </ReceiptPrinter.Screen>
+                </ReceiptPrinter.Machine>
+              </ReceiptPrinter>
+            ) : (
+            <>
+            {isDesktop && (
+              <div className="rounded-[10px] border border-border bg-white p-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.1em]">
+                    <ShoppingBag className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+                    {isInternational ? 'Your order' : 'Tu pedido'}
+                  </h2>
+                  <span className="text-[12px] text-muted-foreground">
+                    {unidades} {unidades === 1 ? (isInternational ? 'item' : 'producto') : (isInternational ? 'items' : 'productos')}
+                  </span>
+                </div>
+                {resumen}
+              </div>
+            )}
+            {isDesktop && <PagoSeguroCard en={isInternational} className="bg-white" />}
             <UpsellCarousel />
             </>
             )}
