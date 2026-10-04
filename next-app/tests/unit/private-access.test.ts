@@ -136,3 +136,35 @@ describe('private-access · returnTo y modo mock', () => {
     vi.unstubAllEnvs();
   });
 });
+
+describe('precios crudos del mu-plugin', () => {
+  // Formato real de /private-access/products: get_price() de Woo, con decimales.
+  const node = {
+    id: 'pa-3482', databaseId: 3482, name: 'HYPE – DISTRESSED GREY HOODIE', slug: 'hype-distressed-grey-hoodie',
+    status: 'private', price: '78400.00', regularPrice: '98000.00', salePrice: '78400.00',
+    stockStatus: 'IN_STOCK', stockQuantity: null,
+    image: { sourceUrl: 'https://x/m.png' }, galleryImages: { nodes: [] },
+    productCategories: { nodes: [{ name: 'Hoodie', slug: 'hoodie' }] }, productTags: { nodes: [] },
+    variations: { nodes: [{ price: '78400.00', regularPrice: '98000.00', salePrice: '78400.00', stockStatus: 'IN_STOCK', stockQuantity: 3, attributes: { nodes: [{ name: 'pa_talle', value: 'M' }] } }] },
+  };
+
+  it('"98000.00" es $98.000, no $9.800.000', async () => {
+    const { fromPrivateNode } = await import('@/lib/private-access/normalize');
+    const p = fromPrivateNode(node, { saleEndsLabel: '10.10', publicOpenLabel: '11.10' });
+    expect(p.price).toBe(78400);
+    expect(p.originalPrice).toBe(98000);
+  });
+
+  it('la ficha también', async () => {
+    const { withPlainPrices } = await import('@/lib/private-access/normalize');
+    const { normalizeProductDetail } = await import('@/lib/product-detail');
+    const d: any = normalizeProductDetail(withPlainPrices(node));
+    expect(d.price).toBe(78400);
+    expect(d.originalPrice).toBe(98000);
+  });
+
+  it('no toca precios que ya vienen formateados', async () => {
+    const { withPlainPrices } = await import('@/lib/private-access/normalize');
+    expect(withPlainPrices({ price: '$78.400' }).price).toBe('$78.400');
+  });
+});
