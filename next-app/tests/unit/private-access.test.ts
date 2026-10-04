@@ -82,28 +82,33 @@ describe('private-access · sesión firmada', () => {
 
 function at(iso: string) { return new Date(iso).getTime(); }
 
-describe('private-access · marca del pedido (create-order)', () => {
+describe('private-access · pedido (create-order-gocuotas)', () => {
   let order: typeof import('@/lib/private-access/order');
-  let session: typeof import('@/lib/private-access/session');
+  let precio: typeof import('@/lib/precio-servidor');
 
   beforeAll(async () => {
     vi.stubEnv('PRIVATE_ACCESS_SESSION_SECRET', 'secreto-de-prueba-no-usar');
     vi.resetModules();
-    session = await import('@/lib/private-access/session');
     order = await import('@/lib/private-access/order');
+    precio = await import('@/lib/precio-servidor');
   });
 
-  it('sin cookie descarta lo que mande el navegador', async () => {
-    const out = await order.withPrivateAccess({ items: [1], privateAccess: { memberId: 999 } }, undefined);
-    expect(out).toEqual({ items: [1] });
+  it('sin cookie no hay contexto de preventa (ni precios privados ni marca)', async () => {
+    expect(await order.privateAccessForOrder(undefined)).toBeNull();
+    expect(await order.privateAccessForOrder('999.9999999999999.firmafalsa')).toBeNull();
+    expect(order.privateAccessMeta(null)).toBeNull();
   });
-  it('con cookie falsificada también lo descarta', async () => {
-    const out = await order.withPrivateAccess({ items: [1], privateAccess: { memberId: 999 } }, '999.9999999999999.firmafalsa');
-    expect('privateAccess' in out).toBe(false);
+  it('un producto privado sin precio extra se rechaza (no se puede comprar armando la request)', () => {
+    const publico = new Map([['hoodie-black-hstars', 89000]]);
+    expect(() => precio.preciosDeLineas([{ id: 'athletic-dept-longsleeve-pink', quantity: 1 }], publico)).toThrow(/no está disponible/);
   });
-  it('con cookie válida marca con el memberId de la cookie, no el del body', async () => {
-    const token = await session.createSessionToken(7, Date.now() + 3600_000);
-    const out = await order.withPrivateAccess({ items: [1], privateAccess: { memberId: 999 } }, token);
-    expect(out).toEqual({ items: [1], privateAccess: { memberId: 7 } });
+  it('con los precios de la preventa se tasa al precio del servidor, no al del navegador', () => {
+    const conPreventa = new Map([['hoodie-black-hstars', 89000], ['athletic-dept-longsleeve-pink', 49600]]);
+    const lineas = precio.preciosDeLineas([{ id: 'athletic-dept-longsleeve-pink', quantity: 2, price: 1 }], conPreventa);
+    expect(lineas).toEqual([{ id: 'athletic-dept-longsleeve-pink', price: 49600, quantity: 2 }]);
+  });
+  it('la marca del pedido lleva el memberId y la colección', () => {
+    const m = order.privateAccessMeta({ memberId: 7, collection: 'ss27-part-01', precios: new Map() });
+    expect(m).toEqual({ key: '_hs_private_access', value: JSON.stringify({ memberId: 7, collection: 'ss27-part-01' }) });
   });
 });

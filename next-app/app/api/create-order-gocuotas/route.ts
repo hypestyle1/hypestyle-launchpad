@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { calcularPedido } from '@/lib/pedido-servidor';
 import { PrecioError } from '@/lib/precio-servidor';
 import { lineasDeEnvio } from '@/lib/andreani-shipping-line';
+import { PRIVATE_ACCESS_COOKIE } from '@/lib/private-access/config';
+import { privateAccessForOrder, privateAccessMeta } from '@/lib/private-access/order';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -75,12 +77,20 @@ export async function POST(req: NextRequest) {
     // Precio, descuento y envío salen del servidor (auditoría 28/09, C1). Del
     // body solo se toma qué se compra; lo que mandó el navegador como precio
     // queda en el log si no coincide.
+    // Preventa Mejores Amigos: con sesión válida, los productos privados de la
+    // colección se pueden tasar y el pedido queda marcado. Sin sesión, nada.
+    const pa = await privateAccessForOrder(req.cookies.get(PRIVATE_ACCESS_COOKIE)?.value).catch((e) => {
+      console.error('[create-order-gocuotas] private access', e);
+      return null;
+    });
+
     const calculo = await calcularPedido({
       items,
       metodo: String(paymentMethod ?? ''),
       internacional: false,
       envio: { cp: customer?.cp ?? '', provincia: customer?.provincia ?? '', tarifaId: shippingMethodId, costoCliente: shipping, cupon: couponCode },
       descuentoCliente,
+      preciosExtra: pa?.precios,
     });
     if (calculo.diferencias.length) {
       console.warn('[create-order-gocuotas] el navegador mandó otros importes:', calculo.diferencias.join(' | '));
@@ -172,6 +182,10 @@ export async function POST(req: NextRequest) {
     // Andreani no respondió al crear el pedido: el envío quedó con el costo que
     // vio el cliente. Marcado para revisarlo antes de despachar.
     if (calculo.envio.verificado === false) meta.push({ key: '_envio_no_verificado', value: calculo.envio.motivo });
+    // Solo si el pedido trae algún producto de la preventa (no cualquier compra
+    // de alguien que además tiene sesión de Mejores Amigos).
+    const paMeta = privateAccessMeta(pa);
+    if (paMeta && (items as any[]).some((it) => pa!.precios.has(String(it?.id)))) meta.push(paMeta);
     if (meta.length)        order.meta_data = meta;
 
     const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {

@@ -67,7 +67,8 @@ redirigir a `/producto/<producto>`.
 - [ ] Usuario que no está → mensaje de Mejores Amigos (mismo mensaje que bloqueado).
 - [ ] `@Usuario`, `usuario`, ` usuario ` y el link del perfil entran igual.
 - [ ] Talle agotado no se puede agregar; el chequeo en vivo lo frena si se agota mientras mirás.
-- [ ] Pedido pago con meta `_hs_private_access` en Woo y suma en las métricas del panel.
+- [ ] Pedido pago con meta `_hs_private_access` en Woo y suma en las métricas del panel (lo agrega create-order-gocuotas solo con sesión válida y si el pedido trae un producto de la preventa).
+- [ ] Sin sesión, un pedido armado a mano con un slug privado se rechaza ("no está disponible").
 - [ ] Ningún producto SS27 en `/api/products`, buscador, `/sitemap.xml` ni `/producto/<slug>` (404).
 - [ ] Pausar → banner y colección desaparecen al instante; reanudar → vuelven.
 
@@ -76,7 +77,8 @@ redirigir a `/producto/<producto>`.
 - **Checkout internacional**: la cotización de envío usa el catálogo público;
   con productos privados no encuentra peso ni categoría. La preventa es para
   Argentina.
-- **Precio del pedido**: como en todo el sitio, `create-order` confía en el
-  precio del carrito (deuda previa, no la introduce esta feature).
+- **Precio del pedido**: lo calcula el servidor (#512). Los productos de la
+  preventa se tasan con el precio que devuelve el mu-plugin, solo si el
+  pedido trae una sesión válida de Mejores Amigos.
 - **Imágenes**: las fotos de Woo viven en `wp-content/uploads` y son públicas
   por URL (inherente a WordPress); no se listan en ningún lado.

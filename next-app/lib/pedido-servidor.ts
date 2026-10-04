@@ -50,8 +50,18 @@ export async function calcularPedido(args: {
   envio?: { cp: string; provincia: string; tarifaId?: string | null; costoCliente?: unknown; cupon?: string | null };
   /** Lo que el navegador dijo que descontaba, solo para dejar rastro si no coincide. */
   descuentoCliente?: unknown;
+  /**
+   * Precios que no están en el catálogo público: los productos privados de la
+   * preventa (Private Access). Solo se pasan si el pedido viene con una sesión
+   * válida de Mejores Amigos; sin eso un producto privado sigue "no disponible".
+   * El catálogo público gana si un slug está en los dos.
+   */
+  preciosExtra?: Map<string, number>;
 }): Promise<PedidoCalculado> {
   const { precios, regularGol } = await catalogoDePrecios();
+  for (const [slug, precio] of args.preciosExtra ?? []) {
+    if (!precios.has(slug) && precio > 0) precios.set(slug, precio);
+  }
   const tieneGol = args.items.some((i) => i.id === GOAL_DISCOUNT_SLUG);
   const precioGol = tieneGol ? await precioGolActual(regularGol) : null;
   const lineas = preciosDeLineas(args.items, precios, { precioGol });
