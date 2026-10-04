@@ -4,12 +4,11 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLocale } from '@/context/LocaleContext';
-import type { PrivateProduct } from '@/lib/private-access/mock';
+import type { PrivateProduct } from '@/lib/private-access/normalize';
+import { usePrivateAddToCart } from './usePrivateAddToCart';
 
 interface Props {
   product: PrivateProduct;
-  /** Mock de hoy: "agregar" no toca el carrito, solo muestra el estado. */
-  onAdd?: (product: PrivateProduct, size: string) => void;
   /** Versión compacta sin talles ni CTA (relacionados de la ficha). */
   compact?: boolean;
 }
@@ -19,28 +18,35 @@ interface Props {
  * (mockup cuadrado, foto de uso al pasar el mouse), pero con talles y CTA
  * siempre visibles: la mayoría entra desde el celular, donde no hay hover.
  */
-export default function PrivateProductCard({ product, onAdd, compact }: Props) {
+export default function PrivateProductCard({ product, compact }: Props) {
   const { formatPrice } = useLocale();
+  const { addToCart, checking } = usePrivateAddToCart();
   const [hovered, setHovered] = useState(false);
   const [size, setSize] = useState<string | null>(product.sizes.length === 1 ? product.sizes[0] : null);
   const [added, setAdded] = useState(false);
+  // Talles que el chequeo en vivo encontró agotados (después de cargada la página).
+  const [liveOut, setLiveOut] = useState<Set<string>>(new Set());
+  const isOut = (s: string) => product.stock[s] === 'out' || liveOut.has(s);
 
   const hoverImage = product.images.length > 1 ? product.images[1] : null;
-  const outOfStock = product.sizes.length > 0 && product.sizes.every(s => product.stock[s] === 'out');
+  const outOfStock = product.sizes.length > 0 && product.sizes.every(isOut);
   const pct = product.originalPrice ? Math.round((1 - product.price / product.originalPrice) * 100) : 0;
   const lowSelected = size ? product.stock[size] === 'low' : false;
   const singleSize = product.sizes.length === 1;
 
-  const add = (e: React.MouseEvent) => {
+  const add = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!size || product.stock[size] === 'out') return;
-    onAdd?.(product, size);
+    if (!size || isOut(size) || checking) return;
+    const r = await addToCart(product, size);
+    if (r === 'out') { setLiveOut(prev => new Set([...prev, size])); setSize(null); return; }
+    if (r !== 'added') return;
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
   };
 
   const ctaLabel = outOfStock ? 'Sin stock'
+    : checking ? 'Verificando…'
     : added ? '✓ Agregado'
     : size ? (singleSize ? 'Agregar' : `Agregar · ${size}`)
     : 'Elegí tu talle';
@@ -97,7 +103,7 @@ export default function PrivateProductCard({ product, onAdd, compact }: Props) {
           {!singleSize && (
             <div className="flex flex-wrap gap-1" role="group" aria-label={`Talles de ${product.name}`}>
               {product.sizes.map(s => {
-                const out = product.stock[s] === 'out';
+                const out = isOut(s);
                 const sel = size === s;
                 return (
                   <button
@@ -121,7 +127,7 @@ export default function PrivateProductCard({ product, onAdd, compact }: Props) {
           <button
             type="button"
             onClick={add}
-            disabled={outOfStock || !size}
+            disabled={outOfStock || !size || checking}
             className={`h-9 w-full rounded-[8px] text-[11px] font-bold uppercase tracking-[0.14em] transition-colors ${
               added ? 'bg-[hsl(142,71%,30%)] text-white'
               : size && !outOfStock ? 'bg-bg-dark text-white hover:bg-bg-dark/85'

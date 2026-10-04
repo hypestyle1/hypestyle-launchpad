@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { clearCartSnapshot } from '@/lib/cart-recovery';
 import { markNewsletterBuyer } from '@/lib/newsletter-popup';
 import { gaPurchase } from '@/lib/ga';
+import { paTrackPurchase } from '@/lib/private-access/analytics';
 import { ReceiptPrinter, type ReceiptStage } from '@/components/ReceiptPrinter';
 import { GiftCard } from '@/components/GiftCard';
 import { GIFT_CARD_SLUG } from '@/lib/gift-card';
@@ -134,6 +135,8 @@ export default function ConfirmacionClient() {
     //   PayPal                → recién cuando /api/paypal-capture confirma el capture
     //   Transferencia         → nunca desde el browser; la acredita el back manualmente
     const gaPurchaseFor = (o: OrderData) => {
+      // Preventa Mejores Amigos: evento propio con id anónimo (ver lib/private-access/analytics).
+      paTrackPurchase(o);
       gaPurchase({
         transactionId: String(o.wcOrderNumber || o.orderNum),
         value: o.total,

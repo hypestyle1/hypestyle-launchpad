@@ -4,13 +4,10 @@
 // son mockups reales del repo (public/), para evaluar jerarquía y layout con
 // imágenes de verdad y no con cuadrados grises.
 
-import type { NormalizedProduct } from '@/lib/products-normalize';
+import type { PrivateProduct } from './normalize';
 import { PRIVATE_ACCESS_PATH } from './config';
+export type { PrivateProduct };
 
-export interface PrivateProduct extends NormalizedProduct {
-  description: string;
-  details: { label: string; text: string }[];
-}
 
 const SIZES = ['S', 'M', 'L', 'XL'];
 const ONE = ['Única'];

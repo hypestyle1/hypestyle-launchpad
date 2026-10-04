@@ -5,7 +5,7 @@
 // Fail closed: sin PRIVATE_ACCESS_SESSION_SECRET no se firma ni se valida
 // nada. Nada de fallbacks literales en el repo.
 
-import { PRIVATE_ACCESS_COOKIE, PRIVATE_ACCESS_FLAG_COOKIE, getPrivateAccessConfig } from './config';
+import { PRIVATE_ACCESS_COOKIE, PRIVATE_ACCESS_FLAG_COOKIE } from './config';
 
 const SESSION_SECRET = (process.env.PRIVATE_ACCESS_SESSION_SECRET || '').replace(/^﻿/, '').trim();
 
@@ -33,16 +33,23 @@ async function hmac(data: string): Promise<string> {
   return bufToBase64Url(sig);
 }
 
-/** Vence cuando abre al público: después de eso la cookie no sirve para nada. */
-export function sessionExpiry(now = Date.now()): number {
-  const open = new Date(getPrivateAccessConfig().publicOpenAt).getTime();
+/** Comparación en tiempo constante (las firmas tienen siempre el mismo largo). */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/** Vence cuando abre al público (tope 7 días): después de eso la cookie no sirve. */
+export function sessionExpiry(publicOpenAt: string, now = Date.now()): number {
+  const open = new Date(publicOpenAt).getTime();
   const sevenDays = now + 7 * 24 * 3600_000;
   return open > now ? Math.min(open, sevenDays) : sevenDays;
 }
 
-export async function createSessionToken(memberId: number, now = Date.now()): Promise<string> {
+export async function createSessionToken(memberId: number, exp: number): Promise<string> {
   if (!SESSION_SECRET) throw new Error('PRIVATE_ACCESS_SESSION_SECRET no configurado');
-  const exp = sessionExpiry(now);
   const payload = `${memberId}.${exp}`;
   return `${payload}.${await hmac(payload)}`;
 }
@@ -56,7 +63,7 @@ export async function verifySessionToken(token: string | undefined | null, now =
   const exp = Number(expStr);
   if (!Number.isInteger(memberId) || memberId < 0 || !exp || Number.isNaN(exp) || now > exp) return null;
   const expected = await hmac(`${idStr}.${expStr}`);
-  if (expected !== sig) return null;
+  if (!safeEqual(expected, sig)) return null;
   return { memberId, exp };
 }
 

@@ -6,7 +6,7 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PrivateProductCard from './PrivateProductCard';
-import type { PrivateProduct } from '@/lib/private-access/mock';
+import type { PrivateProduct } from '@/lib/private-access/normalize';
 import './private-access.css';
 
 interface Props {
@@ -42,7 +42,6 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export default function PrivateCollection({ products, collectionName, collectionSubtitle, discountPct, saleEndsAt, saleEndsLabel, publicOpenLabel }: Props) {
   const router = useRouter();
   const [left, setLeft] = useState<ReturnType<typeof timeLeft>>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('Todo');
 
   useEffect(() => {
@@ -139,7 +138,6 @@ export default function PrivateCollection({ products, collectionName, collection
               <PrivateProductCard
                 key={p.slug}
                 product={p}
-                onAdd={(prod, size) => { setToast(`${prod.name} · ${size} agregado (demo)`); setTimeout(() => setToast(null), 1800); }}
               />
             ))}
           </div>
@@ -157,11 +155,6 @@ export default function PrivateCollection({ products, collectionName, collection
       </main>
       <Footer />
 
-      {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-[max(20px,env(safe-area-inset-bottom))] z-[90] pa-glass-dark text-white text-[12px] px-4 py-2.5 rounded-full">
-          {toast}
-        </div>
-      )}
     </>
   );
 }

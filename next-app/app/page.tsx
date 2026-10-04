@@ -20,7 +20,8 @@ import { buildMetadata } from '@/lib/seo';
 import PrivateAccessBanner from '@/components/private-access/PrivateAccessBanner';
 import PrivatePreviewCarousel from '@/components/private-access/PrivatePreviewCarousel';
 import { PRIVATE_PREVIEW_IMAGES } from '@/lib/private-access/preview-images';
-import { fmtDayMonth, getPrivateAccessConfig, isPrivateAccessActive } from '@/lib/private-access/config';
+import { fmtDayMonth, isPrivateAccessActive } from '@/lib/private-access/config';
+import { getPrivateAccessConfig } from '@/lib/private-access/server';
 
 // Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra, HeroHannaDrop)
 // siguen en el repo, sin usar, por si hay que volver. Hoy el hero es HeroLookbookFW26.
@@ -61,7 +62,7 @@ export default async function Home() {
   // en el servidor, así el HTML ya trae el bloque y no hay salto de layout.
   // Nada por visitante en esta página: lo que depende de la cookie vive en
   // /private-access. Ver docs/private-access-diagnostico.md.
-  const paConfig = getPrivateAccessConfig();
+  const paConfig = await getPrivateAccessConfig();
   const paActive = isPrivateAccessActive(paConfig);
 
   return (

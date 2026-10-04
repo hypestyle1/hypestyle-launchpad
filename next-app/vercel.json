@@ -32,6 +32,10 @@
     {
       "path": "/api/admin/wholesale-campaigns/expire",
       "schedule": "50 7 * * *"
+    },
+    {
+      "path": "/api/admin/private-access/open",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

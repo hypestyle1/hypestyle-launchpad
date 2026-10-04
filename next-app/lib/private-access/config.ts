@@ -1,13 +1,13 @@
 // Private Access — SS27 Part 01.
 //
-// Fuente única de la ventana de preventa para Mejores Amigos. Hoy vive acá
-// como constantes; cuando entre el mu-plugin (hypestyle-private-access.php)
-// esto se reemplaza por la option `hs_private_access_config` leída del server
-// con revalidate 60, con la misma forma. El resto del código solo consume
-// `getPrivateAccessConfig()` e `isPrivateAccessActive()`.
+// La config vive en WordPress (option `hs_private_access_config` del
+// mu-plugin hypestyle-private-access.php) y se edita desde /admin/private-access.
+// Acá están los tipos, el default y las reglas puras de vigencia, que valen
+// igual en el servidor y en los tests.
 //
 // Vigencia = override manual o (habilitado y dentro de la ventana). Se calcula
-// en cada request: ningún cron decide si la preventa está abierta.
+// en cada request: ningún cron decide si la preventa está abierta. El cron
+// solo publica los productos al llegar la hora de apertura.
 
 export type PrivateAccessOverride = 'auto' | 'force_on' | 'force_off';
 
@@ -24,6 +24,11 @@ export interface PrivateAccessConfig {
   saleEndsAt: string;
   discountPct: number;
   override: PrivateAccessOverride;
+  clearSaleOnOpen?: boolean;
+  maxDevices?: number;
+  /** Cuándo se publicaron los productos (null = todavía privados). */
+  openedAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export const PRIVATE_ACCESS_PATH = '/private-access';
@@ -32,7 +37,7 @@ export const PRIVATE_ACCESS_COOKIE = 'hype_pa';
 export const PRIVATE_ACCESS_FLAG_COOKIE = 'hype_pa_ok';
 
 export const DEFAULT_CONFIG: PrivateAccessConfig = {
-  enabled: true,
+  enabled: false,
   collectionTag: 'ss27-part-01',
   collectionName: 'Spring Summer 27',
   collectionSubtitle: 'Part 01',
@@ -41,23 +46,22 @@ export const DEFAULT_CONFIG: PrivateAccessConfig = {
   saleEndsAt: '2026-10-10T23:59:59-03:00',
   discountPct: 20,
   override: 'auto',
+  clearSaleOnOpen: true,
+  maxDevices: 6,
+  openedAt: null,
 };
 
 /**
- * Modo mock (solo local): PRIVATE_ACCESS_MOCK=1 en .env.local. Activa la
- * preventa fuera de fecha, acepta `@test` como usuario autorizado y sirve el
- * catálogo ficticio de lib/private-access/mock.ts. Es una variable de
- * servidor a propósito: el browser nunca sabe si está en mock.
+ * Modo mock (solo local): PRIVATE_ACCESS_MOCK=1 en .env.local. La preventa
+ * queda siempre activa, `@test` es el único usuario autorizado y el catálogo
+ * es el ficticio de lib/private-access/mock.ts. No habla con WordPress.
+ * Variable de servidor a propósito: el browser nunca sabe si está en mock.
  */
 export function isMockMode(): boolean {
   return process.env.PRIVATE_ACCESS_MOCK === '1';
 }
 
-export function getPrivateAccessConfig(): PrivateAccessConfig {
-  return DEFAULT_CONFIG;
-}
-
-export function isPrivateAccessActive(config: PrivateAccessConfig = getPrivateAccessConfig(), now = Date.now()): boolean {
+export function isPrivateAccessActive(config: PrivateAccessConfig, now = Date.now()): boolean {
   if (config.override === 'force_off') return false;
   if (config.override === 'force_on') return true;
   if (isMockMode()) return true;
@@ -68,19 +72,18 @@ export function isPrivateAccessActive(config: PrivateAccessConfig = getPrivateAc
 }
 
 /** Ya abrió al público: los links privados redirigen a la ficha normal. */
-export function isPublicOpen(config: PrivateAccessConfig = getPrivateAccessConfig(), now = Date.now()): boolean {
+export function isPublicOpen(config: PrivateAccessConfig, now = Date.now()): boolean {
   if (isMockMode()) return false;
+  if (config.override === 'force_on') return false;
   return now >= new Date(config.publicOpenAt).getTime();
 }
 
 /** Usuario de IG normalizado: sin @, minúsculas, sin espacios ni puntos finales. */
 export function normalizeHandle(raw: string): string {
-  return String(raw ?? '')
-    .trim()
-    .replace(/^@+/, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\.+$/, '');
+  let h = String(raw ?? '').trim().toLowerCase().replace(/\s+/g, '');
+  const link = h.match(/instagram\.com\/([^/?#]+)/);
+  if (link) h = link[1];
+  return h.replace(/^@+/, '').replace(/\.+$/, '');
 }
 
 export const HANDLE_RE = /^[a-z0-9._]{1,30}$/;

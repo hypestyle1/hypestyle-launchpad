@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import UnlockModal from './UnlockModal';
 import { PRIVATE_ACCESS_FLAG_COOKIE, PRIVATE_ACCESS_PATH } from '@/lib/private-access/config';
+import { paTrack } from '@/lib/private-access/analytics';
 import './private-access.css';
 
 interface Props {
@@ -34,6 +35,19 @@ export default function PrivateAccessBanner({ active, collectionName, discountPc
 
   useEffect(() => { setUnlocked(hasFlagCookie()); }, [open]);
 
+  // private_access_banner_view: una vez por carga, cuando al menos la mitad
+  // del bloque entra en pantalla.
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) { paTrack('private_access_banner_view'); io.disconnect(); }
+    }, { threshold: 0.5 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [active]);
+
   if (!active) return null;
 
   // Sobre charcoal, el botón blanco es el que más contrasta (el negro puro
@@ -42,7 +56,7 @@ export default function PrivateAccessBanner({ active, collectionName, discountPc
 
   return (
     <>
-      <section aria-label="Private Access" className="bg-white">
+      <section ref={ref} aria-label="Private Access" className="bg-white">
         <div className="max-w-[1400px] mx-auto px-4 pt-6 md:pt-10 pb-0">
           <div className="pa-glass-charcoal relative overflow-hidden rounded-[22px] md:rounded-[28px] text-white">
             {/* Verde como acento: un resplandor en una esquina, no un fondo. */}
@@ -84,7 +98,7 @@ export default function PrivateAccessBanner({ active, collectionName, discountPc
                     <ArrowRight size={16} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 ) : (
-                  <button onClick={() => setOpen(true)} className={cta}>
+                  <button onClick={() => { setOpen(true); paTrack('private_access_open'); }} className={cta}>
                     Acceder
                     <ArrowRight size={16} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
                   </button>

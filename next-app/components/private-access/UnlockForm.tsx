@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { normalizeHandle, isValidHandle } from '@/lib/private-access/config';
+import { paTrack, setPaId } from '@/lib/private-access/analytics';
 
 interface Props {
   /** Se llama con el nombre que escribió (o null) cuando el acceso fue aprobado. */
@@ -11,7 +12,7 @@ interface Props {
   compact?: boolean;
 }
 
-type Status = 'idle' | 'busy' | 'denied' | 'invalid' | 'error';
+type Status = 'idle' | 'busy' | 'denied' | 'invalid' | 'error' | 'rate_limited' | 'inactive';
 
 const DENIED_COPY = 'Este acceso es para nuestra lista de Mejores Amigos. Si entraste hace poco, probá de nuevo en un rato, o escribinos por DM y te sumamos.';
 
@@ -43,6 +44,7 @@ export default function UnlockForm({ onGranted, autoFocus, compact }: Props) {
       return;
     }
     setStatus('busy');
+    paTrack('private_access_attempt');
     try {
       const res = await fetch('/api/private-access/unlock', {
         method: 'POST',
@@ -51,10 +53,18 @@ export default function UnlockForm({ onGranted, autoFocus, compact }: Props) {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data?.ok) {
+        setPaId(data.paId);
+        paTrack('private_access_granted');
         onGranted(name.trim() || null);
         return;
       }
-      setStatus(res.ok ? 'denied' : 'error');
+      const reason: string = data?.reason || '';
+      paTrack('private_access_denied', { reason: reason || 'error' });
+      setStatus(
+        reason === 'rate_limited' ? 'rate_limited'
+        : reason === 'inactive' ? 'inactive'
+        : res.ok ? 'denied' : 'error',
+      );
       setShake(true); setTimeout(() => setShake(false), 400);
     } catch {
       setStatus('error');
@@ -118,6 +128,12 @@ export default function UnlockForm({ onGranted, autoFocus, compact }: Props) {
         )}
         {status === 'invalid' && (
           <p className="text-[12.5px] leading-snug text-white/75">Revisá el usuario: solo letras, números, puntos y guiones bajos.</p>
+        )}
+        {status === 'rate_limited' && (
+          <p className="text-[12.5px] leading-snug text-white/75">Demasiados intentos seguidos. Esperá unos minutos y volvé a probar.</p>
+        )}
+        {status === 'inactive' && (
+          <p className="text-[12.5px] leading-snug text-white/75">La preventa privada no está abierta en este momento.</p>
         )}
         {status === 'error' && (
           <p className="text-[12.5px] leading-snug text-white/75">No pudimos validar tu acceso. Probá de nuevo en unos segundos.</p>

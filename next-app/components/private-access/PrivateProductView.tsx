@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -10,7 +10,11 @@ import Footer from '@/components/Footer';
 import PrivateProductCard from './PrivateProductCard';
 import { useLocale } from '@/context/LocaleContext';
 import { PRIVATE_ACCESS_PATH } from '@/lib/private-access/config';
-import type { PrivateProduct } from '@/lib/private-access/mock';
+import type { PrivateProduct } from '@/lib/private-access/normalize';
+import { paTrack } from '@/lib/private-access/analytics';
+import { gaViewItem } from '@/lib/ga';
+import { fbViewContent } from '@/lib/fbpixel';
+import { usePrivateAddToCart } from './usePrivateAddToCart';
 import './private-access.css';
 
 interface Props {
@@ -24,21 +28,35 @@ interface Props {
 /**
  * Ficha de un producto de la colección privada. Misma estructura que la ficha
  * pública (galería a la izquierda, info a la derecha, relacionados abajo),
- * con el precio de Mejores Amigos y el aviso de preventa. El botón es mock.
+ * con el precio de Mejores Amigos y el aviso de preventa.
  */
 export default function PrivateProductView({ product, related, collectionName, discountPct, saleEndsLabel }: Props) {
   const { formatPrice } = useLocale();
+  const { addToCart, checking } = usePrivateAddToCart();
   const [img, setImg] = useState(0);
-  const [size, setSize] = useState<string | null>(null);
+  const [size, setSize] = useState<string | null>(product.sizes.length === 1 ? product.sizes[0] : null);
   const [sizeError, setSizeError] = useState(false);
+  const [stockError, setStockError] = useState(false);
   const [added, setAdded] = useState(false);
+  const [liveOut, setLiveOut] = useState<Set<string>>(new Set());
 
-  const images = product.images;
+  const images = product.images.filter(Boolean).length ? product.images.filter(Boolean) : [product.image];
   const pct = product.originalPrice ? Math.round((1 - product.price / product.originalPrice) * 100) : 0;
   const stockLabel = size ? product.stock[size] : null;
+  const isOut = (s: string) => product.stock[s] === 'out' || liveOut.has(s);
 
-  function add() {
+  useEffect(() => {
+    paTrack('private_product_view', { item_id: product.slug, value: product.price, currency: 'ARS' });
+    gaViewItem({ item_id: product.slug, item_name: product.name, item_category: product.category, price: product.price });
+    fbViewContent({ id: product.slug, name: product.name, price: product.price, category: product.category });
+  }, [product.slug, product.name, product.price, product.category]);
+
+  async function add() {
     if (!size) { setSizeError(true); return; }
+    if (checking) return;
+    const r = await addToCart(product, size);
+    if (r === 'out') { setLiveOut(prev => new Set([...prev, size])); setStockError(true); setSize(null); return; }
+    if (r !== 'added') return;
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
@@ -132,12 +150,12 @@ export default function PrivateProductView({ product, related, collectionName, d
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map(s => {
-                    const out = product.stock[s] === 'out';
+                    const out = isOut(s);
                     const sel = size === s;
                     return (
                       <button
                         key={s}
-                        onClick={() => { if (!out) { setSize(s); setSizeError(false); } }}
+                        onClick={() => { if (!out) { setSize(s); setSizeError(false); setStockError(false); } }}
                         disabled={out}
                         aria-pressed={sel}
                         className={`min-w-[52px] h-11 px-3 text-[12px] font-medium border transition-colors ${
@@ -153,6 +171,7 @@ export default function PrivateProductView({ product, related, collectionName, d
                 </div>
                 <div className="min-h-[18px] mt-2">
                   {sizeError && <p className="text-[12px] text-destructive">Elegí un talle para continuar.</p>}
+                  {stockError && !sizeError && <p className="text-[12px] text-destructive">Ese talle se acaba de agotar. Elegí otro.</p>}
                   {!sizeError && stockLabel === 'low' && <p className="text-[12px] text-amber-700">Últimas unidades en {size}.</p>}
                 </div>
               </div>
@@ -161,11 +180,11 @@ export default function PrivateProductView({ product, related, collectionName, d
                 onClick={add}
                 className={`mt-4 h-[52px] w-full rounded-[10px] text-[12px] font-bold uppercase tracking-[0.2em] transition-colors ${added ? 'bg-green-700 text-white' : 'bg-bg-dark text-white hover:bg-bg-dark/85'}`}
               >
-                {added ? '✓ Agregado (demo)' : 'Agregar al carrito'}
+                {checking ? 'Verificando stock…' : added ? '✓ Agregado' : 'Agregar al carrito'}
               </button>
               <p className="mt-3 text-[11px] text-muted-foreground text-center">Envío a todo el país · Cambios sin cargo dentro de los 30 días</p>
 
-              <p className="mt-8 text-[14px] leading-relaxed text-foreground/80">{product.description}</p>
+              {product.description && <p className="mt-8 text-[14px] leading-relaxed text-foreground/80 whitespace-pre-line">{product.description}</p>}
 
               <div className="mt-6 border-t border-border">
                 {product.details.map(d => (
