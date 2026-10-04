@@ -12,6 +12,8 @@ import { verifySessionToken, type PrivateAccessSession } from './session';
 import { getMockProduct, getMockProducts } from './mock';
 import { fromPrivateNode, stockFromNode, type PrivateProduct, type StockLevel } from './normalize';
 import { wpGet } from './store';
+import { normalizeProductDetail } from '@/lib/product-detail';
+import type { Product } from '@/data/products';
 
 /**
  * Config vigente. Cacheada 60 s en el Data Cache de Next: el home la pide en
@@ -78,15 +80,32 @@ export async function fetchPrivateProducts(config: PrivateAccessConfig): Promise
   return (r.data.products?.nodes ?? []).map((n) => fromPrivateNode(n, l));
 }
 
-export async function fetchPrivateProduct(slug: string, config: PrivateAccessConfig): Promise<PrivateProduct | undefined> {
-  if (isMockMode()) return getMockProduct(slug);
+/**
+ * Producto privado con el MISMO shape que la ficha pública (lib/product-detail):
+ * la ficha de Private Access es la ficha normal con una capa encima.
+ */
+export async function fetchPrivateProductDetail(slug: string): Promise<Product | undefined> {
+  if (isMockMode()) {
+    const m = getMockProduct(slug);
+    if (!m) return undefined;
+    return {
+      slug: m.slug, id: m.slug, name: m.name, category: m.category, price: m.price, originalPrice: m.originalPrice,
+      description: m.description, fit: 'Oversize', sizes: m.sizes, stock: m.stock,
+      careItems: [
+        { icon: 'wash', text: 'Lavar a mano o a máquina en agua fría (máx. 30°C)' },
+        { icon: 'no-dryer', text: 'No usar secadora' },
+      ],
+      colors: [{ label: '', value: '#1a1a1a', image: m.image }],
+      images: m.images,
+    };
+  }
   if (!/^[a-z0-9][a-z0-9-]{0,149}$/.test(slug)) return undefined;
   const r = await wpGet<{ product: any }>('/product', { slug });
   if (r.ok === false) {
-    if (r.status !== 404) console.error('[private-access] product', slug, r.status, r.error);
+    if (r.status !== 404) console.error('[private-access] product detail', slug, r.status, r.error);
     return undefined;
   }
-  return fromPrivateNode(r.data.product, labelsFor(config));
+  return normalizeProductDetail(r.data.product);
 }
 
 /** Stock en vivo por talle (para el chequeo antes de agregar al carrito). */

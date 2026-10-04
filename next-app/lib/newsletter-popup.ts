@@ -85,7 +85,8 @@ export function isProductPage(pathname: string): boolean {
 
 /** Páginas donde no va ni el modal ni la barra: están comprando, pagando o administrando. */
 export function isExcludedPage(pathname: string): boolean {
-  return /^\/(admin|checkout|confirmacion|pendiente-de-pago|pagar|mayoristas|acceso|api)(\/|$)/.test(pathname);
+  // private-access: el popup tapaba el formulario de acceso de la preventa.
+  return /^\/(admin|checkout|confirmacion|pendiente-de-pago|pagar|mayoristas|acceso|private-access|api)(\/|$)/.test(pathname);
 }
 
 /** Lo llama la confirmación de compra: a un cliente no se le pide el email de nuevo. Solo en el browser. */

@@ -5,7 +5,7 @@ import { useLocale } from '@/context/LocaleContext';
 import { abreCuadrada, composicion, esMockup, resumen } from '@/lib/ficha';
 import {
   type FichaProps, Foto, Migas, Precio, Descuento, TablaPagos, SelectorColor, SelectorTalle,
-  LineaDespacho, LineaResenas, BotonComprar, Promesas, CuandoLlega, Desplegable,
+  LineaDespacho, LineaResenas, BotonComprar, Promesas, CuandoLlega, Desplegable, BadgePrivateAccess, NotaPreventa,
   TextoEnvios, TextoCambios, TablaMedidas, NotaCuidadoTalles, InterruptorModelo, imgUrl, isVideo,
 } from './bloques';
 
@@ -44,7 +44,7 @@ export default function Ficha(p: FichaProps) {
         {/* Izquierda: información */}
         <div className={`order-3 lg:order-none ${columna}`}>
           <div className="lg:my-auto flex flex-col gap-4">
-            <div className="hidden lg:block"><Migas product={product} /></div>
+            <div className="hidden lg:block"><Migas product={product} privateAccess={p.privateAccess} /></div>
             <div>
               <Desplegable titulo={t('Detalles')} abierto>
                 <p className="whitespace-pre-line">{intro || p.descripcion}</p>
@@ -123,12 +123,13 @@ export default function Ficha(p: FichaProps) {
           <div className="lg:my-auto flex flex-col gap-5">
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-2 min-w-0">
+                {p.privateAccess && <BadgePrivateAccess pa={p.privateAccess} />}
                 <h1 className="text-[20px] lg:text-[26px] font-semibold tracking-[-0.015em] leading-[1.1]">{product.name}</h1>
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <Precio p={p} />
                   <Descuento p={p} />
                 </div>
-                <LineaResenas />
+                {p.privateAccess ? <NotaPreventa pa={p.privateAccess} /> : <LineaResenas />}
               </div>
               <div className="lg:hidden flex-shrink-0 pt-0.5"><InterruptorModelo p={p} /></div>
             </div>
@@ -150,7 +151,7 @@ export default function Ficha(p: FichaProps) {
       </div>
 
       <section className="max-w-[1400px] mx-auto px-4 pt-14 pb-20">
-        <h2 className="text-lg font-bold uppercase tracking-tight mb-6">{t('Completa el look')}</h2>
+        <h2 className="text-lg font-bold uppercase tracking-tight mb-6">{p.privateAccess ? `Más de ${p.privateAccess.collectionName}` : t('Completa el look')}</h2>
         {p.related}
       </section>
     </main>

@@ -13,8 +13,25 @@ import {
 } from '@/lib/envio';
 import { ventanaEntrega, type Modelo } from '@/lib/ficha';
 
+/**
+ * Capa visual de Private Access (preventa Mejores Amigos). Solo agrega un
+ * badge, la línea de la preventa y las migas a la colección; el resto de la
+ * ficha es la de siempre.
+ */
+export interface FichaPrivateAccess {
+  /** "Mejores Amigos" */
+  badge: string;
+  /** "Preventa exclusiva hasta el 10.10" */
+  note: string;
+  /** Título de la colección para las migas y los relacionados. */
+  collectionName: string;
+  /** /private-access */
+  backHref: string;
+}
+
 /** Todo lo que la ficha necesita de ProductoClient, que sigue siendo dueño del estado. */
 export interface FichaProps {
+  privateAccess?: FichaPrivateAccess;
   product: Product;
   galleryImages: string[];
   selectedImage: number;
@@ -46,7 +63,7 @@ export interface FichaProps {
 export function imgUrl(src: string): string {
   if (!src) return '';
   const s = src.replace('http://hypestyle.local', 'https://lightpink-rook-704850.hostingersite.com');
-  return s.startsWith('http') ? s : `/${s}`;
+  return s.startsWith('http') || s.startsWith('/') ? s : `/${s}`;
 }
 
 export function isVideo(src: string): boolean {
@@ -59,8 +76,17 @@ export function Foto({ src, alt, sizes, priority, calidad, className = 'object-c
     : <Image src={imgUrl(src)} alt={alt} fill sizes={sizes} priority={priority} quality={calidad} className={className} />;
 }
 
-export function Migas({ product }: { product: Product }) {
+export function Migas({ product, privateAccess }: { product: Product; privateAccess?: FichaPrivateAccess }) {
   const { t } = useLocale();
+  if (privateAccess) {
+    return (
+      <p className="text-[12px] text-muted-foreground">
+        <a href={privateAccess.backHref} className="hover:text-foreground transition-colors">{privateAccess.collectionName}</a>
+        {' / '}
+        <span className="text-foreground">{product.name}</span>
+      </p>
+    );
+  }
   return (
     <p className="text-[12px] text-muted-foreground">
       <a href="/productos/" className="hover:text-foreground transition-colors">{t(product.category)}</a>
@@ -82,6 +108,21 @@ export function Precio({ p }: { p: FichaProps }) {
       )}
     </div>
   );
+}
+
+/** Badge chico arriba del nombre: punto verde + "MEJORES AMIGOS". */
+export function BadgePrivateAccess({ pa }: { pa: FichaPrivateAccess }) {
+  return (
+    <span className="self-start inline-flex items-center gap-1.5 rounded-full bg-bg-dark text-white px-2.5 py-1 text-[9.5px] font-semibold uppercase tracking-[0.2em]">
+      <span className="w-1.5 h-1.5 rounded-full bg-[hsl(142,70%,55%)]" aria-hidden />
+      {pa.badge}
+    </span>
+  );
+}
+
+/** "Preventa exclusiva hasta el 10.10", debajo del precio. */
+export function NotaPreventa({ pa }: { pa: FichaPrivateAccess }) {
+  return <p className="text-[12px] text-muted-foreground">{pa.note}</p>;
 }
 
 /** "−33%" junto al precio cuando hay precio tachado. */
