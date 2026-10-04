@@ -31,11 +31,13 @@ import { ReceiptPrinter } from '@/components/ReceiptPrinter';
 import { Button } from '@/components/ui/button';
 import { FloatingInput, FloatingSelect } from '@/components/ui/floating-field';
 import { Check } from '@/components/ui/check';
+import { validarInfo, sugerirEmail, camposVisibles, type CampoInfo, type DatosInfo } from '@/lib/checkout-validacion';
+import { leerDatos, guardarDatos, borrarDatos } from '@/lib/checkout-recordar';
 import { MedioDePago, type MetodoPago } from '@/components/checkout/MedioDePago';
 import { PagoSeguroBadge, NotaPagoSeguro, FranjaConfianza } from '@/components/checkout/Confianza';
 import { PagoSeguroCard } from '@/components/checkout/PagoSeguro';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowRight, AtSign, ChevronDown, ChevronLeft, CreditCard, Gift, Home, Info, Lock, Mail, MapPin, Plane, ShoppingBag, Store, Truck, User } from 'lucide-react';
+import { ArrowRight, AtSign, ChevronDown, ChevronLeft, CreditCard, Gift, Home, Info, Lock, Mail, MapPin, Plane, ShoppingBag, Store, Tag, Truck, User } from 'lucide-react';
 import { Panel, Recap, RadioCard, BarraEnvioGratis } from '@/components/checkout/Panel';
 import { useSyncExternalStore } from 'react';
 
@@ -314,6 +316,12 @@ export default function Checkout() {
   }, [step]);
   const [resumenAbierto, setResumenAbierto] = useState(false);
   const [pagoSinMetodo, setPagoSinMetodo] = useState(false);
+  // Campos por los que ya pasó la persona: el error se muestra recién al salir
+  // del campo (o al intentar continuar), no mientras escribe por primera vez.
+  const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
+  const [precargado, setPrecargado] = useState(false);
+  const [cuponAbierto, setCuponAbierto] = useState(false);
+  const [igTocado, setIgTocado] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
@@ -377,6 +385,46 @@ export default function Checkout() {
   // El pedido viaja con el CP de 4 dígitos: es el que sabe leer el plugin de
   // Andreani para generar la guía. El ZIP internacional se deja tal cual.
   const cpEnvio = isInternational ? info.cp : normalizeCpAr(info.cp);
+
+  const optsValidacion = { soloGift, internacional: isInternational, provinciaObligatoria: stateRequired };
+  const errores = validarInfo(info as unknown as DatosInfo, optsValidacion);
+  const sugerenciaEmail = sugerirEmail(info.email);
+  /** Props de error para cada FloatingInput del primer paso. */
+  const campo = (c: CampoInfo) => ({
+    error: tocados[c] ? errores[c] ?? null : null,
+    onBlur: () => setTocados(t => (t[c] ? t : { ...t, [c]: true })),
+  });
+
+  // Datos de la compra anterior. Solo si el formulario está vacío, y una vez.
+  const datosLeidos = useRef(false);
+  useEffect(() => {
+    if (!hydrated || datosLeidos.current) return;
+    datosLeidos.current = true;
+    const d = leerDatos();
+    if (!d) return;
+    const { instagram, ...dir } = d;
+    // Corre una sola vez, al hidratar: el formulario todavía es el inicial,
+    // salvo que la persona ya haya empezado a escribir.
+    if (info.email || info.nombre || info.direccion) return;
+    setInfo(prev => ({ ...prev, ...dir, provincia: dir.provincia || (dir.pais === 'AR' ? 'Buenos Aires' : '') }));
+    setPrecargado(true);
+    if (instagram) setPago(p => (p.instagram ? p : { ...p, instagram }));
+    // El país guardado manda sobre el de la geo, igual que si lo hubiera elegido.
+    countryTouched.current = true;
+    if (dir.pais && dir.pais !== 'AR' && !currencyChosen) setCurrency(localeForCountry(dir.pais)?.currency ?? 'ARS', false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
+  const olvidarDatos = () => {
+    borrarDatos();
+    setPrecargado(false);
+    setTocados({});
+    setInfo({
+      email: '', newsletter: false, nombre: '', apellido: '', dni: '',
+      direccion: '', depto: '', cp: '', ciudad: '', provincia: 'Buenos Aires', pais: 'AR', telefono: '',
+    });
+    setPago(p => ({ ...p, instagram: '' }));
+  };
 
   useEffect(() => { setFlashActive(isFlashSaleActive() || promo3x2Won || championWon); }, [promo3x2Won, championWon]);
 
@@ -548,6 +596,19 @@ export default function Checkout() {
 
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (Object.keys(errores).length > 0) {
+      // Se marcan todos de una (no de a uno como el globito nativo) y se lleva
+      // el foco al primero con problema.
+      setTocados(Object.fromEntries(camposVisibles(optsValidacion).map(c => [c, true])));
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLInputElement>('form [aria-invalid="true"]')?.focus();
+      });
+      return;
+    }
+    guardarDatos({
+      email: info.email, nombre: info.nombre, apellido: info.apellido, direccion: info.direccion, depto: info.depto,
+      cp: info.cp, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono,
+    });
     if (soloGift) {
       // Nada que enviar: directo a pagar.
       setSelectedRate(null);
@@ -636,7 +697,13 @@ export default function Checkout() {
 
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pago.metodo || submitting) return;
+    const faltaIg = !isInternational && !pago.instagram;
+    if (faltaIg) {
+      setIgTocado(true);
+      document.getElementById('instagram-checkout')?.focus();
+    }
+    if (faltaIg || !pago.metodo || submitting) return;
+    if (pago.instagram) guardarDatos({ instagram: pago.instagram });
     setSubmitting(true);
     setSubmitError(null);
     const isTransfer      = pago.metodo === 'transferencia';
@@ -795,6 +862,11 @@ export default function Checkout() {
   const unidades = purchasableItems.reduce((n, i) => n + i.quantity, 0);
   // Lo que dice el botón "Pagar $X": con transferencia local, el total con el
   // 10% off; en la moneda en que se cobra, no en la de vitrina.
+  const avisarSinMetodo = () => {
+    if (pago.metodo) return;
+    setPagoSinMetodo(true);
+    document.getElementById('medio-de-pago')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
   const montoAPagar = pago.metodo === 'transferencia' && !isInternational ? transferTotal : totalFinal;
   const steps: Step[] = soloGift ? ['info', 'pago'] : ['info', 'envio', 'pago'];
 
@@ -861,9 +933,12 @@ export default function Checkout() {
               ))}
             </ScrollFadeList>
             <GiftProgressBar email={info.email} couponCode={couponData?.code} className="pb-4 mb-4 border-b border-border" />
+            {/* Colapsado: un input de cupón a la vista manda a buscar códigos
+                afuera y muchos no vuelven. Se abre con el link. */}
+            {cuponAbierto || couponData || coupon ? (
             <div className="space-y-1.5 mb-5">
               <div className="flex gap-2">
-                <input type="text" placeholder={isInternational ? 'Discount code' : 'Código de descuento'} value={coupon}
+                <input type="text" autoFocus={cuponAbierto && !coupon} placeholder={isInternational ? 'Discount code' : 'Código de descuento'} value={coupon}
                   onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponData) setCouponData(null); }}
                   className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
                 <DynamicButton
@@ -900,6 +975,16 @@ export default function Checkout() {
               {couponError && <p className="text-[11px] text-destructive">{couponError}</p>}
               {couponData && <p className="text-[11px] text-green-700 font-medium">Cupón {couponData.code} aplicado — {couponData.type === 'percent' ? `${couponData.amount}% off` : formatPrice(couponData.amount)}</p>}
             </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCuponAbierto(true)}
+                className="mb-5 flex items-center gap-1.5 text-[12px] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+              >
+                <Tag className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                {isInternational ? 'Have a discount code?' : '¿Tenés un código de descuento?'}
+              </button>
+            )}
             <div className="space-y-2 border-t border-border pt-4">
               <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
               {championDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Campeones del mundo · 50%</span><span>−{formatPrice(championDescuento)}</span></div>}
@@ -1046,9 +1131,26 @@ export default function Checkout() {
             transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
           >
           {step === 'info' && (
-            <form onSubmit={handleInfoSubmit} className="space-y-4">
-              <Panel icon={Mail} title={isInternational ? 'Contact' : 'Contacto'} sub={isInternational ? 'We send your order updates here' : 'Te mandamos la confirmación y el seguimiento'}>
-                <FloatingInput type="email" label="Email" required autoComplete="email" inputMode="email" value={info.email}
+            <form onSubmit={handleInfoSubmit} noValidate className="space-y-4">
+              <Panel
+                icon={Mail}
+                title={isInternational ? 'Contact' : 'Contacto'}
+                sub={precargado
+                  ? (isInternational ? 'We filled in your details from last time' : 'Completamos con los datos de tu última compra')
+                  : (isInternational ? 'We send your order updates here' : 'Te mandamos la confirmación y el seguimiento')}
+                action={precargado ? (
+                  <button type="button" onClick={olvidarDatos} className="flex-shrink-0 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                    {isInternational ? 'Not you?' : '¿No sos vos?'}
+                  </button>
+                ) : undefined}
+              >
+                <FloatingInput type="email" label="Email" required autoComplete="email" inputMode="email" {...campo('email')} value={info.email}
+                  hint={sugerenciaEmail ? (
+                    <button type="button" onClick={() => setInfo(i => ({ ...i, email: sugerenciaEmail }))} className="text-left text-foreground/70 hover:text-foreground">
+                      {isInternational ? 'Did you mean ' : '¿Quisiste decir '}
+                      <span className="font-semibold text-foreground underline underline-offset-2">{sugerenciaEmail}</span>?
+                    </button>
+                  ) : undefined}
                   onChange={e => setInfo({ ...info, email: e.target.value })} />
                 <Check className="mt-3" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })}>
                   {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
@@ -1061,10 +1163,10 @@ export default function Checkout() {
               <Panel icon={User} title="Tus datos" sub="La gift card es digital: te llega por mail apenas se acredita el pago">
                 <div className="space-y-2.5">
                   <div className="grid grid-cols-2 gap-2.5">
-                    <FloatingInput label="Nombre" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
-                    <FloatingInput label="Apellido" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                    <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                    <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                   </div>
-                  <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                  <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
                 </div>
               </Panel>
               ) : (
@@ -1097,22 +1199,22 @@ export default function Checkout() {
                   {isInternational ? (
                     <>
                       <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="First name" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
-                        <FloatingInput label="Last name" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                        <FloatingInput label="First name" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                        <FloatingInput label="Last name" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                       </div>
-                      <FloatingInput label="Address" required autoComplete="address-line1" value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                      <FloatingInput label="Address" required autoComplete="address-line1" {...campo('direccion')} value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
                       <FloatingInput label="Apartment, suite (optional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
                       <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="City" required autoComplete="address-level2" value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                        <FloatingInput label="City" required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
                         <FloatingInput
                           label={stateRequired ? 'State / Province' : 'State / Province (optional)'}
                           required={stateRequired}
                           autoComplete="address-level1"
-                          value={info.provincia}
+                          {...campo('provincia')} value={info.provincia}
                           onChange={e => setInfo({ ...info, provincia: e.target.value })} />
                       </div>
-                      <FloatingInput label="Postal / ZIP code" required autoComplete="postal-code" value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
-                      <FloatingInput type="tel" label="Phone (with country code)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                      <FloatingInput label="Postal / ZIP code" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
+                      <FloatingInput type="tel" label="Phone (with country code)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
                     </>
                   ) : (
                     <>
@@ -1120,17 +1222,17 @@ export default function Checkout() {
                         {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
                       </FloatingSelect>
                       <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="Nombre" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
-                        <FloatingInput label="Apellido" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                        <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                        <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                       </div>
-                      <FloatingInput label="DNI" required inputMode="numeric" value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
-                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                      <FloatingInput label="DNI" required inputMode="numeric" {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
+                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" {...campo('direccion')} value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
                       <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
                       <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="Código postal" required autoComplete="postal-code" value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
-                        <FloatingInput label="Ciudad" required autoComplete="address-level2" value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
+                        <FloatingInput label="Ciudad" required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
                       </div>
-                      <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                      <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
                     </>
                   )}
                 </div>
@@ -1310,7 +1412,32 @@ export default function Checkout() {
           )}
 
           {step === 'pago' && (
-            <form onSubmit={handlePagoSubmit} className="space-y-4">
+            <form onSubmit={handlePagoSubmit} noValidate className={`space-y-4${isDesktop ? '' : ' pb-24'}`}>
+              {/* Mobile: total y botón pegados al pie. El botón en el flujo quedaba
+                  debajo de cinco medios de pago y había que ir a buscarlo. */}
+              {!isDesktop && (
+                <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur">
+                  <div className="flex items-center gap-4">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Total</p>
+                      <p className="text-[17px] font-bold leading-tight tabular-nums">{formatPriceIn(montoAPagar, cobro)}</p>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      onClick={avisarSinMetodo}
+                      className="ml-auto inline-flex h-12 flex-1 max-w-[230px] items-center justify-center gap-2 rounded-[10px] bg-bg-dark text-[12px] font-bold uppercase tracking-[0.1em] text-white transition-colors hover:bg-bg-dark/85 disabled:opacity-60"
+                    >
+                      {submitting ? (
+                        <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                      ) : (
+                        <Lock className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
+                      )}
+                      {submitting ? (isInternational ? 'Processing' : 'Procesando') : (isInternational ? 'Pay' : 'Pagar')}
+                    </button>
+                  </div>
+                </div>
+              )}
               <Recap
                 cambiar={isInternational ? 'Change' : 'Cambiar'}
                 rows={[
@@ -1343,7 +1470,10 @@ export default function Checkout() {
                   <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-foreground/50">@</span>
                   <input
                     type="text"
+                    id="instagram-checkout"
                     aria-label="Instagram"
+                    aria-invalid={igTocado && !isInternational && !pago.instagram ? true : undefined}
+                    onBlur={() => setIgTocado(true)}
                     placeholder={isInternational ? 'username' : 'usuario'}
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -1356,11 +1486,15 @@ export default function Checkout() {
                       const v = e.target.value.trim().replace(/^@+/, '');
                       setPago({ ...pago, instagram: v ? `@${v}` : '' });
                     }}
-                    className="w-full h-[52px] rounded-[10px] border border-border bg-white pl-[29px] pr-4 text-[13px] focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/70"
+                    className="w-full h-[52px] rounded-[10px] border border-border bg-white pl-[29px] pr-4 text-[13px] focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/70 aria-[invalid=true]:border-destructive"
                   />
                 </div>
+                {igTocado && !isInternational && !pago.instagram && (
+                  <p className="mt-1.5 px-1 text-[11px] text-destructive">Ingresá tu usuario de Instagram</p>
+                )}
               </Panel>
 
+              <div id="medio-de-pago">
               <Panel icon={CreditCard} title={isInternational ? 'Payment method' : 'Medio de pago'} sub={isInternational ? 'You will finish the payment on the next screen' : 'Terminás de pagar en la pantalla siguiente'}>
                 <MedioDePago
                   metodos={paymentMethods}
@@ -1372,14 +1506,16 @@ export default function Checkout() {
                     en rojo apenas se entraba al paso, como si ya hubiera un error. */}
                 {pagoSinMetodo && !pago.metodo && <p className="text-[11px] text-destructive mt-2">{isInternational ? 'Select a payment method' : 'Seleccioná un medio de pago'}</p>}
               </Panel>
+              </div>
 
               {submitError && <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{submitError}</p>}
               <div className="space-y-3 pt-1">
+                {isDesktop && (
                 <DynamicButton
                   type="submit"
                   width="full"
                   disabled={submitting}
-                  onClick={() => { if (!pago.metodo) setPagoSinMetodo(true); }}
+                  onClick={avisarSinMetodo}
                   icon={submitting ? (
                     <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
                   ) : (
@@ -1391,6 +1527,7 @@ export default function Checkout() {
                     ? (isInternational ? 'Processing' : 'Procesando')
                     : `${isInternational ? 'Pay' : 'Pagar'} ${formatPriceIn(montoAPagar, cobro)}`}
                 </DynamicButton>
+                )}
                 {isDesktop
                   ? <NotaPagoSeguro en={isInternational} />
                   : <PagoSeguroCard en={isInternational} className="bg-white" />}

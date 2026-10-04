@@ -26,24 +26,38 @@ const floatingLabel =
 type FloatingInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   wrapperClassName?: string;
+  /** Mensaje de error: borde rojo y el texto debajo del campo. */
+  error?: string | null;
+  /** Algo para mostrar debajo cuando no hay error (ej. "¿Quisiste decir...?"). */
+  hint?: React.ReactNode;
 };
 
 export const FloatingInput = React.forwardRef<HTMLInputElement, FloatingInputProps>(
-  ({ label, id, className, wrapperClassName, placeholder, ...props }, ref) => {
+  ({ label, id, className, wrapperClassName, placeholder, error, hint, ...props }, ref) => {
     const autoId = React.useId();
     const inputId = id ?? autoId;
+    const msgId = `${inputId}-msg`;
     return (
-      <div className={cn('relative', wrapperClassName)}>
-        <input
-          ref={ref}
-          id={inputId}
-          placeholder={placeholder ?? label}
-          className={cn(base, className)}
-          {...props}
-        />
-        <label htmlFor={inputId} className={floatingLabel}>
-          {label}
-        </label>
+      <div className={wrapperClassName}>
+        <div className="relative">
+          <input
+            ref={ref}
+            id={inputId}
+            placeholder={placeholder ?? label}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error || hint ? msgId : undefined}
+            className={cn(base, error && 'border-destructive focus:border-destructive', className)}
+            {...props}
+          />
+          <label htmlFor={inputId} className={cn(floatingLabel, error && 'text-destructive peer-focus:text-destructive')}>
+            {label}
+          </label>
+        </div>
+        {error ? (
+          <p id={msgId} className="mt-1.5 px-1 text-[11px] text-destructive">{error}</p>
+        ) : hint ? (
+          <div id={msgId} className="mt-1.5 px-1 text-[11px]">{hint}</div>
+        ) : null}
       </div>
     );
   },
