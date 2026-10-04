@@ -207,6 +207,13 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
     if (step === 2) emailRef.current?.focus();
   }, [step]);
 
+  // Sin la X, Escape es la salida por teclado.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   useEffect(() => {
     if (step !== 'done') return;
     const t = window.setTimeout(onClose, 2200);
@@ -245,15 +252,6 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
           maxHeight: '92vh',
         }}
       >
-        <button
-          onClick={onClose}
-          aria-label="Cerrar"
-          className="absolute top-4 right-4 md:top-[22px] md:right-[22px] z-20 w-[34px] h-[34px] flex items-center justify-center rounded-full text-white transition-transform hover:scale-105"
-          style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.45)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
-        >
-          <CloseIcon />
-        </button>
-
         {/* La foto se funde en el vidrio por la izquierda. Solo desktop. */}
         {wide && (
           <div
@@ -277,7 +275,7 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
         <div className="relative flex flex-col w-full md:w-[60%] px-6 pt-[30px] pb-[26px] md:pl-[52px] md:pr-0 md:pt-[46px] md:pb-10 md:min-h-[500px]">
           <img src="/hero/hype-white.png" alt="Hype" className="h-[22px] md:h-[26px] w-auto self-start mb-5 md:mb-[26px]" />
 
-          <h3 className="font-medium text-[27px] md:text-[34px] leading-[1.05] tracking-[-0.025em] pr-9 md:pr-0">
+          <h3 className="font-medium text-[27px] md:text-[34px] leading-[1.05] tracking-[-0.025em]">
             10% en tu primera compra
           </h3>
 
@@ -355,7 +353,19 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
           </div>
 
           <p className="mt-auto pt-7 text-[10.5px] leading-[1.5] text-white/80 md:max-w-[400px]">{LEGAL}</p>
-          <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-3 w-auto self-start mt-4 opacity-90" />
+          {/* Sin la X de la esquina: se cierra con "No, gracias" (además de clic
+              afuera y Escape). Una salida en texto, al pie, empuja menos a
+              cerrar que un botón a la vista arriba de todo. */}
+          <div className="mt-4 flex items-center justify-between gap-4 md:max-w-[400px]">
+            <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-3 w-auto opacity-90" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-[12px] text-white/75 underline underline-offset-[3px] transition-colors hover:text-white"
+            >
+              No, gracias
+            </button>
+          </div>
         </div>
       </div>
     </div>
