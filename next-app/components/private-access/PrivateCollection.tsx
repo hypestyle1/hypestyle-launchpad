@@ -1,0 +1,167 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import AnnouncementBar from '@/components/AnnouncementBar';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import PrivateProductCard from './PrivateProductCard';
+import type { PrivateProduct } from '@/lib/private-access/mock';
+import './private-access.css';
+
+interface Props {
+  products: PrivateProduct[];
+  collectionName: string;
+  collectionSubtitle: string;
+  discountPct: number;
+  saleEndsAt: string;
+  saleEndsLabel: string;
+  publicOpenLabel: string;
+}
+
+function timeLeft(to: string): { d: number; h: number; m: number } | null {
+  const diff = new Date(to).getTime() - Date.now();
+  if (diff <= 0) return null;
+  return {
+    d: Math.floor(diff / 86_400_000),
+    h: Math.floor((diff % 86_400_000) / 3_600_000),
+    m: Math.floor((diff % 3_600_000) / 60_000),
+  };
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * /private-access con sesión válida: la "sala" de Mejores Amigos. Cabecera de
+ * vidrio charcoal con acentos verdes (mismo lenguaje que el banner del home y
+ * el modal) y la grilla de la colección con talles y CTA a la vista.
+ *
+ * Sin sesión esta pantalla no se renderiza: app/private-access/page.tsx
+ * decide en el servidor y ni siquiera pide los productos.
+ */
+export default function PrivateCollection({ products, collectionName, collectionSubtitle, discountPct, saleEndsAt, saleEndsLabel, publicOpenLabel }: Props) {
+  const router = useRouter();
+  const [left, setLeft] = useState<ReturnType<typeof timeLeft>>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>('Todo');
+
+  useEffect(() => {
+    const tick = () => setLeft(timeLeft(saleEndsAt));
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, [saleEndsAt]);
+
+  const categories = useMemo(() => ['Todo', ...Array.from(new Set(products.map(p => p.category)))], [products]);
+  const visible = filter === 'Todo' ? products : products.filter(p => p.category === filter);
+
+  async function logout() {
+    await fetch('/api/private-access/logout', { method: 'POST' });
+    router.refresh();
+  }
+
+  return (
+    <>
+      <AnnouncementBar />
+      <Navbar />
+      <main className="pt-[var(--offset)] bg-white">
+        {/* ── Cabecera ─────────────────────────────────────────────── */}
+        <div className="max-w-[1400px] mx-auto px-4 pt-5 md:pt-8">
+          <section className="pa-glass-charcoal relative overflow-hidden rounded-[22px] md:rounded-[28px] text-white">
+            <div className="pa-glow-dark" aria-hidden />
+            <div className="pa-grain" aria-hidden />
+
+            <div className="relative px-6 pt-8 pb-7 md:px-12 md:pt-12 md:pb-10 flex flex-col md:flex-row md:items-end gap-8 md:gap-12">
+              <div className="md:flex-1 text-center md:text-left">
+                <div className="flex items-center justify-center md:justify-start gap-2.5 mb-5">
+                  <span className="pa-dot pa-dot-green" aria-hidden />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/60">Close Friends · Private Access</span>
+                </div>
+                <h1 className="font-bold uppercase leading-[0.9] tracking-[-0.04em] whitespace-nowrap" style={{ fontSize: 'clamp(28px, 7.6vw, 76px)' }}>
+                  {collectionName}
+                </h1>
+                <p className="mt-2 text-[12px] md:text-[13px] font-medium uppercase tracking-[0.22em] text-white/45">{collectionSubtitle} · Private Preview</p>
+                <p className="mt-5 text-[14px] md:text-[16px] leading-relaxed text-white/65 max-w-[460px] mx-auto md:mx-0">
+                  Estás adentro. Acceso anticipado a la colección antes del lanzamiento público del {publicOpenLabel}, con precio exclusivo para Mejores Amigos.
+                </p>
+                <div className="mt-5 flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                  <span className="pa-pill-green pa-pill-green--dark text-[13px]">{discountPct}% OFF</span>
+                  <span className="text-[13px] text-white/60">hasta el {saleEndsLabel}</span>
+                </div>
+              </div>
+
+              {/* Cuenta regresiva del precio Mejores Amigos */}
+              {left && (
+                <div className="md:w-auto flex flex-col items-center md:items-end gap-2.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-white/40">El precio termina en</span>
+                  <div className="flex items-stretch gap-1.5" suppressHydrationWarning>
+                    {[{ v: left.d, u: 'días' }, { v: left.h, u: 'hs' }, { v: left.m, u: 'min' }].map(x => (
+                      <div key={x.u} className="pa-chip-glass flex flex-col items-center justify-center w-[64px] md:w-[72px] py-2.5 rounded-[12px]">
+                        <span className="text-[24px] md:text-[28px] font-bold leading-none tabular-nums">{pad(x.v)}</span>
+                        <span className="mt-1 text-[9px] uppercase tracking-[0.18em] text-white/45">{x.u}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* ── Colección ────────────────────────────────────────────── */}
+        <div className="max-w-[1400px] mx-auto px-4 pt-8 md:pt-12 pb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 md:mb-8">
+            <div>
+              <h2 className="text-[22px] md:text-[28px] font-semibold tracking-[-0.01em] leading-none">La colección</h2>
+              <p className="mt-2 text-[12px] text-muted-foreground">{products.length} productos · precio Mejores Amigos aplicado</p>
+            </div>
+            {categories.length > 2 && (
+              <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-1 [scrollbar-width:none]" role="tablist">
+                {categories.map(c => (
+                  <button
+                    key={c}
+                    role="tab"
+                    aria-selected={filter === c}
+                    onClick={() => setFilter(c)}
+                    className={`shrink-0 h-8 px-3.5 rounded-full text-[11px] font-medium border transition-colors ${
+                      filter === c ? 'bg-bg-dark text-white border-bg-dark' : 'border-border-mid text-foreground/70 hover:border-foreground'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-[6px] gap-y-5 md:gap-x-3 md:gap-y-8">
+            {visible.map(p => (
+              <PrivateProductCard
+                key={p.slug}
+                product={p}
+                onAdd={(prod, size) => { setToast(`${prod.name} · ${size} agregado (demo)`); setTimeout(() => setToast(null), 1800); }}
+              />
+            ))}
+          </div>
+
+          <div className="mt-14 md:mt-20 border-t border-border pt-6 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[12px] text-muted-foreground">
+            <p className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(142,71%,38%)]" aria-hidden />
+              Tu acceso privado está activo hasta el {publicOpenLabel}. Después, la colección queda abierta para todos.
+            </p>
+            <button onClick={logout} className="self-start md:self-auto underline underline-offset-4 decoration-foreground/30 hover:text-foreground transition-colors">
+              Cerrar acceso en este dispositivo
+            </button>
+          </div>
+        </div>
+      </main>
+      <Footer />
+
+      {toast && (
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-[max(20px,env(safe-area-inset-bottom))] z-[90] pa-glass-dark text-white text-[12px] px-4 py-2.5 rounded-full">
+          {toast}
+        </div>
+      )}
+    </>
+  );
+}

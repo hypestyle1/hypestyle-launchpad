@@ -17,6 +17,10 @@ import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query
 import { fetchAllProducts } from '@/lib/products-server';
 import { fetchHomeReviews } from '@/lib/reviews/server';
 import { buildMetadata } from '@/lib/seo';
+import PrivateAccessBanner from '@/components/private-access/PrivateAccessBanner';
+import PrivatePreviewCarousel from '@/components/private-access/PrivatePreviewCarousel';
+import { PRIVATE_PREVIEW_IMAGES } from '@/lib/private-access/preview-images';
+import { fmtDayMonth, getPrivateAccessConfig, isPrivateAccessActive } from '@/lib/private-access/config';
 
 // Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra, HeroHannaDrop)
 // siguen en el repo, sin usar, por si hay que volver. Hoy el hero es HeroLookbookFW26.
@@ -53,6 +57,13 @@ export default async function Home() {
     fetchHomeReviews(4),
   ]);
 
+  // Preventa privada (Mejores Amigos): el estado activo/inactivo se decide acá,
+  // en el servidor, así el HTML ya trae el bloque y no hay salto de layout.
+  // Nada por visitante en esta página: lo que depende de la cookie vive en
+  // /private-access. Ver docs/private-access-diagnostico.md.
+  const paConfig = getPrivateAccessConfig();
+  const paActive = isPrivateAccessActive(paConfig);
+
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <AnnouncementBar />
@@ -74,6 +85,22 @@ export default async function Home() {
             el de cada sección individual) para que no se vea el hero de fondo en los
             huecos entre secciones (ej. NewInFW26, que no trae fondo propio). */}
         <div className="relative z-10 bg-white">
+          {/* Private Access va entre el hero y el producto: es lo primero que
+              tiene que ver un Mejor Amigo que entra por su cuenta. Devuelve
+              null fuera de la ventana de preventa. Dentro de la cortina para
+              que suba junto con el resto del contenido sobre el hero pineado. */}
+          <PrivateAccessBanner
+            active={paActive}
+            collectionName={paConfig.collectionName}
+            discountPct={paConfig.discountPct}
+            saleEndsLabel={fmtDayMonth(paConfig.saleEndsAt)}
+          />
+          {/* Vitrina 3D de la colección: teaser para quien todavía no desbloqueó. */}
+          <PrivatePreviewCarousel
+            active={paActive}
+            collectionName={paConfig.collectionName}
+            images={PRIVATE_PREVIEW_IMAGES}
+          />
           <Promo3x2Section />
           <FlashSaleSection />
           <NewInFW26 />
