@@ -60,13 +60,14 @@ function resolver(look: Look, bySlug: Map<string, NormalizedProduct>): Pieza[] {
         pendiente: false,
       };
     }
-    // Todavía no está en Woo: nombre provisorio y la foto de detalle del look.
+    // Todavía no está en Woo: nombre provisorio y el flat lay (o la foto de
+    // detalle del look si la prenda no tiene flat lay).
     const detalle = look.angulos.includes('detalle') ? 'detalle' : look.angulos[look.angulos.length - 1];
     return {
       slug: it.slug,
       name: it.pendiente?.name ?? it.slug,
       category: it.pendiente?.category ?? '',
-      image: lookFoto(look, detalle),
+      image: it.pendiente?.miniatura ?? lookFoto(look, detalle),
       agotado: false,
       pendiente: true,
     };
