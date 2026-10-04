@@ -561,3 +561,10 @@ export async function fetchProductDetail(
   await resolveColorwayImages(product);
   return product;
 }
+
+/**
+ * La misma normalización que usa la ficha pública, expuesta para la ficha de
+ * Private Access: el mu-plugin devuelve el producto privado con el shape de
+ * la query GET_PRODUCT, así la ficha privada es idéntica a la pública.
+ */
+export const normalizeProductDetail = fromWPNode;

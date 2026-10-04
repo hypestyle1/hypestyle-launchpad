@@ -23,6 +23,19 @@ import { fbViewContent, fbAddToCart } from '@/lib/fbpixel';
 import { ordenarFotos, tieneInterruptorModelo, filtrarPorModelo, modeloInicial, type Modelo } from '@/lib/ficha';
 import Ficha from './ficha/Ficha';
 import { GIFT_CARD_SLUG } from '@/lib/gift-card';
+import type { FichaPrivateAccess } from './ficha/bloques';
+
+/**
+ * Capa de Private Access (preventa Mejores Amigos) sobre la ficha normal. La
+ * ficha es la misma; cambia de dónde sale el producto, cómo se chequea el stock
+ * (ruta privada: el GraphQL público no ve productos privados) y qué se
+ * recomienda abajo. Ver app/private-access/[slug].
+ */
+export interface PrivateAccessMode extends FichaPrivateAccess {
+  checkStock: (slug: string, size: string) => Promise<'ok' | 'low' | 'out'>;
+  onAdded?: (args: { slug: string; name: string; category: string; size: string; price: number }) => void;
+  related: React.ReactNode;
+}
 
 function CareIcon({ type }: { type: string }) {
   const cls = 'w-[18px] h-[18px] flex-shrink-0 text-foreground/70';
@@ -123,7 +136,7 @@ function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string
 function imgUrl(src: string): string {
   if (!src) return '';
   const s = src.replace('http://hypestyle.local', 'https://lightpink-rook-704850.hostingersite.com');
-  return s.startsWith('http') ? s : `/${s}`;
+  return s.startsWith('http') || s.startsWith('/') ? s : `/${s}`;
 }
 
 function isVideo(src: string): boolean {
@@ -162,12 +175,16 @@ function ModelInfo({ html }: { html: string }) {
   );
 }
 
-export default function ProductoClient({ slug, initialProduct, initialGoalDiscount = null }: { slug: string; initialProduct?: Product; initialGoalDiscount?: GoalDiscount | null }) {
+export default function ProductoClient({ slug, initialProduct, initialGoalDiscount = null, privateAccess }: { slug: string; initialProduct?: Product; initialGoalDiscount?: GoalDiscount | null; privateAccess?: PrivateAccessMode }) {
   const router = useRouter();
   const { formatPrice, currency, language, t } = useLocale();
   // initialProduct viene del servidor (page.tsx): el primer render ya sale con
   // el producto puesto, así el <h1> y el precio están en el HTML servido.
-  const { data: product, isLoading } = useProduct(slug, initialProduct);
+  // En Private Access el producto llega del servidor (ruta privada) y no se
+  // vuelve a pedir: el GraphQL público no lo ve y lo pisaría con undefined.
+  const productQuery = useProduct(privateAccess ? undefined : slug, privateAccess ? undefined : initialProduct);
+  const product = privateAccess ? initialProduct : productQuery.data;
+  const isLoading = privateAccess ? false : productQuery.isLoading;
   // Descripción y ficha del modelo en el idioma elegido: IA, cacheada en el
   // servidor. Mientras carga o si falla se ve el español de Woo.
   const traduccion = useProductTranslation(product?.slug, language);
@@ -307,7 +324,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // diseño anterior los personalizables (tienen su propio flujo de dorsal), los
   // dos drops con tratamiento visual de campaña y la gift card, que es un
   // producto digital y se mantiene como estaba por decisión de Valentín.
-  const fichaClasica = !!product.customizable || isLaNuestra || isNapoli || product.slug === GIFT_CARD_SLUG;
+  const fichaClasica = !privateAccess && (!!product.customizable || isLaNuestra || isNapoli || product.slug === GIFT_CARD_SLUG);
   // La ficha nueva abre con una persona usando la prenda; la clásica, con el mockup.
   const abreConModelo = !fichaClasica;
   const conInterruptor = abreConModelo && tieneInterruptorModelo(product.slug, baseImages);
@@ -381,7 +398,9 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       return;
     }
     setSizeError(false); setStockError(false); setStockChecking(true);
-    const result = await checkStock(product.id, selectedSize);
+    const result = privateAccess
+      ? await privateAccess.checkStock(product.slug, selectedSize)
+      : await checkStock(product.id, selectedSize);
     setStockChecking(false);
     if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, selectedSize])); setStockError(true); return; }
     add({ id: product.id, name: product.name, price: displayPrice, image: imgUrl(coverImage), size: selectedSize, quantity: 1 });
@@ -397,6 +416,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       price: displayPrice,
       quantity: 1,
     });
+    privateAccess?.onAdded?.({ slug: product.slug, name: product.name, category: product.category, size: selectedSize, price: displayPrice });
     setAdded(true);
   };
 
@@ -476,7 +496,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
             </div>
   );
 
-  const relacionados = (
+  const relacionados = privateAccess ? privateAccess.related : (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
       {related.map(p => (
         <ProductCard key={p.slug} {...p} />
@@ -516,6 +536,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           modelo={modelo}
           onModelo={(m) => { setModeloElegido(m); setSelectedImage(0); }}
           related={relacionados}
+          privateAccess={privateAccess}
         />
       ) : (
       <main className={`pt-[var(--offset)] ${isLaNuestra ? 'bg-gradient-to-b from-[#eaf5fd] via-white to-white' : isNapoli ? 'bg-gradient-to-b from-[#eaf6fd] via-white to-white' : ''}`}>

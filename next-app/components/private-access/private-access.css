@@ -1,0 +1,248 @@
+/* Private Access — estilos propios del módulo (vidrio, transiciones).
+   Importado desde los componentes del módulo; no toca el resto del sitio. */
+
+.pa-glass {
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(26px) saturate(165%);
+  backdrop-filter: blur(26px) saturate(165%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 70px rgba(0, 0, 0, 0.35);
+}
+
+.pa-glass-dark {
+  background: rgba(10, 10, 10, 0.66);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  backdrop-filter: blur(30px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 30px 80px rgba(0, 0, 0, 0.55);
+}
+
+/* Reflejo sutil arriba a la izquierda, como la luz pegando en el vidrio. */
+.pa-glass::before,
+.pa-glass-dark::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(120% 80% at 10% 0%, rgba(255, 255, 255, 0.16), transparent 55%);
+}
+
+/* ── Banner del home: vidrio charcoal con un acento verde en la esquina ── */
+.pa-glass-charcoal {
+  background: linear-gradient(135deg, rgba(22, 22, 22, 0.96) 0%, rgba(10, 10, 10, 0.98) 100%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 28px 70px rgba(0, 0, 0, 0.28);
+}
+/* Reflejo suave arriba a la izquierda, como la luz pegando en el vidrio. */
+.pa-glass-charcoal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(110% 80% at 6% 0%, rgba(255, 255, 255, 0.12), transparent 50%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 40%);
+}
+.pa-glass-charcoal > .relative { z-index: 2; }
+.pa-glow-dark {
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(46px);
+  background:
+    radial-gradient(22% 40% at 90% 92%, hsla(142, 71%, 42%, 0.34), transparent 70%),
+    radial-gradient(18% 32% at 4% 10%, hsla(142, 60%, 50%, 0.12), transparent 70%);
+}
+.pa-pill-green.pa-pill-green--dark {
+  background: hsla(142, 60%, 45%, 0.16);
+  color: hsl(142, 70%, 62%);
+  border: 1px solid hsla(142, 60%, 50%, 0.25);
+}
+
+/* Chips de la cuenta regresiva sobre charcoal. */
+.pa-chip-glass {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+/* ── Variante clara (sin uso hoy): vidrio claro sobre blanco con resplandor verde ── */
+.pa-glass-light {
+  background: linear-gradient(135deg, #ffffff 0%, #f7faf8 100%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 24px 60px rgba(16, 60, 36, 0.10);
+}
+/* Capa de vidrio: brillo arriba a la izquierda y un velo blanco que suaviza el verde. */
+.pa-glass-light::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(120% 90% at 8% 0%, rgba(255, 255, 255, 0.85), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.15));
+}
+.pa-glass-light > .relative { z-index: 2; }
+/* El verde vive detrás del vidrio: desenfocado es una luz, no un color plano. */
+.pa-glow {
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(40px);
+  background:
+    radial-gradient(28% 45% at 18% 25%, hsla(142, 71%, 42%, 0.55), transparent 70%),
+    radial-gradient(26% 45% at 84% 80%, hsla(142, 60%, 55%, 0.40), transparent 70%),
+    radial-gradient(22% 40% at 62% 12%, hsla(90, 70%, 70%, 0.28), transparent 70%);
+}
+.pa-dot.pa-dot-green {
+  background: hsl(142, 71%, 32%);
+  animation-name: pa-dot-green;
+}
+@keyframes pa-dot-green {
+  0% { box-shadow: 0 0 0 0 hsla(142, 71%, 32%, 0.5); }
+  70% { box-shadow: 0 0 0 7px hsla(142, 71%, 32%, 0); }
+  100% { box-shadow: 0 0 0 0 hsla(142, 71%, 32%, 0); }
+}
+.pa-pill-green {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: hsla(142, 50%, 40%, 0.12);
+  color: hsl(142, 71%, 28%);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* Escenario oscuro del Private Preview (carrusel 3D): negro con dos luces
+   difusas y grano fino; mismo vidrio que el modal, pero opaco porque va sobre
+   el blanco del home. */
+.pa-stage {
+  background: #0b0b0b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+/* Luces difusas sobre negro + grano fino (las usa .pa-stage). */
+.pa-light {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  pointer-events: none;
+}
+.pa-light-a {
+  width: 60vw; height: 60vw; max-width: 760px; max-height: 760px;
+  left: -12%; top: -45%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 70%);
+}
+.pa-light-b {
+  width: 50vw; height: 50vw; max-width: 640px; max-height: 640px;
+  right: -10%; bottom: -55%;
+  background: radial-gradient(closest-side, rgba(214, 196, 168, 0.28), rgba(214, 196, 168, 0) 70%);
+}
+.pa-grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.pa-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.pa-input::placeholder { color: rgba(255, 255, 255, 0.28); }
+.pa-input:focus-within,
+.pa-input:focus {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08);
+}
+.pa-input.is-error { border-color: rgba(255, 90, 90, 0.75); }
+
+.pa-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6);
+  animation: pa-dot 2.2s ease-out infinite;
+}
+@keyframes pa-dot {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+/* Modal: sube como sheet en mobile, aparece con escala en desktop. */
+.pa-sheet-in { animation: pa-sheet-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes pa-sheet-in {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (min-width: 768px) {
+  .pa-sheet-in { animation-name: pa-pop-in; }
+}
+@keyframes pa-pop-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pa-backdrop-in { animation: pa-fade 0.3s ease both; }
+@keyframes pa-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ACCESS GRANTED */
+.pa-granted { animation: pa-fade 0.35s ease both; }
+.pa-granted.is-leaving { animation: pa-fade-out 0.45s ease both; }
+@keyframes pa-fade-out { from { opacity: 1; } to { opacity: 0; } }
+.pa-granted-word {
+  animation: pa-blur-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pa-granted-word:nth-child(2) { animation-delay: 0.12s; }
+.pa-granted-sub { animation: pa-blur-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both; }
+@keyframes pa-blur-in {
+  from { opacity: 0; filter: blur(14px); transform: translateY(10px); letter-spacing: 0.02em; }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+.pa-granted-line {
+  transform-origin: left;
+  animation: pa-line 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both;
+}
+@keyframes pa-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.pa-shake { animation: pa-shake 0.35s ease; }
+@keyframes pa-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pa-dot, .pa-sheet-in, .pa-backdrop-in, .pa-granted, .pa-granted-word, .pa-granted-sub, .pa-granted-line, .pa-shake {
+    animation: none !important;
+  }
+}

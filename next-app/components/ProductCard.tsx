@@ -41,12 +41,20 @@ interface ProductCardProps {
   blurred?: boolean;
   /** Solo vidriera: sin link al producto ni selector de talle/agregar al carrito. Usado en drops pre-lanzamiento. */
   disableLink?: boolean;
+  /**
+   * Chequeo de stock en vivo del "agregar" rápido. Por defecto el del catálogo
+   * público (GraphQL). Private Access pasa el de su ruta privada: el GraphQL
+   * público no ve los productos privados. No cambia nada visual.
+   */
+  checkStockFn?: (id: string, size: string) => Promise<'ok' | 'low' | 'out'>;
+  /** Se llama después de agregar al carrito (Private Access: sus eventos). */
+  onAddedToCart?: (args: { id: string; size: string; price: number }) => void;
 }
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge, image, images,
   href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
-  blurred, disableLink,
+  blurred, disableLink, checkStockFn = checkStock, onAddedToCart,
 }: ProductCardProps) {
   const { formatPrice, t } = useLocale();
   const { add, setDrawerOpen } = useCart();
@@ -67,7 +75,7 @@ export default function ProductCard({
     if (!id || checkingSize) return;
 
     setCheckingSize(size);
-    const result = await checkStock(id, size);
+    const result = await checkStockFn(id, size);
     setCheckingSize(null);
 
     if (result === 'out') {
@@ -78,6 +86,7 @@ export default function ProductCard({
     add({ id, name, price, image, size, quantity: 1 });
     fbAddToCart({ id, name, price, quantity: 1 });
     gaAddToCart({ item_id: id, item_name: name, item_category: category, item_variant: size, price, quantity: 1 });
+    onAddedToCart?.({ id, size, price });
     setAddedSize(size);
     setDrawerOpen(true);
     setTimeout(() => setAddedSize(null), 2000);
