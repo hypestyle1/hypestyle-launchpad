@@ -73,9 +73,6 @@ function resolver(look: Look, bySlug: Map<string, NormalizedProduct>): Pieza[] {
   });
 }
 
-const titulo = (piezas: Pieza[]) =>
-  piezas[0]?.name.replace(/^(Athletic Dept|Hype Department|Hype)\s+/i, '') ?? '';
-
 export default function ShopTheLook() {
   const dragRef = useDragScroll();
   const revealRef = useReveal();
@@ -119,7 +116,7 @@ export default function ShopTheLook() {
         ref={dragRef}
         className="reveal rd2 flex overflow-x-auto no-scrollbar cursor-grab select-none rounded-[8px] bg-[#ecebe8]"
       >
-        {looks.map(({ look, piezas }, i) => {
+        {looks.map(({ look }, i) => {
           const activo = i === selIdx;
           return (
             <button
@@ -128,17 +125,17 @@ export default function ShopTheLook() {
               data-look={look.id}
               onClick={() => elegir(i)}
               aria-pressed={activo}
-              aria-label={`Look ${i + 1}: ${titulo(piezas)}`}
+              aria-label={`Look ${i + 1}: ${look.etiqueta}`}
               className={`flex-none w-[38vw] md:w-[calc(100%/5.5)] lg:w-[calc(100%/7)] text-left transition-[opacity,filter] duration-300 ${
-                activo ? '' : 'opacity-40 grayscale-[0.6] hover:opacity-80 hover:grayscale-0'
+                activo ? '' : 'opacity-40 grayscale-[0.6] md:hover:opacity-80 md:hover:grayscale-0'
               }`}
             >
               <div className="aspect-[3/4] overflow-hidden">
                 <img
-                  src={lookFoto(look, 'frente')}
+                  src={lookFoto(look, 'lineup')}
                   alt=""
-                  width={960}
-                  height={1280}
+                  width={420}
+                  height={560}
                   loading={i < 4 ? 'eager' : 'lazy'}
                   decoding="async"
                   draggable={false}
@@ -148,7 +145,7 @@ export default function ShopTheLook() {
               <div className="flex items-baseline gap-2 px-2.5 pt-2.5 pb-3 text-[11px]">
                 <span className="font-semibold text-[12px] tabular-nums">{String(i + 1).padStart(2, '0')}</span>
                 {activo && <span className="w-1.5 h-1.5 rounded-full bg-foreground self-center" aria-hidden />}
-                <span className="truncate text-foreground/60">{titulo(piezas)}</span>
+                <span className="truncate text-foreground/60">{look.etiqueta}</span>
               </div>
             </button>
           );
@@ -185,11 +182,38 @@ function LookPanel({ look, piezas, numero, total, onPrev, onNext, formatPrice }:
   const n = look.angulos.length;
 
   // Con mouse: la posición horizontal del cursor elige el ángulo (el modelo
-  // "gira"). Con touch no hay hover, así que un toque pasa al siguiente.
+  // "gira"). Con el dedo: deslizar de costado gira de a un ángulo cada
+  // PASO_SWIPE px, y un toque sin deslizar pasa al siguiente.
+  const swipe = useRef<{ x: number; movido: boolean } | null>(null);
+  const PASO_SWIPE = 36;
+
+  const onDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') swipe.current = { x: e.clientX, movido: false };
+  };
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'mouse' || !fotoRef.current) return;
-    const r = fotoRef.current.getBoundingClientRect();
-    setAng(Math.min(n - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * n))));
+    if (e.pointerType === 'mouse') {
+      if (!fotoRef.current) return;
+      const r = fotoRef.current.getBoundingClientRect();
+      setAng(Math.min(n - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * n))));
+      return;
+    }
+    const s = swipe.current;
+    if (!s) return;
+    const dx = e.clientX - s.x;
+    if (Math.abs(dx) >= PASO_SWIPE) {
+      // Deslizar hacia la izquierda gira hacia adelante, como arrastrar al modelo.
+      setAng((a) => Math.min(n - 1, Math.max(0, a + (dx < 0 ? 1 : -1))));
+      swipe.current = { x: e.clientX, movido: true };
+    }
+  };
+  const onUp = () => {
+    // El click llega después del pointerup: si hubo deslizamiento, que no
+    // avance otro ángulo más.
+    setTimeout(() => { swipe.current = null; }, 0);
+  };
+  const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); setAng((a) => Math.min(n - 1, a + 1)); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); setAng((a) => Math.max(0, a - 1)); }
   };
 
   const conPrecio = piezas.filter((p) => p.price && !p.agotado);
@@ -197,23 +221,31 @@ function LookPanel({ look, piezas, numero, total, onPrev, onNext, formatPrice }:
   const hayPendientes = piezas.some((p) => p.pendiente);
 
   return (
-    <div className="grid grid-cols-[42%_minmax(0,1fr)] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-cols-[400px_minmax(0,1fr)] gap-4 md:gap-10 pt-5 md:pt-6">
+    <div className="grid grid-cols-[42%_minmax(0,1fr)] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-cols-[400px_minmax(0,1fr)] gap-4 md:gap-10 pt-5 md:pt-6 animate-in fade-in duration-300 motion-reduce:animate-none">
       <div>
         <div
           ref={fotoRef}
+          role="group"
+          tabIndex={0}
+          aria-label={`${look.etiqueta}: ${ANGULO_LABEL[look.angulos[ang]].toLowerCase()}. Usá las flechas para girar.`}
+          onPointerDown={onDown}
           onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
           onPointerLeave={(e) => e.pointerType === 'mouse' && setAng(0)}
+          onKeyDown={onKey}
           onClick={(e) => {
             if ((e.target as HTMLElement).closest('button')) return;
+            if (swipe.current?.movido) return;
             setAng((a) => (a + 1) % n);
           }}
-          className="relative aspect-[3/4] overflow-hidden rounded-[8px] bg-[#ecebe8] cursor-ew-resize touch-pan-y"
+          className="relative aspect-[3/4] overflow-hidden rounded-[8px] bg-[#ecebe8] cursor-ew-resize touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
         >
           {look.angulos.map((a, i) => (
             <img
               key={a}
               src={lookFoto(look, a)}
-              alt={i === ang ? `${titulo(piezas)}, ${ANGULO_LABEL[a].toLowerCase()}` : ''}
+              alt={i === ang ? `${look.etiqueta}, ${ANGULO_LABEL[a].toLowerCase()}` : ''}
               width={960}
               height={1280}
               decoding="async"
@@ -245,6 +277,13 @@ function LookPanel({ look, piezas, numero, total, onPrev, onNext, formatPrice }:
             ))}
           </div>
         </div>
+        {/* En mobile el aviso va abajo: arriba de la foto no entra al lado del ángulo. */}
+        <p className="md:hidden flex items-center gap-1 mt-2 text-[10px] uppercase tracking-[0.06em] text-foreground/50">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-3.5 h-3.5" aria-hidden>
+            <path d="M2 8h12M4.5 5.5 2 8l2.5 2.5M11.5 5.5 14 8l-2.5 2.5" />
+          </svg>
+          Deslizá para girar
+        </p>
       </div>
 
       <div className="min-w-0 flex flex-col">
@@ -253,7 +292,7 @@ function LookPanel({ look, piezas, numero, total, onPrev, onNext, formatPrice }:
             <p className="text-[10px] uppercase tracking-[0.15em] text-text-light">
               Look <span className="tabular-nums">{String(numero).padStart(2, '0')}</span> · {look.modelo === 'ella' ? 'Ella' : 'Él'}
             </p>
-            <h3 className="text-[17px] md:text-[22px] font-semibold tracking-[-0.01em] leading-tight mt-1">{titulo(piezas)}</h3>
+            <h3 className="text-[17px] md:text-[22px] font-semibold tracking-[-0.01em] leading-tight mt-1">{look.etiqueta}</h3>
           </div>
         </div>
 
