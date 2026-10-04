@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPromo3x2Status } from '@/lib/promo-3x2-status';
-import { compute3x2Discount } from '@/lib/promo-3x2';
-import { getPromoChampionStatus } from '@/lib/promo-champion-status';
-import { computeChampionDiscount } from '@/lib/promo-champion';
+import { calcularPedido } from '@/lib/pedido-servidor';
+import { PrecioError } from '@/lib/precio-servidor';
 import { lineasDeEnvio } from '@/lib/andreani-shipping-line';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
@@ -60,36 +58,6 @@ async function resolveItem(slug: string, size: string, itemName: string): Promis
   return { product_id: productId };
 }
 
-// Misma sanitización server-side que /api/create-order: si el cliente manda un
-// discountAmount que dice ser 3x2 o CAMPEON50 pero esa promo ya no está activa
-// (resultado del partido cambió después de que cargó la página), recortamos esa
-// porción antes de armar la orden. No toca cupón ni descuento por transferencia.
-async function sanitizeDiscount(payload: any) {
-  const label = String(payload?.discountLabel || '');
-  if (!label.includes('3x2') && !label.includes('CAMPEON50')) return payload;
-
-  const items = Array.isArray(payload.items) ? payload.items : [];
-  let discountAmount = Number(payload.discountAmount || 0);
-
-  if (label.includes('CAMPEON50')) {
-    const status = await getPromoChampionStatus().catch(() => null);
-    if (!status?.promoActive) {
-      const realChampion = computeChampionDiscount(items.map((it: any) => ({ id: it.id, price: it.price, quantity: it.quantity })));
-      discountAmount = Math.max(0, discountAmount - realChampion);
-    }
-  }
-
-  if (label.includes('3x2')) {
-    const status = await getPromo3x2Status().catch(() => null);
-    if (!status?.promoActive) {
-      const real3x2 = compute3x2Discount(items.map((it: any) => ({ price: it.price, quantity: it.quantity })));
-      discountAmount = Math.max(0, discountAmount - real3x2);
-    }
-  }
-
-  return { ...payload, discountAmount };
-}
-
 export async function POST(req: NextRequest) {
   try {
     const rawPayload = await req.json();
@@ -99,21 +67,40 @@ export async function POST(req: NextRequest) {
     // regalo oficial sobre la orden real, del lado de WordPress.
     const cleanItems = Array.isArray(rawPayload.items) ? rawPayload.items.filter((it: any) => it?.isGift !== true) : [];
     const {
-      items, customer, shipping, discountAmount, discountLabel, couponCode,
-      paymentMethod, shippingMethodId, shippingLabel, shippingBranch, shippingBranchCode,
+      items, customer, shipping, discountAmount: descuentoCliente, couponCode,
+      paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
       fbp, fbc,
-    } = await sanitizeDiscount({ ...rawPayload, items: cleanItems });
+    } = { ...rawPayload, items: cleanItems };
+
+    // Precio, descuento y envío salen del servidor (auditoría 28/09, C1). Del
+    // body solo se toma qué se compra; lo que mandó el navegador como precio
+    // queda en el log si no coincide.
+    const calculo = await calcularPedido({
+      items,
+      metodo: String(paymentMethod ?? ''),
+      internacional: false,
+      envio: { cp: customer?.cp ?? '', provincia: customer?.provincia ?? '', tarifaId: shippingMethodId, costoCliente: shipping, cupon: couponCode },
+      descuentoCliente,
+    });
+    if (calculo.diferencias.length) {
+      console.warn('[create-order-gocuotas] el navegador mandó otros importes:', calculo.diferencias.join(' | '));
+    }
+    const envioCosto = calculo.envio.costo;
+    const shippingLabel = calculo.envio.verificado && calculo.envio.tarifa.label
+      ? calculo.envio.tarifa.label
+      : rawPayload.shippingLabel;
 
     const lineItems = await Promise.all(
-      (items as any[]).map(async (item) => {
+      (items as any[]).map(async (item, i) => {
         const resolved = await resolveItem(item.id, item.size, item.name ?? item.id);
-        // Pasar subtotal/total explícitos para que WC use el precio del carrito
-        // (con descuento aplicado) en lugar de recalcular desde el catálogo.
-        // Sin esto, si la ventana de sale_price expiró en WC, cobra precio lleno.
-        const lineTotal = String(Math.round(Number(item.price) * Number(item.quantity)));
+        // subtotal/total explícitos con el precio de la tienda (calculado en el
+        // servidor): si la ventana de sale_price expiró en WC, Woo cobraría el
+        // precio lleno en vez del que se mostró.
+        const linea = calculo.lineas[i];
+        const lineTotal = String(Math.round(linea.price * linea.quantity));
         const li: Record<string, unknown> = {
           ...resolved,
-          quantity: item.quantity,
+          quantity: linea.quantity,
           subtotal: lineTotal,
           total: lineTotal,
         };
@@ -160,9 +147,9 @@ export async function POST(req: NextRequest) {
       // registrar el shipping_line: sin él, Andreani no tiene de dónde sacar el
       // método de envío y rechaza el pedido al empaquetar. El method_id es el del
       // método de WooCommerce, no la tarifa (ver lib/andreani-shipping-line).
-      shipping_lines: lineasDeEnvio(shippingMethodId, shippingLabel, shipping),
-      fee_lines: discountAmount > 0
-        ? [{ name: discountLabel || 'Descuento', total: String(-Math.round(discountAmount)), tax_class: '' }]
+      shipping_lines: lineasDeEnvio(shippingMethodId, shippingLabel, envioCosto),
+      fee_lines: calculo.descuento.monto > 0
+        ? [{ name: calculo.descuento.etiqueta || 'Descuento', total: String(-calculo.descuento.monto), tax_class: '' }]
         : [],
     };
 
@@ -182,6 +169,9 @@ export async function POST(req: NextRequest) {
     // solo setea en el checkout nativo (sesión). Sin esto acá, el plugin rechaza el
     // pedido con "no es válida para envío Andreani" al querer empaquetarlo.
     if (shippingMethodId)   meta.push({ key: '_chosen_shipping', value: shippingMethodId });
+    // Andreani no respondió al crear el pedido: el envío quedó con el costo que
+    // vio el cliente. Marcado para revisarlo antes de despachar.
+    if (calculo.envio.verificado === false) meta.push({ key: '_envio_no_verificado', value: calculo.envio.motivo });
     if (meta.length)        order.meta_data = meta;
 
     const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
@@ -233,8 +223,8 @@ export async function POST(req: NextRequest) {
         orderNum:      String(wcOrder.number),
         wcOrderId:     wcOrder.id,
         orderKey:      wcOrder.order_key,
-        items:         (items as any[]).map((i: any) => ({
-          name: i.name, size: i.size, quantity: i.quantity, price: i.price, customization: i.customization,
+        items:         (items as any[]).map((i: any, idx: number) => ({
+          name: i.name, size: i.size, quantity: calculo.lineas[idx].quantity, price: calculo.lineas[idx].price, customization: i.customization,
         })),
         total:         parseFloat(wcOrder.total),
         email:         customer.email,
@@ -268,6 +258,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof OutOfStockError) {
       return NextResponse.json({ message: err.message }, { status: 409 });
+    }
+    if (err instanceof PrecioError) {
+      return NextResponse.json({ message: err.message }, { status: 400 });
     }
     console.error('[create-order-gocuotas]', err);
     return NextResponse.json({ message: 'Error al crear el pedido' }, { status: 500 });

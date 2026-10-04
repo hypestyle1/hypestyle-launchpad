@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gocuotasWebhookToken } from '@/lib/gocuotas-webhook-token';
+import { wcGet } from '@/lib/wc-admin';
+import { totalCobrable } from '@/lib/total-cobrable';
 
 const GC_BASE  = 'https://www.gocuotas.com';
 const SITE_URL = 'https://hypestyle.com.ar';
@@ -9,9 +11,28 @@ const GC_API_KEY = (process.env.GOCUOTAS_API_KEY || '').trim();
 
 export async function POST(req: NextRequest) {
   try {
-    const { wcOrderId, total, email, phone, orderKey } = await req.json() as {
-      wcOrderId: number; total: number; email: string; phone: string; orderKey: string;
+    const body = await req.json() as {
+      wcOrderId: number; total?: number; email: string; phone: string; orderKey: string;
     };
+    const wcOrderId = Number(body.wcOrderId);
+    if (!Number.isInteger(wcOrderId) || wcOrderId <= 0) {
+      return NextResponse.json({ error: 'wcOrderId requerido' }, { status: 400 });
+    }
+    // El monto sale del pedido en WooCommerce, nunca del body (auditoría 28/09,
+    // C1): antes se mandaba a GOcuotas el total que decía el navegador.
+    const pedido = await wcGet<any>(`orders/${wcOrderId}`);
+    const cobrable = totalCobrable(pedido);
+    if (cobrable.ok === false) {
+      return NextResponse.json({ error: cobrable.error }, { status: cobrable.status });
+    }
+    const total = cobrable.total;
+    if (body.total && Math.round(Number(body.total)) !== Math.round(total)) {
+      console.warn('[gocuotas-order] el navegador mandó', body.total, '— el pedido', wcOrderId, 'dice', total);
+    }
+    // La clave del pedido también sale de Woo: va en la URL de vuelta.
+    const orderKey = String(pedido?.order_key || body.orderKey || '');
+    const email = String(pedido?.billing?.email || body.email || '');
+    const phone = String(pedido?.billing?.phone || body.phone || '');
 
     if (!GC_API_KEY) {
       console.error('[gocuotas-order] GOCUOTAS_API_KEY not set');
