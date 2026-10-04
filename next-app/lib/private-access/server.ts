@@ -10,7 +10,7 @@ import {
 } from './config';
 import { verifySessionToken, type PrivateAccessSession } from './session';
 import { getMockProduct, getMockProducts } from './mock';
-import { fromPrivateNode, stockFromNode, withPlainPrices, type PrivateProduct, type StockLevel } from './normalize';
+import { decodeEntities, fromPrivateNode, stockFromNode, withPlainPrices, type PrivateProduct, type StockLevel } from './normalize';
 import { wpGet } from './store';
 import { normalizeProductDetail } from '@/lib/product-detail';
 import type { Product } from '@/data/products';
@@ -105,7 +105,8 @@ export async function fetchPrivateProductDetail(slug: string): Promise<Product |
     if (r.status !== 404) console.error('[private-access] product detail', slug, r.status, r.error);
     return undefined;
   }
-  return normalizeProductDetail(withPlainPrices(r.data.product));
+  const product = r.data.product;
+  return normalizeProductDetail(withPlainPrices({ ...product, name: decodeEntities(product?.name) }));
 }
 
 /** Stock en vivo por talle (para el chequeo antes de agregar al carrito). */

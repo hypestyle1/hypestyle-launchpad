@@ -168,3 +168,18 @@ describe('precios crudos del mu-plugin', () => {
     expect(withPlainPrices({ price: '$78.400' }).price).toBe('$78.400');
   });
 });
+
+describe('nombres con entidades del mu-plugin', () => {
+  it('decodifica &amp; y las comillas tipográficas que guarda WordPress', async () => {
+    const { decodeEntities } = await import('@/lib/private-access/normalize');
+    expect(decodeEntities('STYLE&amp;CULTURE UNIVERSITY &#8211; WHITE TEE')).toBe('STYLE&CULTURE UNIVERSITY – WHITE TEE');
+    expect(decodeEntities('RACE TEE &#038; GREY')).toBe('RACE TEE & GREY');
+    expect(decodeEntities('&amp;lt;b&amp;gt;')).toBe('&lt;b&gt;');
+    expect(decodeEntities('ЗОЛОТЫЕ КУПОЛА – HOODIE')).toBe('ЗОЛОТЫЕ КУПОЛА – HOODIE');
+  });
+  it('la card de la colección muestra el nombre decodificado', async () => {
+    const { fromPrivateNode } = await import('@/lib/private-access/normalize');
+    const p = fromPrivateNode({ name: 'STYLE&amp;CULTURE UNIVERSITY – BLACK TEE', slug: 'style-culture-university-black-tee', price: '31200.00', regularPrice: '39000.00', salePrice: '31200.00', image: { sourceUrl: '' } }, { saleEndsLabel: '10.10', publicOpenLabel: '11.10' });
+    expect(p.name).toBe('STYLE&CULTURE UNIVERSITY – BLACK TEE');
+  });
+});
