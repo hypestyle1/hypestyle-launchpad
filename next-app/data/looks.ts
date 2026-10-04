@@ -5,19 +5,16 @@
  * y stock salen del catálogo de Woo (la query ['products'] que el home ya
  * precarga en el servidor), así que no se desactualizan.
  *
- * `pendiente`: prendas nuevas que todavía no están cargadas en Woo. Mientras el
- * slug no aparezca en el catálogo se muestran con este nombre y "Próximamente",
- * sin precio ni link. Cuando se carga el producto con ese slug, toma los datos
- * reales sola. Si el slug final en Woo es otro, cambiarlo acá.
+ * `pendiente`: datos de respaldo mientras el producto no está publicado (los
+ * de SS27 se cargaron en Woo como privados el 04/10). Mientras el slug no
+ * aparece en el catálogo público, la prenda se muestra con este nombre, la
+ * destacada de Woo y "Próximamente", sin precio ni link. Cuando se publica,
+ * toma los datos reales sola.
  *
  * Fotos: 960x1280 (3:4) en public/looks/ss27/, exportadas de los originales de
- * `Redes & Pauta/CONTENT SS27/ESTUDIO/_SELECCION`. Orden de los ángulos:
- * frente, perfil, espalda, detalle. Cada look tiene además <id>-lineup.webp,
- * el frente achicado a 420x560 para la tira de arriba.
- *
- * Miniaturas de las prendas pendientes: flat lay en public/looks/ss27/prendas/
- * <slug>.webp (480x480). Las que no tienen flat lay usan la foto de detalle del
- * look. Cuando el producto está en Woo, la miniatura es la destacada de Woo.
+ * `Redes & Pauta/CONTENT SS27/ESTUDIO`. Orden de los ángulos: frente, perfil,
+ * espalda, detalle. Cada look tiene además <id>-lineup.webp, el frente achicado
+ * a 420x560 para la tira de arriba.
  */
 
 export type Angulo = 'frente' | 'perfil' | 'espalda' | 'detalle';
@@ -43,58 +40,74 @@ export const lookFoto = (look: Look, angulo: FotoLook) => `/looks/ss27/${look.id
 
 const TODOS: Angulo[] = ['frente', 'perfil', 'espalda', 'detalle'];
 
-// Ya están en Woo.
+// Ya publicados.
 const SWEAT_GREY: LookItem = { slug: 'sweatpant-grey-hstars' };
 const SWEAT_BLACK: LookItem = { slug: 'sweatpant-black-hstars' };
 const REGULAR_NAVY: LookItem = { slug: 'regular-tee-navy' };
 
-const nuevo = (slug: string, name: string, category: string, flatlay = true): LookItem => ({
+// SS27: cargados en Woo, privados hasta la apertura.
+const ss27 = (slug: string, name: string, category: string, miniatura: string): LookItem => ({
   slug,
-  pendiente: { name, category, miniatura: flatlay ? `/looks/ss27/prendas/${slug}.webp` : undefined },
+  pendiente: { name, category, miniatura },
 });
 
-const AD_PINK = nuevo('athletic-dept-longsleeve-pink', 'Athletic Dept Longsleeve Pink', 'Longsleeve');
-const AD_BLUE = nuevo('athletic-dept-longsleeve-blue', 'Athletic Dept Longsleeve Blue', 'Longsleeve', false);
-const AD_BOXY_NAVY = nuevo('athletic-dept-boxy-tee-navy', 'Athletic Dept Boxy Tee Navy', 'Remera');
-const AD_BOXY_WHITE = nuevo('athletic-dept-boxy-tee-white', 'Athletic Dept Boxy Tee White', 'Remera');
-const CREST_BLACK = nuevo('varsity-crest-tee-black', 'Varsity Crest Tee Black', 'Remera');
-const EAGLE = nuevo('eagle-18-hoodie-washed-graphite', 'Eagle 18 Hoodie Washed Graphite', 'Hoodie');
-const RAGLAN = nuevo('raglan-crest-longsleeve-olive', 'Raglan Crest Longsleeve Olive', 'Longsleeve');
-const VARSITY_018 = nuevo('hype-018-worn-varsity-boxy-tee-navy', 'Hype 018 Worn Varsity Boxy Tee Navy', 'Remera');
-const WAFFLE = nuevo('hype-department-waffle-longsleeve-washed-black', 'Hype Department Waffle Longsleeve', 'Longsleeve');
-const CROSS = nuevo('hype-dept-cross-waffle-longsleeve-white', 'Hype Dept Cross Waffle Longsleeve White', 'Longsleeve');
-const HORSES = nuevo('running-horses-waffle-longsleeve-white', 'Running Horses Waffle Longsleeve White', 'Longsleeve', false);
-const DISTRESSED = nuevo('hype-distressed-hoodie-washed-grey', 'Hype Distressed Hoodie Washed Grey', 'Hoodie');
-const HEARTS = nuevo('hearts-boxy-tee-white', 'Hearts Boxy Tee White', 'Remera', false);
+const AD_PINK = ss27('athletic-dept-pink-longsleeve', 'ATHLETIC DEPT – PINK LONGSLEEVE', 'Longsleeve', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/athletic-dept-pink-longsleeve-mockup.jpg');
+const AD_BLUE = ss27('athletic-dept-blue-longsleeve', 'ATHLETIC DEPT – BLUE LONGSLEEVE', 'Longsleeve', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/athletic-dept-blue-longsleeve-mockup.jpg');
+const AD_NAVY_TEE = ss27('athletic-dept-navy-tee', 'ATHLETIC DEPT – NAVY TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/athletic-dept-navy-tee-mockup.png');
+const AD_WHITE_GREY = ss27('athletic-dept-white-grey-print-tee', 'ATHLETIC DEPT – WHITE TEE (GREY PRINT)', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/athletic-dept-white-grey-print-tee-mockup.png');
+const AD_WHITE_BLUE = ss27('athletic-dept-white-tee', 'ATHLETIC DEPT – WHITE TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/athletic-dept-white-tee-mockup.png');
+const AD_POLO = ss27('athletic-dept-washed-grey-polo', 'ATHLETIC DEPT – WASHED GREY POLO', 'Polo', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/athletic-dept-washed-grey-polo-mockup.png');
+const SCU_BLACK = ss27('style-culture-university-black-tee', 'STYLE&CULTURE UNIVERSITY – BLACK TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/style-culture-university-black-tee-mockup.png');
+const SCU_WHITE = ss27('style-culture-university-white-tee', 'STYLE&CULTURE UNIVERSITY – WHITE TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/style-culture-university-white-tee-mockup.png');
+const SCU_NAVY = ss27('style-culture-university-navy-tee', 'STYLE&CULTURE UNIVERSITY – NAVY TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/style-culture-university-navy-tee-mockup.png');
+const WVC_NAVY = ss27('worn-varsity-club-navy-tee', 'WORN VARSITY CLUB – NAVY TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/worn-varsity-club-navy-tee-mockup.png');
+const WVC_WHITE = ss27('worn-varsity-club-white-tee', 'WORN VARSITY CLUB – WHITE TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/worn-varsity-club-white-tee-mockup.png');
+const H_WHITE = ss27('h-hype-white-tee', 'H HYPE – WHITE TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/h-hype-white-tee-mockup.png');
+const H_NAVY = ss27('h-hype-navy-tee', 'H HYPE – NAVY TEE', 'Remera', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/h-hype-navy-tee-mockup.png');
+const KUPOLA = ss27('zolotye-kupola-washed-graphite-hoodie', 'ЗОЛОТЫЕ КУПОЛА – WASHED GRAPHITE HOODIE', 'Hoodie', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/zolotye-kupola-washed-graphite-hoodie-mockup.png');
+const DISTRESSED = ss27('hype-distressed-grey-hoodie', 'HYPE – DISTRESSED GREY HOODIE', 'Hoodie', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/hype-distressed-grey-hoodie-mockup.png');
+const RAGLAN = ss27('hs-crest-olive-raglan-longsleeve', 'HS CREST – OLIVE RAGLAN LONGSLEEVE', 'Longsleeve', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/hs-crest-olive-raglan-longsleeve-mockup.png');
+const DEPT_CULTURE = ss27('department-of-culture-washed-black-waffle-longsleeve', 'DEPARTMENT OF CULTURE – WASHED BLACK WAFFLE LONGSLEEVE', 'Longsleeve', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/department-of-culture-washed-black-waffle-longsleeve-01.jpg');
+const HYPE_WAFFLE = ss27('hype-washed-black-waffle-longsleeve', 'H.Y.P.E – WASHED BLACK WAFFLE LONGSLEEVE', 'Longsleeve', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/hype-washed-black-waffle-longsleeve-01.jpg');
+const CROSS = ss27('hype-dept-cross-white-waffle-longsleeve', 'HYPE DEPT CROSS – WHITE WAFFLE LONGSLEEVE', 'Longsleeve', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/hype-dept-cross-white-waffle-longsleeve-mockup.png');
 
 /**
  * El orden es el del line-up. Primero los looks sobre pared lisa y después los
- * que tienen el ladrillo arriba (toda la cámara 2 y parte de la cámara 1). Así
- * la pared cambia una sola vez. Recortar el ladrillo no sirve: en esas tomas el
- * modelo está encuadrado más arriba y el corte le saca la cabeza.
+ * que tienen el ladrillo arriba (toda la cámara 2 y parte de la cámara 1), para
+ * que la pared cambie una sola vez. Recortar el ladrillo no sirve: en esas
+ * tomas el modelo está encuadrado más arriba y el corte le saca la cabeza.
+ *
+ * Fuera del line-up: Splatter Hoodie (no hay toma de cuerpo entero), y Hearts
+ * Boxy Tee, Running Horses / Griffin Waffle y Mock Neck (no están en Woo).
  */
 export const LOOKS: Look[] = [
   // Pared lisa
-  { id: 'pink-ella',         etiqueta: 'Athletic Dept Pink',  modelo: 'ella', angulos: TODOS, items: [AD_PINK, SWEAT_BLACK] },
-  { id: 'blue-el',           etiqueta: 'Athletic Dept Blue',  modelo: 'el',   angulos: TODOS, items: [AD_BLUE] },
-  { id: 'crest-ella',        etiqueta: 'Varsity Crest Tee',   modelo: 'ella', angulos: TODOS, items: [CREST_BLACK, SWEAT_BLACK] },
-  { id: 'raglan-el',         etiqueta: 'Raglan Crest',        modelo: 'el',   angulos: TODOS, items: [RAGLAN, SWEAT_BLACK] },
-  { id: 'eagle-ella',        etiqueta: 'Eagle 18 Hoodie',     modelo: 'ella', angulos: TODOS, items: [EAGLE] },
-  { id: 'pink-el',           etiqueta: 'Athletic Dept Pink',  modelo: 'el',   angulos: TODOS, items: [AD_PINK] },
-  { id: 'distressed-ella',   etiqueta: 'Distressed Hoodie',   modelo: 'ella', angulos: TODOS, items: [DISTRESSED, SWEAT_GREY] },
-  { id: 'blue-ella',         etiqueta: 'Athletic Dept Blue',  modelo: 'ella', angulos: TODOS, items: [AD_BLUE, SWEAT_GREY] },
-  { id: 'waffle-ella',       etiqueta: 'Department Waffle',   modelo: 'ella', angulos: TODOS, items: [WAFFLE] },
-  { id: 'raglan-ella',       etiqueta: 'Raglan Crest',        modelo: 'ella', angulos: TODOS, items: [RAGLAN] },
+  { id: 'pink-ella',          etiqueta: 'Athletic Dept Pink',       modelo: 'ella', angulos: TODOS, items: [AD_PINK, SWEAT_BLACK] },
+  { id: 'blue-el',            etiqueta: 'Athletic Dept Blue',       modelo: 'el',   angulos: TODOS, items: [AD_BLUE] },
+  { id: 'crest-ella',         etiqueta: 'S&C University Black',     modelo: 'ella', angulos: TODOS, items: [SCU_BLACK, SWEAT_BLACK] },
+  { id: 'raglan-el',          etiqueta: 'HS Crest Raglan',          modelo: 'el',   angulos: TODOS, items: [RAGLAN, SWEAT_BLACK] },
+  { id: 'eagle-ella',         etiqueta: 'Золотые Купола',           modelo: 'ella', angulos: TODOS, items: [KUPOLA] },
+  { id: 'polo-el',            etiqueta: 'Athletic Dept Polo',       modelo: 'el',   angulos: TODOS, items: [AD_POLO, SWEAT_BLACK] },
+  { id: 'crest-white-ella',   etiqueta: 'S&C University White',     modelo: 'ella', angulos: TODOS, items: [SCU_WHITE, SWEAT_GREY] },
+  { id: 'pink-el',            etiqueta: 'Athletic Dept Pink',       modelo: 'el',   angulos: TODOS, items: [AD_PINK] },
+  { id: 'distressed-ella',    etiqueta: 'Distressed Hoodie',        modelo: 'ella', angulos: TODOS, items: [DISTRESSED, SWEAT_GREY] },
+  { id: 'crest-navy-ella',    etiqueta: 'S&C University Navy',      modelo: 'ella', angulos: TODOS, items: [SCU_NAVY, SWEAT_BLACK] },
+  { id: 'blue-ella',          etiqueta: 'Athletic Dept Blue',       modelo: 'ella', angulos: TODOS, items: [AD_BLUE, SWEAT_GREY] },
+  { id: 'style-waffle-ella',  etiqueta: 'H.Y.P.E Waffle',           modelo: 'ella', angulos: TODOS, items: [HYPE_WAFFLE] },
+  { id: 'waffle-ella',        etiqueta: 'Department of Culture',    modelo: 'ella', angulos: TODOS, items: [DEPT_CULTURE] },
+  { id: 'raglan-ella',        etiqueta: 'HS Crest Raglan',          modelo: 'ella', angulos: TODOS, items: [RAGLAN] },
   // Ladrillo arriba
-  { id: 'ad-boxy-navy-ella', etiqueta: 'Athletic Dept Boxy',  modelo: 'ella', angulos: TODOS, items: [AD_BOXY_NAVY, SWEAT_GREY] },
-  { id: 'ad-boxy-white-el',  etiqueta: 'Athletic Dept Boxy',  modelo: 'el',   angulos: TODOS, items: [AD_BOXY_WHITE, SWEAT_GREY] },
-  { id: 'eagle-el',          etiqueta: 'Eagle 18 Hoodie',     modelo: 'el',   angulos: TODOS, items: [EAGLE, SWEAT_GREY] },
-  { id: 'regular-navy-el',   etiqueta: 'Regular Tee Navy',    modelo: 'el',   angulos: TODOS, items: [REGULAR_NAVY, SWEAT_GREY] },
-  { id: 'distressed-el',     etiqueta: 'Distressed Hoodie',   modelo: 'el',   angulos: TODOS, items: [DISTRESSED, SWEAT_GREY] },
-  { id: 'cross-el',          etiqueta: 'Dept Cross Waffle',   modelo: 'el',   angulos: TODOS, items: [CROSS, SWEAT_GREY] },
-  { id: 'horses-el',         etiqueta: 'Running Horses',      modelo: 'el',   angulos: TODOS, items: [HORSES, SWEAT_GREY] },
-  { id: '018-el',            etiqueta: '018 Worn Varsity',    modelo: 'el',   angulos: TODOS, items: [VARSITY_018, SWEAT_GREY] },
-  { id: 'waffle-el',         etiqueta: 'Department Waffle',   modelo: 'el',   angulos: TODOS, items: [WAFFLE, SWEAT_GREY] },
-  { id: 'hearts-el',         etiqueta: 'Hearts Boxy Tee',     modelo: 'el',   angulos: TODOS, items: [HEARTS, SWEAT_GREY] },
-  { id: 'crest-el',          etiqueta: 'Varsity Crest Tee',   modelo: 'el',   angulos: ['frente', 'perfil', 'detalle'], items: [CREST_BLACK, SWEAT_GREY] },
+  { id: 'ad-boxy-navy-ella',  etiqueta: 'Athletic Dept Navy',       modelo: 'ella', angulos: TODOS, items: [AD_NAVY_TEE, SWEAT_GREY] },
+  { id: 'ad-boxy-white-el',   etiqueta: 'Athletic Dept White',      modelo: 'el',   angulos: TODOS, items: [AD_WHITE_GREY, SWEAT_GREY] },
+  { id: 'ad-white-blue-el',   etiqueta: 'Athletic Dept White',      modelo: 'el',   angulos: TODOS, items: [AD_WHITE_BLUE, SWEAT_BLACK] },
+  { id: 'eagle-el',           etiqueta: 'Золотые Купола',           modelo: 'el',   angulos: TODOS, items: [KUPOLA, SWEAT_GREY] },
+  { id: 'regular-navy-el',    etiqueta: 'Regular Tee Navy',         modelo: 'el',   angulos: TODOS, items: [REGULAR_NAVY, SWEAT_GREY] },
+  { id: 'hhype-navy-el',      etiqueta: 'H Hype Navy',              modelo: 'el',   angulos: TODOS, items: [H_NAVY, SWEAT_GREY] },
+  { id: 'distressed-el',      etiqueta: 'Distressed Hoodie',        modelo: 'el',   angulos: TODOS, items: [DISTRESSED, SWEAT_GREY] },
+  { id: 'hhype-white-el',     etiqueta: 'H Hype White',             modelo: 'el',   angulos: ['frente', 'perfil', 'espalda'], items: [H_WHITE, SWEAT_GREY] },
+  { id: 'cross-el',           etiqueta: 'Hype Dept Cross',          modelo: 'el',   angulos: TODOS, items: [CROSS, SWEAT_GREY] },
+  { id: '018-el',             etiqueta: 'Worn Varsity Club Navy',   modelo: 'el',   angulos: TODOS, items: [WVC_NAVY, SWEAT_GREY] },
+  { id: '018-white-el',       etiqueta: 'Worn Varsity Club White',  modelo: 'el',   angulos: TODOS, items: [WVC_WHITE, SWEAT_GREY] },
+  { id: 'waffle-el',          etiqueta: 'Department of Culture',    modelo: 'el',   angulos: TODOS, items: [DEPT_CULTURE, SWEAT_GREY] },
+  { id: 'crest-el',           etiqueta: 'S&C University Black',     modelo: 'el',   angulos: ['frente', 'perfil', 'detalle'], items: [SCU_BLACK, SWEAT_GREY] },
 ];
