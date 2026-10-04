@@ -29,8 +29,39 @@ import { DynamicButton } from '@/components/ui/dynamic-button';
 import { ScrollFadeList } from '@/components/ui/scroll-fade-list';
 import { ReceiptPrinter } from '@/components/ReceiptPrinter';
 import { Button } from '@/components/ui/button';
+import { FloatingInput, FloatingSelect } from '@/components/ui/floating-field';
+import { MedioDePago, type MetodoPago } from '@/components/checkout/MedioDePago';
+import { PagoSeguroBadge, NotaPagoSeguro, FranjaConfianza } from '@/components/checkout/Confianza';
+import { PagoSeguroCard } from '@/components/checkout/PagoSeguro';
+import { AnimatePresence, motion } from 'motion/react';
+import { ChevronDown, Lock, ShoppingBag } from 'lucide-react';
+import { useSyncExternalStore } from 'react';
 
 type Step = 'info' | 'envio' | 'pago';
+
+// En desktop el resumen es la columna de la derecha; en mobile pasa a ser una
+// barra colapsable arriba del formulario (antes quedaba debajo del botón de
+// pagar y el cliente confirmaba sin ver qué ni cuánto). El servidor siempre
+// renderiza la vista de carrito vacío, así que no hay riesgo de desajuste.
+const DESKTOP_MQ = '(min-width: 1024px)';
+function useIsDesktop() {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia(DESKTOP_MQ);
+      mq.addEventListener('change', cb);
+      return () => mq.removeEventListener('change', cb);
+    },
+    () => window.matchMedia(DESKTOP_MQ).matches,
+    () => true,
+  );
+}
+
+/** "CABA, CABA" → "CABA": ciudad y provincia suelen coincidir. */
+function lugar(ciudad: string, provincia: string) {
+  const c = ciudad.trim();
+  const p = provincia.trim();
+  return !p || c.toLowerCase() === p.toLowerCase() ? c : `${c}, ${p}`;
+}
 
 const PROVINCIAS = [
   'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
@@ -273,6 +304,9 @@ export default function Checkout() {
   const router = useRouter();
   const { formatPrice, formatPriceIn, currency, setCurrency, currencyChosen, country } = useLocale();
   const [step, setStep] = useState<Step>('info');
+  const isDesktop = useIsDesktop();
+  const [resumenAbierto, setResumenAbierto] = useState(false);
+  const [pagoSinMetodo, setPagoSinMetodo] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
@@ -758,17 +792,169 @@ export default function Checkout() {
   const paymentMethods = [
     !isInternational && { id: 'tarjeta',       label: 'Tarjeta de crédito o débito',       sub: 'Hasta 3 cuotas sin interés' },
     !isInternational && { id: 'gocuotas',      label: '4 cuotas con débito sin interés',   sub: 'Con tu tarjeta de débito · sin interés' },
-    !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency !== 'ARS' ? '' : soloGift ? 'Sin descuento sobre gift cards' : `Pagás ${formatPrice(transferTotal)} (10% off)` },
+    !isInternational && { id: 'transferencia', label: 'Transferencia o depósito bancario',  sub: currency !== 'ARS' ? '' : soloGift ? 'Sin descuento sobre gift cards' : `Pagás ${formatPrice(transferTotal)}`, badge: soloGift ? undefined : '10% off' },
     !isInternational && { id: 'mercadopago',   label: 'Mercado Pago',                       sub: '' },
     !isInternational && { id: 'paypal',        label: 'PayPal',                             sub: 'Solo con saldo disponible en tu cuenta de PayPal' },
     isInternational  && { id: 'paypal',        label: 'PayPal',                             sub: 'Credit card, debit or PayPal balance · charged in USD' },
     isInternational  && { id: 'transferencia', label: 'Bank transfer (USD wire)',             sub: 'Lead Bank · USD ACH/Wire · details shown after order' },
-  ].filter(Boolean) as { id: string; label: string; sub: string }[];
+  ].filter(Boolean) as MetodoPago[];
+
+  // Productos, cupón y totales. Va en la columna derecha en desktop y dentro
+  // de la barra colapsable en mobile (ver useIsDesktop).
+  const resumen = (
+    <>
+            {/* Con muchos productos la lista scrollea dentro de una altura fija
+                y se difumina en los bordes, así el total no se va de la vista. */}
+            <ScrollFadeList
+              className="mb-6 [--scroll-fade-bg:#fff]"
+              scrollClassName="max-h-[360px] overflow-y-auto overscroll-contain space-y-4 pr-1"
+            >
+              {items.map(item => (
+                <div
+                  key={`${item.id}-${item.size}-${item.customization?.number ?? ''}-${item.customization?.playerName ?? ''}`}
+                  className={`flex gap-3 items-center ${item.isGift ? 'bg-green-50/60 border border-green-100 rounded-[8px] p-2 -mx-2' : ''}`}
+                >
+                  <div className="relative w-16 h-20 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[10px]">
+                    {item.image ? (
+                      <img
+                        src={imgSrc(item.image)}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : null}
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground/60 text-white text-[10px] flex items-center justify-center font-bold">{item.quantity}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium leading-tight">{item.name}</p>
+                    {item.isGift ? (
+                      <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-green-700">Regalo por compra</p>
+                    ) : isGiftCardItem(item) ? (
+                      <p className="text-[11px] text-muted-foreground">
+                        {item.customization?.gift?.paraEmail
+                          ? `Para ${item.customization.gift.paraNombre || item.customization.gift.paraEmail}`
+                          : 'Digital · por mail'}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">Talle: {item.size}</p>
+                    )}
+                    {item.customization && (item.customization.playerName || item.customization.number) && (
+                      <p className="text-[11px] text-foreground/70 font-medium">
+                        Dorsal: {item.customization.number && `#${item.customization.number}`}{item.customization.playerName && ` ${item.customization.playerName}`}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[13px] font-semibold">{formatPrice(item.price * item.quantity)}</span>
+                </div>
+              ))}
+            </ScrollFadeList>
+            <GiftProgressBar email={info.email} couponCode={couponData?.code} className="pb-4 mb-4 border-b border-border" />
+            <div className="space-y-1.5 mb-5">
+              <div className="flex gap-2">
+                <input type="text" placeholder={isInternational ? 'Discount code' : 'Código de descuento'} value={coupon}
+                  onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponData) setCouponData(null); }}
+                  className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                <DynamicButton
+                  onClick={async () => {
+                    if (!coupon.trim() || couponValidating) return;
+                    setCouponValidating(true);
+                    setCouponError(null);
+                    try {
+                      const res = await fetch('/api/validate-coupon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: coupon, total: subtotal }),
+                      });
+                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; error?: string };
+                      if (data.valid && data.gift_card && giftItems.length > 0) {
+                        setCouponError('Una gift card no sirve para comprar otra gift card');
+                      } else if (data.valid && data.code && data.type && data.amount !== undefined) {
+                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping });
+                      }
+                      else { setCouponError(data.error || 'Código inválido'); }
+                    } catch { setCouponError('Error al validar el código'); }
+                    finally { setCouponValidating(false); }
+                  }}
+                  disabled={couponValidating || !!couponData}
+                  className={`px-4 py-2.5 border text-[12px] font-medium rounded-[10px] disabled:opacity-60 ${couponData ? 'border-green-700 text-green-700' : 'border-border hover:border-foreground'}`}
+                >
+                  {couponData
+                    ? (isInternational ? 'Applied' : 'Aplicado')
+                    : couponValidating
+                      ? (isInternational ? 'Checking' : 'Validando')
+                      : (isInternational ? 'Apply' : 'Aplicar')}
+                </DynamicButton>
+              </div>
+              {couponError && <p className="text-[11px] text-destructive">{couponError}</p>}
+              {couponData && <p className="text-[11px] text-green-700 font-medium">Cupón {couponData.code} aplicado — {couponData.type === 'percent' ? `${couponData.amount}% off` : formatPrice(couponData.amount)}</p>}
+            </div>
+            <div className="space-y-2 border-t border-border pt-4">
+              <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+              {championDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Campeones del mundo · 50%</span><span>−{formatPrice(championDescuento)}</span></div>}
+              {promo3x2Descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>3x2</span><span>−{formatPrice(promo3x2Descuento)}</span></div>}
+              {cuponDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(cuponDescuento)}</span></div>}
+              {promo3x2Active && items.length > 0 && (promo3x2UnidadesFaltan === 1 || promo3x2UnidadesFaltan === 2) && (
+                <p className="text-[11px] text-foreground/70">
+                  Agregá {promo3x2UnidadesFaltan} producto{promo3x2UnidadesFaltan > 1 ? 's' : ''} más y llevate el 3x2
+                </p>
+              )}
+              <div className="flex justify-between text-[13px]">
+                <span className="text-muted-foreground">{isInternational ? 'Shipping' : 'Envío'}</span>
+                <span>
+                  {step === 'info' ? (
+                    <span className="text-muted-foreground text-[11px]">
+                      {isInternational ? 'Calculated on the next step' : 'Se calcula a continuación'}
+                    </span>
+                  ) : isInternational ? (
+                    selectedRate ? formatPrice(selectedRate.cost) : <span className="text-muted-foreground">—</span>
+                  ) : loadingRates ? (
+                    <span className="text-muted-foreground">Calculando...</span>
+                  ) : freeShipping ? (
+                    <><span className="line-through text-muted-foreground mr-1">{selectedRate ? formatPrice(selectedRate.cost) : ''}</span><span className="text-green-700 font-semibold">Gratis</span></>
+                  ) : selectedRate && Math.round(envioCosto) < Math.round(selectedRate.cost) ? (
+                    <><span className="line-through text-muted-foreground mr-1">{formatPrice(selectedRate.cost)}</span>{formatPrice(envioCosto)}</>
+                  ) : selectedRate ? (
+                    formatPrice(selectedRate.cost)
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between text-[16px] font-bold border-t border-border pt-3 mt-2">
+                <span>Total</span>
+                {/* El total cambia al sumar el envío, aplicar un cupón o elegir
+                    transferencia: el número viejo se descifra en el nuevo en vez
+                    de saltar. Al cargar se muestra directo. */}
+                <ScrambleText animateOnMount={false} intervalMs={16} numeric className="tabular-nums">
+                  {formatPrice(totalMostrado)}
+                </ScrambleText>
+              </div>
+              {cobroDistinto && (
+                <p data-testid="aviso-moneda-cobro" className="text-[11px] text-muted-foreground mt-1 text-right">
+                  {isInternational
+                    ? <>Prices in {currency} are for reference. You pay in US dollars: <strong className="text-foreground">{formatPriceIn(totalMostrado, 'USD')}</strong> at today&apos;s rate.</>
+                    : cobro === 'USD'
+                      ? <>PayPal cobra en dólares: <strong className="text-foreground">{formatPriceIn(totalMostrado, 'USD')}</strong> a la cotización del día.</>
+                      : <>Los precios en {currency} son de referencia. El pago se hace en pesos argentinos: <strong className="text-foreground">{formatPriceIn(step === 'pago' && pago.metodo === 'transferencia' ? transferTotal : totalMostrado, 'ARS')}</strong>.</>}
+                </p>
+              )}
+              {step === 'pago' && pago.metodo === 'transferencia' && !isInternational && (
+                <p className="text-[11px] text-green-700 font-semibold mt-1 text-right">Con transferencia pagás {formatPrice(transferTotal)}</p>
+              )}
+              {isInternational && step === 'pago' && (
+                <p className="text-[11px] text-muted-foreground mt-1">{CUSTOMS_NOTICE}</p>
+              )}
+            </div>
+    </>
+  );
 
   return (
     <div className={`min-h-screen bg-white${flashActive ? ' pt-[40px]' : ''}`}>
-      <div className="border-b border-border py-5 px-4 text-center">
+      <div className="relative border-b border-border py-5 px-4 text-center">
         <a href="/"><img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-7 w-auto object-contain mx-auto" /></a>
+        <div className="pointer-events-none absolute inset-x-0 top-[27px] mx-auto flex max-w-[1100px] justify-end px-4">
+          <PagoSeguroBadge en={isInternational} />
+        </div>
         {/* Los pasos completados son clickeables para volver; adelantarse no,
             porque cada paso valida al enviar su formulario. */}
         <Stepper<Step>
@@ -778,6 +964,47 @@ export default function Checkout() {
           onSelect={setStep}
         />
       </div>
+
+      {/* Mobile: el resumen arriba, colapsado en una barra con el total.
+          Antes quedaba debajo del botón de pagar. */}
+      {!isDesktop && (
+        <div className="border-b border-border">
+          <button
+            type="button"
+            onClick={() => setResumenAbierto(o => !o)}
+            aria-expanded={resumenAbierto}
+            aria-controls="resumen-mobile"
+            className="w-full bg-foreground/[0.025] px-4 py-4 flex items-center justify-between gap-3"
+          >
+            <span className="flex items-center gap-2 text-[13px] font-medium">
+              <ShoppingBag className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
+              {resumenAbierto
+                ? (isInternational ? 'Hide order summary' : 'Ocultar resumen')
+                : (isInternational ? 'Show order summary' : 'Ver resumen del pedido')}
+              <ChevronDown
+                aria-hidden="true"
+                className={`w-4 h-4 text-foreground/50 transition-transform duration-200 ${resumenAbierto ? 'rotate-180' : ''}`}
+              />
+            </span>
+            <span className="text-[15px] font-bold tabular-nums">{formatPrice(totalMostrado)}</span>
+          </button>
+          <AnimatePresence initial={false}>
+            {resumenAbierto && (
+              <motion.div
+                id="resumen-mobile"
+                key="resumen-mobile"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pt-5 pb-6">{resumen}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {recovered && (
         <div className="max-w-[1100px] mx-auto px-4 pt-6">
@@ -797,57 +1024,53 @@ export default function Checkout() {
       <div className="max-w-[1100px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12">
         <div>
           {step === 'info' && (
-            <form onSubmit={handleInfoSubmit} className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-[15px] font-semibold">Contacto</h2>
-                </div>
-                <input type="email" placeholder="Email" required value={info.email}
-                  onChange={e => setInfo({ ...info, email: e.target.value })}
-                  className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                  <input type="checkbox" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })} className="w-4 h-4" />
+            <form onSubmit={handleInfoSubmit} className="space-y-8">
+              <section>
+                <h2 className="text-[15px] font-semibold mb-3">{isInternational ? 'Contact' : 'Contacto'}</h2>
+                <FloatingInput type="email" label="Email" required autoComplete="email" inputMode="email" value={info.email}
+                  onChange={e => setInfo({ ...info, email: e.target.value })} />
+                <label className="flex items-center gap-2.5 mt-3 cursor-pointer">
+                  <input type="checkbox" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })} className="w-4 h-4 accent-foreground" />
                   <span className="text-[12px] text-muted-foreground">
                     {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
                   </span>
                 </label>
-              </div>
+              </section>
 
               {soloGift ? (
               // Sólo gift cards: nada se envía. Alcanza con nombre y teléfono
               // para el pedido y el mail; sin dirección, DNI ni código postal.
-              <div>
+              <section>
                 <h2 className="text-[15px] font-semibold mb-3">Tus datos</h2>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input placeholder="Nombre" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                    <input placeholder="Apellido" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <FloatingInput label="Nombre" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                    <FloatingInput label="Apellido" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                   </div>
-                  <input placeholder="Teléfono (con código de área)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                  <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
                   <p className="text-[12px] text-muted-foreground leading-relaxed pt-1">
                     La gift card es digital: te llega por mail apenas se acredita el pago.
                   </p>
                 </div>
-              </div>
+              </section>
               ) : (
-              <div>
+              <section>
                 <h2 className="text-[15px] font-semibold mb-3">
                   {isInternational ? 'Shipping address' : 'Dirección de envío'}
                 </h2>
-                <div className="space-y-2">
-
-                  {/* Country selector */}
-                  <select
+                <div className="space-y-2.5">
+                  <FloatingSelect
+                    label={isInternational ? 'Country' : 'País'}
+                    autoComplete="country"
                     value={info.pais}
                     onChange={e => handleCountryChange(e.target.value)}
-                    className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors bg-white rounded-[10px]"
                   >
                     {COUNTRIES.map((c, i) =>
                       c.code === ''
                         ? <option key={i} value="" disabled>{c.name}</option>
                         : <option key={c.code} value={c.code}>{c.name}</option>
                     )}
-                  </select>
+                  </FloatingSelect>
 
                   {/* International notice */}
                   {isInternational && (
@@ -862,46 +1085,45 @@ export default function Checkout() {
 
                   {isInternational ? (
                     <>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="First name" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input placeholder="Last name" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="First name" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                        <FloatingInput label="Last name" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                       </div>
-                      <input placeholder="Address" required value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <input placeholder="Apartment, suite (optional)" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="City" required value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input
-                          placeholder={stateRequired ? 'State / Province' : 'State / Province (optional)'}
+                      <FloatingInput label="Address" required autoComplete="address-line1" value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                      <FloatingInput label="Apartment, suite (optional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="City" required autoComplete="address-level2" value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                        <FloatingInput
+                          label={stateRequired ? 'State / Province' : 'State / Province (optional)'}
                           required={stateRequired}
+                          autoComplete="address-level1"
                           value={info.provincia}
-                          onChange={e => setInfo({ ...info, provincia: e.target.value })}
-                          className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                          onChange={e => setInfo({ ...info, provincia: e.target.value })} />
                       </div>
-                      <input placeholder="Postal / ZIP code" required value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <input placeholder="Phone (with country code)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <FloatingInput label="Postal / ZIP code" required autoComplete="postal-code" value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
+                      <FloatingInput type="tel" label="Phone (with country code)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
                     </>
                   ) : (
                     <>
-                      <select value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })}
-                        className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors bg-white rounded-[10px]">
+                      <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })}>
                         {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="Nombre" required value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input placeholder="Apellido" required value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      </FloatingSelect>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="Nombre" required autoComplete="given-name" value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                        <FloatingInput label="Apellido" required autoComplete="family-name" value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                       </div>
-                      <input placeholder="DNI" required value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <input placeholder="Dirección y número" required value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <input placeholder="Departamento / Piso (opcional)" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input placeholder="Código postal" required value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                        <input placeholder="Ciudad" required value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} className="border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <FloatingInput label="DNI" required inputMode="numeric" value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
+                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                      <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="Código postal" required autoComplete="postal-code" value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
+                        <FloatingInput label="Ciudad" required autoComplete="address-level2" value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
                       </div>
-                      <input placeholder="Teléfono (con código de área)" required value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} className="w-full border border-border px-4 py-3 text-[13px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
+                      <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
                     </>
                   )}
                 </div>
-              </div>
+              </section>
               )}
 
               <Button type="submit" variant="hype" size="ctaFull" className="rounded-[10px]">
@@ -918,7 +1140,7 @@ export default function Checkout() {
                   <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
                 </div>
                 <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Ship to' : 'Enviar a'}</span><span>{info.direccion}, {info.ciudad}{info.provincia ? `, ${info.provincia}` : ''}</span></div>
+                  <div className="flex gap-2"><span className="text-muted-foreground">{isInternational ? 'Ship to' : 'Enviar a'}</span><span>{info.direccion}, {lugar(info.ciudad, info.provincia)}</span></div>
                   <button type="button" onClick={() => setStep('info')} className="underline text-muted-foreground hover:text-foreground transition-colors text-[12px]">{isInternational ? 'Change' : 'Cambiar'}</button>
                 </div>
               </div>
@@ -975,7 +1197,9 @@ export default function Checkout() {
                         {shippingRates.map(rate => {
                           const esSucursal = modoDeTarifa(rate) === 'sucursal';
                           const costo = costoDe(rate);
-                          const bonificado = costo < Math.round(rate.cost);
+                          // costoEnvio devuelve la tarifa cruda (con centavos) cuando no hay bonificación:
+                          // comparar redondeado, si no $5.555,6 < $5.556 mostraba el mismo precio tachado.
+                          const bonificado = Math.round(costo) < Math.round(rate.cost);
                           return (
                             <label key={rate.id} className={`flex items-center justify-between gap-3 border px-4 py-4 cursor-pointer transition-colors rounded-[10px] ${selectedRate?.id === rate.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
                               <div className="flex items-center gap-3 min-w-0">
@@ -1111,39 +1335,42 @@ export default function Checkout() {
                 <h2 className="text-[14px] font-bold uppercase tracking-wider mb-3">
                   {isInternational ? 'Payment method' : 'Medio de pago'}
                 </h2>
-                <div className="space-y-2">
-                  {paymentMethods.map(m => (
-                    <label key={m.id} className={`flex items-center gap-3 border px-4 py-3.5 cursor-pointer transition-colors rounded-[10px] ${pago.metodo === m.id ? 'border-foreground bg-foreground/[0.03]' : 'border-border hover:border-foreground/40'}`}>
-                      <input type="radio" name="metodo" value={m.id} checked={pago.metodo === m.id} onChange={() => handleMetodoChange(m.id)} className="w-4 h-4 accent-foreground" />
-                      <div className="flex-1">
-                        <p className="text-[13px] font-medium">{m.label}</p>
-                        {m.sub && <p className={`text-[11px] ${m.id === 'transferencia' && !isInternational ? 'text-green-700 font-semibold' : 'text-muted-foreground'}`}>{m.sub}</p>}
-                      </div>
-                      <span className="text-foreground/30">›</span>
-                    </label>
-                  ))}
-                </div>
-                {!pago.metodo && <p className="text-[11px] text-destructive mt-1">{isInternational ? 'Select a payment method' : 'Seleccioná un medio de pago'}</p>}
+                <MedioDePago
+                  metodos={paymentMethods}
+                  value={pago.metodo}
+                  onChange={id => { setPagoSinMetodo(false); handleMetodoChange(id); }}
+                  destacarSub={id => id === 'transferencia' && !isInternational}
+                />
+                {/* El aviso sale recién si intentó pagar sin elegir: antes aparecía
+                    en rojo apenas se entraba al paso, como si ya hubiera un error. */}
+                {pagoSinMetodo && !pago.metodo && <p className="text-[11px] text-destructive mt-2">{isInternational ? 'Select a payment method' : 'Seleccioná un medio de pago'}</p>}
               </div>
 
               {submitError && <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{submitError}</p>}
-              <div className="flex items-center justify-between pt-2">
-                <button type="button" onClick={() => setStep(soloGift ? 'info' : 'envio')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
-                  {soloGift ? '‹ Volver' : isInternational ? '‹ Back to shipping' : '‹ Volver al envío'}
-                </button>
-                <DynamicButton
-                  type="submit"
-                  disabled={submitting}
-                  icon={submitting ? (
-                    <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
-                  ) : undefined}
-                  className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {submitting ? (isInternational ? 'Processing' : 'Procesando') : (isInternational ? 'Place order' : 'Realizar pedido')}
-                </DynamicButton>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between gap-4">
+                  <button type="button" onClick={() => setStep(soloGift ? 'info' : 'envio')} className="text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+                    {soloGift ? '‹ Volver' : isInternational ? '‹ Back to shipping' : '‹ Volver al envío'}
+                  </button>
+                  <DynamicButton
+                    type="submit"
+                    disabled={submitting}
+                    onClick={() => { if (!pago.metodo) setPagoSinMetodo(true); }}
+                    icon={submitting ? (
+                      <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                    ) : (
+                      <Lock className="w-3.5 h-3.5" strokeWidth={2.5} aria-hidden="true" />
+                    )}
+                    className="bg-bg-dark text-primary-foreground px-8 py-3.5 text-[12px] font-bold uppercase tracking-[0.1em] hover:bg-bg-dark/85 rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? (isInternational ? 'Processing' : 'Procesando') : (isInternational ? 'Place order' : 'Realizar pedido')}
+                  </DynamicButton>
+                </div>
+                {isDesktop ? <NotaPagoSeguro en={isInternational} /> : <PagoSeguroCard en={isInternational} />}
               </div>
             </form>
           )}
+          <FranjaConfianza en={isInternational} className="mt-10" />
         </div>
 
         {/* Order summary */}
@@ -1178,148 +1405,8 @@ export default function Checkout() {
               </ReceiptPrinter>
             ) : (
             <>
-            {/* Con muchos productos la lista scrollea dentro de una altura fija
-                y se difumina en los bordes, así el total no se va de la vista. */}
-            <ScrollFadeList
-              className="mb-6 [--scroll-fade-bg:#fff]"
-              scrollClassName="max-h-[360px] overflow-y-auto overscroll-contain space-y-4 pr-1"
-            >
-              {items.map(item => (
-                <div
-                  key={`${item.id}-${item.size}-${item.customization?.number ?? ''}-${item.customization?.playerName ?? ''}`}
-                  className={`flex gap-3 items-center ${item.isGift ? 'bg-green-50/60 border border-green-100 rounded-[8px] p-2 -mx-2' : ''}`}
-                >
-                  <div className="relative w-16 h-20 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[10px]">
-                    {item.image ? (
-                      <img
-                        src={imgSrc(item.image)}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    ) : null}
-                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-foreground/60 text-white text-[10px] flex items-center justify-center font-bold">{item.quantity}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium leading-tight">{item.name}</p>
-                    {item.isGift ? (
-                      <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-green-700">Regalo por compra</p>
-                    ) : isGiftCardItem(item) ? (
-                      <p className="text-[11px] text-muted-foreground">
-                        {item.customization?.gift?.paraEmail
-                          ? `Para ${item.customization.gift.paraNombre || item.customization.gift.paraEmail}`
-                          : 'Digital · por mail'}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-muted-foreground">Talle: {item.size}</p>
-                    )}
-                    {item.customization && (item.customization.playerName || item.customization.number) && (
-                      <p className="text-[11px] text-foreground/70 font-medium">
-                        Dorsal: {item.customization.number && `#${item.customization.number}`}{item.customization.playerName && ` ${item.customization.playerName}`}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-[13px] font-semibold">{formatPrice(item.price * item.quantity)}</span>
-                </div>
-              ))}
-            </ScrollFadeList>
-            <GiftProgressBar email={info.email} couponCode={couponData?.code} className="pb-4 mb-4 border-b border-border" />
-            <div className="space-y-1.5 mb-5">
-              <div className="flex gap-2">
-                <input type="text" placeholder={isInternational ? 'Discount code' : 'Código de descuento'} value={coupon}
-                  onChange={e => { setCoupon(e.target.value); setCouponError(null); if (couponData) setCouponData(null); }}
-                  className="flex-1 border border-border px-3 py-2.5 text-[12px] focus:outline-none focus:border-foreground transition-colors rounded-[10px]" />
-                <DynamicButton
-                  onClick={async () => {
-                    if (!coupon.trim() || couponValidating) return;
-                    setCouponValidating(true);
-                    setCouponError(null);
-                    try {
-                      const res = await fetch('/api/validate-coupon', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: coupon, total: subtotal }),
-                      });
-                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; error?: string };
-                      if (data.valid && data.gift_card && giftItems.length > 0) {
-                        setCouponError('Una gift card no sirve para comprar otra gift card');
-                      } else if (data.valid && data.code && data.type && data.amount !== undefined) {
-                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping });
-                      }
-                      else { setCouponError(data.error || 'Código inválido'); }
-                    } catch { setCouponError('Error al validar el código'); }
-                    finally { setCouponValidating(false); }
-                  }}
-                  disabled={couponValidating || !!couponData}
-                  className={`px-4 py-2.5 border text-[12px] font-medium rounded-[10px] disabled:opacity-60 ${couponData ? 'border-green-700 text-green-700' : 'border-border hover:border-foreground'}`}
-                >
-                  {couponData
-                    ? (isInternational ? 'Applied' : 'Aplicado')
-                    : couponValidating
-                      ? (isInternational ? 'Checking' : 'Validando')
-                      : (isInternational ? 'Apply' : 'Aplicar')}
-                </DynamicButton>
-              </div>
-              {couponError && <p className="text-[11px] text-destructive">{couponError}</p>}
-              {couponData && <p className="text-[11px] text-green-700 font-medium">Cupón {couponData.code} aplicado — {couponData.type === 'percent' ? `${couponData.amount}% off` : formatPrice(couponData.amount)}</p>}
-            </div>
-            <div className="space-y-2 border-t border-border pt-4">
-              <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-              {championDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Campeones del mundo · 50%</span><span>−{formatPrice(championDescuento)}</span></div>}
-              {promo3x2Descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>3x2</span><span>−{formatPrice(promo3x2Descuento)}</span></div>}
-              {cuponDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(cuponDescuento)}</span></div>}
-              {promo3x2Active && items.length > 0 && (promo3x2UnidadesFaltan === 1 || promo3x2UnidadesFaltan === 2) && (
-                <p className="text-[11px] text-foreground/70">
-                  Agregá {promo3x2UnidadesFaltan} producto{promo3x2UnidadesFaltan > 1 ? 's' : ''} más y llevate el 3x2
-                </p>
-              )}
-              <div className="flex justify-between text-[13px]">
-                <span className="text-muted-foreground">{isInternational ? 'Shipping' : 'Envío'}</span>
-                <span>
-                  {step === 'info' ? (
-                    <span className="text-muted-foreground text-[11px]">
-                      {isInternational ? 'Calculated on the next step' : 'Se calcula a continuación'}
-                    </span>
-                  ) : isInternational ? (
-                    selectedRate ? formatPrice(selectedRate.cost) : <span className="text-muted-foreground">—</span>
-                  ) : loadingRates ? (
-                    <span className="text-muted-foreground">Calculando...</span>
-                  ) : freeShipping ? (
-                    <><span className="line-through text-muted-foreground mr-1">{selectedRate ? formatPrice(selectedRate.cost) : ''}</span><span className="text-green-700 font-semibold">Gratis</span></>
-                  ) : selectedRate && envioCosto < Math.round(selectedRate.cost) ? (
-                    <><span className="line-through text-muted-foreground mr-1">{formatPrice(selectedRate.cost)}</span>{formatPrice(envioCosto)}</>
-                  ) : selectedRate ? (
-                    formatPrice(selectedRate.cost)
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </span>
-              </div>
-              <div className="flex justify-between text-[16px] font-bold border-t border-border pt-3 mt-2">
-                <span>Total</span>
-                {/* El total cambia al sumar el envío, aplicar un cupón o elegir
-                    transferencia: el número viejo se descifra en el nuevo en vez
-                    de saltar. Al cargar se muestra directo. */}
-                <ScrambleText animateOnMount={false} intervalMs={16} numeric className="tabular-nums">
-                  {formatPrice(totalMostrado)}
-                </ScrambleText>
-              </div>
-              {cobroDistinto && (
-                <p data-testid="aviso-moneda-cobro" className="text-[11px] text-muted-foreground mt-1 text-right">
-                  {isInternational
-                    ? <>Prices in {currency} are for reference. You pay in US dollars: <strong className="text-foreground">{formatPriceIn(totalMostrado, 'USD')}</strong> at today&apos;s rate.</>
-                    : cobro === 'USD'
-                      ? <>PayPal cobra en dólares: <strong className="text-foreground">{formatPriceIn(totalMostrado, 'USD')}</strong> a la cotización del día.</>
-                      : <>Los precios en {currency} son de referencia. El pago se hace en pesos argentinos: <strong className="text-foreground">{formatPriceIn(step === 'pago' && pago.metodo === 'transferencia' ? transferTotal : totalMostrado, 'ARS')}</strong>.</>}
-                </p>
-              )}
-              {step === 'pago' && pago.metodo === 'transferencia' && !isInternational && (
-                <p className="text-[11px] text-green-700 font-semibold mt-1 text-right">Con transferencia pagás {formatPrice(transferTotal)}</p>
-              )}
-              {isInternational && step === 'pago' && (
-                <p className="text-[11px] text-muted-foreground mt-1">{CUSTOMS_NOTICE}</p>
-              )}
-            </div>
+            {isDesktop && resumen}
+            {isDesktop && <PagoSeguroCard en={isInternational} className="mt-6" />}
             <UpsellCarousel />
             </>
             )}
