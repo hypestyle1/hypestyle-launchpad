@@ -58,6 +58,9 @@ export const DEFAULT_CONFIG: PrivateAccessConfig = {
  * Variable de servidor a propósito: el browser nunca sabe si está en mock.
  */
 export function isMockMode(): boolean {
+  // Nunca en el deploy de producción de Vercel, aunque alguien cargue la
+  // variable por error: en producción no hay productos ni usuarios ficticios.
+  if (process.env.VERCEL_ENV === 'production') return false;
   return process.env.PRIVATE_ACCESS_MOCK === '1';
 }
 
@@ -98,4 +101,25 @@ export function fmtDayMonth(iso: string): string {
   // Fecha en hora Argentina, sin depender del TZ del server.
   const ar = new Date(d.getTime() - 3 * 3600_000);
   return `${String(ar.getUTCDate()).padStart(2, '0')}.${String(ar.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Slug de producto válido para /private-access/[slug]. */
+export const PRIVATE_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,149}$/;
+
+/**
+ * `returnTo` del gate: solo se acepta una ficha privada (`/private-access/<slug>`).
+ * Cualquier otra cosa (otro dominio, `//evil.com`, rutas del sitio) se descarta:
+ * así el parámetro no sirve para redirigir afuera.
+ */
+export function safeReturnTo(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const m = raw.match(/^\/private-access\/([a-z0-9][a-z0-9-]{0,149})\/?$/);
+  return m ? `${PRIVATE_ACCESS_PATH}/${m[1]}` : null;
+}
+
+/** URL del gate que, al desbloquear, vuelve al producto pedido. */
+export function gateUrlFor(slug: string): string {
+  return PRIVATE_SLUG_RE.test(slug)
+    ? `${PRIVATE_ACCESS_PATH}?returnTo=${encodeURIComponent(`${PRIVATE_ACCESS_PATH}/${slug}`)}`
+    : PRIVATE_ACCESS_PATH;
 }

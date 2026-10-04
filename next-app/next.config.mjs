@@ -32,6 +32,16 @@ const nextConfig = {
   async headers() {
     return [
       { source: '/:path*', headers: SECURITY_HEADERS },
+      // Preventa privada (Mejores Amigos): el HTML depende de la cookie de cada
+      // persona. Nunca se cachea (ni el CDN ni el navegador para otro usuario)
+      // y nunca se indexa, sigue ni archiva.
+      ...['/private-access', '/private-access/:path*'].map((source) => ({
+        source,
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+        ],
+      })),
       // /pagar es un link personal a un pedido: al salir hacia la pasarela de
       // pago no se manda ni el origen.
       { source: '/pagar/:path*', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] },

@@ -112,3 +112,27 @@ describe('private-access · pedido (create-order-gocuotas)', () => {
     expect(m).toEqual({ key: '_hs_private_access', value: JSON.stringify({ memberId: 7, collection: 'ss27-part-01' }) });
   });
 });
+
+describe('private-access · returnTo y modo mock', () => {
+  it('returnTo solo acepta fichas privadas', async () => {
+    const { safeReturnTo, gateUrlFor } = await import('@/lib/private-access/config');
+    expect(safeReturnTo('/private-access/ss27-tee')).toBe('/private-access/ss27-tee');
+    expect(safeReturnTo('/private-access/ss27-tee/')).toBe('/private-access/ss27-tee');
+    expect(safeReturnTo('https://evil.com')).toBeNull();
+    expect(safeReturnTo('//evil.com/private-access/x')).toBeNull();
+    expect(safeReturnTo('/checkout')).toBeNull();
+    expect(safeReturnTo('/private-access/../admin')).toBeNull();
+    expect(safeReturnTo(undefined)).toBeNull();
+    expect(gateUrlFor('ss27-tee')).toBe('/private-access?returnTo=%2Fprivate-access%2Fss27-tee');
+    expect(gateUrlFor('MAL slug!')).toBe('/private-access');
+  });
+  it('el modo mock nunca se prende en el deploy de producción', async () => {
+    vi.stubEnv('PRIVATE_ACCESS_MOCK', '1');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    const { isMockMode } = await import('@/lib/private-access/config');
+    expect(isMockMode()).toBe(false);
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    expect(isMockMode()).toBe(true);
+    vi.unstubAllEnvs();
+  });
+});

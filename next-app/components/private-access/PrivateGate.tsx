@@ -15,6 +15,8 @@ interface Props {
   discountPct: number;
   saleEndsLabel: string;
   publicOpenLabel: string;
+  /** Ficha privada a la que volver después de desbloquear (ya validada en el servidor). */
+  returnTo?: string | null;
 }
 
 const BG = '/lookbook-fw26/book/6210.webp';
@@ -24,10 +26,12 @@ const BG = '/lookbook-fw26/book/6210.webp';
  * Es la página a la que apunta el link de la story de Mejores Amigos. Si la
  * preventa no está activa, explica y manda al home.
  */
-export default function PrivateGate({ active, collectionName, collectionSubtitle, discountPct, saleEndsLabel, publicOpenLabel }: Props) {
+export default function PrivateGate({ active, collectionName, collectionSubtitle, discountPct, saleEndsLabel, publicOpenLabel, returnTo }: Props) {
   const router = useRouter();
   const [granted, setGranted] = useState<{ name: string | null } | null>(null);
-  const refresh = useCallback(() => router.refresh(), [router]);
+  // Con returnTo vuelve al producto que la persona quería ver; si no, la
+  // colección (refresh: el servidor ya ve la cookie y renderiza el catálogo).
+  const refresh = useCallback(() => { if (returnTo) router.replace(returnTo); else router.refresh(); }, [router, returnTo]);
 
   if (granted) {
     return <AccessGranted name={granted.name} collectionName={collectionName} onDone={refresh} />;
