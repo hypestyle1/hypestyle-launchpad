@@ -59,7 +59,7 @@ export function CloseFriendsCard({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[10px] border border-green-600/25" style={{ background: GRIS }}>
+    <div className="relative overflow-hidden rounded-[10px] border border-green-600/20" style={{ background: GRIS }}>
       {/* Zona brillante que da la vuelta al contorno (8 s), desenfocada. Con
           animaciones reducidas no se monta y queda solo el resplandor quieto. */}
       <div
@@ -68,17 +68,18 @@ export function CloseFriendsCard({
         style={{
           animationDuration: '8s',
           filter: 'blur(12px)',
-          background: 'conic-gradient(from 0deg, transparent 0deg, transparent 210deg, rgba(34,197,94,0.5) 300deg, rgba(34,197,94,0.7) 330deg, transparent 355deg)',
+          background: 'conic-gradient(from 0deg, transparent 0deg, transparent 200deg, rgba(34,197,94,0.32) 295deg, rgba(34,197,94,0.48) 330deg, transparent 358deg)',
         }}
       />
-      {/* Tapa gris desenfocada: deja ver la zona brillante solo cerca del
-          borde, entrando unos px hacia adentro. */}
-      <div aria-hidden="true" className="pointer-events-none absolute rounded-[8px]" style={{ inset: 7, background: GRIS, filter: 'blur(6px)' }} />
+      {/* Tapa gris desenfocada y apenas translúcida: la zona brillante se ve
+          más cerca del borde y, muy tenue, como halo que ilumina el interior
+          mientras recorre el contorno. */}
+      <div aria-hidden="true" className="pointer-events-none absolute rounded-[8px]" style={{ inset: 7, background: 'rgba(226,226,226,0.86)', filter: 'blur(6px)' }} />
       {/* Resplandor interior parejo, quieto. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rounded-[10px]"
-        style={{ boxShadow: 'inset 0 0 22px rgba(34,197,94,0.22), inset 0 0 2px rgba(34,197,94,0.3)' }}
+        style={{ boxShadow: 'inset 0 0 20px rgba(34,197,94,0.13), inset 0 0 2px rgba(34,197,94,0.22)' }}
       />
       <section className="relative px-5 py-4 sm:px-6 sm:py-5">
         <div className="flex items-center justify-between gap-3">
