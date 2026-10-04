@@ -205,6 +205,25 @@ function UpsellCarousel() {
   const [added, setAdded] = useState<Record<string, boolean>>({});
   const [idx, setIdx] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Rotaba cada 3 s al lado del formulario y distraía justo mientras la
+  // persona escribe. Se frena con un campo en foco y con el mouse encima.
+  const pausadoRef = useRef(false);
+  const hoverRef = useRef(false);
+  useEffect(() => {
+    const enCampo = () => {
+      const el = document.activeElement;
+      return !!el && el.matches('input:not([type=radio]):not([type=checkbox]), select, textarea');
+    };
+    const sync = () => { pausadoRef.current = enCampo(); };
+    document.addEventListener('focusin', sync);
+    // Al salir de un campo el foco todavía no llegó al siguiente: se mira en el próximo tick.
+    const alSalir = () => { setTimeout(sync, 0); };
+    document.addEventListener('focusout', alSalir);
+    return () => {
+      document.removeEventListener('focusin', sync);
+      document.removeEventListener('focusout', alSalir);
+    };
+  }, []);
 
   // Pool grande + shuffle (mismo patrón que CartDrawer) — antes traía solo los primeros 20
   // productos por menu_order y los mostraba siempre en el mismo orden, así que terminaba
@@ -223,7 +242,10 @@ function UpsellCarousel() {
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (!total) return;
-    timerRef.current = setInterval(() => setIdx(c => (c + 1) % total), 3000);
+    timerRef.current = setInterval(() => {
+      if (pausadoRef.current || hoverRef.current) return;
+      setIdx(c => (c + 1) % total);
+    }, 3000);
   }, [total]);
 
   useEffect(() => {
@@ -249,7 +271,11 @@ function UpsellCarousel() {
   };
 
   return (
-    <div className="rounded-[10px] border border-border bg-white p-5">
+    <div
+      className="rounded-[10px] border border-border bg-white p-5"
+      onMouseEnter={() => { hoverRef.current = true; }}
+      onMouseLeave={() => { hoverRef.current = false; }}
+    >
       <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 mb-3">
         Completá el look
       </p>
@@ -321,7 +347,6 @@ export default function Checkout() {
   const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
   const [precargado, setPrecargado] = useState(false);
   const [cuponAbierto, setCuponAbierto] = useState(false);
-  const [igTocado, setIgTocado] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
@@ -697,12 +722,7 @@ export default function Checkout() {
 
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const faltaIg = !isInternational && !pago.instagram;
-    if (faltaIg) {
-      setIgTocado(true);
-      document.getElementById('instagram-checkout')?.focus();
-    }
-    if (faltaIg || !pago.metodo || submitting) return;
+    if (!pago.metodo || submitting) return;
     if (pago.instagram) guardarDatos({ instagram: pago.instagram });
     setSubmitting(true);
     setSubmitError(null);
@@ -1465,20 +1485,21 @@ export default function Checkout() {
                 </div>
               )}
 
-              <Panel icon={AtSign} title="Instagram" sub={isInternational ? 'Optional' : 'Para encontrarte rápido si tenemos que escribirte'}>
+              <Panel
+                icon={AtSign}
+                title={<>Instagram <span className="ml-1 text-[10px] font-medium normal-case tracking-normal text-muted-foreground">{isInternational ? '(optional)' : '(opcional)'}</span></>}
+                sub={isInternational ? 'So we can reach you quickly if needed' : 'Para encontrarte rápido si tenemos que escribirte'}
+              >
                 <div className="relative">
                   <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-foreground/50">@</span>
                   <input
                     type="text"
                     id="instagram-checkout"
                     aria-label="Instagram"
-                    aria-invalid={igTocado && !isInternational && !pago.instagram ? true : undefined}
-                    onBlur={() => setIgTocado(true)}
                     placeholder={isInternational ? 'username' : 'usuario'}
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
-                    required={!isInternational}
                     // Se guarda con la @ adelante, igual que llegaba antes cuando
                     // la escribía la persona; acá la @ es fija y no se tipea.
                     value={pago.instagram.replace(/^@+/, '')}
@@ -1486,12 +1507,9 @@ export default function Checkout() {
                       const v = e.target.value.trim().replace(/^@+/, '');
                       setPago({ ...pago, instagram: v ? `@${v}` : '' });
                     }}
-                    className="w-full h-[52px] rounded-[10px] border border-border bg-white pl-[29px] pr-4 text-[13px] focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/70 aria-[invalid=true]:border-destructive"
+                    className="w-full h-[52px] rounded-[10px] border border-border bg-white pl-[29px] pr-4 text-[13px] focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/70"
                   />
                 </div>
-                {igTocado && !isInternational && !pago.instagram && (
-                  <p className="mt-1.5 px-1 text-[11px] text-destructive">Ingresá tu usuario de Instagram</p>
-                )}
               </Panel>
 
               <div id="medio-de-pago">
