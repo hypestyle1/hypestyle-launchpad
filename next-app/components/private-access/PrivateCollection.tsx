@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import PrivateProductCard from './PrivateProductCard';
+import ProductCard from '@/components/ProductCard';
+import { useReveal } from '@/hooks/useReveal';
 import type { PrivateProduct } from '@/lib/private-access/normalize';
+import { checkPrivateStock, onPrivateAddedToCart, toRetailCardProps } from '@/lib/private-access/retail';
 import './private-access.css';
 
 interface Props {
@@ -53,6 +55,7 @@ export default function PrivateCollection({ products, collectionName, collection
 
   const categories = useMemo(() => ['Todo', ...Array.from(new Set(products.map(p => p.category)))], [products]);
   const visible = filter === 'Todo' ? products : products.filter(p => p.category === filter);
+  const ref = useReveal([visible]);
 
   async function logout() {
     await fetch('/api/private-access/logout', { method: 'POST' });
@@ -108,37 +111,37 @@ export default function PrivateCollection({ products, collectionName, collection
         </div>
 
         {/* ── Colección ────────────────────────────────────────────── */}
-        <div className="max-w-[1400px] mx-auto px-4 pt-8 md:pt-12 pb-12">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 md:mb-8">
-            <div>
-              <h2 className="text-[22px] md:text-[28px] font-semibold tracking-[-0.01em] leading-none">La colección</h2>
-              <p className="mt-2 text-[12px] text-muted-foreground">{products.length} productos · precio Mejores Amigos aplicado</p>
+        {/* Filtros por tipo de prenda: parte del bloque de Private Access. */}
+        {categories.length > 2 && (
+          <div className="max-w-[1400px] mx-auto px-4 pt-6 md:pt-8">
+            <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-1 [scrollbar-width:none]" role="tablist" aria-label="Filtrar la colección">
+              {categories.map(c => (
+                <button
+                  key={c}
+                  role="tab"
+                  aria-selected={filter === c}
+                  onClick={() => setFilter(c)}
+                  className={`shrink-0 h-8 px-3.5 rounded-full text-[11px] font-medium border transition-colors ${
+                    filter === c ? 'bg-bg-dark text-white border-bg-dark' : 'border-border-mid text-foreground/70 hover:border-foreground'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
             </div>
-            {categories.length > 2 && (
-              <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-1 [scrollbar-width:none]" role="tablist">
-                {categories.map(c => (
-                  <button
-                    key={c}
-                    role="tab"
-                    aria-selected={filter === c}
-                    onClick={() => setFilter(c)}
-                    className={`shrink-0 h-8 px-3.5 rounded-full text-[11px] font-medium border transition-colors ${
-                      filter === c ? 'bg-bg-dark text-white border-bg-dark' : 'border-border-mid text-foreground/70 hover:border-foreground'
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
+        )}
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-[6px] gap-y-5 md:gap-x-3 md:gap-y-8">
-            {visible.map(p => (
-              <PrivateProductCard
-                key={p.slug}
-                product={p}
-              />
+        {/* Desde acá, la grilla de la tienda tal cual (components/CategoriaPage):
+            mismo contenedor, mismas columnas, mismo gap y el ProductCard retail.
+            Private Access solo cambia los datos y a dónde lleva el click. */}
+        <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
+          <p className="text-[12px] text-muted-foreground mb-6">{visible.length} producto{visible.length !== 1 ? 's' : ''}</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+            {visible.map((p, i) => (
+              <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
+                <ProductCard {...toRetailCardProps(p)} checkStockFn={checkPrivateStock} onAddedToCart={onPrivateAddedToCart} />
+              </div>
             ))}
           </div>
 
@@ -151,7 +154,7 @@ export default function PrivateCollection({ products, collectionName, collection
               Cerrar acceso en este dispositivo
             </button>
           </div>
-        </div>
+        </section>
       </main>
       <Footer />
 
