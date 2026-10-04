@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUsdRate } from '@/lib/fx';
 import { PAYPAL_API, paypalAccessToken } from '@/lib/paypal';
-import { wcPut, wcNote, PAYPAL_ORDER_META } from '@/lib/wc-admin';
+import { wcGet, wcPut, wcNote, PAYPAL_ORDER_META } from '@/lib/wc-admin';
+import { totalCobrable } from '@/lib/total-cobrable';
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://lightpink-rook-704850.hostingersite.com';
 
@@ -12,9 +13,21 @@ const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://lightpink-
 
 export async function POST(req: NextRequest) {
   try {
-    const { wcOrderId, totalARS } = await req.json() as { wcOrderId: number; totalARS: number };
-    if (!wcOrderId || !totalARS) {
-      return NextResponse.json({ error: 'wcOrderId y totalARS requeridos' }, { status: 400 });
+    const { wcOrderId: rawId, totalARS: totalCliente } = await req.json() as { wcOrderId: number; totalARS?: number };
+    const wcOrderId = Number(rawId);
+    if (!Number.isInteger(wcOrderId) || wcOrderId <= 0) {
+      return NextResponse.json({ error: 'wcOrderId requerido' }, { status: 400 });
+    }
+
+    // El monto sale del pedido en WooCommerce, nunca del body (auditoría 28/09,
+    // C1): antes se cobraba el totalARS que mandaba el navegador.
+    const cobrable = totalCobrable(await wcGet<any>(`orders/${wcOrderId}`));
+    if (cobrable.ok === false) {
+      return NextResponse.json({ error: cobrable.error }, { status: cobrable.status });
+    }
+    const totalARS = cobrable.total;
+    if (totalCliente && Math.round(Number(totalCliente)) !== Math.round(totalARS)) {
+      console.warn('[paypal-order] el navegador mandó', totalCliente, '— el pedido', wcOrderId, 'dice', totalARS);
     }
 
     const [token, usdRate] = await Promise.all([paypalAccessToken(), getUsdRate()]);

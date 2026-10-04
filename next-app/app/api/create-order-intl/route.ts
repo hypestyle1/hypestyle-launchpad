@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { quoteIntlShipping, IntlShippingLine } from '@/lib/shipping-intl';
+import { calcularPedido } from '@/lib/pedido-servidor';
+import { PrecioError } from '@/lib/precio-servidor';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -72,16 +74,24 @@ export async function POST(req: NextRequest) {
 
     const country = (customer.pais && customer.pais !== 'OTHER') ? customer.pais : 'AR';
 
+    // Precio por línea calculado en el servidor (auditoría 28/09, C1), igual
+    // que el envío de abajo: del navegador solo se toma qué se compra.
+    const calculo = await calcularPedido({ items, metodo: String(paymentMethod ?? ''), internacional: true });
+    if (calculo.diferencias.length) {
+      console.warn('[create-order-intl] el navegador mandó otros importes:', calculo.diferencias.join(' | '));
+    }
+
     const shippingLines: IntlShippingLine[] = [];
 
     const lineItems = await Promise.all(
-      (items as any[]).map(async (item) => {
+      (items as any[]).map(async (item, i) => {
+        const linea = calculo.lineas[i];
         const { category, weightKg, ...resolved } = await resolveItem(item.id, item.size);
-        shippingLines.push({ category, weightKg, quantity: Number(item.quantity) || 1 });
-        const lineTotal = String(Math.round(Number(item.price) * Number(item.quantity)));
+        shippingLines.push({ category, weightKg, quantity: linea.quantity });
+        const lineTotal = String(Math.round(linea.price * linea.quantity));
         const li: Record<string, unknown> = {
           ...resolved,
-          quantity: item.quantity,
+          quantity: linea.quantity,
           subtotal: lineTotal,
           total: lineTotal,
         };
@@ -177,8 +187,8 @@ export async function POST(req: NextRequest) {
         orderNum:      String(wcOrder.number),
         wcOrderId:     wcOrder.id,
         orderKey:      wcOrder.order_key,
-        items:         (items as any[]).map((i: any) => ({
-          name: i.name, size: i.size, quantity: i.quantity, price: i.price, customization: i.customization,
+        items:         (items as any[]).map((i: any, idx: number) => ({
+          name: i.name, size: i.size, quantity: calculo.lineas[idx].quantity, price: calculo.lineas[idx].price, customization: i.customization,
         })),
         total:         parseFloat(wcOrder.total),
         email:         customer.email,
@@ -210,6 +220,9 @@ export async function POST(req: NextRequest) {
       paypalUrl:     null,
     });
   } catch (err) {
+    if (err instanceof PrecioError) {
+      return NextResponse.json({ message: err.message }, { status: 400 });
+    }
     console.error('[create-order-intl]', err);
     return NextResponse.json({ message: 'Error creating order' }, { status: 500 });
   }

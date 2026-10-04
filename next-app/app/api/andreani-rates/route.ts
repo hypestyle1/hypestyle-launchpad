@@ -1,30 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { normalizeCpAr } from '@/lib/postal-code';
+import { cotizarAndreani } from '@/lib/andreani-cotizador';
 
-const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
-
+// Misma función que usa la creación del pedido para recotizar el envío: lo que
+// el checkout muestra y lo que se cobra salen del mismo tarifario.
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  // Mismo criterio que /api/andreani-branches: el tarifario espera 4 dígitos.
-  const cp       = normalizeCpAr(searchParams.get('cp'));
-  const provincia = searchParams.get('provincia') || '';
-  const valor    = searchParams.get('valor') || '10000';
-  const peso     = searchParams.get('peso') || '0.5';
-
+  const cp = searchParams.get('cp') || '';
   if (!cp) return NextResponse.json({ error: 'cp requerido' }, { status: 400 });
 
   try {
-    const body = new URLSearchParams({
-      action: 'hype_shipping_rates',
-      cp, provincia, valor, peso,
+    const data = await cotizarAndreani({
+      cp,
+      provincia: searchParams.get('provincia') || '',
+      valor: searchParams.get('valor') || '10000',
+      peso: searchParams.get('peso') || '0.5',
     });
-    const res = await fetch(`${WP_URL}/wp-admin/admin-ajax.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-      cache: 'no-store',
-    });
-    const data = await res.json();
+    if (data.error === 'cp requerido') return NextResponse.json(data, { status: 400 });
     return NextResponse.json(data);
   } catch (err) {
     console.error('[andreani-rates]', err);
