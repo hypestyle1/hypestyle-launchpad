@@ -347,7 +347,7 @@ function LookPanel({ look, piezas, numero, total, onPrev, onNext, formatPrice }:
           </div>
         )}
         {hayPendientes && (
-          <p className="text-[11px] text-foreground/50 pt-3 leading-snug">Las prendas nuevas de SS27 se suman a la web en el próximo drop.</p>
+          <p className="text-[11px] text-foreground/50 pt-3 leading-snug">Las prendas de SS27 llegan a la web con la apertura de la colección.</p>
         )}
 
         {/* Desktop: los ángulos también como miniaturas, para elegir sin girar. */}
