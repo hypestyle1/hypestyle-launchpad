@@ -14,6 +14,8 @@ const cap: ResolvedProduct = { product_id: 924, stock, regularPrice: 43000, vari
 const catalog = new Map<string, ResolvedProduct | null>([['faith-hoodie', hoodie], ['camo-cap', cap]]);
 // Últimos pedidos del cliente en Woo (freno al pedido duplicado).
 let recentOrders: any[] = [];
+// Metas del cliente en Woo (exclusividad por ciudad).
+let customerMeta: { key: string; value: string }[] = [];
 const wooOrder = (minutesAgo: number, extra: Record<string, unknown> = {}) => ({
   id: 3324, number: '3324', status: 'on-hold', total: '1018960.00',
   date_created_gmt: new Date(Date.now() - minutesAgo * 60_000).toISOString().slice(0, 19),
@@ -36,7 +38,7 @@ vi.mock('@/lib/mayorista-stock', async (importOriginal) => {
     ...real,
     wcAuth: () => 'Basic test',
     wcGet: vi.fn(async (path: string) => {
-      if (path.startsWith('customers/19')) return { email: 'mask@test.com', meta_data: [] };
+      if (path.startsWith('customers/19')) return { email: 'mask@test.com', meta_data: customerMeta };
       if (path.startsWith('orders?')) return recentOrders;
       throw new Error('wcGet inesperado: ' + path);
     }),
@@ -52,6 +54,7 @@ const wcOrderPosts: any[] = [];
 beforeEach(() => {
   wcOrderPosts.length = 0;
   recentOrders = [];
+  customerMeta = [];
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
     if (String(url).includes('/wc/v3/orders')) {
       wcOrderPosts.push(JSON.parse(String(init?.body)));
@@ -205,5 +208,30 @@ describe('POST /api/mayorista/pedido — pedido duplicado', () => {
     const r = await post({ items: [hoodieL(48000)], shipping });
     expect(r.status).toBe(502);
     expect(r.data.maybeCreated).toBe(true);
+  });
+});
+
+describe('POST /api/mayorista/pedido — exclusividad por ciudad', () => {
+  it('cuenta bloqueada por la exclusividad de otro local: 403 EXCLUSIVITY_BLOCKED y no crea orden', async () => {
+    customerMeta = [{ key: 'mayorista_bloqueo_exclusividad', value: JSON.stringify({ ciudad: 'Córdoba Capital', titular: 'AKASHA RAGS', desde: '2026-10-05' }) }];
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(403);
+    expect(r.data.code).toBe('EXCLUSIVITY_BLOCKED');
+    expect(r.data.message).toContain('Córdoba Capital');
+    expect(r.data.message).toContain('WhatsApp');
+    expect(wcOrderPosts).toHaveLength(0);
+  });
+
+  it('la cuenta titular de la exclusividad pide normal', async () => {
+    customerMeta = [{ key: 'mayorista_exclusividad', value: JSON.stringify({ ciudad: 'Córdoba Capital', desde: '2026-09-28', pedido: 3324 }) }];
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(200);
+    expect(wcOrderPosts).toHaveLength(1);
+  });
+
+  it('meta de bloqueo vacía (se quitó desde el panel): pide normal', async () => {
+    customerMeta = [{ key: 'mayorista_bloqueo_exclusividad', value: '' }];
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(200);
   });
 });

@@ -13,6 +13,7 @@ import MayoristaMinBar from './MayoristaMinBar';
 import { completarMinimo } from '@/lib/mayorista-completar-minimo';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
 import { agoLabel, type RecentOrder } from '@/lib/mayorista-recent-order';
+import MayoristaExclusividadBanner from './MayoristaExclusividadBanner';
 
 // Cuánto se espera a que aparezca la orden cuando el envío falló sin respuesta
 // clara: Woo tardó ~57 s en crear una de 42 líneas.
@@ -165,6 +166,9 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   const [minOrder, setMinOrder] = useState<number | null>(null);
   // Saldo a favor de la cuenta (nota de crédito): se descuenta solo del pedido.
   const [credit, setCredit] = useState(0);
+  // Otro local tiene la exclusividad de la ciudad de esta cuenta: no se puede
+  // confirmar (lib/mayorista-exclusividad.ts). Viene del perfil o del 403 del pedido.
+  const [bloqueo, setBloqueo] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
   // Si el pedido actual salió de un borrador, "guardar" lo pisa en vez de duplicarlo,
   // y al confirmar el pedido ese borrador se elimina solo.
@@ -292,6 +296,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         if (!data) return;
         if (typeof data.minOrder === 'number') setMinOrder(data.minOrder);
         if (typeof data.credit === 'number') setCredit(data.credit);
+        if (data.bloqueoExclusividad?.mensaje) setBloqueo(data.bloqueoExclusividad.mensaje);
         if (data.email) setEmail(data.email);
         const b = data.billing;
         setShipping(s => ({
@@ -411,6 +416,10 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
           return;
         }
         throw new Error('No pudimos confirmar si tu pedido entró. Antes de enviarlo de nuevo, revisá "Mis pedidos" o escribinos.');
+      }
+      if (res.status === 403 && data.code === 'EXCLUSIVITY_BLOCKED') {
+        setBloqueo(data.message || 'En tu ciudad hay un local con exclusividad de Hype. Escribinos por WhatsApp.');
+        return;
       }
       if (res.status === 409 && data.code === 'RECENT_ORDER') {
         setRecentOrder({ order: data.order as RecentOrder, confirmPrices });
@@ -642,6 +651,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         </div>
 
         {error && <p className="mt-4 text-[12px] text-destructive">{error}</p>}
+        {bloqueo && <p className="mt-4 text-[12px] text-destructive">{bloqueo}</p>}
 
         {priceChange && (
           <div className="mt-6 rounded-[12px] border border-foreground p-4">
@@ -683,7 +693,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
 
         {verifying && <p className="mt-4 text-[12px] text-muted-foreground">El envío está tardando. Estamos verificando si tu pedido entró: dejá esta página abierta.</p>}
 
-        <Button type="submit" variant="hype" size="ctaFull" disabled={sending || !!priceChange || !!recentOrder} className="mt-8 py-3 rounded-full">
+        <Button type="submit" variant="hype" size="ctaFull" disabled={sending || !!priceChange || !!recentOrder || !!bloqueo} className="mt-8 py-3 rounded-full">
           {verifying ? 'Verificando…' : sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(toPay)}`}
         </Button>
       </form>
@@ -693,6 +703,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   return (
     <div className="max-w-2xl mx-auto px-5 sm:px-8 py-8">
       <h1 className="text-2xl font-bold tracking-tight mb-6">Mi pedido</h1>
+      {bloqueo && <div className="mb-4 -mx-5 sm:-mx-8"><MayoristaExclusividadBanner mensaje={bloqueo} /></div>}
 
       {recentNotice && (
         <div className="mb-4 rounded-[12px] border border-foreground p-4 text-[12px]">

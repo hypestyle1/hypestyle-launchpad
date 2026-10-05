@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getMayoristaById, sendNewPasswordEmail, sendAprobacionEmail, sendCreditEmail } from '@/lib/mayorista-account';
 import { parseCredit, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { adminSecretMatches } from '@/lib/admin-auth';
+import { META_EXCLUSIVIDAD, META_BLOQUEO } from '@/lib/mayorista-exclusividad';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -17,9 +18,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
-  const { active, minOrder, password, approve, credito } = body as {
+  const { active, minOrder, password, approve, credito, exclusividad, bloqueoExclusividad } = body as {
     active?: boolean; minOrder?: number | null; password?: string; approve?: boolean;
     credito?: { monto: number; motivo: string; orden?: string };
+    // Exclusividad por ciudad (lib/mayorista-exclusividad.ts). null la quita.
+    exclusividad?: { ciudad: string; desde?: string; pedido?: string | number } | null;
+    bloqueoExclusividad?: { ciudad: string; titular: string; desde?: string } | null;
   };
 
   // Nota de crédito: suma (o corrige, con monto negativo) el saldo a favor que
@@ -56,6 +60,26 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (account) emailSent = await sendCreditEmail(account, monto, next.saldo, motivo);
     }
     return NextResponse.json({ ok: true, credit: next.saldo, emailSent });
+  }
+
+  if (exclusividad !== undefined || bloqueoExclusividad !== undefined) {
+    const hoy = new Date().toISOString().slice(0, 10);
+    const meta: { key: string; value: string }[] = [];
+    if (exclusividad !== undefined) {
+      if (exclusividad && !String(exclusividad.ciudad ?? '').trim()) return NextResponse.json({ message: 'Falta la ciudad' }, { status: 400 });
+      meta.push({ key: META_EXCLUSIVIDAD, value: exclusividad ? JSON.stringify({ ciudad: exclusividad.ciudad.trim(), desde: exclusividad.desde || hoy, ...(exclusividad.pedido ? { pedido: exclusividad.pedido } : {}) }) : '' });
+    }
+    if (bloqueoExclusividad !== undefined) {
+      if (bloqueoExclusividad && (!String(bloqueoExclusividad.ciudad ?? '').trim() || !String(bloqueoExclusividad.titular ?? '').trim())) return NextResponse.json({ message: 'Faltan la ciudad o el local titular' }, { status: 400 });
+      meta.push({ key: META_BLOQUEO, value: bloqueoExclusividad ? JSON.stringify({ ciudad: bloqueoExclusividad.ciudad.trim(), titular: bloqueoExclusividad.titular.trim(), desde: bloqueoExclusividad.desde || hoy }) : '' });
+    }
+    const put = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${params.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+      body: JSON.stringify({ meta_data: meta }),
+    });
+    if (!put.ok) return NextResponse.json({ message: `Error de WooCommerce (${put.status})` }, { status: 502 });
+    return NextResponse.json({ ok: true });
   }
 
   if (active === undefined && minOrder === undefined && password === undefined) {

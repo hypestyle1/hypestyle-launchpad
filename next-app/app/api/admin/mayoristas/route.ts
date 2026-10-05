@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { statusFromMeta } from '@/lib/mayorista-account';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { parseCredit } from '@/lib/mayorista-credit';
+import { parseExclusividad, parseBloqueo } from '@/lib/mayorista-exclusividad';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -107,6 +108,8 @@ export async function GET(req: NextRequest) {
       status: statusFromMeta(metaVal(meta, 'es_mayorista')),
       cuit: metaVal(meta, 'mayorista_cuit'),
       instagram: metaVal(meta, 'mayorista_instagram'),
+      exclusividad: parseExclusividad(meta),
+      bloqueoExclusividad: parseBloqueo(meta),
       localFisico: metaVal(meta, 'mayorista_local_fisico') === 'yes',
       modalidad: metaVal(meta, 'mayorista_modalidad'),
       solicitadoEl: metaVal(meta, 'mayorista_solicitud_fecha') || null,

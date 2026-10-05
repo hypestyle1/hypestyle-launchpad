@@ -9,6 +9,7 @@ import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
 import { pickRecentOrder, recentOrdersPath, agoLabel } from '@/lib/mayorista-recent-order';
+import { parseBloqueo, mensajeBloqueo } from '@/lib/mayorista-exclusividad';
 
 // Woo puede tardar cerca de un minuto en crear una orden grande. Si la función
 // se corta antes, la orden queda creada pero el cliente ve un error.
@@ -213,6 +214,15 @@ export async function POST(req: NextRequest) {
     if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone || !shipping?.dni) {
       return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
     }
+    // Exclusividad por ciudad: si otro local tiene la exclusividad de la ciudad
+    // de esta cuenta, no se toman pedidos (lib/mayorista-exclusividad.ts). Va
+    // antes de tocar productos y stock.
+    const customer = await wcGet(`customers/${customerId}?_fields=meta_data,email`);
+    const bloqueo = parseBloqueo(customer.meta_data);
+    if (bloqueo) {
+      return NextResponse.json({ code: 'EXCLUSIVITY_BLOCKED', message: mensajeBloqueo(bloqueo), ciudad: bloqueo.ciudad }, { status: 403 });
+    }
+
     const envio = envioDe(shipping);
     const envioError = validarEnvio(envio.metodo, envio.destino);
     if (envioError) return NextResponse.json({ message: envioError }, { status: 400 });
@@ -332,7 +342,6 @@ export async function POST(req: NextRequest) {
 
     const total = pricing.total;
 
-    const customer = await wcGet(`customers/${customerId}?_fields=meta_data,email`);
     // Mínimo: el override del cliente manda; si no, el mínimo propio de la
     // campaña aplicada; si no, el general.
     const campaignMin = appliedCampaign ? campaigns.find(c => c.id === appliedCampaign.campaignId)?.minOrder ?? null : null;
