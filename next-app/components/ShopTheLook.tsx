@@ -1,46 +1,110 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { imgSrc } from "@/lib/img";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
 import { useLocale } from "@/context/LocaleContext";
 import SectionHeader from "./SectionHeader";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useReveal } from "@/hooks/useReveal";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { X } from "lucide-react";
-import { LOOKS, type Look } from "@/data/looks";
+import { useProducts, type NormalizedProduct } from "@/hooks/useProducts";
+import { LOOKS, lookFoto, type Angulo, type Look } from "@/data/looks";
+
+/**
+ * Shop the look — line-up + giro (SS27).
+ *
+ * Arriba, todos los looks parados uno al lado del otro sobre la misma pared del
+ * estudio (las fotos comparten fondo, distancia y altura de cámara, por eso se
+ * leen como un solo plano). Al tocar una figura, abajo se abre el look: la foto
+ * gira con el cursor por frente, perfil, espalda y detalle, y al lado van las
+ * prendas con precio, stock y link a la ficha.
+ *
+ * Los datos de producto salen de la query ['products'] (precargada en el
+ * servidor en el home), así que el primer render ya trae precios y no hay
+ * salto. El look seleccionado arranca en el primero visible, igual en server y
+ * cliente, sin orden al azar: el orden del line-up es curado.
+ */
+
+const ANGULO_LABEL: Record<Angulo, string> = {
+  frente: 'Frente',
+  perfil: 'Perfil',
+  espalda: 'Espalda',
+  detalle: 'Detalle',
+};
+
+interface Pieza {
+  slug: string;
+  name: string;
+  category: string;
+  image: string;
+  price?: number;
+  originalPrice?: number;
+  href?: string;
+  agotado: boolean;
+  pendiente: boolean;
+}
+
+function resolver(look: Look, bySlug: Map<string, NormalizedProduct>): Pieza[] {
+  // Un ítem que no está en el catálogo y no está marcado como pendiente (un
+  // producto que se despublicó, o el catálogo todavía sin cargar) se omite.
+  return look.items.filter((it) => it.pendiente || bySlug.has(it.slug)).map((it) => {
+    const p = bySlug.get(it.slug);
+    if (p) {
+      return {
+        slug: p.slug,
+        name: p.name,
+        category: p.category,
+        image: p.image,
+        price: p.price,
+        originalPrice: p.originalPrice,
+        href: p.href,
+        agotado: Object.values(p.stock).every((s) => s === 'out'),
+        pendiente: false,
+      };
+    }
+    // Todavía no está en Woo: nombre provisorio y el flat lay (o la foto de
+    // detalle del look si la prenda no tiene flat lay).
+    const detalle = look.angulos.includes('detalle') ? 'detalle' : look.angulos[look.angulos.length - 1];
+    return {
+      slug: it.slug,
+      name: it.pendiente?.name ?? it.slug,
+      category: it.pendiente?.category ?? '',
+      image: it.pendiente?.miniatura ?? lookFoto(look, detalle),
+      agotado: false,
+      pendiente: true,
+    };
+  });
+}
 
 export default function ShopTheLook() {
   const dragRef = useDragScroll();
   const revealRef = useReveal();
-  const [activeLook, setActiveLook] = useState<Look | null>(null);
   const { formatPrice } = useLocale();
+  const { data: allProducts = [] } = useProducts(0);
 
-  // Arranca con el orden natural (igual en server y cliente) para que el primer render
-  // no tenga mismatch de hidratación, y recién en el efecto (solo cliente) se reordena al
-  // azar. Antes el shuffle corría directo en el render con useMemo: en el server daba un
-  // orden y al hidratar en el cliente daba OTRO, entonces la imagen que quedaba pintada
-  // (la del server) no coincidía con el look enganchado al click (el del cliente) — por
-  // eso se abría un look distinto al que se tocaba.
-  const [visibleLooks, setVisibleLooks] = useState<Look[]>(() => LOOKS.slice(0, 4));
+  const looks = useMemo(() => {
+    const bySlug = new Map(allProducts.map((p) => [p.slug, p]));
+    return LOOKS.map((look) => ({ look, piezas: resolver(look, bySlug) }))
+      // Un look se oculta solo si todo lo que tiene cargado en Woo está agotado.
+      .filter(({ piezas }) => piezas.some((p) => p.pendiente || !p.agotado));
+  }, [allProducts]);
 
-  useEffect(() => {
-    const key = 'hype_looks_order';
-    let order: string[] = [];
-    try { order = JSON.parse(sessionStorage.getItem(key) || '[]'); } catch {}
-    if (order.length !== LOOKS.length) {
-      order = [...LOOKS].sort(() => Math.random() - 0.5).map(l => l.id);
-      try { sessionStorage.setItem(key, JSON.stringify(order)); } catch {}
+  const [selId, setSelId] = useState<string | null>(null);
+  const selIdx = Math.max(0, looks.findIndex((l) => l.look.id === selId));
+  const sel = looks[selIdx];
+
+  const elegir = (i: number) => {
+    const next = looks[(i + looks.length) % looks.length];
+    if (!next) return;
+    setSelId(next.look.id);
+    // Lleva la figura elegida a la vista dentro del line-up, sin mover la página.
+    const rail = dragRef.current;
+    const fig = rail?.querySelector<HTMLElement>(`[data-look="${next.look.id}"]`);
+    if (rail && fig) {
+      const left = fig.offsetLeft - (rail.clientWidth - fig.clientWidth) / 2;
+      rail.scrollTo({ left, behavior: 'smooth' });
     }
-    const sorted = order.map(id => LOOKS.find(l => l.id === id)).filter(Boolean) as Look[];
-    setVisibleLooks(sorted.slice(0, 4));
-  }, []);
+  };
+
+  if (!sel) return null;
 
   return (
     <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={revealRef}>
@@ -48,114 +112,307 @@ export default function ShopTheLook() {
         <SectionHeader title="Shop the look" link="/looks/" />
       </div>
 
+      {/* Line-up: una sola pared, sin separación entre fotos. */}
       <div
         ref={dragRef}
-        className="reveal rd2 flex gap-[2px] overflow-x-auto no-scrollbar snap-x snap-mandatory cursor-grab select-none px-[10vw] md:px-0"
+        className="reveal rd2 flex overflow-x-auto no-scrollbar cursor-grab select-none rounded-[8px] bg-[#ecebe8]"
       >
-        {visibleLooks.map((look) => (
-          // hover:scale/z-10 solo desde md: en mobile no hay hover real y el estado
-          // puede quedar "pegado" en la tarjeta anterior tras tocarla; con el carrusel
-          // por snap, esa tarjeta agrandada y elevada tapaba el borde de la tarjeta
-          // siguiente y el tap terminaba abriendo el look equivocado.
-          <div
-            key={look.id}
-            className="flex-none w-[80vw] md:flex-1 snap-center transition-transform duration-300 ease-out md:hover:scale-[1.02] md:hover:z-10 relative"
-          >
+        {looks.map(({ look }, i) => {
+          const activo = i === selIdx;
+          return (
             <button
-              onClick={() => setActiveLook(look)}
-              className="relative w-full aspect-[3/4] overflow-hidden rounded-[8px] bg-bg-alt group block text-left"
+              key={look.id}
+              type="button"
+              data-look={look.id}
+              onClick={() => elegir(i)}
+              aria-pressed={activo}
+              aria-label={`Look ${i + 1}: ${look.etiqueta}`}
+              className={`flex-none w-[38vw] md:w-[calc(100%/5.5)] lg:w-[calc(100%/7)] text-left transition-[opacity,filter] duration-300 ${
+                activo ? '' : 'opacity-40 grayscale-[0.6] md:hover:opacity-80 md:hover:grayscale-0'
+              }`}
             >
-              {/* loading/decoding + width/height: la sección está bien abajo del
-                  pliegue pero las 4 fotos se pedían de una, junto con el hero.
-                  Con width/height el navegador además reserva el alto antes de
-                  que baje la imagen (si no, cuenta como layout shift). */}
-              <img
-                src={imgSrc(look.image)}
-                alt={look.title}
-                width={900}
-                height={1200}
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
-              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20 transition-colors duration-300" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <span className="px-6 py-2.5 bg-primary-foreground text-foreground text-[12px] font-semibold uppercase tracking-wider">
-                  Ver look →
-                </span>
+              <div className="aspect-[3/4] overflow-hidden">
+                <img
+                  src={lookFoto(look, 'lineup')}
+                  alt=""
+                  width={420}
+                  height={560}
+                  loading={i < 4 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  draggable={false}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex items-baseline gap-2 px-2.5 pt-2.5 pb-3 text-[11px]">
+                <span className="font-semibold text-[12px] tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                {activo && <span className="w-1.5 h-1.5 rounded-full bg-foreground self-center" aria-hidden />}
+                <span className="truncate text-foreground/60">{look.etiqueta}</span>
               </div>
             </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Look Drawer */}
-      <Sheet open={!!activeLook} onOpenChange={(open) => !open && setActiveLook(null)}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-[380px] bg-background p-0 border-l border-border [&>button:last-child]:hidden"
-        >
-          {activeLook && (
-            <>
-              <SheetHeader className="flex flex-row items-center justify-between p-5 pb-4 border-b border-border space-y-0">
-                <SheetTitle className="text-[15px] font-bold uppercase tracking-tight">
-                  {activeLook.title}
-                </SheetTitle>
-                <SheetClose className="rounded-sm opacity-70 hover:opacity-100 transition-opacity">
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Cerrar</span>
-                </SheetClose>
-              </SheetHeader>
-
-              <div className="p-5 space-y-0 overflow-y-auto max-h-[calc(100vh-80px)]">
-                {activeLook.products.map((product, i) => (
-                  <div key={product.slug}>
-                    <div className="flex gap-4 py-4">
-                      {/* Product thumbnail */}
-                      <div className="w-20 h-20 flex-shrink-0 bg-bg-alt overflow-hidden">
-                        <img
-                          src={imgSrc(product.image)}
-                          alt={product.name}
-                          width={80}
-                          height={80}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        />
-                      </div>
-
-                      {/* Product info */}
-                      <div className="flex flex-col justify-center min-w-0">
-                        <p className="text-[10px] uppercase tracking-[0.15em] text-text-light mb-0.5">
-                          {product.category}
-                        </p>
-                        <p className="text-[14px] font-medium leading-tight text-foreground">
-                          {product.name}
-                        </p>
-                        <p suppressHydrationWarning className="text-[14px] font-semibold text-foreground mt-0.5">
-                          {formatPrice(product.price)}
-                        </p>
-                        <a
-                          href={`/producto/${product.slug}/`}
-                          onClick={() => setActiveLook(null)}
-                          className="text-[12px] text-border-mid hover:text-foreground transition-colors mt-1 inline-block"
-                        >
-                          Ver producto →
-                        </a>
-                      </div>
-                    </div>
-                    {i < activeLook.products.length - 1 && (
-                      <div className="border-b border-border" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <LookPanel
+        key={sel.look.id}
+        look={sel.look}
+        piezas={sel.piezas}
+        numero={selIdx + 1}
+        total={looks.length}
+        onPrev={() => elegir(selIdx - 1)}
+        onNext={() => elegir(selIdx + 1)}
+        formatPrice={formatPrice}
+      />
     </section>
+  );
+}
+
+interface PanelProps {
+  look: Look;
+  piezas: Pieza[];
+  numero: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+  formatPrice: (n: number) => string;
+}
+
+function LookPanel({ look, piezas, numero, total, onPrev, onNext, formatPrice }: PanelProps) {
+  const [ang, setAng] = useState(0);
+  const fotoRef = useRef<HTMLDivElement>(null);
+  const n = look.angulos.length;
+
+  // Con mouse: la posición horizontal del cursor elige el ángulo (el modelo
+  // "gira"). Con el dedo: deslizar de costado gira de a un ángulo cada
+  // PASO_SWIPE px, y un toque sin deslizar pasa al siguiente.
+  const swipe = useRef<{ x: number; movido: boolean } | null>(null);
+  const PASO_SWIPE = 36;
+
+  const onDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') swipe.current = { x: e.clientX, movido: false };
+  };
+  const onMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse') {
+      if (!fotoRef.current) return;
+      const r = fotoRef.current.getBoundingClientRect();
+      setAng(Math.min(n - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * n))));
+      return;
+    }
+    const s = swipe.current;
+    if (!s) return;
+    const dx = e.clientX - s.x;
+    if (Math.abs(dx) >= PASO_SWIPE) {
+      // Deslizar hacia la izquierda gira hacia adelante, como arrastrar al modelo.
+      setAng((a) => Math.min(n - 1, Math.max(0, a + (dx < 0 ? 1 : -1))));
+      swipe.current = { x: e.clientX, movido: true };
+    }
+  };
+  const onUp = () => {
+    // El click llega después del pointerup: si hubo deslizamiento, que no
+    // avance otro ángulo más.
+    setTimeout(() => { swipe.current = null; }, 0);
+  };
+  const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); setAng((a) => Math.min(n - 1, a + 1)); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); setAng((a) => Math.max(0, a - 1)); }
+  };
+
+  const conPrecio = piezas.filter((p) => p.price && !p.agotado);
+  const sumaLook = conPrecio.reduce((a, p) => a + (p.price ?? 0), 0);
+  const hayPendientes = piezas.some((p) => p.pendiente);
+
+  return (
+    <div className="grid grid-cols-[42%_minmax(0,1fr)] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-cols-[400px_minmax(0,1fr)] gap-4 md:gap-10 pt-5 md:pt-6 animate-in fade-in duration-300 motion-reduce:animate-none">
+      <div>
+        <div
+          ref={fotoRef}
+          role="group"
+          tabIndex={0}
+          aria-label={`${look.etiqueta}: ${ANGULO_LABEL[look.angulos[ang]].toLowerCase()}. Usá las flechas para girar.`}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          onPointerLeave={(e) => e.pointerType === 'mouse' && setAng(0)}
+          onKeyDown={onKey}
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('button')) return;
+            if (swipe.current?.movido) return;
+            setAng((a) => (a + 1) % n);
+          }}
+          className="relative aspect-[3/4] overflow-hidden rounded-[8px] bg-[#ecebe8] cursor-ew-resize touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+        >
+          {look.angulos.map((a, i) => (
+            <img
+              key={a}
+              src={lookFoto(look, a)}
+              alt={i === ang ? `${look.etiqueta}, ${ANGULO_LABEL[a].toLowerCase()}` : ''}
+              width={960}
+              height={1280}
+              decoding="async"
+              draggable={false}
+              className={`absolute inset-0 w-full h-full object-cover ${i === ang ? 'opacity-100' : 'opacity-0'}`}
+            />
+          ))}
+          <span className="absolute left-2.5 top-2.5 md:left-3 md:top-3 bg-white/85 text-[#0a0a0a] text-[10px] font-semibold uppercase tracking-[0.1em] px-2 py-1 rounded-[6px]">
+            {ANGULO_LABEL[look.angulos[ang]]}
+          </span>
+          <span className="hidden md:flex absolute right-3 top-3 items-center gap-1 text-[10px] uppercase tracking-[0.06em] text-[#0a0a0a]/55">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-3.5 h-3.5" aria-hidden>
+              <path d="M2 8h12M4.5 5.5 2 8l2.5 2.5M11.5 5.5 14 8l-2.5 2.5" />
+            </svg>
+            Girar
+          </span>
+          <div className="absolute left-2.5 right-2.5 bottom-2 md:left-3 md:right-3 md:bottom-3 flex gap-1">
+            {look.angulos.map((a, i) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setAng(i)}
+                aria-label={ANGULO_LABEL[a]}
+                aria-pressed={i === ang}
+                className="flex-1 h-6 flex items-end pb-1.5"
+              >
+                <span className={`block w-full h-[2px] transition-colors ${i === ang ? 'bg-[#0a0a0a]' : 'bg-[#0a0a0a]/20'}`} />
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* En mobile el aviso va abajo: arriba de la foto no entra al lado del ángulo. */}
+        <p className="md:hidden flex items-center gap-1 mt-2 text-[10px] uppercase tracking-[0.06em] text-foreground/50">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-3.5 h-3.5" aria-hidden>
+            <path d="M2 8h12M4.5 5.5 2 8l2.5 2.5M11.5 5.5 14 8l-2.5 2.5" />
+          </svg>
+          Deslizá para girar
+        </p>
+      </div>
+
+      <div className="min-w-0 flex flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.15em] text-text-light">
+              Look <span className="tabular-nums">{String(numero).padStart(2, '0')}</span> · {look.modelo === 'ella' ? 'Ella' : 'Él'}
+            </p>
+            <h3 className="text-[17px] md:text-[22px] font-semibold tracking-[-0.01em] leading-tight mt-1">{look.etiqueta}</h3>
+          </div>
+        </div>
+
+        <ul className="mt-3 md:mt-5 border-t border-border">
+          {piezas.map((p) => {
+            const contenido = (
+              <>
+                <img
+                  src={p.image}
+                  alt=""
+                  width={64}
+                  height={64}
+                  loading="lazy"
+                  decoding="async"
+                  className={`hidden md:block w-16 h-16 object-cover bg-bg-alt ${p.agotado ? 'opacity-45 grayscale' : ''}`}
+                />
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-text-light">
+                    {p.category}
+                    {p.pendiente && <span className="ml-1.5 normal-case tracking-normal text-foreground/50">· Próximamente</span>}
+                  </p>
+                  <p className={`text-[13px] md:text-[14px] font-medium leading-tight mt-0.5 underline-offset-[3px] ${p.href && !p.agotado ? 'group-hover:underline' : ''} ${p.agotado ? 'text-text-light' : 'text-foreground'}`}>
+                    {p.name}
+                  </p>
+                  {/* En mobile el precio va abajo del nombre: la columna es angosta. */}
+                  <PrecioPieza p={p} formatPrice={formatPrice} className="md:hidden mt-1" />
+                </div>
+                <div className="hidden md:flex flex-col items-end gap-1 flex-none">
+                  <PrecioPieza p={p} formatPrice={formatPrice} />
+                  {p.href && !p.agotado && <span className="text-[11px] text-foreground/50">Ver producto →</span>}
+                </div>
+              </>
+            );
+            const cls = "grid grid-cols-[minmax(0,1fr)] md:grid-cols-[64px_minmax(0,1fr)_auto] gap-3 md:gap-4 items-center py-3 border-b border-border";
+            return (
+              <li key={p.slug}>
+                {p.href ? (
+                  <a href={p.href} className={`${cls} group`}>{contenido}</a>
+                ) : (
+                  <div className={cls}>{contenido}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+
+        {sumaLook > 0 && conPrecio.length > 1 && (
+          <div className="flex justify-between items-baseline pt-4">
+            <span className="text-[12px] text-foreground/60">Look completo</span>
+            <span suppressHydrationWarning className="text-[16px] font-semibold tabular-nums">{formatPrice(sumaLook)}</span>
+          </div>
+        )}
+        {hayPendientes && (
+          <p className="text-[11px] text-foreground/50 pt-3 leading-snug">Las prendas de SS27 llegan a la web con la apertura de la colección.</p>
+        )}
+
+        {/* Desktop: los ángulos también como miniaturas, para elegir sin girar. */}
+        <div className="hidden md:flex items-end justify-between gap-6 mt-auto pt-8">
+        <div className="grid grid-cols-4 gap-1.5 w-full max-w-[380px]">
+          {look.angulos.map((a, i) => (
+            <button
+              key={a}
+              type="button"
+              onClick={() => setAng(i)}
+              onMouseEnter={() => setAng(i)}
+              aria-label={`Ver ${ANGULO_LABEL[a].toLowerCase()}`}
+              className="text-left group"
+            >
+              <span className={`block aspect-[3/4] overflow-hidden rounded-[6px] bg-[#ecebe8] border transition-colors ${i === ang ? 'border-foreground' : 'border-transparent'}`}>
+                <img src={lookFoto(look, a)} alt="" width={96} height={128} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+              </span>
+              <span className={`block text-[10px] uppercase tracking-[0.1em] mt-1.5 ${i === ang ? 'text-foreground' : 'text-foreground/45 group-hover:text-foreground/70'}`}>
+                {ANGULO_LABEL[a]}
+              </span>
+            </button>
+          ))}
+        </div>
+          <div className="flex gap-1.5 flex-none items-center">
+            <span className="text-[11px] text-foreground/50 mr-1.5 tabular-nums">{numero}/{total}</span>
+            <FlechaBtn dir="prev" onClick={onPrev} />
+            <FlechaBtn dir="next" onClick={onNext} />
+          </div>
+        </div>
+
+        <div className="flex md:hidden gap-1.5 mt-auto pt-4">
+          <FlechaBtn dir="prev" onClick={onPrev} />
+          <FlechaBtn dir="next" onClick={onNext} />
+          <span className="text-[11px] text-foreground/50 self-center ml-1 tabular-nums">{numero}/{total}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PrecioPieza({ p, formatPrice, className = '' }: { p: Pieza; formatPrice: (n: number) => string; className?: string }) {
+  if (p.pendiente) return null;
+  if (p.agotado) return <p className={`text-[12px] text-text-light ${className}`}>Agotado</p>;
+  if (!p.price) return null;
+  return (
+    <p suppressHydrationWarning className={`text-[13px] md:text-[14px] font-semibold tabular-nums ${className}`}>
+      {formatPrice(p.price)}
+      {p.originalPrice && (
+        <span className="ml-1.5 font-normal text-text-light line-through">{formatPrice(p.originalPrice)}</span>
+      )}
+    </p>
+  );
+}
+
+function FlechaBtn({ dir, onClick }: { dir: 'prev' | 'next'; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={dir === 'prev' ? 'Look anterior' : 'Look siguiente'}
+      className="w-9 h-9 grid place-items-center border border-border hover:border-foreground transition-colors"
+    >
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-3.5 h-3.5" aria-hidden>
+        <path d={dir === 'prev' ? 'M10 2 4 8l6 6' : 'm6 2 6 6-6 6'} />
+      </svg>
+    </button>
   );
 }
