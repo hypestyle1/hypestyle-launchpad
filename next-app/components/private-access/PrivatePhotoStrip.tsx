@@ -11,7 +11,7 @@ import './private-access.css';
 export default function PrivatePhotoStrip() {
   const images = PRIVATE_BANNER_IMAGES;
   return (
-    <section aria-label="Spring Summer 27 · fotos" className="pt-5 md:pt-6 overflow-hidden">
+    <section aria-label="Spring Summer 27 · fotos" className="pt-5 md:pt-8 overflow-hidden">
       <div className="pa-strip">
         <div className="pa-strip-track">
           {[...images, ...images].map((img, i) => (

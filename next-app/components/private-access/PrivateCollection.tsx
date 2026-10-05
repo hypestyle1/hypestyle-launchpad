@@ -68,17 +68,20 @@ export default function PrivateCollection({ products, collectionName, collection
       <AnnouncementBar />
       <Navbar />
       <main className="pt-[var(--offset)] bg-white">
+        {/* ── Fotos de la colección: lo primero que se ve ───────── */}
+        <PrivatePhotoStrip />
+
         {/* ── Cabecera ─────────────────────────────────────────────── */}
-        <div className="max-w-[1400px] mx-auto px-4 pt-5 md:pt-8">
+        <div className="max-w-[1400px] mx-auto px-4 pt-5 md:pt-6">
           <section className="pa-glass-charcoal relative overflow-hidden rounded-[22px] md:rounded-[28px] text-white">
             <div className="pa-glow-dark" aria-hidden />
             <div className="pa-grain" aria-hidden />
 
             <div className="relative px-6 pt-8 pb-7 md:px-12 md:pt-12 md:pb-10 flex flex-col md:flex-row md:items-end gap-8 md:gap-12">
               <div className="md:flex-1 text-center md:text-left">
-                <div className="flex items-center justify-center md:justify-start gap-2.5 mb-5">
-                  <span className="pa-dot pa-dot-green" aria-hidden />
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/60">Close Friends · Private Access</span>
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
+                  <span className="pa-dot pa-dot-green scale-75" aria-hidden />
+                  <span className="text-[9px] font-medium uppercase tracking-[0.22em] text-white/35">Close Friends · Private Access</span>
                 </div>
                 <h1 className="font-bold uppercase leading-[0.9] tracking-[-0.04em] whitespace-nowrap" style={{ fontSize: 'clamp(28px, 7.6vw, 76px)' }}>
                   {collectionName}
@@ -110,9 +113,6 @@ export default function PrivateCollection({ products, collectionName, collection
             </div>
           </section>
         </div>
-
-        {/* ── Fotos de la colección ─────────────────────────────── */}
-        <PrivatePhotoStrip />
 
         {/* ── Colección ────────────────────────────────────────────── */}
         {/* Filtros por tipo de prenda: parte del bloque de Private Access. */}
