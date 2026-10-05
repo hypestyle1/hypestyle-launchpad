@@ -164,7 +164,8 @@ export function SelectorColor({ p }: { p: FichaProps }) {
       <div className="flex gap-2 flex-wrap">
         {product.colors.map(c => (
           <button key={c.label} title={c.label}
-            onClick={() => { if (c.slug && c.slug !== product.slug) router.push(`/producto/${c.slug}/`); }}
+            // En la preventa el otro color es otra ficha privada, no la pública.
+            onClick={() => { if (c.slug && c.slug !== product.slug) router.push(p.privateAccess ? `/private-access/${c.slug}` : `/producto/${c.slug}/`); }}
             className={`relative w-[56px] h-[72px] overflow-hidden bg-bg-alt border-b-2 transition-colors ${c.slug === product.slug || p.selectedColor === c.label ? 'border-foreground' : 'border-transparent hover:border-foreground/40'}`}>
             {c.image && <Image src={imgUrl(c.image)} alt={c.label} fill sizes="56px" className="object-cover" />}
           </button>
