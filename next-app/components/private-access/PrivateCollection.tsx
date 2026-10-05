@@ -6,6 +6,7 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import PrivatePhotoStrip from './PrivatePhotoStrip';
 import { useReveal } from '@/hooks/useReveal';
 import type { PrivateProduct } from '@/lib/private-access/normalize';
 import { checkPrivateStock, onPrivateAddedToCart, toRetailCardProps } from '@/lib/private-access/retail';
@@ -109,6 +110,9 @@ export default function PrivateCollection({ products, collectionName, collection
             </div>
           </section>
         </div>
+
+        {/* ── Fotos de la colección ─────────────────────────────── */}
+        <PrivatePhotoStrip />
 
         {/* ── Colección ────────────────────────────────────────────── */}
         {/* Filtros por tipo de prenda: parte del bloque de Private Access. */}

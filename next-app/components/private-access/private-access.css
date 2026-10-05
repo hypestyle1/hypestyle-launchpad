@@ -246,3 +246,24 @@
     animation: none !important;
   }
 }
+
+/* Tira de fotos (PrivatePhotoStrip) */
+.pa-strip {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+}
+.pa-strip-track {
+  display: flex;
+  gap: 8px;
+  width: max-content;
+  animation: pa-strip 90s linear infinite;
+}
+.pa-strip:hover .pa-strip-track { animation-play-state: paused; }
+@keyframes pa-strip {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-50% - 4px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pa-strip { overflow-x: auto; scrollbar-width: none; }
+  .pa-strip-track { animation: none; }
+}
