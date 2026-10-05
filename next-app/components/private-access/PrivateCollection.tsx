@@ -6,6 +6,7 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import PrivatePhotoStrip from './PrivatePhotoStrip';
 import { useReveal } from '@/hooks/useReveal';
 import type { PrivateProduct } from '@/lib/private-access/normalize';
 import { checkPrivateStock, onPrivateAddedToCart, toRetailCardProps } from '@/lib/private-access/retail';
@@ -67,40 +68,36 @@ export default function PrivateCollection({ products, collectionName, collection
       <AnnouncementBar />
       <Navbar />
       <main className="pt-[var(--offset)] bg-white">
-        {/* ── Cabecera ─────────────────────────────────────────────── */}
-        <div className="max-w-[1400px] mx-auto px-4 pt-5 md:pt-8">
-          <section className="pa-glass-charcoal relative overflow-hidden rounded-[22px] md:rounded-[28px] text-white">
-            <div className="pa-glow-dark" aria-hidden />
+        {/* ── Fotos de la colección: lo primero que se ve ───────── */}
+        <PrivatePhotoStrip />
+
+        {/* ── Barra de precio ──────────────────────────────────────── */}
+        {/* Las fotos son las protagonistas: la barra solo dice qué colección es,
+            el descuento y cuánto falta para que termine el precio. */}
+        <div className="max-w-[1400px] mx-auto px-4 pt-4 md:pt-5">
+          <section className="pa-glass-charcoal relative overflow-hidden rounded-[16px] md:rounded-[18px] text-white">
             <div className="pa-grain" aria-hidden />
 
-            <div className="relative px-6 pt-8 pb-7 md:px-12 md:pt-12 md:pb-10 flex flex-col md:flex-row md:items-end gap-8 md:gap-12">
-              <div className="md:flex-1 text-center md:text-left">
-                <div className="flex items-center justify-center md:justify-start gap-2.5 mb-5">
-                  <span className="pa-dot pa-dot-green" aria-hidden />
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/60">Close Friends · Private Access</span>
-                </div>
-                <h1 className="font-bold uppercase leading-[0.9] tracking-[-0.04em] whitespace-nowrap" style={{ fontSize: 'clamp(28px, 7.6vw, 76px)' }}>
-                  {collectionName}
+            <div className="relative px-5 py-3.5 md:px-7 md:py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-8">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-3 gap-y-1.5">
+                <h1 className="text-[13px] md:text-[14px] font-bold uppercase tracking-[0.08em]">
+                  {collectionName} <span className="text-white/45 font-medium">· {collectionSubtitle}</span>
                 </h1>
-                <p className="mt-2 text-[12px] md:text-[13px] font-medium uppercase tracking-[0.22em] text-white/45">{collectionSubtitle} · Private Preview</p>
-                <p className="mt-5 text-[14px] md:text-[16px] leading-relaxed text-white/65 max-w-[460px] mx-auto md:mx-0">
-                  Estás adentro. Acceso anticipado a la colección antes del lanzamiento público del {publicOpenLabel}, con precio exclusivo para Mejores Amigos.
-                </p>
-                <div className="mt-5 flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-                  <span className="pa-pill-green pa-pill-green--dark text-[13px]">{discountPct}% OFF</span>
-                  <span className="text-[13px] text-white/60">hasta el {saleEndsLabel}</span>
-                </div>
+                <span className="flex items-center gap-2 text-[12px] text-white/60">
+                  <span className="pa-pill-green pa-pill-green--dark text-[12px]">{discountPct}% OFF</span>
+                  hasta el {saleEndsLabel}
+                </span>
               </div>
 
               {/* Cuenta regresiva del precio Mejores Amigos */}
               {left && (
-                <div className="md:w-auto flex flex-col items-center md:items-end gap-2.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-white/40">El precio termina en</span>
-                  <div className="flex items-stretch gap-1.5" suppressHydrationWarning>
-                    {[{ v: left.d, u: 'días' }, { v: left.h, u: 'hs' }, { v: left.m, u: 'min' }].map(x => (
-                      <div key={x.u} className="pa-chip-glass flex flex-col items-center justify-center w-[64px] md:w-[72px] py-2.5 rounded-[12px]">
-                        <span className="text-[24px] md:text-[28px] font-bold leading-none tabular-nums">{pad(x.v)}</span>
-                        <span className="mt-1 text-[9px] uppercase tracking-[0.18em] text-white/45">{x.u}</span>
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-[9px] md:text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Termina en</span>
+                  <div className="flex items-stretch gap-1" suppressHydrationWarning>
+                    {[{ v: left.d, u: 'd' }, { v: left.h, u: 'h' }, { v: left.m, u: 'm' }].map(x => (
+                      <div key={x.u} className="pa-chip-glass flex items-baseline gap-0.5 px-2.5 py-1.5 rounded-[8px]">
+                        <span className="text-[16px] md:text-[18px] font-bold leading-none tabular-nums">{pad(x.v)}</span>
+                        <span className="text-[10px] text-white/45">{x.u}</span>
                       </div>
                     ))}
                   </div>
