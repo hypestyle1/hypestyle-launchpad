@@ -56,7 +56,7 @@ export const HOW_IT_WORKS_SECTIONS = [
     items: [
       'Revisamos cada solicitud a mano. Buscamos locales y proyectos que cuiden la marca.',
       'Te avisamos por mail cuando la cuenta queda aprobada; desde ese momento entrás con tu usuario y contraseña.',
-      'Si tu ciudad ya tiene un local activo con Hype, te lo decimos antes de aprobar.',
+      'Si tu ciudad tiene un local con exclusividad, mientras la mantenga no podemos aprobar cuentas nuevas ahí. Te lo decimos antes de aprobar.',
     ],
   },
   {
@@ -110,11 +110,16 @@ export const HOW_IT_WORKS_SECTIONS = [
   {
     id: 'exclusividad',
     title: 'Exclusividad por ciudad',
+    // Política del 05/10/2026 (lib/mayorista-exclusividad.ts). Es la única
+    // sección de textos fijos que lleva un monto: Valentín pidió que las
+    // condiciones queden claras. El mínimo de pedido sigue sin monto acá.
     items: [
-      'Sujeta a volumen y recurrencia: se gana pidiendo seguido, no con un pedido grande.',
-      'Se sostiene pidiendo en cada drop. Si dejás de pedir, se libera.',
-      'Vale para tu ciudad y frena altas nuevas ahí; las cuentas que ya existen siguen comprando.',
-      'Consultá las condiciones por WhatsApp.',
+      'Se gana con $3.000.000 en pedidos pagados dentro de 120 días.',
+      'Se mantiene con al menos un pedido pagado por mes y $3.000.000 en compras por cuatrimestre.',
+      'Si alguna de las dos no se cumple, la exclusividad se libera y la ciudad vuelve a abrirse.',
+      'Vale para tu ciudad, no para la provincia.',
+      'Mientras la tengas, no damos de alta otros locales en tu ciudad y las cuentas mayoristas que ya existían ahí no pueden hacer pedidos.',
+      'La confirmamos por mail cuando la ganás.',
     ],
   },
   {

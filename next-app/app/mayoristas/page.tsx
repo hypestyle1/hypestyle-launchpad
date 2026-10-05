@@ -1,5 +1,6 @@
 import MayoristaHeader from '@/components/mayorista/MayoristaHeader';
 import MayoristaCatalog from '@/components/mayorista/MayoristaCatalog';
+import MayoristaExclusividadBanner from '@/components/mayorista/MayoristaExclusividadBanner';
 import { fetchMayoristaProducts } from '@/lib/mayorista-products';
 import { loadCampaignsForPortal } from '@/lib/mayorista-campaigns-portal';
 import { decorateCatalog, campaignBanner } from '@/lib/mayorista-campaign-view';
@@ -18,6 +19,7 @@ export default async function MayoristasPage({ searchParams }: { searchParams?: 
   return (
     <>
       <MayoristaHeader />
+      <MayoristaExclusividadBanner />
       <MayoristaCatalog products={decorated} banner={banner} preview={preview} />
     </>
   );

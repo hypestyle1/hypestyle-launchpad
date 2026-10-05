@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { mismaCiudad, type Exclusividad, type BloqueoExclusividad } from '@/lib/mayorista-exclusividad';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -19,6 +20,8 @@ type Mayorista = {
   pendingCount: number; pendingTotal: number;
   lastOrderAt: string | null; lastLogin: string | null; loginCount: number;
   credit?: number;
+  exclusividad?: Exclusividad | null;
+  bloqueoExclusividad?: BloqueoExclusividad | null;
 };
 
 type HealthCheck = { ok: boolean; label: string; detail: string };
@@ -126,6 +129,7 @@ export default function MayoristasAdminPage() {
   const [loadingList, setLoadingList] = useState(false);
   const [togglingId, setTogglingId]   = useState<number | null>(null);
   const [creditingId, setCreditingId] = useState<number | null>(null);
+  const [exclId, setExclId] = useState<number | null>(null);
   const [minInputs, setMinInputs]     = useState<Record<number, string>>({});
   const [savingMinId, setSavingMinId] = useState<number | null>(null);
   const [resettingId, setResettingId] = useState<number | null>(null);
@@ -320,6 +324,60 @@ Monto a favor en pesos (negativo para corregir):`);
     }
   }
 
+  // Exclusividad por ciudad (lib/mayorista-exclusividad.ts): se administra a
+  // mano. Dar/quitar en la cuenta titular; bloquear/desbloquear en las cuentas
+  // de esa ciudad que no pueden pedir mientras dure.
+  async function patchExclusividad(m: Mayorista, body: Record<string, unknown>, apply: Partial<Mayorista>) {
+    setExclId(m.id);
+    try {
+      const res = await fetch(`/api/admin/mayoristas/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(data.message || 'No se pudo guardar'); return; }
+      setMayoristas(prev => prev.map(x => x.id === m.id ? { ...x, ...apply } : x));
+    } finally {
+      setExclId(null);
+    }
+  }
+
+  function editarExclusividad(m: Mayorista) {
+    const label = m.company || m.name || m.email;
+    if (m.exclusividad) {
+      if (!confirm(`Quitar la exclusividad de ${label} en ${m.exclusividad.ciudad}?`)) return;
+      patchExclusividad(m, { exclusividad: null }, { exclusividad: null });
+      return;
+    }
+    const ciudad = prompt(`Exclusividad para ${label}
+
+Ciudad (ej. Córdoba Capital):`, m.city || '');
+    if (!ciudad?.trim()) return;
+    const desde = prompt('Desde (AAAA-MM-DD, la fecha del pedido con el que la ganó):', new Date().toISOString().slice(0, 10)) || '';
+    const pedido = prompt('Pedido con el que la ganó (opcional):', '') || '';
+    const excl = { ciudad: ciudad.trim(), desde: desde.trim() || new Date().toISOString().slice(0, 10), ...(pedido.trim() ? { pedido: pedido.trim() } : {}) };
+    patchExclusividad(m, { exclusividad: excl }, { exclusividad: excl });
+  }
+
+  function editarBloqueo(m: Mayorista) {
+    const label = m.company || m.name || m.email;
+    if (m.bloqueoExclusividad) {
+      if (!confirm(`Desbloquear a ${label}? Vuelve a poder hacer pedidos.`)) return;
+      patchExclusividad(m, { bloqueoExclusividad: null }, { bloqueoExclusividad: null });
+      return;
+    }
+    const titular = mayoristas.find(x => x.exclusividad && mismaCiudad(x.exclusividad.ciudad, m.city));
+    const ciudad = prompt(`Bloquear pedidos de ${label} por exclusividad
+
+Ciudad:`, titular?.exclusividad?.ciudad || m.city || '');
+    if (!ciudad?.trim()) return;
+    const quien = prompt('Local que tiene la exclusividad:', titular ? (titular.company || titular.name) : '');
+    if (!quien?.trim()) return;
+    const bloqueo = { ciudad: ciudad.trim(), titular: quien.trim(), desde: new Date().toISOString().slice(0, 10) };
+    patchExclusividad(m, { bloqueoExclusividad: bloqueo }, { bloqueoExclusividad: bloqueo });
+  }
+
   async function toggleActive(m: Mayorista) {
     setTogglingId(m.id);
     try {
@@ -454,6 +512,14 @@ Monto a favor en pesos (negativo para corregir):`);
                     <p className="text-[11px] text-muted-foreground/70 mt-0.5">
                       {[m.cuit ? `CUIT ${m.cuit}` : '', m.instagram ? `@${m.instagram}` : '', m.modalidad, m.localFisico ? 'con local' : 'sin local'].filter(Boolean).join(' · ')}
                     </p>
+                    {(() => {
+                      const t = mayoristas.find(x => x.id !== m.id && x.exclusividad && mismaCiudad(x.exclusividad.ciudad, m.city));
+                      return t ? (
+                        <p className="text-[11px] font-semibold text-red-700 mt-1">
+                          {t.exclusividad!.ciudad} tiene exclusividad de {t.company || t.name} desde {t.exclusividad!.desde}. No aprobar mientras la mantenga.
+                        </p>
+                      ) : null;
+                    })()}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
                     <a href={`mailto:${m.email}`} className="hover:text-foreground block">{m.email}</a>
@@ -650,6 +716,16 @@ Monto a favor en pesos (negativo para corregir):`);
                         <p className="font-medium text-foreground">{m.company || m.name}</p>
                         {m.company && <p className="text-[11px] text-muted-foreground/70">{m.name}</p>}
                         <p className="text-[10px] text-muted-foreground/70">desde {fmtDate(m.createdAt)}</p>
+                        {m.exclusividad && (
+                          <span title={`Desde ${m.exclusividad.desde}${m.exclusividad.pedido ? ` · pedido #${m.exclusividad.pedido}` : ''}`} className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800">
+                            Exclusividad · {m.exclusividad.ciudad}
+                          </span>
+                        )}
+                        {m.bloqueoExclusividad && (
+                          <span title={`${m.bloqueoExclusividad.ciudad} es exclusiva de ${m.bloqueoExclusividad.titular} · desde ${m.bloqueoExclusividad.desde}`} className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                            Bloqueada por exclusividad
+                          </span>
+                        )}
                       </td>
                       <td data-label="Contacto" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden">
                         <a href={`mailto:${m.email}`} className="block text-[12px] text-muted-foreground hover:text-foreground truncate max-w-[180px]">{m.email}</a>
@@ -711,6 +787,22 @@ Monto a favor en pesos (negativo para corregir):`);
                       </td>
                       <td className="px-1 py-1.5 lg:px-4 lg:py-3 lg:text-right block lg:table-cell">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => editarExclusividad(m)}
+                            disabled={exclId === m.id || !!m.bloqueoExclusividad}
+                            title="Exclusividad por ciudad: $3.000.000 pagados en 120 días; se mantiene con un pedido por mes y $3.000.000 por cuatrimestre"
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-border-mid text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
+                          >
+                            {exclId === m.id ? '...' : m.exclusividad ? 'Quitar excl.' : 'Exclusividad'}
+                          </button>
+                          <button
+                            onClick={() => editarBloqueo(m)}
+                            disabled={exclId === m.id || !!m.exclusividad}
+                            title="Bloquea los pedidos de esta cuenta porque otro local tiene la exclusividad de su ciudad"
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-border-mid text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
+                          >
+                            {exclId === m.id ? '...' : m.bloqueoExclusividad ? 'Desbloquear' : 'Bloquear'}
+                          </button>
                           <button
                             onClick={() => cargarCredito(m)}
                             disabled={creditingId === m.id}
