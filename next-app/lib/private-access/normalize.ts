@@ -54,8 +54,31 @@ export function withPlainPrices<T>(node: T): T {
   return out;
 }
 
+/**
+ * El mu-plugin devuelve el nombre tal como lo guarda WordPress, con las
+ * entidades HTML escapadas ("STYLE&amp;CULTURE"); WPGraphQL, en cambio, lo
+ * devuelve ya decodificado. Se decodifica para que la card muestre "&".
+ */
+export function decodeEntities(s: string): string {
+  return String(s ?? '')
+    .replace(/&#0*38;|&#x0*26;/gi, '&amp;')
+    .replace(/&#8211;|&ndash;/g, '–')
+    .replace(/&#8212;|&mdash;/g, '—')
+    .replace(/&#8217;|&rsquo;/g, '’')
+    .replace(/&#8220;|&ldquo;/g, '“')
+    .replace(/&#8221;|&rdquo;/g, '”')
+    .replace(/&#8242;/g, '′')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0*39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    // &amp; va última: si no, un `&amp;lt;` terminaría convertido en `<`.
+    .replace(/&amp;/g, '&');
+}
+
 export function fromPrivateNode(node: any, labels: { saleEndsLabel: string; publicOpenLabel: string }): PrivateProduct {
-  const base = fromWPNode(withPlainPrices(node));
+  const base = fromWPNode(withPlainPrices({ ...node, name: decodeEntities(node?.name) }));
   return {
     ...base,
     href: `${PRIVATE_ACCESS_PATH}/${base.slug}`,
