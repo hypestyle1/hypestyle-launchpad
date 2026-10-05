@@ -243,6 +243,32 @@ const AEROBLUE_COLORWAYS = [
   { label: 'Grey',  value: '#a9a9a9', slug: 'aeroblue-tees-grey',  image: `${WP}/2026/04/mesa-de-trabajo-2-copia-3-2-641053e5dc7fb10bee17683316433329-1024-1024.png` },
 ];
 
+// ── SS27 Part 01. Mientras la colección es privada, la ficha de /private-access
+// usa estas imágenes tal cual (resolveColorwayImages solo corre en la ficha
+// pública, y ahí WPGraphQL todavía no devuelve los productos privados).
+const SS27_ATHLETIC_TEE_COLORWAYS = [
+  { label: 'White',              value: '#f5f5f5', slug: 'athletic-dept-white-tee',            image: `${WP}/2026/10/athletic-dept-white-tee-mockup-v2.png` },
+  { label: 'White · Grey print', value: '#d9d9d9', slug: 'athletic-dept-white-grey-print-tee', image: `${WP}/2026/10/athletic-dept-white-grey-print-tee-mockup-v2.png` },
+  { label: 'Navy',               value: '#1a2744', slug: 'athletic-dept-navy-tee',             image: `${WP}/2026/10/athletic-dept-navy-tee-mockup-v2.png` },
+];
+const SS27_WORN_VARSITY_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'worn-varsity-club-white-tee', image: `${WP}/2026/10/worn-varsity-club-white-tee-mockup-v2.png` },
+  { label: 'Navy',  value: '#1a2744', slug: 'worn-varsity-club-navy-tee',  image: `${WP}/2026/10/worn-varsity-club-navy-tee-mockup-v2.png` },
+];
+const SS27_H_HYPE_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'h-hype-white-tee', image: `${WP}/2026/10/h-hype-white-tee-mockup-v2.png` },
+  { label: 'Navy',  value: '#1a2744', slug: 'h-hype-navy-tee',  image: `${WP}/2026/10/h-hype-navy-tee-mockup-v2.png` },
+];
+const SS27_STYLE_CULTURE_COLORWAYS = [
+  { label: 'White', value: '#f5f5f5', slug: 'style-culture-university-white-tee', image: `${WP}/2026/10/style-culture-university-white-tee-mockup-v2.png` },
+  { label: 'Black', value: '#1a1a1a', slug: 'style-culture-university-black-tee', image: `${WP}/2026/10/style-culture-university-black-tee-mockup-v2.png` },
+  { label: 'Navy',  value: '#1a2744', slug: 'style-culture-university-navy-tee',  image: `${WP}/2026/10/style-culture-university-navy-tee-mockup-v2.png` },
+];
+const SS27_ATHLETIC_LS_COLORWAYS = [
+  { label: 'Pink', value: '#e88ea0', slug: 'athletic-dept-pink-longsleeve', image: `${WP}/2026/10/athletic-dept-pink-longsleeve-mockup-v2.png` },
+  { label: 'Blue', value: '#3a6ea8', slug: 'athletic-dept-blue-longsleeve', image: `${WP}/2026/10/athletic-dept-blue-longsleeve-mockup-v2.png` },
+];
+
 /** Colorways hermanos de un slug (para los puntitos de color en la card). */
 export function getColorwaysForSlug(slug: string): { label: string; value: string; slug: string }[] | null {
   return COLORWAYS[slug] ?? null;
@@ -305,6 +331,10 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   ...Object.fromEntries(AEROPINK_COLORWAYS.map(c => [c.slug, AEROPINK_COLORWAYS])),
   ...Object.fromEntries(AEROGREY_COLORWAYS.map(c => [c.slug, AEROGREY_COLORWAYS])),
   ...Object.fromEntries(AEROBLUE_COLORWAYS.map(c => [c.slug, AEROBLUE_COLORWAYS])),
+  ...Object.fromEntries([
+    SS27_ATHLETIC_TEE_COLORWAYS, SS27_WORN_VARSITY_COLORWAYS, SS27_H_HYPE_COLORWAYS,
+    SS27_STYLE_CULTURE_COLORWAYS, SS27_ATHLETIC_LS_COLORWAYS,
+  ].flatMap(g => g.map(c => [c.slug, g]))),
 };
 
 const FIT_KEYWORDS: [string, string][] = [

@@ -183,3 +183,21 @@ describe('nombres con entidades del mu-plugin', () => {
     expect(p.name).toBe('STYLE&CULTURE UNIVERSITY – BLACK TEE');
   });
 });
+
+describe('colorways SS27', () => {
+  it('cada producto del drop con más de un color ve a sus hermanos', async () => {
+    const { getColorwaysForSlug } = await import('@/lib/product-detail');
+    const grupos: Record<string, number> = {
+      'athletic-dept-white-tee': 3, 'athletic-dept-white-grey-print-tee': 3, 'athletic-dept-navy-tee': 3,
+      'worn-varsity-club-white-tee': 2, 'worn-varsity-club-navy-tee': 2,
+      'h-hype-white-tee': 2, 'h-hype-navy-tee': 2,
+      'style-culture-university-white-tee': 3, 'style-culture-university-black-tee': 3, 'style-culture-university-navy-tee': 3,
+      'athletic-dept-pink-longsleeve': 2, 'athletic-dept-blue-longsleeve': 2,
+    };
+    for (const [slug, n] of Object.entries(grupos)) {
+      const g = getColorwaysForSlug(slug);
+      expect(g?.length, slug).toBe(n);
+      expect(g?.some(c => c.slug === slug), slug).toBe(true);
+    }
+  });
+});
