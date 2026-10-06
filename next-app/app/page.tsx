@@ -18,9 +18,10 @@ import { fetchAllProducts } from '@/lib/products-server';
 import { fetchHomeReviews } from '@/lib/reviews/server';
 import { buildMetadata } from '@/lib/seo';
 import PrivateAccessBanner from '@/components/private-access/PrivateAccessBanner';
+import PrivateAccessHomePopup from '@/components/private-access/PrivateAccessHomePopup';
 import PrivatePreviewCarousel from '@/components/private-access/PrivatePreviewCarousel';
 import { PRIVATE_PREVIEW_IMAGES } from '@/lib/private-access/preview-images';
-import { fmtDayMonth, isPrivateAccessActive } from '@/lib/private-access/config';
+import { fmtDayMonth, fmtWeekdayDayMonth, isPrivateAccessActive } from '@/lib/private-access/config';
 import { getPrivateAccessConfig } from '@/lib/private-access/server';
 
 // Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra, HeroHannaDrop)
@@ -90,6 +91,13 @@ export default async function Home() {
               tiene que ver un Mejor Amigo que entra por su cuenta. Devuelve
               null fuera de la ventana de preventa. Dentro de la cortina para
               que suba junto con el resto del contenido sobre el hero pineado. */}
+          {/* Popup de la preventa (una vez por día, no a quien ya desbloqueó). */}
+          <PrivateAccessHomePopup
+            active={paActive}
+            collectionName={paConfig.collectionName}
+            discountPct={paConfig.discountPct}
+            publicOpenLabel={fmtWeekdayDayMonth(paConfig.publicOpenAt)}
+          />
           <PrivateAccessBanner
             active={paActive}
             collectionName={paConfig.collectionName}

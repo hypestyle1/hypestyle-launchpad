@@ -103,6 +103,14 @@ export function fmtDayMonth(iso: string): string {
   return `${String(ar.getUTCDate()).padStart(2, '0')}.${String(ar.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+/** `domingo 11.10` → para el popup del home. */
+export function fmtWeekdayDayMonth(iso: string): string {
+  const ar = new Date(new Date(iso).getTime() - 3 * 3600_000);
+  return `${WEEKDAYS[ar.getUTCDay()]} ${fmtDayMonth(iso)}`;
+}
+
 /** Slug de producto válido para /private-access/[slug]. */
 export const PRIVATE_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,149}$/;
 
