@@ -57,6 +57,8 @@ export const COLOR_LABEL: Record<string, string> = {
   ranglan_blanco: 'Blank remera oversize ranglan blanco',
   ranglan_azul_noche: 'Blank remera oversize ranglan azul noche',
   longsleeve_negro: 'Blank longsleeve negra',
+  waffle_blanco: 'Blank longsleeve waffle blanco',
+  waffle_gris_topo: 'Blank longsleeve waffle gris topo',
 };
 
 function wpHeaders(extra?: Record<string, string>): Record<string, string> {

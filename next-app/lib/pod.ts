@@ -31,6 +31,21 @@ export const POD_DESIGNS: PodDesign[] = [
   { productId: 2019, name: 'CHRIST REIGNS HOODIE',           blank: 'hoodie_negro' },
   { productId: 2271, name: 'Hoodie Black HStars',            blank: 'hoodie_negro' },
   { productId: 2351, name: 'SHOOT FOR THE STARS',            blank: 'hoodie_negro', retirado: true },
+  // Remeras oversize ranglan (incluye las SS27).
+  { productId: 815,  name: 'BABY COME BACK — White',         blank: 'ranglan_blanco' },
+  { productId: 3522, name: 'ATHLETIC DEPT — White',          blank: 'ranglan_blanco' },
+  { productId: 3535, name: 'ATHLETIC DEPT — White (grey print)', blank: 'ranglan_blanco' },
+  { productId: 3563, name: 'WORN VARSITY CLUB — White',      blank: 'ranglan_blanco' },
+  { productId: 3589, name: 'H HYPE — White',                 blank: 'ranglan_blanco' },
+  { productId: 3549, name: 'ATHLETIC DEPT — Navy',           blank: 'ranglan_azul_noche' },
+  { productId: 3577, name: 'WORN VARSITY CLUB — Navy',       blank: 'ranglan_azul_noche' },
+  { productId: 3603, name: 'H HYPE — Navy',                  blank: 'ranglan_azul_noche' },
+  // Longsleeves.
+  { productId: 713,  name: 'FIND JESUS — Longsleeve',        blank: 'longsleeve_negro' },
+  { productId: 3254, name: 'LETTERING — Longsleeve',         blank: 'longsleeve_negro' },
+  { productId: 3721, name: 'HYPE DEPT CROSS — Waffle',       blank: 'waffle_blanco' },
+  { productId: 3691, name: 'DEPARTMENT OF CULTURE — Waffle', blank: 'waffle_gris_topo' },
+  { productId: 3705, name: 'H.Y.P.E — Waffle',               blank: 'waffle_gris_topo' },
 ];
 
 export const POD_BY_PRODUCT_ID: Record<number, PodDesign> = Object.fromEntries(
@@ -44,6 +59,11 @@ export const BLANK_LABEL: Record<string, string> = {
   boxy_gris_topo:   'Blank remera boxy gris topo',
   boxy_crop_blanco: 'Blank remera boxy crop blanco',
   hoodie_negro:     'Blank hoodie negro',
+  ranglan_blanco:       'Blank remera oversize ranglan blanco',
+  ranglan_azul_noche:   'Blank remera oversize ranglan azul noche',
+  longsleeve_negro:     'Blank longsleeve negra',
+  waffle_blanco:        'Blank longsleeve waffle blanco',
+  waffle_gris_topo:     'Blank longsleeve waffle gris topo',
 };
 
 export const POD_SIZES = ['S', 'M', 'L', 'XL'] as const;
