@@ -19,6 +19,8 @@ const ls = {
 
 export type PaEvent =
   | 'private_access_banner_view'
+  | 'private_access_popup_view'
+  | 'private_access_popup_click'
   | 'private_access_open'
   | 'private_access_attempt'
   | 'private_access_granted'
