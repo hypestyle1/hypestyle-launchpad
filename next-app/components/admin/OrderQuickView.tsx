@@ -36,7 +36,7 @@ function waLink(phone: string, name: string, orderNum: string) {
   return `https://wa.me/${intl}?text=${msg}`;
 }
 
-// El talle ya va en su recuadro: se saca del nombre ("Regular Tee - Black - S").
+// El talle ya va en la línea de abajo: se saca del nombre ("Regular Tee - Black - S").
 function cleanName(it: Item) {
   const name = it.name.replace(/\s*[—-]\s*Talle\s*\S+/i, '');
   if (!it.size) return name;
@@ -119,10 +119,9 @@ export default function OrderQuickView({ orderId, adminKey, cache }: {
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-medium text-foreground line-clamp-2">{cleanName(it)}</div>
                 <div className="text-[11px] text-muted-foreground truncate">
-                  {[it.color, (it.dorsalNumber || it.dorsalName) && `Dorsal ${it.dorsalNumber ? `#${it.dorsalNumber}` : ''} ${it.dorsalName || ''}`.trim()].filter(Boolean).join(' · ')}
+                  {[it.color, it.size && `Talle ${it.size}`, (it.dorsalNumber || it.dorsalName) && `Dorsal ${it.dorsalNumber ? `#${it.dorsalNumber}` : ''} ${it.dorsalName || ''}`.trim()].filter(Boolean).join(' · ')}
                 </div>
               </div>
-              {it.size && <span className="flex-none text-[15px] font-bold text-foreground border-2 border-foreground px-2 leading-6 min-w-[32px] text-center">{it.size}</span>}
               <span className="flex-none text-[13px] text-muted-foreground w-7 text-right">×{it.quantity}</span>
               <span className="flex-none text-[13px] font-semibold text-foreground w-[72px] lg:w-24 text-right">{fmt(it.total)}</span>
             </div>
