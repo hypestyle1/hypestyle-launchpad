@@ -6,14 +6,16 @@ import { collectFromWoo } from '@/lib/close-friends/sync';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
+const CRON_SECRET = (process.env.CRON_SECRET || '').trim();
+
 /**
- * POST: lee los pedidos pagados de Woo desde el último sync (con solapamiento)
+ * Lee los pedidos pagados de Woo desde el último sync (con solapamiento)
  * y suma a la lista los usuarios de IG que no estaban. Devuelve el delta.
+ *
+ *   POST (panel, botón de sync)       authorizeAdmin(req, 'creadores')
+ *   GET  (Vercel Cron diario)         CRON_SECRET
  */
-export async function POST(req: NextRequest) {
-  if (!(await authorizeAdmin(req, 'creadores'))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+async function run() {
   const current = await loadStore();
   if (current.ok === false) {
     if (current.notDeployed) return NextResponse.json({ error: 'Backend no desplegado (PHP 1.31.0)' }, { status: 501 });
@@ -44,4 +46,22 @@ export async function POST(req: NextRequest) {
     truncated: collected.truncated,
     nuevos: nuevos.map((e) => ({ handle: e.handle, name: e.name, orderNumber: e.orderNumber, date: e.date, status: e.status })),
   });
+}
+
+export async function POST(req: NextRequest) {
+  if (!(await authorizeAdmin(req, 'creadores'))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+  return run();
+}
+
+/** Corrida diaria (Vercel Cron). Acepta ?secret=, x-cron-secret o el Bearer de Vercel. */
+export async function GET(req: NextRequest) {
+  const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const provided = req.nextUrl.searchParams.get('secret') || req.headers.get('x-cron-secret') || bearer;
+  // Fail closed: sin CRON_SECRET cargado el endpoint no se abre solo.
+  if (!CRON_SECRET || provided !== CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return run();
 }

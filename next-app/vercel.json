@@ -34,6 +34,10 @@
       "schedule": "50 7 * * *"
     },
     {
+      "path": "/api/admin/close-friends/sync",
+      "schedule": "30 10 * * *"
+    },
+    {
       "path": "/api/admin/private-access/open",
       "schedule": "*/10 * * * *"
     }
