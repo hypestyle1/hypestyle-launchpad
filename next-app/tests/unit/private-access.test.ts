@@ -201,3 +201,27 @@ describe('colorways SS27', () => {
     }
   });
 });
+
+describe('Próximamente (tag proximamente)', () => {
+  const node = (tags: string[]) => ({
+    name: 'HYPE CREATIVE GOODS – PINK RAGLAN LONGSLEEVE', slug: 'hype-creative-goods-pink-raglan-longsleeve',
+    price: '48000.00', regularPrice: '60000.00', salePrice: '48000.00', image: { sourceUrl: '' },
+    productTags: { nodes: tags.map(slug => ({ slug, name: slug })) },
+  });
+
+  it('marca comingSoon y la card queda solo vidriera', async () => {
+    const { fromPrivateNode } = await import('@/lib/private-access/normalize');
+    const { toRetailCardProps } = await import('@/lib/private-access/retail');
+    const p = fromPrivateNode(node(['ss27-part-01', 'proximamente']), { saleEndsLabel: '10.10', publicOpenLabel: '11.10' });
+    expect(p.comingSoon).toBe(true);
+    expect(toRetailCardProps(p)).toMatchObject({ badge: 'Próximamente', disableLink: true, price: 60000, originalPrice: undefined });
+  });
+
+  it('sin el tag se vende como siempre', async () => {
+    const { fromPrivateNode } = await import('@/lib/private-access/normalize');
+    const { toRetailCardProps } = await import('@/lib/private-access/retail');
+    const p = fromPrivateNode(node(['ss27-part-01']), { saleEndsLabel: '10.10', publicOpenLabel: '11.10' });
+    expect(p.comingSoon).toBe(false);
+    expect(toRetailCardProps(p)).not.toHaveProperty('disableLink');
+  });
+});

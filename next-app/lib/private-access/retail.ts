@@ -24,6 +24,9 @@ export function toRetailCardProps(p: PrivateProduct) {
     stock: p.stock,
     href: `${PRIVATE_ACCESS_PATH}/${p.slug}`,
     customizable: p.customizable,
+    // Próximamente: solo vidriera (sin link, sin talles ni carrito), sale con la apertura.
+    // Precio: el regular con el que sale al público, sin el tachado de la preventa.
+    ...(p.comingSoon ? { badge: 'Próximamente', disableLink: true, price: p.originalPrice ?? p.price, originalPrice: undefined } : {}),
   };
 }
 
