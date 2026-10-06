@@ -6,6 +6,7 @@ import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '
 import { priceLines } from '@/lib/mayorista-pricing';
 import { applyCampaign, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
+import { mayoristaDropTag } from '@/lib/mayorista-drop-server';
 import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
 import { pickRecentOrder, recentOrdersPath, agoLabel } from '@/lib/mayorista-recent-order';
@@ -242,7 +243,9 @@ export async function POST(req: NextRequest) {
       price: Number(i?.price),
     }));
 
-    const resolvedBySlug = await resolveProducts(items.map(i => i.slug));
+    // La colección nueva (privada hasta la apertura) se puede pedir: ver lib/mayorista-drop.ts.
+    const dropTag = await mayoristaDropTag().catch(() => null);
+    const resolvedBySlug = await resolveProducts(items.map(i => i.slug), dropTag);
 
     // Lo que el catálogo ya no ofrece (producto despublicado o borrado, talle
     // sin stock) no puede entrar en la orden aunque siga en el carrito o en un

@@ -8,7 +8,7 @@
  *  línea secundaria del hero de
  *  marca y, si la campaña no trae `secondary`, también en el hero de
  *  campaña. Vacío = no se muestra. */
-export const NEXT_DROP_LABEL = '04.10';
+export const NEXT_DROP_LABEL = '';
 
 /** Línea secundaria del hero: "Próximo drop 04.10". */
 export const NEXT_DROP_TEXT = NEXT_DROP_LABEL ? `Próximo drop ${NEXT_DROP_LABEL}` : '';

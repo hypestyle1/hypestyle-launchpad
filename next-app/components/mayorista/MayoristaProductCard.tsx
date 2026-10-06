@@ -64,9 +64,14 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
           <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-foreground text-background">
             Sin stock
           </span>
-        ) : product.promo && (
+        ) : product.promo ? (
           <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-sale text-sale-foreground">
             {product.promo.badge} · −{Math.round(product.promo.discount * 100)}%
+          </span>
+        ) : product.drop && (
+          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-bg-dark text-primary-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-[hsl(142,70%,55%)]" aria-hidden />
+            Nuevo drop
           </span>
         )}
 

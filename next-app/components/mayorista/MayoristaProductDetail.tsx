@@ -45,7 +45,15 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
         </div>
 
         <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-text-light">{product.category}</p>
+          <div className="flex items-center gap-2.5">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-text-light">{product.category}</p>
+            {product.drop && (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-bg-dark text-primary-foreground">
+                <span className="w-1.5 h-1.5 rounded-full bg-[hsl(142,70%,55%)]" aria-hidden />
+                Nuevo drop
+              </span>
+            )}
+          </div>
           <h1 className="text-2xl font-bold tracking-tight mt-1">{product.name}</h1>
           {product.shortDescription && (
             <p className="text-[13px] text-text-light mt-1">{product.shortDescription}</p>

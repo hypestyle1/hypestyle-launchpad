@@ -3,6 +3,7 @@ import MayoristaCartPage from '@/components/mayorista/MayoristaCartPage';
 import { fetchMayoristaProducts } from '@/lib/mayorista-products';
 import { loadCampaignsForPortal } from '@/lib/mayorista-campaigns-portal';
 import { decorateCatalog, campaignBanner } from '@/lib/mayorista-campaign-view';
+import { fetchMayoristaDrop } from '@/lib/mayorista-drop-server';
 
 // El carrito recibe el catálogo decorado con la campaña vigente para
 // "Completá el mínimo" (sugerencias) y el nombre de la campaña para la línea
@@ -10,7 +11,8 @@ import { decorateCatalog, campaignBanner } from '@/lib/mayorista-campaign-view';
 export const dynamic = 'force-dynamic';
 
 export default async function MayoristaCarritoPage({ searchParams }: { searchParams?: { preview?: string } }) {
-  const [products, campaigns] = await Promise.all([fetchMayoristaProducts().catch(() => []), loadCampaignsForPortal(searchParams?.preview)]);
+  const drop = await fetchMayoristaDrop().catch(() => null);
+  const [products, campaigns] = await Promise.all([fetchMayoristaProducts(drop).catch(() => []), loadCampaignsForPortal(searchParams?.preview)]);
   const catalog = decorateCatalog(products, campaigns);
   const banner = campaignBanner(products, campaigns);
 

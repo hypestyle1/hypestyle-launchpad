@@ -4,6 +4,8 @@
 import { fetchWithRetry } from './fetch-retry';
 import { wholesalePrice } from './mayorista-pricing';
 import type { ProductPromo } from './mayorista-campaign-view';
+import type { MayoristaDrop } from './mayorista-drop-server';
+import { decodeEntities, withPlainPrices } from './private-access/normalize';
 
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
@@ -66,6 +68,9 @@ export interface MayoristaProduct {
   // Promo de la campaña mayorista vigente (lib/mayorista-campaign-view.ts).
   // Solo para mostrar: el precio que se cobra lo recalcula el servidor.
   promo?: ProductPromo;
+  // Producto del drop nuevo (colección de Private Access abierta antes para
+  // mayoristas, ver lib/mayorista-drop.ts). Va primero y con badge.
+  drop?: boolean;
 }
 
 /** Clave del stock de una combinación talle/color. */
@@ -259,18 +264,48 @@ export async function fetchMayoristaPriceIndex(): Promise<Map<number, { regularP
   return out;
 }
 
-export async function fetchMayoristaProducts(): Promise<MayoristaProduct[]> {
-  const products = (await fetchMayoristaNodes())
+/**
+ * Suma los nodos del drop (privados hasta la apertura, ver
+ * lib/mayorista-drop.ts) a los publicados, sin repetir: al abrir al público
+ * el mismo producto viene por las dos vías. Marca `drop` en los que se
+ * destacan: los privados siempre; los publicados solo una vez abierta la
+ * colección (antes de eso, un publicado con el tag es algo que ya estaba a
+ * la venta, como el pack de medias).
+ */
+export function buildMayoristaCatalog(publicNodes: any[], drop?: Pick<MayoristaDrop, 'nodes' | 'highlighted' | 'info'> | null): MayoristaProduct[] {
+  const seen = new Set(publicNodes.map((n: any) => Number(n.databaseId)).filter(Boolean));
+  const dropNodes = drop?.nodes ?? [];
+  // El mu-plugin devuelve precios crudos de Woo ("98000.00") y el nombre con
+  // entidades HTML; parsePrice espera el formato de WPGraphQL y leería 9.800.000.
+  const extra = dropNodes
+    .filter((n: any) => n?.slug && !seen.has(Number(n.databaseId)))
+    .map((n: any) => withPlainPrices({ ...n, name: decodeEntities(n.name) }));
+  const highlightIds = new Set(
+    drop?.highlighted
+      ? dropNodes.filter((n: any) => n.status === 'private' || !drop.info.beforePublic).map((n: any) => Number(n.databaseId))
+      : [],
+  );
+
+  const products = [...publicNodes, ...extra]
     .filter((n: any) => !isExcludedFromMayorista(n))
-    .map(normalizeMayoristaNode)
+    .map((n: any) => {
+      const p = normalizeMayoristaNode(n);
+      return highlightIds.has(p.productId) ? { ...p, drop: true } : p;
+    })
     .filter((p: MayoristaProduct) => p.regularPrice > 0 && !isFullyOut(p));
 
-  // Estable: entre productos con el mismo puntaje de stock, se mantiene el
-  // orden que ya traían (fecha de alta, ver la query).
+  // Drop primero; después, por disponibilidad. Estable: entre productos con el
+  // mismo puntaje se mantiene el orden que ya traían (fecha de alta, ver la
+  // query; el drop, en el orden del menú de Woo).
   return products
     .map((p, i) => ({ p, i }))
-    .sort((a, b) => stockScore(a.p) - stockScore(b.p) || a.i - b.i)
+    .sort((a, b) => Number(!!b.p.drop) - Number(!!a.p.drop) || stockScore(a.p) - stockScore(b.p) || a.i - b.i)
     .map(({ p }) => p);
+}
+
+/** Catálogo mayorista. `drop` (lib/mayorista-drop-server.ts) suma la colección nueva todavía privada. */
+export async function fetchMayoristaProducts(drop?: MayoristaDrop | null): Promise<MayoristaProduct[]> {
+  return buildMayoristaCatalog(await fetchMayoristaNodes(), drop);
 }
 
 /** Todos los nodos publicados de WPGraphQL, paginados y deduplicados. */
@@ -312,7 +347,7 @@ async function fetchMayoristaNodes(): Promise<any[]> {
   });
 }
 
-export async function fetchMayoristaProduct(slug: string): Promise<MayoristaProduct | null> {
-  const products = await fetchMayoristaProducts();
+export async function fetchMayoristaProduct(slug: string, drop?: MayoristaDrop | null): Promise<MayoristaProduct | null> {
+  const products = await fetchMayoristaProducts(drop);
   return products.find(p => p.slug === slug) ?? null;
 }
