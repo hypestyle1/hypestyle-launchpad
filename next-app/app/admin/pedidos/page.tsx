@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { Fragment, useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import PendienteEstampar from '@/components/admin/PendienteEstampar';
 import GiftCardsPanel from '@/components/admin/GiftCardsPanel';
 import { HoldToConfirm } from '@/components/ui/hold-to-confirm';
+import OrderQuickView, { type OrderDetail } from '@/components/admin/OrderQuickView';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -111,6 +112,9 @@ export default function PedidosPage() {
   const [cancelNotify, setCancelNotify]   = useState(true);
   const [cancelLoading, setCancelLoading] = useState(false);
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pedidos desplegados con la flecha + detalle ya cargado de cada uno.
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const detailCache = useRef(new Map<number, OrderDetail>());
 
   useEffect(() => {
     const stored = sessionStorage.getItem(WP_SECRET_KEY);
@@ -170,6 +174,14 @@ export default function PedidosPage() {
 
   function toggleSelect(id: number) {
     setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleExpanded(id: number) {
+    setExpanded(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -426,7 +438,8 @@ export default function PedidosPage() {
         ) : (
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             {/* Table header */}
-            <div className="hidden lg:grid grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-2.5 border-b border-border bg-muted/50">
+            <div className="hidden lg:grid grid-cols-[28px_32px_80px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-2.5 border-b border-border bg-muted/50">
+              <div />
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -444,13 +457,28 @@ export default function PedidosPage() {
             </div>
 
             {/* Rows */}
-            {visibleOrders.map((order, idx) => (
+            {visibleOrders.map((order, idx) => {
+              const isOpen = expanded.has(order.id);
+              return (
+              <Fragment key={order.id}>
               <div
-                key={order.id}
-                className={`grid grid-cols-[28px_1fr_auto] gap-x-3 gap-y-1.5 lg:gap-y-3 lg:grid-cols-[32px_80px_1fr_1fr_100px_120px_80px] px-4 py-3 items-center border-b border-border hover:bg-muted/50 transition-colors group ${
+                className={`grid grid-cols-[28px_1fr_auto] gap-x-3 gap-y-1.5 lg:gap-y-3 lg:grid-cols-[28px_32px_80px_1fr_1fr_100px_120px_80px] px-4 py-3 items-center border-b border-border hover:bg-muted/50 transition-colors group ${
                   selected.has(order.id) ? 'bg-blue-50 hover:bg-blue-50' : ''
-                } ${idx === visibleOrders.length - 1 ? 'border-b-0' : ''}`}
+                } ${isOpen ? 'bg-muted/30' : ''} ${idx === visibleOrders.length - 1 && !isOpen ? 'border-b-0' : ''}`}
               >
+                {/* Flecha: despliega el pedido sin entrar */}
+                <div className="flex items-center col-start-1 row-start-2 lg:col-start-auto lg:row-start-auto">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(order.id)}
+                    aria-expanded={isOpen}
+                    aria-label={isOpen ? `Cerrar pedido #${order.number}` : `Ver pedido #${order.number}`}
+                    className="w-7 h-7 -ml-1 flex items-center justify-center rounded border border-border hover:border-border-mid hover:bg-card text-muted-foreground hover:text-foreground"
+                  >
+                    <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+                  </button>
+                </div>
+
                 {/* Checkbox */}
                 <div className="flex items-center col-start-1 row-start-1 lg:col-start-auto lg:row-start-auto">
                   <input
@@ -567,7 +595,10 @@ export default function PedidosPage() {
                   )}
                 </div>
               </div>
-            ))}
+              {isOpen && <OrderQuickView orderId={order.id} adminKey={adminKey} cache={detailCache.current} />}
+              </Fragment>
+              );
+            })}
           </div>
         )}
 
