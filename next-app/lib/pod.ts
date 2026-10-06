@@ -46,7 +46,6 @@ export const POD_DESIGNS: PodDesign[] = [
   { productId: 3721, name: 'HYPE DEPT CROSS — Waffle',       blank: 'waffle_blanco' },
   { productId: 3691, name: 'DEPARTMENT OF CULTURE — Waffle', blank: 'waffle_gris_topo' },
   { productId: 3705, name: 'H.Y.P.E — Waffle',               blank: 'waffle_gris_topo' },
-  { productId: 3677, name: 'HS CREST — Raglan Longsleeve',   blank: 'raglan_ls_rosa_verde' },
 ];
 
 export const POD_BY_PRODUCT_ID: Record<number, PodDesign> = Object.fromEntries(
@@ -65,7 +64,6 @@ export const BLANK_LABEL: Record<string, string> = {
   longsleeve_negro:     'Blank longsleeve negra',
   waffle_blanco:        'Blank longsleeve waffle blanco',
   waffle_gris_topo:     'Blank longsleeve waffle gris topo',
-  raglan_ls_rosa_verde: 'Blank longsleeve raglan rosa c/verde',
 };
 
 export const POD_SIZES = ['S', 'M', 'L', 'XL'] as const;

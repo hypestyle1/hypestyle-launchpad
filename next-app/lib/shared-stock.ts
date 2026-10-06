@@ -59,7 +59,6 @@ export const COLOR_LABEL: Record<string, string> = {
   longsleeve_negro: 'Blank longsleeve negra',
   waffle_blanco: 'Blank longsleeve waffle blanco',
   waffle_gris_topo: 'Blank longsleeve waffle gris topo',
-  raglan_ls_rosa_verde: 'Blank longsleeve raglan rosa c/verde',
 };
 
 function wpHeaders(extra?: Record<string, string>): Record<string, string> {
