@@ -7,6 +7,7 @@
 
 import { mapLimit } from './map-limit';
 import { unavailableReason, unavailableMessage, type StockInfo, type Unavailable } from './mayorista-availability';
+import { isDropPrivateProduct } from './mayorista-drop';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -68,13 +69,17 @@ function stockInfo(x: any): StockInfo {
 // Se consulta una sola vez por producto y de a pocos: un pedido de 35 ítems
 // resuelto por ítem y en paralelo eran ~70 requests simultáneos y WP tira 500
 // esporádicos con ese fan-out.
-async function resolveProduct(slug: string): Promise<ResolvedProduct | null> {
+async function resolveProduct(slug: string, dropTag: string | null): Promise<ResolvedProduct | null> {
   // status=any: queremos encontrar también el producto privado/borrador para
   // poder decirle al cliente por qué no va.
-  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&status=any&_fields=id,type,status,stock_status,manage_stock,stock_quantity,regular_price&per_page=1`);
+  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&status=any&_fields=id,type,status,tags,stock_status,manage_stock,stock_quantity,regular_price&per_page=1`);
   if (!products.length) return null;
   const { id: productId, type } = products[0];
   const stock = stockInfo(products[0]);
+  // La colección nueva sigue privada hasta la apertura al público, pero los
+  // mayoristas la piden antes (lib/mayorista-drop.ts): para ellos cuenta como
+  // publicada. Cualquier otro privado sigue afuera.
+  if (isDropPrivateProduct(products[0], dropTag)) stock.status = 'publish';
   const parentRegular = regularPrice(products[0]);
 
   if (type !== 'variable') return { product_id: productId, stock, regularPrice: parentRegular, variations: [] };
@@ -93,9 +98,10 @@ async function resolveProduct(slug: string): Promise<ResolvedProduct | null> {
   };
 }
 
-export async function resolveProducts(slugs: string[]): Promise<Map<string, ResolvedProduct | null>> {
+/** `dropTag`: tag de la colección abierta para mayoristas (lib/mayorista-drop-server.ts), o null. */
+export async function resolveProducts(slugs: string[], dropTag: string | null = null): Promise<Map<string, ResolvedProduct | null>> {
   const unique = [...new Set(slugs)];
-  const list = await mapLimit(unique, 3, resolveProduct);
+  const list = await mapLimit(unique, 3, (slug) => resolveProduct(slug, dropTag));
   return new Map(unique.map((s, i) => [s, list[i]]));
 }
 

@@ -4,6 +4,8 @@ import { useMemo, useRef, useState } from 'react';
 import MayoristaProductCard from './MayoristaProductCard';
 import MayoristaCampaignHero from './MayoristaCampaignHero';
 import MayoristaHowItWorks from './MayoristaHowItWorks';
+import MayoristaDropBanner, { type MayoristaDropProps } from './MayoristaDropBanner';
+import MayoristaDropPopup from './MayoristaDropPopup';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
 import { filterByPromo, sortPromoFirst, type CampaignBanner, type PromoFilter } from '@/lib/mayorista-campaign-view';
 
@@ -12,10 +14,11 @@ const chip = (active: boolean) =>
     active ? 'bg-bg-dark text-primary-foreground border-bg-dark' : 'border-border text-muted-foreground hover:border-foreground/40'
   }`;
 
-export default function MayoristaCatalog({ products, banner, preview }: { products: MayoristaProduct[]; banner: CampaignBanner | null; preview?: boolean }) {
+export default function MayoristaCatalog({ products, banner, preview, drop }: { products: MayoristaProduct[]; banner: CampaignBanner | null; preview?: boolean; drop?: MayoristaDropProps | null }) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todos');
   const [promo, setPromo] = useState<PromoFilter>('all');
+  const [onlyDrop, setOnlyDrop] = useState(false);
   const catalogRef = useRef<HTMLDivElement>(null);
 
   const hasPromo = products.some(p => p.promo);
@@ -28,29 +31,42 @@ export default function MayoristaCatalog({ products, banner, preview }: { produc
   // filtros de grupo solo aparecen si hay productos en ese grupo.
   const base = hasPromo ? sortPromoFirst(products) : products;
   const filtered = filterByPromo(base, promo).filter(p => {
+    if (onlyDrop && !p.drop) return false;
     const matchesCategory = category === 'Todos' || p.category === category;
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
     return matchesCategory && matchesSearch;
   });
   const promoActive = promo !== 'all';
   const scrollToCatalog = () => catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const showDrop = () => { setOnlyDrop(true); setPromo('all'); setCategory('Todos'); scrollToCatalog(); };
+  const showAll = () => { setOnlyDrop(false); setPromo('all'); scrollToCatalog(); };
 
   return (
     <div className="px-5 sm:px-8 py-6">
-      <MayoristaCampaignHero
-        banner={banner}
-        preview={preview}
-        onCta={() => { setPromo('promo'); setCategory('Todos'); scrollToCatalog(); }}
-        onCatalog={() => { setPromo('all'); scrollToCatalog(); }}
-      />
+      {drop && (
+        <>
+          <MayoristaDropBanner drop={drop} onCta={showDrop} onCatalog={showAll} />
+          <MayoristaDropPopup drop={drop} onCta={showDrop} />
+        </>
+      )}
+
+      {/* Con drop y sin campaña, el banner del drop reemplaza al hero de marca. */}
+      {(banner || !drop) && (
+        <MayoristaCampaignHero
+          banner={banner}
+          preview={preview}
+          onCta={() => { setOnlyDrop(false); setPromo('promo'); setCategory('Todos'); scrollToCatalog(); }}
+          onCatalog={showAll}
+        />
+      )}
 
       <MayoristaHowItWorks />
 
       <div ref={catalogRef} className="scroll-mt-24">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
-          <h2 className="text-lg font-bold tracking-tight">{promoActive && banner ? banner.name : 'Catálogo'}</h2>
+          <h2 className="text-lg font-bold tracking-tight">{onlyDrop && drop ? `${drop.name}${drop.subtitle ? ` ${drop.subtitle}` : ''}` : promoActive && banner ? banner.name : 'Catálogo'}</h2>
           <p className="text-[12px] text-muted-foreground">
-            {promoActive && banner ? `${filtered.length} productos en ${banner.badge.toLowerCase()} · precio mayorista con el extra ya aplicado` : '50% del PVP. Pedís hoy, lo preparamos esta semana.'}
+            {onlyDrop && drop ? `${filtered.length} modelos nuevos · ${drop.beforePublic ? `antes que el público (sale el ${drop.publicOpenLabel})` : 'recién salidos'}` : promoActive && banner ? `${filtered.length} productos en ${banner.badge.toLowerCase()} · precio mayorista con el extra ya aplicado` : '50% del PVP. Pedís hoy, lo preparamos esta semana.'}
           </p>
         </div>
 
@@ -77,6 +93,12 @@ export default function MayoristaCatalog({ products, banner, preview }: { produc
         )}
 
         <div className="flex flex-wrap gap-2 mb-6">
+          {drop && (
+            <button onClick={() => setOnlyDrop(!onlyDrop)} className={`${chip(onlyDrop)} inline-flex items-center gap-1.5`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${onlyDrop ? 'bg-[hsl(142,70%,62%)]' : 'bg-[hsl(142,71%,32%)]'}`} aria-hidden />
+              Nuevo · {drop.name}
+            </button>
+          )}
           {categories.map((c) => (
             <button key={c} onClick={() => setCategory(c)} className={chip(category === c)}>
               {c}

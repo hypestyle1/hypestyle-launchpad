@@ -4,6 +4,7 @@ import { resolveProducts, findUnavailable, type StockLine } from '@/lib/mayorist
 import { priceLines } from '@/lib/mayorista-pricing';
 import { applyCampaign } from '@/lib/wholesale-campaigns';
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
+import { mayoristaDropTag } from '@/lib/mayorista-drop-server';
 
 // POST { items: [{ slug, name, size, color?, quantity, price? }] }
 //   -> { unavailable: [{ slug, size, color?, reason, available?, message }],
@@ -42,7 +43,8 @@ export async function POST(req: NextRequest) {
   })).filter(l => l.slug);
 
   try {
-    const resolved = await resolveProducts(lines.map(l => l.slug));
+    const dropTag = await mayoristaDropTag().catch(() => null);
+    const resolved = await resolveProducts(lines.map(l => l.slug), dropTag);
     // Acá una falla leyendo campañas no frena nada: es un aviso previo. El
     // pedido sí exige leerlas.
     const campaigns = await readCampaigns().catch((e) => { console.error('[mayorista/disponibilidad] campañas:', e); return []; });
