@@ -52,6 +52,7 @@ const base = (slug: string, name: string, category: string, regular: number, ima
   sizes,
   stock,
   tags: ['ss27-part-01'],
+  comingSoon: false,
   description,
   details,
 });

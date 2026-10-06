@@ -8,6 +8,15 @@ import { PRIVATE_ACCESS_PATH } from './config';
 export interface PrivateProduct extends NormalizedProduct {
   description: string;
   details: { label: string; text: string }[];
+  /** Con el tag `proximamente`: se ve en la colección pero no se vende en la preventa (sale con la apertura al público). */
+  comingSoon: boolean;
+}
+
+/** Tag de Woo de las prendas de la colección que NO entran en la preventa. Los mayoristas sí las pueden pedir. */
+export const COMING_SOON_TAG = 'proximamente';
+
+export function isComingSoonNode(node: any): boolean {
+  return (node?.productTags?.nodes ?? []).some((t: any) => t?.slug === COMING_SOON_TAG);
 }
 
 export type StockLevel = 'ok' | 'low' | 'out';
@@ -84,6 +93,7 @@ export function fromPrivateNode(node: any, labels: { saleEndsLabel: string; publ
     href: `${PRIVATE_ACCESS_PATH}/${base.slug}`,
     description: stripHtml(node.description || node.shortDescription || ''),
     details: previewDetails(labels.saleEndsLabel, labels.publicOpenLabel),
+    comingSoon: isComingSoonNode(node),
   };
 }
 

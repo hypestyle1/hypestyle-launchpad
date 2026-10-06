@@ -29,11 +29,13 @@ export default async function PrivateProductPage({ params }: { params: { slug: s
 
   const [product, all] = await Promise.all([fetchPrivateProductDetail(params.slug), fetchPrivateProducts(config)]);
   if (!product) redirect(PRIVATE_ACCESS_PATH);
+  // "Próximamente": se ve en la colección pero la ficha no se abre hasta la apertura.
+  if (all.find(p => p.slug === product.slug)?.comingSoon) redirect(PRIVATE_ACCESS_PATH);
 
   return (
     <PrivateFicha
       product={product}
-      related={all.filter(p => p.slug !== product.slug)}
+      related={all.filter(p => p.slug !== product.slug && !p.comingSoon)}
       collectionName={config.collectionName}
       saleEndsLabel={labelsFor(config).saleEndsLabel}
     />

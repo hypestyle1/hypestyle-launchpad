@@ -24,7 +24,8 @@ export async function privateAccessForOrder(cookieValue: string | undefined | nu
   if (!isPrivateAccessActive(config)) return null;
   const productos = await fetchPrivateProducts(config);
   const precios = new Map<string, number>();
-  for (const p of productos) if (p.slug && p.price > 0) precios.set(p.slug, p.price);
+  // Las "Próximamente" no se venden en la preventa: sin precio, el pedido las rechaza.
+  for (const p of productos) if (p.slug && p.price > 0 && !p.comingSoon) precios.set(p.slug, p.price);
   return { memberId: session.memberId, collection: config.collectionTag, precios };
 }
 
