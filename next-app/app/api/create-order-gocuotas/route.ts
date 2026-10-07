@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { calcularPedido } from '@/lib/pedido-servidor';
+import { attributionOrderMeta } from '@/lib/attribution';
 import { PrecioError } from '@/lib/precio-servidor';
 import { lineasDeEnvio } from '@/lib/andreani-shipping-line';
 import { PRIVATE_ACCESS_COOKIE } from '@/lib/private-access/config';
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     const {
       items, customer, shipping, discountAmount: descuentoCliente, couponCode,
       paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
-      fbp, fbc,
+      fbp, fbc, attribution,
     } = { ...rawPayload, items: cleanItems };
 
     // Precio, descuento y envío salen del servidor (auditoría 28/09, C1). Del
@@ -175,6 +176,8 @@ export async function POST(req: NextRequest) {
     if (shippingBranchCode) meta.push({ key: '_shipping_branch_code', value: String(shippingBranchCode) });
     if (fbp)                meta.push({ key: '_fbp',             value: String(fbp) });
     if (fbc)                meta.push({ key: '_fbc',             value: String(fbc) });
+    // Por dónde entró (utm del ad, referrer, landing): sin esto no se sabe qué ad trajo la venta.
+    meta.push(...attributionOrderMeta(attribution));
     // El plugin andreani-shipping valida el envío contra este meta, que WooCommerce
     // solo setea en el checkout nativo (sesión). Sin esto acá, el plugin rechaza el
     // pedido con "no es válida para envío Andreani" al querer empaquetarlo.
