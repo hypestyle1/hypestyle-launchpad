@@ -9,6 +9,7 @@ import NewsletterPopup from '@/components/NewsletterPopup';
 import LocaleSuggestion from '@/components/LocaleSuggestion';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
+import AttributionCapture from '@/components/AttributionCapture';
 import MicrosoftClarity from '@/components/MicrosoftClarity';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import WhatsAppButton from '@/components/WhatsAppButton';
@@ -108,6 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               y la barra puede caer en cualquier página (ver lib/newsletter-popup). */}
           <NewsletterPopup />
           <MetaPixel />
+          <AttributionCapture />
           <MicrosoftClarity />
           <GoogleAnalytics />
           {children}

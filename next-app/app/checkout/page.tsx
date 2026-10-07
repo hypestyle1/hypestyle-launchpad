@@ -14,6 +14,7 @@ import { chargeCurrency } from '@/lib/currency';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
+import { captureAttribution } from '@/lib/attribution';
 import { gaBeginCheckout } from '@/lib/ga';
 import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
 import { imgSrc } from '@/lib/img';
@@ -761,6 +762,7 @@ export default function Checkout() {
           // el texto de arriba es solo para mostrar. Ver Andreani_Order_Mapper::get_branch_code_for_order.
           shippingBranchCode: selectedBranch?.id || undefined,
           ...getFbCookies(),
+          attribution: captureAttribution(),
         });
       } catch (wcErr) {
         console.error('[checkout] create-order error:', wcErr);

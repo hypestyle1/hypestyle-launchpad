@@ -1,3 +1,5 @@
+import type { Attribution } from '@/lib/attribution';
+
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 
 const MP_METHODS = ['mercadopago', 'tarjeta', 'efectivo'];
@@ -45,6 +47,8 @@ export interface CreateOrderPayload {
   shippingBranchCode?: string;
   fbp?: string;
   fbc?: string;
+  /** Origen de la visita (utm/fbclid/referrer/landing). Ver lib/attribution.ts. */
+  attribution?: Attribution;
 }
 
 export interface TaloPaymentData {
