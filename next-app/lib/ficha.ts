@@ -38,8 +38,29 @@ export function ventanaEntrega(hoy: Date = new Date()): string {
  * Woo no guarda ese dato: hasta que exista un campo, se declara acá por
  * producto. Un producto que no figura no muestra el interruptor.
  */
+/**
+ * Las fotos de estudio de SS27 se suben como `<slug>-01.jpg`, `-02.jpg`…
+ * sin decir quién es: se declara por número, mirando cada foto.
+ */
+const porNumero = (el: number[], ella: number[]) => {
+  const regla = (n: number[]) => new RegExp(`-(?:${n.map((x) => String(x).padStart(2, '0')).join('|')})(?:-scaled|-\\d+x\\d+)?\\.(?:jpe?g|webp)(?:\\?|$)`, 'i');
+  return { el: regla(el), ella: regla(ella) };
+};
+
 const MODELOS_POR_SLUG: Record<string, { el: RegExp; ella: RegExp }> = {
   'camo-full-set-combo': { el: /\/camo-\d{4}/i, ella: /\/mia-camo/i },
+  'longsleeve-waffle-horses': porNumero([5, 6, 9], [1, 2, 3, 4, 7, 8, 10, 11]),
+  'hype-dept-cross-white-waffle-longsleeve': porNumero([2, 4, 6], [1, 3, 5, 7]),
+  'hype-washed-black-waffle-longsleeve': porNumero([2, 4, 6], [3, 5, 7]),
+  'department-of-culture-washed-black-waffle-longsleeve': porNumero([2, 4, 6], [1, 3, 5, 7]),
+  'hs-crest-olive-raglan-longsleeve': porNumero([2, 4, 6], [1, 3, 5, 7]),
+  'style-culture-university-navy-tee': porNumero([2, 4, 6], [1, 3, 5, 7]),
+  'style-culture-university-black-tee': porNumero([1, 3, 5, 7], [2, 4, 6]),
+  'style-culture-university-white-tee': porNumero([2, 4, 6], [1, 3, 5, 7]),
+  'zolotye-kupola-washed-graphite-hoodie': porNumero([2, 4, 6], [1, 3, 5, 7]),
+  'hype-distressed-grey-hoodie': porNumero([1, 3, 5, 7], [2, 4, 6]),
+  'athletic-dept-blue-longsleeve': porNumero([2, 4, 6, 8], [1, 3, 5, 7]),
+  'athletic-dept-pink-longsleeve': porNumero([2, 4, 6], [1, 3, 5, 7]),
 };
 
 export type Modelo = 'el' | 'ella';
