@@ -7,6 +7,7 @@ import { isFlashSaleActive } from '@/lib/flash-sale';
 import { compute3x2Discount, unitsToNext3x2 } from '@/lib/promo-3x2';
 import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 import { computeChampionDiscount } from '@/lib/promo-champion';
+import { computePackRegularDiscount, packRegularFaltan, precioPackRegular } from '@/lib/promo-pack-regular';
 import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
 import { useLocale } from '@/context/LocaleContext';
 import { localeForCountry, readCountryCookie } from '@/lib/geo';
@@ -534,13 +535,19 @@ export default function Checkout() {
   const promo3x2Active = promo3x2Won && !isInternational && !championActive;
   const promo3x2Descuento = promo3x2Active ? compute3x2Discount(fisicos) : 0;
   const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(fisicos) : 0;
-  const descuento = cuponDescuento + promo3x2Descuento + championDescuento;
+  // Pack libre de Regular Tees: 3 individuales de cualquier color = precio del
+  // 3-PACK. No se suma a las promos de arriba (misma regla que el servidor).
+  const packRegularActive = !isInternational && !championActive && !promo3x2Active;
+  const packRegularDescuento = packRegularActive ? computePackRegularDiscount(fisicos, precioPackRegular(catalog)) : 0;
+  const packRegularFaltanN = packRegularActive ? packRegularFaltan(fisicos) : 0;
+  const descuento = cuponDescuento + promo3x2Descuento + championDescuento + packRegularDescuento;
   const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
   const totalFinal = subtotal - descuento + envioEnPaso;
   // Lo que dice la línea "Total" del resumen: sin envío hasta que haya uno elegido.
   const totalMostrado = step === 'info' || !shippingReady ? subtotal - descuento : totalFinal;
   // El 10% de transferencia va sobre lo físico; la gift card se paga entera.
-  const transferTotal = Math.round((subtotal - subtotalGift) * 0.90) + subtotalGift - descuento + envioEnPaso;
+  // Y va después del pack libre, igual que en el servidor.
+  const transferTotal = Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.90) + subtotalGift - (descuento - packRegularDescuento) + envioEnPaso;
 
   // InitiateCheckout / begin_checkout: al ENTRAR al checkout con carrito, no en el
   // paso 2. Estaba enganchado a la transición envío → pago, que es el tercer paso
@@ -743,8 +750,8 @@ export default function Checkout() {
           items: purchasableItems.map(item => ({ id: item.id, slug: item.id, name: item.name, price: item.price, quantity: item.quantity, size: item.size, image: item.image, customization: item.customization, gift: item.customization?.gift })),
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: cpEnvio, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram },
           shipping: envioCosto,
-          discountAmount: (isLocalTransfer ? Math.round((subtotal - subtotalGift) * 0.10) : 0) + promo3x2Descuento + championDescuento,
-          discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
+          discountAmount: (isLocalTransfer ? Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.10) : 0) + promo3x2Descuento + championDescuento + packRegularDescuento,
+          discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', packRegularDescuento > 0 ? 'Pack Regular x3' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
           couponCode: couponData?.code,
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
@@ -1014,6 +1021,12 @@ export default function Checkout() {
               <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
               {championDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Campeones del mundo · 50%</span><span>−{formatPrice(championDescuento)}</span></div>}
               {promo3x2Descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>3x2</span><span>−{formatPrice(promo3x2Descuento)}</span></div>}
+              {packRegularDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Pack Regular x3</span><span>−{formatPrice(packRegularDescuento)}</span></div>}
+              {packRegularFaltanN > 0 && (
+                <p className="text-[11px] text-foreground/70">
+                  Sumá {packRegularFaltanN} Regular Tee{packRegularFaltanN > 1 ? 's' : ''} más y pagás precio de pack
+                </p>
+              )}
               {cuponDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(cuponDescuento)}</span></div>}
               {promo3x2Active && items.length > 0 && (promo3x2UnidadesFaltan === 1 || promo3x2UnidadesFaltan === 2) && (
                 <p className="text-[11px] text-foreground/70">
