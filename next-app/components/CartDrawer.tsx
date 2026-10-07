@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useProducts } from "@/hooks/useProducts";
 import { compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
 import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
+import { PACK_REGULAR_SLUGS, computePackRegularDiscount, packRegularFaltan, precioPackRegular } from "@/lib/promo-pack-regular";
 import GiftProgressBar from "@/components/GiftProgressBar";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/envio";
 import { ScrollFadeList } from "@/components/ui/scroll-fade-list";
@@ -131,13 +132,29 @@ export default function CartDrawer() {
   const promo3x2Discount = promo3x2Active ? compute3x2Discount(purchasableItems) : 0;
   const promo3x2Faltan = promo3x2Active ? unitsToNext3x2(purchasableItems) : 0;
 
+  // Pack libre de Regular Tees (lib/promo-pack-regular): misma regla que el
+  // checkout y el servidor. Si falta una sola, se avisa cuánto sale la tercera.
+  const packRegularActive = !desdeAfuera && !promo3x2Active;
+  const precioPack = precioPackRegular(allProducts);
+  const packRegularDiscount = packRegularActive ? computePackRegularDiscount(purchasableItems, precioPack) : 0;
+  const packRegularFaltanN = packRegularActive && precioPack ? packRegularFaltan(purchasableItems) : 0;
+  const regularMasBarata = Math.min(
+    ...purchasableItems.filter(i => PACK_REGULAR_SLUGS.has(i.id)).map(i => i.price),
+  );
+  const terceraCuesta = packRegularFaltanN === 1
+    ? regularMasBarata - (computePackRegularDiscount(
+        [...purchasableItems, { id: 'regular-tee-black', price: regularMasBarata, quantity: 1 }],
+        precioPack,
+      ) - packRegularDiscount)
+    : 0;
+
   // Formas de pago, con las mismas cuentas que el checkout: el 10% de
   // transferencia va sobre lo físico (la gift card se paga entera) y después
   // del 3x2. El envío se suma recién en el checkout.
   const giftCardSubtotal = items
     .filter(item => item.id === 'gift-card')
     .reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const payable = Math.max(total - promo3x2Discount, 0);
+  const payable = Math.max(total - promo3x2Discount - packRegularDiscount, 0);
   const physical = Math.max(payable - giftCardSubtotal, 0);
   const transferTotal = Math.round(physical * (1 - TRANSFER_RATE / 100)) + giftCardSubtotal;
   const showPayments = currency === 'ARS' && payable > 0;
@@ -218,6 +235,27 @@ export default function CartDrawer() {
               <p className="text-[11px] text-center text-muted-foreground">
                 {t('Añadí')} <span className="font-bold text-foreground">{promo3x2Faltan}</span>{' '}
                 {t('más y llevate el')} <span className="font-bold uppercase text-foreground">3x2</span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Barra pack libre de Regular Tees */}
+        {(packRegularDiscount > 0 || packRegularFaltanN > 0) && (
+          <div className="hs-drawer-in px-6 pt-2 pb-2 border-b border-black/10" style={stagger(2)}>
+            {packRegularFaltanN === 1 && terceraCuesta > 0 ? (
+              <p className="text-[11px] text-center text-muted-foreground">
+                Sumá <span className="font-bold text-foreground">1 Regular Tee</span> más de cualquier color:{' '}
+                la tercera te sale <span className="font-bold text-foreground">{formatPrice(terceraCuesta)}</span>
+              </p>
+            ) : packRegularFaltanN > 0 ? (
+              <p className="text-[11px] text-center text-muted-foreground">
+                Sumá <span className="font-bold text-foreground">{packRegularFaltanN} Regular Tee{packRegularFaltanN > 1 ? 's' : ''}</span>{' '}
+                más y pagás <span className="font-bold uppercase text-foreground">precio de pack</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
+                Precio de pack aplicado — ahorrás {formatPrice(packRegularDiscount)}
               </p>
             )}
           </div>
@@ -373,6 +411,12 @@ export default function CartDrawer() {
               <div className="flex items-center justify-between">
                 <span className="text-[13px] text-green-700">3x2</span>
                 <span className="text-[14px] font-semibold text-green-700">−{formatPrice(promo3x2Discount)}</span>
+              </div>
+            )}
+            {packRegularDiscount > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] text-green-700">Pack Regular x3</span>
+                <span className="text-[14px] font-semibold text-green-700">−{formatPrice(packRegularDiscount)}</span>
               </div>
             )}
             {showPayments && (

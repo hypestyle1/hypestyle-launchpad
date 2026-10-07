@@ -70,6 +70,23 @@ describe('descuentos', () => {
     expect(d).toEqual({ monto: 80000, etiqueta: 'CAMPEON50' });
   });
 
+  it('pack libre de Regular: 3 individuales al precio del pack, y el 10% va después', () => {
+    const regulares = [
+      { id: 'regular-tee-black', price: 23400, quantity: 2 },
+      { id: 'regular-tee-white', price: 23400, quantity: 1 },
+    ];
+    const d = descuentos(regulares, { ...base, metodo: 'transferencia', precioPackRegular: 59160 });
+    // 70200 - 59160 = 11040 de pack; 10% de 59160 = 5916. Igual que comprar el 3-PACK por transferencia.
+    expect(d).toEqual({ monto: 11040 + 5916, etiqueta: 'Pack Regular x3 + Transferencia (10%)' });
+  });
+
+  it('pack libre no se suma al 3x2 ni corre en envíos internacionales', () => {
+    const regulares = [{ id: 'regular-tee-black', price: 23400, quantity: 3 }];
+    expect(descuentos(regulares, { ...base, tresPorDosActivo: true, precioPackRegular: 59160 }))
+      .toEqual({ monto: 23400, etiqueta: '3x2' });
+    expect(descuentos(regulares, { ...base, internacional: true, precioPackRegular: 59160 }).monto).toBe(0);
+  });
+
   it('internacional: ni promos locales ni 10% de transferencia', () => {
     const d = descuentos(lineas, { ...base, metodo: 'transferencia', internacional: true, tresPorDosActivo: true });
     expect(d.monto).toBe(0);

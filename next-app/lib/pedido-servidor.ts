@@ -10,6 +10,7 @@ import { getActiveDiscountStatus } from '@/lib/goal-discount';
 import { GOAL_DISCOUNT_SLUG } from '@/hooks/useGoalDiscount';
 import { cotizarAndreani } from '@/lib/andreani-cotizador';
 import { cuponConEnvioGratis } from '@/lib/cupon-envio-gratis';
+import { precioPackRegular } from '@/lib/promo-pack-regular';
 import {
   descuentos, envioNacional, lineasFisicas, preciosDeLineas, subtotal,
   type ItemPedido, type LineaPrecio, type ResultadoEnvio,
@@ -85,6 +86,7 @@ export async function calcularPedido(args: {
     internacional: args.internacional,
     campeonActivo: !!stCampeon?.promoActive,
     tresPorDosActivo: !!st3x2?.promoActive,
+    precioPackRegular: precioPackRegular(precios),
   });
   const dCliente = Math.round(Number(args.descuentoCliente) || 0);
   if (dCliente !== descuento.monto) diferencias.push(`descuento: navegador ${dCliente}, servidor ${descuento.monto}`);

@@ -18,6 +18,7 @@ import { GIFT_CARD_SLUG, isValidGiftAmount } from '@/lib/gift-card';
 import { GOAL_DISCOUNT_SLUG } from '@/hooks/useGoalDiscount';
 import { compute3x2Discount } from '@/lib/promo-3x2';
 import { computeChampionDiscount } from '@/lib/promo-champion';
+import { computePackRegularDiscount } from '@/lib/promo-pack-regular';
 import { costoEnvio, tarifaPorDefecto, type TarifaEnvio } from '@/lib/envio';
 
 export const DESCUENTO_TRANSFERENCIA = 0.10;
@@ -78,29 +79,42 @@ export function lineasFisicas(lineas: LineaPrecio[]): LineaPrecio[] {
 
 /**
  * Descuentos que viajan como fee line negativa: promo CAMPEON50 (tiene
- * prioridad y no se suma con el 3x2), 3x2, y el 10% de transferencia local.
+ * prioridad y no se suma con el 3x2), 3x2, pack libre de Regular Tees (solo si
+ * no corre ninguna de las otras dos) y el 10% de transferencia local.
  * Los cupones no van acá: se mandan como coupon_lines y los calcula Woo.
+ *
+ * El 10% de transferencia va sobre lo físico DESPUÉS del pack libre: si no, 3
+ * individuales por transferencia saldrían más baratas que el 3-PACK.
  */
 export function descuentos(
   lineas: LineaPrecio[],
-  opts: { metodo: string; internacional: boolean; campeonActivo: boolean; tresPorDosActivo: boolean },
+  opts: {
+    metodo: string;
+    internacional: boolean;
+    campeonActivo: boolean;
+    tresPorDosActivo: boolean;
+    precioPackRegular?: number | null;
+  },
 ): { monto: number; etiqueta: string | undefined } {
   const fisicas = lineasFisicas(lineas);
   let campeon = 0;
   let tresPorDos = 0;
+  let packRegular = 0;
   if (!opts.internacional) {
     if (opts.campeonActivo) campeon = computeChampionDiscount(fisicas);
     else if (opts.tresPorDosActivo) tresPorDos = compute3x2Discount(fisicas);
+    else packRegular = computePackRegularDiscount(fisicas, opts.precioPackRegular);
   }
   const transferencia = opts.metodo === 'transferencia' && !opts.internacional
-    ? Math.round(subtotal(fisicas) * DESCUENTO_TRANSFERENCIA)
+    ? Math.round((subtotal(fisicas) - packRegular) * DESCUENTO_TRANSFERENCIA)
     : 0;
   const etiqueta = [
     campeon > 0 ? 'CAMPEON50' : '',
     tresPorDos > 0 ? '3x2' : '',
+    packRegular > 0 ? 'Pack Regular x3' : '',
     transferencia > 0 ? 'Transferencia (10%)' : '',
   ].filter(Boolean).join(' + ') || undefined;
-  return { monto: campeon + tresPorDos + transferencia, etiqueta };
+  return { monto: campeon + tresPorDos + packRegular + transferencia, etiqueta };
 }
 
 export type ResultadoEnvio =
