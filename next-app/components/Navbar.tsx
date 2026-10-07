@@ -26,6 +26,7 @@ const navLinks = [
 // todos los shootings profesionales de cada colección, uno por temporada.
 const menuColecciones = [
   { label: 'Ver colecciones',   href: '/colecciones/' },
+  { label: 'Spring Summer 27 · Part 01', href: '/colecciones/ss27/' },
   { label: 'Lookbook FW26 — Rio de Janeiro', href: '/lookbook-fw26/' },
   { label: 'Lookbook — Faith Is The Real Hype', href: '/lookbook-faith/' },
   { label: 'Lookbook — CULTO x Neo Pistea', href: '/lookbook-neo/' },
@@ -57,6 +58,7 @@ const megaMenu = {
     { label: 'Gift Card',  href: '/gift-cards/', indent: false },
   ],
   colecciones: [
+    { label: 'Spring Summer 27',    href: '/colecciones/ss27/' },
     { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
     { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop/' },
     { label: 'Race Drop',           href: '/colecciones/race/' },
@@ -82,6 +84,7 @@ const mobilePanels = {
       { label: 'Gift Card',                href: '/gift-cards/',     homeHash: null,             panel: null },
     ],
     collections: [
+      { label: 'Spring Summer 27',    href: '/colecciones/ss27/' },
       { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
       { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop/' },
       { label: 'Race Drop',           href: '/colecciones/race/' },
@@ -500,6 +503,7 @@ export default function Navbar() {
                 <div className="border-t border-foreground/10 pt-4 space-y-1">
                   {[
                     { label: 'Colecciones',   href: '/colecciones/' },
+                    { label: 'Spring Summer 27', href: '/colecciones/ss27/' },
                     { label: 'Lookbook FW26', href: '/lookbook-fw26/' },
                     { label: 'Lookbook Faith', href: '/lookbook-faith/' },
                     { label: 'Lookbook CULTO', href: '/lookbook-neo/' },

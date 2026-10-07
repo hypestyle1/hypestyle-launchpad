@@ -31,7 +31,7 @@ export async function openCollection(dryRun = false): Promise<WpResult<OpenResul
   const r = await wpPost<OpenResult>('/open', { dryRun });
   if (r.ok && !dryRun) {
     invalidateConfig();
-    for (const p of ['/', '/productos', '/new-in', '/novedades', '/sitemap.xml', '/private-access']) {
+    for (const p of ['/', '/productos', '/new-in', '/novedades', '/sitemap.xml', '/private-access', '/colecciones/ss27']) {
       try { revalidatePath(p); } catch { /* fuera de un request de Next (tests) */ }
     }
     for (const slug of r.data.published) {

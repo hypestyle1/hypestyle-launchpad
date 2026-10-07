@@ -8,10 +8,18 @@ import Footer from "@/components/Footer";
 // lookbook en vez de a un listado vacío, y con `cta` cambian el texto del link.
 type Drop = {
   name: string; season: string; description: string; image: string;
-  href: string; products: number; status: string; cta?: string;
+  href: string; products?: number; status: string; cta?: string;
 };
 
 const drops: Drop[] = [
+  {
+    name: "Spring Summer 27 · Part 01",
+    season: "Colección — Spring Summer 2027",
+    description: "Boxy tees, waffle longsleeves y hoodies lavados. La primera parte de la temporada, en producción limitada.",
+    image: "ss27/coleccion/hero-duo-grey.webp",
+    href: "/colecciones/ss27/",
+    status: "nuevo",
+  },
   {
     name: "Napoli",
     season: "Drop — Agosto 2026",
@@ -175,7 +183,7 @@ export default function Colecciones() {
                     onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0"; }}
                   />
                   <span className={`absolute top-4 left-4 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 ${
-                    drop.status === "disponible"
+                    drop.status === "disponible" || drop.status === "nuevo"
                       ? "bg-foreground text-background"
                       : "bg-background/80 text-foreground backdrop-blur-sm border border-border"
                   }`}>
@@ -199,7 +207,7 @@ export default function Colecciones() {
                     </p>
                   </div>
                   <div className="flex items-center justify-between mt-8">
-                    <p className="text-[12px] text-muted-foreground">{drop.products} {drop.products === 1 ? "producto" : "productos"}</p>
+                    <p className="text-[12px] text-muted-foreground">{drop.products !== undefined && `${drop.products} ${drop.products === 1 ? "producto" : "productos"}`}</p>
                     <span className="text-[12px] font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                       {drop.cta ?? "Ver colección"}
                       <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
