@@ -11,7 +11,7 @@ import { normalizeCpAr } from '@/lib/postal-code';
 import {
   FREE_SHIPPING_THRESHOLD, costoEnvio, modoDeTarifa, ordenarTarifas, type TarifaEnvio,
 } from '@/lib/envio';
-import { ventanaEntrega, type Modelo } from '@/lib/ficha';
+import { ventanaEntrega, medidasModelo, type Modelo } from '@/lib/ficha';
 
 /**
  * Capa visual de Private Access (preventa Mejores Amigos). Solo agrega un
@@ -482,6 +482,19 @@ export function TablaMedidas({ product }: { product: Product }) {
       <p className="text-[11px] text-muted-foreground mt-2">{t('Medido en plano · puede variar ±2 cm.')}</p>
       <p className="text-[12px] text-foreground/70 mt-1">{t('Si dudás entre dos talles, elegí el más grande: una remera un poco holgada se usa igual; una que queda chica, no.')}</p>
     </div>
+  );
+}
+
+/** Cuánto mide quien aparece en las fotos, según el interruptor Él / Ella. */
+export function NotaModelo({ p }: { p: FichaProps }) {
+  const { t } = useLocale();
+  const medidas = p.modelo ? medidasModelo(p.product.slug, p.modelo) : null;
+  if (!medidas) return null;
+  const quien = p.modelo === 'ella' ? t('Ella mide') : t('Él mide');
+  return (
+    <p className="text-[13px] text-foreground/80">
+      {quien} {medidas.altura} m{medidas.talle && <> {t('y usa talle')} <strong className="font-semibold text-foreground">{medidas.talle}</strong></>}.
+    </p>
   );
 }
 

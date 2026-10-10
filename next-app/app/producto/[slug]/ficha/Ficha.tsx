@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import { useLocale } from '@/context/LocaleContext';
-import { abreCuadrada, composicion, esMockup, resumen } from '@/lib/ficha';
+import { abreCuadrada, composicion, esMockup, medidasModelo, resumen } from '@/lib/ficha';
 import {
   type FichaProps, Foto, Migas, Precio, Descuento, TablaPagos, SelectorColor, SelectorTalle,
   LineaDespacho, LineaResenas, BotonComprar, Promesas, CuandoLlega, Desplegable, BadgePrivateAccess, NotaPreventa,
-  TextoEnvios, TextoCambios, TablaMedidas, NotaCuidadoTalles, InterruptorModelo, imgUrl, isVideo,
+  TextoEnvios, TextoCambios, TablaMedidas, NotaCuidadoTalles, InterruptorModelo, NotaModelo, imgUrl, isVideo,
 } from './bloques';
 
 /**
@@ -138,7 +138,10 @@ export default function Ficha(p: FichaProps) {
             <SelectorColor p={p} />
             <div className="flex flex-col gap-3">
               <SelectorTalle p={p} />
-              {p.modelInfo && <div className="bg-bg-alt rounded-[10px] px-4 py-3">{p.modelInfo}</div>}
+              {/* Con medidas del estudio SS27 van esas: el texto de Woo describe a un solo modelo. */}
+              {p.modelo && medidasModelo(product.slug, p.modelo)
+                ? <NotaModelo p={p} />
+                : p.modelInfo && <div className="bg-bg-alt rounded-[10px] px-4 py-3">{p.modelInfo}</div>}
             </div>
             <div className="flex flex-col gap-2.5">
               <LineaDespacho />

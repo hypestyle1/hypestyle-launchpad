@@ -44,10 +44,10 @@ export function ventanaEntrega(hoy: Date = new Date()): string {
  */
 const porNumero = (el: number[], ella: number[]) => {
   const regla = (n: number[]) => new RegExp(`-(?:${n.map((x) => String(x).padStart(2, '0')).join('|')})(?:-scaled|-\\d+x\\d+)?\\.(?:jpe?g|webp)(?:\\?|$)`, 'i');
-  return { el: regla(el), ella: regla(ella) };
+  return { el: regla(el), ella: regla(ella), estudioSS27: true };
 };
 
-const MODELOS_POR_SLUG: Record<string, { el: RegExp; ella: RegExp }> = {
+const MODELOS_POR_SLUG: Record<string, { el: RegExp; ella: RegExp; estudioSS27?: boolean }> = {
   'camo-full-set-combo': { el: /\/camo-\d{4}/i, ella: /\/mia-camo/i },
   'longsleeve-waffle-horses': porNumero([5, 6, 9], [1, 2, 3, 4, 7, 8, 10, 11]),
   'hype-dept-cross-white-waffle-longsleeve': porNumero([2, 4, 6], [1, 3, 5, 7]),
@@ -64,6 +64,19 @@ const MODELOS_POR_SLUG: Record<string, { el: RegExp; ella: RegExp }> = {
 };
 
 export type Modelo = 'el' | 'ella';
+
+export type MedidasModelo = { altura: string; talle?: string };
+
+/** Los mismos dos modelos en todas las fotos de estudio SS27. Sin peso, a pedido de Valentín. */
+const MEDIDAS_SS27: Record<Modelo, MedidasModelo> = {
+  el: { altura: '1,75' },
+  ella: { altura: '1,77', talle: 'S' },
+};
+
+/** Altura (y talle, si se sabe) de quien aparece en las fotos; null si no es del estudio SS27. */
+export function medidasModelo(slug: string, modelo: Modelo): MedidasModelo | null {
+  return MODELOS_POR_SLUG[slug]?.estudioSS27 ? MEDIDAS_SS27[modelo] : null;
+}
 
 export function tieneInterruptorModelo(slug: string, imagenes: string[]): boolean {
   const regla = MODELOS_POR_SLUG[slug];
