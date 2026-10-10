@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MediaFill } from './MediaTile';
-import { LiquidButton } from '@/components/ui/liquid-glass-button';
+import { MetallicButton } from '@/components/ui/metallic-button';
 import { SS27_MEDIA, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
 
 const SLIDE_MS = 4500;
@@ -87,13 +87,11 @@ function HeroMobile() {
           </div>
         </div>
 
-        {/* Kicker + botón glass. Bien arriba del borde: abajo flotan el badge de
+        {/* Kicker + botón metálico. Bien arriba del borde: abajo flotan el badge de
             reseñas, el WhatsApp y el botón de accesibilidad. */}
-        <div className="absolute inset-x-4 bottom-[112px] flex flex-col items-center text-center">
+        <div className="absolute inset-x-4 bottom-[168px] flex flex-col items-center text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.04em]">SS27-01 · Ya disponible</p>
-          <LiquidButton href={COLECCION} size="xl" onDark className="mt-4 text-white text-[14px] font-semibold tracking-[0.01em]">
-            Ver colección
-          </LiquidButton>
+          <MetallicButton href={COLECCION} label="Ver colección" className="mt-4" labelClassName="text-[14px] font-semibold tracking-[0.01em]" />
         </div>
       </div>
     </section>
