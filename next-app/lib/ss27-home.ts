@@ -184,3 +184,22 @@ export const SS27_PROXIMAMENTE: { src: string; alt: string }[] = [
  * Cuando la gorra nueva esté cargada en Woo, sumar su slug acá.
  */
 export const SS27_HOME_EXTRA_SLUGS = ['pack-x3-medias-hype'];
+
+/** Carrusel grande de Remeras: una foto por modelo, cada una lleva a su ficha. */
+export const SS27_REMERAS_CAROUSEL: { src: string; alt: string; title: string; href: string }[] = [
+  { src: '/ss27/home/remeras/h-hype-navy.webp', alt: 'H Hype Tee navy', title: 'H Hype', href: '/producto/h-hype-navy-tee' },
+  { src: '/ss27/home/remeras/worn-varsity-white.webp', alt: 'Worn Varsity Club Tee blanca', title: 'Worn Varsity Club', href: '/producto/worn-varsity-club-white-tee' },
+  { src: '/ss27/home/remeras/sc-university-black.webp', alt: 'Style & Culture University Tee negra', title: 'Style & Culture University', href: '/producto/style-culture-university-black-tee' },
+  { src: '/ss27/home/remeras/athletic-grey-print.webp', alt: 'Athletic Dept Tee blanca, estampa gris', title: 'Athletic Dept', href: '/producto/athletic-dept-white-grey-print-tee' },
+];
+
+/**
+ * Prendas que vienen y todavía no están cargadas en Woo: van con el mockup y
+ * el badge Próximamente, sin link. `section` dice dónde se muestran. Cuando se
+ * carguen en Woo (con los tags ss27-part-01 + proximamente), sacarlas de acá.
+ */
+export type Ss27Upcoming = { id: string; name: string; src: string; section: 'longsleeves' | 'proximamente' };
+export const SS27_UPCOMING: Ss27Upcoming[] = [
+  { id: 'equestrian', name: 'Hype Equestrian Society – Black Longsleeve', src: '/ss27/home/mock-equestrian-society-black-ls.webp', section: 'longsleeves' },
+  { id: 'creative-olive', name: 'Hype Creative Goods – Olive Raglan Longsleeve', src: '/ss27/home/mock-creative-goods-olive-raglan.webp', section: 'proximamente' },
+];

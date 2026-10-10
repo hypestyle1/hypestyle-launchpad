@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import MediaTile, { MediaFill } from './MediaTile';
 import { toCardProps, type Ss27Product } from '@/lib/ss27-coleccion';
-import { SS27_LOOPS, SS27_MEDIA, SS27_PROXIMAMENTE, type Ss27Media } from '@/lib/ss27-home';
+import { SS27_LOOPS, SS27_MEDIA, SS27_PROXIMAMENTE, SS27_REMERAS_CAROUSEL, SS27_UPCOMING, type Ss27Media, type Ss27Upcoming } from '@/lib/ss27-home';
 
 const COLECCION = '/colecciones/ss27/';
 
@@ -54,15 +54,20 @@ function SoonSlot() {
   );
 }
 
-/** Carrusel de fotos de lo que viene: pasa solo, con indicadores. */
-function ProximamenteCarousel({ className = '' }: { className?: string }) {
-  const slides = SS27_PROXIMAMENTE;
+type Slide = { src: string; alt: string; title?: string; href?: string };
+
+/**
+ * Foto grande que pasa sola entre varias (crossfade), con indicadores. Si los
+ * slides traen title/href, el texto y el link siguen al slide visible.
+ */
+function PhotoCarousel({ slides, kicker, title, className = '' }: { slides: Slide[]; kicker: string; title?: string; className?: string }) {
   const [i, setI] = useState(0);
   useEffect(() => {
     if (slides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const t = setInterval(() => setI((x) => (x + 1) % slides.length), 3200);
     return () => clearInterval(t);
   }, [slides.length]);
+  const cur = slides[i];
   return (
     <div className={`relative overflow-hidden rounded-[4px] bg-bg-alt ${className}`}>
       {slides.map((s, k) => (
@@ -76,12 +81,13 @@ function ProximamenteCarousel({ className = '' }: { className?: string }) {
           style={{ opacity: k === i ? 1 : 0 }}
         />
       ))}
+      {cur.href && <Link href={cur.href} aria-label={cur.title ?? cur.alt} className="absolute inset-0 z-[1]" />}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent" />
-      <div className="absolute left-4 bottom-4 md:left-5 md:bottom-5 text-white">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-white/75 mb-1">Spring Summer 27</p>
-        <p className="text-[17px] md:text-[20px] font-semibold leading-tight">Lo que viene</p>
+      <div className="pointer-events-none absolute left-4 bottom-4 md:left-5 md:bottom-5 z-[2] text-white">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-white/75 mb-1">{kicker}</p>
+        <p className="text-[17px] md:text-[20px] font-semibold leading-tight">{cur.title ?? title}</p>
       </div>
-      <div className="absolute right-4 bottom-5 md:right-5 flex gap-1.5">
+      <div className="absolute right-4 bottom-5 md:right-5 z-[2] flex gap-1.5">
         {slides.map((s, k) => (
           <button
             key={s.src}
@@ -90,6 +96,24 @@ function ProximamenteCarousel({ className = '' }: { className?: string }) {
             className={`h-[3px] rounded-full transition-all ${k === i ? 'w-6 bg-white' : 'w-3 bg-white/50'}`}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+/** Prenda que todavía no está cargada en Woo: solo el mockup, sin link ni precio. */
+function UpcomingCell({ item }: { item: Ss27Upcoming }) {
+  return (
+    <div>
+      <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
+        <Image src={item.src} alt={item.name} fill sizes="(max-width: 1024px) 50vw, 25vw" className="object-cover" />
+        <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider bg-black/70 text-white rounded-[6px]">
+          Próximamente
+        </span>
+      </div>
+      <div className="mt-3 px-0.5">
+        <p className="text-[13px] leading-tight uppercase">{item.name}</p>
+        <p className="text-[12px] text-muted-foreground mt-1">Muy pronto</p>
       </div>
     </div>
   );
@@ -127,6 +151,8 @@ type Section = {
   /** Banner que abre la sección (la primera no lleva: viene pegada al hero). */
   banner?: [Ss27Media, Ss27Media];
   tile?: Ss27Media;
+  /** En vez de tile: foto grande que pasa entre varias (una por modelo). */
+  carousel?: Slide[];
   loops: string[];
 };
 const cat = (p: Ss27Product) => `${p.category} ${p.name}`.toLowerCase();
@@ -134,7 +160,7 @@ const cat = (p: Ss27Product) => `${p.category} ${p.name}`.toLowerCase();
 // accesorios al final). Adentro de cada sección, igual: ver byPrice.
 const SECTIONS: Section[] = [
   { id: 'hoodies', label: 'Hoodies', test: (p) => /hoodie/.test(cat(p)), tile: SS27_MEDIA.duoVideo, loops: ['l-eagle', 'l-distressed'] },
-  { id: 'remeras', label: 'Remeras', test: (p) => /\btee\b|polo|remera/.test(cat(p)) && !/longsleeve/.test(cat(p)), banner: [SS27_MEDIA.hHype, SS27_MEDIA.piso018], tile: SS27_MEDIA.crestGrid, loops: ['l-018', 'l-hhype'] },
+  { id: 'remeras', label: 'Remeras', test: (p) => /\btee\b|polo|remera/.test(cat(p)) && !/longsleeve/.test(cat(p)), banner: [SS27_MEDIA.hHype, SS27_MEDIA.piso018], carousel: SS27_REMERAS_CAROUSEL, loops: ['l-018', 'l-hhype'] },
   { id: 'longsleeves', label: 'Longsleeves', test: (p) => /longsleeve/.test(cat(p)), banner: [SS27_MEDIA.lsPink, SS27_MEDIA.crossVideo], tile: SS27_MEDIA.waffleBlack, loops: ['l-pink', 'l-blue', 'l-raglan', 'l-waffle'] },
   { id: 'mas', label: 'Accesorios', test: () => true, loops: [] },
 ];
@@ -176,6 +202,7 @@ export default function Ss27Feed({ products }: { products: Ss27Product[] }) {
   }, [groups]);
 
   if (products.length === 0) return null;
+  const proxUpcoming = SS27_UPCOMING.filter((u) => u.section === 'proximamente');
   const nav = [...groups.map((g) => ({ id: g.s.id, label: g.s.label })), ...(proximamente.length ? [{ id: 'proximamente', label: 'Próximamente' }] : [])];
 
   return (
@@ -184,7 +211,7 @@ export default function Ss27Feed({ products }: { products: Ss27Product[] }) {
       <div className="sticky top-[var(--offset)] z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-3 mb-4 md:mb-6 bg-white/90 backdrop-blur-md flex items-end justify-between gap-4">
         <h2 className="min-w-0 flex flex-col md:flex-row md:items-baseline md:gap-x-3 text-[24px] md:text-[34px] font-semibold tracking-[-0.035em] leading-none">
           <span className="whitespace-nowrap">Spring Summer 27</span>
-          <span ref={navRef} className="mt-2 md:mt-0 flex items-baseline gap-x-1.5 md:gap-x-2 overflow-x-auto [scrollbar-width:none] text-[17px] md:text-[34px] whitespace-nowrap">
+          <span ref={navRef} className="mt-2 md:mt-0 pb-[0.2em] -mb-[0.2em] flex items-baseline gap-x-1.5 md:gap-x-2 overflow-x-auto [scrollbar-width:none] text-[17px] md:text-[34px] whitespace-nowrap">
             {nav.map((x, k) => (
               <span key={x.id} data-nav={x.id} className="flex items-baseline gap-x-1.5 md:gap-x-2">
                 {k > 0 && <span className="text-foreground/25">/</span>}
@@ -202,20 +229,29 @@ export default function Ss27Feed({ products }: { products: Ss27Product[] }) {
 
       {groups.map(({ s, items }, gi) => {
         const loops = SS27_LOOPS.filter((m) => s.loops.includes(m.id));
-        const used = items.length + (s.tile ? 4 : 0);
+        const upcoming = SS27_UPCOMING.filter((u) => u.section === s.id);
+        const big = s.tile || s.carousel ? 4 : 0;
+        const used = items.length + upcoming.length + big;
         const fill = Math.min((4 - (used % 4)) % 4, loops.length);
         return (
           <div key={s.id} id={`ss27-${s.id}`} className="scroll-mt-[calc(var(--offset)+120px)] mb-12 md:mb-16">
             {gi > 0 && s.banner && <SplitBanner items={s.banner} />}
-            <SectionTitle label={s.label} count={items.length} />
+            <SectionTitle label={s.label} count={items.length + upcoming.length} />
             <div className={GRID}>
-              {s.tile && (
+              {s.carousel ? (
+                <PhotoCarousel
+                  slides={s.carousel}
+                  kicker={s.label}
+                  className={`col-span-2 row-span-1 lg:row-span-2 aspect-[4/5] lg:aspect-auto lg:min-h-full ${gi % 2 ? 'lg:col-start-3' : 'lg:col-start-1'}`}
+                />
+              ) : s.tile && (
                 <MediaTile
                   media={s.tile}
                   className={`col-span-2 row-span-1 lg:row-span-2 aspect-[4/5] lg:aspect-auto lg:min-h-full ${gi % 2 ? 'lg:col-start-3' : 'lg:col-start-1'}`}
                 />
               )}
               {items.map((p) => <Card key={p.slug} p={p} />)}
+              {upcoming.map((u) => <UpcomingCell key={u.id} item={u} />)}
               {loops.slice(0, fill).map((m) => <LoopCell key={m.id} m={m} />)}
             </div>
           </div>
@@ -228,9 +264,10 @@ export default function Ss27Feed({ products }: { products: Ss27Product[] }) {
           <SectionTitle label="Próximamente" count={Math.max(PROX_SLOTS, proximamente.length)} />
           {/* Carrusel grande + los lugares de lo que viene (2x2 al costado). */}
           <div className={GRID}>
-            <ProximamenteCarousel className="col-span-2 row-span-1 lg:row-span-2 aspect-[4/5] lg:aspect-auto lg:min-h-full" />
+            <PhotoCarousel slides={SS27_PROXIMAMENTE} kicker="Spring Summer 27" title="Lo que viene" className="col-span-2 row-span-1 lg:row-span-2 aspect-[4/5] lg:aspect-auto lg:min-h-full" />
             {proximamente.map((p) => <Card key={p.slug} p={p} />)}
-            {Array.from({ length: Math.max(0, PROX_SLOTS - proximamente.length) }, (_, k) => <SoonSlot key={k} />)}
+            {proxUpcoming.map((u) => <UpcomingCell key={u.id} item={u} />)}
+            {Array.from({ length: Math.max(0, PROX_SLOTS - proximamente.length - proxUpcoming.length) }, (_, k) => <SoonSlot key={k} />)}
           </div>
         </div>
       )}
