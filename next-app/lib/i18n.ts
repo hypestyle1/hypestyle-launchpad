@@ -474,6 +474,9 @@ const DICT: Dict = {
   'Fechas estimadas, contando de 5 a 10 días hábiles.': { EN: 'Estimated dates, based on 5 to 10 business days.', PT: 'Datas estimadas, considerando de 5 a 10 dias úteis.', DE: 'Geschätzte Termine, ausgehend von 5 bis 10 Werktagen.', FR: 'Dates estimées, sur la base de 5 à 10 jours ouvrés.', IT: 'Date stimate, calcolate su 5-10 giorni lavorativi.' },
   'Ver las fotos de ella': { EN: 'See the photos on her', PT: 'Ver as fotos dela', DE: 'Fotos an ihr ansehen', FR: 'Voir les photos sur elle', IT: 'Vedi le foto su di lei' },
   'Él': { EN: 'Him', PT: 'Ele', DE: 'Er', FR: 'Lui', IT: 'Lui' },
+  'Él mide': { EN: 'He is', PT: 'Ele mede', DE: 'Er ist', FR: 'Il mesure', IT: 'Lui è alto' },
+  'Ella mide': { EN: 'She is', PT: 'Ela mede', DE: 'Sie ist', FR: 'Elle mesure', IT: 'Lei è alta' },
+  'y usa talle': { EN: 'and wears size', PT: 'e usa tamanho', DE: 'und trägt Größe', FR: 'et porte la taille', IT: 'e indossa la taglia' },
   'Ella': { EN: 'Her', PT: 'Ela', DE: 'Sie', FR: 'Elle', IT: 'Lei' },
 };
 
