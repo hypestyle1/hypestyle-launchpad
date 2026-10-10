@@ -12,7 +12,7 @@ import VideoSection from '@/components/VideoSection';
 import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
 import InstagramFeed from '@/components/InstagramFeed';
 import Footer from '@/components/Footer';
-import HeroSs27, { type HeroVariant } from '@/components/ss27-home/HeroSs27';
+import HeroSs27 from '@/components/ss27-home/HeroSs27';
 import Ss27Feed, { type FeedVariant } from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
@@ -33,9 +33,8 @@ export const metadata = buildMetadata({
   path: '/',
 });
 
-// Selector de variantes para iterar el diseño en local (?hero=&v=). Solo en
+// Selector de variantes para iterar el diseño en local (?v=). Solo en
 // `next dev`: en cualquier build se usan las por defecto.
-const HEROES: HeroVariant[] = ['film', 'carrusel', 'tira'];
 const FEEDS: FeedVariant[] = ['grilla', 'capitulos', 'split'];
 
 /**
@@ -57,7 +56,6 @@ const FEEDS: FeedVariant[] = ['grilla', 'capitulos', 'split'];
  */
 export default async function Home({ searchParams }: { searchParams: Record<string, string | undefined> }) {
   const sp = process.env.NODE_ENV === 'development' ? searchParams : {};
-  const heroVariant = HEROES.find((h) => h === sp.hero) ?? 'film';
   const feedVariant = FEEDS.find((f) => f === sp.v) ?? 'grilla';
 
   const queryClient = new QueryClient();
@@ -80,7 +78,7 @@ export default async function Home({ searchParams }: { searchParams: Record<stri
         <h1 className="sr-only">
           HYPESTYLE — Streetwear argentino. Drops limitados, envíos a todo el mundo.
         </h1>
-        <HeroSs27 variant={heroVariant} />
+        <HeroSs27 />
         {/* Orden: el drop nuevo arriba (SS27 + sus looks), después FW26, best
             sellers, básicos, editorial y la prueba social al final. Promo y
             Flash Sale devuelven null sin campaña. */}

@@ -169,3 +169,10 @@ export const SS27_HERO_SLIDES: Ss27Media[] = [
   SS27_MEDIA.waffleBlack,
   SS27_MEDIA.lsBlue,
 ];
+
+// ── Próximamente ────────────────────────────────────────────────────────────
+/** Fotos de la celda "Próximamente" (al final de la grilla), en orden. */
+export const SS27_PROXIMAMENTE: { src: string; alt: string }[] = [
+  { src: '/ss27/home/proximamente-creative-goods.webp', alt: 'Hype Creative Goods Raglan Longsleeve rosa' },
+  { src: '/ss27/home/proximamente-doc-eagle.webp', alt: 'Department of Culture Eagle Raglan Longsleeve rosa' },
+];

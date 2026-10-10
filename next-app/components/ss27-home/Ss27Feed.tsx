@@ -1,11 +1,12 @@
 'use client';
 
-import { Fragment, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import MediaTile, { MediaFill } from './MediaTile';
 import { toCardProps, type Ss27Product } from '@/lib/ss27-coleccion';
-import { SS27_LOOPS, SS27_MEDIA, interleave, splitChapters, type Ss27Media } from '@/lib/ss27-home';
+import { SS27_LOOPS, SS27_MEDIA, SS27_PROXIMAMENTE, interleave, splitChapters, type Ss27Media } from '@/lib/ss27-home';
 
 export type FeedVariant = 'grilla' | 'capitulos' | 'split';
 
@@ -28,6 +29,52 @@ function LoopCell({ m }: { m: Ss27Media }) {
         <p className="text-[12px] text-muted-foreground mt-1 underline underline-offset-4 decoration-foreground/30">Ver prenda</p>
       </div>
     </Link>
+  );
+}
+
+/**
+ * Las prendas "Próximamente" no van sueltas en la grilla: todas juntas en la
+ * última celda, con sus fotos pasando solas. Sin link ni talles (todavía no
+ * se venden); el texto lista los nombres.
+ */
+function ProximamenteCell({ items }: { items: Ss27Product[] }) {
+  const slides = SS27_PROXIMAMENTE;
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (slides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => setI((x) => (x + 1) % slides.length), 2800);
+    return () => clearInterval(t);
+  }, [slides.length]);
+  return (
+    <div>
+      <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
+        {slides.map((s, k) => (
+          <Image
+            key={s.src}
+            src={s.src}
+            alt={s.alt}
+            fill
+            sizes="(max-width: 768px) 50vw, 25vw"
+            className="object-cover object-top transition-opacity duration-700"
+            style={{ opacity: k === i ? 1 : 0 }}
+          />
+        ))}
+        <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider bg-black/70 backdrop-blur-md text-white rounded-[6px]">
+          Próximamente
+        </span>
+        <div className="absolute bottom-3 left-3 z-10 flex gap-1">
+          {slides.map((s, k) => (
+            <span key={s.src} className={`h-[3px] rounded-full transition-all ${k === i ? 'w-5 bg-white' : 'w-2.5 bg-white/50'}`} />
+          ))}
+        </div>
+      </div>
+      <div className="mt-3 px-0.5">
+        <p className="text-[13px] leading-tight">{items.length > 1 ? `${items.length} prendas más` : items[0]?.name}</p>
+        <p className="text-[12px] text-muted-foreground mt-1 leading-snug">
+          {items.length > 1 ? items.map((p) => p.name).join(' · ') : 'Muy pronto'}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -60,11 +107,14 @@ const EVERY = 6;
 
 function Grilla({ products }: { products: Ss27Product[] }) {
   const [filter, setFilter] = useState('todo');
-  const ordered = useMemo(() => interleave(products), [products]);
+  const ordered = useMemo(() => interleave(products.filter((p) => !p.comingSoon)), [products]);
+  const proximamente = useMemo(() => products.filter((p) => p.comingSoon), [products]);
   const f = FILTERS.find((x) => x.id === filter)!;
   const list = ordered.filter((p) => f.test(p.category));
   const withMedia = filter === 'todo';
-  const fill = withMedia ? (4 - (list.length % 4)) % 4 : 0;
+  // La celda Próximamente cierra la grilla; los giros 360 completan la fila antes.
+  const prox = withMedia && proximamente.length > 0 ? 1 : 0;
+  const fill = withMedia ? (4 - ((list.length + prox) % 4)) % 4 : 0;
 
   return (
     <>
@@ -98,6 +148,7 @@ function Grilla({ products }: { products: Ss27Product[] }) {
           );
         })}
         {SS27_LOOPS.slice(0, fill).map((m) => <LoopCell key={m.id} m={m} />)}
+        {prox > 0 && <ProximamenteCell items={proximamente} />}
       </div>
     </>
   );
