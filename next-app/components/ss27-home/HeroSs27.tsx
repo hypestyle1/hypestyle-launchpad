@@ -250,15 +250,13 @@ function HeroDesktop() {
               <span className="block text-white/90 text-[15px] font-bold uppercase tracking-[0.06em] leading-[1.4]">{current.name2}</span>
             </Link>
 
-            <a
-              href="#ss27"
-              className="absolute right-8 bottom-8 z-20 inline-flex items-center gap-2
-                         text-white text-[12px] font-semibold uppercase tracking-[0.14em]
-                         [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] hover:opacity-80 transition-opacity"
-            >
-              Comprar SS27
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 3l5 5-5 5" /></svg>
-            </a>
+            {/* Mismo CTA que mobile: liquid glass con contorno metálico. Va en un
+                wrapper absoluto: el botón tiene que quedar position:relative. */}
+            <div className="absolute right-8 bottom-8 z-20">
+              <LiquidButton href={COLECCION} size="xl" onDark metalRim className="text-white text-[14px] font-semibold tracking-[0.01em]">
+                Ver colección
+              </LiquidButton>
+            </div>
           </div>
         </div>
 
