@@ -10,6 +10,7 @@ import { getActiveDiscountStatus } from '@/lib/goal-discount';
 import { GOAL_DISCOUNT_SLUG } from '@/hooks/useGoalDiscount';
 import { cotizarAndreani } from '@/lib/andreani-cotizador';
 import { cuponConEnvioGratis } from '@/lib/cupon-envio-gratis';
+import { incluyeEnvioGratis } from '@/lib/envio';
 import { precioPackRegular } from '@/lib/promo-pack-regular';
 import {
   descuentos, envioNacional, lineasFisicas, preciosDeLineas, subtotal,
@@ -105,6 +106,7 @@ export async function calcularPedido(args: {
       costoCliente: args.envio.costoCliente,
       subtotalFisico,
       cuponEnvioGratis: await cuponConEnvioGratis(args.envio.cupon),
+      productoConEnvioGratis: incluyeEnvioGratis(lineasFisicas(lineas).map((l) => l.id)),
     });
     const eCliente = Math.round(Number(args.envio.costoCliente) || 0);
     if (envio.verificado && eCliente !== envio.costo) diferencias.push(`envío: navegador ${eCliente}, servidor ${envio.costo}`);
