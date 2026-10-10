@@ -13,7 +13,7 @@ import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
 import InstagramFeed from '@/components/InstagramFeed';
 import Footer from '@/components/Footer';
 import HeroSs27 from '@/components/ss27-home/HeroSs27';
-import Ss27Feed, { type FeedVariant } from '@/components/ss27-home/Ss27Feed';
+import Ss27Feed from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
 import { fetchHomeReviews } from '@/lib/reviews/server';
@@ -33,10 +33,6 @@ export const metadata = buildMetadata({
   path: '/',
 });
 
-// Selector de variantes para iterar el diseño en local (?v=). Solo en
-// `next dev`: en cualquier build se usan las por defecto.
-const FEEDS: FeedVariant[] = ['grilla', 'capitulos', 'split'];
-
 /**
  * NewInFW26, BasicosSection, BackInStock y MasHypeSection comparten la query
  * ['products'] de React Query, que pedía /api/products desde el browser: las
@@ -54,10 +50,7 @@ const FEEDS: FeedVariant[] = ['grilla', 'capitulos', 'split'];
  * el mu-plugin, igual que /colecciones/ss27, y llegan por props. Antes de la
  * apertura la lista viene vacía y la sección no se muestra.
  */
-export default async function Home({ searchParams }: { searchParams: Record<string, string | undefined> }) {
-  const sp = process.env.NODE_ENV === 'development' ? searchParams : {};
-  const feedVariant = FEEDS.find((f) => f === sp.v) ?? 'grilla';
-
+export default async function Home() {
   const queryClient = new QueryClient();
   // Las reseñas van por separado: no pasan por React Query, la sección las
   // recibe por props. Sin esto se montaba vacía y a los 6–9s insertaba ~715px
@@ -85,7 +78,7 @@ export default async function Home({ searchParams }: { searchParams: Record<stri
         <div className="relative z-10 bg-white">
           <Promo3x2Section />
           <FlashSaleSection />
-          <Ss27Feed products={ss27.state === 'open' ? ss27.products : []} variant={feedVariant} />
+          <Ss27Feed products={ss27.state === 'open' ? ss27.products : []} />
           <ShopTheLook />
           <NewInFW26 />
           <VideoSection />
