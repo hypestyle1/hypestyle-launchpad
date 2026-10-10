@@ -13,9 +13,9 @@ import { decodeEntities, isComingSoonNode, withPlainPrices } from './private-acc
 export const SS27_PATH = '/colecciones/ss27/';
 
 export const SS27_HERO_IMAGES = [
-  { src: '/ss27/coleccion/hero-duo-grey.webp', alt: 'Hype Distressed Hoodie gris y Athletic Dept Polo gris, Spring Summer 27' },
-  { src: '/ss27/coleccion/hero-flatlay.webp', alt: 'Spring Summer 27 Part 01 completa, vista desde arriba' },
-  { src: '/ss27/coleccion/hero-duo-athletic.webp', alt: 'Athletic Dept Boxy Tee blanca y navy, Spring Summer 27' },
+  { src: '/ss27/coleccion/hero-duo-grey-hd.webp', alt: 'Hype Distressed Hoodie gris y Athletic Dept Polo gris, Spring Summer 27' },
+  { src: '/ss27/coleccion/hero-flatlay-hd.webp', alt: 'Spring Summer 27 Part 01 completa, vista desde arriba' },
+  { src: '/ss27/coleccion/hero-duo-athletic-hd.webp', alt: 'Athletic Dept Boxy Tee blanca y navy, Spring Summer 27' },
 ] as const;
 
 export const SS27_OG_IMAGE = '/ss27/coleccion/og.jpg';

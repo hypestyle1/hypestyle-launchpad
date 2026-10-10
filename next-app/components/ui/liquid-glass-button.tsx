@@ -16,10 +16,13 @@ import { cn } from '@/lib/utils';
  * varias capas adentro) recibe `href` y se renderiza como Link.
  * Safari no soporta backdrop-filter con url(): ahí queda el backdrop-blur de la
  * clase como respaldo.
+ * Hover: escala, brillo alrededor, el vidrio se aclara y cruza un reflejo. En
+ * celulares (sin hover) el reflejo pasa solo cada pocos segundos
+ * (.liquid-sheen-idle en globals.css).
  * `onDark`: brillos blancos en el borde, para usarlo sobre foto o video.
  */
 const liquidbuttonVariants = cva(
-  'relative isolate inline-flex items-center justify-center cursor-pointer gap-2 whitespace-nowrap rounded-full text-sm font-medium transition duration-300 hover:scale-105 disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-[3px] focus-visible:ring-white/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
+  'group relative isolate inline-flex items-center justify-center cursor-pointer gap-2 whitespace-nowrap rounded-full text-sm font-medium transition duration-300 ease-out hover:scale-105 active:scale-[0.97] hover:shadow-[0_0_28px_rgba(255,255,255,0.28)] disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-[3px] focus-visible:ring-white/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
   {
     variants: {
       size: {
@@ -55,6 +58,11 @@ function LiquidButton({ className, size, onDark, href, children, ...props }: Liq
         className="absolute inset-0 isolate -z-10 overflow-hidden rounded-full backdrop-blur-sm"
         style={{ backdropFilter: `url("#${filterId}")`, WebkitBackdropFilter: `url("#${filterId}")` }}
       />
+      {/* Hover: el vidrio se aclara un poco y cruza un reflejo de lado a lado. */}
+      <span className="pointer-events-none absolute inset-0 z-[1] rounded-full bg-white/0 transition-colors duration-300 group-hover:bg-white/[0.12]" />
+      <span className="pointer-events-none absolute inset-0 z-[2] overflow-hidden rounded-full">
+        <span className="liquid-sheen-idle absolute inset-y-0 -left-1/2 w-1/2 -translate-x-[120%] -skew-x-12 bg-gradient-to-r from-transparent via-white/45 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-[320%]" />
+      </span>
       <span className="pointer-events-none relative z-10">{children}</span>
       <GlassFilter id={filterId} />
     </>

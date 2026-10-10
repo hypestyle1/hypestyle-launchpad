@@ -16,7 +16,7 @@ const drops: Drop[] = [
     name: "Spring Summer 27 · Part 01",
     season: "Colección — Spring Summer 2027",
     description: "Boxy tees, waffle longsleeves y hoodies lavados. La primera parte de la temporada, en producción limitada.",
-    image: "ss27/coleccion/hero-duo-grey.webp",
+    image: "ss27/coleccion/hero-duo-grey-hd.webp",
     href: "/colecciones/ss27/",
     status: "nuevo",
   },
