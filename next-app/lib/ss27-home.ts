@@ -3,8 +3,9 @@
 // Los productos NO se listan acá: salen de la colección (tag `ss27-part-01`,
 // lib/ss27-coleccion-server.ts), así que cualquier prenda que se publique en
 // Woo con el tag aparece sola. Acá solo vive lo editorial: qué foto o video
-// va intercalado entre los productos y a qué ficha lleva, y cómo se agrupan
-// los capítulos. Un slug que no esté publicado simplemente no se muestra.
+// va intercalado entre los productos y a qué ficha lleva, más lo que acompaña
+// al drop sin el tag (SS27_HOME_EXTRA_SLUGS) y lo que todavía no está en Woo
+// (SS27_UPCOMING). Un slug que no esté publicado simplemente no se muestra.
 
 const B = '/ss27/banner/';
 const P = '/ss27/preview/';
@@ -76,98 +77,6 @@ export const SS27_LOOPS: Ss27Media[] = [
   { id: 'l-blue', kind: 'video', ...v360('athletic-dept-longsleeve-blue-hombre'), alt: 'Athletic Dept Longsleeve azul, giro 360', title: 'Athletic Dept blue', href: ficha('athletic-dept-blue-longsleeve') },
   { id: 'l-hhype', kind: 'video', ...v360('h-hype-boxy-tee-navy-hombre'), alt: 'H Hype Tee navy, giro 360', title: 'H Hype navy', href: ficha('h-hype-navy-tee') },
   { id: 'l-waffle', kind: 'video', ...v360('hype-department-waffle-longsleeve-washed-black-mujer'), alt: 'Department of Culture Waffle, giro 360', title: 'Department of Culture', href: ficha('department-of-culture-washed-black-waffle-longsleeve') },
-];
-
-// ── Capítulos ───────────────────────────────────────────────────────────────
-// Agrupan la colección por línea. Se arma por prefijo de slug: un producto
-// nuevo de la misma línea entra solo; lo que no matchee ningún capítulo cae
-// en el último ("Y más"), nunca desaparece.
-export type Ss27Chapter = {
-  id: string;
-  title: string;
-  /** Línea corta debajo del título. */
-  line: string;
-  match: (slug: string, category: string) => boolean;
-  /** Foto o video que abre el capítulo, y las piezas que se intercalan. */
-  cover: Ss27Media;
-  inserts: Ss27Media[];
-};
-
-export const SS27_CHAPTERS: Ss27Chapter[] = [
-  {
-    id: 'athletic',
-    title: 'Athletic Dept',
-    line: 'Boxy tees, longsleeves y el polo. Est. 2018.',
-    match: (s) => s.startsWith('athletic-dept'),
-    cover: SS27_MEDIA.lsPink,
-    inserts: [SS27_MEDIA.pisoBoxy, SS27_MEDIA.polo],
-  },
-  {
-    id: 'varsity',
-    title: 'Varsity',
-    line: 'Style & Culture University, Worn Varsity Club y H Hype.',
-    match: (s) => s.startsWith('style-culture') || s.startsWith('worn-varsity') || s.startsWith('h-hype'),
-    cover: SS27_MEDIA.crestGrid,
-    inserts: [SS27_MEDIA.piso018, SS27_MEDIA.hHype],
-  },
-  {
-    id: 'waffle',
-    title: 'Waffles & raglans',
-    line: 'Tejido waffle lavado y raglans de manga estampada.',
-    match: (s, c) => /waffle|raglan/.test(s) || c === 'Longsleeve',
-    cover: SS27_MEDIA.waffleBlack,
-    inserts: [SS27_MEDIA.crossVideo, SS27_MEDIA.raglan],
-  },
-  {
-    id: 'hoodies',
-    title: 'Hoodies',
-    line: 'Lavados a mano, gastados a propósito.',
-    match: (s, c) => c === 'Hoodie' || /hoodie/.test(s),
-    cover: SS27_MEDIA.eagleVideo,
-    inserts: [SS27_MEDIA.distressed, SS27_MEDIA.splatter],
-  },
-  {
-    id: 'mas',
-    title: 'Y más',
-    line: 'Lo que completa el drop.',
-    match: () => true,
-    cover: SS27_MEDIA.flatlay,
-    inserts: [],
-  },
-];
-
-/** Reparte los productos en capítulos, en el orden de SS27_CHAPTERS (primer match gana). */
-export function splitChapters<T extends { slug: string; category: string }>(products: T[]) {
-  const buckets = SS27_CHAPTERS.map((c) => ({ chapter: c, items: [] as T[] }));
-  for (const p of products) {
-    const b = buckets.find((x) => x.chapter.match(p.slug, p.category));
-    b?.items.push(p);
-  }
-  return buckets.filter((b) => b.items.length > 0);
-}
-
-/**
- * Orden de la grilla continua (opción A): intercala por línea para que el
- * scroll no sea 6 remeras iguales seguidas. Toma uno de cada capítulo por turno.
- */
-export function interleave<T extends { slug: string; category: string }>(products: T[]) {
-  const groups = splitChapters(products).map((g) => [...g.items]);
-  const out: T[] = [];
-  while (groups.some((g) => g.length)) for (const g of groups) if (g.length) out.push(g.shift()!);
-  return out;
-}
-
-// ── Hero ────────────────────────────────────────────────────────────────────
-/** Slides del carrusel provisorio: foto vertical, línea y ficha. */
-export const SS27_HERO_SLIDES: Ss27Media[] = [
-  SS27_MEDIA.duo,
-  SS27_MEDIA.eagleElla,
-  SS27_MEDIA.lsPink,
-  SS27_MEDIA.cross,
-  SS27_MEDIA.distressed,
-  SS27_MEDIA.raglan,
-  SS27_MEDIA.waffleBlack,
-  SS27_MEDIA.lsBlue,
 ];
 
 // ── Próximamente ────────────────────────────────────────────────────────────
