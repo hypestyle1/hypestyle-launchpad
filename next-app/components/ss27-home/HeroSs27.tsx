@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MediaFill } from './MediaTile';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { SS27_MEDIA, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
 
 const SLIDE_MS = 4500;
@@ -86,18 +87,13 @@ function HeroMobile() {
           </div>
         </div>
 
-        {/* Kicker + pills. Bien arriba del borde: abajo flotan el badge de
+        {/* Kicker + botón glass. Bien arriba del borde: abajo flotan el badge de
             reseñas, el WhatsApp y el botón de accesibilidad. */}
         <div className="absolute inset-x-4 bottom-[112px] flex flex-col items-center text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.04em]">SS27-01 · Ya disponible</p>
-          <div className="mt-3 flex gap-2.5">
-            <a href="#ss27" className="inline-flex items-center h-10 px-5 rounded-full bg-white text-black text-[13px] font-medium hover:bg-white/85 transition-colors">
-              Comprar el drop
-            </a>
-            <Link href={COLECCION} className="inline-flex items-center h-10 px-5 rounded-full bg-white/15 border border-white/60 backdrop-blur-md text-white text-[13px] font-medium hover:bg-white/25 transition-colors">
-              Ver colección
-            </Link>
-          </div>
+          <LiquidButton href={COLECCION} size="xl" onDark className="mt-4 text-white text-[14px] font-semibold tracking-[0.01em]">
+            Ver colección
+          </LiquidButton>
         </div>
       </div>
     </section>
