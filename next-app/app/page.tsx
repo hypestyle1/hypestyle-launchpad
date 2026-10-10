@@ -18,6 +18,9 @@ import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query
 import { fetchAllProducts } from '@/lib/products-server';
 import { fetchHomeReviews } from '@/lib/reviews/server';
 import { loadSs27Page } from '@/lib/ss27-coleccion-server';
+import { SS27_HOME_EXTRA_SLUGS } from '@/lib/ss27-home';
+import type { NormalizedProduct } from '@/lib/products-normalize';
+import type { Ss27Product } from '@/lib/ss27-coleccion';
 import { buildMetadata } from '@/lib/seo';
 
 // Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra,
@@ -61,6 +64,15 @@ export default async function Home() {
     loadSs27Page(),
   ]);
 
+  // Lo que acompaña al drop sin ser de la colección (medias, gorra): sale del
+  // catálogo que ya se precargó arriba. Ver SS27_HOME_EXTRA_SLUGS.
+  const catalog = queryClient.getQueryData<NormalizedProduct[]>(['products']) ?? [];
+  const extras: Ss27Product[] = SS27_HOME_EXTRA_SLUGS
+    .filter((slug) => !ss27.products.some((p) => p.slug === slug))
+    .map((slug) => catalog.find((p) => p.slug === slug))
+    .filter((p): p is NormalizedProduct => Boolean(p))
+    .map((p) => ({ ...p, comingSoon: false }));
+
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <AnnouncementBar />
@@ -78,7 +90,7 @@ export default async function Home() {
         <div className="relative z-10 bg-white">
           <Promo3x2Section />
           <FlashSaleSection />
-          <Ss27Feed products={ss27.state === 'open' ? ss27.products : []} />
+          <Ss27Feed products={ss27.state === 'open' ? [...ss27.products, ...extras] : []} />
           <ShopTheLook />
           <NewInFW26 />
           <VideoSection />

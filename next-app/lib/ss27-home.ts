@@ -176,3 +176,11 @@ export const SS27_PROXIMAMENTE: { src: string; alt: string }[] = [
   { src: '/ss27/home/proximamente-creative-goods.webp', alt: 'Hype Creative Goods Raglan Longsleeve rosa' },
   { src: '/ss27/home/proximamente-doc-eagle.webp', alt: 'Department of Culture Eagle Raglan Longsleeve rosa' },
 ];
+
+/**
+ * Productos que van en la home junto con SS27 sin tener el tag ss27-part-01
+ * (no son de la colección, pero acompañan el drop). Salen del catálogo general
+ * que el home ya precarga; no tocan /colecciones/ss27 ni Private Access.
+ * Cuando la gorra nueva esté cargada en Woo, sumar su slug acá.
+ */
+export const SS27_HOME_EXTRA_SLUGS = ['pack-x3-medias-hype'];

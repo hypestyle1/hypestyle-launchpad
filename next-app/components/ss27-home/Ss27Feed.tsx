@@ -130,12 +130,17 @@ type Section = {
   loops: string[];
 };
 const cat = (p: Ss27Product) => `${p.category} ${p.name}`.toLowerCase();
+// Orden: de lo más caro a lo más barato de la colección (hoodies primero,
+// accesorios al final). Adentro de cada sección, igual: ver byPrice.
 const SECTIONS: Section[] = [
-  { id: 'remeras', label: 'Remeras', test: (p) => /\btee\b|polo|remera/.test(cat(p)) && !/longsleeve/.test(cat(p)), tile: SS27_MEDIA.crestGrid, loops: ['l-018', 'l-hhype'] },
+  { id: 'hoodies', label: 'Hoodies', test: (p) => /hoodie/.test(cat(p)), tile: SS27_MEDIA.duoVideo, loops: ['l-eagle', 'l-distressed'] },
+  { id: 'remeras', label: 'Remeras', test: (p) => /\btee\b|polo|remera/.test(cat(p)) && !/longsleeve/.test(cat(p)), banner: [SS27_MEDIA.hHype, SS27_MEDIA.piso018], tile: SS27_MEDIA.crestGrid, loops: ['l-018', 'l-hhype'] },
   { id: 'longsleeves', label: 'Longsleeves', test: (p) => /longsleeve/.test(cat(p)), banner: [SS27_MEDIA.lsPink, SS27_MEDIA.crossVideo], tile: SS27_MEDIA.waffleBlack, loops: ['l-pink', 'l-blue', 'l-raglan', 'l-waffle'] },
-  { id: 'hoodies', label: 'Hoodies', test: (p) => /hoodie/.test(cat(p)), banner: [SS27_MEDIA.eagleEl, SS27_MEDIA.splatterVideo], tile: SS27_MEDIA.duoVideo, loops: ['l-eagle', 'l-distressed'] },
   { id: 'mas', label: 'Accesorios', test: () => true, loops: [] },
 ];
+/** Precio de lista (sin la oferta): el orden no cambia cuando se cae el sale. Empate: el orden de Woo. */
+const listPrice = (p: Ss27Product) => p.originalPrice ?? p.price;
+const byPrice = (items: Ss27Product[]) => items.map((p, i) => ({ p, i })).sort((x, y) => listPrice(y.p) - listPrice(x.p) || x.i - y.i).map((x) => x.p);
 const PROX_BANNER: [Ss27Media, Ss27Media] = [SS27_MEDIA.pisoBoxy, SS27_MEDIA.eagleVideo];
 const GRID = 'grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9 [grid-auto-flow:row_dense]';
 
@@ -145,7 +150,7 @@ export default function Ss27Feed({ products }: { products: Ss27Product[] }) {
     return SECTIONS.map((s) => {
       const items = left.filter(s.test);
       for (const p of items) left.splice(left.indexOf(p), 1);
-      return { s, items };
+      return { s, items: byPrice(items) };
     }).filter((g) => g.items.length > 0);
   }, [products]);
   const proximamente = useMemo(() => products.filter((p) => p.comingSoon), [products]);
