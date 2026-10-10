@@ -292,7 +292,7 @@ void main() {
   fragColor = vec4(color, opacity);
 }`;
 
-interface MetallicShaderUniforms {
+export interface MetallicShaderUniforms {
   colorBack: string;
   colorTint: string;
   repetition: number;
@@ -340,7 +340,7 @@ function createShader(gl: WebGL2RenderingContext, type: number, source: string) 
   return shader;
 }
 
-class MetallicShaderMount {
+export class MetallicShaderMount {
   private gl: WebGL2RenderingContext | null = null;
   private program: WebGLProgram | null = null;
   private canvas: HTMLCanvasElement;
