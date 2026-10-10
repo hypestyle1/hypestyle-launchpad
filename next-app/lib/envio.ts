@@ -27,6 +27,24 @@
  */
 export const FREE_SHIPPING_THRESHOLD = 180000;
 
+/**
+ * Productos que traen el envío a sucursal incluido en el precio: con uno de
+ * estos en el carrito la sucursal sale gratis aunque no se llegue al umbral, y
+ * el domicilio paga la diferencia, igual que sobre el umbral. 10/10/2026: los
+ * tres hoodies SS27 pasaron de $98.000 a $110.000 para cubrir el envío.
+ */
+export const ENVIO_GRATIS_SLUGS: ReadonlySet<string> = new Set([
+  'splatter-hoodie-washed-grey',
+  'zolotye-kupola-washed-graphite-hoodie',
+  'hype-distressed-grey-hoodie',
+]);
+
+/** ¿Alguno de estos productos trae el envío a sucursal incluido? */
+export function incluyeEnvioGratis(slugs: Iterable<string>): boolean {
+  for (const s of slugs) if (ENVIO_GRATIS_SLUGS.has(s)) return true;
+  return false;
+}
+
 export type ModoEntrega = 'sucursal' | 'domicilio';
 
 /** Lo que devuelve /api/andreani-rates por cada tarifa. */
@@ -91,12 +109,17 @@ export interface ContextoEnvio {
   subtotalFisico: number;
   cuponEnvioGratis?: boolean;
   internacional?: boolean;
+  /** El carrito tiene un producto de ENVIO_GRATIS_SLUGS (ver incluyeEnvioGratis). */
+  productoConEnvioGratis?: boolean;
 }
 
-/** ¿El carrito llegó al umbral? Nunca para un envío al exterior. */
-export function alcanzaUmbral({ subtotalFisico, internacional }: ContextoEnvio): boolean {
+/**
+ * ¿El carrito llegó al umbral? Un producto con el envío incluido cuenta como
+ * haber llegado. Nunca para un envío al exterior.
+ */
+export function alcanzaUmbral({ subtotalFisico, internacional, productoConEnvioGratis }: ContextoEnvio): boolean {
   if (internacional) return false;
-  return subtotalFisico >= FREE_SHIPPING_THRESHOLD;
+  return !!productoConEnvioGratis || subtotalFisico >= FREE_SHIPPING_THRESHOLD;
 }
 
 /**

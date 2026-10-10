@@ -137,10 +137,11 @@ export function envioNacional(args: {
   costoCliente: unknown;
   subtotalFisico: number;
   cuponEnvioGratis: boolean;
+  productoConEnvioGratis?: boolean;
 }): ResultadoEnvio {
-  const { tarifas, tarifaId, subtotalFisico, cuponEnvioGratis } = args;
+  const { tarifas, tarifaId, subtotalFisico, cuponEnvioGratis, productoConEnvioGratis } = args;
   if (subtotalFisico <= 0) return { verificado: true, costo: 0, tarifa: { id: '', label: '', cost: 0 } };
-  const ctx = { subtotalFisico, cuponEnvioGratis, internacional: false };
+  const ctx = { subtotalFisico, cuponEnvioGratis, productoConEnvioGratis, internacional: false };
 
   if (!tarifas || tarifas.length === 0) {
     const c = Math.max(0, Math.round(Number(args.costoCliente) || 0));
