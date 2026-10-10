@@ -10,7 +10,7 @@ import { compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
 import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
 import { PACK_REGULAR_SLUGS, computePackRegularDiscount, packRegularFaltan, precioPackRegular } from "@/lib/promo-pack-regular";
 import GiftProgressBar from "@/components/GiftProgressBar";
-import { FREE_SHIPPING_THRESHOLD } from "@/lib/envio";
+import { FREE_SHIPPING_THRESHOLD, incluyeEnvioGratis } from "@/lib/envio";
 import { ScrollFadeList } from "@/components/ui/scroll-fade-list";
 import { Button } from "@/components/ui/button";
 import { suggestForCart } from "@/lib/cart-suggestions";
@@ -122,8 +122,10 @@ export default function CartDrawer() {
   // El regalo por compra no es un producto pago: no cuenta para el 3x2.
   const purchasableItems = items.filter(item => !item.isGift);
 
-  const remaining = Math.max(FREE_SHIPPING_THRESHOLD - total, 0);
-  const progress = Math.min((total / FREE_SHIPPING_THRESHOLD) * 100, 100);
+  // Un producto con el envío incluido (lib/envio) completa la barra solo.
+  const conEnvioIncluido = incluyeEnvioGratis(purchasableItems.map(item => item.id));
+  const remaining = conEnvioIncluido ? 0 : Math.max(FREE_SHIPPING_THRESHOLD - total, 0);
+  const progress = conEnvioIncluido ? 100 : Math.min((total / FREE_SHIPPING_THRESHOLD) * 100, 100);
   // El envío gratis es solo para Argentina (y solo a sucursal, ver lib/envio):
   // a quien compra desde afuera no se le promete nada.
   const desdeAfuera = country !== null && country !== 'AR';

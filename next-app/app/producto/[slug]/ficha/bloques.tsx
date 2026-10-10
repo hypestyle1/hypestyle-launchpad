@@ -9,7 +9,7 @@ import StockAlertForm from '@/components/StockAlertForm';
 import { getPublicReviewSummary } from '@/lib/reviews/public';
 import { normalizeCpAr } from '@/lib/postal-code';
 import {
-  FREE_SHIPPING_THRESHOLD, costoEnvio, modoDeTarifa, ordenarTarifas, type TarifaEnvio,
+  ENVIO_GRATIS_SLUGS, FREE_SHIPPING_THRESHOLD, costoEnvio, modoDeTarifa, ordenarTarifas, type TarifaEnvio,
 } from '@/lib/envio';
 import { ventanaEntrega, medidasModelo, type Modelo } from '@/lib/ficha';
 
@@ -289,6 +289,10 @@ export function LineaResenas() {
 
 const pesosSinCentavos = (n: number) => `$ ${Math.round(n).toLocaleString('es-AR')}`;
 
+/** Este producto solo ya sale con envío gratis a sucursal (umbral o envío incluido, ver lib/envio). */
+const conEnvioGratis = (p: FichaProps) =>
+  p.displayPrice >= FREE_SHIPPING_THRESHOLD || ENVIO_GRATIS_SLUGS.has(p.product.slug);
+
 /** Promesas en texto plano, sin íconos. */
 export function Promesas({ p }: { p: FichaProps }) {
   const { t, currency } = useLocale();
@@ -296,7 +300,7 @@ export function Promesas({ p }: { p: FichaProps }) {
     <div className="flex flex-col gap-0.5 text-[13px]">
       {currency === 'ARS' && (
         <span>
-          {p.displayPrice >= FREE_SHIPPING_THRESHOLD
+          {conEnvioGratis(p)
             ? t('Envío gratis a sucursal en este pedido.')
             : `${t('Envío gratis a sucursal desde')} ${pesosSinCentavos(FREE_SHIPPING_THRESHOLD)}.`}
         </span>
@@ -347,7 +351,7 @@ export function CuandoLlega({ p }: { p: FichaProps }) {
   }, [p.product.slug, p.displayPrice]);
 
   if (currency !== 'ARS') return null;
-  const ctx = { subtotalFisico: p.displayPrice };
+  const ctx = { subtotalFisico: p.displayPrice, productoConEnvioGratis: ENVIO_GRATIS_SLUGS.has(p.product.slug) };
   const ventana = ventanaEntrega();
 
   return (
@@ -408,7 +412,7 @@ export function Desplegable({ titulo, abierto = false, children }: { titulo: str
 
 export function TextoEnvios({ p }: { p: FichaProps }) {
   const { t, currency } = useLocale();
-  const gratis = currency === 'ARS' && p.displayPrice >= FREE_SHIPPING_THRESHOLD;
+  const gratis = currency === 'ARS' && conEnvioGratis(p);
   return (
     <>
       <p className="font-semibold text-foreground">{t('Envíos en Argentina')}</p>

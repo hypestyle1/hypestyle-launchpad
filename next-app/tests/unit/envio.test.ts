@@ -5,6 +5,7 @@ import {
   alcanzaUmbral,
   costoEnvio,
   envioBonificado,
+  incluyeEnvioGratis,
   modoDeTarifa,
   ordenarTarifas,
   tarifaPorDefecto,
@@ -126,5 +127,27 @@ describe('envíos al exterior', () => {
     const conCupon = { ...afuera, cuponEnvioGratis: true };
     expect(envioBonificado('domicilio', conCupon)).toBe(false);
     expect(costoEnvio(FEDEX, [FEDEX], conCupon)).toBe(85000);
+  });
+});
+
+describe('productos con el envío incluido', () => {
+  const CON_HOODIE = { subtotalFisico: 110000, productoConEnvioGratis: true };
+
+  it('reconoce los slugs de la lista', () => {
+    expect(incluyeEnvioGratis(['regular-tee-black', 'hype-distressed-grey-hoodie'])).toBe(true);
+    expect(incluyeEnvioGratis(['regular-tee-black'])).toBe(false);
+    expect(incluyeEnvioGratis([])).toBe(false);
+  });
+  it('la sucursal sale gratis aunque no se llegue al umbral', () => {
+    expect(alcanzaUmbral(CON_HOODIE)).toBe(true);
+    expect(costoEnvio(SUCURSAL, TARIFAS, CON_HOODIE)).toBe(0);
+    expect(envioBonificado('sucursal', CON_HOODIE)).toBe(true);
+  });
+  it('el domicilio paga la diferencia contra la sucursal', () => {
+    expect(costoEnvio(ESTANDAR, TARIFAS, CON_HOODIE)).toBe(8331 - 5556);
+    expect(envioBonificado('domicilio', CON_HOODIE)).toBe(false);
+  });
+  it('al exterior no aplica', () => {
+    expect(alcanzaUmbral({ ...CON_HOODIE, internacional: true })).toBe(false);
   });
 });

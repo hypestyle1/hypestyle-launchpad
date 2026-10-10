@@ -22,7 +22,7 @@ import { imgSrc } from '@/lib/img';
 import { normalizeCpAr } from '@/lib/postal-code';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
-import { FREE_SHIPPING_THRESHOLD, ahorroSucursal, alcanzaUmbral, costoEnvio, modoDeTarifa, ordenarTarifas, tarifaPorDefecto } from '@/lib/envio';
+import { FREE_SHIPPING_THRESHOLD, ahorroSucursal, alcanzaUmbral, costoEnvio, incluyeEnvioGratis, modoDeTarifa, ordenarTarifas, tarifaPorDefecto } from '@/lib/envio';
 import { isGiftCardItem } from '@/lib/gift-card';
 import GiftProgressBar from '@/components/GiftProgressBar';
 import { Stepper } from '@/components/ui/stepper';
@@ -512,7 +512,13 @@ export default function Checkout() {
   // El cupón de envío gratis cubre cualquier modo de entrega; el umbral, solo sucursal.
   const couponFreeShip = !isInternational && !!couponData?.free_shipping;
   // El umbral de envío gratis se mide sobre lo físico: una gift card no viaja.
-  const envioCtx = { subtotalFisico: subtotal - subtotalGift, cuponEnvioGratis: couponFreeShip, internacional: isInternational };
+  const envioCtx = {
+    subtotalFisico: subtotal - subtotalGift,
+    cuponEnvioGratis: couponFreeShip,
+    internacional: isInternational,
+    // El regalo por compra no se paga: no trae el envío incluido aunque sea uno de esos productos.
+    productoConEnvioGratis: incluyeEnvioGratis(items.filter((i) => !i.isGift).map((i) => i.id)),
+  };
   const sobreUmbral = alcanzaUmbral(envioCtx);
   const costoDe = (rate: ShippingRate) => costoEnvio(rate, shippingRates, envioCtx);
   const envioCosto = soloGift || !selectedRate ? 0 : costoDe(selectedRate);
@@ -1386,7 +1392,7 @@ export default function Checkout() {
                         </div>
                         <BarraEnvioGratis
                           falta={couponFreeShip || sobreUmbral ? 0 : FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico}
-                          progreso={couponFreeShip ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
+                          progreso={couponFreeShip || sobreUmbral ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
                         >
                           {couponFreeShip ? (
                             'Cupón de envío gratis aplicado.'
