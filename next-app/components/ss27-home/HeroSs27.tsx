@@ -252,7 +252,8 @@ function HeroDesktop() {
 
             {/* Mismo CTA que mobile: liquid glass con contorno metálico. Va en un
                 wrapper absoluto: el botón tiene que quedar position:relative. */}
-            <div className="absolute right-8 bottom-8 z-20">
+            <div className="absolute right-8 bottom-8 z-20 flex flex-col items-end">
+              <p className="mb-3 text-white text-[11px] font-semibold uppercase tracking-[0.04em]">SS27-01 · Ya disponible</p>
               <LiquidButton href={COLECCION} size="xl" onDark metalRim className="text-white text-[14px] font-semibold tracking-[0.01em]">
                 Ver colección
               </LiquidButton>
