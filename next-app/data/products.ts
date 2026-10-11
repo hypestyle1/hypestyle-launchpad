@@ -18,6 +18,8 @@ export interface Product {
   images: string[];
   video?: string; // URL de video de producto (meta WP "product_video_url"); se muestra como 1er slide
   customizable?: boolean;
+  /** Tag `proximamente` en Woo: la ficha se ve pero todavía no se vende. */
+  comingSoon?: boolean;
   customPreviewImage?: string;
   modelInfo?: string;
   sizeGuideImage?: string;

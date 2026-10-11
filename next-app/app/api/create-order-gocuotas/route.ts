@@ -5,6 +5,7 @@ import { PrecioError } from '@/lib/precio-servidor';
 import { lineasDeEnvio } from '@/lib/andreani-shipping-line';
 import { PRIVATE_ACCESS_COOKIE } from '@/lib/private-access/config';
 import { privateAccessForOrder, privateAccessMeta } from '@/lib/private-access/order';
+import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -34,9 +35,15 @@ async function wcGet(path: string) {
 }
 
 async function resolveItem(slug: string, size: string, itemName: string): Promise<{ product_id: number; variation_id?: number }> {
-  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type,stock_status&per_page=1`);
+  const products = await wcGet(`products?slug=${encodeURIComponent(slug)}&_fields=id,type,stock_status,tags&per_page=1`);
   if (!products.length) throw new Error(`Product not found: ${slug}`);
-  const { id: productId, type, stock_status } = products[0];
+  const { id: productId, type, stock_status, tags } = products[0];
+  // Próximamente: se muestra pero todavía no se vende. La ficha y el carrito ya
+  // lo frenan; esto cubre a quien llegue igual al checkout (link directo,
+  // carrito viejo guardado).
+  if ((tags ?? []).some((t: any) => t?.slug === COMING_SOON_TAG)) {
+    throw new OutOfStockError(`${itemName} todavía no está a la venta`);
+  }
 
   if (type !== 'variable') {
     if (stock_status === 'outofstock') {

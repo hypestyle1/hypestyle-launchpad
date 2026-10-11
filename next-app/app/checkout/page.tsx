@@ -1449,6 +1449,15 @@ export default function Checkout() {
                   {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
                   <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
                 </Button>
+                {/* El botón gris solo no dice qué falta (auditoría 11/10, UX-06):
+                    sin sucursal elegida parece que el checkout está trabado. */}
+                {!loadingRates && (!shippingReady || !branchReady) && (
+                  <p className="text-[12px] text-muted-foreground" aria-live="polite">
+                    {!shippingReady
+                      ? (isInternational ? 'Choose a shipping method to continue.' : 'Elegí un método de envío para continuar.')
+                      : 'Elegí una sucursal de Andreani para continuar.'}
+                  </p>
+                )}
                 <button type="button" onClick={() => setStep('info')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                   {isInternational ? 'Back to information' : 'Volver a información'}

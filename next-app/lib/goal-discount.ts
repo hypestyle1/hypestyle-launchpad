@@ -11,6 +11,12 @@ const WC_KEY = (process.env.WC_CONSUMER_KEY || '').trim();
 const WC_SEC = (process.env.WC_CONSUMER_SECRET || '').trim();
 
 export const PRODUCT_ID = 1571;
+/**
+ * Slug de la camiseta (PRODUCT_ID). Copia de GOAL_DISCOUNT_SLUG de
+ * hooks/useGoalDiscount: ese módulo es 'use client' y un server component que
+ * lo importa recibe una referencia de cliente, no el texto.
+ */
+export const GOAL_PRODUCT_SLUG = 'la-nuestra-jersey-mundial-26';
 const PER_GOAL = 0.07;
 const MAX_DISCOUNT = 0.5;
 const SALE_HOURS = 24;

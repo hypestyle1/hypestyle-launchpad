@@ -34,11 +34,11 @@ export async function checkStock(slug: string, size: string): Promise<'ok' | 'lo
     const timeout = setTimeout(() => controller.abort(), 3000);
     const res = await fetch(GRAPHQL_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-      },
+      // Solo Content-Type: el CORS de WordPress acepta Content-Type,
+      // Authorization, X-WP-Nonce y X-Hypestyle-Secret. Cualquier otro header
+      // (Cache-Control, Pragma) hace fallar el preflight, el catch devuelve
+      // 'ok' y el chequeo deja pasar todo. `cache: 'no-store'` alcanza.
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: CHECK_STOCK, variables: { slug } }),
       signal: controller.signal,
       cache: 'no-store',

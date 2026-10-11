@@ -1,6 +1,7 @@
 import { fetchGraphQL } from '@/lib/graphql-client';
 import { type Product } from '@/data/products';
 import { CUSTOMIZABLE_SLUGS } from '@/lib/customizable';
+import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 
 // Sin 'use client' a propósito: este módulo lo importan tanto el hook
 // hooks/useProduct.ts (browser) como app/producto/[slug]/page.tsx (servidor),
@@ -14,6 +15,7 @@ const GET_PRODUCT = `
       id
       name
       slug
+      productTags { nodes { slug } }
       description
       shortDescription
       ... on SimpleProduct {
@@ -505,6 +507,7 @@ function fromWPNode(node: any): Product {
     measurementsTable: measurementsTable.length ? measurementsTable : undefined,
     careItems, careNote, fit, sizes, stock,
     customizable: CUSTOMIZABLE_SLUGS.has(slug),
+    comingSoon: (node.productTags?.nodes ?? []).some((t: any) => t?.slug === COMING_SOON_TAG),
     colorVariant,
     colors: COLORWAYS[slug]?.map(c => ({
       label: c.label,

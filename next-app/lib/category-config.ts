@@ -15,6 +15,12 @@ export interface CategoryConfig {
   subtitle: string;
   /** Texto de la meta description. El subtitle es demasiado corto para SERP. */
   seoDescription: string;
+  /**
+   * La query de productos no trae el slug de la categoría, así que llega el
+   * nombre crudo de Woo ("Remera", "JORT", "Musculosa", "Polo"). Se listan los
+   * dos nombres (el normalizado y el crudo) para que el filtro no deje afuera
+   * a ninguno.
+   */
   categories: string[];
   tag?: string;
   tabs?: SubTab[];
@@ -61,19 +67,19 @@ export const CATEGORY_MAP: Record<string, CategoryConfig> = {
     title: 'Arriba',
     subtitle: 'Hoodies, remeras, longsleeves y más',
     seoDescription: 'Hoodies, remeras, longsleeves, sleeveless y jerseys de HYPESTYLE. Streetwear argentino con envíos a todo el mundo.',
-    categories: ['Hoodie', 'Crewneck', 'Tee', 'Top', 'Sleeveless', 'Longsleeve', 'Jersey'],
+    categories: ['Hoodie', 'Crewneck', 'Tee', 'Remera', 'Polo', 'Top', 'Musculosa', 'Sleeveless', 'Longsleeve', 'Jersey'],
     tabs: [
       { label: 'Todo', categories: [] }, { label: 'Hoodies', categories: ['Hoodie', 'Crewneck'] },
-      { label: 'Remeras', categories: ['Tee'] }, { label: 'Longsleeves', categories: ['Longsleeve'] },
-      { label: 'Sleeveless', categories: ['Sleeveless', 'Top'] }, { label: 'Jersey', categories: ['Jersey'] },
+      { label: 'Remeras', categories: ['Tee', 'Remera', 'Polo'] }, { label: 'Longsleeves', categories: ['Longsleeve'] },
+      { label: 'Sleeveless', categories: ['Sleeveless', 'Top', 'Musculosa'] }, { label: 'Jersey', categories: ['Jersey'] },
     ],
   },
   '/abajo': {
     title: 'Abajo',
     subtitle: 'Pantalones y jorts',
     seoDescription: 'Pantalones, joggers y jorts de HYPESTYLE. Cargo fit y jogger fit, producción limitada. Envíos a todo el mundo.',
-    categories: ['Pantalón', 'Jort'],
-    tabs: [{ label: 'Todo', categories: [] }, { label: 'Pantalones', categories: ['Pantalón'] }, { label: 'Jorts', categories: ['Jort'] }],
+    categories: ['Pantalón', 'Jort', 'JORT'],
+    tabs: [{ label: 'Todo', categories: [] }, { label: 'Pantalones', categories: ['Pantalón'] }, { label: 'Jorts', categories: ['Jort', 'JORT'] }],
   },
   '/accesorios': {
     title: 'Accesorios',
@@ -98,7 +104,7 @@ export const CATEGORY_MAP: Record<string, CategoryConfig> = {
     title: 'Tees',
     subtitle: 'Remeras y tops',
     seoDescription: 'Remeras y tops de HYPESTYLE. Boxy fit y regular fit, 100% algodón, estampas de edición limitada.',
-    categories: ['Tee', 'Longsleeve', 'Top'],
+    categories: ['Tee', 'Remera', 'Polo', 'Longsleeve', 'Top', 'Musculosa'],
   },
   '/hoodies': {
     title: 'Hoodies',
@@ -116,7 +122,7 @@ export const CATEGORY_MAP: Record<string, CategoryConfig> = {
     title: 'Jorts',
     subtitle: 'Jorts y shorts',
     seoDescription: 'Jorts y shorts de HYPESTYLE. Corte ancho, denim y frisa, producción limitada. Envíos a todo el mundo.',
-    categories: ['Jort'],
+    categories: ['Jort', 'JORT'],
   },
 };
 
