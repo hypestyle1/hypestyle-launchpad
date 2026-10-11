@@ -3,7 +3,9 @@
     "mockups": [
       "mesa-de-trabajo-1-copia-2-4c1d77b9283b562e9d17679043646798-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-c5c24e4d1b91c5feb917683316474953-1024-1024.webp"
+    ],
     "cuadrada": false
   },
   "aeroblue-tees-black": {
@@ -24,14 +26,18 @@
     "mockups": [
       "aerogrey-tees-destacada-v2.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-f2686af59abceddaff17683316156476-1024-1024.webp"
+    ],
     "cuadrada": true
   },
   "aerogrey-tees-black": {
     "mockups": [
       "mesa-de-trabajo-1-copia-2-9d2b5c09eda6b292bc17683316106844-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-f2686af59abceddaff17683316156476-1024-1024.webp"
+    ],
     "cuadrada": false
   },
   "aerogrey-tees-grey": {
@@ -45,7 +51,9 @@
     "mockups": [
       "mesa-de-trabajo-1-copia-d001477687accf22e917679044697808-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "regular-talle-post-cb9b22aad2109829a617626596202534-1024-1024-bb6f33834d40cb661617683315790950-1024-1024.webp"
+    ],
     "cuadrada": false
   },
   "aeropink-tees-black": {
@@ -61,48 +69,6 @@
     ],
     "tablas": [],
     "cuadrada": true
-  },
-  "athletic-dept-blue-longsleeve": {
-    "mockups": [
-      "athletic-dept-blue-longsleeve-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "athletic-dept-navy-tee": {
-    "mockups": [
-      "athletic-dept-navy-tee-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "athletic-dept-pink-longsleeve": {
-    "mockups": [
-      "athletic-dept-pink-longsleeve-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "athletic-dept-washed-grey-polo": {
-    "mockups": [
-      "athletic-dept-washed-grey-polo-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "athletic-dept-white-grey-print-tee": {
-    "mockups": [
-      "mockup-3535-sombra-tenue.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "athletic-dept-white-tee": {
-    "mockups": [
-      "mockup-3522-sombra-tenue.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
   },
   "baby-come-back-black": {
     "mockups": [
@@ -144,14 +110,17 @@
       "camo-full-set-combo-7.png",
       "camo-full-set-combo-8.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "camo-full-set-combo-9.jpg",
+      "camo-full-set-combo-10.jpg"
+    ],
     "cuadrada": true
   },
   "chain-hype": {
-    "mockups": [],
-    "tablas": [
+    "mockups": [
       "chain-hype-0-1.png"
     ],
+    "tablas": [],
     "cuadrada": true
   },
   "christ-reigns-hoodie": {
@@ -194,27 +163,12 @@
     "tablas": [],
     "cuadrada": true
   },
-  "department-of-culture-washed-black-waffle-longsleeve": {
-    "mockups": [
-      "department-of-culture-washed-black-waffle-longsleeve-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "dept-of-culture-eagle-pink-raglan-longsleeve": {
-    "mockups": [
-      "dept-of-culture-eagle-pink-raglan-longsleeve-mockup.jpg"
-    ],
-    "tablas": [],
-    "cuadrada": true
-  },
   "eye-sleveless-wheat": {
     "mockups": [
-      "eye-sleveless-wheat-destacada-v2.png"
-    ],
-    "tablas": [
+      "eye-sleveless-wheat-destacada-v2.png",
       "465605f2-d8f7-4932-b1ea-162d6c56a000-e0f8ebd20164cb459117367000786541-1024-1024.jpeg"
     ],
+    "tablas": [],
     "cuadrada": true
   },
   "faith-over-everything-camo-hoodie": {
@@ -255,27 +209,6 @@
     ],
     "tablas": [],
     "cuadrada": true
-  },
-  "grey-camo-cap": {
-    "mockups": [
-      "grey-camo-cap-0.png"
-    ],
-    "tablas": [],
-    "cuadrada": true
-  },
-  "h-hype-navy-tee": {
-    "mockups": [
-      "h-hype-navy-tee-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "h-hype-white-tee": {
-    "mockups": [
-      "mockup-3589-sombra-tenue.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
   },
   "half-zip-polo-black": {
     "mockups": [
@@ -353,7 +286,9 @@
       "pink-hoodie-espalda-49e94ac3ef115e9f1f17766491993274-1024-1024.png",
       "sin-titulo-2mesa-de-trabajo-2-jpg-c04b69f787e4630d6e17766405738656-1024-1024.jpg"
     ],
-    "tablas": [],
+    "tablas": [
+      "hoodie-jpg-743f49498ebdffdad217766373708324-1024-1024.jpg"
+    ],
     "cuadrada": false
   },
   "hoodie-shield-olive": {
@@ -369,7 +304,9 @@
       "mesa-de-trabajo-1-copia-2-acec0af1d7074a2d1217687822617715-1024-1024-1.png",
       "mesa-de-trabajo-1-copia-3-17acc057c455d41b0217687822601969-1024-1024-1.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "hoodie-4f4c1c88d8925bfcab17703156461772-1024-1024-1.jpg"
+    ],
     "cuadrada": true
   },
   "hs-co-green-hoodie": {
@@ -387,13 +324,6 @@
     "tablas": [],
     "cuadrada": false
   },
-  "hs-crest-olive-raglan-longsleeve": {
-    "mockups": [
-      "hs-crest-olive-raglan-longsleeve-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
   "hs-ring-silver-925": {
     "mockups": [
       "hs-ring-silver-925-destacada-v2.png",
@@ -404,35 +334,6 @@
     ],
     "tablas": [],
     "cuadrada": true
-  },
-  "hype-creative-goods-pink-raglan-longsleeve": {
-    "mockups": [
-      "hype-creative-goods-pink-raglan-longsleeve-mockup-hd.png"
-    ],
-    "tablas": [],
-    "cuadrada": true
-  },
-  "hype-dept-cross-white-waffle-longsleeve": {
-    "mockups": [
-      "mockup-3721-sombra-tenue.png",
-      "mockup-3721b-sombra-tenue.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "hype-distressed-grey-hoodie": {
-    "mockups": [
-      "hype-distressed-grey-hoodie-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "hype-washed-black-waffle-longsleeve": {
-    "mockups": [
-      "hype-washed-black-waffle-longsleeve-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
   },
   "hypestation-black-tee": {
     "mockups": [
@@ -501,7 +402,9 @@
       "mockup-ladytribal-black-a0a75c06644978269b17597968353968-1024-1024-1.png",
       "mockup-ladytribal-black-back-531492cc46c7ac3a5d17604850717128-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "04-a72269cec0cef8ec4b17599675874212-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "lamb-of-god-pink-tee": {
@@ -525,7 +428,9 @@
       "mesa-de-trabajo-1-copia-43f76d1e964f10c3db17687822912509-1024-1024.png",
       "mesa-de-trabajo-1-628da2f45e93338aa417687822951756-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "hoodie-6ee7f834733a3d53f217703156212387-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "lettering-graphite-jort": {
@@ -631,7 +536,9 @@
       "black-1-86f643848df8f4a2a417707594207650-1024-1024.png",
       "grey-e284d25c67bb3a5f5a17707586261873-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "tank-top-jpg-f08215306db91222a417707585926523-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "no-service-for-the-faithless-black": {
@@ -663,7 +570,9 @@
       "buzo-graphite_-nsftf-8db78fd41cab49461117737767457023-1024-1024.png",
       "mesa-de-trabajo-1-5985648f2f026afd5217737767467034-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "hoodie-1d5e384a98c0121e7117737767487844-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "no-service-for-the-faithless-white": {
@@ -892,7 +801,11 @@
       "mesa-de-trabajo-9-copia-4-9e25aaa06575fb751417724912478842-1024-1024.png",
       "mesa-de-trabajo-9-copia-74afedb9a4b66bef4217724912117368-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "ranglan-493fc3a14189601e5a17705788779076-1024-1024.jpg",
+      "ranglan-1484c64ca4229e3b0517705788623609-1024-1024.jpg",
+      "ranglan-13d6eead76dd92cfb417705788557134-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "sleeveless-ranglan-black": {
@@ -908,7 +821,9 @@
       "mesa-de-trabajo-9-copia-7-b90c03102c0f90233f17724911900741-1024-1024.png",
       "mesa-de-trabajo-9-copia-6-cbe8550896d299a4a117724911900749-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "ranglan-1484c64ca4229e3b0517705788623609-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "sleeveless-ranglan-militar-green": {
@@ -916,7 +831,9 @@
       "mesa-de-trabajo-9-copia-5-c965515e970b12576c17724912477374-1024-1024.png",
       "mesa-de-trabajo-9-copia-4-9e25aaa06575fb751417724912478842-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "ranglan-13d6eead76dd92cfb417705788557134-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "sleeveless-ranglan-white": {
@@ -924,41 +841,15 @@
       "mesa-de-trabajo-9-copia-2-ac04d165f7e6bb696617724912313365-1024-1024.png",
       "mesa-de-trabajo-9-copia-3-5de51800ba16b671bd17724912313848-1024-1024.png"
     ],
-    "tablas": [],
-    "cuadrada": true
-  },
-  "splatter-hoodie-washed-grey": {
-    "mockups": [
-      "splatter-hoodie-washed-grey-mockup-v2.png"
+    "tablas": [
+      "ranglan-493fc3a14189601e5a17705788779076-1024-1024.jpg"
     ],
-    "tablas": [],
-    "cuadrada": false
+    "cuadrada": true
   },
   "stars-for-venezuela-hoodie": {
     "mockups": [
       "front.png",
       "back.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "style-culture-university-black-tee": {
-    "mockups": [
-      "style-culture-university-black-tee-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "style-culture-university-navy-tee": {
-    "mockups": [
-      "style-culture-university-navy-tee-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "style-culture-university-white-tee": {
-    "mockups": [
-      "mockup-3632-sombra-tenue.png"
     ],
     "tablas": [],
     "cuadrada": false
@@ -985,7 +876,9 @@
       "camo-full-set-combo-8.png",
       "pantcamo_espalda-693cca526b88ac682017752460860263-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "pant-0e6adf54e96821ebc417754189964661-1024-1024.jpg"
+    ],
     "cuadrada": false
   },
   "sweatpant-grey-hstars": {
@@ -1002,7 +895,9 @@
       "sin-titulo-2mesa-de-trabajo-3-jpg-cff6d51a6c991ca63617766409766712-1024-1024.jpg",
       "pink-pant-espalda-f495284f9da811660d17766492260285-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "pant-jpg-7f4bce841358fc9c7817766376541569-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "sweatpants-bombe-bordo": {
@@ -1061,7 +956,9 @@
       "marron-wafle-1-0f0d66c9385edb2a5d17662581874282-1024-1024.png",
       "marron-wafle-2-c72a11ace1230ea1b817662581885676-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "ranglan-e5bba3a0f81e1e45f117705789403927-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "waffle-crest-sleeveless-pearl-grey": {
@@ -1069,7 +966,9 @@
       "wafle-gris-a6369ecb409b8e70de17662582045223-1024-1024.png",
       "wafle-gris-2-89c51a736ab4c3280b17662582042147-1024-1024.png"
     ],
-    "tablas": [],
+    "tablas": [
+      "ranglan-6806659f9a653ee58d17705788961949-1024-1024.jpg"
+    ],
     "cuadrada": true
   },
   "worldwide-movement-taupe-tee": {
@@ -1079,20 +978,6 @@
     ],
     "tablas": [],
     "cuadrada": true
-  },
-  "worn-varsity-club-navy-tee": {
-    "mockups": [
-      "worn-varsity-club-navy-tee-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
-  },
-  "worn-varsity-club-white-tee": {
-    "mockups": [
-      "mockup-3563-sombra-tenue.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
   },
   "zip-hoodie-camo": {
     "mockups": [
@@ -1110,12 +995,5 @@
     ],
     "tablas": [],
     "cuadrada": true
-  },
-  "zolotye-kupola-washed-graphite-hoodie": {
-    "mockups": [
-      "zolotye-kupola-washed-graphite-hoodie-mockup-v2.png"
-    ],
-    "tablas": [],
-    "cuadrada": false
   }
 }
