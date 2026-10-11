@@ -65,8 +65,11 @@ export default async function Ss27Page() {
                   alt={img.alt}
                   fill
                   priority={i === 0}
-                  sizes="(min-width: 768px) 50vw, 100vw"
-                  quality={90}
+                  // Tres columnas en desktop (~33vw) y 86vw en mobile. Con 50vw/100vw
+                  // y q90 se pedían 1920 px en desktop y la primera foto pesaba
+                  // 255 KB: es el LCP de la landing del drop.
+                  sizes="(min-width: 768px) 34vw, 86vw"
+                  quality={85}
                   className="object-cover"
                 />
               </div>

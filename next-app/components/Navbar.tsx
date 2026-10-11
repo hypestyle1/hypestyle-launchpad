@@ -107,6 +107,11 @@ const glassStyle = {
   boxShadow: '0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.6)',
 } as React.CSSProperties;
 
+// El logo del navbar se dibuja a 18–25 px de alto. El PNG original mide
+// 4000x1757 (65 KB, "sobredimensionado 29x" en la auditoría del 11/10): esta
+// versión de 100 px de alto alcanza para DPR 4 y pesa una fracción.
+const LOGO_NAV = '/logo-hypestyle-nav.png';
+
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -267,7 +272,7 @@ export default function Navbar() {
               {/* Logo desktop */}
               <Link href="/" className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center z-10">
                 {!logoError ? (
-                  <img src="/logo-hypestyle-2026.png" alt="Hypestyle"
+                  <img src={LOGO_NAV} alt="Hypestyle"
                     className="w-auto transition-all duration-300"
                     style={{ height: scrolled ? '20px' : '25px' }}
                     onError={() => setLogoError(true)} />
@@ -284,7 +289,7 @@ export default function Navbar() {
                 </button>
                 <Link href="/">
                   {!logoError ? (
-                    <img src="/logo-hypestyle-2026.png" alt="Hypestyle"
+                    <img src={LOGO_NAV} alt="Hypestyle"
                       className="w-auto" style={{ height: scrolled ? '18px' : '22px' }}
                       onError={() => setLogoError(true)} />
                   ) : (
@@ -392,7 +397,7 @@ export default function Navbar() {
                   onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
                   <span className="w-10 h-10 flex-shrink-0 rounded-[6px] bg-[#141414] flex items-center justify-center">
-                    <img src="/logo-hypestyle-2026.png" alt="" className="h-3 w-auto invert" />
+                    <img src={LOGO_NAV} alt="" className="h-3 w-auto invert" />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-medium truncate">Gift Card</p>
@@ -441,7 +446,7 @@ export default function Navbar() {
             )}
             <Link href="/" onClick={closeMobile} className="absolute left-1/2 -translate-x-1/2">
               {!logoError ? (
-                <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-5 w-auto" onError={() => setLogoError(true)} />
+                <img src={LOGO_NAV} alt="Hypestyle" className="h-5 w-auto" onError={() => setLogoError(true)} />
               ) : (
                 <span className="text-[15px] font-normal tracking-[0.08em]">Hypestyle</span>
               )}
