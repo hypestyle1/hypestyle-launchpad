@@ -10,6 +10,7 @@ import { compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
 import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
 import { PACK_REGULAR_SLUGS, computePackRegularDiscount, packRegularFaltan, precioPackRegular } from "@/lib/promo-pack-regular";
 import GiftProgressBar from "@/components/GiftProgressBar";
+import PriceChangeNotice from "@/components/PriceChangeNotice";
 import { FREE_SHIPPING_THRESHOLD, incluyeEnvioGratis } from "@/lib/envio";
 import { ScrollFadeList } from "@/components/ui/scroll-fade-list";
 import { Button } from "@/components/ui/button";
@@ -292,7 +293,9 @@ export default function CartDrawer() {
               </a>
             </div>
           ) : (
-            items.map((item) => (
+            <>
+            <PriceChangeNotice en={currency !== 'ARS'} />
+            {items.map((item) => (
               <div
                 key={cartLineKey(item)}
                 className={`hs-cart-line ${item.isGift ? '-mx-2' : ''}`}
@@ -353,7 +356,8 @@ export default function CartDrawer() {
                 </div>
               </div>
               </div>
-            ))
+            ))}
+            </>
           )}
 
           {/* Completa el look */}

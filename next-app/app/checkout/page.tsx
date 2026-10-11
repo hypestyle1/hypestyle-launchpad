@@ -21,6 +21,7 @@ import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
 import { imgSrc } from '@/lib/img';
 import { normalizeCpAr } from '@/lib/postal-code';
 import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
+import PriceChangeNotice from '@/components/PriceChangeNotice';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import { FREE_SHIPPING_THRESHOLD, ahorroSucursal, alcanzaUmbral, costoEnvio, incluyeEnvioGratis, modoDeTarifa, ordenarTarifas, tarifaPorDefecto } from '@/lib/envio';
 import { isGiftCardItem } from '@/lib/gift-card';
@@ -322,7 +323,7 @@ interface InfoForm {
 interface PagoForm { metodo: string; instagram: string }
 
 export default function Checkout() {
-  const { items, total, clear, restore, hydrated } = useCart();
+  const { items, total, clear, restore, hydrated, priceChanges } = useCart();
   // El regalo por compra nunca es un producto pago: no debe contarse para 3x2,
   // CAMPEON50, ni mandarse al backend como línea comercial — el servidor lo
   // recalcula y agrega por su cuenta (HPG_Gift_Engine).
@@ -1146,6 +1147,15 @@ export default function Checkout() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* Precio del carrito puesto al día con el de la tienda (lib/cart-reprice.ts):
+          arriba de todo, en mobile y en desktop, porque el resumen mobile está
+          colapsado y el cambio tiene que verse antes de pagar. */}
+      {priceChanges.length > 0 && (
+        <div className="max-w-[1100px] mx-auto px-4 pt-6">
+          <PriceChangeNotice en={isInternational} className="rounded-[10px]" />
         </div>
       )}
 
