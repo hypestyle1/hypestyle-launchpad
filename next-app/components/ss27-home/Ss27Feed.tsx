@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
 import MediaTile, { MediaFill } from './MediaTile';
 import { toCardProps, type Ss27Product } from '@/lib/ss27-coleccion';
-import { SS27_LOOPS, SS27_MEDIA, SS27_PROXIMAMENTE, SS27_REMERAS_CAROUSEL, SS27_UPCOMING, type Ss27Media, type Ss27Upcoming } from '@/lib/ss27-home';
+import { EDITORIAL_QUALITY, SS27_LOOPS, SS27_MEDIA, SS27_PROXIMAMENTE, SS27_REMERAS_CAROUSEL, SS27_UPCOMING, type Ss27Media, type Ss27Upcoming } from '@/lib/ss27-home';
 
 const COLECCION = '/colecciones/ss27/';
 
@@ -77,6 +77,7 @@ function PhotoCarousel({ slides, kicker, title, className = '' }: { slides: Slid
           alt={s.alt}
           fill
           sizes="(min-width: 1024px) 50vw, 100vw"
+          quality={EDITORIAL_QUALITY}
           className="object-cover object-top transition-opacity duration-700"
           style={{ opacity: k === i ? 1 : 0 }}
         />
@@ -106,7 +107,7 @@ function UpcomingCell({ item }: { item: Ss27Upcoming }) {
   return (
     <div>
       <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
-        <Image src={item.src} alt={item.name} fill sizes="(max-width: 1024px) 50vw, 25vw" className="object-cover" />
+        <Image src={item.src} alt={item.name} fill sizes="(max-width: 1024px) 50vw, 25vw" quality={EDITORIAL_QUALITY} className="object-cover" />
         <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider bg-black/70 text-white rounded-[6px]">
           Próximamente
         </span>

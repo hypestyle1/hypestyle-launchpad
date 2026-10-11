@@ -7,7 +7,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MediaFill } from './MediaTile';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
-import { SS27_MEDIA, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
+import { EDITORIAL_QUALITY, SS27_HERO_BG_VIDEO, SS27_MEDIA, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
 
 const SLIDE_MS = 4500;
 const B = '/ss27/banner/';
@@ -65,7 +65,7 @@ function HeroMobile() {
   return (
     <section className="md:hidden relative w-full h-[calc(100svh-var(--offset))] min-h-[560px] max-h-[980px] overflow-hidden bg-bg-dark text-white">
       <div ref={boxRef} className="absolute inset-0 overflow-hidden">
-        <MediaFill media={ESTUDIO} sizes="100vw" />
+        <MediaFill media={ESTUDIO} sizes="100vw" priority />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/45" />
 
         {/* Marca al centro + bajada en dos puntas. */}
@@ -193,10 +193,11 @@ function HeroDesktop() {
         {desktop && (
           <>
             {/* El film de estudio de fondo. Es vertical: estirado a horizontal
-                se pixela, así que va desenfocado, como atmósfera. */}
+                se pixela, así que va desenfocado, como atmósfera. Con el blur no
+                se ve la definición: es una versión chica (SS27_HERO_BG_VIDEO). */}
             <video
               className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl"
-              src={SS27_VIDEOS.estudio.src}
+              src={SS27_HERO_BG_VIDEO}
               poster={SS27_VIDEOS.estudio.poster}
               autoPlay
               loop
@@ -221,7 +222,7 @@ function HeroDesktop() {
                   ready.has(i) &&
                   s.trio.map((src) => (
                     <div key={src} className="relative">
-                      <Image src={src} alt="" fill loading="eager" sizes="(min-width: 1280px) 410px, 33vw" className="object-cover" />
+                      <Image src={src} alt="" fill loading="eager" sizes="(min-width: 1280px) 500px, 40vw" quality={EDITORIAL_QUALITY} className="object-cover" />
                     </div>
                   ))}
               </div>
