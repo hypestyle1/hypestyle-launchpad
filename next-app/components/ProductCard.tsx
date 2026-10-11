@@ -69,6 +69,12 @@ export default function ProductCard({
   const { add, setDrawerOpen } = useCart();
   const { toggle, has } = useWishlist();
   const [hovered, setHovered] = useState(false);
+  // La foto de hover se monta recién la primera vez que el mouse entra en la
+  // card. Antes se pedía siempre (con opacity-0), también en celulares, donde no
+  // hay hover: en /colecciones/ss27 eran ~22 imágenes de más compitiendo con el
+  // hero. Y la principal se apaga solo cuando la de hover ya cargó.
+  const [hoverReady, setHoverReady] = useState(false);
+  const [hoverLoaded, setHoverLoaded] = useState(false);
   const [addedSize, setAddedSize] = useState<string | null>(null);
   const [checkingSize, setCheckingSize] = useState<string | null>(null);
   // Sizes found out-of-stock by live check — persisted for this card's lifetime
@@ -122,7 +128,7 @@ export default function ProductCard({
       href={disableLink ? undefined : href}
       onClick={(e) => { if (disableLink) e.preventDefault(); }}
       className={`group block ${disableLink ? "cursor-default" : ""}`}
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => { setHovered(true); setHoverReady(true); }}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image */}
@@ -134,18 +140,19 @@ export default function ProductCard({
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             className={`object-cover object-top transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
-              hovered && hoverImage ? "opacity-0" : "opacity-100"
+              hovered && hoverImage && hoverLoaded ? "opacity-0" : "opacity-100"
             }`}
           />
         ) : null}
-        {hoverImage && (
+        {hoverImage && hoverReady && (
           <Image
             src={imgSrc(hoverImage)}
-            alt={name}
+            alt=""
             fill
+            onLoad={() => setHoverLoaded(true)}
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             className={`object-cover object-center transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
-              hovered ? "opacity-100" : "opacity-0"
+              hovered && hoverLoaded ? "opacity-100" : "opacity-0"
             }`}
           />
         )}
