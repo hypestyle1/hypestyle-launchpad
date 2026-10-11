@@ -90,3 +90,26 @@ build trae el catálogo de WordPress en build time: si Hostinger está caído se
 pone rojo sin que haya nada roto en el PR. Un check rojo por motivos ajenos
 enseña a ignorar los checks — que es lo que ya pasa con `Vercel – launchpad`.
 Cuando el E2E falle hay que mirarlo, pero decide una persona.
+
+## Layout (contra un sitio publicado)
+
+`tests/layout` no levanta nada ni mockea: abre producción (o un preview de
+Vercel) y revisa lo que se rompió alguna vez sin que nadie lo viera:
+
+- desborde horizontal en 320, 390, 1024 y 1440;
+- el CTA del hero mobile y la compra de la ficha sin flotantes encima (con y sin
+  el cartel de cookies, de 320x568 a 430x932);
+- el logo del navbar sin pisarse con los links entre 1024 y 1440;
+- `/tees` con remeras (estuvo en producción vacía) y las prendas Próximamente
+  visibles pero sin compra (grilla y URL directa).
+
+```bash
+npm run test:layout                                            # producción
+LAYOUT_BASE_URL=https://<preview>.vercel.app npm run test:layout
+```
+
+Lo que ya se sabe roto y todavía no tiene arreglo mergeado está en `CONOCIDOS`
+(`layout.spec.ts`): se chequea igual y queda anotado. El PR que lo arregla saca
+la marca.
+
+No está en CI todavía: corre contra producción y tarda ~8 minutos.
