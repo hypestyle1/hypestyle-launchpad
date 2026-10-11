@@ -39,7 +39,8 @@ const ficha = (slug: string) => `/producto/${slug}`;
  * misma calidad.
  */
 export const SS27_VIDEOS = {
-  estudio: { src: V + 'estudio-12s.mp4', poster: V + 'estudio-12s.jpg' },
+  // El poster del hero es el LCP en mobile: webp (~90 KB contra ~150 del jpg).
+  estudio: { src: V + 'estudio-12s.mp4', poster: V + 'estudio-12s.webp' },
   duo: { src: V + 'duo-hoodie-polo-grey.mp4', poster: V + 'duo-hoodie-polo-grey.jpg' },
   eagle: { src: V + 'eagle-18-hoodie.mp4', poster: V + 'eagle-18-hoodie.jpg' },
   splatter: { src: V + 'splatter-hoodie.mp4', poster: V + 'splatter-hoodie.jpg' },

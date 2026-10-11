@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { preload } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { gsap } from 'gsap';
@@ -53,6 +54,12 @@ export default function HeroSs27() {
 function HeroMobile() {
   const boxRef = useRef<HTMLDivElement>(null);
 
+  // El poster del video es lo primero que se ve y el LCP en mobile, pero el
+  // navegador no lo descubre solo: el preload scanner lee <img>, no el poster
+  // de un <video>. Así se pide desde el <head>, con prioridad alta (igual que
+  // la primera foto en HeroLookbookFW26).
+  preload(SS27_VIDEOS.estudio.poster, { as: 'image', fetchPriority: 'high' });
+
   // Aparición al cargar, como el hero mobile de la tienda.
   useEffect(() => {
     const box = boxRef.current;
@@ -78,6 +85,9 @@ function HeroMobile() {
               width={1778}
               height={113}
               priority
+              // Ocupa el 88 % del ancho en mobile. Sin sizes, next/image pedía el
+              // ancho intrínseco (w=3840) para un logo de ~350 px.
+              sizes="88vw"
               className="w-full h-auto [filter:drop-shadow(0_2px_24px_rgba(0,0,0,0.35))]"
             />
             <div className="mt-3 flex justify-between text-[13px] font-semibold tracking-[-0.01em] [text-shadow:0_1px_12px_rgba(0,0,0,0.35)]">
