@@ -1,7 +1,9 @@
 'use client';
 
-import { createContext, useContext, useReducer, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useReducer, useEffect, useMemo, useState, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useProducts } from '@/hooks/useProducts';
+import { repriceCart, type CambioDePrecio } from '@/lib/cart-reprice';
 import type { NormalizedProduct } from '@/lib/products-normalize';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 
@@ -118,6 +120,10 @@ interface CartContextType {
   count: number;
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
+  /** Líneas cuyo precio guardado no coincidía con el de la tienda y se
+   *  actualizaron (ver lib/cart-reprice.ts). Se muestran una vez y se descartan. */
+  priceChanges: CambioDePrecio[];
+  dismissPriceChanges: () => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -128,6 +134,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
+  const [priceChanges, setPriceChanges] = useState<CambioDePrecio[]>([]);
+  // El navbar ya pide el catálogo en todas las páginas: esto comparte esa misma
+  // query (misma key), no hace un request aparte.
+  const { data: catalog } = useProducts(0);
+  const precios = useMemo(
+    () => new Map((catalog ?? []).filter((p) => p.price > 0).map((p) => [p.slug, p.price] as const)),
+    [catalog],
+  );
 
   // Próximamente: se ve pero todavía no se vende. La ficha y las cards ya no
   // ofrecen agregarlo; esto frena cualquier otro camino (favoritos, sugerencias)
@@ -147,6 +161,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (hydrated) localStorage.setItem(CART_KEY, JSON.stringify(state));
   }, [state, hydrated]);
 
+  // El precio que se ve es el que se cobra: el servidor cobra el del catálogo,
+  // así que el carrito guardado se pone al día apenas el catálogo está cargado.
+  useEffect(() => {
+    if (!hydrated || precios.size === 0) return;
+    const { items, cambios } = repriceCart(state.items, precios);
+    if (!cambios.length) return;
+    dispatch({ type: 'LOAD', state: { items } });
+    setPriceChanges((prev) => [
+      ...prev.filter((p) => !cambios.some((c) => c.id === p.id && c.size === p.size)),
+      ...cambios,
+    ]);
+  }, [hydrated, precios, state.items]);
+
   const total = state.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   // El regalo no es algo que el cliente "compró" — no cuenta en el badge de cantidad.
   const count = state.items.reduce((sum, i) => sum + (i.isGift ? 0 : i.quantity), 0);
@@ -163,6 +190,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setGift: (item) => dispatch({ type: 'SET_GIFT', item }),
       clearGift: () => dispatch({ type: 'CLEAR_GIFT' }),
       hydrated, total, count, drawerOpen, setDrawerOpen,
+      priceChanges, dismissPriceChanges: () => setPriceChanges([]),
     }}>
       {children}
     </CartContext.Provider>
