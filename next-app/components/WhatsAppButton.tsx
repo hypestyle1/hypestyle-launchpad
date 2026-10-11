@@ -2,12 +2,14 @@
 
 import { usePathname } from 'next/navigation';
 import { shiftedBottom } from '@/lib/bottom-shift';
+import { useMobileFloatGate } from '@/hooks/useMobileFloatGate';
 
 const WA_NUMBER  = '5491178292430';
 const WA_MESSAGE = encodeURIComponent('Hola Hype!');
 
 export default function WhatsAppButton() {
   const pathname = usePathname();
+  const gate = useMobileFloatGate();
   // El panel es interno: el botón flotante de atención al cliente no pinta
   // nada ahí, y encima tapa la esquina donde caen los botones de cada fila.
   if (pathname?.startsWith('/checkout') || pathname?.startsWith('/admin')) return null;
@@ -18,7 +20,7 @@ export default function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Contactar por WhatsApp"
-      className="fixed right-5 z-[90] w-[52px] h-[52px] rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-transform duration-200"
+      className={`fixed right-5 z-[90] w-[52px] h-[52px] rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 ${gate}`}
       style={{ background: '#25D366', ...shiftedBottom(24) }}
     >
       <svg width="26" height="26" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">

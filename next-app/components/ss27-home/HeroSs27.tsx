@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { preload } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MediaFill } from './MediaTile';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
-import { SS27_MEDIA, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
+import { EDITORIAL_QUALITY, SS27_HERO_BG_VIDEO, SS27_MEDIA, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
 
 const SLIDE_MS = 4500;
 const B = '/ss27/banner/';
@@ -53,6 +54,12 @@ export default function HeroSs27() {
 function HeroMobile() {
   const boxRef = useRef<HTMLDivElement>(null);
 
+  // El poster del video es lo primero que se ve y el LCP en mobile, pero el
+  // navegador no lo descubre solo: el preload scanner lee <img>, no el poster
+  // de un <video>. Así se pide desde el <head>, con prioridad alta (igual que
+  // la primera foto en HeroLookbookFW26).
+  preload(SS27_VIDEOS.estudio.poster, { as: 'image', fetchPriority: 'high' });
+
   // Aparición al cargar, como el hero mobile de la tienda.
   useEffect(() => {
     const box = boxRef.current;
@@ -65,7 +72,7 @@ function HeroMobile() {
   return (
     <section className="md:hidden relative w-full h-[calc(100svh-var(--offset))] min-h-[560px] max-h-[980px] overflow-hidden bg-bg-dark text-white">
       <div ref={boxRef} className="absolute inset-0 overflow-hidden">
-        <MediaFill media={ESTUDIO} sizes="100vw" />
+        <MediaFill media={ESTUDIO} sizes="100vw" priority />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/45" />
 
         {/* Marca al centro + bajada en dos puntas. */}
@@ -78,6 +85,9 @@ function HeroMobile() {
               width={1778}
               height={113}
               priority
+              // Ocupa el 88 % del ancho en mobile. Sin sizes, next/image pedía el
+              // ancho intrínseco (w=3840) para un logo de ~350 px.
+              sizes="88vw"
               className="w-full h-auto [filter:drop-shadow(0_2px_24px_rgba(0,0,0,0.35))]"
             />
             <div className="mt-3 flex justify-between text-[13px] font-semibold tracking-[-0.01em] [text-shadow:0_1px_12px_rgba(0,0,0,0.35)]">
@@ -193,10 +203,11 @@ function HeroDesktop() {
         {desktop && (
           <>
             {/* El film de estudio de fondo. Es vertical: estirado a horizontal
-                se pixela, así que va desenfocado, como atmósfera. */}
+                se pixela, así que va desenfocado, como atmósfera. Con el blur no
+                se ve la definición: es una versión chica (SS27_HERO_BG_VIDEO). */}
             <video
               className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl"
-              src={SS27_VIDEOS.estudio.src}
+              src={SS27_HERO_BG_VIDEO}
               poster={SS27_VIDEOS.estudio.poster}
               autoPlay
               loop
@@ -221,7 +232,7 @@ function HeroDesktop() {
                   ready.has(i) &&
                   s.trio.map((src) => (
                     <div key={src} className="relative">
-                      <Image src={src} alt="" fill loading="eager" sizes="(min-width: 1280px) 410px, 33vw" className="object-cover" />
+                      <Image src={src} alt="" fill loading="eager" sizes="(min-width: 1280px) 500px, 40vw" quality={EDITORIAL_QUALITY} className="object-cover" />
                     </div>
                   ))}
               </div>
