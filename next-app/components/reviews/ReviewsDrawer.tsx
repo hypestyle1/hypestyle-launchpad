@@ -106,14 +106,16 @@ export default function ReviewsDrawer() {
 
       {/* Mobile: botón fijo compacto, encima del botón de WhatsApp. En la home
           no va: en celulares de pantalla baja (o con el aviso de cookies) caía
-          encima de "Ver colección" del hero. Las reseñas tienen su sección abajo. */}
+          encima de "Ver colección" del hero. Las reseñas tienen su sección abajo.
+          En la ficha tampoco: tapaba el precio con transferencia, y la ficha ya
+          muestra el promedio de reseñas debajo del precio. */}
       <button
         ref={pillTriggerRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`${pathname === '/' ? 'hidden' : 'flex'} sm:hidden fixed z-[90] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow`}
+        className={`${pathname === '/' || pathname.startsWith('/producto/') ? 'hidden' : 'flex'} sm:hidden fixed z-[90] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow`}
         style={shiftedBottom(92)}
       >
         <StarRating rating={summary.average ?? 0} size={12} />
