@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext';
 import { shiftedBottom } from '@/lib/bottom-shift';
+import { useMobileFloatGate } from '@/hooks/useMobileFloatGate';
 
 // La playlist oficial de la tienda. Cambiarla = cambiar solo este ID.
 const PLAYLIST_ID = '7DOlr3syXZhNlzxV9SuuKl';
@@ -17,6 +18,7 @@ export default function SpotifyPlayer() {
   // así la home no carga nada de Spotify de arranque. Y una vez montado no se
   // desmonta más — desmontarlo cortaría la música al cerrar el panel.
   const [loaded, setLoaded] = useState(false);
+  const gate = useMobileFloatGate();
 
   // Sin player en checkout/admin, y tampoco en el canal mayorista: es otro
   // contexto de compra y la experiencia "musica de local" es del minorista.
@@ -32,7 +34,13 @@ export default function SpotifyPlayer() {
   }
 
   return (
-    <div className="fixed left-5 z-[90]" style={shiftedBottom(24)}>
+    // En la ficha mobile no va: el único flotante ahí es WhatsApp (decisión del
+    // 11/10). Se esconde con CSS y no se desmonta, para que la música no se corte
+    // si venía sonando. Abierto, no se esconde aunque se vuelva al hero.
+    <div
+      className={`fixed left-5 z-[90] ${pathname?.startsWith('/producto/') ? 'max-md:hidden' : open ? '' : gate}`}
+      style={shiftedBottom(24)}
+    >
       {/* Panel — oculto con CSS (no desmontado) para que siga sonando cerrado */}
       {loaded && (
         <div

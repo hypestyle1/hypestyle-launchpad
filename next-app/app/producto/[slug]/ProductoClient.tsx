@@ -15,7 +15,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useProductTranslation } from '@/hooks/useProductTranslation';
 import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
-import { useBottomShift } from '@/lib/bottom-shift';
+import { useBottomShift, setBuyBarVisible } from '@/lib/bottom-shift';
 import StockAlertForm from '@/components/StockAlertForm';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
@@ -243,6 +243,12 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     return () => mq.removeEventListener('change', sync);
   }, []);
   useBottomShift(stickyBarRef, showSticky && isMobileVp, 8);
+  // WhatsApp aparece en la ficha mobile recién junto con la barra fija (y por
+  // encima de ella): antes tapaba "Guía de talles" en la primera pantalla.
+  useEffect(() => {
+    setBuyBarVisible(showSticky);
+    return () => setBuyBarVisible(false);
+  }, [showSticky]);
   const { add, setDrawerOpen } = useCart();
 
   useEffect(() => { setMounted(true); setFlashActive(isFlashSaleActive()); }, []);
@@ -306,13 +312,29 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     });
   }, [product?.slug]);
 
+  // La barra fija aparece cuando el botón de compra ya quedó arriba, no cuando
+  // todavía está más abajo: en pantallas de 667–844 px de alto aparecía en la
+  // primera pantalla y tapaba la fila de talles. Se mira la posición en cada
+  // scroll (una vez por frame) y no con IntersectionObserver: el observer solo
+  // avisa cuando cambia la visibilidad, y un scroll rápido que lleva el botón de
+  // abajo de la pantalla a arriba de un salto no la cambia nunca.
   useEffect(() => {
-    const el = addBtnRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => setShowSticky(!entry.isIntersecting), { threshold: 0 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      const el = addBtnRef.current;
+      setShowSticky(!!el && el.getBoundingClientRect().bottom < 0);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(check); };
+    check();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [product?.slug]);
 
   if (isLoading && !product) return (
     <><AnnouncementBar /><Navbar />
