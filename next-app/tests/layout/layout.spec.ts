@@ -15,12 +15,16 @@ import {
  * Problemas conocidos en producción que todavía no tienen arreglo mergeado.
  * El chequeo corre igual, marcado como "falla esperada": si deja de fallar,
  * Playwright avisa y hay que sacar la marca en el mismo PR que lo arregla.
+ *
+ * Para probar un arreglo contra su preview antes de sacar la marca:
+ * `LAYOUT_SIN_CONOCIDOS=1` los trata como cualquier otro chequeo.
  */
+const sinConocidos = !!process.env.LAYOUT_SIN_CONOCIDOS;
 const CONOCIDOS = {
   // Ficha mobile: el reproductor y WhatsApp tapan cuotas, talles y "Guía de
   // talles", y la barra fija "Agregar" aparece antes de pasar el botón de compra
   // y tapa la fila de talles (390x844, 375x667). Plan etapa 2, PR 3.1.
-  flotantes: true,
+  flotantes: !sinConocidos,
 };
 
 const PAGINAS = ['/', '/colecciones/ss27', '/tees', FICHA_SS27, '/new-in', '/checkout'];
