@@ -145,6 +145,19 @@
     animation: marquee 45s linear infinite;
   }
 
+  /* Reflejo que cruza el LiquidButton. En pantallas sin hover (celulares) pasa
+     solo cada pocos segundos; con mouse lo dispara el hover (ver el componente). */
+  @keyframes liquid-sheen {
+    0%, 62% { transform: translateX(-120%) skewX(-12deg); }
+    100% { transform: translateX(320%) skewX(-12deg); }
+  }
+
+  @media (hover: none) and (prefers-reduced-motion: no-preference) {
+    .liquid-sheen-idle {
+      animation: liquid-sheen 4.2s ease-in-out 1.6s infinite;
+    }
+  }
+
   .cursor-grab { cursor: grab; }
   .cursor-grab:active { cursor: grabbing; }
 

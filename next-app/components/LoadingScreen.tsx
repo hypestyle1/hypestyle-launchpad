@@ -45,7 +45,9 @@ export default function LoadingScreen() {
     const start = setTimeout(() => setPhase('run'), 60);
     const exit = setTimeout(() => {
       const from = logoRef.current;
-      const to = document.querySelector<HTMLElement>(TARGET);
+      // El primero visible: un hero puede tener un destino para mobile y otro
+      // para desktop, y el que está oculto (display:none) mide 0.
+      const to = Array.from(document.querySelectorAll<HTMLElement>(TARGET)).find((el) => el.getClientRects().length > 0);
       const a = from?.getBoundingClientRect();
       const b = to?.getBoundingClientRect();
       // Sin destino, con el destino fuera de pantalla (alguien scrolleó) o con

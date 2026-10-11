@@ -65,7 +65,8 @@ export default async function Ss27Page() {
                   alt={img.alt}
                   fill
                   priority={i === 0}
-                  sizes="(min-width: 768px) 33vw, 86vw"
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  quality={90}
                   className="object-cover"
                 />
               </div>

@@ -1,6 +1,5 @@
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
-import HeroLookbookFW26 from '@/components/HeroLookbookFW26';
 import ShopTheLook from '@/components/ShopTheLook';
 import BackInStock from '@/components/BackInStock';
 import BasicosSection from '@/components/BasicosSection';
@@ -13,19 +12,20 @@ import VideoSection from '@/components/VideoSection';
 import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
 import InstagramFeed from '@/components/InstagramFeed';
 import Footer from '@/components/Footer';
+import HeroSs27 from '@/components/ss27-home/HeroSs27';
+import Ss27Feed from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
 import { fetchHomeReviews } from '@/lib/reviews/server';
+import { loadSs27Page } from '@/lib/ss27-coleccion-server';
+import { SS27_HOME_EXTRA_SLUGS } from '@/lib/ss27-home';
+import type { NormalizedProduct } from '@/lib/products-normalize';
+import type { Ss27Product } from '@/lib/ss27-coleccion';
 import { buildMetadata } from '@/lib/seo';
-import PrivateAccessBanner from '@/components/private-access/PrivateAccessBanner';
-import PrivateAccessHomePopup from '@/components/private-access/PrivateAccessHomePopup';
-import PrivatePreviewCarousel from '@/components/private-access/PrivatePreviewCarousel';
-import { PRIVATE_PREVIEW_IMAGES } from '@/lib/private-access/preview-images';
-import { fmtDayMonth, fmtWeekdayDayMonth, isPrivateAccessActive } from '@/lib/private-access/config';
-import { getPrivateAccessConfig } from '@/lib/private-access/server';
 
-// Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra, HeroHannaDrop)
-// siguen en el repo, sin usar, por si hay que volver. Hoy el hero es HeroLookbookFW26.
+// Heroes anteriores (Hero + EventCountdown + PinnedIntro, HeroLaNuestra,
+// HeroHannaDrop, HeroLookbookFW26) siguen en el repo, sin usar, por si hay que
+// volver. Desde el drop SS27 (11/10/2026) el hero es HeroSs27.
 
 // rawTitle: el título de la home se define entero acá, sin el sufijo de marca
 // que lleva el resto del sitio (quedaría "…| HYPESTYLE" duplicando "Hype").
@@ -48,72 +48,51 @@ export const metadata = buildMetadata({
  * usa exactamente el mismo query GraphQL que /api/products (mismos campos,
  * mismo orden por DATE, mismo dedupe por id), así que el dato hidratado y el
  * que traería el browser son idénticos: no hay refetch que vuelva a mover nada.
+ *
+ * SS27 va aparte: sus productos salen de la colección (tag ss27-part-01) por
+ * el mu-plugin, igual que /colecciones/ss27, y llegan por props. Antes de la
+ * apertura la lista viene vacía y la sección no se muestra.
  */
 export default async function Home() {
   const queryClient = new QueryClient();
   // Las reseñas van por separado: no pasan por React Query, la sección las
   // recibe por props. Sin esto se montaba vacía y a los 6–9s insertaba ~715px
   // arriba de #new-in-fw26, que era lo último que quedaba del CLS del home.
-  const [, reviews] = await Promise.all([
+  const [, reviews, ss27] = await Promise.all([
     queryClient.prefetchQuery({ queryKey: ['products'], queryFn: fetchAllProducts }),
     fetchHomeReviews(4),
+    loadSs27Page(),
   ]);
 
-  // Preventa privada (Mejores Amigos): el estado activo/inactivo se decide acá,
-  // en el servidor, así el HTML ya trae el bloque y no hay salto de layout.
-  // Nada por visitante en esta página: lo que depende de la cookie vive en
-  // /private-access. Ver docs/private-access-diagnostico.md.
-  const paConfig = await getPrivateAccessConfig();
-  const paActive = isPrivateAccessActive(paConfig);
+  // Lo que acompaña al drop sin ser de la colección (medias, gorra): sale del
+  // catálogo que ya se precargó arriba. Ver SS27_HOME_EXTRA_SLUGS.
+  const catalog = queryClient.getQueryData<NormalizedProduct[]>(['products']) ?? [];
+  const extras: Ss27Product[] = SS27_HOME_EXTRA_SLUGS
+    .filter((slug) => !ss27.products.some((p) => p.slug === slug))
+    .map((slug) => catalog.find((p) => p.slug === slug))
+    .filter((p): p is NormalizedProduct => Boolean(p))
+    .map((p) => ({ ...p, comingSoon: false }));
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <AnnouncementBar />
       <Navbar />
       <main className="pt-[var(--offset)]">
-        {/* El título del hero es una imagen, así que el H1 del documento va acá.
-            Oculto a la vista (sr-only) pero presente en el DOM: sin esto la home
-            no tenía ningún H1, ni para Google ni para lectores de pantalla. */}
+        {/* El título del hero es texto decorativo, así que el H1 del documento va acá.
+            Oculto a la vista (sr-only) pero presente en el DOM. */}
         <h1 className="sr-only">
           HYPESTYLE — Streetwear argentino. Drops limitados, envíos a todo el mundo.
         </h1>
-        <HeroLookbookFW26 />
-        {/* Orden estilo EME: producto primero (new in, looks, film, best sellers,
-            básicos), editorial después y la prueba social (reseñas) al final. Los
-            beneficios (envío, cuotas, cambios) ya están en la barra de avisos, así
-            que la tira de íconos se sacó. Promo y Flash Sale devuelven null sin campaña. */}
-        {/* z-10 + relative + bg-white: efecto cortina, esta sección sube y tapa el hero
-            pineado (ver HeroHannaDrop). El fondo opaco es necesario acá (no alcanza con
-            el de cada sección individual) para que no se vea el hero de fondo en los
-            huecos entre secciones (ej. NewInFW26, que no trae fondo propio). */}
+        <HeroSs27 />
+        {/* Orden: el drop nuevo arriba (SS27 + sus looks), después FW26, best
+            sellers, básicos, editorial y la prueba social al final. Promo y
+            Flash Sale devuelven null sin campaña. */}
         <div className="relative z-10 bg-white">
-          {/* Private Access va entre el hero y el producto: es lo primero que
-              tiene que ver un Mejor Amigo que entra por su cuenta. Devuelve
-              null fuera de la ventana de preventa. Dentro de la cortina para
-              que suba junto con el resto del contenido sobre el hero pineado. */}
-          {/* Popup de la preventa (una vez por día, no a quien ya desbloqueó). */}
-          <PrivateAccessHomePopup
-            active={paActive}
-            collectionName={paConfig.collectionName}
-            discountPct={paConfig.discountPct}
-            publicOpenLabel={fmtWeekdayDayMonth(paConfig.publicOpenAt)}
-          />
-          <PrivateAccessBanner
-            active={paActive}
-            collectionName={paConfig.collectionName}
-            discountPct={paConfig.discountPct}
-            saleEndsLabel={fmtDayMonth(paConfig.saleEndsAt)}
-          />
-          {/* Vitrina 3D de la colección: teaser para quien todavía no desbloqueó. */}
-          <PrivatePreviewCarousel
-            active={paActive}
-            collectionName={paConfig.collectionName}
-            images={PRIVATE_PREVIEW_IMAGES}
-          />
           <Promo3x2Section />
           <FlashSaleSection />
-          <NewInFW26 />
+          <Ss27Feed products={ss27.state === 'open' ? [...ss27.products, ...extras] : []} />
           <ShopTheLook />
+          <NewInFW26 />
           <VideoSection />
           <BackInStock />
           <BasicosSection />
