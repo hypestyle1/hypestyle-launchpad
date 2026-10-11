@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { fetchProductSlugs } from '@/lib/wp-products';
-import { getCachedDiscountStatus } from '@/lib/goal-discount';
+import { getCachedDiscountStatus, GOAL_PRODUCT_SLUG } from '@/lib/goal-discount';
 import { fetchProductDetail } from '@/lib/product-detail';
 import { buildMetadata, truncate } from '@/lib/seo';
 import { productJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
@@ -59,7 +59,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function ProductoPage({ params }: { params: { slug: string } }) {
   const [product, initialGoalDiscount] = await Promise.all([
     getProduct(params.slug),
-    getCachedDiscountStatus().catch(() => null),
+    // El descuento por gol es solo de la camiseta (el servidor lo cobra solo
+    // ahí). Pasarlo a cualquier ficha mostraba el −% en todo el catálogo y
+    // después el checkout cobraba el precio lleno. Igual que /personalizar.
+    params.slug === GOAL_PRODUCT_SLUG ? getCachedDiscountStatus().catch(() => null) : Promise.resolve(null),
   ]);
 
   // 404 real. Antes el fetch era client-side y un slug inexistente devolvía
