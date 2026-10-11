@@ -147,6 +147,15 @@ export function TablaPagos({ p }: { p: FichaProps }) {
         <span>{t('Tarjeta de crédito, 3 cuotas sin interés')}</span>
         <span className="font-semibold tabular-nums whitespace-nowrap">3 x {formatPrice(Math.round(p.displayPrice / 3))}</span>
       </div>
+      {/* Los hoodies SS27 traen el envío a sucursal incluido en el precio (lib/envio).
+          Va acá, junto al precio, porque es parte de lo que vale: abajo del botón,
+          como "promesa", no se leía. */}
+      {ENVIO_GRATIS_SLUGS.has(p.product.slug) && (
+        <div className="flex justify-between gap-3 py-2.5 border-b border-border">
+          <span>{t('Envío a sucursal Andreani')}</span>
+          <span className="text-green-700 font-semibold whitespace-nowrap">{t('Gratis')}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -300,7 +309,9 @@ export function Promesas({ p }: { p: FichaProps }) {
     <div className="flex flex-col gap-0.5 text-[13px]">
       {currency === 'ARS' && (
         <span>
-          {conEnvioGratis(p)
+          {ENVIO_GRATIS_SLUGS.has(p.product.slug)
+            ? t('Envío a sucursal incluido en el precio.')
+            : conEnvioGratis(p)
             ? t('Envío gratis a sucursal en este pedido.')
             : `${t('Envío gratis a sucursal desde')} ${pesosSinCentavos(FREE_SHIPPING_THRESHOLD)}.`}
         </span>
