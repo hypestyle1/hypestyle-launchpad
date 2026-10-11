@@ -21,10 +21,11 @@ import {
  */
 const sinConocidos = !!process.env.LAYOUT_SIN_CONOCIDOS;
 const CONOCIDOS = {
-  // Ficha mobile: el reproductor y WhatsApp tapan cuotas, talles y "Guía de
-  // talles", y la barra fija "Agregar" aparece antes de pasar el botón de compra
-  // y tapa la fila de talles (390x844, 375x667). Plan etapa 2, PR 3.1.
-  flotantes: !sinConocidos,
+  // Ficha mobile: el reproductor y WhatsApp tapaban cuotas, talles y "Guía de
+  // talles", y la barra fija "Agregar" aparecía antes de pasar el botón de
+  // compra y tapaba la fila de talles (390x844, 375x667). Resuelto en el PR 3.1
+  // (#543): queda en false y el chequeo vuelve a ser obligatorio.
+  flotantes: false && !sinConocidos,
 };
 
 const PAGINAS = ['/', '/colecciones/ss27', '/tees', FICHA_SS27, '/new-in', '/checkout'];
