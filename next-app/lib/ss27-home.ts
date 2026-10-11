@@ -28,7 +28,16 @@ export type Ss27Media = {
 const coleccion = '/colecciones/ss27/';
 const ficha = (slug: string) => `/producto/${slug}`;
 
-/** Videos verticales de estudio (9:16 y 4:5), recodificados a 720 px. */
+/**
+ * Videos verticales de estudio (9:16 y 4:5), a la resolución de las fuentes
+ * (1080 px de ancho). Hasta el 11/10 estaban a 720 px y se veían blandos: en un
+ * celular el hero se muestra a ~1170 px reales y en desktop los tiles a ~1440.
+ *
+ * Cada video existe en tres versiones con el mismo nombre base y el navegador
+ * elige la primera que puede reproducir (ver videoSources): AV1, HEVC (Safari)
+ * y H.264 como respaldo universal. AV1 y HEVC pesan ~30 % menos que H.264 a la
+ * misma calidad.
+ */
 export const SS27_VIDEOS = {
   estudio: { src: V + 'estudio-12s.mp4', poster: V + 'estudio-12s.jpg' },
   duo: { src: V + 'duo-hoodie-polo-grey.mp4', poster: V + 'duo-hoodie-polo-grey.jpg' },
@@ -36,6 +45,24 @@ export const SS27_VIDEOS = {
   splatter: { src: V + 'splatter-hoodie.mp4', poster: V + 'splatter-hoodie.jpg' },
   cross: { src: V + 'cross-waffle-white.mp4', poster: V + 'cross-waffle-white.jpg' },
 } as const;
+
+/** Fondo desenfocado del hero desktop: va con blur-xl, así que alcanza una
+ *  versión de 270 px (antes bajaba el video entero solo para desenfocarlo). */
+export const SS27_HERO_BG_VIDEO = V + 'estudio-12s-bg.mp4';
+
+/** Las tres versiones de un video, en orden de preferencia. `src` es la H.264. */
+export function videoSources(src: string): { src: string; type: string }[] {
+  const base = src.replace(/.mp4$/, '');
+  return [
+    { src: `${base}.av1.mp4`, type: 'video/mp4; codecs="av01.0.08M.08"' },
+    { src: `${base}.hevc.mp4`, type: 'video/mp4; codecs="hvc1.1.6.L120.90"' },
+    { src, type: 'video/mp4' },
+  ];
+}
+
+/** Calidad de next/image para las fotos editoriales (el default es 75: en tela
+ *  con textura, como el waffle o el lavado, se notaba la compresión). */
+export const EDITORIAL_QUALITY = 85;
 
 const v360 = (name: string) => ({ src: `${V}${name}-360.mp4`, poster: `${V}${name}-360.jpg` });
 
