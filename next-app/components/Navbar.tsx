@@ -12,13 +12,15 @@ import { useProducts } from '@/hooks/useProducts';
 import LocalePopup from '@/components/LocalePopup';
 import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 
+// wideOnly: entre 1024 y ~1270 px no entran todos y el logo centrado se pisa con
+// los últimos; esos dos quedan en el footer y en el menú mobile.
 const navLinks = [
   { label: 'Shop',          href: '/productos/',               hasDropdown: true,  routeMatch: '/productos' },
   { label: 'Colecciones',   href: '/colecciones/',             hasDropdown: false, routeMatch: '/colecciones', menu: 'colecciones' },
   { label: 'Contacto',      href: '/contacto/',                hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
   { label: 'FAQs',          href: '/faqs/',                    hasDropdown: false, routeMatch: '/faqs' },
-  { label: 'Políticas',     href: '/politicas-de-devolucion/', hasDropdown: false, routeMatch: '/politicas' },
-  { label: 'Quiénes Somos', href: '/nosotros/',                hasDropdown: false, routeMatch: '/nosotros' },
+  { label: 'Políticas',     href: '/politicas-de-devolucion/', hasDropdown: false, routeMatch: '/politicas', wideOnly: true },
+  { label: 'Quiénes Somos', href: '/nosotros/',                hasDropdown: false, routeMatch: '/nosotros', wideOnly: true },
 ];
 
 // Desplegables chicos (flecha como Shop). Colecciones junta las colecciones
@@ -217,7 +219,7 @@ export default function Navbar() {
                 {navLinks.map((link) => {
                   const isActive = link.routeMatch && pathname.startsWith(link.routeMatch);
                   return (
-                    <div key={t(link.label)} className="relative flex items-center"
+                    <div key={t(link.label)} className={`relative items-center ${(link as { wideOnly?: boolean }).wideOnly ? 'hidden xl:flex' : 'flex'}`}
                       onMouseEnter={() => {
                         if (link.hasDropdown) setShopOpen(true);
                         const m = (link as { menu?: string }).menu;
@@ -363,13 +365,13 @@ export default function Navbar() {
                 ))}
               </div>
               <div className="relative overflow-hidden rounded-sm">
-                <img src="/stl-look-camo-outdoor.webp" alt="Colección"
+                <img src="/ss27/coleccion/hero-duo-grey.webp" alt="Spring Summer 27"
                   className="w-full h-full object-cover" style={{ maxHeight: '220px' }} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-4">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.15em] text-white/60 mb-0.5">{t('Colección')}</p>
-                    <p className="text-[14px] font-bold text-white leading-tight">Camo Set Drop</p>
-                    <Link href="/camo-set-drop/" onClick={() => setShopOpen(false)}
+                    <p className="text-[14px] font-bold text-white leading-tight">Spring Summer 27</p>
+                    <Link href="/colecciones/ss27/" onClick={() => setShopOpen(false)}
                       className="text-[11px] text-white/70 hover:text-white transition-colors mt-1 block">
                       {t('Ver colección →')}
                     </Link>
@@ -446,7 +448,7 @@ export default function Navbar() {
             </Link>
             <div className="flex items-center gap-3">
               <LocalePopup />
-              <button onClick={() => { closeMobile(); setDrawerOpen(true); }} className="relative">
+              <button onClick={() => { closeMobile(); setDrawerOpen(true); }} className="relative" aria-label="Carrito">
                 <ShoppingBag className="w-4 h-4" strokeWidth={1.2} />
                 {count > 0 && (
                   <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">

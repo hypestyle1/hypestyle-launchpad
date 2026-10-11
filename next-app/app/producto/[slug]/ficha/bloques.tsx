@@ -141,11 +141,11 @@ export function TablaPagos({ p }: { p: FichaProps }) {
     <div className="text-[13px] border-t border-border">
       <div className="flex justify-between gap-3 py-2.5 border-b border-border">
         <span>{t('Transferencia')} <span className="text-green-700 font-semibold">{p.transferRate}% off</span></span>
-        <span className="font-semibold tabular-nums">{formatPrice(p.transferPrice)}</span>
+        <span className="font-semibold tabular-nums whitespace-nowrap">{formatPrice(p.transferPrice)}</span>
       </div>
       <div className="flex justify-between gap-3 py-2.5 border-b border-border">
         <span>{t('Tarjeta de crédito, 3 cuotas sin interés')}</span>
-        <span className="font-semibold tabular-nums">3 x {formatPrice(Math.round(p.displayPrice / 3))}</span>
+        <span className="font-semibold tabular-nums whitespace-nowrap">3 x {formatPrice(Math.round(p.displayPrice / 3))}</span>
       </div>
     </div>
   );
@@ -252,9 +252,9 @@ export function LineaDespacho() {
 export function BotonComprar({ p }: { p: FichaProps }) {
   const { formatPrice, t } = useLocale();
   return (
-    <button ref={p.addBtnRef} onClick={p.onAdd} disabled={p.stockChecking}
+    <button ref={p.addBtnRef} onClick={p.onAdd} disabled={p.stockChecking || !!p.product.comingSoon}
       className={`w-full h-[54px] px-5 flex items-center justify-between gap-3 ${p.primaryBtnClass} text-primary-foreground text-[13px] font-bold uppercase tracking-[0.1em] rounded-[10px] transition-[transform,background-color] duration-150 active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60 disabled:cursor-not-allowed`}>
-      <span>{p.stockChecking ? t('Verificando stock...') : t('Agregar al carrito')}</span>
+      <span>{p.product.comingSoon ? t('Próximamente') : p.stockChecking ? t('Verificando stock...') : t('Agregar al carrito')}</span>
       <span className="tabular-nums tracking-[0.02em]">{p.mounted ? formatPrice(p.displayPrice) : ''}</span>
     </button>
   );

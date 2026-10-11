@@ -3,6 +3,7 @@ import { quoteIntlShipping, IntlShippingLine } from '@/lib/shipping-intl';
 import { calcularPedido } from '@/lib/pedido-servidor';
 import { attributionOrderMeta } from '@/lib/attribution';
 import { PrecioError } from '@/lib/precio-servidor';
+import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -25,10 +26,14 @@ async function resolveItem(
   size: string,
 ): Promise<{ product_id: number; variation_id?: number; category?: string; weightKg?: number }> {
   const products = await wcGet(
-    `products?slug=${encodeURIComponent(slug)}&_fields=id,type,weight,categories&per_page=1`,
+    `products?slug=${encodeURIComponent(slug)}&_fields=id,name,type,weight,categories,tags&per_page=1`,
   );
   if (!products.length) throw new Error(`Product not found: ${slug}`);
-  const { id: productId, type, weight, categories } = products[0];
+  const { id: productId, name, type, weight, categories, tags } = products[0];
+  // Próximamente: todavía no se vende (ver create-order-gocuotas).
+  if ((tags ?? []).some((t: any) => t?.slug === COMING_SOON_TAG)) {
+    throw new PrecioError(`${name ?? slug} is not available yet`);
+  }
   // Categoría y peso viajan con el ítem para poder recalcular el envío acá y no
   // depender del número que mandó el navegador.
   const meta = {

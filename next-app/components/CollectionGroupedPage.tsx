@@ -87,6 +87,7 @@ export default function CollectionGroupedPage({ config }: { config: CollectionCo
                     <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
                       <ProductCard
                         id={p.slug}
+                        tags={p.tags}
                         name={p.name}
                         category={p.category}
                         price={p.price}

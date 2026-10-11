@@ -15,6 +15,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useProductTranslation } from '@/hooks/useProductTranslation';
 import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
+import { useBottomShift } from '@/lib/bottom-shift';
 import StockAlertForm from '@/components/StockAlertForm';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
@@ -229,6 +230,19 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const panStartRef  = useRef<{ x: number; y: number; offX: number; offY: number } | null>(null);
   const didPanRef    = useRef(false);
   const addBtnRef    = useRef<HTMLButtonElement>(null);
+  const stickyBarRef = useRef<HTMLDivElement>(null);
+  const [isMobileVp, setIsMobileVp] = useState(false);
+
+  // Barra fija de compra (solo mobile): mientras está a la vista, WhatsApp, el
+  // reproductor y la pastilla de reseñas suben por encima en vez de taparla.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const sync = () => setIsMobileVp(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+  useBottomShift(stickyBarRef, showSticky && isMobileVp, 8);
   const { add, setDrawerOpen } = useCart();
 
   useEffect(() => { setMounted(true); setFlashActive(isFlashSaleActive()); }, []);
@@ -392,6 +406,8 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const transferPrice = Math.round(displayPrice * (1 - transferRate / 100));
 
   const handleAdd = async () => {
+    // Próximamente: se ve pero no se vende (el pedido también lo rechaza el servidor).
+    if (product.comingSoon) return;
     if (!selectedSize) {
       if (product.customizable) { router.push(`/personalizar/${product.slug}/`); return; }
       setSizeError(true);
@@ -713,10 +729,10 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
               {/* Label de texto plano: el Button anima el cambio a "Verificando
                   stock..." (entra desde abajo, el ancho se acomoda) en vez del
                   spinner. Mismo look que antes: negro, 13px, radio 10px. */}
-              <Button ref={addBtnRef} onClick={() => handleAdd()} disabled={stockChecking}
+              <Button ref={addBtnRef} onClick={() => handleAdd()} disabled={stockChecking || !!product.comingSoon}
                 variant="hype" size="ctaFull"
                 className={`${primaryBtnClass} text-[13px] mb-4 rounded-[10px] disabled:cursor-not-allowed`}>
-                {stockChecking ? t('Verificando stock...') : t('Agregar al carrito')}
+                {product.comingSoon ? t('Próximamente') : stockChecking ? t('Verificando stock...') : t('Agregar al carrito')}
               </Button>
 
               <div className="border-b border-border">
@@ -819,16 +835,16 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       <Footer />
 
       {/* Sticky mobile bar */}
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border px-4 py-3 flex items-center gap-3 transition-transform duration-300 ${showSticky ? 'translate-y-0' : 'translate-y-full'}`}
+      <div ref={stickyBarRef} className={`md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border px-4 py-3 flex items-center gap-3 transition-transform duration-300 ${showSticky ? 'translate-y-0' : 'translate-y-full'}`}
         style={{ boxShadow: '0 -4px 16px rgba(0,0,0,0.08)' }}>
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-semibold truncate">{product.name}</p>
           <p className="text-[11px] text-muted-foreground">{mounted ? formatPrice(displayPrice) : '—'}{selectedSize && <span> · {t('Talle')} {selectedSize}</span>}</p>
         </div>
-        <button onClick={() => handleAdd()} disabled={stockChecking}
+        <button onClick={() => handleAdd()} disabled={stockChecking || !!product.comingSoon}
           className={`flex-shrink-0 ${primaryBtnClass} text-primary-foreground px-5 py-2.5 text-[12px] font-bold uppercase tracking-[0.08em] transition-colors rounded-[10px] disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5`}>
           {stockChecking && <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>}
-          {t('Agregar')}
+          {product.comingSoon ? t('Próximamente') : t('Agregar')}
         </button>
       </div>
 

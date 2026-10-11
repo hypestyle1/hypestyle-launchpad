@@ -7,6 +7,7 @@ import { useLocale } from "@/context/LocaleContext";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { checkStock } from "@/lib/checkStock";
+import { COMING_SOON_TAG } from "@/lib/private-access/normalize";
 import { gaAddToCart } from "@/lib/ga";
 import { fbAddToCart } from "@/lib/fbpixel";
 import { getColorwaysForSlug } from "@/lib/product-detail";
@@ -49,13 +50,21 @@ interface ProductCardProps {
   checkStockFn?: (id: string, size: string) => Promise<'ok' | 'low' | 'out'>;
   /** Se llama después de agregar al carrito (Private Access: sus eventos). */
   onAddedToCart?: (args: { id: string; size: string; price: number }) => void;
+  /**
+   * Tags de Woo (llegan solos al hacer {...producto} desde el catálogo). Con
+   * `proximamente` la card linkea a la ficha pero no tiene agregar rápido y
+   * lleva el badge "Próximamente".
+   */
+  tags?: string[];
 }
 
 export default function ProductCard({
-  id, name, category, price, originalPrice, badge, image, images,
+  id, name, category, price, originalPrice, badge: badgeProp, image, images,
   href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
-  blurred, disableLink, checkStockFn = checkStock, onAddedToCart,
+  blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags,
 }: ProductCardProps) {
+  const comingSoon = !!tags?.includes(COMING_SOON_TAG);
+  const badge = comingSoon ? 'Próximamente' : badgeProp;
   const { formatPrice, t } = useLocale();
   const { add, setDrawerOpen } = useCart();
   const { toggle, has } = useWishlist();
@@ -104,7 +113,7 @@ export default function ProductCard({
     return "bg-bg-dark text-primary-foreground";
   };
 
-  const hasSizes = !disableLink && id && sizes && sizes.length > 0;
+  const hasSizes = !disableLink && !comingSoon && id && sizes && sizes.length > 0;
   // Producto totalmente agotado: todos los talles sin stock.
   const outOfStock = !!sizes && sizes.length > 0 && !!stock && sizes.every(s => stock[s] === "out");
 

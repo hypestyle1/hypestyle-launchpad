@@ -10,6 +10,8 @@ import './private-access.css';
 
 interface Props {
   active: boolean;
+  /** Ya abrió al público: en vez de "no está abierta", manda a la colección. */
+  publicOpen?: boolean;
   collectionName: string;
   collectionSubtitle: string;
   discountPct: number;
@@ -26,7 +28,7 @@ const BG = '/lookbook-fw26/book/6210.webp';
  * Es la página a la que apunta el link de la story de Mejores Amigos. Si la
  * preventa no está activa, explica y manda al home.
  */
-export default function PrivateGate({ active, collectionName, collectionSubtitle, discountPct, saleEndsLabel, publicOpenLabel, returnTo }: Props) {
+export default function PrivateGate({ active, publicOpen, collectionName, collectionSubtitle, discountPct, saleEndsLabel, publicOpenLabel, returnTo }: Props) {
   const router = useRouter();
   const [granted, setGranted] = useState<{ name: string | null } | null>(null);
   // Con returnTo vuelve al producto que la persona quería ver; si no, la
@@ -69,6 +71,18 @@ export default function PrivateGate({ active, collectionName, collectionSubtitle
                 <span className="text-white/80">{discountPct}% OFF hasta el {saleEndsLabel}.</span>
               </p>
               <UnlockForm autoFocus onGranted={(name) => setGranted({ name })} />
+            </>
+          ) : publicOpen ? (
+            <>
+              <h1 className="text-[26px] md:text-[28px] font-semibold tracking-[-0.02em] leading-[1.1] mb-2">
+                {collectionName} ya está disponible
+              </h1>
+              <p className="text-[14px] leading-relaxed text-white/60 mb-7">
+                La preventa privada terminó. La colección completa ya está abierta para todos.
+              </p>
+              <Link href="/colecciones/ss27/" className="inline-flex h-[52px] items-center justify-center w-full rounded-[14px] bg-white text-[#0a0a0a] text-[12px] font-bold uppercase tracking-[0.24em]">
+                Ver colección
+              </Link>
             </>
           ) : (
             <>

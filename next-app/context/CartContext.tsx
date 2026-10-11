@@ -1,6 +1,9 @@
 'use client';
 
 import { createContext, useContext, useReducer, useEffect, useState, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import type { NormalizedProduct } from '@/lib/products-normalize';
+import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 
 export interface CartItem {
   id: string;
@@ -124,6 +127,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
   const [hydrated, setHydrated] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Próximamente: se ve pero todavía no se vende. La ficha y las cards ya no
+  // ofrecen agregarlo; esto frena cualquier otro camino (favoritos, sugerencias)
+  // con el catálogo que ya está en cache. Si no está cargado, lo frena el servidor.
+  const isComingSoon = (id: string) =>
+    !!queryClient.getQueryData<NormalizedProduct[]>(['products'])?.some((p) => p.slug === id && p.tags?.includes(COMING_SOON_TAG));
 
   useEffect(() => {
     try {
@@ -144,7 +154,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return (
     <CartContext.Provider value={{
       items: state.items,
-      add: (item) => dispatch({ type: 'ADD', item }),
+      add: (item) => { if (!isComingSoon(item.id)) dispatch({ type: 'ADD', item }); },
       remove: (id, size, cust) => dispatch({ type: 'REMOVE', id, size, cust }),
       increment: (id, size, cust) => dispatch({ type: 'INCREMENT', id, size, cust }),
       decrement: (id, size, cust) => dispatch({ type: 'DECREMENT', id, size, cust }),

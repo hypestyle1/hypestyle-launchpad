@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import PrivateGate from '@/components/private-access/PrivateGate';
 import PrivateCollection from '@/components/private-access/PrivateCollection';
-import { safeReturnTo } from '@/lib/private-access/config';
+import { isPublicOpen, safeReturnTo } from '@/lib/private-access/config';
 import { fetchPrivateProducts, labelsFor, readPrivateAccessState } from '@/lib/private-access/server';
 
 // Depende de la cookie de cada visitante: siempre dinámica, nunca cacheada.
@@ -16,7 +16,7 @@ export default async function PrivateAccessPage({ searchParams }: { searchParams
   // Sin sesión válida no se piden los productos: el catálogo no existe para
   // quien no desbloqueó, aunque conozca la URL.
   if (!active || !session) {
-    return <PrivateGate active={active} returnTo={returnTo} {...labels} />;
+    return <PrivateGate active={active} publicOpen={isPublicOpen(config)} returnTo={returnTo} {...labels} />;
   }
 
   // Ya tiene sesión y venía de un link a un producto: directo al producto.
