@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import { useCart } from "@/context/CartContext";
@@ -87,6 +87,13 @@ export default function ProductCard({
   const cardRef = useRef<HTMLAnchorElement>(null);
   const [near, setNear] = useState(!mountMargin);
   const heroPintado = useCriticalPainted();
+  // Con mountMargin, mientras llega la foto se ve la misma foto en miniatura
+  // (24 px, ~1 KB) desenfocada: la card nunca queda vacía en un scroll rápido,
+  // y las ~30 miniaturas casi no le sacan banda al hero.
+  const [fotoLista, setFotoLista] = useState(false);
+  const miniatura = mountMargin && image
+    ? getImageProps({ src: imgSrc(image), alt: "", width: 24, height: 24, quality: 40 }).props.src
+    : null;
   useEffect(() => {
     if (near || !cardRef.current) return;
     const margen = heroPintado ? PRECARGA_TRAS_HERO : mountMargin;
@@ -159,14 +166,22 @@ export default function ProductCard({
     >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
+        {miniatura && (
+          <div
+            aria-hidden="true"
+            className={`absolute inset-0 bg-cover bg-top scale-110 blur-md transition-opacity duration-500 ${fotoLista ? "opacity-0" : "opacity-100"}`}
+            style={{ backgroundImage: `url(${miniatura})` }}
+          />
+        )}
         {image && near ? (
           <Image
             src={imgSrc(image)}
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            onLoad={() => setFotoLista(true)}
             className={`object-cover object-top transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
-              hovered && hoverImage && hoverLoaded ? "opacity-0" : "opacity-100"
+              (hovered && hoverImage && hoverLoaded) || (miniatura && !fotoLista) ? "opacity-0" : "opacity-100"
             }`}
           />
         ) : null}
