@@ -72,6 +72,19 @@
     --nav-h: 48px;
     --offset: 90px;
 
+    /* ── Material glass único (aprobado 12/10) ────────────────────────────
+       Un solo material beige para toda la zona superior: navbar e índice
+       sticky de colección comparten receta, y el announcement es la versión
+       oscura del mismo material. Reemplaza a los tres materiales distintos
+       que convivían (announcement .55/blur20, navbar .62/blur32, índice
+       blanco .90/blur12). */
+    --glass-announce-bg: rgba(12, 12, 10, 0.62);
+    --glass-announce-filter: blur(24px) saturate(160%);
+    --glass-nav-bg: rgba(240, 238, 232, 0.72);
+    --glass-nav-filter: blur(24px) saturate(160%);
+    --glass-sticky-bg: rgba(240, 238, 232, 0.72);
+    --glass-sticky-filter: blur(24px) saturate(160%);
+
     /* Purchase Gift — barra de progreso (GiftProgressBar.tsx). Centralizado
        acá para poder ajustar el diseño sin tocar el componente. Verde (no
        negro) a propósito: para que se distinga a simple vista de la barra
@@ -171,6 +184,13 @@
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
+
+/* El índice sticky de colección (components/collection/CollectionIndex). */
+.hs-collection-index {
+  background: var(--glass-sticky-bg);
+  -webkit-backdrop-filter: var(--glass-sticky-filter);
+  backdrop-filter: var(--glass-sticky-filter);
+}
 
 /* ─── Hype Panel (admin) ─────────────────────────────────────────────────────
    El panel redefine el set semántico dentro de .admin-theme, así el sitio

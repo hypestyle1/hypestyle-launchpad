@@ -49,7 +49,9 @@ const megaMenu = {
     { label: 'New In',         href: '/new-in/',          homeHash: 'best-sellers',   isNew: true  },
     { label: 'Colecciones',    href: '/colecciones/',    homeHash: null,             isNew: false },
     { label: 'Básicos',        href: '/colecciones/regular-tees/', homeHash: 'basicos', isNew: false },
-    { label: 'Más Hype',       href: '/colecciones/mas-hype/', homeHash: 'mas-hype',    isNew: false },
+    // homeHash null: la sección Más Hype salió de la home con el rediseño
+    // 2026 — el link va siempre a su colección.
+    { label: 'Más Hype',       href: '/colecciones/mas-hype/', homeHash: null,    isNew: false },
     { label: 'SALE', href: '/special-prices/', homeHash: 'back-in-stock', isNew: false, isSale: true },
   ],
   categorias: [
@@ -77,7 +79,7 @@ const mobilePanels = {
       { label: 'New In',                   href: '/new-in/',          homeHash: 'best-sellers',   panel: null },
       { label: 'Colecciones',              href: '/colecciones/',    homeHash: null,             panel: null },
       { label: 'Básicos',                  href: '/colecciones/regular-tees/', homeHash: 'basicos', panel: null },
-      { label: 'Más Hype',                 href: '/colecciones/mas-hype/', homeHash: 'mas-hype',    panel: null },
+      { label: 'Más Hype',                 href: '/colecciones/mas-hype/', homeHash: null,    panel: null },
       { label: 'SALE',                     href: '/special-prices/', homeHash: 'back-in-stock', panel: null, isSale: true },
       { label: 'Arriba',                   href: null,               homeHash: null,             panel: 'arriba' },
       { label: 'Abajo',                    href: null,               homeHash: null,             panel: 'abajo' },
@@ -185,9 +187,11 @@ export default function Navbar() {
         style={{
           height: navHeight,
           borderRadius: '14px',
-          background: argMode ? 'rgba(117, 170, 219, 0.30)' : 'rgba(240, 238, 232, 0.62)',
-          backdropFilter: 'blur(32px) saturate(200%)',
-          WebkitBackdropFilter: 'blur(32px) saturate(200%)',
+          // Material glass único (globals.css, --glass-nav-*). El modo
+          // argentino (promo 3x2) conserva su celeste hardcodeado.
+          background: argMode ? 'rgba(117, 170, 219, 0.30)' : 'var(--glass-nav-bg)',
+          backdropFilter: 'var(--glass-nav-filter)',
+          WebkitBackdropFilter: 'var(--glass-nav-filter)',
           border: argMode
             ? '1px solid rgba(212, 175, 55, 0.55)'
             : (scrolled || shopOpen ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.45)'),
