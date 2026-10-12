@@ -1,6 +1,7 @@
 'use client';
 
 import type { InstagramPost } from '@/lib/instagram';
+import { IG_IMAGE_SIZES, igImageSrc, igImageSrcSet } from '@/lib/instagram-image';
 import { useDragScroll } from '@/hooks/useDragScroll';
 
 /**
@@ -18,6 +19,8 @@ import { useDragScroll } from '@/hooks/useDragScroll';
  * no compiten con el LCP del home. Se usa <img> y no next/image a propósito —
  * las URLs del CDN de Instagram son firmadas y rotan, meterlas al optimizador
  * de Next obligaría a un remotePattern comodín y a cachear imágenes que caducan.
+ * Las miniaturas salen de /api/ig-image (por id de post, recortadas al tamaño
+ * de la tira): antes se bajaban los originales, ~8,8 MB entre las 12 fotos.
  */
 export default function InstagramFeedCarousel({ posts }: { posts: InstagramPost[] }) {
   // El hook ya cancela el click que sigue a un arrastre (si no, soltar el
@@ -44,7 +47,9 @@ export default function InstagramFeedCarousel({ posts }: { posts: InstagramPost[
             className="group relative flex-none w-[48vw] sm:w-[33vw] md:w-[25vw] lg:w-[16.6vw] aspect-square snap-start bg-bg-alt overflow-hidden"
           >
             <img
-              src={post.imageUrl}
+              src={igImageSrc(post.id)}
+              srcSet={igImageSrcSet(post.id)}
+              sizes={IG_IMAGE_SIZES}
               alt={post.caption ? post.caption.slice(0, 120) : 'Publicación de Hypestyle en Instagram'}
               loading="lazy"
               decoding="async"
