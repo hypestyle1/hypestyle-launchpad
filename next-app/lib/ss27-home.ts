@@ -136,6 +136,4 @@ export const SS27_REMERAS_CAROUSEL: { src: string; alt: string; title: string; h
  * carguen en Woo (con los tags ss27-part-01 + proximamente), sacarlas de acá.
  */
 export type Ss27Upcoming = { id: string; name: string; src: string; section: 'longsleeves' | 'proximamente' };
-export const SS27_UPCOMING: Ss27Upcoming[] = [
-  { id: 'equestrian', name: 'Hype Equestrian Society – Black Longsleeve', src: '/ss27/home/mock-equestrian-society-black-ls.webp', section: 'longsleeves' },
-];
+export const SS27_UPCOMING: Ss27Upcoming[] = [];
