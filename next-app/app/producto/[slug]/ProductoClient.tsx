@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { videoPoster } from '@/lib/video-posters';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -493,7 +494,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   onMouseMove={handleMouseMove} onMouseLeave={() => setZoomPos(null)}
                   onClick={() => { if (window.innerWidth < 1024) setIsGalleryOpen(true); }}>
                   {isVideo(galleryImages[selectedImage])
-                    ? <video key={selectedImage} src={imgUrl(galleryImages[selectedImage])} autoPlay muted loop playsInline
+                    ? <video key={selectedImage} src={imgUrl(galleryImages[selectedImage])} poster={videoPoster(galleryImages[selectedImage])} autoPlay muted loop playsInline
                         className="absolute inset-0 w-full h-full object-cover" style={{ animation: 'fadeIn 0.25s ease' }} />
                     : <Image key={selectedImage} src={imgUrl(galleryImages[selectedImage])} alt={product.name}
                         fill priority sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"

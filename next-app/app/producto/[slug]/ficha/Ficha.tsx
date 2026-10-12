@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { videoPoster } from '@/lib/video-posters';
 import { useLocale } from '@/context/LocaleContext';
 import { abreCuadrada, composicion, esMockup, medidasModelo, resumen } from '@/lib/ficha';
 import {
@@ -89,7 +90,11 @@ export default function Ficha(p: FichaProps) {
                 aria-label={`${isVideo(img) ? t('Ver video') : `${t('Ver imagen')} ${i + 1}`} — ${product.name}`}
                 className={`relative w-[46px] h-[60px] flex-shrink-0 overflow-hidden bg-bg-alt transition-opacity duration-150 ${i === selectedImage ? 'opacity-100 outline outline-1 outline-foreground -outline-offset-1' : 'opacity-60 hover:opacity-100'}`}>
                 {isVideo(img)
-                  ? <video src={imgUrl(img)} muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover" />
+                  ? (videoPoster(img)
+                    // Con poster, la miniatura es una imagen: antes cada miniatura
+                    // de video pedía el archivo (preload="metadata").
+                    ? <Image src={videoPoster(img)!} alt="" fill sizes="96px" className="object-cover object-top" />
+                    : <video src={imgUrl(img)} muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover" />)
                   : <Image src={imgUrl(img)} alt="" fill sizes="96px" className="object-cover object-top" />}
               </button>
             ))}
