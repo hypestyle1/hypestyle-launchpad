@@ -153,7 +153,7 @@ export default async function Ss27Page() {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
               {products.map((p) => (
-                <ProductCard key={p.slug} {...toCardProps(p)} />
+                <ProductCard key={p.slug} {...toCardProps(p)} mountMargin="400px" />
               ))}
             </div>
           </section>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
@@ -56,12 +56,20 @@ interface ProductCardProps {
    * lleva el badge "Próximamente".
    */
   tags?: string[];
+  /**
+   * Monta la foto recién cuando la card está a esta distancia de la pantalla
+   * (ej. "400px"). Sin esto, el lazy loading nativo de Chrome en conexiones
+   * lentas empieza a bajar todas las cards hasta ~2.500 px más abajo, y en
+   * /colecciones/ss27 esas ~30 fotos le sacaban banda a la del hero (el LCP):
+   * medido en producción, 8,4 s con la grilla compitiendo, ~5 s sin ella.
+   */
+  mountMargin?: string;
 }
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
   href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
-  blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags,
+  blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin,
 }: ProductCardProps) {
   const comingSoon = !!tags?.includes(COMING_SOON_TAG);
   const badge = comingSoon ? 'Próximamente' : badgeProp;
@@ -69,6 +77,14 @@ export default function ProductCard({
   const { add, setDrawerOpen } = useCart();
   const { toggle, has } = useWishlist();
   const [hovered, setHovered] = useState(false);
+  const cardRef = useRef<HTMLAnchorElement>(null);
+  const [near, setNear] = useState(!mountMargin);
+  useEffect(() => {
+    if (near || !cardRef.current) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setNear(true); io.disconnect(); } }, { rootMargin: `${mountMargin} 0px` });
+    io.observe(cardRef.current);
+    return () => io.disconnect();
+  }, [near, mountMargin]);
   // La foto de hover se monta recién la primera vez que el mouse entra en la
   // card. Antes se pedía siempre (con opacity-0), también en celulares, donde no
   // hay hover: en /colecciones/ss27 eran ~22 imágenes de más compitiendo con el
@@ -125,6 +141,7 @@ export default function ProductCard({
 
   return (
     <a
+      ref={cardRef}
       href={disableLink ? undefined : href}
       onClick={(e) => { if (disableLink) e.preventDefault(); }}
       className={`group block ${disableLink ? "cursor-default" : ""}`}
@@ -133,7 +150,7 @@ export default function ProductCard({
     >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
-        {image ? (
+        {image && near ? (
           <Image
             src={imgSrc(image)}
             alt={name}
