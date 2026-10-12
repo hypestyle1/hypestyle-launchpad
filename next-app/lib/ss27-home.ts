@@ -138,5 +138,4 @@ export const SS27_REMERAS_CAROUSEL: { src: string; alt: string; title: string; h
 export type Ss27Upcoming = { id: string; name: string; src: string; section: 'longsleeves' | 'proximamente' };
 export const SS27_UPCOMING: Ss27Upcoming[] = [
   { id: 'equestrian', name: 'Hype Equestrian Society – Black Longsleeve', src: '/ss27/home/mock-equestrian-society-black-ls.webp', section: 'longsleeves' },
-  { id: 'creative-olive', name: 'Hype Creative Goods – Olive Raglan Longsleeve', src: '/ss27/home/mock-creative-goods-olive-raglan.webp', section: 'proximamente' },
 ];
