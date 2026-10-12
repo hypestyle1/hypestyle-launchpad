@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type ReactNode, type RefObject } from 'react';
 import Image from 'next/image';
+import { preload } from 'react-dom';
+import { videoPoster } from '@/lib/video-posters';
 import { useRouter } from 'next/navigation';
 import { useLocale } from '@/context/LocaleContext';
 import { type Product } from '@/data/products';
@@ -71,8 +73,12 @@ export function isVideo(src: string): boolean {
 }
 
 export function Foto({ src, alt, sizes, priority, calidad, className = 'object-cover object-top' }: { src: string; alt: string; sizes: string; priority?: boolean; calidad?: number; className?: string }) {
+  const poster = isVideo(src) ? videoPoster(src) : undefined;
+  // El poster del video principal es el LCP: se pide desde el <head> (el
+  // preload scanner no lee el poster de un <video>).
+  if (poster && priority) preload(poster, { as: 'image', fetchPriority: 'high' });
   return isVideo(src)
-    ? <video src={imgUrl(src)} autoPlay muted loop playsInline className={`absolute inset-0 w-full h-full ${className}`} />
+    ? <video src={imgUrl(src)} poster={poster} autoPlay muted loop playsInline className={`absolute inset-0 w-full h-full ${className}`} />
     : <Image src={imgUrl(src)} alt={alt} fill sizes={sizes} priority={priority} quality={calidad} className={className} />;
 }
 
@@ -136,16 +142,21 @@ export function Descuento({ p }: { p: FichaProps }) {
 /** Medios de pago como tabla. Transferencia primero: es el medio que mejor cobra. */
 export function TablaPagos({ p }: { p: FichaProps }) {
   const { formatPrice, currency, t } = useLocale();
-  if (!p.mounted || currency !== 'ARS') return null;
+  if (p.mounted && currency !== 'ARS') return null;
+  // Hasta montar (la moneda se lee en el cliente) se dibuja la misma tabla,
+  // invisible: antes no había nada y al aparecer empujaba 143 px el bloque de
+  // talles (CLS 0,04 en mobile).
+  const reservando = !p.mounted;
+  const precio = (n: number) => (reservando ? '—' : formatPrice(n));
   return (
-    <div className="text-[13px] border-t border-border">
+    <div className={`text-[13px] border-t border-border ${reservando ? 'invisible' : ''}`} aria-hidden={reservando || undefined}>
       <div className="flex justify-between gap-3 py-2.5 border-b border-border">
         <span>{t('Transferencia')} <span className="text-green-700 font-semibold">{p.transferRate}% off</span></span>
-        <span className="font-semibold tabular-nums whitespace-nowrap">{formatPrice(p.transferPrice)}</span>
+        <span className="font-semibold tabular-nums whitespace-nowrap">{precio(p.transferPrice)}</span>
       </div>
       <div className="flex justify-between gap-3 py-2.5 border-b border-border">
         <span>{t('Tarjeta de crédito, 3 cuotas sin interés')}</span>
-        <span className="font-semibold tabular-nums whitespace-nowrap">3 x {formatPrice(Math.round(p.displayPrice / 3))}</span>
+        <span className="font-semibold tabular-nums whitespace-nowrap">3 x {precio(Math.round(p.displayPrice / 3))}</span>
       </div>
       {/* Los hoodies SS27 traen el envío a sucursal incluido en el precio (lib/envio).
           Va acá, junto al precio, porque es parte de lo que vale: abajo del botón,
@@ -288,7 +299,9 @@ function usePromedioResenas(): { promedio: string; total: number } | null {
 export function LineaResenas() {
   const { t } = useLocale();
   const r = usePromedioResenas();
-  if (!r) return null;
+  // Mientras llega el promedio, una línea vacía del mismo alto: aparecía
+  // después y corría 26 px todo lo de abajo.
+  if (!r) return <p className="text-[12px] invisible" aria-hidden="true">&nbsp;</p>;
   return (
     <p className="text-[12px] text-muted-foreground">
       <span className="font-semibold text-foreground">{r.promedio}</span> {t('de 5')} · {r.total} {t('reseñas de la tienda')}
