@@ -89,7 +89,7 @@ export function Migas({ product, privateAccess }: { product: Product; privateAcc
   }
   return (
     <p className="text-[12px] text-muted-foreground">
-      <a href="/productos/" className="hover:text-foreground transition-colors">{t(product.category)}</a>
+      <a href="/productos" className="hover:text-foreground transition-colors">{t(product.category)}</a>
       {' / '}
       <span className="text-foreground">{product.name}</span>
     </p>
@@ -451,7 +451,7 @@ export function TextoCambios() {
   return (
     <>
       <p>{t('Aceptamos cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.')}</p>
-      <a href="/politicas-de-devolucion/" className="underline underline-offset-[3px] text-foreground hover:text-foreground/70 transition-colors">{t('Ver políticas completas →')}</a>
+      <a href="/politicas-de-devolucion" className="underline underline-offset-[3px] text-foreground hover:text-foreground/70 transition-colors">{t('Ver políticas completas →')}</a>
     </>
   );
 }

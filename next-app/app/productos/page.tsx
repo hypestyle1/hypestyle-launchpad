@@ -4,7 +4,7 @@ import { getCategoryConfig } from '@/lib/category-config';
 import { buildMetadata } from '@/lib/seo';
 import { collectionJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
-const PATH = '/productos/';
+const PATH = '/productos';
 const config = getCategoryConfig(PATH)!;
 
 export const metadata = buildMetadata({

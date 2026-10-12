@@ -136,7 +136,7 @@ export default function Promo3x2Bar() {
       <span className="text-white/25 text-[10px] hidden sm:block">·</span>
 
       <Link
-        href="/productos/"
+        href="/productos"
         className="hidden sm:flex items-center gap-1 text-[10px] font-bold tracking-[0.14em] uppercase text-white border px-3 py-1 hover:bg-white hover:text-[#1B3B6F] transition-colors duration-150 shrink-0"
         style={{ borderColor: `${GOLD}66` }}
       >

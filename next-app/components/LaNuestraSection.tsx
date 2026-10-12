@@ -102,7 +102,7 @@ export default function LaNuestraSection() {
               {/* BLOQUE 2 — CTA */}
               <div className="space-y-2">
                 <Link
-                  href="/personalizar/la-nuestra-jersey-mundial-26/"
+                  href="/personalizar/la-nuestra-jersey-mundial-26"
                   className="inline-flex items-center justify-center rounded-full w-full py-2 lg:py-2.5 text-[9px] lg:text-[10px] font-bold uppercase tracking-[0.16em] bg-white transition-opacity hover:opacity-85"
                   style={{ color: '#0A0A0A' }}
                 >

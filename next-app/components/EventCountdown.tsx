@@ -88,7 +88,7 @@ export default function EventCountdown() {
         {/* Right — CTA */}
         <div className="flex justify-center md:justify-end">
           <Link
-            href="/special-prices/"
+            href="/special-prices"
             className="bg-white text-black text-[9px] font-bold uppercase tracking-[0.22em] px-8 py-3 hover:bg-white/85 transition-colors"
           >
             Ver Ofertas

@@ -275,7 +275,7 @@ export default function HeroLookbookFW26() {
 
           {/* Acceso al lookbook completo: la produ entera, en /lookbook-fw26. */}
           <Link
-            href="/lookbook-fw26/"
+            href="/lookbook-fw26"
             className="absolute right-4 bottom-4 md:right-8 md:bottom-8 z-20 hidden md:inline-flex items-center gap-2
                        text-white text-[12px] font-semibold uppercase tracking-[0.14em]
                        [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] hover:opacity-80 transition-opacity"

@@ -10,7 +10,7 @@ import { collectionJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 
 export const revalidate = 60;
 
-const PATH = '/special-prices/';
+const PATH = '/special-prices';
 const TITLE = 'SALE';
 // Sin nombre de campaña ni porcentaje fijo: al cerrar el Cold Archive (06/09/26)
 // esta pagina dejo de ser la vitrina de una campaña y volvio a ser la lista

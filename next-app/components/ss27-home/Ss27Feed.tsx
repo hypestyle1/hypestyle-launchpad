@@ -8,7 +8,7 @@ import MediaTile, { MediaFill } from './MediaTile';
 import { toCardProps, type Ss27Product } from '@/lib/ss27-coleccion';
 import { EDITORIAL_QUALITY, SS27_LOOPS, SS27_MEDIA, SS27_PROXIMAMENTE, SS27_REMERAS_CAROUSEL, SS27_UPCOMING, type Ss27Media, type Ss27Upcoming } from '@/lib/ss27-home';
 
-const COLECCION = '/colecciones/ss27/';
+const COLECCION = '/colecciones/ss27';
 
 /**
  * Lugares reservados en "Próximamente". Si hay menos prendas comingSoon que

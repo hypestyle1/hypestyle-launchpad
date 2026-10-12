@@ -2,18 +2,18 @@ import { foto as f, type Lookbook, type Producto } from './types';
 
 // Lookbook FW26: la produ en Rio de Janeiro (fotos de Fili, mayo 2026), sin
 // retocar. El hero del home usa las horizontales y linkea acá.
-const CAMO: Producto = { producto: 'Camo Full Set', href: '/producto/camo-full-set-combo/' };
-const PINK: Producto = { producto: 'Zip Hoodie Pink', href: '/producto/zip-hoodie-pink/' };
-const JORT: Producto = { producto: 'Lettering Pink Jort', href: '/producto/lettering-pink-jort/' };
-const JERSEY: Producto = { producto: 'La Nuestra — Jersey Mundial 26', href: '/producto/la-nuestra-jersey-mundial-26/' };
-const MESH: Producto = { producto: 'Mesh Camo Blue Tee', href: '/producto/mesh-camo-blue-tee/' };
-const VENEZUELA: Producto = { producto: 'Stars For Venezuela Hoodie', href: '/producto/stars-for-venezuela-hoodie/' };
-const HOODIE_PINK: Producto = { producto: 'Hoodie Pink', href: '/producto/hoodie-pink/' };
+const CAMO: Producto = { producto: 'Camo Full Set', href: '/producto/camo-full-set-combo' };
+const PINK: Producto = { producto: 'Zip Hoodie Pink', href: '/producto/zip-hoodie-pink' };
+const JORT: Producto = { producto: 'Lettering Pink Jort', href: '/producto/lettering-pink-jort' };
+const JERSEY: Producto = { producto: 'La Nuestra — Jersey Mundial 26', href: '/producto/la-nuestra-jersey-mundial-26' };
+const MESH: Producto = { producto: 'Mesh Camo Blue Tee', href: '/producto/mesh-camo-blue-tee' };
+const VENEZUELA: Producto = { producto: 'Stars For Venezuela Hoodie', href: '/producto/stars-for-venezuela-hoodie' };
+const HOODIE_PINK: Producto = { producto: 'Hoodie Pink', href: '/producto/hoodie-pink' };
 // Look gris: el polo en los planos cortos, el sweatpant en los de cuerpo entero.
-const POLO_GREY: Producto = { producto: 'Half-Zip Polo Melange', href: '/producto/half-zip-polo-melange/' };
-const PANT_GREY: Producto = { producto: 'SweatPant Grey HStars', href: '/producto/sweatpant-grey-hstars/' };
-const OGCJM_WHITE: Producto = { producto: 'Only God Can Judge Me — Blanca', href: '/producto/only-god-can-judge-me-blanca/' };
-const OGCJM_BLACK: Producto = { producto: 'Only God Can Judge Me — Negra', href: '/producto/only-god-can-judge-me-negra/' };
+const POLO_GREY: Producto = { producto: 'Half-Zip Polo Melange', href: '/producto/half-zip-polo-melange' };
+const PANT_GREY: Producto = { producto: 'SweatPant Grey HStars', href: '/producto/sweatpant-grey-hstars' };
+const OGCJM_WHITE: Producto = { producto: 'Only God Can Judge Me — Blanca', href: '/producto/only-god-can-judge-me-blanca' };
+const OGCJM_BLACK: Producto = { producto: 'Only God Can Judge Me — Negra', href: '/producto/only-god-can-judge-me-negra' };
 // Pieza de la produ que aún no está cargada en el catálogo.
 const WHITE_TOP: Producto = { producto: 'White Crop Top' };
 

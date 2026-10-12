@@ -14,7 +14,7 @@ const SLIDE_MS = 4500;
 const B = '/ss27/banner/';
 const P = '/ss27/preview/';
 const H = '/ss27/home/';
-const COLECCION = '/colecciones/ss27/';
+const COLECCION = '/colecciones/ss27';
 
 const ESTUDIO: Ss27Media = { id: 'estudio', kind: 'video', ...SS27_VIDEOS.estudio, alt: 'Spring Summer 27 en estudio' };
 

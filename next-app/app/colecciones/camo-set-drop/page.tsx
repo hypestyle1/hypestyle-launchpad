@@ -13,7 +13,7 @@ const config: CollectionConfig = {
   ],
 };
 
-const PATH = '/colecciones/camo-set-drop/';
+const PATH = '/colecciones/camo-set-drop';
 const SEO_DESCRIPTION =
   'Camo Set Drop: conjunto completo en camo full print. Zip hoodie, sweatpant, gorra y beanie de edición limitada.';
 

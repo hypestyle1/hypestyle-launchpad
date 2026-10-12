@@ -36,7 +36,7 @@ export default function FW26Drop() {
           ))}
         </div>
         <div className="relative overflow-hidden bg-bg-alt min-h-[300px]">
-          <a href="/colecciones/fw26/" className="absolute inset-0 group block">
+          <a href="/colecciones/fw26" className="absolute inset-0 group block">
             <Image
               src="/stl-look-halfzip-polo-navy.png"
               alt="FW26"

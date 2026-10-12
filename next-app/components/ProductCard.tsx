@@ -60,7 +60,7 @@ interface ProductCardProps {
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
-  href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
+  href = "/productos", sizes, stock, giftNote, customizable, mutedPrice,
   blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags,
 }: ProductCardProps) {
   const comingSoon = !!tags?.includes(COMING_SOON_TAG);

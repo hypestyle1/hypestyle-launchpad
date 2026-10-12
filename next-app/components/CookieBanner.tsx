@@ -37,7 +37,7 @@ export default function CookieBanner() {
   if (!bannerOpen) return null;
 
   const policy = (
-    <Link href="/politica-de-privacidad/" className="underline underline-offset-2 text-white/60 hover:text-white transition-colors">
+    <Link href="/politica-de-privacidad" className="underline underline-offset-2 text-white/60 hover:text-white transition-colors">
       {t('Más info')}
     </Link>
   );

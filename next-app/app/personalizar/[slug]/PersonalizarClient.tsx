@@ -150,7 +150,7 @@ export default function PersonalizarClient({ slug, initialGoalDiscount = null }:
     if (!selectedSize) { setSizeError(true); return; }
     add({ id: product.id, name: product.name, price: displayPrice, image: product.images[0], size: selectedSize, quantity: 1, ...(playerName || playerNumber ? { customization: { playerName, number: playerNumber } } : {}) });
     setAdded(true);
-    setTimeout(() => { setDrawerOpen(true); router.push(`/producto/${slug}/`); }, 900);
+    setTimeout(() => { setDrawerOpen(true); router.push(`/producto/${slug}`); }, 900);
   };
 
   const ADIDAS = `"AdidasWorldCup", "Arial Black", Arial, sans-serif`;
@@ -161,7 +161,7 @@ export default function PersonalizarClient({ slug, initialGoalDiscount = null }:
       <Navbar />
       <main className="pt-[var(--offset)] min-h-screen bg-background">
         <div className="max-w-[1200px] mx-auto px-4 pt-4 pb-12">
-          <button onClick={() => router.push(`/producto/${slug}/`)}
+          <button onClick={() => router.push(`/producto/${slug}`)}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-[11px] uppercase tracking-wider mb-6">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 2L4 7L9 12" /></svg>
             Volver al producto

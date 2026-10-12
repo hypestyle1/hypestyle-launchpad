@@ -15,57 +15,57 @@ import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 // wideOnly: entre 1024 y ~1270 px no entran todos y el logo centrado se pisa con
 // los últimos; esos dos quedan en el footer y en el menú mobile.
 const navLinks = [
-  { label: 'Shop',          href: '/productos/',               hasDropdown: true,  routeMatch: '/productos' },
-  { label: 'Colecciones',   href: '/colecciones/',             hasDropdown: false, routeMatch: '/colecciones', menu: 'colecciones' },
-  { label: 'Contacto',      href: '/contacto/',                hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
-  { label: 'FAQs',          href: '/faqs/',                    hasDropdown: false, routeMatch: '/faqs' },
-  { label: 'Políticas',     href: '/politicas-de-devolucion/', hasDropdown: false, routeMatch: '/politicas', wideOnly: true },
-  { label: 'Quiénes Somos', href: '/nosotros/',                hasDropdown: false, routeMatch: '/nosotros', wideOnly: true },
+  { label: 'Shop',          href: '/productos',               hasDropdown: true,  routeMatch: '/productos' },
+  { label: 'Colecciones',   href: '/colecciones',             hasDropdown: false, routeMatch: '/colecciones', menu: 'colecciones' },
+  { label: 'Contacto',      href: '/contacto',                hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
+  { label: 'FAQs',          href: '/faqs',                    hasDropdown: false, routeMatch: '/faqs' },
+  { label: 'Políticas',     href: '/politicas-de-devolucion', hasDropdown: false, routeMatch: '/politicas', wideOnly: true },
+  { label: 'Quiénes Somos', href: '/nosotros',                hasDropdown: false, routeMatch: '/nosotros', wideOnly: true },
 ];
 
 // Desplegables chicos (flecha como Shop). Colecciones junta las colecciones
 // de la tienda con los lookbooks: la idea es que acá vivan las carpetas de
 // todos los shootings profesionales de cada colección, uno por temporada.
 const menuColecciones = [
-  { label: 'Ver colecciones',   href: '/colecciones/' },
-  { label: 'Spring Summer 27 · Part 01', href: '/colecciones/ss27/' },
-  { label: 'Lookbook FW26 — Rio de Janeiro', href: '/lookbook-fw26/' },
-  { label: 'Lookbook — Faith Is The Real Hype', href: '/lookbook-faith/' },
-  { label: 'Lookbook — CULTO x Neo Pistea', href: '/lookbook-neo/' },
-  { label: 'Lookbook — La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir/' },
-  { label: 'Lookbook — Fileteado Porteño x Alfredo Genovese', href: '/lookbook-genovese/' },
-  { label: 'Lookbook — Tie Dye Hoodie Drop x Ferpa', href: '/lookbook-ferpa/' },
+  { label: 'Ver colecciones',   href: '/colecciones' },
+  { label: 'Spring Summer 27 · Part 01', href: '/colecciones/ss27' },
+  { label: 'Lookbook FW26 — Rio de Janeiro', href: '/lookbook-fw26' },
+  { label: 'Lookbook — Faith Is The Real Hype', href: '/lookbook-faith' },
+  { label: 'Lookbook — CULTO x Neo Pistea', href: '/lookbook-neo' },
+  { label: 'Lookbook — La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir' },
+  { label: 'Lookbook — Fileteado Porteño x Alfredo Genovese', href: '/lookbook-genovese' },
+  { label: 'Lookbook — Tie Dye Hoodie Drop x Ferpa', href: '/lookbook-ferpa' },
 ];
 const menuContacto = [
-  { label: 'Escribinos',              href: '/contacto/' },
-  { label: 'Crea contenido con Hype', href: '/creadores/' },
-  { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud/' },
+  { label: 'Escribinos',              href: '/contacto' },
+  { label: 'Crea contenido con Hype', href: '/creadores' },
+  { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud' },
 ];
 const smallMenus: Record<string, { label: string; href: string }[]> = { colecciones: menuColecciones, contacto: menuContacto };
 
 const megaMenu = {
   general: [
-    { label: 'Ver todo',       href: '/productos/',      homeHash: null,             isNew: false },
-    { label: 'New In',         href: '/new-in/',          homeHash: 'best-sellers',   isNew: true  },
-    { label: 'Colecciones',    href: '/colecciones/',    homeHash: null,             isNew: false },
-    { label: 'Básicos',        href: '/colecciones/regular-tees/', homeHash: 'basicos', isNew: false },
-    { label: 'Más Hype',       href: '/colecciones/mas-hype/', homeHash: 'mas-hype',    isNew: false },
-    { label: 'SALE', href: '/special-prices/', homeHash: 'back-in-stock', isNew: false, isSale: true },
+    { label: 'Ver todo',       href: '/productos',      homeHash: null,             isNew: false },
+    { label: 'New In',         href: '/new-in',          homeHash: 'best-sellers',   isNew: true  },
+    { label: 'Colecciones',    href: '/colecciones',    homeHash: null,             isNew: false },
+    { label: 'Básicos',        href: '/colecciones/regular-tees', homeHash: 'basicos', isNew: false },
+    { label: 'Más Hype',       href: '/colecciones/mas-hype', homeHash: 'mas-hype',    isNew: false },
+    { label: 'SALE', href: '/special-prices', homeHash: 'back-in-stock', isNew: false, isSale: true },
   ],
   categorias: [
-    { label: 'Arriba',     href: '/arriba/',     indent: false },
-    { label: 'Abajo',      href: '/abajo/',      indent: false },
-    { label: 'Accesorios', href: '/accesorios/', indent: false },
-    { label: 'Sets',       href: '/sets/',       indent: false },
-    { label: 'Gift Card',  href: '/gift-cards/', indent: false },
+    { label: 'Arriba',     href: '/arriba',     indent: false },
+    { label: 'Abajo',      href: '/abajo',      indent: false },
+    { label: 'Accesorios', href: '/accesorios', indent: false },
+    { label: 'Sets',       href: '/sets',       indent: false },
+    { label: 'Gift Card',  href: '/gift-cards', indent: false },
   ],
   colecciones: [
-    { label: 'Spring Summer 27',    href: '/colecciones/ss27/' },
-    { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
-    { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop/' },
-    { label: 'Race Drop',           href: '/colecciones/race/' },
-    { label: 'Summer 26',           href: '/colecciones/summer-26/' },
-    { label: 'Regular Tees',        href: '/colecciones/regular-tees/' },
+    { label: 'Spring Summer 27',    href: '/colecciones/ss27' },
+    { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style' },
+    { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop' },
+    { label: 'Race Drop',           href: '/colecciones/race' },
+    { label: 'Summer 26',           href: '/colecciones/summer-26' },
+    { label: 'Regular Tees',        href: '/colecciones/regular-tees' },
   ],
 };
 
@@ -73,30 +73,30 @@ const mobilePanels = {
   main: {
     title: 'Shop',
     items: [
-      { label: 'Ver todos los productos', href: '/productos/',      homeHash: null,             panel: null },
-      { label: 'New In',                   href: '/new-in/',          homeHash: 'best-sellers',   panel: null },
-      { label: 'Colecciones',              href: '/colecciones/',    homeHash: null,             panel: null },
-      { label: 'Básicos',                  href: '/colecciones/regular-tees/', homeHash: 'basicos', panel: null },
-      { label: 'Más Hype',                 href: '/colecciones/mas-hype/', homeHash: 'mas-hype',    panel: null },
-      { label: 'SALE',                     href: '/special-prices/', homeHash: 'back-in-stock', panel: null, isSale: true },
+      { label: 'Ver todos los productos', href: '/productos',      homeHash: null,             panel: null },
+      { label: 'New In',                   href: '/new-in',          homeHash: 'best-sellers',   panel: null },
+      { label: 'Colecciones',              href: '/colecciones',    homeHash: null,             panel: null },
+      { label: 'Básicos',                  href: '/colecciones/regular-tees', homeHash: 'basicos', panel: null },
+      { label: 'Más Hype',                 href: '/colecciones/mas-hype', homeHash: 'mas-hype',    panel: null },
+      { label: 'SALE',                     href: '/special-prices', homeHash: 'back-in-stock', panel: null, isSale: true },
       { label: 'Arriba',                   href: null,               homeHash: null,             panel: 'arriba' },
       { label: 'Abajo',                    href: null,               homeHash: null,             panel: 'abajo' },
       { label: 'Accesorios',               href: null,               homeHash: null,             panel: 'accesorios' },
-      { label: 'Sets',                     href: '/sets/',           homeHash: null,             panel: null },
-      { label: 'Gift Card',                href: '/gift-cards/',     homeHash: null,             panel: null },
+      { label: 'Sets',                     href: '/sets',           homeHash: null,             panel: null },
+      { label: 'Gift Card',                href: '/gift-cards',     homeHash: null,             panel: null },
     ],
     collections: [
-      { label: 'Spring Summer 27',    href: '/colecciones/ss27/' },
-      { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
-      { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop/' },
-      { label: 'Race Drop',           href: '/colecciones/race/' },
-      { label: 'Summer 26',           href: '/colecciones/summer-26/' },
-      { label: 'Regular Tees',        href: '/colecciones/regular-tees/' },
+      { label: 'Spring Summer 27',    href: '/colecciones/ss27' },
+      { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style' },
+      { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop' },
+      { label: 'Race Drop',           href: '/colecciones/race' },
+      { label: 'Summer 26',           href: '/colecciones/summer-26' },
+      { label: 'Regular Tees',        href: '/colecciones/regular-tees' },
     ],
   },
-  arriba:     { title: 'Arriba',     verTodo: '/arriba/',     items: [{ label: 'Hoodies', href: '/hoodies/', panel: null }, { label: 'Remeras', href: '/tees/', panel: null }, { label: 'Accesorios', href: '/accesorios/', panel: null }] },
-  abajo:      { title: 'Abajo',      verTodo: '/abajo/',      items: [{ label: 'Pantalones', href: '/abajo/', panel: null }, { label: 'Jorts', href: '/abajo/', panel: null }] },
-  accesorios: { title: 'Accesorios', verTodo: '/accesorios/', items: [{ label: 'Gorras', href: '/accesorios/', panel: null }, { label: 'Beanies', href: '/accesorios/', panel: null }, { label: 'Rings', href: '/accesorios/', panel: null }] },
+  arriba:     { title: 'Arriba',     verTodo: '/arriba/',     items: [{ label: 'Hoodies', href: '/hoodies', panel: null }, { label: 'Remeras', href: '/tees', panel: null }, { label: 'Accesorios', href: '/accesorios', panel: null }] },
+  abajo:      { title: 'Abajo',      verTodo: '/abajo/',      items: [{ label: 'Pantalones', href: '/abajo', panel: null }, { label: 'Jorts', href: '/abajo', panel: null }] },
+  accesorios: { title: 'Accesorios', verTodo: '/accesorios/', items: [{ label: 'Gorras', href: '/accesorios', panel: null }, { label: 'Beanies', href: '/accesorios', panel: null }, { label: 'Rings', href: '/accesorios', panel: null }] },
 };
 
 const glassStyle = {
@@ -376,7 +376,7 @@ export default function Navbar() {
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.15em] text-white/60 mb-0.5">{t('Colección')}</p>
                     <p className="text-[14px] font-bold text-white leading-tight">Spring Summer 27</p>
-                    <Link href="/colecciones/ss27/" onClick={() => setShopOpen(false)}
+                    <Link href="/colecciones/ss27" onClick={() => setShopOpen(false)}
                       className="text-[11px] text-white/70 hover:text-white transition-colors mt-1 block">
                       {t('Ver colección →')}
                     </Link>
@@ -393,7 +393,7 @@ export default function Navbar() {
             style={{ ...glassStyle, borderRadius: '0 0 14px 14px', borderTop: 'none' }}>
             <div className="max-w-[1400px] mx-auto p-2">
               {searchGift && (
-                <Link href="/gift-cards/"
+                <Link href="/gift-cards"
                   onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
                   <span className="w-10 h-10 flex-shrink-0 rounded-[6px] bg-[#141414] flex items-center justify-center">
@@ -406,7 +406,7 @@ export default function Navbar() {
                 </Link>
               )}
               {searchResults.length > 0 || searchGift ? searchResults.map((p) => (
-                <Link key={p.slug} href={`/producto/${p.slug}/`}
+                <Link key={p.slug} href={`/producto/${p.slug}`}
                   onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
                   <img src={imgSrc(p.image)} alt={p.name}
@@ -509,22 +509,22 @@ export default function Navbar() {
                 </div>
                 <div className="border-t border-foreground/10 pt-4 space-y-1">
                   {[
-                    { label: 'Colecciones',   href: '/colecciones/' },
-                    { label: 'Spring Summer 27', href: '/colecciones/ss27/' },
-                    { label: 'Lookbook FW26', href: '/lookbook-fw26/' },
-                    { label: 'Lookbook Faith', href: '/lookbook-faith/' },
-                    { label: 'Lookbook CULTO', href: '/lookbook-neo/' },
-                    { label: 'Lookbook La Ciudad del Pop', href: '/lookbook-mir/' },
-                    { label: 'Lookbook Fileteado Porteño', href: '/lookbook-genovese/' },
-                    { label: 'Lookbook Tie Dye x Ferpa', href: '/lookbook-ferpa/' },
-                    { label: 'Reseñas',       href: '/reviews/' },
+                    { label: 'Colecciones',   href: '/colecciones' },
+                    { label: 'Spring Summer 27', href: '/colecciones/ss27' },
+                    { label: 'Lookbook FW26', href: '/lookbook-fw26' },
+                    { label: 'Lookbook Faith', href: '/lookbook-faith' },
+                    { label: 'Lookbook CULTO', href: '/lookbook-neo' },
+                    { label: 'Lookbook La Ciudad del Pop', href: '/lookbook-mir' },
+                    { label: 'Lookbook Fileteado Porteño', href: '/lookbook-genovese' },
+                    { label: 'Lookbook Tie Dye x Ferpa', href: '/lookbook-ferpa' },
+                    { label: 'Reseñas',       href: '/reviews' },
 
-                    { label: 'FAQs',          href: '/faqs/' },
-                    { label: 'Quiénes Somos', href: '/nosotros/' },
-                    { label: 'Políticas',     href: '/politicas-de-devolucion/' },
-                    { label: 'Contacto',      href: '/contacto/' },
-                    { label: 'Crea contenido con Hype', href: '/creadores/' },
-                    { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud/' },
+                    { label: 'FAQs',          href: '/faqs' },
+                    { label: 'Quiénes Somos', href: '/nosotros' },
+                    { label: 'Políticas',     href: '/politicas-de-devolucion' },
+                    { label: 'Contacto',      href: '/contacto' },
+                    { label: 'Crea contenido con Hype', href: '/creadores' },
+                    { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud' },
                   ].map((l) => (
                     <Link key={t(l.label)} href={l.href} onClick={closeMobile}
                       className="block text-[14px] text-foreground/50 hover:text-foreground transition-colors py-1">

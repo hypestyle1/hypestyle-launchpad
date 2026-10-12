@@ -116,8 +116,8 @@ describe('fromWPNode — talles y stock', () => {
 });
 
 describe('fromWPNode — enlaces e imágenes', () => {
-  it('arma el href de la ficha con el slug', () => {
-    expect(fromWPNode(node()).href).toBe('/producto/hoodie-hype/');
+  it('arma el href de la ficha con el slug, sin barra final (con barra responde 308)', () => {
+    expect(fromWPNode(node()).href).toBe('/producto/hoodie-hype');
   });
 
   it('siempre devuelve al menos una imagen, aunque sea vacía', () => {

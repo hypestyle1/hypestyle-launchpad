@@ -169,7 +169,7 @@ export default function FlashSaleSection() {
           </div>
         ) : (
           <Link
-            href="/productos/"
+            href="/productos"
             className="group inline-flex items-center gap-3 px-8 py-4 font-black text-[11px] tracking-[0.2em] uppercase transition-all duration-200"
             style={{ background: '#ff2d2d', color: '#fff' }}
             onMouseEnter={e => {

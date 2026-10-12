@@ -114,7 +114,7 @@ export default function FlashSaleBar() {
       {/* CTA */}
       {!isFull && (
         <Link
-          href="/productos/"
+          href="/productos"
           className="hidden sm:flex items-center gap-1 text-[10px] font-bold tracking-[0.14em] uppercase text-white border border-white/20 px-3 py-1 hover:bg-white hover:text-black transition-colors duration-150 shrink-0"
         >
           Comprar

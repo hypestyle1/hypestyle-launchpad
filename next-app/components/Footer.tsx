@@ -7,29 +7,29 @@ import { useLocale, LANGUAGES } from "@/context/LocaleContext";
 import { CURRENCIES } from "@/lib/currency";
 
 const shopLinks = [
-  { label: "Arriba",     href: "/arriba/" },
-  { label: "Abajo",      href: "/abajo/" },
-  { label: "Accesorios", href: "/accesorios/" },
-  { label: "Sets",       href: "/sets/" },
-  { label: "Gift Card",  href: "/gift-cards/" },
-  { label: "Ver todo",   href: "/productos/" },
+  { label: "Arriba",     href: "/arriba" },
+  { label: "Abajo",      href: "/abajo" },
+  { label: "Accesorios", href: "/accesorios" },
+  { label: "Sets",       href: "/sets" },
+  { label: "Gift Card",  href: "/gift-cards" },
+  { label: "Ver todo",   href: "/productos" },
 ];
 
 const infoLinks = [
-  { label: "Reseñas", href: "/reviews/" },
-  { label: "Quiénes Somos", href: "/nosotros/" },
-  { label: "Envíos internacionales", href: "/worldwide/" },
-  { label: "Devoluciones", href: "/politicas-de-devolucion/" },
-  { label: "Privacidad", href: "/politica-de-privacidad/" },
-  { label: "FAQs", href: "/faqs/" },
-  { label: "Contacto", href: "/contacto/" },
+  { label: "Reseñas", href: "/reviews" },
+  { label: "Quiénes Somos", href: "/nosotros" },
+  { label: "Envíos internacionales", href: "/worldwide" },
+  { label: "Devoluciones", href: "/politicas-de-devolucion" },
+  { label: "Privacidad", href: "/politica-de-privacidad" },
+  { label: "FAQs", href: "/faqs" },
+  { label: "Contacto", href: "/contacto" },
 ];
 
 // Las dos puertas de entrada para trabajar con la marca. Van juntas y en su
 // propia columna: no son links de tienda ni de ayuda, son propuestas.
 const trabajaLinks = [
-  { label: "Crea contenido con Hype", href: "/creadores/" },
-  { label: "Sumá Hype a tu local", href: "/mayoristas/como-funciona/" },
+  { label: "Crea contenido con Hype", href: "/creadores" },
+  { label: "Sumá Hype a tu local", href: "/mayoristas/como-funciona" },
 ];
 
 const rrssLinks = [

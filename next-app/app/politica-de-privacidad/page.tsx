@@ -6,7 +6,7 @@ import { breadcrumbJsonLd } from '@/lib/jsonld';
 // La página es un client component (hooks de estado y de datos), así que no
 // puede exportar metadata. Este wrapper server le pone el <title>, la meta
 // description, el canonical propio y el structured data.
-const PATH = '/politica-de-privacidad/';
+const PATH = '/politica-de-privacidad';
 const TITLE = 'Política de privacidad';
 const DESCRIPTION =
   'Cómo HYPESTYLE trata tus datos personales: qué guardamos, para qué los usamos y cuáles son tus derechos.';

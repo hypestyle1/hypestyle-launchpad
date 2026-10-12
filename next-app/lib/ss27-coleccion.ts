@@ -10,7 +10,7 @@ import { fromWPNode, type NormalizedProduct } from './products-normalize';
 import { isPublicOpen, type PrivateAccessConfig } from './private-access/config';
 import { decodeEntities, isComingSoonNode, withPlainPrices } from './private-access/normalize';
 
-export const SS27_PATH = '/colecciones/ss27/';
+export const SS27_PATH = '/colecciones/ss27';
 
 export const SS27_HERO_IMAGES = [
   { src: '/ss27/coleccion/hero-duo-grey-hd.webp', alt: 'Hype Distressed Hoodie gris y Athletic Dept Polo gris, Spring Summer 27' },
