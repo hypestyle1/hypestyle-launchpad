@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { imgSrc } from "@/lib/img";
 import { useLocale } from "@/context/LocaleContext";
 import { useCart } from "@/context/CartContext";
@@ -11,6 +11,7 @@ import { COMING_SOON_TAG } from "@/lib/private-access/normalize";
 import { gaAddToCart } from "@/lib/ga";
 import { fbAddToCart } from "@/lib/fbpixel";
 import { getColorwaysForSlug } from "@/lib/product-detail";
+import { useCriticalPainted } from "@/hooks/useCriticalPainted";
 
 // La primera foto es siempre el mockup (la destacada de Woo): todo el sitio
 // está armado alrededor de eso. Al pasar el mouse aparece la primera foto de
@@ -62,9 +63,15 @@ interface ProductCardProps {
    * lentas empieza a bajar todas las cards hasta ~2.500 px más abajo, y en
    * /colecciones/ss27 esas ~30 fotos le sacaban banda a la del hero (el LCP):
    * medido en producción, 8,4 s con la grilla compitiendo, ~5 s sin ella.
+   * Es el margen solo hasta que se pinta el hero (useCriticalPainted): después
+   * se amplía a PRECARGA_TRAS_HERO, para que un scroll rápido no encuentre
+   * cards vacías.
    */
   mountMargin?: string;
 }
+
+/** Margen de precarga de las cards con mountMargin una vez pintado el hero. */
+const PRECARGA_TRAS_HERO = "2000px";
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
@@ -79,12 +86,21 @@ export default function ProductCard({
   const [hovered, setHovered] = useState(false);
   const cardRef = useRef<HTMLAnchorElement>(null);
   const [near, setNear] = useState(!mountMargin);
+  const heroPintado = useCriticalPainted();
+  // Con mountMargin, mientras llega la foto se ve la misma foto en miniatura
+  // (24 px, ~1 KB) desenfocada: la card nunca queda vacía en un scroll rápido,
+  // y las ~30 miniaturas casi no le sacan banda al hero.
+  const [fotoLista, setFotoLista] = useState(false);
+  const miniatura = mountMargin && image
+    ? getImageProps({ src: imgSrc(image), alt: "", width: 24, height: 24, quality: 40 }).props.src
+    : null;
   useEffect(() => {
     if (near || !cardRef.current) return;
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setNear(true); io.disconnect(); } }, { rootMargin: `${mountMargin} 0px` });
+    const margen = heroPintado ? PRECARGA_TRAS_HERO : mountMargin;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setNear(true); io.disconnect(); } }, { rootMargin: `${margen} 0px` });
     io.observe(cardRef.current);
     return () => io.disconnect();
-  }, [near, mountMargin]);
+  }, [near, mountMargin, heroPintado]);
   // La foto de hover se monta recién la primera vez que el mouse entra en la
   // card. Antes se pedía siempre (con opacity-0), también en celulares, donde no
   // hay hover: en /colecciones/ss27 eran ~22 imágenes de más compitiendo con el
@@ -150,14 +166,22 @@ export default function ProductCard({
     >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
+        {miniatura && (
+          <div
+            aria-hidden="true"
+            className={`absolute inset-0 bg-cover bg-top scale-110 blur-md transition-opacity duration-500 ${fotoLista ? "opacity-0" : "opacity-100"}`}
+            style={{ backgroundImage: `url(${miniatura})` }}
+          />
+        )}
         {image && near ? (
           <Image
             src={imgSrc(image)}
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            onLoad={() => setFotoLista(true)}
             className={`object-cover object-top transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
-              hovered && hoverImage && hoverLoaded ? "opacity-0" : "opacity-100"
+              (hovered && hoverImage && hoverLoaded) || (miniatura && !fotoLista) ? "opacity-0" : "opacity-100"
             }`}
           />
         ) : null}
