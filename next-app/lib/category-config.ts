@@ -130,3 +130,19 @@ export const CATEGORY_MAP: Record<string, CategoryConfig> = {
 export function getCategoryConfig(path: string): CategoryConfig | undefined {
   return CATEGORY_MAP[path.replace(/\/$/, '')];
 }
+
+/**
+ * Productos de la página antes de tabs, talle y orden: los de sus categorías y,
+ * si tiene, de su tag. Lo usan CategoriaPage y su wrapper server, que manda
+ * solo este subconjunto en el HTML inicial (no el catálogo entero).
+ */
+export function productsForCategory<P extends { category: string; tags: string[] }>(
+  products: P[],
+  config: CategoryConfig,
+): P[] {
+  let base = config.categories.length === 0
+    ? products
+    : products.filter(p => config.categories.includes(p.category));
+  if (config.tag) base = base.filter(p => p.tags.includes(config.tag!));
+  return base;
+}

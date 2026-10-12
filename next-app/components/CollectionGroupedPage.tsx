@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/lib/products-normalize";
 
 interface Group { label: string; slugs: string[] }
 
@@ -19,9 +20,13 @@ export interface CollectionConfig {
   groups: Group[];
 }
 
-export default function CollectionGroupedPage({ config }: { config: CollectionConfig }) {
+/**
+ * `initialProducts`: los productos de la colección traídos en el servidor
+ * (lib/catalog.ts), para que las cards estén en el HTML inicial.
+ */
+export default function CollectionGroupedPage({ config, initialProducts }: { config: CollectionConfig; initialProducts?: NormalizedProduct[] }) {
   const allSlugs = config.groups.flatMap(g => g.slugs);
-  const { data: allProducts = [] } = useProducts(0);
+  const { data: allProducts = [] } = useProducts(0, undefined, undefined, initialProducts);
 
   const bySlug = useMemo(() => {
     const map: Record<string, (typeof allProducts)[0]> = {};

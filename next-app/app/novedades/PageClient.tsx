@@ -6,9 +6,11 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/lib/products-normalize";
 
-export default function NovedadesPage() {
-  const { data: products = [] } = useProducts(8);
+/** `initialProducts`: traídos en el servidor (lib/catalog.ts) para el HTML inicial. */
+export default function NovedadesPage({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
+  const { data: products = [] } = useProducts(8, undefined, undefined, initialProducts);
   const ref = useReveal([products]);
 
   return (

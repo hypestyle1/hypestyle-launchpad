@@ -6,9 +6,11 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/lib/products-normalize";
 
-export default function BackInStockPage() {
-  const { data: products = [], isLoading } = useProducts(100, undefined, 'best-seller');
+/** `initialProducts`: traídos en el servidor (lib/catalog.ts) para el HTML inicial. */
+export default function BackInStockPage({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
+  const { data: products = [], isLoading } = useProducts(100, undefined, 'best-seller', initialProducts);
   const ref = useReveal([products]);
 
   return (

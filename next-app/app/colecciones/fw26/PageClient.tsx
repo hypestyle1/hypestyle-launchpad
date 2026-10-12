@@ -7,10 +7,12 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/lib/products-normalize";
 import { FW26_GROUPS as GROUPS, FW26_SLUGS as ALL_SLUGS } from "@/lib/fw26";
 
-export default function FW26Page() {
-  const { data: allProducts = [] } = useProducts(0);
+/** `initialProducts`: traídos en el servidor (lib/catalog.ts) para el HTML inicial. */
+export default function FW26Page({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
+  const { data: allProducts = [] } = useProducts(0, undefined, undefined, initialProducts);
   const bySlug = useMemo(() => {
     const map: Record<string, (typeof allProducts)[0]> = {};
     allProducts.forEach(p => { map[p.slug] = p; });

@@ -1,6 +1,7 @@
 import CategoriaPage from '@/components/CategoriaPage';
 import JsonLd from '@/components/JsonLd';
 import { getCategoryConfig } from '@/lib/category-config';
+import { initialProductsFor } from '@/lib/catalog';
 import { buildMetadata } from '@/lib/seo';
 import { collectionJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
@@ -13,7 +14,12 @@ export const metadata = buildMetadata({
   path: PATH,
 });
 
-export default function Page() {
+// Las cards van en el HTML inicial (lib/catalog.ts), como en /special-prices.
+// En el navegador manda igual el pedido a /api/products (stock y precio al día).
+export const revalidate = 60;
+
+export default async function Page() {
+  const initialProducts = await initialProductsFor(config);
   return (
     <>
       <JsonLd
@@ -22,7 +28,7 @@ export default function Page() {
           breadcrumbJsonLd([{ name: config.title, path: PATH }]),
         ]}
       />
-      <CategoriaPage />
+      <CategoriaPage initialProducts={initialProducts} />
     </>
   );
 }

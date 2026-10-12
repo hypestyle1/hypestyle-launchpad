@@ -1,5 +1,6 @@
 import NovedadesPage from './PageClient';
 import JsonLd from '@/components/JsonLd';
+import { fetchCatalogForSsr } from '@/lib/catalog';
 import { buildMetadata } from '@/lib/seo';
 import { breadcrumbJsonLd } from '@/lib/jsonld';
 
@@ -13,7 +14,12 @@ const DESCRIPTION =
 
 export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, path: PATH });
 
-export default function Page() {
+// Las cards van en el HTML inicial (lib/catalog.ts), como en /special-prices.
+// En el navegador manda igual el pedido a /api/products (stock y precio al día).
+export const revalidate = 60;
+
+export default async function Page() {
+  const initialProducts = (await fetchCatalogForSsr()).slice(0, 8);
   return (
     <>
       <JsonLd
@@ -21,7 +27,7 @@ export default function Page() {
           breadcrumbJsonLd([{ name: 'Novedades', path: PATH }]),
         ]}
       />
-      <NovedadesPage />
+      <NovedadesPage initialProducts={initialProducts} />
     </>
   );
 }
