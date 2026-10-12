@@ -11,6 +11,7 @@ import { COMING_SOON_TAG } from "@/lib/private-access/normalize";
 import { gaAddToCart } from "@/lib/ga";
 import { fbAddToCart } from "@/lib/fbpixel";
 import { getColorwaysForSlug } from "@/lib/product-detail";
+import { useCriticalPainted } from "@/hooks/useCriticalPainted";
 
 // La primera foto es siempre el mockup (la destacada de Woo): todo el sitio
 // está armado alrededor de eso. Al pasar el mouse aparece la primera foto de
@@ -62,9 +63,15 @@ interface ProductCardProps {
    * lentas empieza a bajar todas las cards hasta ~2.500 px más abajo, y en
    * /colecciones/ss27 esas ~30 fotos le sacaban banda a la del hero (el LCP):
    * medido en producción, 8,4 s con la grilla compitiendo, ~5 s sin ella.
+   * Es el margen solo hasta que se pinta el hero (useCriticalPainted): después
+   * se amplía a PRECARGA_TRAS_HERO, para que un scroll rápido no encuentre
+   * cards vacías.
    */
   mountMargin?: string;
 }
+
+/** Margen de precarga de las cards con mountMargin una vez pintado el hero. */
+const PRECARGA_TRAS_HERO = "2000px";
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
@@ -79,12 +86,14 @@ export default function ProductCard({
   const [hovered, setHovered] = useState(false);
   const cardRef = useRef<HTMLAnchorElement>(null);
   const [near, setNear] = useState(!mountMargin);
+  const heroPintado = useCriticalPainted();
   useEffect(() => {
     if (near || !cardRef.current) return;
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setNear(true); io.disconnect(); } }, { rootMargin: `${mountMargin} 0px` });
+    const margen = heroPintado ? PRECARGA_TRAS_HERO : mountMargin;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setNear(true); io.disconnect(); } }, { rootMargin: `${margen} 0px` });
     io.observe(cardRef.current);
     return () => io.disconnect();
-  }, [near, mountMargin]);
+  }, [near, mountMargin, heroPintado]);
   // La foto de hover se monta recién la primera vez que el mouse entra en la
   // card. Antes se pedía siempre (con opacity-0), también en celulares, donde no
   // hay hover: en /colecciones/ss27 eran ~22 imágenes de más compitiendo con el
