@@ -271,6 +271,13 @@ const SS27_ATHLETIC_LS_COLORWAYS = [
   { label: 'Blue', value: '#3a6ea8', slug: 'athletic-dept-blue-longsleeve', image: `${WP}/2026/10/athletic-dept-blue-longsleeve-mockup-v2.png` },
 ];
 
+// Gorras: la Camo original (verde, bordado naranja) y la Grey Camo SS27
+// (gris, bordado rosa). Mismo modelo, distinto colorway.
+const CAP_COLORWAYS = [
+  { label: 'Camo',      value: '#5b6b3a', slug: 'camo-cap',      image: `${WP}/2026/05/camo-cap-0.png` },
+  { label: 'Grey Camo', value: '#8a8a8a', slug: 'grey-camo-cap', image: `${WP}/2026/10/grey-camo-cap-0.png` },
+];
+
 /** Colorways hermanos de un slug (para los puntitos de color en la card). */
 export function getColorwaysForSlug(slug: string): { label: string; value: string; slug: string }[] | null {
   return COLORWAYS[slug] ?? null;
@@ -335,7 +342,7 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   ...Object.fromEntries(AEROBLUE_COLORWAYS.map(c => [c.slug, AEROBLUE_COLORWAYS])),
   ...Object.fromEntries([
     SS27_ATHLETIC_TEE_COLORWAYS, SS27_WORN_VARSITY_COLORWAYS, SS27_H_HYPE_COLORWAYS,
-    SS27_STYLE_CULTURE_COLORWAYS, SS27_ATHLETIC_LS_COLORWAYS,
+    SS27_STYLE_CULTURE_COLORWAYS, SS27_ATHLETIC_LS_COLORWAYS, CAP_COLORWAYS,
   ].flatMap(g => g.map(c => [c.slug, g]))),
 };
 
