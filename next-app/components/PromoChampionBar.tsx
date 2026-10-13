@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
+import { isRetailChromeHidden } from '@/lib/retail-chrome';
 
 const GOLD = '#C9A227';
 const NAVY = '#0d1b3d';
@@ -24,8 +25,7 @@ export default function PromoChampionBar() {
   const pathname = usePathname();
   const { phase, promoActive } = usePromoChampionStatus();
 
-  const hideOn = ['/admin', '/checkout', '/pendiente-de-pago', '/confirmacion', '/pagar'];
-  if (phase !== 'won' || !promoActive || hideOn.some(p => pathname?.startsWith(p))) return null;
+  if (phase !== 'won' || !promoActive || isRetailChromeHidden(pathname)) return null;
 
   return (
     <div

@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { shiftedBottom } from '@/lib/bottom-shift';
 import { useMobileFloatGate } from '@/hooks/useMobileFloatGate';
+import { isRetailChromeHidden } from '@/lib/retail-chrome';
 
 const WA_NUMBER  = '5491178292430';
 const WA_MESSAGE = encodeURIComponent('Hola Hype!');
@@ -12,7 +13,9 @@ export default function WhatsAppButton() {
   const gate = useMobileFloatGate();
   // El panel es interno: el botón flotante de atención al cliente no pinta
   // nada ahí, y encima tapa la esquina donde caen los botones de cada fila.
-  if (pathname?.startsWith('/checkout') || pathname?.startsWith('/admin')) return null;
+  // En /mayoristas tampoco: tapaba el formulario de solicitud en el teléfono y
+  // el mensaje es el minorista; el portal tiene sus propios links de WhatsApp.
+  if (isRetailChromeHidden(pathname)) return null;
 
   return (
     <a

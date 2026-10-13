@@ -80,16 +80,16 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
             <button
               onClick={prevImg}
               aria-label="Foto anterior"
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 text-foreground transition-colors hover:bg-white"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 text-foreground transition-colors hover:bg-white"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={nextImg}
               aria-label="Foto siguiente"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 text-foreground transition-colors hover:bg-white"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 text-foreground transition-colors hover:bg-white"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
               {images.map((_, i) => (
@@ -143,7 +143,7 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
             <button
               onClick={(e) => handleAdd(product.sizes[0], e)}
               disabled={outOfStock}
-              className={`mt-2 w-full py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] transition-colors ${
+              className={`mt-2 w-full min-h-[36px] py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] transition-colors ${
                 outOfStock ? 'bg-bg-alt text-text-light/60 cursor-not-allowed' :
                 added === product.sizes[0] ? 'bg-bg-dark text-primary-foreground' :
                 'bg-bg-dark text-primary-foreground hover:bg-bg-dark/85'
@@ -163,7 +163,7 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
                   key={size}
                   onClick={(e) => handleAdd(size, e)}
                   disabled={isOut}
-                  className={`min-w-[28px] px-1.5 py-1 text-[11px] rounded-[6px] border transition-colors flex flex-col items-center leading-tight ${
+                  className={`min-w-[36px] min-h-[36px] px-2 py-1 text-[11px] rounded-[6px] border transition-colors flex flex-col items-center justify-center leading-tight ${
                     isOut ? 'border-border text-text-light/60 line-through cursor-not-allowed' :
                     added === size ? 'border-bg-dark bg-bg-dark text-primary-foreground' :
                     isLow ? 'border-orange-400/60 text-orange-600 hover:border-orange-500' :

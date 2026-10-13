@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { useLocale, Language } from "@/context/LocaleContext";
 import { readCountryCookie, localeForCountry, LocaleGuess } from "@/lib/geo";
+import { isRetailChromeHidden } from "@/lib/retail-chrome";
 
 const STORAGE_KEY = "hs-locale-prompted";
 
@@ -43,6 +45,7 @@ const COPY: Record<Language, { title: string; note: string; dismiss: string }> =
 };
 
 export default function LocaleSuggestion() {
+  const pathname = usePathname();
   const [suggestion, setSuggestion] = useState<LocaleGuess | null>(null);
   const [visible, setVisible] = useState(false);
   const { setLanguage, setCurrency } = useLocale();
@@ -77,7 +80,8 @@ export default function LocaleSuggestion() {
     setVisible(false);
   }
 
-  if (!visible || !suggestion) return null;
+  // El portal mayorista es solo en castellano y pesos (lib/retail-chrome.ts).
+  if (!visible || !suggestion || isRetailChromeHidden(pathname)) return null;
 
   const copy = COPY[suggestion.language];
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { FLASH_SALE_END, isFlashSaleActive } from '@/lib/flash-sale';
+import { isRetailChromeHidden } from '@/lib/retail-chrome';
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -52,8 +53,7 @@ export default function FlashSaleBar() {
     return () => { clearInterval(tick); clearInterval(poll); };
   }, []);
 
-  const hideOn = ['/admin', '/checkout', '/pendiente-de-pago', '/confirmacion', '/pagar'];
-  if (!active || !time || hideOn.some(p => pathname?.startsWith(p))) return null;
+  if (!active || !time || isRetailChromeHidden(pathname)) return null;
 
   const isFull = status?.full;
   const count  = status?.count ?? 0;

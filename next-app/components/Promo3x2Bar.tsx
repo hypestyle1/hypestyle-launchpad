@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
+import { isRetailChromeHidden } from '@/lib/retail-chrome';
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -63,8 +64,7 @@ export default function Promo3x2Bar() {
   const pathname = usePathname();
   const { data, phase } = usePromo3x2Status();
 
-  const hideOn = ['/admin', '/checkout', '/pendiente-de-pago', '/confirmacion', '/pagar'];
-  if (!phase || phase === 'lost' || phase === 'none' || hideOn.some(p => pathname?.startsWith(p))) return null;
+  if (!phase || phase === 'lost' || phase === 'none' || isRetailChromeHidden(pathname)) return null;
 
   const match = data?.match;
 
