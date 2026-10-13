@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useLocale, Language } from "@/context/LocaleContext";
-import { readCountryCookie, localeForCountry, LocaleGuess } from "@/lib/geo";
+import { readCountryCookie, localeOffer, LocaleOffer } from "@/lib/geo";
 
 const STORAGE_KEY = "hs-locale-prompted";
 
@@ -43,23 +43,23 @@ const COPY: Record<Language, { title: string; note: string; dismiss: string }> =
 };
 
 export default function LocaleSuggestion() {
-  const [suggestion, setSuggestion] = useState<LocaleGuess | null>(null);
+  const [suggestion, setSuggestion] = useState<LocaleOffer | null>(null);
   const [visible, setVisible] = useState(false);
   const { setLanguage, setCurrency } = useLocale();
 
-  // LocaleContext ya aplicó el idioma y la moneda sugeridos al cargar. Este
-  // aviso existe para que la persona sepa que cambiaron y pueda volver atrás,
-  // así que solo aparece si nunca eligió a mano.
+  // El sitio queda en español y pesos para todos (ver LocaleContext). Esto es
+  // la única vía por la que el país o el navegador cambian algo: una oferta, y
+  // solo si la persona la acepta. Aparece una vez y solo a quien nunca eligió.
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
     if (localStorage.getItem("hs-language") || localStorage.getItem("hs-currency")) return;
 
-    const guess = localeForCountry(readCountryCookie());
-    if (!guess) {
+    const offer = localeOffer(readCountryCookie(), [navigator.language, ...(navigator.languages || [])]);
+    if (!offer) {
       localStorage.setItem(STORAGE_KEY, "1");
       return;
     }
-    setSuggestion(guess);
+    setSuggestion(offer);
     const timer = setTimeout(() => setVisible(true), 1200);
     return () => clearTimeout(timer);
   }, []);
@@ -67,7 +67,7 @@ export default function LocaleSuggestion() {
   function accept() {
     if (!suggestion) return;
     setLanguage(suggestion.language);
-    setCurrency(suggestion.currency);
+    if (suggestion.currency) setCurrency(suggestion.currency);
     localStorage.setItem(STORAGE_KEY, "1");
     setVisible(false);
   }
@@ -82,7 +82,7 @@ export default function LocaleSuggestion() {
   const copy = COPY[suggestion.language];
 
   return (
-    <div
+    <div data-testid="locale-suggestion"
       className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-[420px] animate-in slide-in-from-bottom-4 fade-in duration-300"
       style={{
         background: "rgba(245, 243, 237, 0.55)",

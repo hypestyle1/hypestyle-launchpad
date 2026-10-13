@@ -117,7 +117,12 @@ export async function seedCart(page: Page, items = [TEST_ITEM]) {
 
 /** Descarta el banner de cookies, que tapa los botones del fondo de la página. */
 export async function acceptCookies(page: Page) {
-  await page.addInitScript(() => window.localStorage.setItem('hy_cookie_consent', 'all'));
+  await page.addInitScript(() => {
+    window.localStorage.setItem('hy_cookie_consent', 'all');
+    // Y la sugerencia de idioma/moneda ya respondida: con el navegador de CI en
+    // inglés aparece abajo y taparía botones. La cubre tests/e2e/idioma-moneda.spec.ts.
+    window.localStorage.setItem('hs-locale-prompted', '1');
+  });
 }
 
 /** Todo lo que mide: pixel de Meta, GA4, Clarity y nuestro relay de CAPI. */

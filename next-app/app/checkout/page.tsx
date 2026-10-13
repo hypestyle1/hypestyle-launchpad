@@ -10,7 +10,7 @@ import { computeChampionDiscount } from '@/lib/promo-champion';
 import { computePackRegularDiscount, packRegularFaltan, precioPackRegular } from '@/lib/promo-pack-regular';
 import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
 import { useLocale } from '@/context/LocaleContext';
-import { localeForCountry, readCountryCookie } from '@/lib/geo';
+import { localeForCountry } from '@/lib/geo';
 import { chargeCurrency } from '@/lib/currency';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
@@ -472,17 +472,21 @@ export default function Checkout() {
     setInfo(prev => (prev.pais === 'AR'
       ? { ...prev, pais: known ? country : 'OTHER', provincia: '' }
       : prev));
+    // El resumen pasa a la moneda del destino, igual que cuando se cambia el
+    // país a mano (handleCountryChange). Fuera del checkout el sitio queda en
+    // pesos para todos; acá la moneda es contexto del pedido y no se persiste.
+    if (info.pais === 'AR' && !currencyChosen) setCurrency(localeForCountry(country)?.currency ?? 'ARS', false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [country]);
 
   // La moneda que el checkout toma prestada del país de envío (ver
-  // handleCountryChange) se devuelve al salir: fuera del checkout vuelve a
-  // mandar la geo de Vercel, salvo que la persona haya elegido moneda a mano.
+  // handleCountryChange) se devuelve al salir: fuera del checkout el sitio
+  // vuelve a pesos, salvo que la persona haya elegido moneda a mano.
   const currencyChosenRef = useRef(currencyChosen);
   currencyChosenRef.current = currencyChosen;
   useEffect(() => () => {
     if (currencyChosenRef.current) return;
-    setCurrency(localeForCountry(readCountryCookie())?.currency ?? 'ARS', false);
+    setCurrency('ARS', false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -594,7 +598,7 @@ export default function Checkout() {
     countryTouched.current = true;
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
-    // La moneda de la vitrina la decide la geo de Vercel, no el destino. Si la
+    // La moneda de la vitrina es pesos salvo elección explícita. Si la
     // persona nunca eligió moneda a mano y cambia el país de envío, el resumen
     // pasa a la moneda de ese destino (ES → EUR, US → USD, AR → ARS): antes un
     // pedido a España desde una IP argentina se veía en pesos hasta el final.
