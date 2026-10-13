@@ -207,6 +207,8 @@ export default function Navbar() {
         }}
         onMouseLeave={() => { setShopOpen(false); setOpenMenu(null); }}
       >
+        {/* La luz que recorre el borde del pill (elegida 13/10). */}
+        <span aria-hidden className="hs-nav-beam" />
         <div className="h-full max-w-[1400px] mx-auto px-4 flex items-center relative">
           {searchOpen ? (
             <div className="flex items-center w-full gap-3">
@@ -309,7 +311,7 @@ export default function Navbar() {
               <Link href="/" className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center z-10">
                 {!logoError ? (
                   <img src={LOGO_NAV} alt="Hypestyle"
-                    className="w-auto transition-all duration-300"
+                    className="w-auto transition-all duration-300 hs-logo-3d"
                     style={{ height: scrolled ? '20px' : '25px' }}
                     onError={() => setLogoError(true)} />
                 ) : (
@@ -326,7 +328,7 @@ export default function Navbar() {
                 <Link href="/">
                   {!logoError ? (
                     <img src={LOGO_NAV} alt="Hypestyle"
-                      className="w-auto" style={{ height: scrolled ? '18px' : '22px' }}
+                      className="w-auto hs-logo-3d" style={{ height: scrolled ? '18px' : '22px' }}
                       onError={() => setLogoError(true)} />
                   ) : (
                     <span className="text-[15px] font-normal tracking-[0.08em] text-foreground">Hypestyle</span>
