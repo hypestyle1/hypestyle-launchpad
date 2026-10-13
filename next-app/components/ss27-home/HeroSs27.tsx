@@ -1,60 +1,45 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { preload } from 'react-dom';
-import Link from 'next/link';
 import Image from 'next/image';
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { MediaFill } from './MediaTile';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
-import { EDITORIAL_QUALITY, SS27_HERO_BG_VIDEO, SS27_MEDIA, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
+import { EDITORIAL_QUALITY, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
 
-const SLIDE_MS = 4500;
-const B = '/ss27/banner/';
-const P = '/ss27/preview/';
-const H = '/ss27/home/';
 const COLECCION = '/colecciones/ss27/';
 
 const ESTUDIO: Ss27Media = { id: 'estudio', kind: 'video', ...SS27_VIDEOS.estudio, alt: 'Spring Summer 27 en estudio' };
 
-// Desktop: FW26 tenía fotos horizontales para el card (990/503); la sesión SS27
-// es toda vertical, así que cada slide es un trío de verticales de la misma
-// línea. Las del piso (suelo-*) salen del FLATLAY de cada prenda.
-const SLIDES = [
-  { trio: [B + '04-athletic-ls-pink.webp', B + '05-piso-athletic-ls.webp', B + '11-athletic-ls-blue.webp'], name1: 'Athletic Dept', name2: 'Longsleeves', href: SS27_MEDIA.lsPink.href },
-  { trio: [B + '02-eagle-18-el.webp', H + 'suelo-eagle-hoodie.webp', B + '03-eagle-18-ella.webp'], name1: 'Золотые купола', name2: 'Hoodie', href: SS27_MEDIA.eagleEl.href },
-  { trio: [B + '01-duo.webp', H + 'suelo-distressed-hoodie.webp', B + '08-polo.webp'], name1: 'Washed Grey', name2: 'Hoodie + Polo', href: SS27_MEDIA.duo.href },
-  { trio: [B + '12-cross-waffle.webp', B + '14-waffle-black.webp', H + 'suelo-sc-waffle.webp'], name1: 'Waffle', name2: 'Longsleeves', href: SS27_MEDIA.cross.href },
-  { trio: [P + '10-varsity-crest-white.webp', B + '18-varsity-crest-grid.webp', H + 'hero-sc-university-black.webp'], name1: 'Style & Culture', name2: 'University Tee', href: SS27_MEDIA.crestGrid.href },
-  { trio: [P + '03-018-varsity-navy.webp', B + '13-piso-018.webp', P + '16-018-varsity-white.webp'], name1: 'Worn Varsity Club', name2: 'Boxy Tee', href: SS27_MEDIA.piso018.href },
-];
-
-const ARROW_BTN_CLASS =
-  'absolute top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/25 backdrop-blur-md ' +
-  'border border-white/40 flex items-center justify-center text-white hover:bg-white/35 transition-colors';
-
 /**
- * Hero del drop SS27: dos piezas distintas según el ancho.
- * - Mobile: el video de estudio a pantalla completa, con el STYLE&CULTURE
- *   grande al centro, y el bloque "aparece" al cargar (scale 0,88→1).
- * - Desktop: el hero de la tienda (HeroLookbookFW26) con tríos de fotos SS27.
- * Cada una tiene su STYLE&CULTURE con data-intro-target; LoadingScreen toma el
- * que está visible.
+ * Hero del drop SS27 (rediseño 13/10, elegido tras el laboratorio):
+ * - Desktop: split "Showroom" — el flatlay de la colección completa de un
+ *   lado, el film de estudio (vertical, a sangre en media pantalla) del otro,
+ *   y la marca + CTA sobre la costura. La sección queda sticky detrás del
+ *   contenido: la "cortina blanca" (la sección siguiente pasa por arriba) con
+ *   CSS puro, sin GSAP. El hero anterior (card que crece con pin) quedó
+ *   archivado en docs/HEROES.md.
+ * - Mobile: 50/50 AL AZAR entre el video de estudio aprobado y el flatlay.
+ *   El server siempre manda el video (sin mismatch de hidratación) y la mitad
+ *   de las visitas cambia al montar.
+ * Cada pieza tiene su STYLE&CULTURE con data-intro-target; LoadingScreen toma
+ * el que está visible.
  */
 export default function HeroSs27() {
+  const [mobileFlatlay, setMobileFlatlay] = useState(false);
+  useEffect(() => { setMobileFlatlay(Math.random() < 0.5); }, []);
   return (
     <>
-      <HeroMobile />
-      <HeroDesktop />
+      {mobileFlatlay ? <HeroMobileFlatlay /> : <HeroMobile />}
+      <HeroDesktopSplit />
     </>
   );
 }
 
 /**
- * Flechita de scroll del hero mobile (12/10: "la gente no navegaba"): SCROLL +
- * chevron que rebota, se desvanece al primer scroll y al tocarla baja un
- * viewport. El desktop ya tenía la suya.
+ * Flechita de scroll (12/10: "la gente no navegaba"): SCROLL + chevron que
+ * rebota, se desvanece al primer scroll y al tocarla baja un viewport.
  */
 function ScrollCue() {
   const [scrolled, setScrolled] = useState(false);
@@ -78,13 +63,74 @@ function ScrollCue() {
   );
 }
 
+function Brand({ className = '' }: { className?: string }) {
+  return (
+    <Image
+      src="/STYLE&CULTURE WHITE.png"
+      alt="Style & Culture"
+      data-intro-target
+      width={1778}
+      height={113}
+      className={`h-auto [filter:drop-shadow(0_2px_16px_rgba(0,0,0,0.55))] ${className}`}
+    />
+  );
+}
+
+/**
+ * STYLE&CULTURE que crece con el scroll (13/10): arranca un poco más chico y
+ * llega a su tamaño ORIGINAL (scale 1, el de los márgenes) justo cuando la
+ * cortina empieza a asomar — el "hold" lo da el spacer (HeroHold) después de
+ * la sección sticky: durante ese tramo solo crece el logo, y recién al topear
+ * entra el contenido por abajo. Sin GSAP (listener pasivo + rAF);
+ * reduced-motion lo apaga.
+ *
+ * `dist` = fracción del alto de viewport que dura el crecimiento. Tiene que
+ * coincidir con el scroll que falta para que la cortina asome: spacer + alto
+ * del hero − 100svh.
+ */
+function BrandScale({ from, dist, origin = 'center', className = '', children }: {
+  from: number; dist: number; origin?: string; className?: string; children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.style.transform = 'none';
+      return;
+    }
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const p = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * dist)));
+      el.style.transform = `scale(${from + (1 - from) * p})`;
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [from, dist]);
+  return (
+    <div ref={ref} className={`will-change-transform ${className}`} style={{ transformOrigin: origin, transform: `scale(${from})` }}>
+      {children}
+    </div>
+  );
+}
+
+/** El colchón de scroll que sostiene el "hold" del hero sticky en desktop. */
+function HeroHold() {
+  return <div className="hidden md:block h-[45svh]" aria-hidden />;
+}
+
 function HeroMobile() {
   const boxRef = useRef<HTMLDivElement>(null);
 
   // El poster del video es lo primero que se ve y el LCP en mobile, pero el
   // navegador no lo descubre solo: el preload scanner lee <img>, no el poster
-  // de un <video>. Así se pide desde el <head>, con prioridad alta (igual que
-  // la primera foto en HeroLookbookFW26).
+  // de un <video>. Así se pide desde el <head>, con prioridad alta.
   preload(SS27_VIDEOS.estudio.poster, { as: 'image', fetchPriority: 'high' });
 
   // Aparición al cargar, como el hero mobile de la tienda.
@@ -114,9 +160,10 @@ function HeroMobile() {
         </div>
       </div>
 
-      {/* Marca al centro + bajada en dos puntas — STICKY (12/10): al scrollear
-          sube con la página, se clava justo debajo del navbar y la sección
-          siguiente se la lleva (mismo handoff que el índice de colección). */}
+      {/* Marca al centro + bajada en dos puntas — STICKY (pedido 13/10): al
+          scrollear sube con la página, se clava justo debajo del navbar y la
+          sección siguiente se la lleva al llegar (mismo handoff que el índice
+          de colección). CSS puro. */}
       <div className="relative h-full flex flex-col justify-center px-5 pointer-events-none">
         <div className="sticky top-[calc(var(--offset)+10px)] w-full max-w-[88vw] mx-auto">
           <Image
@@ -138,23 +185,66 @@ function HeroMobile() {
         </div>
       </div>
 
+      {/* Flechita de scroll (la gente no navegaba): se desvanece al scrollear. */}
       <ScrollCue />
     </section>
   );
 }
 
-function HeroDesktop() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLDivElement>(null);
+/* ── Mobile · flatlay ──────────────────────────────────────────────────────────
+   El flatlay de la colección a pantalla completa con la anatomía del hero
+   mobile aprobado (STYLE&CULTURE al centro + CTA liquid abajo), sin video. */
+function HeroMobileFlatlay() {
+  return (
+    // Sin overflow-hidden: el S&C sticky lo necesita (ver HeroMobile).
+    <section className="md:hidden relative w-full h-[calc(100svh-var(--offset))] min-h-[560px] max-h-[980px] bg-bg-dark text-white">
+      <div className="absolute inset-0 overflow-hidden">
+        {/* En mobile el flatlay va a sangre (cover): el contain dejaba bandas
+            arriba y abajo. La foto completa queda para el split de desktop. */}
+        <Image
+          src="/ss27/coleccion/hero-flatlay-hd.webp"
+          alt="Spring Summer 27 Part 01 completa, vista desde arriba"
+          fill
+          priority
+          sizes="100vw"
+          quality={EDITORIAL_QUALITY}
+          className="object-cover object-center"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-black/50" />
+      </div>
+      {/* Marca sticky: crece hasta su tamaño original, se clava bajo el navbar
+          y la sección siguiente se la lleva (handoff). */}
+      <div className="relative h-full flex flex-col justify-center px-5 pointer-events-none">
+        <div className="sticky top-[calc(var(--offset)+10px)] w-full max-w-[88vw] mx-auto">
+          <BrandScale from={0.68} dist={0.35}>
+            <Brand className="w-full" />
+          </BrandScale>
+          <div className="mt-3 flex justify-between text-[13px] font-semibold tracking-[-0.01em] [text-shadow:0_1px_12px_rgba(0,0,0,0.35)]">
+            <span>Part 01</span>
+            <span>Spring Summer 27</span>
+          </div>
+        </div>
+      </div>
+      <div className="absolute inset-x-4 bottom-[168px] flex flex-col items-center text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.04em]">SS27-01 · Ya disponible</p>
+        <LiquidButton href={COLECCION} size="xl" onDark metalRim className="mt-4 text-white text-[14px] font-semibold tracking-[0.01em]">
+          Ver colección
+        </LiquidButton>
+      </div>
+      <ScrollCue />
+    </section>
+  );
+}
 
-  const [slide, setSlide] = useState(0);
-  const [scrolled, setScrolled] = useState(false);
-  // Fotos y video se montan solo en desktop: en mobile esta sección está
-  // oculta y no tiene que bajar nada.
+/* ── Desktop · split "Showroom" ────────────────────────────────────────────────
+   La sección queda STICKY detrás del contenido: la "cortina blanca" (la
+   sección siguiente, z-10 bg-white en page.tsx, pasa por arriba) con CSS puro.
+   El z-0 encierra el stacking de los CTAs para que no floten sobre la cortina. */
+function HeroDesktopSplit() {
+  // El video se monta solo en desktop: en mobile esta sección está oculta y
+  // no tiene que bajar nada (mismo patrón que el hero anterior). El flatlay
+  // queda sin gate: en desktop es el LCP y conviene que salga en el HTML.
   const [desktop, setDesktop] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
     const apply = () => setDesktop(mq.matches);
@@ -162,178 +252,53 @@ function HeroDesktop() {
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
   }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  // Solo piden su foto el slide actual, el siguiente y los ya vistos.
-  const [ready, setReady] = useState<Set<number>>(() => new Set([0]));
-  useEffect(() => {
-    setReady((prev) => {
-      const next = (slide + 1) % SLIDES.length;
-      if (prev.has(slide) && prev.has(next)) return prev;
-      return new Set([...prev, slide, next]);
-    });
-  }, [slide]);
-
-  const resetTimer = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), SLIDE_MS);
-  }, []);
-
-  useEffect(() => {
-    if (!desktop) return;
-    resetTimer();
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [desktop, resetTimer]);
-
-  const goTo = (i: number) => {
-    setSlide(((i % SLIDES.length) + SLIDES.length) % SLIDES.length);
-    resetTimer();
-  };
-
-  // Mismo timeline que FW26: grow (card 767→1220 y logo x2,1) + hold, sobre un
-  // pin de 200% sin pinSpacing y el spacer manual de abajo.
-  useEffect(() => {
-    const section = sectionRef.current;
-    const card = cardRef.current;
-    const title = titleRef.current;
-    if (!section || !card || !title) return;
-    gsap.registerPlugin(ScrollTrigger);
-
-    const ctx = gsap.context(() => {
-      gsap.matchMedia().add('(min-width: 768px)', () => {
-        const tl = gsap.timeline({
-          scrollTrigger: { trigger: section, start: 'top top', end: '+=200%', pin: true, pinSpacing: false, scrub: 0.4, anticipatePin: 1 },
-        });
-        tl.fromTo(card, { maxWidth: 767 }, { maxWidth: 1220, ease: 'none', duration: 1 }, 0);
-        tl.fromTo(title, { scale: 1 }, { scale: 2.1, transformOrigin: 'left top', ease: 'none', duration: 1 }, 0);
-        tl.to({}, { duration: 1 });
-      });
-    }, section);
-
-    let raf = 0;
-    const refresh = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => ScrollTrigger.refresh()); };
-    const ro = new ResizeObserver(refresh);
-    ro.observe(document.body);
-    window.addEventListener('load', refresh);
-    return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-      window.removeEventListener('load', refresh);
-      ctx.revert();
-    };
-  }, []);
-
-  const current = SLIDES[slide];
-
   return (
     <>
-      <section ref={sectionRef} className="hidden md:block relative w-full h-[100dvh] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
-        {desktop && (
-          <>
-            {/* El film de estudio de fondo. Es vertical: estirado a horizontal
-                se pixela, así que va desenfocado, como atmósfera. Con el blur no
-                se ve la definición: es una versión chica (SS27_HERO_BG_VIDEO). */}
-            <video
-              className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl"
-              src={SS27_HERO_BG_VIDEO}
-              poster={SS27_VIDEOS.estudio.poster}
-              autoPlay
-              loop
-              muted
-              playsInline
-              aria-hidden
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/55 pointer-events-none" />
-          </>
-        )}
-
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <div ref={cardRef} className="relative w-full max-w-[767px] aspect-[990/503] overflow-hidden rounded-[24px] bg-bg-dark">
-            {SLIDES.map((s, i) => (
-              <div
-                key={s.name1}
-                aria-hidden={i !== slide}
-                className="absolute inset-0 grid grid-cols-3 gap-[2px] transition-opacity duration-[1200ms] ease-in-out"
-                style={{ opacity: i === slide ? 1 : 0 }}
-              >
-                {desktop &&
-                  ready.has(i) &&
-                  s.trio.map((src) => (
-                    <div key={src} className="relative">
-                      <Image src={src} alt="" fill loading="eager" sizes="(min-width: 1280px) 500px, 40vw" quality={EDITORIAL_QUALITY} className="object-cover" />
-                    </div>
-                  ))}
-              </div>
-            ))}
-
-            <div className="absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/50 via-black/15 to-transparent pointer-events-none z-[15]" />
-
-            <button onClick={() => goTo(slide - 1)} aria-label="Anterior" className={`${ARROW_BTN_CLASS} left-4`}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M10 3L5 8l5 5" /></svg>
-            </button>
-            <button onClick={() => goTo(slide + 1)} aria-label="Siguiente" className={`${ARROW_BTN_CLASS} right-4`}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 3l5 5-5 5" /></svg>
-            </button>
-
-            {/* Card glass — CTA a la prenda del slide actual */}
-            <Link
-              href={current.href ?? COLECCION}
-              className="absolute left-8 bottom-8 z-20 inline-flex flex-col items-start
-                         bg-white/[0.32] border-[1.5px] border-white/55 rounded-[18px]
-                         px-7 py-5 backdrop-blur-[40px] backdrop-saturate-[1.4]
-                         shadow-[0_8px_32px_rgba(0,0,0,0.22),inset_0_1.5px_0_rgba(255,255,255,0.45)]
-                         transition-transform duration-300 hover:scale-[1.03]"
-            >
-              <Image src="/hero/hype-white.png" alt="Hype." width={200} height={88} className="w-20 h-auto mb-3" />
-              <span className="block text-white/90 text-[15px] font-bold uppercase tracking-[0.06em] leading-[1.4]">{current.name1}</span>
-              <span className="block text-white/90 text-[15px] font-bold uppercase tracking-[0.06em] leading-[1.4]">{current.name2}</span>
-            </Link>
-
-            {/* Mismo CTA que mobile: liquid glass con contorno metálico. Va en un
-                wrapper absoluto: el botón tiene que quedar position:relative. */}
-            <div className="absolute right-8 bottom-8 z-20 flex flex-col items-end">
-              <p className="mb-3 text-white text-[11px] font-semibold uppercase tracking-[0.04em]">SS27-01 · Ya disponible</p>
-              <LiquidButton href={COLECCION} size="xl" onDark metalRim className="text-white text-[14px] font-semibold tracking-[0.01em]">
-                Ver colección
-              </LiquidButton>
-            </div>
+    <section className="hidden md:block md:sticky md:top-0 z-0 relative w-full h-[100svh] min-h-[560px] -mt-[var(--offset)] overflow-hidden bg-bg-dark">
+      {/* Split: la presentación de la colección (flatlay) de un lado y el film
+          de estudio —que es vertical, entra a sangre en media pantalla— del
+          otro. La marca y el CTA sobre la costura, como en el split de los
+          creativos. */}
+      <div className="absolute inset-0 grid grid-cols-2 gap-px bg-bg-dark">
+        <div className="relative overflow-hidden">
+          <Image
+            src="/ss27/coleccion/hero-flatlay-hd.webp"
+            alt="Spring Summer 27 Part 01 completa, vista desde arriba"
+            fill
+            priority
+            sizes="50vw"
+            quality={EDITORIAL_QUALITY}
+            className="object-cover object-center"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
+        </div>
+        <div className="relative overflow-hidden">
+          {desktop && <MediaFill media={ESTUDIO} sizes="50vw" priority />}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
+        </div>
+      </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-8">
+        <div className="w-full max-w-[560px]">
+          <BrandScale from={0.62} dist={0.45}>
+            <Brand className="w-full" />
+          </BrandScale>
+          <div className="mt-3 flex justify-between text-white text-[13px] font-semibold tracking-[-0.01em] [text-shadow:0_1px_12px_rgba(0,0,0,0.4)]">
+            <span>Part 01</span>
+            <span>Spring Summer 27</span>
           </div>
         </div>
-
-        <button
-          onClick={() => window.scrollBy({ top: window.innerHeight * 0.9, behavior: 'smooth' })}
-          aria-label="Scroll hacia abajo"
-          className={`absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5
-                      text-white/80 transition-opacity duration-500 ${scrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-        >
-          <span className="text-[9px] uppercase tracking-[0.22em] font-medium [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">Scroll</span>
-          <svg className="animate-bounce" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.5))' }}>
-            <path d="M3 6l5 5 5-5" />
-          </svg>
-        </button>
-
-        {/* STYLE&CULTURE top-left: destino del logo de la intro, escala con el scroll */}
-        <div className="absolute top-[calc(var(--offset)+5rem)] left-12 z-20 max-w-[300px]">
-          <div ref={titleRef} className="origin-top-left">
-            <Image
-              src="/STYLE&CULTURE WHITE.png"
-              alt="Style & Culture"
-              data-intro-target
-              width={1778}
-              height={113}
-              className="w-full h-auto [filter:drop-shadow(0_2px_16px_rgba(0,0,0,0.6))]"
-            />
-          </div>
+        <div className="pointer-events-auto mt-8 flex flex-col items-center">
+          <p className="mb-3 text-white text-[11px] font-semibold uppercase tracking-[0.04em] [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
+            SS27-01 · Ya disponible
+          </p>
+          <LiquidButton href={COLECCION} size="xl" onDark metalRim className="text-white text-[14px] font-semibold tracking-[0.01em]">
+            Ver colección
+          </LiquidButton>
         </div>
-      </section>
-      {/* Spacer del pin, igual que FW26: reserva el scroll que dura el
-          crecimiento antes de que la sección siguiente tape el hero. */}
-      <div className="hidden md:block h-[100svh]" aria-hidden />
+      </div>
+      <ScrollCue />
+    </section>
+    <HeroHold />
     </>
   );
 }
