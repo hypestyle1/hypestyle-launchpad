@@ -1,14 +1,12 @@
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import ShopTheLook from '@/components/ShopTheLook';
-import BackInStock from '@/components/BackInStock';
-import BasicosSection from '@/components/BasicosSection';
-import MasHypeSection from '@/components/MasHypeSection';
-import NewInFW26 from '@/components/NewInFW26';
+import EsencialesShelf from '@/components/home/EsencialesShelf';
+import Fw26Shelf from '@/components/home/Fw26Shelf';
+import BestSellersShelf from '@/components/home/BestSellersShelf';
 import EditorialBanner from '@/components/EditorialBanner';
 import FlashSaleSection from '@/components/FlashSaleSection';
 import Promo3x2Section from '@/components/Promo3x2Section';
-import VideoSection from '@/components/VideoSection';
 import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
 import InstagramFeed from '@/components/InstagramFeed';
 import Footer from '@/components/Footer';
@@ -92,12 +90,18 @@ export default async function Home() {
           <FlashSaleSection />
           <Ss27Feed products={ss27.state === 'open' ? [...ss27.products, ...extras] : []} />
           <ShopTheLook />
-          <NewInFW26 />
-          <VideoSection />
-          <BackInStock />
-          <BasicosSection />
+          {/* Rediseño 2026 (aprobado 12/10): debajo del drop, los estantes del
+              sistema nuevo con índice sticky propio y handoff nativo entre sí.
+              Esenciales reemplaza a BasicosSection (conserva id="basicos"),
+              Fw26Shelf condensa a NewInFW26 (id="new-in-fw26") y BestSellers
+              reorganiza a BackInStock por familias (id="back-in-stock") — los
+              ids se mantienen para que los anclajes del menú sigan andando.
+              VideoSection y MasHypeSection salen: la home no se alarga (sus
+              productos viven en /colecciones/mas-hype y el video en la ficha). */}
+          <EsencialesShelf />
+          <Fw26Shelf />
+          <BestSellersShelf />
           <EditorialBanner />
-          <MasHypeSection />
           <ReviewsHomeSection initial={reviews} />
           {/* Último bloque antes del footer, a propósito: Clarity muestra que casi
               nadie llega hasta acá, así que no compite con el producto arriba. */}

@@ -24,9 +24,11 @@ export default function AnnouncementBar() {
       className="fixed top-2.5 left-4 right-4 z-50 h-[28px] flex items-center overflow-hidden"
       style={{
         borderRadius: "999px",
-        background: "rgba(10, 10, 10, 0.55)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        // Material glass único (globals.css, --glass-announce-*): la versión
+        // oscura del mismo beige del navbar y el índice sticky.
+        background: "var(--glass-announce-bg)",
+        backdropFilter: "var(--glass-announce-filter)",
+        WebkitBackdropFilter: "var(--glass-announce-filter)",
         border: "1px solid rgba(255,255,255,0.10)",
         boxShadow: "0 2px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
       }}

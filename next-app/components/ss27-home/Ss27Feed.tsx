@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ProductCard from '@/components/ProductCard';
+import CollectionIndex from '@/components/collection/CollectionIndex';
+import { useScrollSpy } from '@/components/collection/useScrollSpy';
 import MediaTile, { MediaFill } from './MediaTile';
 import { toCardProps, type Ss27Product } from '@/lib/ss27-coleccion';
+import { SS27_CATEGORIAS } from '@/lib/ss27-categorias';
 import { EDITORIAL_QUALITY, SS27_LOOPS, SS27_MEDIA, SS27_PROXIMAMENTE, SS27_REMERAS_CAROUSEL, SS27_UPCOMING, type Ss27Media, type Ss27Upcoming } from '@/lib/ss27-home';
 
 const COLECCION = '/colecciones/ss27/';
@@ -157,14 +160,24 @@ type Section = {
   loops: string[];
 };
 const cat = (p: Ss27Product) => `${p.category} ${p.name}`.toLowerCase();
+// Las categorías (ids, labels y tests) viven en lib/ss27-categorias para que
+// la landing /colecciones/ss27 agrupe exactamente igual. Acá solo se les
+// cuelga la media editorial de cada sección del home.
 // Orden: de lo más caro a lo más barato de la colección (hoodies primero,
 // accesorios al final). Adentro de cada sección, igual: ver byPrice.
-const SECTIONS: Section[] = [
-  { id: 'hoodies', label: 'Hoodies', test: (p) => /hoodie/.test(cat(p)), tile: SS27_MEDIA.duoVideo, loops: ['l-eagle', 'l-distressed'] },
-  { id: 'remeras', label: 'Remeras', test: (p) => /\btee\b|polo|remera/.test(cat(p)) && !/longsleeve/.test(cat(p)), banner: [SS27_MEDIA.hHype, SS27_MEDIA.piso018], carousel: SS27_REMERAS_CAROUSEL, loops: ['l-018', 'l-hhype'] },
-  { id: 'longsleeves', label: 'Longsleeves', test: (p) => /longsleeve/.test(cat(p)), banner: [SS27_MEDIA.lsPink, SS27_MEDIA.crossVideo], tile: SS27_MEDIA.waffleBlack, loops: ['l-pink', 'l-blue', 'l-raglan', 'l-waffle'] },
-  { id: 'mas', label: 'Accesorios', test: () => true, loops: [] },
-];
+const SECTION_MEDIA: Record<string, Pick<Section, 'banner' | 'tile' | 'carousel' | 'loops'>> = {
+  hoodies: { tile: SS27_MEDIA.duoVideo, loops: ['l-eagle', 'l-distressed'] },
+  remeras: { banner: [SS27_MEDIA.hHype, SS27_MEDIA.piso018], carousel: SS27_REMERAS_CAROUSEL, loops: ['l-018', 'l-hhype'] },
+  longsleeves: { banner: [SS27_MEDIA.lsPink, SS27_MEDIA.crossVideo], tile: SS27_MEDIA.waffleBlack, loops: ['l-pink', 'l-blue', 'l-raglan', 'l-waffle'] },
+  mas: { loops: [] },
+};
+const SECTIONS: Section[] = SS27_CATEGORIAS.map((c) => ({
+  id: c.id,
+  label: c.label,
+  test: (p) => c.test(cat(p)),
+  loops: [],
+  ...SECTION_MEDIA[c.id],
+}));
 /** Precio de lista (sin la oferta): el orden no cambia cuando se cae el sale. Empate: el orden de Woo. */
 const listPrice = (p: Ss27Product) => p.originalPrice ?? p.price;
 const byPrice = (items: Ss27Product[]) => items.map((p, i) => ({ p, i })).sort((x, y) => listPrice(y.p) - listPrice(x.p) || x.i - y.i).map((x) => x.p);
@@ -181,52 +194,30 @@ export default function Ss27Feed({ products }: { products: Ss27Product[] }) {
     }).filter((g) => g.items.length > 0);
   }, [products]);
   const proximamente = useMemo(() => products.filter((p) => p.comingSoon), [products]);
-  const [active, setActive] = useState('');
-  const navRef = useRef<HTMLSpanElement>(null);
-
-  // En mobile el índice no entra entero: se corre solo hasta la sección activa.
-  useEffect(() => {
-    const nav = navRef.current;
-    const el = nav?.querySelector<HTMLElement>(`[data-nav="${active}"]`);
-    if (nav && el) nav.scrollTo({ left: el.offsetLeft - nav.offsetLeft - 8, behavior: 'smooth' });
-  }, [active]);
-
-  // Índice del título: marca la sección que está en pantalla.
-  useEffect(() => {
-    const els = [...groups.map((g) => g.s.id), 'proximamente'].map((id) => document.getElementById(`ss27-${id}`)).filter(Boolean) as HTMLElement[];
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.isIntersecting && setActive(e.target.id.replace('ss27-', ''))),
-      { rootMargin: '-40% 0px -55% 0px' },
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [groups]);
+  const nav = useMemo(
+    () => [...groups.map((g) => ({ id: g.s.id, label: g.s.label })), ...(proximamente.length ? [{ id: 'proximamente', label: 'Próximamente' }] : [])],
+    [groups, proximamente.length],
+  );
+  // Índice del título: marca la sección que está en pantalla (ver useScrollSpy;
+  // reemplaza al IntersectionObserver que quedaba desincronizado tras un salto
+  // por ancla — SS-11).
+  const { active, onAnchorClick } = useScrollSpy(nav.map((x) => x.id), 'ss27-');
 
   if (products.length === 0) return null;
   const proxUpcoming = SS27_UPCOMING.filter((u) => u.section === 'proximamente');
-  const nav = [...groups.map((g) => ({ id: g.s.id, label: g.s.label })), ...(proximamente.length ? [{ id: 'proximamente', label: 'Próximamente' }] : [])];
 
   return (
     <section id="ss27" className="px-4 md:px-6 pt-8 md:pt-10 pb-6 scroll-mt-[var(--offset)]">
       {/* Título + índice, como el "Novedades Hombre / Mujer" de EME. */}
-      <div className="sticky top-[var(--offset)] z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-3 mb-4 md:mb-6 bg-white/90 backdrop-blur-md flex items-end justify-between gap-4">
-        <h2 className="min-w-0 flex flex-col md:flex-row md:items-baseline md:gap-x-3 text-[24px] md:text-[34px] font-semibold tracking-[-0.035em] leading-none">
-          <span className="whitespace-nowrap">Spring Summer 27</span>
-          <span ref={navRef} className="mt-2 md:mt-0 pb-[0.2em] -mb-[0.2em] flex items-baseline gap-x-1.5 md:gap-x-2 overflow-x-auto [scrollbar-width:none] text-[17px] md:text-[34px] whitespace-nowrap">
-            {nav.map((x, k) => (
-              <span key={x.id} data-nav={x.id} className="flex items-baseline gap-x-1.5 md:gap-x-2">
-                {k > 0 && <span className="text-foreground/25">/</span>}
-                <a href={`#ss27-${x.id}`} className={`transition-colors ${active === x.id ? 'text-foreground' : 'text-foreground/25 hover:text-foreground/60'}`}>
-                  {x.label}
-                </a>
-              </span>
-            ))}
-          </span>
-        </h2>
-        <Link href={COLECCION} className="shrink-0 text-[11px] md:text-[12px] font-semibold uppercase underline underline-offset-4">
-          Ver todo
-        </Link>
-      </div>
+      <CollectionIndex
+        title="Spring Summer 27"
+        shortTitle="SS27"
+        items={nav}
+        active={active}
+        prefix="ss27-"
+        cta={{ href: COLECCION, label: 'Ver todo' }}
+        onSelect={onAnchorClick}
+      />
 
       {groups.map(({ s, items }, gi) => {
         const loops = SS27_LOOPS.filter((m) => s.loops.includes(m.id));

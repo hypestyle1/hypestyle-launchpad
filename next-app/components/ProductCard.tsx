@@ -39,6 +39,12 @@ interface ProductCardProps {
   customizable?: boolean;
   /** Muestra el precio promocional en negro (no en rojo). Usado en New In. */
   mutedPrice?: boolean;
+  /**
+   * Card compacta para grillas densas (3 columnas en mobile, Best sellers):
+   * badge, nombre y precios bajan un escalón para no pisarse en ~115px de
+   * ancho. No cambia nada del comportamiento.
+   */
+  dense?: boolean;
   /** Foto borrosa — para productos recien subidos sin reveal final todavia. */
   blurred?: boolean;
   /** Solo vidriera: sin link al producto ni selector de talle/agregar al carrito. Usado en drops pre-lanzamiento. */
@@ -76,8 +82,13 @@ const PRECARGA_TRAS_HERO = "2000px";
 export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
   href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
-  blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin,
+  dense, blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin,
 }: ProductCardProps) {
+  // Escalas de la card densa vs. la normal (ver prop `dense`).
+  const badgePos = dense ? "top-2 left-2 px-1.5 py-0.5 text-[8px] tracking-[0.06em]" : "top-3 left-3 px-2.5 py-1 text-[10px] tracking-wider";
+  const nameCls = dense ? "text-[11px]" : "text-[13px]";
+  const priceCls = dense ? "text-[11.5px]" : "text-[13px]";
+  const strikeCls = dense ? "text-[10px]" : "text-[12px]";
   const comingSoon = !!tags?.includes(COMING_SOON_TAG);
   const badge = comingSoon ? 'Próximamente' : badgeProp;
   const { formatPrice, t } = useLocale();
@@ -199,11 +210,11 @@ export default function ProductCard({
         )}
 
         {outOfStock ? (
-          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[4px] bg-foreground text-background">
+          <span className={`absolute ${badgePos} z-10 font-semibold uppercase rounded-[4px] bg-foreground text-background`}>
             {t('Sin stock')}
           </span>
         ) : badge ? (
-          <span className={`absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${badgeStyle()}`}>
+          <span className={`absolute ${badgePos} z-10 font-semibold uppercase ${badgeStyle()}`}>
             {badge}
           </span>
         ) : null}
@@ -234,15 +245,15 @@ export default function ProductCard({
       </div>
 
       {/* Info */}
-      <div className="mt-3 px-0.5">
-        <p className="text-[13px] leading-tight">{name}</p>
-        <div className="flex items-center gap-2 mt-1">
+      <div className={dense ? "mt-2 px-0.5" : "mt-3 px-0.5"}>
+        <p className={`${nameCls} leading-tight`}>{name}</p>
+        <div className={`flex items-center flex-wrap ${dense ? "gap-1" : "gap-2"} mt-1`}>
           {/* Sin stock: ocultamos el precio promocional y mostramos el regular en neutro */}
-          <span suppressHydrationWarning className={`text-[13px] font-semibold ${originalPrice && !outOfStock && !mutedPrice ? "text-destructive" : ""}`}>
+          <span suppressHydrationWarning className={`${priceCls} font-semibold whitespace-nowrap ${originalPrice && !outOfStock && !mutedPrice ? "text-destructive" : ""}`}>
             {formatPrice(outOfStock && originalPrice ? originalPrice : price)}
           </span>
           {originalPrice && !outOfStock && (
-            <span suppressHydrationWarning className="text-[12px] text-text-light line-through">
+            <span suppressHydrationWarning className={`${strikeCls} text-text-light line-through whitespace-nowrap`}>
               {formatPrice(originalPrice)}
             </span>
           )}
