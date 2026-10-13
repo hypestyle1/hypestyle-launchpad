@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { textoFirst10, type First10Info } from '@/lib/first10';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { isFlashSaleActive } from '@/lib/flash-sale';
@@ -354,7 +355,7 @@ export default function Checkout() {
   // Lo que hay escrito en Close Friends aunque no hayan tocado "Sumarme".
   const igBorrador = useRef('');
   const [coupon, setCoupon] = useState('');
-  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean } | null>(null);
+  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean; first10?: First10Info } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [info, setInfo] = useState<InfoForm>({
@@ -530,6 +531,14 @@ export default function Checkout() {
   const shippingReady = soloGift ? true : isInternational ? !!selectedRate : sobreUmbral || couponFreeShip || !!selectedRate;
   // Un cupón de monto fijo (o una gift card) nunca descuenta más que el subtotal:
   // sin este tope una gift card de $250k sobre un carrito de $80k daba negativo.
+  // FIRST10 pide $100.000 en productos: si el carrito baja del mínimo con el
+  // código ya puesto, se saca acá y se avisa (Woo lo rechazaría al confirmar).
+  useEffect(() => {
+    if (!couponData?.first10) return;
+    if (subtotal >= couponData.first10.min) return;
+    setCouponData(null);
+    setCouponError(`FIRST10 necesita $${couponData.first10.min.toLocaleString('es-AR')} en productos. Sumá algo y volvé a aplicarlo.`);
+  }, [subtotal, couponData]);
   const cuponDescuento = couponData ? (
     couponData.type === 'percent'
       ? Math.round(subtotal * (couponData.amount / 100))
@@ -798,6 +807,10 @@ export default function Checkout() {
         direccion: info.direccion, ciudad: info.ciudad, provincia: info.provincia,
         cp: cpEnvio, telefono: info.telefono, pais: info.pais,
         talo: isLocalTransfer ? orderRes.taloPaymentData : undefined,
+        // Si Woo tiró el cupón al confirmar (cupo de FIRST10 agotado, vencido o
+        // ya usado), la pantalla siguiente se lo dice al cliente.
+        couponDropped: orderRes.couponDropped ?? null,
+        first10: !!orderRes.first10,
       }));
       if (isGocuotas) {
         let gcRes;
@@ -993,11 +1006,11 @@ export default function Checkout() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ code: coupon, total: subtotal }),
                       });
-                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; error?: string };
+                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; first10?: First10Info; error?: string };
                       if (data.valid && data.gift_card && giftItems.length > 0) {
                         setCouponError('Una gift card no sirve para comprar otra gift card');
                       } else if (data.valid && data.code && data.type && data.amount !== undefined) {
-                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping });
+                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping, first10: data.first10 });
                       }
                       else { setCouponError(data.error || 'Código inválido'); }
                     } catch { setCouponError('Error al validar el código'); }
@@ -1014,7 +1027,23 @@ export default function Checkout() {
                 </DynamicButton>
               </div>
               {couponError && <p className="text-[11px] text-destructive">{couponError}</p>}
-              {couponData && <p className="text-[11px] text-green-700 font-medium">Cupón {couponData.code} aplicado — {couponData.type === 'percent' ? `${couponData.amount}% off` : formatPrice(couponData.amount)}</p>}
+              {couponData && (
+                <p className="text-[11px] text-green-700 font-medium">
+                  Cupón {couponData.code} aplicado — {couponData.first10 ? textoFirst10(couponData.first10) : couponData.type === 'percent' ? `${couponData.amount}% off` : formatPrice(couponData.amount)}
+                </p>
+              )}
+              {couponData?.first10 && (
+                <div className="flex items-center gap-3 rounded-[8px] border border-green-100 bg-green-50/60 p-2">
+                  {couponData.first10.image ? (
+                    <img src={couponData.first10.image} alt={couponData.first10.name} className="h-12 w-10 flex-shrink-0 rounded-[6px] object-cover" />
+                  ) : null}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-medium leading-tight">{couponData.first10.name}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-green-700">Regalo FIRST10 · se agrega al confirmar</p>
+                  </div>
+                  <span className="text-[12px] font-semibold">{formatPrice(0)}</span>
+                </div>
+              )}
             </div>
             ) : (
               <button

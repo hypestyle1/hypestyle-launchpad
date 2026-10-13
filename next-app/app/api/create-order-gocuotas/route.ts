@@ -6,6 +6,7 @@ import { lineasDeEnvio } from '@/lib/andreani-shipping-line';
 import { PRIVATE_ACCESS_COOKIE } from '@/lib/private-access/config';
 import { privateAccessForOrder, privateAccessMeta } from '@/lib/private-access/order';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
+import { errorEsDeCupon, regaloFirst10DeLineas } from '@/lib/first10';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -198,11 +199,32 @@ export async function POST(req: NextRequest) {
     if (paMeta && (items as any[]).some((it) => pa!.precios.has(String(it?.id)))) meta.push(paMeta);
     if (meta.length)        order.meta_data = meta;
 
-    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
+    const crear = () => fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
       body:    JSON.stringify(order),
     });
+    let res = await crear();
+
+    // Woo rechaza el pedido entero si el cupón ya no vale (cupo de FIRST10
+    // agotado entre que se validó y se confirmó, vencido, ya usado por ese mail).
+    // Un cupón caído no puede tirar la venta: se reintenta sin el código y se le
+    // avisa al cliente en la respuesta.
+    let couponDropped: { code: string; reason: string } | null = null;
+    if (!res.ok && couponCode) {
+      const txt = await res.text();
+      if (errorEsDeCupon(res.status, txt)) {
+        let reason = 'El código ya no está disponible';
+        try { reason = String(JSON.parse(txt)?.message || reason); } catch { /* texto plano */ }
+        console.warn('[create-order-gocuotas] cupón rechazado por Woo, reintento sin cupón:', couponCode, txt);
+        delete order.coupon_lines;
+        couponDropped = { code: String(couponCode).toUpperCase(), reason };
+        res = await crear();
+      } else {
+        console.error('[create-order-gocuotas] WC error:', res.status, txt);
+        return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
+      }
+    }
 
     if (!res.ok) {
       const txt = await res.text();
@@ -210,7 +232,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
     }
 
-    const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string };
+    const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string; line_items?: { name?: string; quantity?: number; total?: string; meta_data?: { key?: string; value?: unknown }[] }[] };
+    // El regalo FIRST10 lo agrega WordPress sobre el pedido real; para el mail
+    // de confirmación se lee de las líneas que devolvió Woo.
+    const regaloFirst10 = regaloFirst10DeLineas(wcOrder.line_items);
 
     // Transferencia (Talo Pay): la orden ya quedó creada con el gateway real de Talo vía
     // wc/v3/orders. Talo genera el alias/CVU/monto de esa orden recién cuando algo visita
@@ -247,9 +272,12 @@ export async function POST(req: NextRequest) {
         orderNum:      String(wcOrder.number),
         wcOrderId:     wcOrder.id,
         orderKey:      wcOrder.order_key,
-        items:         (items as any[]).map((i: any, idx: number) => ({
-          name: i.name, size: i.size, quantity: calculo.lineas[idx].quantity, price: calculo.lineas[idx].price, customization: i.customization,
-        })),
+        items:         [
+          ...(items as any[]).map((i: any, idx: number) => ({
+            name: i.name, size: i.size, quantity: calculo.lineas[idx].quantity, price: calculo.lineas[idx].price, customization: i.customization,
+          })),
+          ...(regaloFirst10 ? [regaloFirst10] : []),
+        ],
         total:         parseFloat(wcOrder.total),
         email:         customer.email,
         nombre:        customer.nombre,
@@ -278,6 +306,8 @@ export async function POST(req: NextRequest) {
       initPoint:     null,
       paypalUrl:     null,
       taloPaymentData,
+      couponDropped,
+      first10: !!regaloFirst10,
     });
   } catch (err) {
     if (err instanceof OutOfStockError) {
