@@ -80,7 +80,7 @@ export default function PrivateGate({ active, publicOpen, collectionName, collec
               <p className="text-[14px] leading-relaxed text-white/60 mb-7">
                 La preventa privada terminó. La colección completa ya está abierta para todos.
               </p>
-              <Link href="/colecciones/ss27/" className="inline-flex h-[52px] items-center justify-center w-full rounded-[14px] bg-white text-[#0a0a0a] text-[12px] font-bold uppercase tracking-[0.24em]">
+              <Link href="/colecciones/ss27" className="inline-flex h-[52px] items-center justify-center w-full rounded-[14px] bg-white text-[#0a0a0a] text-[12px] font-bold uppercase tracking-[0.24em]">
                 Ver colección
               </Link>
             </>

@@ -8,7 +8,7 @@ import { MediaFill } from './MediaTile';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { EDITORIAL_QUALITY, SS27_VIDEOS, type Ss27Media } from '@/lib/ss27-home';
 
-const COLECCION = '/colecciones/ss27/';
+const COLECCION = '/colecciones/ss27';
 
 const ESTUDIO: Ss27Media = { id: 'estudio', kind: 'video', ...SS27_VIDEOS.estudio, alt: 'Spring Summer 27 en estudio' };
 

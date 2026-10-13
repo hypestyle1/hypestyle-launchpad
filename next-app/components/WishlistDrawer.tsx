@@ -68,14 +68,14 @@ export default function WishlistDrawer() {
                 const availableSizes = p.sizes.filter((s) => p.stock[s] !== "out");
                 return (
                   <div key={p.slug} className="flex gap-4">
-                    <a href={`/producto/${p.slug}/`} className="w-20 h-24 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[5px] block">
+                    <a href={`/producto/${p.slug}`} className="w-20 h-24 bg-bg-alt flex-shrink-0 overflow-hidden rounded-[5px] block">
                       <img src={imgSrc(p.image)} alt={p.name} className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     </a>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{p.category}</p>
-                          <a href={`/producto/${p.slug}/`} className="text-[13px] font-medium leading-tight hover:underline block">{p.name}</a>
+                          <a href={`/producto/${p.slug}`} className="text-[13px] font-medium leading-tight hover:underline block">{p.name}</a>
                           <p className="text-[13px] font-semibold mt-0.5">{formatPrice(p.price)}</p>
                         </div>
                         <button
@@ -117,7 +117,7 @@ export default function WishlistDrawer() {
         {products.length > 0 && (
           <div className="px-6 py-4 border-t border-border">
             <a
-              href="/productos/"
+              href="/productos"
               onClick={() => setDrawerOpen(false)}
               className="block w-full text-center py-3 text-[12px] font-bold uppercase tracking-[0.1em] border border-foreground hover:bg-foreground hover:text-background transition-colors rounded-[10px]"
             >

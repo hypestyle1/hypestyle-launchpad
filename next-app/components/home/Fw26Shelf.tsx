@@ -72,11 +72,11 @@ export default function Fw26Shelf() {
         title="Fall Winter 26"
         shortTitle="FW26"
         prefix="fw26-"
-        cta={{ href: '/colecciones/fw26/', label: 'Ver FW26' }}
+        cta={{ href: '/colecciones/fw26', label: 'Ver FW26' }}
       />
       <div className={GRID}>
         <Link
-          href="/colecciones/fw26/"
+          href="/colecciones/fw26"
           className="group relative col-span-2 row-span-1 lg:row-span-2 aspect-[4/5] lg:aspect-auto lg:min-h-full overflow-hidden rounded-[4px] bg-bg-alt block"
         >
           <Image
@@ -105,7 +105,7 @@ export default function Fw26Shelf() {
             images={p.images}
             sizes={p.sizes}
             stock={p.stock}
-            href={`/producto/${p.slug}/`}
+            href={`/producto/${p.slug}`}
             mutedPrice
           />
         ))}

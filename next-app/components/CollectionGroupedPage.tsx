@@ -77,7 +77,7 @@ export default function CollectionGroupedPage({ config, initialProducts }: { con
                       images={p.images}
                       sizes={p.sizes}
                       stock={p.stock}
-                      href={`/producto/${p.slug}/`}
+                      href={`/producto/${p.slug}`}
                     />
                   ))}
                 </div>

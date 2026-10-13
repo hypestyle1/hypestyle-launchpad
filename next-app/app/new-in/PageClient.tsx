@@ -62,7 +62,7 @@ export default function NewInPage({ initialProducts }: { initialProducts?: Norma
               {/* La campaña del drop vigente como banda entre filas. */}
               <div className="-mx-4 md:-mx-6 my-10 md:my-14 grid grid-cols-2 gap-px bg-white">
                 {SS27_HERO_IMAGES.slice(0, 2).map((img) => (
-                  <Link key={img.src} href="/colecciones/ss27/" className="group relative block aspect-[3/4] md:aspect-[4/3] overflow-hidden bg-bg-alt">
+                  <Link key={img.src} href="/colecciones/ss27" className="group relative block aspect-[3/4] md:aspect-[4/3] overflow-hidden bg-bg-alt">
                     <Image src={img.src} alt={img.alt} fill sizes="50vw" quality={70} className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.02]" />
                     <span className="absolute left-3 bottom-3 md:left-5 md:bottom-5 text-white text-[11px] md:text-[13px] font-semibold uppercase tracking-[0.02em] underline underline-offset-4 [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
                       Spring Summer 27

@@ -175,7 +175,7 @@ export default function ReviewsDrawer() {
 
             <div className="px-6 py-5 border-t border-border">
               <Button asChild variant="hype" size="ctaFull" className="py-3.5 rounded-[10px]">
-                <Link href="/reviews/" onClick={close}>{t('Ver todas las reseñas')}</Link>
+                <Link href="/reviews" onClick={close}>{t('Ver todas las reseñas')}</Link>
               </Button>
             </div>
           </div>

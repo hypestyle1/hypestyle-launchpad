@@ -8,7 +8,7 @@ import { breadcrumbJsonLd, collectionJsonLd } from '@/lib/jsonld';
 // La página es un client component (hooks de estado y de datos), así que no
 // puede exportar metadata. Este wrapper server le pone el <title>, la meta
 // description, el canonical propio y el structured data.
-const PATH = '/colecciones/fw26/';
+const PATH = '/colecciones/fw26';
 const TITLE = 'FW26';
 const DESCRIPTION =
   'Colección FW26 de HYPESTYLE: Grey HStars, Half-Zip Polos y Pink Set Drop. La temporada Fall/Winter 2026 completa.';

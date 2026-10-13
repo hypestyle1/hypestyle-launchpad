@@ -6,7 +6,7 @@ import { foto as f, type Lookbook, type Producto } from './types';
 // que las captions linkean a la ficha en vez de decir "Agotado".
 const JERSEY: Producto = {
   producto: 'Jersey Fileteado — x Alfredo Genovese',
-  href: '/producto/jersey-fileteado-x-alfredo-genovese/',
+  href: '/producto/jersey-fileteado-x-alfredo-genovese',
 };
 
 export const GENOVESE: Lookbook = {

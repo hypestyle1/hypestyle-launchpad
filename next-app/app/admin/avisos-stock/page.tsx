@@ -201,7 +201,7 @@ function Grupo({ g, filas, abierto, ocupado, onToggle, onCopiar, onMarcar, onBor
     <>
       <tr>
         <td className="px-4 py-2.5 text-foreground">
-          <a href={`/producto/${g.slug}/`} target="_blank" rel="noreferrer" className="hover:underline">{g.name || g.slug}</a>
+          <a href={`/producto/${g.slug}`} target="_blank" rel="noreferrer" className="hover:underline">{g.name || g.slug}</a>
         </td>
         <td className="px-2 py-2.5 text-foreground font-medium">{g.size}</td>
         <td className="px-2 py-2.5 text-right tabular-nums font-semibold text-foreground">{g.count}</td>

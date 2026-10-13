@@ -10,39 +10,39 @@ import { CURRENCIES } from "@/lib/currency";
 // menú (prendas directas), e "Info" se parte en POLÍTICAS (lo legal/ayuda) y
 // GENERAL (la marca) — mezclados no se encontraba nada.
 const shopLinks = [
-  { label: "New In",      href: "/new-in/" },
-  { label: "Remeras",     href: "/tees/" },
-  { label: "Hoodies",     href: "/hoodies/" },
-  { label: "Longsleeves", href: "/longsleeves/" },
-  { label: "Pantalones",  href: "/pants/" },
-  { label: "Jorts",       href: "/jorts/" },
-  { label: "Conjuntos",   href: "/sets/" },
-  { label: "Accesorios",  href: "/accesorios/" },
-  { label: "Gift Card",   href: "/gift-cards/" },
-  { label: "SALE",        href: "/special-prices/" },
-  { label: "Ver todo",    href: "/productos/" },
+  { label: "New In",      href: "/new-in" },
+  { label: "Remeras",     href: "/tees" },
+  { label: "Hoodies",     href: "/hoodies" },
+  { label: "Longsleeves", href: "/longsleeves" },
+  { label: "Pantalones",  href: "/pants" },
+  { label: "Jorts",       href: "/jorts" },
+  { label: "Conjuntos",   href: "/sets" },
+  { label: "Accesorios",  href: "/accesorios" },
+  { label: "Gift Card",   href: "/gift-cards" },
+  { label: "SALE",        href: "/special-prices" },
+  { label: "Ver todo",    href: "/productos" },
 ];
 
 const generalLinks = [
-  { label: "Colecciones", href: "/colecciones/" },
-  { label: "Colaboraciones", href: "/colaboraciones/" },
-  { label: "Reseñas", href: "/reviews/" },
-  { label: "Quiénes Somos", href: "/nosotros/" },
-  { label: "Contacto", href: "/contacto/" },
+  { label: "Colecciones", href: "/colecciones" },
+  { label: "Colaboraciones", href: "/colaboraciones" },
+  { label: "Reseñas", href: "/reviews" },
+  { label: "Quiénes Somos", href: "/nosotros" },
+  { label: "Contacto", href: "/contacto" },
 ];
 
 const politicasLinks = [
-  { label: "Envíos internacionales", href: "/worldwide/" },
-  { label: "Cambios y devoluciones", href: "/politicas-de-devolucion/" },
-  { label: "Privacidad", href: "/politica-de-privacidad/" },
-  { label: "FAQs", href: "/faqs/" },
+  { label: "Envíos internacionales", href: "/worldwide" },
+  { label: "Cambios y devoluciones", href: "/politicas-de-devolucion" },
+  { label: "Privacidad", href: "/politica-de-privacidad" },
+  { label: "FAQs", href: "/faqs" },
 ];
 
 // Las dos puertas de entrada para trabajar con la marca. Van juntas y en su
 // propia columna: no son links de tienda ni de ayuda, son propuestas.
 const trabajaLinks = [
-  { label: "Crea contenido con Hype", href: "/creadores/" },
-  { label: "Sumá Hype a tu local", href: "/mayoristas/como-funciona/" },
+  { label: "Crea contenido con Hype", href: "/creadores" },
+  { label: "Sumá Hype a tu local", href: "/mayoristas/como-funciona" },
 ];
 
 const rrssLinks = [

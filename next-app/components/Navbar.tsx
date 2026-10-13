@@ -16,31 +16,31 @@ import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 // FAQs y Políticas viven en el footer y al pie del menú mobile. Los lookbooks
 // salen del flujo de compra: están integrados en /colecciones (Archivo).
 const navLinks = [
-  { label: 'Shop',        href: '/productos/',   hasDropdown: true,  routeMatch: '/productos' },
-  { label: 'Colecciones', href: '/colecciones/', hasDropdown: false, routeMatch: '/colecciones', menu: 'colecciones' },
-  { label: 'Nosotros',    href: '/nosotros/',    hasDropdown: false, routeMatch: '/nosotros' },
-  { label: 'Contacto',    href: '/contacto/',    hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
+  { label: 'Shop',        href: '/productos',   hasDropdown: true,  routeMatch: '/productos' },
+  { label: 'Colecciones', href: '/colecciones', hasDropdown: false, routeMatch: '/colecciones', menu: 'colecciones' },
+  { label: 'Nosotros',    href: '/nosotros',    hasDropdown: false, routeMatch: '/nosotros' },
+  { label: 'Contacto',    href: '/contacto',    hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
 ];
 
 // Desplegable chico de Colecciones: colecciones de tienda + el hub de colabs
 // (con flecha: despliega las cuatro adentro del mismo menú).
 type MenuItem = { label: string; href: string; children?: { label: string; href: string }[] };
 const menuColecciones: MenuItem[] = [
-  { label: 'Spring Summer 27 · Part 01', href: '/colecciones/ss27/' },
-  { label: 'Fall Winter 26',             href: '/colecciones/fw26/' },
-  { label: 'Esenciales — Regular Tees',  href: '/colecciones/regular-tees/' },
-  { label: 'Colaboraciones', href: '/colaboraciones/', children: [
-    { label: 'Fileteado Porteño x Genovese',    href: '/lookbook-genovese/' },
-    { label: 'La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir/' },
-    { label: 'CULTO x Neo Pistea',              href: '/lookbook-neo/' },
-    { label: 'Tie Dye x Ferpa',                 href: '/lookbook-ferpa/' },
+  { label: 'Spring Summer 27 · Part 01', href: '/colecciones/ss27' },
+  { label: 'Fall Winter 26',             href: '/colecciones/fw26' },
+  { label: 'Esenciales — Regular Tees',  href: '/colecciones/regular-tees' },
+  { label: 'Colaboraciones', href: '/colaboraciones', children: [
+    { label: 'Fileteado Porteño x Genovese',    href: '/lookbook-genovese' },
+    { label: 'La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir' },
+    { label: 'CULTO x Neo Pistea',              href: '/lookbook-neo' },
+    { label: 'Tie Dye x Ferpa',                 href: '/lookbook-ferpa' },
   ] },
-  { label: 'Ver todas las colecciones',  href: '/colecciones/' },
+  { label: 'Ver todas las colecciones',  href: '/colecciones' },
 ];
 const menuContacto = [
-  { label: 'Escribinos',              href: '/contacto/' },
-  { label: 'Crea contenido con Hype', href: '/creadores/' },
-  { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud/' },
+  { label: 'Escribinos',              href: '/contacto' },
+  { label: 'Crea contenido con Hype', href: '/creadores' },
+  { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud' },
 ];
 const smallMenus: Record<string, MenuItem[]> = { colecciones: menuColecciones, contacto: menuContacto };
 
@@ -48,25 +48,25 @@ const smallMenus: Record<string, MenuItem[]> = { colecciones: menuColecciones, c
 // SALE sin rojo permanente (liquidación ≠ lanzamiento); FW26 presente.
 const megaMenu = {
   general: [
-    { label: 'New In',    href: '/new-in/',         homeHash: null, isNew: true },
-    { label: 'Ver todo',  href: '/productos/',      homeHash: null, isNew: false },
-    { label: 'Gift Card', href: '/gift-cards/',     homeHash: null, isNew: false },
-    { label: 'SALE',      href: '/special-prices/', homeHash: null, isNew: false },
+    { label: 'New In',    href: '/new-in',         homeHash: null, isNew: true },
+    { label: 'Ver todo',  href: '/productos',      homeHash: null, isNew: false },
+    { label: 'Gift Card', href: '/gift-cards',     homeHash: null, isNew: false },
+    { label: 'SALE',      href: '/special-prices', homeHash: null, isNew: false },
   ],
   categorias: [
-    { label: 'Remeras',     href: '/tees/',        indent: false },
-    { label: 'Hoodies',     href: '/hoodies/',     indent: false },
-    { label: 'Longsleeves', href: '/longsleeves/', indent: false },
-    { label: 'Pantalones',  href: '/pants/',       indent: false },
-    { label: 'Jorts',       href: '/jorts/',       indent: false },
-    { label: 'Conjuntos',   href: '/sets/',        indent: false },
-    { label: 'Accesorios',  href: '/accesorios/',  indent: false },
+    { label: 'Remeras',     href: '/tees',        indent: false },
+    { label: 'Hoodies',     href: '/hoodies',     indent: false },
+    { label: 'Longsleeves', href: '/longsleeves', indent: false },
+    { label: 'Pantalones',  href: '/pants',       indent: false },
+    { label: 'Jorts',       href: '/jorts',       indent: false },
+    { label: 'Conjuntos',   href: '/sets',        indent: false },
+    { label: 'Accesorios',  href: '/accesorios',  indent: false },
   ],
   colecciones: [
-    { label: 'Spring Summer 27', href: '/colecciones/ss27/' },
-    { label: 'Fall Winter 26',   href: '/colecciones/fw26/' },
-    { label: 'Esenciales',       href: '/colecciones/regular-tees/' },
-    { label: 'Ver todas',        href: '/colecciones/' },
+    { label: 'Spring Summer 27', href: '/colecciones/ss27' },
+    { label: 'Fall Winter 26',   href: '/colecciones/fw26' },
+    { label: 'Esenciales',       href: '/colecciones/regular-tees' },
+    { label: 'Ver todas',        href: '/colecciones' },
   ],
 };
 
@@ -74,33 +74,33 @@ const mobilePanels = {
   main: {
     title: 'Shop',
     items: [
-      { label: 'Ver todos los productos', href: '/productos/',      homeHash: null,             panel: null },
-      { label: 'New In',                   href: '/new-in/',          homeHash: null,   panel: null },
-      { label: 'Remeras',                  href: '/tees/',            homeHash: null,   panel: null },
-      { label: 'Hoodies',                  href: '/hoodies/',         homeHash: null,   panel: null },
-      { label: 'Longsleeves',              href: '/longsleeves/',     homeHash: null,   panel: null },
-      { label: 'Pantalones',               href: '/pants/',           homeHash: null,   panel: null },
-      { label: 'Jorts',                    href: '/jorts/',           homeHash: null,   panel: null },
-      { label: 'Conjuntos',                href: '/sets/',            homeHash: null,   panel: null },
-      { label: 'Accesorios',               href: '/accesorios/',      homeHash: null,   panel: null },
-      { label: 'Gift Card',                href: '/gift-cards/',      homeHash: null,   panel: null },
-      { label: 'SALE',                     href: '/special-prices/',  homeHash: null,   panel: null },
+      { label: 'Ver todos los productos', href: '/productos',      homeHash: null,             panel: null },
+      { label: 'New In',                   href: '/new-in',          homeHash: null,   panel: null },
+      { label: 'Remeras',                  href: '/tees',            homeHash: null,   panel: null },
+      { label: 'Hoodies',                  href: '/hoodies',         homeHash: null,   panel: null },
+      { label: 'Longsleeves',              href: '/longsleeves',     homeHash: null,   panel: null },
+      { label: 'Pantalones',               href: '/pants',           homeHash: null,   panel: null },
+      { label: 'Jorts',                    href: '/jorts',           homeHash: null,   panel: null },
+      { label: 'Conjuntos',                href: '/sets',            homeHash: null,   panel: null },
+      { label: 'Accesorios',               href: '/accesorios',      homeHash: null,   panel: null },
+      { label: 'Gift Card',                href: '/gift-cards',      homeHash: null,   panel: null },
+      { label: 'SALE',                     href: '/special-prices',  homeHash: null,   panel: null },
     ],
     collections: [
-      { label: 'Spring Summer 27', href: '/colecciones/ss27/' },
-      { label: 'Fall Winter 26',   href: '/colecciones/fw26/' },
-      { label: 'Esenciales',       href: '/colecciones/regular-tees/' },
-      { label: 'Colaboraciones',   href: '/colaboraciones/' },
-      { label: 'Ver todas',        href: '/colecciones/' },
+      { label: 'Spring Summer 27', href: '/colecciones/ss27' },
+      { label: 'Fall Winter 26',   href: '/colecciones/fw26' },
+      { label: 'Esenciales',       href: '/colecciones/regular-tees' },
+      { label: 'Colaboraciones',   href: '/colaboraciones' },
+      { label: 'Ver todas',        href: '/colecciones' },
     ],
   },
   // Los viejos sub-paneles Arriba/Abajo/Accesorios se retiran: tenían links
   // rotos (Pantalones y Jorts iban los dos a /abajo; Gorras/Beanies/Rings los
   // tres a /accesorios) y con las prendas a 1 click ya no hacen falta. Quedan
   // vacíos para no tocar el tipo del estado mobilePanel.
-  arriba:     { title: 'Arriba',     verTodo: '/arriba/',     items: [] },
-  abajo:      { title: 'Abajo',      verTodo: '/abajo/',      items: [] },
-  accesorios: { title: 'Accesorios', verTodo: '/accesorios/', items: [] },
+  arriba:     { title: 'Arriba',     verTodo: '/arriba',     items: [] },
+  abajo:      { title: 'Abajo',      verTodo: '/abajo',      items: [] },
+  accesorios: { title: 'Accesorios', verTodo: '/accesorios', items: [] },
 };
 
 const glassStyle = {
@@ -416,7 +416,7 @@ export default function Navbar() {
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.15em] text-white/60 mb-0.5">{t('Colección')}</p>
                     <p className="text-[14px] font-bold text-white leading-tight">Spring Summer 27</p>
-                    <Link href="/colecciones/ss27/" onClick={() => setShopOpen(false)}
+                    <Link href="/colecciones/ss27" onClick={() => setShopOpen(false)}
                       className="text-[11px] text-white/70 hover:text-white transition-colors mt-1 block">
                       {t('Ver colección →')}
                     </Link>
@@ -433,7 +433,7 @@ export default function Navbar() {
             style={{ ...glassStyle, borderRadius: '0 0 14px 14px', borderTop: 'none' }}>
             <div className="max-w-[1400px] mx-auto p-2">
               {searchGift && (
-                <Link href="/gift-cards/"
+                <Link href="/gift-cards"
                   onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
                   <span className="w-10 h-10 flex-shrink-0 rounded-[6px] bg-[#141414] flex items-center justify-center">
@@ -446,7 +446,7 @@ export default function Navbar() {
                 </Link>
               )}
               {searchResults.length > 0 || searchGift ? searchResults.map((p) => (
-                <Link key={p.slug} href={`/producto/${p.slug}/`}
+                <Link key={p.slug} href={`/producto/${p.slug}`}
                   onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] hover:bg-black/[0.06] transition-colors">
                   <img src={imgSrc(p.image)} alt={p.name}
@@ -551,13 +551,13 @@ export default function Navbar() {
                   {/* Los lookbooks salen del menú de compra: viven en el
                       Archivo de /colecciones. Acá quedan las institucionales. */}
                   {[
-                    { label: 'Reseñas',       href: '/reviews/' },
-                    { label: 'FAQs',          href: '/faqs/' },
-                    { label: 'Quiénes Somos', href: '/nosotros/' },
-                    { label: 'Políticas',     href: '/politicas-de-devolucion/' },
-                    { label: 'Contacto',      href: '/contacto/' },
-                    { label: 'Crea contenido con Hype', href: '/creadores/' },
-                    { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud/' },
+                    { label: 'Reseñas',       href: '/reviews' },
+                    { label: 'FAQs',          href: '/faqs' },
+                    { label: 'Quiénes Somos', href: '/nosotros' },
+                    { label: 'Políticas',     href: '/politicas-de-devolucion' },
+                    { label: 'Contacto',      href: '/contacto' },
+                    { label: 'Crea contenido con Hype', href: '/creadores' },
+                    { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud' },
                   ].map((l) => (
                     <Link key={t(l.label)} href={l.href} onClick={closeMobile}
                       className="block text-[14px] text-foreground/50 hover:text-foreground transition-colors py-1">

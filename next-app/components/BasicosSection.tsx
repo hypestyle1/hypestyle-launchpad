@@ -22,7 +22,7 @@ export default function BasicosSection() {
   return (
     <section id="basicos" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="Básicos" link="/colecciones/regular-tees/" linkLabel="Ver más" />
+        <SectionHeader title="Básicos" link="/colecciones/regular-tees" linkLabel="Ver más" />
       </div>
       <div className={HOME_GRID}>
         {ordered.map((p, i) => (
@@ -38,7 +38,7 @@ export default function BasicosSection() {
               images={p.images}
               sizes={p.sizes}
               stock={p.stock}
-              href={`/producto/${p.slug}/`}
+              href={`/producto/${p.slug}`}
             />
           </div>
         ))}

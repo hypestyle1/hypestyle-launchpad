@@ -23,7 +23,7 @@ const COLABS = [
     season: 'Diciembre 2025',
     description: 'Filete porteño sobre una camiseta de fútbol, pintado por el maestro Alfredo Genovese. Filmado en la cancha de la Villa 31.',
     image: 'genovese-drop-banner.webp',
-    href: '/lookbook-genovese/',
+    href: '/lookbook-genovese',
     disponible: true,
   },
   {
@@ -31,7 +31,7 @@ const COLABS = [
     season: 'Octubre 2025',
     description: 'Arte inspirado en el universo visual de Mir Nicolás y la cultura urbana japonesa. Tres gráficas, con pop-up en Vorterix.',
     image: 'mir-nicolas-drop-banner.webp',
-    href: '/lookbook-mir/',
+    href: '/lookbook-mir',
     disponible: false,
   },
   {
@@ -39,7 +39,7 @@ const COLABS = [
     season: 'Verano 2025',
     description: 'El merch oficial del disco. Tres remeras con Neo Pistea, agotadas: queda el lookbook del shooting y de la noche en Mar del Plata.',
     image: 'neo-pistea-drop-banner.webp',
-    href: '/lookbook-neo/',
+    href: '/lookbook-neo',
     disponible: false,
   },
   {
@@ -47,7 +47,7 @@ const COLABS = [
     season: 'Septiembre 2020',
     description: 'Cuarenta buzos tie dye, ninguno a la venta: se repartieron entre los streamers y creadores del momento.',
     image: 'ferpa-drop-banner.webp',
-    href: '/lookbook-ferpa/',
+    href: '/lookbook-ferpa',
     disponible: false,
   },
 ];

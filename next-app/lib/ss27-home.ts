@@ -25,7 +25,7 @@ export type Ss27Media = {
   href?: string;
 };
 
-const coleccion = '/colecciones/ss27/';
+const coleccion = '/colecciones/ss27';
 const ficha = (slug: string) => `/producto/${slug}`;
 
 /**

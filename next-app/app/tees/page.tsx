@@ -5,7 +5,7 @@ import { initialProductsFor } from '@/lib/catalog';
 import { buildMetadata } from '@/lib/seo';
 import { collectionJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
-const PATH = '/tees/';
+const PATH = '/tees';
 const config = getCategoryConfig(PATH)!;
 
 export const metadata = buildMetadata({

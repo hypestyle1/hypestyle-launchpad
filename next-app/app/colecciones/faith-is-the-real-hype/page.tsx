@@ -15,7 +15,7 @@ const config: CollectionConfig = {
   ],
 };
 
-const PATH = '/colecciones/faith-is-the-real-hype/';
+const PATH = '/colecciones/faith-is-the-real-hype';
 const SEO_DESCRIPTION =
   'Faith Is The Real Hype: streetwear con fe. Hoodies, remeras y longsleeves con gráficos religiosos, corte oversize.';
 

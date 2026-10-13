@@ -432,7 +432,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
     // Próximamente: se ve pero no se vende (el pedido también lo rechaza el servidor).
     if (product.comingSoon) return;
     if (!selectedSize) {
-      if (product.customizable) { router.push(`/personalizar/${product.slug}/`); return; }
+      if (product.customizable) { router.push(`/personalizar/${product.slug}`); return; }
       setSizeError(true);
       return;
     }
@@ -583,7 +583,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           <p className="text-[11px] text-muted-foreground">
             <a href="/" className="hover:text-foreground transition-colors">{t('Inicio')}</a>
             {' / '}
-            <a href="/productos/" className="hover:text-foreground transition-colors">Shop</a>
+            <a href="/productos" className="hover:text-foreground transition-colors">Shop</a>
             {' / '}
             <span className="text-foreground">{product.name}</span>
           </p>
@@ -641,7 +641,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   <div className="flex gap-2 flex-wrap">
                     {product.colors.map(c => (
                       <button key={c.label}
-                        onClick={() => c.slug && c.slug !== product.slug ? router.push(`/producto/${c.slug}/`) : setSelectedColor(c.label)}
+                        onClick={() => c.slug && c.slug !== product.slug ? router.push(`/producto/${c.slug}`) : setSelectedColor(c.label)}
                         title={c.label}
                         className={`relative w-[44px] h-[44px] overflow-hidden border transition-colors duration-150 rounded-[5px] ${selectedColor === c.label || c.slug === product.slug ? 'border-foreground' : 'border-border hover:border-foreground/40'}`}>
                         {c.image && <Image src={imgUrl(c.image)} alt={c.label} fill sizes="44px" className="object-cover" />}
@@ -838,7 +838,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   <p className="font-semibold text-foreground mt-3">{t('Cambios y devoluciones')}</p>
                   <p>{t('Aceptamos cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.')}</p>
 
-                  <a href="/politicas-de-devolucion/" className="underline text-foreground hover:text-foreground/70 transition-colors mt-3 block">{t('Ver políticas completas →')}</a>
+                  <a href="/politicas-de-devolucion" className="underline text-foreground hover:text-foreground/70 transition-colors mt-3 block">{t('Ver políticas completas →')}</a>
                 </Accordion>
               </div>
             </div>

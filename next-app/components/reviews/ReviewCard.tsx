@@ -75,7 +75,7 @@ export default function ReviewCard({ review, compact = false }: { review: Public
             </div>
           )}
           {productSlug && !isDemo ? (
-            <Link href={`/producto/${productSlug}/`} className="text-[12px] text-foreground/60 hover:text-foreground transition-colors truncate">
+            <Link href={`/producto/${productSlug}`} className="text-[12px] text-foreground/60 hover:text-foreground transition-colors truncate">
               {productName}
             </Link>
           ) : (

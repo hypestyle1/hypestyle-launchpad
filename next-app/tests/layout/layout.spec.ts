@@ -207,3 +207,23 @@ test.describe('Catálogo', () => {
     }
   });
 });
+
+test.describe('Links internos sin barra final', () => {
+  // Con barra final cada navegación pasa por un 308 a la versión sin barra
+  // (~150-450 ms más en mobile). Se revisa el DOM ya hidratado, con el menú abierto.
+  for (const path of ['/', '/tees', '/colecciones/ss27', FICHA_SS27]) {
+    test(path, async ({ page }) => {
+      await page.setViewportSize(MOBILE[2]);
+      await prepare(page);
+      await page.goto(path);
+      await settle(page, 3000);
+      await page.getByRole('button', { name: 'Menu' }).click().catch(() => {});
+      await page.waitForTimeout(800);
+      const conBarra = await page.evaluate(() =>
+        [...new Set([...document.querySelectorAll('a[href^="/"]')].map((a) => (a.getAttribute('href') || '').split(/[?#]/)[0]))]
+          .filter((h) => h.length > 1 && h.endsWith('/')),
+      );
+      expect(conBarra).toEqual([]);
+    });
+  }
+});

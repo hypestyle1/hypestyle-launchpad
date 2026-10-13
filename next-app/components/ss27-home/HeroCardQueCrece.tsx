@@ -28,7 +28,7 @@ const SLIDE_MS = 4500;
 const B = '/ss27/banner/';
 const P = '/ss27/preview/';
 const H = '/ss27/home/';
-const COLECCION = '/colecciones/ss27/';
+const COLECCION = '/colecciones/ss27';
 
 // Desktop: FW26 tenía fotos horizontales para el card (990/503); la sesión SS27
 // es toda vertical, así que cada slide es un trío de verticales de la misma

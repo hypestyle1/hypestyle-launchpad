@@ -81,7 +81,7 @@ const PRECARGA_TRAS_HERO = "2000px";
 
 export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
-  href = "/productos/", sizes, stock, giftNote, customizable, mutedPrice,
+  href = "/productos", sizes, stock, giftNote, customizable, mutedPrice,
   dense, blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin,
 }: ProductCardProps) {
   // Escalas de la card densa vs. la normal (ver prop `dense`).
