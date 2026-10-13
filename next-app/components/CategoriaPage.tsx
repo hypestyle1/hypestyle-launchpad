@@ -6,12 +6,21 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import CatalogHeader from '@/components/collection/CatalogHeader';
 import { useReveal } from '@/hooks/useReveal';
 import { useProducts } from '@/hooks/useProducts';
 import { CATEGORY_MAP } from '@/lib/category-config';
 
 type SortKey = 'default' | 'price-asc' | 'price-desc';
 
+/**
+ * Plantilla de las páginas de categoría (rediseño 2026): cabecera editorial
+ * compacta en lugar de la banda oscura de ~260px (los productos entran en la
+ * primera pantalla), tabs como riel sticky con la gramática del índice de
+ * colección, grilla con aire del sistema y orden por defecto "más nuevos
+ * primero" (antes "Relevancia" era la fecha ascendente de la API: lo más
+ * viejo primero).
+ */
 export default function CategoriaPage() {
   const pathname = usePathname();
   const normalizedPath = pathname.replace(/\/$/, '');
@@ -43,6 +52,9 @@ export default function CategoriaPage() {
     if (sizeFilter.length > 0) result = result.filter(p => sizeFilter.some(s => p.sizes.includes(s) && p.stock[s] !== 'out'));
     if (sort === 'price-asc') result.sort((a, b) => a.price - b.price);
     else if (sort === 'price-desc') result.sort((a, b) => b.price - a.price);
+    // Por defecto, lo más nuevo primero: /api/products ordena por fecha
+    // ascendente, así que el orden natural era "lo más viejo primero".
+    else result.reverse();
     return result;
   }, [baseProducts, sizeFilter, sort]);
 
@@ -53,28 +65,35 @@ export default function CategoriaPage() {
     <>
       <AnnouncementBar />
       <Navbar />
-      <main className="pt-[var(--offset)]">
-        <section className="bg-bg-dark text-primary-foreground py-16 md:py-20 px-6 text-center">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Shop</p>
-          <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3">{config.title}</h1>
-          <p className="text-[14px] text-primary-foreground/40">{config.subtitle}</p>
-        </section>
+      <main className="pt-[var(--offset)] bg-white">
+        <CatalogHeader
+          kicker="Shop"
+          title={config.title}
+          count={isLoading ? undefined : baseProducts.length}
+          description={config.subtitle}
+        />
 
         {config.tabs && config.tabs.length > 1 && (
-          <div className="border-b border-border sticky top-[var(--offset)] bg-background z-10">
-            <div className="max-w-[1400px] mx-auto px-4 flex items-center gap-0 overflow-x-auto scrollbar-none">
+          /* Las tabs como riel del sistema sticky: mismo material glass y
+             misma gramática ( / entre items, activo negro) que el índice de
+             colección — pero por estado, no por ancla. */
+          <div className="hs-collection-index sticky top-[var(--offset)] z-20 px-4 md:px-6 py-2.5 md:py-3 mb-1 flex items-center">
+            <nav aria-label={`Categorías de ${config.title}`} className="flex items-baseline gap-x-1.5 md:gap-x-2 overflow-x-auto no-scrollbar whitespace-nowrap text-[14px] md:text-[20px] font-medium tracking-[-0.03em] leading-none pb-[0.2em] -mb-[0.2em]">
               {config.tabs.map((tab, i) => (
-                <button key={tab.label} onClick={() => setActiveTab(i)}
-                  className={`shrink-0 text-[12px] font-medium uppercase tracking-[0.1em] px-5 py-4 border-b-2 transition-colors whitespace-nowrap ${activeTab === i ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
-                  {tab.label}
-                </button>
+                <span key={tab.label} className="flex items-baseline gap-x-1.5 md:gap-x-2">
+                  {i > 0 && <span aria-hidden className="text-foreground/25">/</span>}
+                  <button onClick={() => setActiveTab(i)} aria-pressed={activeTab === i}
+                    className={`transition-colors ${activeTab === i ? 'text-foreground' : 'text-foreground/45 hover:text-foreground/70'}`}>
+                    {tab.label}
+                  </button>
+                </span>
               ))}
-            </div>
+            </nav>
           </div>
         )}
 
-        <div className="border-b border-border bg-background">
-          <div className="max-w-[1400px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+        <div className="bg-background">
+          <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
             {availableSizes.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap">
                 {availableSizes.map(s => (
@@ -95,7 +114,7 @@ export default function CategoriaPage() {
               <span className="text-[11px] text-muted-foreground hidden sm:block">Ordenar:</span>
               <select value={sort} onChange={e => setSort(e.target.value as SortKey)}
                 className="text-[11px] border border-border rounded-[6px] px-2.5 py-1.5 bg-background text-foreground cursor-pointer outline-none hover:border-foreground/40 transition-colors">
-                <option value="default">Relevancia</option>
+                <option value="default">Más nuevos</option>
                 <option value="price-asc">Precio: menor a mayor</option>
                 <option value="price-desc">Precio: mayor a menor</option>
               </select>
@@ -103,7 +122,7 @@ export default function CategoriaPage() {
           </div>
         </div>
 
-        <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
+        <section className="px-4 md:px-6 pt-3 pb-10 md:pb-14" ref={ref}>
           {isLoading ? (
             <div className="flex justify-center py-20">
               <div className="w-6 h-6 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
@@ -111,18 +130,15 @@ export default function CategoriaPage() {
           ) : products.length === 0 ? (
             <p className="text-center text-muted-foreground py-20">No hay productos en esta categoría todavía.</p>
           ) : (
-            <>
-              <p className="text-[12px] text-muted-foreground mb-6">{products.length} producto{products.length !== 1 ? 's' : ''}</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
-                {products.map((p, i) => (
-                  <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
-                    <ProductCard id={p.slug} name={p.name} category={p.category} price={p.price}
-                      originalPrice={p.originalPrice} badge={p.badge} image={p.image} images={p.images}
-                      sizes={p.sizes} stock={p.stock} href={p.href} customizable={p.customizable} tags={p.tags} />
-                  </div>
-                ))}
-              </div>
-            </>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9">
+              {products.map((p, i) => (
+                <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
+                  <ProductCard id={p.slug} name={p.name} category={p.category} price={p.price}
+                    originalPrice={p.originalPrice} badge={p.badge} image={p.image} images={p.images}
+                    sizes={p.sizes} stock={p.stock} href={p.href} customizable={p.customizable} tags={p.tags} />
+                </div>
+              ))}
+            </div>
           )}
         </section>
       </main>

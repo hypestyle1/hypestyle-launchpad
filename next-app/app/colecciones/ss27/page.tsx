@@ -3,13 +3,13 @@ import Link from 'next/link';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import ProductCard from '@/components/ProductCard';
 import JsonLd from '@/components/JsonLd';
 import Ss27Countdown from '@/components/ss27/Ss27Countdown';
+import Ss27Landing from '@/components/ss27-coleccion/Ss27Landing';
 import { buildMetadata } from '@/lib/seo';
 import { breadcrumbJsonLd, collectionJsonLd } from '@/lib/jsonld';
 import { PRIVATE_ACCESS_PATH } from '@/lib/private-access/config';
-import { SS27_HERO_IMAGES, SS27_OG_IMAGE, SS27_PATH, toCardProps } from '@/lib/ss27-coleccion';
+import { SS27_HERO_IMAGES, SS27_OG_IMAGE, SS27_PATH } from '@/lib/ss27-coleccion';
 import { loadSs27Page } from '@/lib/ss27-coleccion-server';
 
 // URL estable para la pauta del 11/10: /colecciones/ss27.
@@ -34,7 +34,35 @@ export const metadata = buildMetadata({
 
 export default async function Ss27Page() {
   const { state, config, privateAccessActive, openLabel, products } = await loadSs27Page();
-  const forSale = products.filter((p) => !p.comingSoon).length;
+  // Colección abierta: la landing del rediseño 2026 (cabecera compacta +
+  // índice sticky + grilla aireada). Antes y durante la apertura, la página
+  // de countdown de siempre (más abajo).
+  if (state === 'open') {
+    return (
+      <>
+        <JsonLd
+          data={[
+            collectionJsonLd({
+              name: TITLE,
+              description: DESCRIPTION,
+              path: SS27_PATH,
+              products: products.map((p) => ({ name: p.name, slug: p.slug })),
+            }),
+            breadcrumbJsonLd([
+              { name: 'Colecciones', path: '/colecciones/' },
+              { name: TITLE, path: SS27_PATH },
+            ]),
+          ]}
+        />
+        <AnnouncementBar />
+        <Navbar />
+        <main className="pt-[var(--offset)] bg-white">
+          <Ss27Landing products={products} />
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
@@ -146,18 +174,7 @@ export default async function Ss27Page() {
               <Ss27Countdown to={config.publicOpenAt} />
             </div>
           </section>
-        ) : (
-          <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14">
-            <p className="text-[12px] text-muted-foreground mb-6">
-              {forSale} producto{forSale !== 1 ? 's' : ''}
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
-              {products.map((p) => (
-                <ProductCard key={p.slug} {...toCardProps(p)} mountMargin="400px" />
-              ))}
-            </div>
-          </section>
-        )}
+        ) : null /* open ya retornó arriba con la landing nueva */}
       </main>
       <Footer />
     </>
