@@ -26,7 +26,7 @@ interface Perfil {
   dni?: string;
   envioMetodo?: string;
   envioDestino?: string;
-  exclusividad?: { ciudad: string; desde: string } | null;
+  exclusividad?: { ciudad: string; desde: string; zona?: { nombre: string; alias: string[] } } | null;
   bloqueoExclusividad?: { ciudad: string; mensaje: string } | null;
 }
 
@@ -123,7 +123,7 @@ export default function MayoristaCuentaPage() {
                 {perfil.exclusividad && (
                   <div>
                     <dt className="text-muted-foreground text-[11px] uppercase tracking-wide">Exclusividad</dt>
-                    <dd>{perfil.exclusividad.ciudad}{perfil.exclusividad.desde ? ` · desde el ${fmtDate(perfil.exclusividad.desde)}` : ''}</dd>
+                    <dd>{perfil.exclusividad.zona?.nombre || perfil.exclusividad.ciudad}{perfil.exclusividad.desde ? ` · desde el ${fmtDate(perfil.exclusividad.desde)}` : ''}</dd>
                   </div>
                 )}
                 {perfil.bloqueoExclusividad && (

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getMayoristaById, sendNewPasswordEmail, sendAprobacionEmail, sendCreditEmail } from '@/lib/mayorista-account';
 import { parseCredit, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { adminSecretMatches } from '@/lib/admin-auth';
-import { META_EXCLUSIVIDAD, META_BLOQUEO } from '@/lib/mayorista-exclusividad';
+import { META_EXCLUSIVIDAD, META_BLOQUEO, parseAliasInput } from '@/lib/mayorista-exclusividad';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -21,8 +21,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { active, minOrder, password, approve, credito, exclusividad, bloqueoExclusividad } = body as {
     active?: boolean; minOrder?: number | null; password?: string; approve?: boolean;
     credito?: { monto: number; motivo: string; orden?: string };
-    // Exclusividad por ciudad (lib/mayorista-exclusividad.ts). null la quita.
-    exclusividad?: { ciudad: string; desde?: string; pedido?: string | number } | null;
+    // Exclusividad por zona (lib/mayorista-exclusividad.ts). null la quita.
+    // `zona` la define el admin al concederla: nombre + alias de localidades.
+    exclusividad?: { ciudad: string; desde?: string; pedido?: string | number; zona?: { nombre?: string; alias?: string[] | string } | null } | null;
     bloqueoExclusividad?: { ciudad: string; titular: string; desde?: string } | null;
   };
 
@@ -67,7 +68,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const meta: { key: string; value: string }[] = [];
     if (exclusividad !== undefined) {
       if (exclusividad && !String(exclusividad.ciudad ?? '').trim()) return NextResponse.json({ message: 'Falta la ciudad' }, { status: 400 });
-      meta.push({ key: META_EXCLUSIVIDAD, value: exclusividad ? JSON.stringify({ ciudad: exclusividad.ciudad.trim(), desde: exclusividad.desde || hoy, ...(exclusividad.pedido ? { pedido: exclusividad.pedido } : {}) }) : '' });
+      const zonaNombre = String(exclusividad?.zona?.nombre ?? '').trim();
+      const zona = zonaNombre ? { nombre: zonaNombre, alias: parseAliasInput(Array.isArray(exclusividad?.zona?.alias) ? exclusividad!.zona!.alias.join(',') : exclusividad?.zona?.alias) } : undefined;
+      meta.push({ key: META_EXCLUSIVIDAD, value: exclusividad ? JSON.stringify({ ciudad: exclusividad.ciudad.trim(), desde: exclusividad.desde || hoy, ...(exclusividad.pedido ? { pedido: exclusividad.pedido } : {}), ...(zona ? { zona } : {}) }) : '' });
     }
     if (bloqueoExclusividad !== undefined) {
       if (bloqueoExclusividad && (!String(bloqueoExclusividad.ciudad ?? '').trim() || !String(bloqueoExclusividad.titular ?? '').trim())) return NextResponse.json({ message: 'Faltan la ciudad o el local titular' }, { status: 400 });

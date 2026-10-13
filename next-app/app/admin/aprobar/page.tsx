@@ -28,6 +28,8 @@ function Aprobacion() {
   const token = useSearchParams().get('token') || '';
   const [loading, setLoading] = useState(true);
   const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
+  // Otro local tiene la exclusividad de la zona de esta solicitud (solo aviso).
+  const [exclusividad, setExclusividad] = useState<{ zona: string; titular: string; desde: string } | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [resultado, setResultado] = useState<'aprobar' | 'rechazar' | null>(null);
@@ -38,7 +40,7 @@ function Aprobacion() {
     fetch(`/api/admin/aprobar?token=${encodeURIComponent(token)}`)
       .then(async res => {
         const data = await res.json().catch(() => ({}));
-        if (res.ok && data.solicitud) setSolicitud(data.solicitud);
+        if (res.ok && data.solicitud) { setSolicitud(data.solicitud); setExclusividad(data.exclusividadVigente ?? null); }
         else setError(data.message || 'No pudimos abrir la solicitud');
       })
       .catch(() => setError('No pudimos abrir la solicitud'))
@@ -126,6 +128,12 @@ function Aprobacion() {
         <Row label="Cómo vende" value={solicitud.modalidad} />
         <Row label="Ubicación" value={[solicitud.ciudad, solicitud.provincia].filter(Boolean).join(', ')} />
       </div>
+
+      {exclusividad && !yaDecidida && (
+        <div role="alert" className="rounded-lg px-4 py-3 mt-4 text-[12px] bg-red-50 text-red-800 border border-red-200">
+          <b>{exclusividad.zona}</b> tiene exclusividad de <b>{exclusividad.titular}</b> desde {exclusividad.desde}. Mientras la mantenga, no corresponde aprobar cuentas nuevas en esa zona. Podés aprobar igual si lo decidís vos: el sistema solo avisa.
+        </div>
+      )}
 
       {error && <p className="text-[12px] text-red-600 mt-3">{error}</p>}
 

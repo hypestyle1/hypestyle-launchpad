@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { mismaCiudad, type Exclusividad, type BloqueoExclusividad } from '@/lib/mayorista-exclusividad';
+import { enZona, zonaDe, parseAliasInput, ESTADO_EXCLUSIVIDAD_LABEL, type Exclusividad, type BloqueoExclusividad, type EvaluacionExclusividad } from '@/lib/mayorista-exclusividad';
 import MayoristaRecargoOfertas from '@/components/admin/MayoristaRecargoOfertas';
 
 const WP_SECRET_KEY = 'hype_admin_key';
@@ -23,7 +23,21 @@ type Mayorista = {
   credit?: number;
   exclusividad?: Exclusividad | null;
   bloqueoExclusividad?: BloqueoExclusividad | null;
+  exclusividadEvaluacion?: EvaluacionExclusividad | null;
 };
+
+const ESTADO_STYLE: Record<string, string> = {
+  elegible: 'bg-emerald-100 text-emerald-800',
+  'vigente-cumple': 'bg-violet-100 text-violet-800',
+  'vigente-riesgo': 'bg-amber-100 text-amber-800',
+  'vigente-no-cumple': 'bg-red-100 text-red-700',
+};
+
+/** Cuentas cuya ciudad cae en la zona de la exclusividad de `titular` (sin el titular). */
+function cuentasEnZona(todas: Mayorista[], titular: Mayorista): Mayorista[] {
+  if (!titular.exclusividad) return [];
+  return todas.filter(x => x.id !== titular.id && enZona(titular.exclusividad!, x.city));
+}
 
 type HealthCheck = { ok: boolean; label: string; detail: string };
 
@@ -350,21 +364,46 @@ Monto a favor en pesos (negativo para corregir):`);
     }
   }
 
-  function editarExclusividad(m: Mayorista) {
+  // Conceder: ciudad, zona comercial (nombre + alias), fecha y pedido. Después
+  // lista las cuentas de la zona y ofrece bloquearlas, una por una, con
+  // confirmación: nada se bloquea sin que alguien lo acepte.
+  async function editarExclusividad(m: Mayorista) {
     const label = m.company || m.name || m.email;
     if (m.exclusividad) {
-      if (!confirm(`Quitar la exclusividad de ${label} en ${m.exclusividad.ciudad}?`)) return;
+      const z = zonaDe(m.exclusividad);
+      if (!confirm(`Quitar la exclusividad de ${label} en ${z.nombre}?\n\nLas cuentas bloqueadas por esta zona NO se desbloquean solas: hacelo desde cada una.`)) return;
       patchExclusividad(m, { exclusividad: null }, { exclusividad: null });
       return;
     }
-    const ciudad = prompt(`Exclusividad para ${label}
+    const ev = m.exclusividadEvaluacion;
+    const aviso = ev && !ev.elegible ? `\n\nOjo: según los pedidos pagados ${ev.detalle}` : '';
+    const ciudad = prompt(`Exclusividad para ${label}${aviso}
 
-Ciudad (ej. Córdoba Capital):`, m.city || '');
+Ciudad de la cuenta (ej. Córdoba Capital):`, m.city || '');
     if (!ciudad?.trim()) return;
+    const zonaNombre = prompt('Zona comercial que protege (ej. Gran Córdoba). Si es la ciudad sola, dejá el mismo nombre:', ciudad.trim()) || '';
+    if (!zonaNombre.trim()) return;
+    const aliasRaw = prompt('Otras localidades que entran en la zona, separadas por coma (opcional; ej. Villa Allende, Mendiolaza):', '') || '';
     const desde = prompt('Desde (AAAA-MM-DD, la fecha del pedido con el que la ganó):', new Date().toISOString().slice(0, 10)) || '';
     const pedido = prompt('Pedido con el que la ganó (opcional):', '') || '';
-    const excl = { ciudad: ciudad.trim(), desde: desde.trim() || new Date().toISOString().slice(0, 10), ...(pedido.trim() ? { pedido: pedido.trim() } : {}) };
-    patchExclusividad(m, { exclusividad: excl }, { exclusividad: excl });
+    const excl: Exclusividad = {
+      ciudad: ciudad.trim(),
+      desde: desde.trim() || new Date().toISOString().slice(0, 10),
+      ...(pedido.trim() ? { pedido: pedido.trim() } : {}),
+      zona: { nombre: zonaNombre.trim(), alias: parseAliasInput(aliasRaw) },
+    };
+    await patchExclusividad(m, { exclusividad: excl }, { exclusividad: excl });
+
+    // Las otras cuentas de la zona: se ofrece bloquearlas ahora, una por una.
+    const afectadas = cuentasEnZona(mayoristas, { ...m, exclusividad: excl }).filter(x => !x.bloqueoExclusividad && !x.exclusividad);
+    if (!afectadas.length) { alert(`Listo. No hay otras cuentas en ${excl.zona!.nombre}.`); return; }
+    const nombres = afectadas.map(x => `• ${x.company || x.name || x.email} (${x.city || 'sin ciudad'}, ${x.status})`).join('\n');
+    if (!confirm(`En ${excl.zona!.nombre} hay ${afectadas.length} cuenta(s) más:\n${nombres}\n\nMientras dure la exclusividad no pueden pedir. ¿Bloquearlas ahora? (se confirma una por una)`)) return;
+    for (const x of afectadas) {
+      if (!confirm(`Bloquear pedidos de ${x.company || x.name || x.email}?`)) continue;
+      const bloqueo = { ciudad: excl.zona!.nombre, titular: label, desde: new Date().toISOString().slice(0, 10) };
+      await patchExclusividad(x, { bloqueoExclusividad: bloqueo }, { bloqueoExclusividad: bloqueo });
+    }
   }
 
   function editarBloqueo(m: Mayorista) {
@@ -374,10 +413,10 @@ Ciudad (ej. Córdoba Capital):`, m.city || '');
       patchExclusividad(m, { bloqueoExclusividad: null }, { bloqueoExclusividad: null });
       return;
     }
-    const titular = mayoristas.find(x => x.exclusividad && mismaCiudad(x.exclusividad.ciudad, m.city));
+    const titular = mayoristas.find(x => x.exclusividad && enZona(x.exclusividad, m.city));
     const ciudad = prompt(`Bloquear pedidos de ${label} por exclusividad
 
-Ciudad:`, titular?.exclusividad?.ciudad || m.city || '');
+Zona:`, titular?.exclusividad ? zonaDe(titular.exclusividad).nombre : m.city || '');
     if (!ciudad?.trim()) return;
     const quien = prompt('Local que tiene la exclusividad:', titular ? (titular.company || titular.name) : '');
     if (!quien?.trim()) return;
@@ -520,10 +559,10 @@ Ciudad:`, titular?.exclusividad?.ciudad || m.city || '');
                       {[m.cuit ? `CUIT ${m.cuit}` : '', m.instagram ? `@${m.instagram}` : '', m.modalidad, m.localFisico ? 'con local' : 'sin local'].filter(Boolean).join(' · ')}
                     </p>
                     {(() => {
-                      const t = mayoristas.find(x => x.id !== m.id && x.exclusividad && mismaCiudad(x.exclusividad.ciudad, m.city));
+                      const t = mayoristas.find(x => x.id !== m.id && x.exclusividad && enZona(x.exclusividad, m.city));
                       return t ? (
                         <p className="text-[11px] font-semibold text-red-700 mt-1">
-                          {t.exclusividad!.ciudad} tiene exclusividad de {t.company || t.name} desde {t.exclusividad!.desde}. No aprobar mientras la mantenga.
+                          {zonaDe(t.exclusividad!).nombre} tiene exclusividad de {t.company || t.name} desde {t.exclusividad!.desde}. No aprobar mientras la mantenga (la decisión es tuya: el sistema solo avisa).
                         </p>
                       ) : null;
                     })()}
@@ -727,8 +766,13 @@ Ciudad:`, titular?.exclusividad?.ciudad || m.city || '');
                         {m.company && <p className="text-[11px] text-muted-foreground/70">{m.name}</p>}
                         <p className="text-[10px] text-muted-foreground/70">desde {fmtDate(m.createdAt)}</p>
                         {m.exclusividad && (
-                          <span title={`Desde ${m.exclusividad.desde}${m.exclusividad.pedido ? ` · pedido #${m.exclusividad.pedido}` : ''}`} className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800">
-                            Exclusividad · {m.exclusividad.ciudad}
+                          <span title={`Desde ${m.exclusividad.desde}${m.exclusividad.pedido ? ` · pedido #${m.exclusividad.pedido}` : ''}${zonaDe(m.exclusividad).alias.length ? ` · incluye ${zonaDe(m.exclusividad).alias.join(', ')}` : ''}`} className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800">
+                            Exclusividad · {zonaDe(m.exclusividad).nombre}
+                          </span>
+                        )}
+                        {m.exclusividadEvaluacion && m.exclusividadEvaluacion.estado !== 'sin' && (
+                          <span title={`${m.exclusividadEvaluacion.detalle} Cuatrimestre ${m.exclusividadEvaluacion.cuatrimestre.desde} → ${m.exclusividadEvaluacion.cuatrimestre.hasta}. Solo informa: la decisión es del admin.`} className={`inline-block mt-1 ml-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${ESTADO_STYLE[m.exclusividadEvaluacion.estado] ?? 'bg-gray-100 text-gray-700'}`}>
+                            {ESTADO_EXCLUSIVIDAD_LABEL[m.exclusividadEvaluacion.estado]}
                           </span>
                         )}
                         {m.bloqueoExclusividad && (
@@ -800,7 +844,7 @@ Ciudad:`, titular?.exclusividad?.ciudad || m.city || '');
                           <button
                             onClick={() => editarExclusividad(m)}
                             disabled={exclId === m.id || !!m.bloqueoExclusividad}
-                            title="Exclusividad por ciudad: $3.000.000 pagados en 120 días; se mantiene con un pedido por mes y $3.000.000 por cuatrimestre"
+                            title="Exclusividad por zona comercial: se gana con $3.000.000 pagados en 120 días; se mantiene con un pedido por mes y $3.000.000 por cuatrimestre. El sistema evalúa y avisa; concederla o quitarla es siempre una decisión del admin."
                             className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-border-mid text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
                           >
                             {exclId === m.id ? '...' : m.exclusividad ? 'Quitar excl.' : 'Exclusividad'}
