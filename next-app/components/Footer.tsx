@@ -6,23 +6,36 @@ import { useReveal } from "@/hooks/useReveal";
 import { useLocale, LANGUAGES } from "@/context/LocaleContext";
 import { CURRENCIES } from "@/lib/currency";
 
+// Rediseño 2026: el Shop del footer habla la misma arquitectura que el mega
+// menú (prendas directas), e "Info" se parte en POLÍTICAS (lo legal/ayuda) y
+// GENERAL (la marca) — mezclados no se encontraba nada.
 const shopLinks = [
-  { label: "Arriba",     href: "/arriba/" },
-  { label: "Abajo",      href: "/abajo/" },
-  { label: "Accesorios", href: "/accesorios/" },
-  { label: "Sets",       href: "/sets/" },
-  { label: "Gift Card",  href: "/gift-cards/" },
-  { label: "Ver todo",   href: "/productos/" },
+  { label: "New In",      href: "/new-in/" },
+  { label: "Remeras",     href: "/tees/" },
+  { label: "Hoodies",     href: "/hoodies/" },
+  { label: "Longsleeves", href: "/longsleeves/" },
+  { label: "Pantalones",  href: "/pants/" },
+  { label: "Jorts",       href: "/jorts/" },
+  { label: "Conjuntos",   href: "/sets/" },
+  { label: "Accesorios",  href: "/accesorios/" },
+  { label: "Gift Card",   href: "/gift-cards/" },
+  { label: "SALE",        href: "/special-prices/" },
+  { label: "Ver todo",    href: "/productos/" },
 ];
 
-const infoLinks = [
+const generalLinks = [
+  { label: "Colecciones", href: "/colecciones/" },
+  { label: "Colaboraciones", href: "/colaboraciones/" },
   { label: "Reseñas", href: "/reviews/" },
   { label: "Quiénes Somos", href: "/nosotros/" },
+  { label: "Contacto", href: "/contacto/" },
+];
+
+const politicasLinks = [
   { label: "Envíos internacionales", href: "/worldwide/" },
-  { label: "Devoluciones", href: "/politicas-de-devolucion/" },
+  { label: "Cambios y devoluciones", href: "/politicas-de-devolucion/" },
   { label: "Privacidad", href: "/politica-de-privacidad/" },
   { label: "FAQs", href: "/faqs/" },
-  { label: "Contacto", href: "/contacto/" },
 ];
 
 // Las dos puertas de entrada para trabajar con la marca. Van juntas y en su
@@ -121,7 +134,8 @@ export default function Footer() {
         <div className="md:hidden -mt-2 border-y border-primary-foreground/10 divide-y divide-primary-foreground/10">
           {[
             { title: 'Shop', links: shopLinks },
-            { title: 'Info', links: infoLinks },
+            { title: 'General', links: generalLinks },
+            { title: 'Políticas', links: politicasLinks },
             { title: 'Trabajá con Hype', links: trabajaLinks },
             { title: 'RRSS', links: rrssLinks },
           ].map((col) => (
@@ -137,8 +151,9 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Columnas — desktop */}
-        <div className="hidden md:grid grid-cols-3 gap-8">
+        {/* Columnas — desktop. Jerarquía 2026: Shop (comprar) → General (la
+            marca) → Políticas (ayuda/legal) → Trabajá + RRSS. */}
+        <div className="hidden md:grid grid-cols-4 gap-8">
           {/* Shop */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Shop</p>
@@ -150,25 +165,29 @@ export default function Footer() {
             ))}
           </div>
 
-          {/* Info */}
+          {/* General */}
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Info</p>
-            {infoLinks.map((l) => (
-              l.href.startsWith("http") ? (
-                <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer"
-                  className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
-                  {t(l.label)}
-                </a>
-              ) : (
-                <Link key={l.label} href={l.href}
-                  className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
-                  {t(l.label)}
-                </Link>
-              )
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">General</p>
+            {generalLinks.map((l) => (
+              <Link key={l.label} href={l.href}
+                className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
+                {t(l.label)}
+              </Link>
             ))}
           </div>
 
-          {/* RRSS — única aparición */}
+          {/* Políticas */}
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">{t('Políticas')}</p>
+            {politicasLinks.map((l) => (
+              <Link key={l.label} href={l.href}
+                className="block text-[12px] text-primary-foreground/55 hover:text-primary-foreground transition-colors mb-2.5">
+                {t(l.label)}
+              </Link>
+            ))}
+          </div>
+
+          {/* Trabajá + RRSS — única aparición */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-primary-foreground/30 mb-4">Trabajá con Hype</p>
             <ul className="space-y-2 mb-8">

@@ -22,11 +22,19 @@ const navLinks = [
   { label: 'Contacto',    href: '/contacto/',    hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
 ];
 
-// Desplegable chico de Colecciones: solo colecciones de tienda.
-const menuColecciones = [
+// Desplegable chico de Colecciones: colecciones de tienda + el hub de colabs
+// (con flecha: despliega las cuatro adentro del mismo menú).
+type MenuItem = { label: string; href: string; children?: { label: string; href: string }[] };
+const menuColecciones: MenuItem[] = [
   { label: 'Spring Summer 27 · Part 01', href: '/colecciones/ss27/' },
   { label: 'Fall Winter 26',             href: '/colecciones/fw26/' },
   { label: 'Esenciales — Regular Tees',  href: '/colecciones/regular-tees/' },
+  { label: 'Colaboraciones', href: '/colaboraciones/', children: [
+    { label: 'Fileteado Porteño x Genovese',    href: '/lookbook-genovese/' },
+    { label: 'La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir/' },
+    { label: 'CULTO x Neo Pistea',              href: '/lookbook-neo/' },
+    { label: 'Tie Dye x Ferpa',                 href: '/lookbook-ferpa/' },
+  ] },
   { label: 'Ver todas las colecciones',  href: '/colecciones/' },
 ];
 const menuContacto = [
@@ -34,7 +42,7 @@ const menuContacto = [
   { label: 'Crea contenido con Hype', href: '/creadores/' },
   { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud/' },
 ];
-const smallMenus: Record<string, { label: string; href: string }[]> = { colecciones: menuColecciones, contacto: menuContacto };
+const smallMenus: Record<string, MenuItem[]> = { colecciones: menuColecciones, contacto: menuContacto };
 
 // Mega menú 2026: Comprar / Prendas (tipo de prenda a 1 click) / Colecciones.
 // SALE sin rojo permanente (liquidación ≠ lanzamiento); FW26 presente.
@@ -82,6 +90,7 @@ const mobilePanels = {
       { label: 'Spring Summer 27', href: '/colecciones/ss27/' },
       { label: 'Fall Winter 26',   href: '/colecciones/fw26/' },
       { label: 'Esenciales',       href: '/colecciones/regular-tees/' },
+      { label: 'Colaboraciones',   href: '/colaboraciones/' },
       { label: 'Ver todas',        href: '/colecciones/' },
     ],
   },
@@ -116,6 +125,8 @@ export default function Navbar() {
   const [shopOpen, setShopOpen]       = useState(false);
   // Qué desplegable chico está abierto ('colecciones' | 'contacto'), o ninguno.
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  // Sub-lista expandida adentro de un desplegable (Colaboraciones).
+  const [openSub, setOpenSub] = useState<string | null>(null);
   const [logoError, setLogoError]     = useState(false);
   const [searchOpen, setSearchOpen]   = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -250,14 +261,42 @@ export default function Navbar() {
                           onMouseLeave={() => setOpenMenu(null)}
                         >
                           {smallMenus[(link as { menu?: string }).menu!].map((l) => (
-                            <Link
-                              key={t(l.label)}
-                              href={l.href}
-                              onClick={() => setOpenMenu(null)}
-                              className="block px-4 py-2 text-[13px] text-foreground/70 hover:text-foreground hover:bg-black/[0.05] transition-colors"
-                            >
-                              {t(l.label)}
-                            </Link>
+                            l.children ? (
+                              <div key={t(l.label)}>
+                                <button
+                                  onClick={() => setOpenSub(openSub === l.label ? null : l.label)}
+                                  aria-expanded={openSub === l.label}
+                                  className="w-full flex items-center justify-between px-4 py-2 text-[13px] text-foreground/70 hover:text-foreground hover:bg-black/[0.05] transition-colors text-left"
+                                >
+                                  {t(l.label)}
+                                  <ChevronDown className="w-3 h-3 transition-transform duration-200" strokeWidth={1.2}
+                                    style={{ transform: openSub === l.label ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                                </button>
+                                {openSub === l.label && (
+                                  <>
+                                    {l.children.map((c) => (
+                                      <Link key={t(c.label)} href={c.href} onClick={() => { setOpenMenu(null); setOpenSub(null); }}
+                                        className="block pl-7 pr-4 py-1.5 text-[12px] text-foreground/60 hover:text-foreground hover:bg-black/[0.05] transition-colors">
+                                        {t(c.label)}
+                                      </Link>
+                                    ))}
+                                    <Link href={l.href} onClick={() => { setOpenMenu(null); setOpenSub(null); }}
+                                      className="block pl-7 pr-4 py-1.5 text-[12px] font-semibold underline underline-offset-4 text-foreground/70 hover:text-foreground transition-colors">
+                                      {t('Ver todas')}
+                                    </Link>
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <Link
+                                key={t(l.label)}
+                                href={l.href}
+                                onClick={() => setOpenMenu(null)}
+                                className="block px-4 py-2 text-[13px] text-foreground/70 hover:text-foreground hover:bg-black/[0.05] transition-colors"
+                              >
+                                {t(l.label)}
+                              </Link>
+                            )
                           ))}
                         </div>
                       )}

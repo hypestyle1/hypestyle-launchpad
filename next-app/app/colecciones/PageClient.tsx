@@ -44,7 +44,7 @@ const drops: Drop[] = [
   },
   {
     name: "Faith Is The Real Hype",
-    season: "Drop — 2026",
+    season: "Drop — Invierno 2026",
     description: "Streetwear con fe. Hoodies y remeras con gráficos religiosos, corte oversize.",
     image: "newin/faith-christ-reigns-hoodie.webp",
     href: "/colecciones/faith-is-the-real-hype/",
@@ -211,28 +211,10 @@ export default function Colecciones() {
           </div>
         </div>
 
-        {/* ── Shop por prenda ── */}
-        <div className="px-4 md:px-6 pt-8 pb-20">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-4">Shop por prenda</p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-2">
-            {[
-              { name: "Remeras",    image: "regular tee 1.webp",  href: "/tees/" },
-              { name: "Hoodies",    image: "cat-hoodies.webp",    href: "/hoodies/" },
-              { name: "Pantalones", image: "cat-sets.webp",       href: "/pants/" },
-              { name: "Accesorios", image: "cat-accesorios.webp", href: "/accesorios/" },
-            ].map((cat) => (
-              <a key={cat.name} href={cat.href} className="group relative overflow-hidden rounded-[4px] bg-bg-alt" style={{ aspectRatio: "3/4" }}>
-                <img src={`/${cat.image}`} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 p-5">
-                  <p className="text-white text-[17px] md:text-[20px] font-semibold tracking-[-0.03em]">{cat.name}</p>
-                  <p className="text-white/75 text-[11px] font-semibold uppercase tracking-[0.1em] underline underline-offset-4 mt-1">Shop</p>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
+        {/* "Shop por prenda" salió (12/10): duplicaba las prendas del mega
+            menú con mockups que no estaban a la altura. Si vuelve, se rearma
+            con fotos de campaña reales. */}
+        <div className="pb-14" />
       </main>
       <Footer />
     </>
