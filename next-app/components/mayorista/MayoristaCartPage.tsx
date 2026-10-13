@@ -14,6 +14,7 @@ import { completarMinimo } from '@/lib/mayorista-completar-minimo';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
 import { agoLabel, type RecentOrder } from '@/lib/mayorista-recent-order';
 import { MIN_ORDER_UNAVAILABLE_MESSAGE } from '@/lib/mayorista-copy';
+import { newIdempotencyKey } from '@/lib/mayorista-idempotency';
 import MayoristaExclusividadBanner from './MayoristaExclusividadBanner';
 
 // Cuánto se espera a que aparezca la orden cuando el envío falló sin respuesta
@@ -190,6 +191,13 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   const [checkingStock, setCheckingStock] = useState(false);
   const [stockNotice, setStockNotice] = useState<string[]>([]);
   const checkedOnHydrate = useRef(false);
+  // Clave de idempotencia del envío (lib/mayorista-idempotency.ts): una por
+  // carrito. Se repite en los reintentos (precio cambiado, pedido reciente,
+  // corte de red) y se renueva cuando cambian productos o cantidades, así dos
+  // envíos del mismo carrito nunca crean dos órdenes.
+  const itemsSignature = items.map(i => `${lineKey(i)}:${i.quantity}`).join('|');
+  const [idempotencyKey, setIdempotencyKey] = useState(() => newIdempotencyKey());
+  useEffect(() => { setIdempotencyKey(newIdempotencyKey()); }, [itemsSignature]);
 
   async function pruneUnavailable(candidate: MayoristaCartItem[]): Promise<MayoristaCartItem[]> {
     if (candidate.length === 0) return candidate;
@@ -412,7 +420,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         res = await fetch('/api/mayorista/pedido', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, shipping, ...(confirmPrices ? { confirmPrices: true } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
+          body: JSON.stringify({ items, shipping, idempotencyKey, ...(confirmPrices ? { confirmPrices: true } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
         });
         data = await res.json();
       } catch {

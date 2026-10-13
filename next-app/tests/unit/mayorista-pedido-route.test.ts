@@ -311,3 +311,81 @@ describe('POST /api/mayorista/pedido — exclusividad por ciudad', () => {
     expect(r.status).toBe(200);
   });
 });
+
+// 13/10/2026: dos envíos casi simultáneos del mismo carrito (doble click, dos
+// pestañas, POST reintentado por el navegador) pasaban los dos el freno por
+// pedido reciente y creaban dos órdenes. El carrito manda una clave por
+// carrito (lib/mayorista-idempotency.ts).
+describe('POST /api/mayorista/pedido — clave de idempotencia', () => {
+  const KEY = '0f3c9a2e-5b7d-4e81-9c6a-1d2b3c4d5e6f';
+  const keyed = (id: number, extra: Record<string, unknown> = {}) => wooOrder(0.2, { id, number: String(id), meta_data: [{ key: '_es_mayorista', value: 'true' }, { key: '_mayorista_idempotency_key', value: KEY }], ...extra });
+
+  it('la orden nueva lleva la clave en meta', async () => {
+    const r = await post({ items: [hoodieL(48000)], shipping, idempotencyKey: KEY });
+    expect(r.status).toBe(200);
+    expect(wcOrderPosts[0].meta_data).toContainEqual({ key: '_mayorista_idempotency_key', value: KEY });
+  });
+
+  it('clave inválida: se ignora y la orden sale sin meta', async () => {
+    const r = await post({ items: [hoodieL(48000)], shipping, idempotencyKey: 'abc' });
+    expect(r.status).toBe(200);
+    expect(wcOrderPosts[0].meta_data.map((m: any) => m.key)).not.toContain('_mayorista_idempotency_key');
+  });
+
+  it('misma clave que una orden viva: devuelve esa orden y no crea otra (aunque confirmDuplicate)', async () => {
+    recentOrders = [keyed(7000)];
+    const r = await post({ items: [hoodieL(48000)], shipping, idempotencyKey: KEY, confirmDuplicate: true });
+    expect(r.status).toBe(200);
+    expect(r.data).toMatchObject({ wcOrderNumber: '7000', replayed: true, total: 1018960, creditUsed: 0 });
+    expect(wcOrderPosts).toHaveLength(0);
+  });
+
+  it('otra clave en el pedido reciente: sigue el freno de siempre (409 RECENT_ORDER)', async () => {
+    recentOrders = [wooOrder(1)];
+    const r = await post({ items: [hoodieL(48000)], shipping, idempotencyKey: KEY });
+    expect(r.status).toBe(409);
+    expect(r.data.code).toBe('RECENT_ORDER');
+  });
+
+  it('carrera: tras crear aparece otra orden más vieja con la clave → cancela la nuestra y responde con la otra', async () => {
+    const cancelled: { url: string; body: any }[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/wc/v3/orders/') && init?.method === 'PUT') { cancelled.push({ url: u, body: JSON.parse(String(init.body)) }); return new Response('{}', { status: 200 }); }
+      if (u.includes('/wc/v3/orders') && init?.method === 'POST') {
+        wcOrderPosts.push(JSON.parse(String(init.body)));
+        // El otro envío ganó la carrera: su orden (4999) ya está cuando volvemos a leer.
+        recentOrders = [keyed(5001), keyed(4999)];
+        return new Response(JSON.stringify({ id: 5001, number: '5001' }), { status: 201 });
+      }
+      return new Response('{}', { status: 200 });
+    }));
+    const r = await post({ items: [hoodieL(48000)], shipping, idempotencyKey: KEY });
+    expect(r.status).toBe(200);
+    expect(r.data).toMatchObject({ wcOrderNumber: '4999', replayed: true });
+    expect(wcOrderPosts).toHaveLength(1);
+    expect(cancelled).toHaveLength(1);
+    expect(cancelled[0].url).toContain('/wc/v3/orders/5001');
+    expect(cancelled[0].body.status).toBe('cancelled');
+    expect(cancelled[0].body.customer_note).toContain('4999');
+  });
+
+  it('carrera donde ganamos nosotros: la orden queda y no se cancela nada', async () => {
+    const puts: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/wc/v3/orders/') && init?.method === 'PUT') { puts.push(u); return new Response('{}', { status: 200 }); }
+      if (u.includes('/wc/v3/orders') && init?.method === 'POST') {
+        wcOrderPosts.push(JSON.parse(String(init.body)));
+        recentOrders = [keyed(5002), keyed(5001)];
+        return new Response(JSON.stringify({ id: 5001, number: '5001' }), { status: 201 });
+      }
+      return new Response('{}', { status: 200 });
+    }));
+    const r = await post({ items: [hoodieL(48000)], shipping, idempotencyKey: KEY });
+    expect(r.status).toBe(200);
+    expect(r.data.wcOrderNumber).toBe('5001');
+    expect(r.data.replayed).toBeUndefined();
+    expect(puts).toHaveLength(0);
+  });
+});
