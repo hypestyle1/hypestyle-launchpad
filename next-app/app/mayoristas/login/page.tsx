@@ -105,7 +105,7 @@ export default function MayoristaLoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-10 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center px-4 pt-10 pb-24 md:pb-10 overflow-hidden">
       {/* Fondo — slideshow blureado */}
       {SLIDES.map((src, i) => (
         <div

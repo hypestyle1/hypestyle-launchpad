@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useFinalStatus } from '@/hooks/useFinalStatus';
 import { useFinalPhoto } from '@/hooks/useFinalPhoto';
+import { isRetailChromeHidden } from '@/lib/retail-chrome';
 
 const GOLD = '#D4AF37';
 const SESSION_KEY = 'hy-champion-takeover-seen';
@@ -20,6 +22,7 @@ function Star({ size = 20 }: { size?: number }) {
 // Inglaterra). Mismo patrón: una vez por sesión, sin CTA ni link a producto, se ve
 // cualquiera que entre mientras dure el estado "won" de la final.
 export default function ChampionTakeover() {
+  const pathname = usePathname();
   const { phase } = useFinalStatus();
   const photoUrl = useFinalPhoto();
   const [stage, setStage] = useState<'idle' | 'visible' | 'exit' | 'done'>('idle');
@@ -44,7 +47,7 @@ export default function ChampionTakeover() {
     setTimeout(() => setStage('done'), 700);
   };
 
-  if (phase !== 'won' || stage === 'idle' || stage === 'done') return null;
+  if (phase !== 'won' || stage === 'idle' || stage === 'done' || isRetailChromeHidden(pathname)) return null;
 
   const exiting = stage === 'exit';
 
