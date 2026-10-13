@@ -11,6 +11,7 @@ import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/
 import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
 import { pickRecentOrder, recentOrdersPath, agoLabel } from '@/lib/mayorista-recent-order';
 import { parseBloqueo, mensajeBloqueo } from '@/lib/mayorista-exclusividad';
+import { IDEMPOTENCY_META, isValidIdempotencyKey, ordersWithKey, replayOf, resolveDuplicate } from '@/lib/mayorista-idempotency';
 
 // Woo puede tardar cerca de un minuto en crear una orden grande. Si la función
 // se corta antes, la orden queda creada pero el cliente ve un error.
@@ -208,10 +209,14 @@ export async function POST(req: NextRequest) {
   if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
 
   try {
-    const { items: rawItems, shipping, confirmPrices, confirmDuplicate } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo; confirmPrices?: boolean; confirmDuplicate?: boolean };
+    const { items: rawItems, shipping, confirmPrices, confirmDuplicate, idempotencyKey: rawKey } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo; confirmPrices?: boolean; confirmDuplicate?: boolean; idempotencyKey?: unknown };
     if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
     }
+    // Clave del carrito (lib/mayorista-idempotency.ts). Un carrito viejo
+    // abierto antes del cambio no la manda: sigue con el freno por pedido
+    // reciente de siempre.
+    const idempotencyKey = isValidIdempotencyKey(rawKey) ? rawKey : null;
     if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone || !shipping?.dni) {
       return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
     }
@@ -358,18 +363,34 @@ export async function POST(req: NextRequest) {
     const credit = parseCredit(customer.meta_data);
     const creditUsed = creditToApply(credit.saldo, total);
 
-    // Pedido duplicado: si el cliente ya tiene una orden de hace minutos, lo
-    // más probable es que sea un reintento después de un error. Se le muestra
-    // esa orden y recién con `confirmDuplicate: true` se crea otra. Va lo más
-    // cerca posible de la creación para achicar la ventana entre dos envíos.
-    if (confirmDuplicate !== true) {
-      let recentOrders: any[];
+    // Últimos pedidos del cliente: para la clave de idempotencia y para el
+    // freno por pedido reciente. Si no se pueden leer, no se crea nada.
+    let recentOrders: any[] = [];
+    if (idempotencyKey || confirmDuplicate !== true) {
       try {
         recentOrders = await wcGet(recentOrdersPath(customerId));
       } catch (err) {
         console.error('[mayorista/pedido] no se pudo verificar si hay un pedido reciente:', err);
         return NextResponse.json({ message: 'No pudimos verificar tu pedido. Esperá unos segundos e intentá de nuevo.' }, { status: 502 });
       }
+    }
+
+    // Misma clave que una orden viva: es el mismo envío (reintento de red,
+    // doble click, segunda pestaña). Se devuelve esa orden como si recién se
+    // hubiera creado; no se crea otra.
+    if (idempotencyKey) {
+      const existing = ordersWithKey(recentOrders, idempotencyKey)[0];
+      if (existing) {
+        const r = replayOf(existing);
+        return NextResponse.json({ wcOrderId: r.id, wcOrderNumber: r.number, creditUsed: r.creditUsed, total: r.total, items: pricedItems, campaign: campaignSummary, replayed: true });
+      }
+    }
+
+    // Pedido duplicado: si el cliente ya tiene una orden de hace minutos, lo
+    // más probable es que sea un reintento después de un error. Se le muestra
+    // esa orden y recién con `confirmDuplicate: true` se crea otra. Va lo más
+    // cerca posible de la creación para achicar la ventana entre dos envíos.
+    if (confirmDuplicate !== true) {
       const recent = pickRecentOrder(recentOrders, Date.now());
       if (recent) {
         return NextResponse.json(
@@ -419,6 +440,7 @@ export async function POST(req: NextRequest) {
         ] : []),
         { key: '_es_mayorista', value: 'true' },
         { key: '_billing_dni', value: shipping.dni },
+        ...(idempotencyKey ? [{ key: IDEMPOTENCY_META, value: idempotencyKey }] : []),
         ...envioOrderMeta(envio.metodo, envio.destino),
       ],
     };
@@ -438,6 +460,26 @@ export async function POST(req: NextRequest) {
     }
 
     const wcOrder = await res.json() as { id: number; number: string };
+
+    // Carrera: dos envíos con la misma clave pasaron el chequeo previo a la
+    // vez y los dos crearon. Se vuelve a leer y, si hay otra orden viva con la
+    // clave más vieja que la nuestra, la nuestra se cancela (Woo repone el
+    // stock) y se responde con la otra: el crédito, los mails y el perfil ya
+    // los hizo (o los está haciendo) el envío que ganó.
+    if (idempotencyKey) {
+      const after = await wcGet(recentOrdersPath(customerId)).catch((err) => { console.error('[mayorista/pedido] no se pudo verificar la clave tras crear:', err); return null; });
+      const dup = after ? resolveDuplicate(after, idempotencyKey, Number(wcOrder.id)) : null;
+      if (dup?.cancel) {
+        const cancel = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${wcOrder.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+          body: JSON.stringify({ status: 'cancelled', customer_note: `Duplicada de #${dup.keep.number ?? dup.keep.id} (misma clave de envío). Cancelada automáticamente.` }),
+        }).catch(() => null);
+        if (!cancel?.ok) console.error(`[mayorista/pedido] orden #${wcOrder.number} duplica a #${dup.keep.number} y no se pudo cancelar (${cancel?.status ?? 'sin respuesta'}): cancelar a mano`);
+        const r = replayOf(dup.keep);
+        return NextResponse.json({ wcOrderId: r.id, wcOrderNumber: r.number, creditUsed: r.creditUsed, total: r.total, items: pricedItems, campaign: campaignSummary, replayed: true });
+      }
+    }
 
     // Con la orden ya creada, se descuenta el saldo usado. Si falla, la orden
     // queda igual (el crédito ya se aplicó en ella) y se avisa en el log para
