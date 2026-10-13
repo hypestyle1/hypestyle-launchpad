@@ -70,14 +70,19 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
                 <p className="text-[14px] text-text-light line-through">{formatArs(product.wholesalePrice)}</p>
               </div>
               <p className="text-[12px] mt-1 text-sale">Ahorrás {formatArs(product.promo.saving)} por unidad sobre tu precio mayorista.</p>
-              <p className="text-[12px] text-text-light mt-0.5">PVP sugerido {formatArs(product.regularPrice)} · tu margen sobre PVP {Math.round((1 - product.promo.price / product.regularPrice) * 100)}%</p>
+              <p className="text-[12px] text-text-light mt-0.5">Precio de lista {formatArs(product.regularPrice)} · a lista, recargás {Math.round((product.regularPrice / product.promo.price - 1) * 100)}% sobre tu costo ({Math.round((1 - product.promo.price / product.regularPrice) * 100)}% de margen bruto)</p>
             </div>
           ) : (
             <div className="mt-4">
               <p className="text-[24px] font-semibold">{formatArs(product.wholesalePrice)}</p>
-              <p className="text-[13px] text-text-light line-through">precio de lista {formatArs(product.regularPrice)}</p>
-              <p className="text-[12px] text-text-light mt-0.5">tu margen sobre PVP 50%</p>
+              <p className="text-[13px] text-text-light">Precio de lista {formatArs(product.regularPrice)}</p>
+              <p className="text-[12px] text-text-light mt-0.5">A precio de lista, recargás 100% sobre tu costo (50% de margen bruto).</p>
             </div>
+          )}
+          {product.retailPrice != null && (
+            <p className="mt-2 inline-block text-[12px] rounded-[6px] border border-border px-2.5 py-1.5">
+              En la tienda hoy <b>{formatArs(product.retailPrice)}</b> (oferta): vendiendo a ese precio tu recargo es {Math.round((product.retailPrice / (product.promo?.price ?? product.wholesalePrice) - 1) * 100)}%.
+            </p>
           )}
 
           {hasColors && (

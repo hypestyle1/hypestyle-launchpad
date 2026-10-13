@@ -104,3 +104,22 @@ describe('normalizeMayoristaNode — color', () => {
     expect(p.colorAxis).toBe(false);
   });
 });
+
+// 13/10/2026: el mayorista paga 50% de la lista aunque la tienda esté en
+// oferta. El precio público de hoy se muestra para que el local sepa contra
+// qué compite; no cambia su precio.
+describe('normalizeMayoristaNode — precio público de hoy', () => {
+  it('con oferta: retailPrice es el precio de hoy, el mayorista sigue siendo 50% de la lista', () => {
+    const p = normalizeMayoristaNode(node({ onSale: true, price: '$&nbsp;40.500,00' }));
+    expect(p.wholesalePrice).toBe(22500);
+    expect(p.retailPrice).toBe(40500);
+  });
+  it('sin oferta: null (aunque price venga igual a la lista)', () => {
+    expect(normalizeMayoristaNode(node({ onSale: false, price: '$&nbsp;45.000,00' })).retailPrice).toBeNull();
+    expect(normalizeMayoristaNode(node({ onSale: true, price: '$&nbsp;45.000,00' })).retailPrice).toBeNull();
+    expect(normalizeMayoristaNode(node()).retailPrice).toBeNull();
+  });
+  it('variable con rango "mín - máx": toma el mínimo', () => {
+    expect(normalizeMayoristaNode(node({ onSale: true, price: '$&nbsp;40.500,00 - $&nbsp;45.000,00' })).retailPrice).toBe(40500);
+  });
+});

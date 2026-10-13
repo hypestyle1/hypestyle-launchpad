@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { mismaCiudad, type Exclusividad, type BloqueoExclusividad } from '@/lib/mayorista-exclusividad';
+import MayoristaRecargoOfertas from '@/components/admin/MayoristaRecargoOfertas';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -580,6 +581,8 @@ Ciudad:`, titular?.exclusividad?.ciudad || m.city || '');
           </div>
           {globalMin != null && <p className="text-[11px] text-muted-foreground/70 mt-2">Actual: ${globalMin.toLocaleString('es-AR')}</p>}
         </div>
+
+        <MayoristaRecargoOfertas adminKey={adminKey} />
 
         {showForm && (
           <div className="mb-6">

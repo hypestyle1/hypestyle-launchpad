@@ -16,14 +16,14 @@ const GET_PRODUCTS = `
       nodes {
         id databaseId name slug shortDescription
         ... on SimpleProduct {
-          regularPrice stockStatus stockQuantity
+          regularPrice price onSale stockStatus stockQuantity
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name slug } }
           attributes { nodes { name options } }
         }
         ... on VariableProduct {
-          regularPrice
+          regularPrice price onSale
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name slug } }
@@ -50,6 +50,11 @@ export interface MayoristaProduct {
   shortDescription: string;
   wholesalePrice: number;
   regularPrice: number;
+  // Precio al que la tienda vende hoy si está en oferta (menor que la lista),
+  // o null. No cambia el precio mayorista: se muestra para que el local sepa
+  // contra qué precio público compite. (Variable: WPGraphQL devuelve un rango
+  // "mín - máx"; se toma el mínimo, lo peor para el revendedor.)
+  retailPrice?: number | null;
   image: string;
   images: string[];
   sizes: string[];
@@ -170,11 +175,23 @@ function isFullyOut(p: MayoristaProduct): boolean {
   return p.sizes.length > 0 && p.sizes.every((s) => sizeLevel(p, s) === 'out');
 }
 
+/** Precio público de hoy si hay oferta y es menor que la lista; si no, null. */
+export function retailPriceOf(node: { onSale?: boolean | null; price?: string | null }, regularPrice: number): number | null {
+  if (!node.onSale) return null;
+  // Variable: "$ 40.500,00 - $ 45.000,00". Se parsea cada tramo por separado
+  // (parsePrice sobre el rango entero pega los dos números).
+  const prices = String(node.price ?? '').split(/\s+[-–]\s+/).map(parsePrice).filter(n => n > 0);
+  if (!prices.length) return null;
+  const p = Math.round(Math.min(...prices));
+  return p < regularPrice ? p : null;
+}
+
 export function normalizeMayoristaNode(node: any): MayoristaProduct {
   const regularPrice = parsePrice(node.regularPrice);
   // Lo que ve el catálogo es orientativo: el precio que se cobra se recalcula
   // en el servidor al confirmar (lib/mayorista-pricing.ts), con la misma regla.
   const wholesale = wholesalePrice(regularPrice);
+  const retailPrice = retailPriceOf(node, regularPrice);
 
   const images: string[] = [];
   if (node.image?.sourceUrl) images.push(node.image.sourceUrl);
@@ -239,6 +256,7 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
     shortDescription: stripHtml(node.shortDescription),
     wholesalePrice: wholesale,
     regularPrice,
+    retailPrice,
     image: images[0] ?? '',
     images,
     sizes: sortSizes(sizes),

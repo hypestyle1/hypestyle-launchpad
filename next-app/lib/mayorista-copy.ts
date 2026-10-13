@@ -24,7 +24,10 @@ export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURICo
  *  Lo que un local compara cuando elige marca (aprendido del catálogo de
  *  Shaka, sep-26): precio, stock, mínimo, drops, material y zona. */
 export const WHOLESALE_HOW_IT_WORKS = [
-  { title: '50% OFF PVP', text: 'Comprás a la mitad del precio de venta al público, en todo el catálogo. Marcás 100% sobre tu costo.' },
+  // Recargo ≠ margen: a precio de lista, el local recarga 100% sobre su costo,
+  // que es 50% de margen bruto sobre la venta. No se promete ganancia: si la
+  // tienda tiene oferta, el precio público puede ser menor que la lista.
+  { title: '50% del precio de lista', text: 'Comprás a la mitad del precio de lista, en todo el catálogo. Vendido a precio de lista, recargás 100% sobre tu costo (50% de margen bruto).' },
   { title: 'Stock en vivo', text: 'Lo que ves es lo que hay en depósito, por talle. Sin sorpresas al confirmar.' },
   { title: 'Surtido libre', text: 'Talles y modelos sueltos, sin mínimo por modelo. Armás el pedido como lo vende tu local.' },
   { title: 'Sale esta semana', text: 'Pedís hoy, lo preparamos en la semana y te avisamos con el seguimiento.' },
@@ -63,8 +66,8 @@ export const HOW_IT_WORKS_SECTIONS = [
     id: 'pedido',
     title: 'Cómo armar el pedido',
     items: [
-      'Ves el catálogo completo con tu precio (50% del PVP) y el stock real por talle.',
-      'Ves el PVP al lado de tu precio, así sabés de entrada cuánto marcás por prenda.',
+      'Ves el catálogo completo con tu precio (50% del precio de lista) y el stock real por talle.',
+      'Ves el precio de lista al lado del tuyo: es tu referencia para marcar. Si la tienda tiene una oferta, te mostramos también el precio público de hoy.',
       'Sumás talles sueltos desde la card o la ficha. Podés guardar borradores y retomarlos después.',
       'Hay un pedido mínimo a precio mayorista: lo ves en tu cuenta, la barra te muestra cuánto falta y el carrito te sugiere cómo completarlo.',
       'Al confirmar, cargás los datos de envío una sola vez y te llega el resumen por mail, con PDF y planilla.',
