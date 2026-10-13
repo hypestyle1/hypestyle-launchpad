@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import CategoriaPage from '@/components/CategoriaPage';
 import JsonLd from '@/components/JsonLd';
 import { getCategoryConfig } from '@/lib/category-config';
+import { initialProductsFor } from '@/lib/catalog';
 import { buildMetadata } from '@/lib/seo';
 import { collectionJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 
@@ -25,7 +26,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   });
 }
 
-export default function Page({ params }: { params: { slug: string } }) {
+// Las cards van en el HTML inicial (lib/catalog.ts), como en /special-prices.
+// En el navegador manda igual el pedido a /api/products (stock y precio al día).
+export const revalidate = 60;
+
+export default async function Page({ params }: { params: { slug: string } }) {
   const config = getCategoryConfig(path(params.slug));
 
   // Sin esto la ruta era un catch-all: /colecciones/loquesea devolvía HTTP 200
@@ -33,6 +38,7 @@ export default function Page({ params }: { params: { slug: string } }) {
   // soft 404. Las colecciones con página propia (fw26, faith-is-the-real-hype,
   // pink-set-drop, mas-hype) tienen prioridad sobre esta ruta y no llegan acá.
   if (!config) notFound();
+  const initialProducts = await initialProductsFor(config);
 
   return (
     <>
@@ -49,7 +55,7 @@ export default function Page({ params }: { params: { slug: string } }) {
           ]),
         ]}
       />
-      <CategoriaPage />
+      <CategoriaPage initialProducts={initialProducts} />
     </>
   );
 }

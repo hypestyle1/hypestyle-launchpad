@@ -1,6 +1,8 @@
 import FW26Page from './PageClient';
 import JsonLd from '@/components/JsonLd';
+import { initialProductsBySlugs } from '@/lib/catalog';
 import { buildMetadata } from '@/lib/seo';
+import { FW26_SLUGS } from '@/lib/fw26';
 import { breadcrumbJsonLd, collectionJsonLd } from '@/lib/jsonld';
 
 // La página es un client component (hooks de estado y de datos), así que no
@@ -13,7 +15,12 @@ const DESCRIPTION =
 
 export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, path: PATH });
 
-export default function Page() {
+// Las cards van en el HTML inicial (lib/catalog.ts), como en /special-prices.
+// En el navegador manda igual el pedido a /api/products (stock y precio al día).
+export const revalidate = 60;
+
+export default async function Page() {
+  const initialProducts = await initialProductsBySlugs(FW26_SLUGS);
   return (
     <>
       <JsonLd
@@ -22,7 +29,7 @@ export default function Page() {
           breadcrumbJsonLd([{ name: 'Colecciones', path: '/colecciones/' }, { name: 'FW26', path: PATH }]),
         ]}
       />
-      <FW26Page />
+      <FW26Page initialProducts={initialProducts} />
     </>
   );
 }
