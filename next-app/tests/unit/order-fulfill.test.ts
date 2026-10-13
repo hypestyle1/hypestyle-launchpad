@@ -55,7 +55,7 @@ async function run() {
 
 const flagWrites = (w: { body: any }[]) =>
   w.filter(x => (x.body.meta_data || []).some((m: any) => m.key === FLAG));
-const noteWrites = (w: { path: string }[]) => w.filter(x => x.path.endsWith('/notes'));
+const noteWrites = (w: { path: string; body: any }[]) => w.filter(x => x.path.endsWith('/notes'));
 
 describe('fulfillOrder', () => {
   afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });

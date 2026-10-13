@@ -1,25 +1,30 @@
+# Cada bot lee UN solo grupo: el más específico que lo nombra (RFC 9309).
+# Antes Googlebot, Bingbot y los bots de redes tenían un grupo propio con solo
+# "Allow: /", así que los Disallow del grupo * no les aplicaban: /admin/ estaba
+# abierto para Google sin que nadie lo hubiera decidido. Ahora cada grupo lista
+# todas sus reglas.
+#
+# Las rutas transaccionales (checkout, confirmacion, pendiente-de-pago,
+# seguimiento, acceso, subir-foto-final, resena, review), /private-access y
+# /mayoristas/como-funciona NO van con Disallow: sirven noindex en su propio
+# HTML (y /private-access también en X-Robots-Tag), y una URL bloqueada acá
+# nunca se rastrea, así que Google jamás leería ese noindex — quedaría indexable
+# solo por el link. El noindex es la señal fuerte; el Disallow, no.
+
+# Buscadores y previews de redes. /api/ queda ABIERTO a propósito: Google y Bing
+# renderizan el JS, y los listados, el stock en vivo y las reseñas se piden a
+# /api/* desde el navegador. Bloquearlo dejaría esas partes vacías en el render
+# que indexan. /mayoristas/ también queda abierto: /mayoristas/como-funciona
+# está enlazada desde todo el sitio y tiene que poder mostrar su noindex; el
+# resto redirige al login, que también es noindex.
 User-agent: Googlebot
-Allow: /
-
 User-agent: Bingbot
-Allow: /
-
 User-agent: Twitterbot
-Allow: /
-
 User-agent: facebookexternalhit
 Allow: /
+Disallow: /admin/
 
-# Las rutas transaccionales (checkout, confirmacion, pendiente-de-pago,
-# seguimiento, acceso, subir-foto-final, resena, review) YA NO van con Disallow:
-# ahora sirven "noindex, follow" en su propio HTML, y una URL bloqueada acá
-# nunca se rastrea, así que Google jamás llegaría a leer ese noindex — quedaría
-# indexable solo por el link. El noindex es la señal fuerte; el Disallow, no.
-#
-# Solo quedan bloqueadas las que NO pueden declarar noindex por sí mismas
-# (rutas de API, que devuelven JSON) o que están detrás de login y no
-# queremos que consuman presupuesto de rastreo.
-
+# Resto de los bots: no renderizan, así que no necesitan /api/.
 User-agent: *
 Allow: /
 Disallow: /api/

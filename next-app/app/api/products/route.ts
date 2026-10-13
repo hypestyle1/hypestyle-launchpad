@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fetchWithRetry } from '@/lib/fetch-retry';
+import { SLUGS_INTERNOS } from '@/lib/catalog';
 
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
@@ -90,25 +91,9 @@ export async function GET() {
     after = page.pageInfo.endCursor;
   }
 
-  // Productos internos: existen en Woo pero no son parte del catálogo público.
-  // `catalog_visibility: hidden` no alcanza para sacarlos del sitio — la query
-  // de arriba filtra por `status`, no por visibilidad, así que este endpoint es
-  // el único lugar donde se decide qué ve el sitio.
-  //
-  // par-de-medias-hype (3000) es el regalo del Purchase Gift. Tiene que estar
-  // `publish` porque el motor del plugin llama a `is_purchasable()`, que rechaza
-  // los `private` — por eso no se puede esconder del lado de WordPress como sí
-  // se hace con las pilas de blanks del stock compartido.
-  //
-  // gift-card (3012) es la gift card: se compra desde /gift-cards con su propia
-  // UI de monto, no desde una card del catálogo.
-  //
-  // sleeveless-ranglan (1046) junta los cuatro colores en un solo producto con
-  // el mockup blanco de portada. Los cuatro colores ya existen como productos
-  // propios (sleeveless-ranglan-white / -black / -grey / -militar-green), así
-  // que en la grilla la blanca salía dos veces. No se despublica en Woo: se
-  // saca de acá.
-  const SLUGS_INTERNOS = new Set(['par-de-medias-hype', 'gift-card', 'sleeveless-ranglan']);
+  // Productos internos (regalo del Purchase Gift, gift card, sleeveless
+  // agrupada): la lista y el porqué viven en lib/catalog.ts, que la comparte
+  // con el HTML inicial de los listados.
 
   // La mayoría de los productos comparten menu_order (nunca se seteó a mano por
   // producto), así que el cursor de WPGraphQL no separa las páginas de forma

@@ -44,6 +44,8 @@ const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[numb
   { path: '/hoodies/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/pants/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/jorts/', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/gift-cards/', changeFrequency: 'monthly', priority: 0.6 },
+  { path: '/creadores/', changeFrequency: 'monthly', priority: 0.3 },
   { path: '/worldwide/', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/reviews/', changeFrequency: 'weekly', priority: 0.5 },
   { path: '/nosotros/', changeFrequency: 'monthly', priority: 0.4 },

@@ -9,7 +9,8 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import CollectionIndex from "@/components/collection/CollectionIndex";
 import { useScrollSpy } from "@/components/collection/useScrollSpy";
-import { useProducts, type NormalizedProduct } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/lib/products-normalize";
 import { FW26_GROUPS as GROUPS, FW26_SLUGS as ALL_SLUGS } from "@/lib/fw26";
 
 /**
@@ -70,8 +71,9 @@ function RioCarousel() {
   );
 }
 
-export default function FW26Page() {
-  const { data: allProducts = [] } = useProducts(0);
+/** `initialProducts`: traídos en el servidor (lib/catalog.ts) para el HTML inicial. */
+export default function FW26Page({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
+  const { data: allProducts = [] } = useProducts(0, undefined, undefined, initialProducts);
   const bySlug = useMemo(() => {
     const map: Record<string, (typeof allProducts)[0]> = {};
     allProducts.forEach(p => { map[p.slug] = p; });

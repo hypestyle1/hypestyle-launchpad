@@ -6,13 +6,15 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import CatalogHeader from "@/components/collection/CatalogHeader";
 import { useReveal } from "@/hooks/useReveal";
-import { useProducts, type NormalizedProduct } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/lib/products-normalize";
 
 const GRID_AIRE = 'grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9';
 const enStock = (p: NormalizedProduct) => Object.values(p.stock).some((s) => s !== 'out');
 
-export default function BackInStockPage() {
-  const { data: raw = [], isLoading } = useProducts(100, undefined, 'best-seller');
+/** `initialProducts`: traídos en el servidor (lib/catalog.ts) para el HTML inicial. */
+export default function BackInStockPage({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
+  const { data: raw = [], isLoading } = useProducts(100, undefined, 'best-seller', initialProducts);
   // Agotados al fondo: la lista por tag los trae mezclados.
   const products = [...raw.filter(enStock), ...raw.filter((p) => !enStock(p))];
   const ref = useReveal([products]);

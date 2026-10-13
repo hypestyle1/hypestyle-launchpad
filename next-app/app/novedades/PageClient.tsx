@@ -7,12 +7,14 @@ import ProductCard from "@/components/ProductCard";
 import CatalogHeader from "@/components/collection/CatalogHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/lib/products-normalize";
 
-export default function NovedadesPage() {
+/** `initialProducts`: traídos en el servidor (lib/catalog.ts) para el HTML inicial. */
+export default function NovedadesPage({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
   // /api/products ordena por fecha ASCENDENTE: useProducts(8) traía los 8
   // productos MÁS VIEJOS del catálogo con badge "New" (bug, auditoría 12/10).
-  // Se traen todos y se muestran los 8 más nuevos.
-  const { data: allProducts = [] } = useProducts(0);
+  // Se trae el catálogo completo y se muestran los 8 más nuevos.
+  const { data: allProducts = [] } = useProducts(0, undefined, undefined, initialProducts);
   const products = allProducts.slice(-8).reverse();
   const ref = useReveal([products]);
 

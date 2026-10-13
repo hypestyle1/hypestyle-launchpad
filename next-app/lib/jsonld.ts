@@ -1,5 +1,5 @@
 import type { Product } from '@/data/products';
-import { SITE_URL, SITE_NAME, canonicalUrl, truncateChars } from './seo';
+import { SITE_URL, SITE_NAME, canonicalUrl, crawlableImageUrl, truncateChars } from './seo';
 
 /**
  * Structured data (schema.org / JSON-LD).
@@ -72,9 +72,8 @@ export function breadcrumbJsonLd(trail: { name: string; path: string }[]) {
  */
 export function productJsonLd(product: Product) {
   const url = canonicalUrl(`/producto/${product.slug}/`);
-  const images = product.images.filter(Boolean).map(img =>
-    img.startsWith('http') ? img : `${SITE_URL}/${img.replace(/^\/+/, '')}`
-  );
+  // Desde hypestyle.com.ar: el WP donde viven las fotos bloquea a Googlebot.
+  const images = product.images.filter(Boolean).map(crawlableImageUrl);
   // "out" en todos los talles = sin stock. Si hay al menos uno disponible, InStock.
   const anyInStock = product.sizes.some(size => product.stock[size] !== 'out');
 

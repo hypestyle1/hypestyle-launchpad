@@ -9,7 +9,8 @@ import ProductCard from '@/components/ProductCard';
 import CatalogHeader from '@/components/collection/CatalogHeader';
 import { useReveal } from '@/hooks/useReveal';
 import { useProducts } from '@/hooks/useProducts';
-import { CATEGORY_MAP } from '@/lib/category-config';
+import { CATEGORY_MAP, productsForCategory } from '@/lib/category-config';
+import type { NormalizedProduct } from '@/lib/products-normalize';
 
 type SortKey = 'default' | 'price-asc' | 'price-desc';
 
@@ -20,8 +21,12 @@ type SortKey = 'default' | 'price-asc' | 'price-desc';
  * colección, grilla con aire del sistema y orden por defecto "más nuevos
  * primero" (antes "Relevancia" era la fecha ascendente de la API: lo más
  * viejo primero).
+ *
+ * `initialProducts`: los productos de esta página traídos en el servidor
+ * (ver lib/catalog.ts). Hacen que las cards y sus links estén en el HTML
+ * inicial; después manda el pedido a /api/products, como antes.
  */
-export default function CategoriaPage() {
+export default function CategoriaPage({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
   const pathname = usePathname();
   const normalizedPath = pathname.replace(/\/$/, '');
   const config = CATEGORY_MAP[normalizedPath] ?? CATEGORY_MAP['/productos'];
@@ -29,14 +34,11 @@ export default function CategoriaPage() {
   const [sort, setSort] = useState<SortKey>('default');
   const [sizeFilter, setSizeFilter] = useState<string[]>([]);
 
-  const { data: allProducts = [], isLoading } = useProducts(0);
+  const { data: allProducts = [], isLoading } = useProducts(0, undefined, undefined, initialProducts);
   const ref = useReveal([allProducts]);
 
   const baseProducts = useMemo(() => {
-    let base = config.categories.length === 0
-      ? allProducts
-      : allProducts.filter(p => config.categories.includes(p.category));
-    if (config.tag) base = base.filter(p => p.tags.includes(config.tag!));
+    const base = productsForCategory(allProducts, config);
     if (!config.tabs || activeTab === 0 || config.tabs[activeTab].categories.length === 0) return base;
     return base.filter(p => config.tabs![activeTab].categories.includes(p.category));
   }, [allProducts, config, activeTab]);

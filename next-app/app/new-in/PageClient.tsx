@@ -8,7 +8,8 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import CatalogHeader from "@/components/collection/CatalogHeader";
 import { useReveal } from "@/hooks/useReveal";
-import { useProducts, type NormalizedProduct } from "@/hooks/useProducts";
+import { useProducts } from "@/hooks/useProducts";
+import type { NormalizedProduct } from "@/lib/products-normalize";
 import { SS27_HERO_IMAGES } from "@/lib/ss27-coleccion";
 
 /**
@@ -22,8 +23,9 @@ import { SS27_HERO_IMAGES } from "@/lib/ss27-coleccion";
 const GRID_AIRE = 'grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9';
 const enStock = (p: NormalizedProduct) => Object.values(p.stock).some((s) => s !== 'out');
 
-export default function NewInPage() {
-  const { data: rawProducts = [], isLoading } = useProducts(100, undefined, 'new-in');
+/** `initialProducts`: traídos en el servidor (lib/catalog.ts) para el HTML inicial. */
+export default function NewInPage({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
+  const { data: rawProducts = [], isLoading } = useProducts(100, undefined, 'new-in', initialProducts);
   const newestFirst = [...rawProducts].reverse();
   const products = [...newestFirst.filter(enStock), ...newestFirst.filter((p) => !enStock(p))];
   const ref = useReveal([products]);
