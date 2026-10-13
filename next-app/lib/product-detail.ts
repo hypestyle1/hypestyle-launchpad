@@ -248,10 +248,16 @@ const AEROBLUE_COLORWAYS = [
 // ── SS27 Part 01. Mientras la colección es privada, la ficha de /private-access
 // usa estas imágenes tal cual (resolveColorwayImages solo corre en la ficha
 // pública, y ahí WPGraphQL todavía no devuelve los productos privados).
+// Dos familias de Athletic Dept que no se mezclan: la de estampa a contraste
+// (blanca con escudo azul / navy con escudo gris) y la tono sobre tono con
+// costuras a juego (blanca con estampa gris / navy con estampa mostaza).
 const SS27_ATHLETIC_TEE_COLORWAYS = [
-  { label: 'White',              value: '#f5f5f5', slug: 'athletic-dept-white-tee',            image: `${WP}/2026/10/athletic-dept-white-tee-mockup-v2.png` },
-  { label: 'White · Grey print', value: '#d9d9d9', slug: 'athletic-dept-white-grey-print-tee', image: `${WP}/2026/10/athletic-dept-white-grey-print-tee-mockup-v2.png` },
-  { label: 'Navy',               value: '#1a2744', slug: 'athletic-dept-navy-tee',             image: `${WP}/2026/10/athletic-dept-navy-tee-mockup-v2.png` },
+  { label: 'White', value: '#f5f5f5', slug: 'athletic-dept-white-tee', image: `${WP}/2026/10/athletic-dept-white-tee-mockup-v2.png` },
+  { label: 'Navy',  value: '#1a2744', slug: 'athletic-dept-navy-tee',  image: `${WP}/2026/10/athletic-dept-navy-tee-mockup-v2.png` },
+];
+const SS27_ATHLETIC_TONAL_TEE_COLORWAYS = [
+  { label: 'White · Grey print',   value: '#d9d9d9', slug: 'athletic-dept-white-grey-print-tee',   image: `${WP}/2026/10/athletic-dept-white-grey-print-tee-mockup-v2.png` },
+  { label: 'Navy · Mustard print', value: '#1a2744', slug: 'athletic-dept-navy-mustard-print-tee', image: `${WP}/2026/10/athletic-dept-navy-mustard-print-tee-mockup.png` },
 ];
 const SS27_WORN_VARSITY_COLORWAYS = [
   { label: 'White', value: '#f5f5f5', slug: 'worn-varsity-club-white-tee', image: `${WP}/2026/10/worn-varsity-club-white-tee-mockup-v2.png` },
@@ -341,7 +347,7 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   ...Object.fromEntries(AEROGREY_COLORWAYS.map(c => [c.slug, AEROGREY_COLORWAYS])),
   ...Object.fromEntries(AEROBLUE_COLORWAYS.map(c => [c.slug, AEROBLUE_COLORWAYS])),
   ...Object.fromEntries([
-    SS27_ATHLETIC_TEE_COLORWAYS, SS27_WORN_VARSITY_COLORWAYS, SS27_H_HYPE_COLORWAYS,
+    SS27_ATHLETIC_TEE_COLORWAYS, SS27_ATHLETIC_TONAL_TEE_COLORWAYS, SS27_WORN_VARSITY_COLORWAYS, SS27_H_HYPE_COLORWAYS,
     SS27_STYLE_CULTURE_COLORWAYS, SS27_ATHLETIC_LS_COLORWAYS, CAP_COLORWAYS,
   ].flatMap(g => g.map(c => [c.slug, g]))),
 };

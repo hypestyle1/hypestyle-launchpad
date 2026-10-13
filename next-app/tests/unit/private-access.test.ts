@@ -188,7 +188,8 @@ describe('colorways SS27', () => {
   it('cada producto del drop con más de un color ve a sus hermanos', async () => {
     const { getColorwaysForSlug } = await import('@/lib/product-detail');
     const grupos: Record<string, number> = {
-      'athletic-dept-white-tee': 3, 'athletic-dept-white-grey-print-tee': 3, 'athletic-dept-navy-tee': 3,
+      'athletic-dept-white-tee': 2, 'athletic-dept-navy-tee': 2,
+      'athletic-dept-white-grey-print-tee': 2, 'athletic-dept-navy-mustard-print-tee': 2,
       'worn-varsity-club-white-tee': 2, 'worn-varsity-club-navy-tee': 2,
       'h-hype-white-tee': 2, 'h-hype-navy-tee': 2,
       'style-culture-university-white-tee': 3, 'style-culture-university-black-tee': 3, 'style-culture-university-navy-tee': 3,
