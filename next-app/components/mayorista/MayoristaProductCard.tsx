@@ -9,11 +9,14 @@ import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import { sizeLevel, stockKey, canOrder, isPurchasable, isUnconfirmed, type MayoristaProduct } from '@/lib/mayorista-products';
 import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
+import { isNewProduct } from '@/lib/mayorista-catalog-sort';
+import MayoristaAddedNotice from './MayoristaAddedNotice';
 
 export default function MayoristaProductCard({ product }: { product: MayoristaProduct }) {
   const { add } = useMayoristaCart();
   const [added, setAdded] = useState<string | null>(null);
   const [imgIndex, setImgIndex] = useState(0);
+  const isNew = isNewProduct(product);
 
   const outOfStock = product.sizes.every(s => sizeLevel(product, s) === 'out');
   // Próximamente: se muestra, no se pide. Sin confirmar: ningún talle con
@@ -39,8 +42,12 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
     // servidor lo recalcula al confirmar.
     add({ slug: product.slug, name: product.name, price: product.promo?.price ?? product.wholesalePrice, image: product.image, size, ...(singleColor ? { color: singleColor } : {}), quantity: 1 });
     setAdded(size);
-    setTimeout(() => setAdded(null), 1500);
+    setTimeout(() => setAdded(null), 4000);
   }
+
+  // Dentro de un <Link>: el aviso tiene su propio link al pedido, así que no
+  // puede propagar el click a la card.
+  const stop = (e: React.MouseEvent) => { e.stopPropagation(); };
 
   function prevImg(e: React.MouseEvent) {
     e.preventDefault();
@@ -82,10 +89,14 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
           <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-sale text-sale-foreground">
             {product.promo.badge} · −{Math.round(product.promo.discount * 100)}%
           </span>
-        ) : product.drop && (
+        ) : product.drop ? (
           <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-bg-dark text-primary-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-[hsl(142,70%,55%)]" aria-hidden />
             Nuevo drop
+          </span>
+        ) : isNew && (
+          <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-background/90 text-foreground border border-border">
+            Nuevo
           </span>
         )}
 
@@ -191,6 +202,11 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
                 </button>
               );
             })}
+          </div>
+        )}
+        {added && (
+          <div onClick={stop}>
+            <MayoristaAddedNotice text={`Talle ${added} agregado`} onClose={() => setAdded(null)} />
           </div>
         )}
       </div>

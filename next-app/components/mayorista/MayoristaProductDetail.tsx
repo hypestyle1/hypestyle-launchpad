@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { imgSrc } from '@/lib/img';
 import { formatArs } from '@/lib/mayorista-format';
@@ -9,14 +9,22 @@ import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import { stockKey, canOrder, isPurchasable, type MayoristaProduct } from '@/lib/mayorista-products';
 import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
 import { WHATSAPP_URL } from '@/lib/mayorista-copy';
+import MayoristaAddedNotice from './MayoristaAddedNotice';
+
+// Tope del selector cuando el talle no tiene cantidad conocida.
+const MAX_QTY = 99;
 
 export default function MayoristaProductDetail({ product }: { product: MayoristaProduct }) {
-  const router = useRouter();
   const { add } = useMayoristaCart();
   const [size, setSize] = useState<string | null>(product.sizes.length === 1 ? product.sizes[0] : null);
   // Un solo color cargado (ej. "Negra") no es una elección: va directo al pedido.
   const [color, setColor] = useState<string | null>(product.colors.length === 1 ? product.colors[0] : null);
-  const [added, setAdded] = useState(false);
+  const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState<string | null>(null);
+  // Galería: destacada + galería de Woo (lib/mayorista-products.ts). Antes la
+  // ficha mostraba una sola foto aunque la card tuviera carrusel.
+  const images = product.images.length ? product.images : [product.image];
+  const [imgIndex, setImgIndex] = useState(0);
 
   const hasColors = product.colors.length > 0;
   const needsColor = hasColors && !color;
@@ -27,33 +35,63 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
   const comingSoon = product.comingSoon;
   const purchasable = isPurchasable(product);
   const canAdd = !!size && !needsColor && canOrder(product, selectedStock ?? undefined);
+  // Tope de cantidad: lo que hay del talle elegido (si Woo lo gestiona).
+  const maxQty = typeof selectedQty === 'number' && selectedQty > 0 ? selectedQty : MAX_QTY;
+  const unitPrice = product.promo?.price ?? product.wholesalePrice;
+
+  useEffect(() => { setQty(q => Math.min(q, maxQty)); }, [maxQty]);
+  useEffect(() => {
+    if (!added) return;
+    const t = setTimeout(() => setAdded(null), 6000);
+    return () => clearTimeout(t);
+  }, [added]);
 
   function handleAdd() {
     if (!size || !canAdd) return;
+    const quantity = Math.max(1, Math.min(maxQty, Math.floor(qty) || 1));
     // Precio orientativo (promo si hay campaña): el servidor lo recalcula al confirmar.
-    add({ slug: product.slug, name: product.name, price: product.promo?.price ?? product.wholesalePrice, image: product.image, size, ...(color ? { color } : {}), quantity: 1 });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    add({ slug: product.slug, name: product.name, price: unitPrice, image: product.image, size, ...(color ? { color } : {}), quantity });
+    setAdded(`${quantity} × ${product.name} · Talle ${size}${color ? ` · ${color}` : ''}`);
   }
 
-  const buttonLabel = added ? '✓ Agregado al pedido'
-    : comingSoon ? 'Próximamente'
+  const setQtyClamped = (n: number) => setQty(Math.max(1, Math.min(maxQty, Math.floor(n) || 1)));
+
+  const buttonLabel = comingSoon ? 'Próximamente'
     : needsColor ? 'Elegí un color'
     : !size ? 'Elegí un talle'
     : selectedStock === 'out' ? 'Sin stock'
     : selectedStock === 'unconfirmed' ? 'Stock sin confirmar'
-    : 'Agregar al pedido';
+    : `Agregar ${qty > 1 ? `${qty} ` : ''}al pedido — ${formatArs(unitPrice * qty)}`;
 
   return (
     <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6">
-      <button onClick={() => router.back()} className="text-[12px] uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors mb-6">
+      <Link href="/mayoristas" className="inline-flex items-center min-h-[44px] text-[12px] uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors mb-2">
         ← Volver al catálogo
-      </button>
+      </Link>
 
       <div className="grid sm:grid-cols-2 gap-8">
-        <div className="relative aspect-square rounded-[8px] overflow-hidden bg-bg-alt">
-          {product.image && (
-            <Image src={imgSrc(product.image)} alt={product.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover object-top" />
+        <div>
+          <div className="relative aspect-square rounded-[8px] overflow-hidden bg-bg-alt">
+            {images[imgIndex] && (
+              <Image src={imgSrc(images[imgIndex])} alt={`${product.name} — foto ${imgIndex + 1} de ${images.length}`} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover object-top" priority />
+            )}
+          </div>
+          {images.length > 1 && (
+            <div className="mt-2 grid grid-cols-5 gap-2" role="tablist" aria-label="Fotos del producto">
+              {images.map((src, i) => (
+                <button
+                  key={src}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === imgIndex}
+                  aria-label={`Foto ${i + 1}`}
+                  onClick={() => setImgIndex(i)}
+                  className={`relative aspect-square rounded-[6px] overflow-hidden bg-bg-alt border transition-colors ${i === imgIndex ? 'border-foreground' : 'border-transparent hover:border-border-mid'}`}
+                >
+                  <Image src={imgSrc(src)} alt="" fill sizes="20vw" className="object-cover object-top" />
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -98,7 +136,7 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
           )}
           {product.retailPrice != null && (
             <p className="mt-2 inline-block text-[12px] rounded-[6px] border border-border px-2.5 py-1.5">
-              En la tienda hoy <b>{formatArs(product.retailPrice)}</b> (oferta): vendiendo a ese precio tu recargo es {Math.round((product.retailPrice / (product.promo?.price ?? product.wholesalePrice) - 1) * 100)}%.
+              En la tienda hoy <b>{formatArs(product.retailPrice)}</b> (oferta): vendiendo a ese precio tu recargo es {Math.round((product.retailPrice / unitPrice - 1) * 100)}%.
             </p>
           )}
 
@@ -121,16 +159,18 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
                 Color{color && <span className="normal-case tracking-normal text-foreground"> — {color}</span>}
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Color">
                 {product.colors.map((c) => (
                   <button
                     key={c}
+                    type="button"
+                    aria-pressed={color === c}
                     onClick={() => {
                       setColor(c);
                       // Con stock por color, el talle elegido puede no existir (o no poder pedirse) en el nuevo color.
                       if (product.colorAxis && size && !canOrder(product, product.stock[stockKey(product, size, c)])) setSize(null);
                     }}
-                    className={`px-3 py-2 text-[13px] rounded-[8px] border transition-colors ${
+                    className={`min-h-[44px] px-3 py-2 text-[13px] rounded-[8px] border transition-colors ${
                       color === c ? 'bg-bg-dark text-primary-foreground border-bg-dark' : 'border-border-mid text-foreground/80 hover:border-foreground'
                     }`}
                   >
@@ -144,21 +184,23 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
           {!comingSoon && (
             <div className="mt-6">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Talle</p>
-              <div className={`flex flex-wrap gap-2 ${needsColor ? 'opacity-50' : ''}`}>
+              <div className={`flex flex-wrap gap-2 ${needsColor ? 'opacity-50' : ''}`} role="group" aria-label="Talle">
                 {product.sizes.map((s) => {
                   const level = needsColor ? null : product.stock[keyFor(s)];
                   const isOut = level === 'out';
                   const isUnconfirmed = level === 'unconfirmed';
                   const isLow = level === 'low';
-                  const qty = needsColor ? null : product.stockQty[keyFor(s)];
+                  const q = needsColor ? null : product.stockQty[keyFor(s)];
                   const blocked = isOut || isUnconfirmed || needsColor;
                   return (
                     <button
                       key={s}
+                      type="button"
+                      aria-pressed={size === s}
                       onClick={() => !blocked && setSize(s)}
                       disabled={blocked}
                       title={isUnconfirmed ? 'Stock sin confirmar' : undefined}
-                      className={`min-w-[44px] px-3 py-2 text-[13px] rounded-[8px] border transition-colors ${
+                      className={`min-w-[44px] min-h-[44px] px-3 py-2 text-[13px] rounded-[8px] border transition-colors ${
                         isOut ? 'border-border text-text-light/60 line-through cursor-not-allowed' :
                         isUnconfirmed ? 'border-dashed border-border text-text-light/60 cursor-not-allowed' :
                         size === s ? 'bg-bg-dark text-primary-foreground border-bg-dark' :
@@ -167,7 +209,7 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
                       }`}
                     >
                       {s}
-                      {isLow && qty != null && <span className="block text-[9px] mt-0.5">¡{qty}!</span>}
+                      {isLow && q != null && <span className="block text-[9px] mt-0.5">¡{q}!</span>}
                     </button>
                   );
                 })}
@@ -186,15 +228,44 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
             </div>
           )}
 
+          {/* Cantidad: un local pide de a varias unidades. Antes había que
+              tocar "Agregar" una vez por unidad o ajustar en el carrito. */}
+          {!comingSoon && purchasable && (
+            <div className="mt-6">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+                Cantidad{typeof selectedQty === 'number' && selectedQty > 0 && <span className="normal-case tracking-normal text-foreground/60"> — hay {selectedQty} en talle {size}</span>}
+              </p>
+              <div className="inline-flex items-stretch rounded-[8px] border border-border-mid overflow-hidden">
+                <button type="button" onClick={() => setQtyClamped(qty - 1)} disabled={qty <= 1 || !canAdd} aria-label="Una menos" className="w-11 min-h-[44px] text-[16px] hover:bg-bg-alt disabled:opacity-40 disabled:cursor-not-allowed">−</button>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={maxQty}
+                  value={qty}
+                  disabled={!canAdd}
+                  aria-label="Cantidad"
+                  onChange={(e) => setQtyClamped(Number(e.target.value))}
+                  onBlur={(e) => setQtyClamped(Number(e.target.value))}
+                  className="w-16 text-center text-[15px] font-semibold bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none disabled:opacity-40"
+                />
+                <button type="button" onClick={() => setQtyClamped(qty + 1)} disabled={qty >= maxQty || !canAdd} aria-label="Una más" className="w-11 min-h-[44px] text-[16px] hover:bg-bg-alt disabled:opacity-40 disabled:cursor-not-allowed">+</button>
+              </div>
+              {canAdd && qty >= maxQty && maxQty < MAX_QTY && (
+                <p className="mt-2 text-[12px] text-text-light">Es todo lo que hay de este talle.</p>
+              )}
+            </div>
+          )}
+
           <button
+            type="button"
             onClick={handleAdd}
             disabled={!canAdd}
-            className={`mt-8 w-full py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-              added ? 'bg-bg-dark/80 text-primary-foreground' : 'bg-bg-dark text-primary-foreground hover:bg-bg-dark/85'
-            }`}
+            className="mt-8 w-full py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-bg-dark text-primary-foreground hover:bg-bg-dark/85"
           >
             {buttonLabel}
           </button>
+          {added && <MayoristaAddedNotice text={added} onClose={() => setAdded(null)} />}
         </div>
       </div>
     </div>

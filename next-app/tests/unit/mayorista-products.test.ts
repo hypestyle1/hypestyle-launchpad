@@ -211,3 +211,10 @@ describe('normalizeMayoristaNode — precio público de hoy', () => {
     expect(normalizeMayoristaNode(node({ onSale: true, price: '$&nbsp;40.500,00 - $&nbsp;45.000,00' })).retailPrice).toBe(40500);
   });
 });
+
+describe('normalizeMayoristaNode — fecha de alta', () => {
+  it('guarda la fecha de Woo para "Novedades" y el badge Nuevo', () => {
+    expect(normalizeMayoristaNode(node({ date: '2026-10-12T10:00:00' })).createdAt).toBe('2026-10-12T10:00:00');
+    expect(normalizeMayoristaNode(node()).createdAt).toBeUndefined();
+  });
+});
