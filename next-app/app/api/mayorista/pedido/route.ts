@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
-import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
+import { resolveMinOrder, customerMinOrderOverride, MIN_ORDER_UNAVAILABLE_MESSAGE } from '@/lib/mayorista-settings';
 import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '@/lib/mayorista-stock';
 import { priceLines } from '@/lib/mayorista-pricing';
-import { applyCampaign, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
+import { applyCampaign, appliedCampaignMinOrder, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 import { mayoristaDropTag } from '@/lib/mayorista-drop-server';
 import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
@@ -346,9 +346,16 @@ export async function POST(req: NextRequest) {
     const total = pricing.total;
 
     // Mínimo: el override del cliente manda; si no, el mínimo propio de la
-    // campaña aplicada; si no, el general.
-    const campaignMin = appliedCampaign ? campaigns.find(c => c.id === appliedCampaign.campaignId)?.minOrder ?? null : null;
-    const minOrder = customerMinOrderOverride(customer.meta_data) ?? campaignMin ?? await getGlobalMinOrder();
+    // campaña aplicada; si no, el general (lib/mayorista-settings.ts). Si el
+    // general hace falta y WordPress no responde, no se asume ninguno: se pide
+    // reintento, como con las campañas.
+    const minOrder = await resolveMinOrder({
+      override: customerMinOrderOverride(customer.meta_data),
+      campaignMin: appliedCampaignMinOrder(pricing, campaigns),
+    });
+    if (minOrder == null) {
+      return NextResponse.json({ code: 'MIN_ORDER_UNAVAILABLE', message: MIN_ORDER_UNAVAILABLE_MESSAGE }, { status: 502 });
+    }
     if (total < minOrder) {
       return NextResponse.json({ message: `El pedido mínimo es ${formatArs(minOrder)}` }, { status: 400 });
     }

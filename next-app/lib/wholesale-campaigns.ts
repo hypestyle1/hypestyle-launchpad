@@ -244,6 +244,15 @@ export function applyCampaign(pricing: PricingResult, list: WholesaleCampaign[],
   return { lines, changes, unpriced: pricing.unpriced, total: lines.reduce((s, l) => s + l.lineTotal, 0), discountTotal, campaignIds: [...campaignIds] };
 }
 
+/** Mínimo propio de la campaña aplicada al pedido (la de la primera línea con
+ *  campaña, igual que el resumen de la orden), o null si no hay campaña o no
+ *  define mínimo. */
+export function appliedCampaignMinOrder(pricing: Pick<CampaignPricingResult, 'lines'>, list: WholesaleCampaign[]): number | null {
+  const applied = pricing.lines.find(l => l.campaign)?.campaign ?? null;
+  if (!applied) return null;
+  return list.find(c => c.id === applied.campaignId)?.minOrder ?? null;
+}
+
 /* ─── Preview financiero ───────────────────────────────────────────────── */
 
 export interface PreviewProduct {

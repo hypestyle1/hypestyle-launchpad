@@ -20,6 +20,10 @@ export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURICo
 // ser distinto por cliente. Lo muestra el portal (barra del pedido) con el
 // valor real de la cuenta.
 
+/** Cuando el mínimo no se pudo leer de WordPress (lib/mayorista-settings.ts):
+ *  lo muestran el carrito y la respuesta del pedido. No se inventa un monto. */
+export const MIN_ORDER_UNAVAILABLE_MESSAGE = 'No pudimos verificar el pedido mínimo. Esperá unos segundos e intentá de nuevo.';
+
 /** Los seis pilares. Van en el catálogo (fila) y en la página pública.
  *  Lo que un local compara cuando elige marca (aprendido del catálogo de
  *  Shaka, sep-26): precio, stock, mínimo, drops, material y zona. */

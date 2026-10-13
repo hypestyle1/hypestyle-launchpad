@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
-import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
+import { resolveMinOrder, customerMinOrderOverride, MIN_ORDER_UNAVAILABLE_MESSAGE } from '@/lib/mayorista-settings';
 import { parseCredit } from '@/lib/mayorista-credit';
 import { parseBloqueo, mensajeBloqueo } from '@/lib/mayorista-exclusividad';
 
@@ -23,7 +23,10 @@ export async function GET(req: NextRequest) {
   if (!res.ok) return NextResponse.json({ message: 'No se pudo cargar el perfil' }, { status: 502 });
 
   const customer = await res.json();
-  const minOrder = customerMinOrderOverride(customer.meta_data) ?? await getGlobalMinOrder();
+  // Mínimo base de la cuenta (override o general). El de campaña lo agrega
+  // /api/mayorista/disponibilidad, que conoce las líneas del carrito. Si el
+  // general no se pudo leer viene null y el carrito no deja continuar.
+  const minOrder = await resolveMinOrder({ override: customerMinOrderOverride(customer.meta_data) });
   const meta = (customer.meta_data ?? []) as { key: string; value: string }[];
   const metaVal = (key: string) => meta.find((m) => m.key === key)?.value ?? '';
 
@@ -32,6 +35,7 @@ export async function GET(req: NextRequest) {
     billing: customer.billing,
     shipping: customer.shipping,
     minOrder,
+    ...(minOrder == null ? { minOrderError: MIN_ORDER_UNAVAILABLE_MESSAGE } : {}),
     dni: metaVal('dni'),
     viaCargoSucursal: metaVal('via_cargo_sucursal'),
     // Último método de envío elegido. Las cuentas viejas no lo tienen: el

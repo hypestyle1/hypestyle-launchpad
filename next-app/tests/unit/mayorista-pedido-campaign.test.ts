@@ -22,7 +22,7 @@ const catalog = new Map<string, ResolvedProduct | null>([
 let campaignsResponse: () => Promise<any[]> = async () => [fixture.campaign];
 vi.mock('@/lib/wholesale-campaigns-store', () => ({ readCampaigns: vi.fn(() => campaignsResponse()) }));
 vi.mock('@/lib/mayorista-auth', () => ({ MAYORISTA_COOKIE: 'hype_mayorista_session', verifySessionToken: vi.fn(async (t?: string) => (t === 'ok' ? 19 : null)) }));
-vi.mock('@/lib/mayorista-settings', () => ({ getGlobalMinOrder: vi.fn(async () => 0), customerMinOrderOverride: vi.fn(() => null) }));
+// El mínimo general se simula en la red (ver el stub de fetch): $1, no es el tema acá.
 vi.mock('@/lib/mayorista-stock', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/mayorista-stock')>();
   return {
@@ -48,6 +48,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
     if (String(url).includes('/wc/v3/orders')) { wcOrderPosts.push(JSON.parse(String(init?.body))); return new Response(JSON.stringify({ id: 6001, number: '6001' }), { status: 201 }); }
     if (String(url).includes('api.brevo.com')) { brevoPosts.push(JSON.parse(String(init?.body))); return new Response('{}', { status: 201 }); }
+    if (String(url).includes('/hypestyle/v1/mayorista-settings')) return new Response(JSON.stringify({ minOrder: 1 }), { status: 200 });
     return new Response('{}', { status: 200 });
   }));
 });

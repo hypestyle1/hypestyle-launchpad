@@ -123,6 +123,9 @@ export default function MayoristasAdminPage() {
   const [error, setError]       = useState('');
   const [created, setCreated]   = useState<{ email: string; password: string } | null>(null);
   const [globalMin, setGlobalMin]         = useState<number | null>(null);
+  // WordPress no devolvió el mínimo: se avisa en vez de mostrar un número que
+  // no es el que valida el portal.
+  const [globalMinError, setGlobalMinError] = useState('');
   const [globalMinInput, setGlobalMinInput] = useState('');
   const [savingMin, setSavingMin]         = useState(false);
   const [mayoristas, setMayoristas]   = useState<Mayorista[]>([]);
@@ -221,14 +224,17 @@ export default function MayoristasAdminPage() {
       .then(data => { if (data?.checks) setHealth(data); })
       .catch(() => {});
     fetch('/api/admin/mayorista-settings', { headers: { 'x-admin-key': adminKey } })
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (typeof data?.minOrder === 'number') {
+      .then(async res => ({ ok: res.ok, data: await res.json().catch(() => null) }))
+      .then(({ ok, data }) => {
+        if (ok && typeof data?.minOrder === 'number') {
           setGlobalMin(data.minOrder);
           setGlobalMinInput(String(data.minOrder));
+          setGlobalMinError('');
+        } else {
+          setGlobalMinError(data?.message || 'No se pudo leer el mínimo de WordPress');
         }
       })
-      .catch(() => {});
+      .catch(() => setGlobalMinError('No se pudo leer el mínimo de WordPress'));
   }, [authed, adminKey, fetchList]);
 
   async function saveGlobalMin() {
@@ -579,6 +585,7 @@ Ciudad:`, titular?.exclusividad?.ciudad || m.city || '');
             </button>
           </div>
           {globalMin != null && <p className="text-[11px] text-muted-foreground/70 mt-2">Actual: ${globalMin.toLocaleString('es-AR')}</p>}
+          {globalMinError && <p className="text-[11px] font-semibold text-red-700 mt-2">{globalMinError}. Mientras tanto el portal no acepta pedidos sin mínimo propio.</p>}
         </div>
 
         {showForm && (
