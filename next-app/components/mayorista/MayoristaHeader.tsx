@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMayoristaCart } from '@/context/MayoristaCartContext';
+import { useMayoristaCart, forgetMayoristaUser } from '@/context/MayoristaCartContext';
 import MayoristaMinBar from './MayoristaMinBar';
 
 const glassBar = {
@@ -16,7 +16,7 @@ const glassBar = {
 
 export default function MayoristaHeader() {
   const router = useRouter();
-  const { count, total, hydrated } = useMayoristaCart();
+  const { count, total, hydrated, clear } = useMayoristaCart();
   const [name, setName] = useState('');
   const [minOrder, setMinOrder] = useState<number | null>(null);
 
@@ -34,6 +34,10 @@ export default function MayoristaHeader() {
 
   async function logout() {
     await fetch('/api/mayorista/logout', { method: 'POST' });
+    // El pedido en curso no queda para el próximo que use este navegador
+    // (los borradores guardados en la cuenta sí siguen).
+    clear();
+    forgetMayoristaUser();
     router.push('/mayoristas/login');
     router.refresh();
   }

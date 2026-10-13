@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import type { ResolvedProduct } from '@/lib/mayorista-stock';
+import { rateLimitReset } from '@/lib/rate-limit';
 
 // /api/mayorista/pedido no puede confiar en el precio que manda el navegador.
 // Acá se le pega a la ruta real con Woo simulado y se mira qué orden crea.
@@ -63,6 +64,8 @@ beforeEach(() => {
   customerMeta = [];
   settingsResponse = () => new Response(JSON.stringify({ minOrder: 1 }), { status: 200 });
   settingsCalls.length = 0;
+  // El tope de 20 pedidos por cuenta cada 10 min (lib/rate-limit.ts) frenaría la suite entera.
+  rateLimitReset();
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
     if (String(url).includes('/hypestyle/v1/mayorista-settings')) { settingsCalls.push(String(url)); return settingsResponse(); }
     if (String(url).includes('/wc/v3/orders')) {
@@ -350,6 +353,7 @@ describe('POST /api/mayorista/pedido — clave de idempotencia', () => {
   it('carrera: tras crear aparece otra orden más vieja con la clave → cancela la nuestra y responde con la otra', async () => {
     const cancelled: { url: string; body: any }[] = [];
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/hypestyle/v1/mayorista-settings')) return settingsResponse();
       const u = String(url);
       if (u.includes('/wc/v3/orders/') && init?.method === 'PUT') { cancelled.push({ url: u, body: JSON.parse(String(init.body)) }); return new Response('{}', { status: 200 }); }
       if (u.includes('/wc/v3/orders') && init?.method === 'POST') {
@@ -373,6 +377,7 @@ describe('POST /api/mayorista/pedido — clave de idempotencia', () => {
   it('carrera donde ganamos nosotros: la orden queda y no se cancela nada', async () => {
     const puts: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/hypestyle/v1/mayorista-settings')) return settingsResponse();
       const u = String(url);
       if (u.includes('/wc/v3/orders/') && init?.method === 'PUT') { puts.push(u); return new Response('{}', { status: 200 }); }
       if (u.includes('/wc/v3/orders') && init?.method === 'POST') {
@@ -387,5 +392,88 @@ describe('POST /api/mayorista/pedido — clave de idempotencia', () => {
     expect(r.data.wcOrderNumber).toBe('5001');
     expect(r.data.replayed).toBeUndefined();
     expect(puts).toHaveLength(0);
+  });
+});
+
+// 13/10/2026: límite de líneas por pedido y saldo a favor atómico.
+describe('POST /api/mayorista/pedido — tope de líneas y saldo a favor', () => {
+  it('más de 200 líneas: 400 sin tocar Woo', async () => {
+    const items = Array.from({ length: 201 }, () => hoodieL(48000));
+    const r = await post({ items, shipping });
+    expect(r.status).toBe(400);
+    expect(r.data.message).toContain('200');
+    expect(wcOrderPosts).toHaveLength(0);
+  });
+
+  it('con saldo a favor: se descuenta ANTES de crear la orden y después se anota el número', async () => {
+    customerMeta = [{ key: 'mayorista_credito', value: JSON.stringify({ saldo: 30000, movimientos: [] }) }];
+    const calls: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/hypestyle/v1/mayorista-settings')) return settingsResponse();
+      const u = String(url);
+      if (u.includes('/wc/v3/customers/19') && init?.method === 'PUT') {
+        const body = JSON.parse(String(init.body));
+        const credit = body.meta_data?.find((m: any) => m.key === 'mayorista_credito');
+        calls.push(credit ? `credit:${JSON.parse(credit.value).saldo}:${JSON.parse(credit.value).movimientos.at(-1)?.orden ?? '-'}` : 'perfil');
+        return new Response('{}', { status: 200 });
+      }
+      if (u.includes('/wc/v3/orders') && init?.method === 'POST') { calls.push('order'); wcOrderPosts.push(JSON.parse(String(init.body))); return new Response(JSON.stringify({ id: 5001, number: '5001' }), { status: 201 }); }
+      return new Response('{}', { status: 200 });
+    }));
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(200);
+    // Pedido de $96.000 con $30.000 de saldo: se usa todo el saldo (queda 0).
+    expect(r.data.creditUsed).toBe(30000);
+    expect(calls.indexOf('credit:0:-')).toBeLessThan(calls.indexOf('order'));
+    expect(calls).toContain('credit:0:5001');
+  });
+
+  it('si Woo rechaza la orden con 4xx, el saldo vuelve', async () => {
+    customerMeta = [{ key: 'mayorista_credito', value: JSON.stringify({ saldo: 30000, movimientos: [] }) }];
+    const credits: number[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/hypestyle/v1/mayorista-settings')) return settingsResponse();
+      const u = String(url);
+      if (u.includes('/wc/v3/customers/19') && init?.method === 'PUT') {
+        const credit = JSON.parse(String(init.body)).meta_data?.find((m: any) => m.key === 'mayorista_credito');
+        if (credit) credits.push(JSON.parse(credit.value).saldo);
+        return new Response('{}', { status: 200 });
+      }
+      if (u.includes('/wc/v3/orders') && init?.method === 'POST') return new Response('bad', { status: 400 });
+      return new Response('{}', { status: 200 });
+    }));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(502);
+    expect(r.data.maybeCreated).toBeUndefined();
+    // Descontado a 0 antes de crear; repuesto a 30.000 cuando Woo rechazó.
+    expect(credits).toEqual([0, 30000]);
+    error.mockRestore();
+  });
+
+  it('si no se pudo reservar el saldo, no se crea la orden', async () => {
+    customerMeta = [{ key: 'mayorista_credito', value: JSON.stringify({ saldo: 30000, movimientos: [] }) }];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/hypestyle/v1/mayorista-settings')) return settingsResponse();
+      if (String(url).includes('/wc/v3/customers/19') && init?.method === 'PUT') return new Response('x', { status: 500 });
+      if (String(url).includes('/wc/v3/orders')) { wcOrderPosts.push({}); return new Response('{}', { status: 201 }); }
+      return new Response('{}', { status: 200 });
+    }));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(502);
+    expect(r.data.message).toContain('saldo a favor');
+    expect(wcOrderPosts).toHaveLength(0);
+    error.mockRestore();
+  });
+});
+
+describe('POST /api/mayorista/pedido — tope de envíos por cuenta', () => {
+  it('el envío 21 en 10 minutos devuelve 429 sin tocar Woo', async () => {
+    for (let i = 0; i < 20; i++) expect((await post({ items: [hoodieL(48000)], shipping, confirmDuplicate: true })).status).toBe(200);
+    const r = await post({ items: [hoodieL(48000)], shipping, confirmDuplicate: true });
+    expect(r.status).toBe(429);
+    expect(r.data.message).toContain('Demasiados envíos');
+    expect(wcOrderPosts).toHaveLength(20);
   });
 });

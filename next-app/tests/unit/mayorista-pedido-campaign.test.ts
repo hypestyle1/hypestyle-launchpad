@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import fixture from '../fixtures/private-stock-sale.json';
 import type { ResolvedProduct } from '@/lib/mayorista-stock';
+import { rateLimitReset } from '@/lib/rate-limit';
 
 // C2: /api/mayorista/pedido bajo una campaña mayorista. La ruta real con Woo,
 // campañas y mails simulados; se mira la orden que crea y las metas.
@@ -41,6 +42,7 @@ const wcOrderPosts: any[] = [];
 const brevoPosts: any[] = [];
 beforeEach(() => {
   wcOrderPosts.length = 0; brevoPosts.length = 0;
+  rateLimitReset();
   campaignsResponse = async () => [fixture.campaign];
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-09-28T15:00:00-03:00')); // en plena campaña
@@ -212,5 +214,22 @@ describe('mail del cliente — cómo pagar', () => {
     const cliente = brevoPosts.find(b => b.to?.[0]?.email === 'mask@test.com');
     expect(cliente.htmlContent).toContain('te mandamos los datos de la cuenta por WhatsApp');
     expect(cliente.htmlContent).not.toContain('CBU / CVU');
+  });
+});
+
+// 13/10/2026: lo que viene del navegador se escapa en los mails HTML.
+describe('mails — escape de HTML', () => {
+  it('un nombre o dirección con HTML llega escapado al mail del admin y del cliente', async () => {
+    const r = await post({
+      items: [{ slug: 'find-jesus', name: 'FIND <script>alert(1)</script>', size: 'M', quantity: 1, price: 26800 }],
+      shipping: { ...shipping, address_1: '<img src=x onerror=alert(1)>', company: 'MASK & <b>CO</b>' },
+    });
+    expect(r.status).toBe(200);
+    for (const mail of brevoPosts) {
+      expect(mail.htmlContent).not.toContain('<script>');
+      expect(mail.htmlContent).not.toContain('<img src=x');
+      expect(mail.htmlContent).toContain('&lt;script&gt;');
+    }
+    expect(brevoPosts.find(b => b.to?.[0]?.email !== 'mask@test.com').htmlContent).toContain('MASK &amp; &lt;b&gt;CO&lt;/b&gt;');
   });
 });

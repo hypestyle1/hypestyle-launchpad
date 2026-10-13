@@ -3,7 +3,7 @@
 
 import { envioDeOrden, type MetodoEnvio } from './mayorista-envio';
 import type { MayoristaProduct } from './mayorista-products';
-import { sizeLevel, stockKey } from './mayorista-products';
+import { sizeLevel, stockKey, canOrder } from './mayorista-products';
 import type { MayoristaCartItem } from '@/context/MayoristaCartContext';
 
 export interface PedidoLine {
@@ -128,7 +128,8 @@ export function reorderPlan(lines: PedidoLine[], catalog: MayoristaProduct[]): R
     if (!size) { plan.skipped.push({ name: l.name, size: l.size, reason: 'no-size' }); continue; }
     const color = p.colors.find(c => c.toLowerCase() === l.color.toLowerCase()) ?? (p.colors.length === 1 ? p.colors[0] : undefined);
     const level = p.colorAxis ? p.stock[stockKey(p, size, color)] : sizeLevel(p, size);
-    if (!level || level === 'out') { plan.skipped.push({ name: l.name, size, reason: 'out' }); continue; }
+    // Agotado, sin stock confirmado o "próximamente": no se vuelve a pedir.
+    if (!canOrder(p, level)) { plan.skipped.push({ name: l.name, size, reason: 'out' }); continue; }
     const available = p.stockQty[stockKey(p, size, color)];
     const quantity = typeof available === 'number' && available > 0 ? Math.min(l.quantity, available) : l.quantity;
     plan.items.push({ slug: p.slug, name: p.name, price: p.promo?.price ?? p.wholesalePrice, image: p.image, size, ...(color ? { color } : {}), quantity: Math.max(1, quantity) });

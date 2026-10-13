@@ -4,7 +4,7 @@ import type { MayoristaProduct } from '@/lib/mayorista-products';
 
 const prod = (slug: string, ws: number, createdAt: string | undefined, extra: Partial<MayoristaProduct> = {}): MayoristaProduct => ({
   id: slug, productId: 1, name: slug, slug, category: 'Remera', shortDescription: '', wholesalePrice: ws, regularPrice: ws * 2,
-  image: '', images: [], sizes: ['M'], colors: [], colorAxis: false, stock: { M: 'ok' }, stockQty: { M: 10 }, createdAt, ...extra,
+  image: '', images: [], sizes: ['M'], colors: [], colorAxis: false, stock: { M: 'ok' }, stockQty: { M: 10 }, comingSoon: false, createdAt, ...extra,
 });
 const NOW = Date.parse('2026-10-13T12:00:00-03:00');
 const catalog = [

@@ -74,23 +74,65 @@ interface MayoristaCartContextType {
 }
 
 const MayoristaCartContext = createContext<MayoristaCartContextType | null>(null);
-const CART_KEY = 'hy_mayorista_cart';
+
+// El carrito se guarda por cuenta: `hy_mayorista_cart:<customerId>`. Antes la
+// clave era una sola para todo el navegador y, en una PC compartida (dos
+// locales, un vendedor que atiende varias cuentas), el siguiente usuario
+// heredaba el pedido del anterior. El id lo deja el login
+// (rememberMayoristaUser) y lo borra el logout (forgetMayoristaUser).
+const LEGACY_CART_KEY = 'hy_mayorista_cart';
+const CART_KEY_PREFIX = 'hy_mayorista_cart:';
+const USER_KEY = 'hy_mayorista_uid';
+
+export function cartStorageKey(uid: string | null): string {
+  return uid ? `${CART_KEY_PREFIX}${uid}` : LEGACY_CART_KEY;
+}
+
+function currentUid(): string | null {
+  try { return localStorage.getItem(USER_KEY); } catch { return null; }
+}
+
+/** Lo llama el login con el customerId. */
+export function rememberMayoristaUser(customerId: number | string): void {
+  try { localStorage.setItem(USER_KEY, String(customerId)); } catch {}
+}
+
+/** Lo llama el logout: olvida la cuenta y borra su carrito del navegador. */
+export function forgetMayoristaUser(): void {
+  try {
+    const uid = localStorage.getItem(USER_KEY);
+    localStorage.removeItem(cartStorageKey(uid));
+    localStorage.removeItem(LEGACY_CART_KEY);
+    localStorage.removeItem(USER_KEY);
+  } catch {}
+}
 
 export function MayoristaCartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
   const [hydrated, setHydrated] = useState(false);
+  const [storageKey, setStorageKey] = useState(LEGACY_CART_KEY);
 
   useEffect(() => {
+    const key = cartStorageKey(currentUid());
+    setStorageKey(key);
     try {
-      const saved = localStorage.getItem(CART_KEY);
+      let saved = localStorage.getItem(key);
+      // Carrito de antes del cambio (clave sin cuenta): pasa a la cuenta de
+      // esta sesión una sola vez y se borra de la clave vieja.
+      if (!saved && key !== LEGACY_CART_KEY) {
+        saved = localStorage.getItem(LEGACY_CART_KEY);
+        if (saved) localStorage.removeItem(LEGACY_CART_KEY);
+      }
       if (saved) dispatch({ type: 'LOAD', state: JSON.parse(saved) });
     } catch {}
     setHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (hydrated) localStorage.setItem(CART_KEY, JSON.stringify(state));
-  }, [state, hydrated]);
+    if (hydrated) {
+      try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch {}
+    }
+  }, [state, hydrated, storageKey]);
 
   const total = state.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const count = state.items.reduce((sum, i) => sum + i.quantity, 0);

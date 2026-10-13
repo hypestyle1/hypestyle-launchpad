@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { rememberMayoristaUser } from '@/context/MayoristaCartContext';
 
 // Mismas fotos y misma técnica (blur + oscurecido + scrim) que usamos en el
 // gate de early access (/acceso) — le da branding sin competir con la tarjeta.
@@ -58,6 +59,9 @@ export default function MayoristaLoginPage() {
     });
     setLoading(false);
     if (res.ok) {
+      // Carrito por cuenta (context/MayoristaCartContext.tsx).
+      const data = await res.json().catch(() => ({}));
+      if (data?.customerId != null) rememberMayoristaUser(data.customerId);
       router.push('/mayoristas');
       router.refresh();
     } else {

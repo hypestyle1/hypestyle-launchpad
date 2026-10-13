@@ -55,7 +55,7 @@ describe('trackingUrlFor', () => {
 describe('reorderPlan — volver a pedir con el catálogo de hoy', () => {
   const prod = (productId: number, slug: string, over: Partial<MayoristaProduct> = {}): MayoristaProduct => ({
     id: slug, productId, name: slug.toUpperCase(), slug, category: 'Remera', shortDescription: '', wholesalePrice: 30000, regularPrice: 60000,
-    image: '/x.jpg', images: [], sizes: ['M', 'L'], colors: [], colorAxis: false, stock: { M: 'ok', L: 'low' }, stockQty: { M: 10, L: 2 }, ...over,
+    image: '/x.jpg', images: [], sizes: ['M', 'L'], colors: [], colorAxis: false, stock: { M: 'ok', L: 'low' }, stockQty: { M: 10, L: 2 }, comingSoon: false, ...over,
   });
   const catalog = [
     prod(2033, 'faith-hoodie', { wholesalePrice: 50000, promo: { campaignId: 'c', group: '10', label: '10%', discount: 0.1, price: 45000, saving: 5000, badge: 'LIQ', tag: 'unidades-limitadas' } as any }),
