@@ -14,6 +14,9 @@ import type { NormalizedProduct } from '@/lib/products-normalize';
 
 type SortKey = 'default' | 'price-asc' | 'price-desc';
 
+/** Cards que se ven al cargar sin scroll en desktop (4 columnas). */
+const PRIMERA_FILA = 4;
+
 /**
  * Plantilla de las páginas de categoría (rediseño 2026): cabecera editorial
  * compacta en lugar de la banda oscura de ~260px (los productos entran en la
@@ -134,10 +137,16 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9">
               {products.map((p, i) => (
-                <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
+                // La primera fila (4 cards en desktop, 2 filas de 2 en mobile)
+                // se pinta de entrada: con .reveal arrancaba en opacity 0 hasta
+                // hidratar, y el LCP de /tees y /hoodies terminaba siendo el logo
+                // o el título. Las dos primeras fotos van con prioridad (una es
+                // el LCP en mobile y desktop); el resto, lazy como siempre.
+                <div key={p.slug} className={i < PRIMERA_FILA ? undefined : `reveal rd${Math.min(i + 1 - PRIMERA_FILA, 8)}`}>
                   <ProductCard id={p.slug} name={p.name} category={p.category} price={p.price}
                     originalPrice={p.originalPrice} badge={p.badge} image={p.image} images={p.images}
-                    sizes={p.sizes} stock={p.stock} href={p.href} customizable={p.customizable} tags={p.tags} />
+                    sizes={p.sizes} stock={p.stock} href={p.href} customizable={p.customizable} tags={p.tags}
+                    imagePriority={i < 2 ? 'lcp' : i < PRIMERA_FILA ? 'eager' : undefined} />
                 </div>
               ))}
             </div>
