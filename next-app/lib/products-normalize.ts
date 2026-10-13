@@ -112,7 +112,7 @@ export function fromWPNode(node: any): NormalizedProduct {
     badge,
     image: images[0],
     images,
-    href: `/producto/${node.slug}/`,
+    href: `/producto/${node.slug}`,
     sizes: sortSizes(sizes),
     stock,
     tags: (node.productTags?.nodes ?? []).map((t: any) => t.slug),

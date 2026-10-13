@@ -18,7 +18,7 @@ export default function FW26Drop() {
   return (
     <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="FW26" link="/colecciones/fw26/" linkLabel="Ver colección">
+        <SectionHeader title="FW26" link="/colecciones/fw26" linkLabel="Ver colección">
           <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground border border-border px-2.5 py-1 leading-none">
             Nueva temporada
           </span>
@@ -36,7 +36,7 @@ export default function FW26Drop() {
           ))}
         </div>
         <div className="relative overflow-hidden bg-bg-alt min-h-[300px]">
-          <a href="/colecciones/fw26/" className="absolute inset-0 group block">
+          <a href="/colecciones/fw26" className="absolute inset-0 group block">
             <Image
               src="/stl-look-halfzip-polo-navy.png"
               alt="FW26"

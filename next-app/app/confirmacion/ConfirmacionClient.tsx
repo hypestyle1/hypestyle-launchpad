@@ -424,7 +424,7 @@ export default function ConfirmacionClient() {
           {isRejected ? (
             <div className="flex flex-col items-center gap-3">
               <DynamicButton
-                onClick={() => { window.location.href = '/checkout/'; }}
+                onClick={() => { window.location.href = '/checkout'; }}
                 className="bg-bg-dark text-primary-foreground px-10 py-4 text-[12px] font-bold uppercase tracking-[0.1em] rounded-[8px] hover:bg-bg-dark/85"
               >
                 {t.retry}

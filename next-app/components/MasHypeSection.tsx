@@ -22,7 +22,7 @@ export default function MasHypeSection() {
   return (
     <section id="mas-hype" className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
       <div className="reveal rd1">
-        <SectionHeader title="Más Hype" link="/colecciones/mas-hype/" linkLabel="Ver más" />
+        <SectionHeader title="Más Hype" link="/colecciones/mas-hype" linkLabel="Ver más" />
       </div>
       <div className={HOME_GRID}>
         {products.map((p, i) => (
@@ -38,7 +38,7 @@ export default function MasHypeSection() {
               images={p.images}
               sizes={p.sizes}
               stock={p.stock}
-              href={`/producto/${p.slug}/`}
+              href={`/producto/${p.slug}`}
             />
           </div>
         ))}

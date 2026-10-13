@@ -11,7 +11,7 @@ const config: CollectionConfig = {
   groups: REGULAR_TEES_GROUPS,
 };
 
-const PATH = '/colecciones/regular-tees/';
+const PATH = '/colecciones/regular-tees';
 const SEO_DESCRIPTION =
   'Regular Tees de HYPESTYLE: básicos premium 100% algodón, corte regular. Los que siempre están disponibles.';
 

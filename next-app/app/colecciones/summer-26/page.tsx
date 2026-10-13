@@ -16,7 +16,7 @@ const config: CollectionConfig = {
   ],
 };
 
-const PATH = '/colecciones/summer-26/';
+const PATH = '/colecciones/summer-26';
 const SEO_DESCRIPTION =
   "Summer '26 de HYPESTYLE: mesh, fileteado y jorts para el verano. Remeras, jorts y pantalones de la colección más caliente.";
 

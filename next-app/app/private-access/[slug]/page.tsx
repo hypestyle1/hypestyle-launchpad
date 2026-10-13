@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic';
 export default async function PrivateProductPage({ params }: { params: { slug: string } }) {
   const { active, session, config } = await readPrivateAccessState();
 
-  if (isPublicOpen(config)) redirect(`/producto/${params.slug}/`);
+  if (isPublicOpen(config)) redirect(`/producto/${params.slug}`);
   if (!active || !session) redirect(gateUrlFor(params.slug));
   if (!PRIVATE_SLUG_RE.test(params.slug)) redirect(PRIVATE_ACCESS_PATH);
 

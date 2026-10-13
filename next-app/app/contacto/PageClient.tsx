@@ -14,7 +14,7 @@ import { MessageCircle, Mail, Sparkles } from "lucide-react";
 const CHANNEL_LINKS = [
   { icon: MessageCircle, href: "https://wa.me/5491178292430" },
   { icon: Mail, href: "mailto:hypestylearg@gmail.com" },
-  { icon: Sparkles, href: "/creadores/" },
+  { icon: Sparkles, href: "/creadores" },
 ];
 
 export default function Contacto() {

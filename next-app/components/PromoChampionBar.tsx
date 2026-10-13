@@ -47,7 +47,7 @@ export default function PromoChampionBar() {
       <Star />
       <span className="hidden sm:block" style={{ color: `${NAVY}40` }}>&middot;</span>
       <Link
-        href="/productos/"
+        href="/productos"
         className="hidden sm:flex items-center gap-1 text-[10px] font-black tracking-[0.14em] uppercase px-3 py-1 border-2 transition-colors duration-150 shrink-0"
         style={{ color: NAVY, borderColor: GOLD }}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = GOLD; (e.currentTarget as HTMLElement).style.color = '#fff'; }}

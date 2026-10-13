@@ -25,7 +25,7 @@ const drops: Drop[] = [
     season: "Colección — Spring Summer 2027",
     description: "Boxy tees, waffle longsleeves y hoodies lavados. La primera parte de la temporada, en producción limitada.",
     image: "ss27/coleccion/hero-duo-grey-hd.webp",
-    href: "/colecciones/ss27/",
+    href: "/colecciones/ss27",
     status: "nuevo",
   },
   {
@@ -33,7 +33,7 @@ const drops: Drop[] = [
     season: "Colección — Fall/Winter 2026",
     description: "Conjuntos HStars, abrigo, polos y las gráficas de Fe. La colección anterior, con precios de cierre.",
     image: "fw26-camo-editorial.webp",
-    href: "/colecciones/fw26/",
+    href: "/colecciones/fw26",
     status: "disponible",
   },
   {
@@ -44,7 +44,7 @@ const drops: Drop[] = [
     // foto anterior era la Honda tee, que no es una básica).
     image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/regular-tees-3pack-black-navy-white.png",
     mockup: true,
-    href: "/colecciones/regular-tees/",
+    href: "/colecciones/regular-tees",
     status: "disponible",
   },
   {
@@ -52,7 +52,7 @@ const drops: Drop[] = [
     season: "Drop — Invierno 2026",
     description: "Streetwear con fe. Hoodies y remeras con gráficos religiosos, corte oversize.",
     image: "newin/faith-christ-reigns-hoodie.webp",
-    href: "/colecciones/faith-is-the-real-hype/",
+    href: "/colecciones/faith-is-the-real-hype",
     status: "disponible",
   },
   {
@@ -60,7 +60,7 @@ const drops: Drop[] = [
     season: "Drop — Agosto 2026",
     description: "Honor y gloria. Las Napoli Tees en azzurro y bianco, filmadas en el potrero de La Boca.",
     image: "napoli-drop-banner.webp",
-    href: "/colecciones/napoli/",
+    href: "/colecciones/napoli",
     status: "disponible",
   },
   {
@@ -68,7 +68,7 @@ const drops: Drop[] = [
     season: "Drop 01 — 2025",
     description: "El primer drop de la era. Gráficos crudos, actitud sin filtro.",
     image: "No Love, Only Style banner.webp",
-    href: "/colecciones/no-love-only-style/",
+    href: "/colecciones/no-love-only-style",
     status: "disponible",
   },
   {
@@ -76,7 +76,7 @@ const drops: Drop[] = [
     season: "Drop — Verano 2026",
     description: "Mesh, fileteado y Jorts para el verano. La temporada más caliente.",
     image: "summer drop banner.webp",
-    href: "/colecciones/summer-26/",
+    href: "/colecciones/summer-26",
     status: "disponible",
   },
   {
@@ -84,7 +84,7 @@ const drops: Drop[] = [
     season: "Drop 02 — 2025",
     description: "Set completo en camo full print. Cargo fit, entretela polar, cremera YKK.",
     image: "stl-look-camo-outdoor.webp",
-    href: "/colecciones/camo-set-drop/",
+    href: "/colecciones/camo-set-drop",
     status: "agotado",
   },
   {
@@ -92,7 +92,7 @@ const drops: Drop[] = [
     season: "Drop 03 — 2025",
     description: "No service for the faithless. Race Tee, Hoodie y accesorios de edición limitada.",
     image: "race drop banner.webp",
-    href: "/colecciones/race/",
+    href: "/colecciones/race",
     status: "disponible",
   },
   {
@@ -100,7 +100,7 @@ const drops: Drop[] = [
     season: "Colab — Diciembre 2025",
     description: "Filete porteño sobre una camiseta de fútbol. El jersey fileteado por Alfredo Genovese, filmado en la cancha de la Villa 31.",
     image: "genovese-drop-banner.webp",
-    href: "/lookbook-genovese/",
+    href: "/lookbook-genovese",
     status: "disponible",
     cta: "Ver lookbook",
   },
@@ -109,7 +109,7 @@ const drops: Drop[] = [
     season: "Shooting — Mayo 2026",
     description: "La colección FW26 puesta, en Rio de Janeiro. Fotos de Fili.",
     image: "fw26-camo-editorial.webp",
-    href: "/lookbook-fw26/",
+    href: "/lookbook-fw26",
     status: "disponible",
     cta: "Ver lookbook",
   },
@@ -118,7 +118,7 @@ const drops: Drop[] = [
     season: "Colab — Octubre 2025",
     description: "Arte inspirado en el universo visual de Mir Nicolás y la cultura urbana japonesa. Tres gráficas, con pop-up en Vorterix.",
     image: "mir-nicolas-drop-banner.webp",
-    href: "/lookbook-mir/",
+    href: "/lookbook-mir",
     status: "agotado",
     cta: "Ver lookbook",
   },
@@ -127,7 +127,7 @@ const drops: Drop[] = [
     season: "Colab — Verano 2025",
     description: "El merch oficial del disco. Tres remeras con Neo Pistea, agotadas: queda el lookbook del shooting.",
     image: "neo-pistea-drop-banner.webp",
-    href: "/lookbook-neo/",
+    href: "/lookbook-neo",
     status: "agotado",
     cta: "Ver lookbook",
   },
@@ -136,7 +136,7 @@ const drops: Drop[] = [
     season: "Colab — Septiembre 2020",
     description: "Cuarenta buzos tie dye, ninguno a la venta: se repartieron entre los streamers y creadores del momento.",
     image: "ferpa-drop-banner.webp",
-    href: "/lookbook-ferpa/",
+    href: "/lookbook-ferpa",
     status: "not for sale",
     cta: "Ver lookbook",
   },
@@ -144,7 +144,7 @@ const drops: Drop[] = [
 
 // Temporada actual (aprobado 12/10): SS27 · FW26 · Esenciales. El resto es
 // Archivo: ninguna URL se elimina, el valor SEO se conserva.
-const ACTUALES = new Set(["/colecciones/ss27/", "/colecciones/fw26/", "/colecciones/regular-tees/"]);
+const ACTUALES = new Set(["/colecciones/ss27", "/colecciones/fw26", "/colecciones/regular-tees"]);
 
 /** Las fotos de los drops pueden ser locales (public/) o del WP (URL completa). */
 const dropSrc = (image: string) => (image.startsWith('http') ? image : `/${image}`);

@@ -23,8 +23,8 @@ const WP = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/'
 // Prendas rebajadas Y con stock al 12/10 — si una se agota o sale del sale,
 // cambiar la foto por otra que cumpla las dos condiciones.
 const SALE_BANDA: { src: string; alt: string; label: string; href: string }[] = [
-  { src: WP + '2026/07/DSC03189-scaled.jpg', alt: 'SweatPant Black HStars en campaña', label: 'SweatPant Black HStars · −10%', href: '/producto/sweatpant-black-hstars/' },
-  { src: WP + '2026/08/hype-marado-DSC03306-scaled.jpg', alt: 'Lamb of God Pink Tee en campaña', label: 'Lamb of God Pink Tee · −10%', href: '/producto/lamb-of-god-pink-tee/' },
+  { src: WP + '2026/07/DSC03189-scaled.jpg', alt: 'SweatPant Black HStars en campaña', label: 'SweatPant Black HStars · −10%', href: '/producto/sweatpant-black-hstars' },
+  { src: WP + '2026/08/hype-marado-DSC03306-scaled.jpg', alt: 'Lamb of God Pink Tee en campaña', label: 'Lamb of God Pink Tee · −10%', href: '/producto/lamb-of-god-pink-tee' },
 ];
 
 const GRID_AIRE = 'grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9';

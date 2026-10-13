@@ -285,7 +285,7 @@ export default function CartDrawer() {
               {/* El carrito vacío es el momento exacto en que alguien no sabe
                   qué llevarse: la gift card resuelve eso. */}
               <a
-                href="/gift-cards/"
+                href="/gift-cards"
                 onClick={() => setDrawerOpen(false)}
                 className="mt-3 text-[12px] text-foreground/50 hover:text-foreground transition-colors"
               >

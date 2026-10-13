@@ -51,7 +51,7 @@ function RioCarousel() {
           style={{ opacity: k === i ? 1 : 0 }}
         />
       ))}
-      <Link href="/lookbook-fw26/" aria-label="Ver el lookbook FW26 en Rio de Janeiro" className="absolute inset-0 z-[1]" />
+      <Link href="/lookbook-fw26" aria-label="Ver el lookbook FW26 en Rio de Janeiro" className="absolute inset-0 z-[1]" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent" />
       <div className="pointer-events-none absolute left-4 bottom-4 md:left-6 md:bottom-6 z-[2] text-white">
         <p className="text-[10px] uppercase tracking-[0.18em] text-white/75 mb-1">Lookbook — Rio de Janeiro</p>
@@ -142,7 +142,7 @@ export default function FW26Page({ initialProducts }: { initialProducts?: Normal
                     images={p.images}
                     sizes={p.sizes}
                     stock={p.stock}
-                    href={`/producto/${p.slug}/`}
+                    href={`/producto/${p.slug}`}
                   />
                 ))}
               </div>

@@ -222,7 +222,7 @@ export default function PendientePago() {
                 </>
               )}
 
-              <button onClick={() => router.push('/checkout/')}
+              <button onClick={() => router.push('/checkout')}
                 className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
                 {isIntl ? 'Change payment method' : 'Cambiar medio de pago'}
               </button>

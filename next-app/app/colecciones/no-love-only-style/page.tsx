@@ -13,7 +13,7 @@ const config: CollectionConfig = {
   ],
 };
 
-const PATH = '/colecciones/no-love-only-style/';
+const PATH = '/colecciones/no-love-only-style';
 const SEO_DESCRIPTION =
   'No Love, Only Style — Drop 01. El primer drop de la era HYPESTYLE: gráficos crudos, actitud sin filtro, producción limitada.';
 

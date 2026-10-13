@@ -877,8 +877,8 @@ export default function Checkout() {
       }
       snapshotAndClear();
       if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
-      else if (isTransfer)            { router.push('/pendiente-de-pago/'); }
-      else                            { router.push('/confirmacion/'); }
+      else if (isTransfer)            { router.push('/pendiente-de-pago'); }
+      else                            { router.push('/confirmacion'); }
     } catch (err) {
       console.error('[checkout] unexpected error:', err);
       setSubmitError('Error inesperado. Revisá la consola del navegador.');

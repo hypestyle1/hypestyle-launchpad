@@ -61,7 +61,7 @@ export default function EsencialesShelf() {
       images={p.images}
       sizes={p.sizes}
       stock={p.stock}
-      href={`/producto/${p.slug}/`}
+      href={`/producto/${p.slug}`}
       mutedPrice
     />
   );
@@ -73,7 +73,7 @@ export default function EsencialesShelf() {
         items={NAV}
         active={active}
         prefix="esen-"
-        cta={{ href: '/colecciones/regular-tees/', label: 'Ver todo' }}
+        cta={{ href: '/colecciones/regular-tees', label: 'Ver todo' }}
         onSelect={onAnchorClick}
       />
 
@@ -82,7 +82,7 @@ export default function EsencialesShelf() {
         <ShelfTitle label="Remeras" count={individuales.length} />
         <div className={GRID}>
           <Link
-            href="/colecciones/regular-tees/"
+            href="/colecciones/regular-tees"
             className="group relative col-span-2 row-span-1 lg:row-span-2 aspect-[4/5] lg:aspect-auto lg:min-h-full overflow-hidden rounded-[4px] bg-bg-alt block"
           >
             <Image

@@ -18,7 +18,7 @@ const slides: Slide[] = [
   {
     imageDesktop: "banner desktop/DSCF6201.jpg",
     imageMobile: "banner desktop/DSCF6203.jpg",
-    href: "/colecciones/camo-set-drop/",
+    href: "/colecciones/camo-set-drop",
     overlayRight: {
       sublabel: "FW26",
       label: "Camo Drop",
@@ -28,17 +28,17 @@ const slides: Slide[] = [
   {
     imageDesktop: "banner desktop/DSCF6201.jpg",
     imageMobile: "banner desktop/IMG_0229.jpg",
-    href: "/productos/",
+    href: "/productos",
   },
   {
     imageDesktop: "banner desktop/DSCF6201.jpg",
     imageMobile: "banner desktop/IMG_5593.jpg",
-    href: "/productos/",
+    href: "/productos",
   },
   {
     imageDesktop: "banner desktop/DSCF6201.jpg",
     imageMobile: "banner desktop/IMG_0043.jpg",
-    href: "/productos/",
+    href: "/productos",
   },
 ];
 
@@ -88,7 +88,7 @@ export default function Hero() {
         <p className="text-[10px] uppercase tracking-[0.22em] text-white/60 mb-3">FW26</p>
         <h2 className="text-[52px] font-bold uppercase text-white leading-none mb-7">Camo Drop</h2>
         <a
-          href="/colecciones/camo-set-drop/"
+          href="/colecciones/camo-set-drop"
           className="pointer-events-auto px-7 py-3 bg-white text-black text-[11px] uppercase tracking-[0.18em] font-medium hover:bg-white/85 transition-colors duration-300"
         >
           Ver colección

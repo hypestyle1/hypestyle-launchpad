@@ -11,7 +11,7 @@ const config: CollectionConfig = {
   groups: MAS_HYPE_GROUPS,
 };
 
-const PATH = '/colecciones/mas-hype/';
+const PATH = '/colecciones/mas-hype';
 const SEO_DESCRIPTION =
   'Más Hype: el resto del catálogo de HYPESTYLE. Piezas únicas, colabs y clásicos que siguen disponibles.';
 

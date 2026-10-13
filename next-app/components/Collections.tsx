@@ -3,10 +3,10 @@
 import { useReveal } from "@/hooks/useReveal";
 
 const collections = [
-  { name: "Tees", href: "/us/tees/", image: "regular tee 1.webp" },
-  { name: "Hoodies", href: "/us/hoodies/", image: "cat-hoodies.webp" },
-  { name: "Sets", href: "/us/sets/", image: "cat-sets.webp" },
-  { name: "Accesorios", href: "/us/accesorios/", image: "cat-accesorios.webp" },
+  { name: "Tees", href: "/us/tees", image: "regular tee 1.webp" },
+  { name: "Hoodies", href: "/us/hoodies", image: "cat-hoodies.webp" },
+  { name: "Sets", href: "/us/sets", image: "cat-sets.webp" },
+  { name: "Accesorios", href: "/us/accesorios", image: "cat-accesorios.webp" },
 ];
 
 export default function Collections() {

@@ -181,7 +181,7 @@ export default function Promo3x2Section() {
         )}
 
         <Link
-          href="/productos/"
+          href="/productos"
           className="group inline-flex items-center gap-3 px-8 py-4 font-black text-[11px] tracking-[0.2em] uppercase transition-all duration-200"
           style={{ background: GOLD, color: '#0d1b3d' }}
           onMouseEnter={e => {

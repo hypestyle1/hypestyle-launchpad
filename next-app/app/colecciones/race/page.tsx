@@ -13,7 +13,7 @@ const config: CollectionConfig = {
   ],
 };
 
-const PATH = '/colecciones/race/';
+const PATH = '/colecciones/race';
 const SEO_DESCRIPTION =
   'Colección Race de HYPESTYLE: motorsport y estética vintage racing. Hoodie y remeras No Service For The Faithless.';
 

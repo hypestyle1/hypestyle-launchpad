@@ -16,7 +16,7 @@ const config: CollectionConfig = {
   ],
 };
 
-const PATH = '/colecciones/pink-set-drop/';
+const PATH = '/colecciones/pink-set-drop';
 const SEO_DESCRIPTION =
   'Pink Set Drop: todo en rosa. Zip hoodie, sweatpant, remeras y jorts de un drop limitado de HYPESTYLE.';
 

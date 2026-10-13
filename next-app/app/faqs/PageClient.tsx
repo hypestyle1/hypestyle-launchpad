@@ -63,7 +63,7 @@ export default function FAQs() {
         <section className="text-center pb-16 px-6">
           <p className="text-[14px] text-muted-foreground mb-6">{c.ctaQuestion}</p>
           <Button asChild variant="hype" size="ctaLg">
-            <a href="/contacto/">{c.ctaButton}</a>
+            <a href="/contacto">{c.ctaButton}</a>
           </Button>
         </section>
 

@@ -3,14 +3,14 @@ import { foto as f, type Lookbook, type Producto } from './types';
 // Faith Is The Real Hype: shooting de julio 2026 en Recoleta (fotos DSC03122–
 // 03322 de la produ de agosto, que también tiene el Napoli en el potrero de
 // La Boca). Todas verticales.
-const WAFFLE: Producto = { producto: 'God Gave Me Style — Waffle Longsleeve', href: '/producto/longsleeve-waffle-god-gave-me-style/' };
-const GREY_SET: Producto = { producto: 'Grey HStars — Hoodie + SweatPant', href: '/producto/hoodie-grey-hstars/' };
-const BLACK_SET: Producto = { producto: 'Black HStars — Hoodie + SweatPant', href: '/producto/hoodie-black-hstars/' };
-const LAMB: Producto = { producto: 'Lamb Of God Pink Tee', href: '/producto/lamb-of-god-pink-tee/' };
-const CHRIST: Producto = { producto: 'Christ Reigns Hoodie', href: '/producto/christ-reigns-hoodie/' };
-const HE_DIED: Producto = { producto: 'He Died So I Could Live — Grey Hoodie', href: '/producto/he-die-so-i-could-live-hoodie/' };
-const NSFTF: Producto = { producto: 'No Service For The Faithless — Hoodie', href: '/producto/no-service-for-the-faithless-hoodie/' };
-const VENEZUELA: Producto = { producto: 'Stars For Venezuela Hoodie', href: '/producto/stars-for-venezuela-hoodie/' };
+const WAFFLE: Producto = { producto: 'God Gave Me Style — Waffle Longsleeve', href: '/producto/longsleeve-waffle-god-gave-me-style' };
+const GREY_SET: Producto = { producto: 'Grey HStars — Hoodie + SweatPant', href: '/producto/hoodie-grey-hstars' };
+const BLACK_SET: Producto = { producto: 'Black HStars — Hoodie + SweatPant', href: '/producto/hoodie-black-hstars' };
+const LAMB: Producto = { producto: 'Lamb Of God Pink Tee', href: '/producto/lamb-of-god-pink-tee' };
+const CHRIST: Producto = { producto: 'Christ Reigns Hoodie', href: '/producto/christ-reigns-hoodie' };
+const HE_DIED: Producto = { producto: 'He Died So I Could Live — Grey Hoodie', href: '/producto/he-die-so-i-could-live-hoodie' };
+const NSFTF: Producto = { producto: 'No Service For The Faithless — Hoodie', href: '/producto/no-service-for-the-faithless-hoodie' };
+const VENEZUELA: Producto = { producto: 'Stars For Venezuela Hoodie', href: '/producto/stars-for-venezuela-hoodie' };
 // Piezas del shooting que no están en el catálogo.
 const KNIT: Producto = { producto: 'Knit Sweater' };
 const HE_DIED_BLACK: Producto = { producto: 'He Died So I Could Live — Black Hoodie' };

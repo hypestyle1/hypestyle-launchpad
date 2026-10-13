@@ -91,7 +91,7 @@ export default function ReviewsHomeSection({ initial }: { initial?: HomeReviewsD
       {!hasReviews && (
         <div className="reveal rd2 flex flex-wrap justify-center gap-3">
           <Button asChild variant="hype" size="cta" className="rounded-[10px]">
-            <Link href="/productos/">Ver productos</Link>
+            <Link href="/productos">Ver productos</Link>
           </Button>
           <Button asChild variant="hypeOutline" size="cta" className="rounded-[10px] border-foreground/30">
             <Link href="/resena">Dejá tu reseña</Link>
@@ -118,7 +118,7 @@ export default function ReviewsHomeSection({ initial }: { initial?: HomeReviewsD
       {hasReviews && (
       <div className="reveal rd3 flex flex-wrap justify-center gap-3 mt-9">
         <Link
-          href="/reviews/"
+          href="/reviews"
           className="inline-block text-[12px] font-bold uppercase tracking-[0.1em] border border-foreground/30 rounded-[10px] px-8 py-3.5 hover:bg-foreground hover:text-white transition-colors"
         >
           Ver todas las reseñas
