@@ -3,6 +3,7 @@ import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { resolveMinOrder, customerMinOrderOverride, MIN_ORDER_UNAVAILABLE_MESSAGE } from '@/lib/mayorista-settings';
 import { parseCredit } from '@/lib/mayorista-credit';
 import { parseBloqueo, mensajeBloqueo } from '@/lib/mayorista-exclusividad';
+import { pagoInfoFromEnv } from '@/lib/mayorista-pago';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -43,6 +44,8 @@ export async function GET(req: NextRequest) {
     envioMetodo: metaVal('mayorista_envio_metodo'),
     envioDestino: metaVal('mayorista_envio_destino'),
     credit: parseCredit(meta).saldo,
+    // Datos para pagar (lib/mayorista-pago.ts): los muestra la confirmación del pedido.
+    pago: pagoInfoFromEnv(),
     // Otro local tiene la exclusividad de su ciudad: el portal lo avisa y el
     // carrito no deja confirmar (el pedido lo rechaza igual en el servidor).
     bloqueoExclusividad: (() => { const b = parseBloqueo(meta); return b ? { ciudad: b.ciudad, mensaje: mensajeBloqueo(b) } : null; })(),

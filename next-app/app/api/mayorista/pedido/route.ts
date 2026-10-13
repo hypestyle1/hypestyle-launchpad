@@ -12,6 +12,7 @@ import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, 
 import { pickRecentOrder, recentOrdersPath, agoLabel } from '@/lib/mayorista-recent-order';
 import { parseBloqueo, mensajeBloqueo } from '@/lib/mayorista-exclusividad';
 import { IDEMPOTENCY_META, isValidIdempotencyKey, ordersWithKey, replayOf, resolveDuplicate } from '@/lib/mayorista-idempotency';
+import { pagoInfoFromEnv, pagoHtml } from '@/lib/mayorista-pago';
 
 // Woo puede tardar cerca de un minuto en crear una orden grande. Si la función
 // se corta antes, la orden queda creada pero el cliente ve un error.
@@ -164,7 +165,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Hype. — Resumen de tu pedido</h2>
-    <p style="font-size:13px">Recibimos tu pedido <b>#${orderNumber}</b>. Te contactamos para coordinar preparación y entrega.</p>
+    <p style="font-size:13px">Recibimos tu pedido <b>#${orderNumber}</b>. Abajo tenés cómo pagarlo; una vez acreditado lo preparamos y te avisamos con el seguimiento.</p>
     <p style="font-size:12px;color:#444">Envío: <b>${envio}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
@@ -176,6 +177,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
       <tbody>${rows}</tbody>
     </table>
     ${totalsHtml(total, credit, campaign)}
+    ${pagoHtml(pagoInfoFromEnv(), orderNumber)}
   </div>`;
 
   await fetch('https://api.brevo.com/v3/smtp/email', {
