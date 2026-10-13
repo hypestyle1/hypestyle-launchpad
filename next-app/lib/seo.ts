@@ -81,6 +81,41 @@ export function canonicalUrl(path: string): string {
   return clean ? `${SITE_URL}/${clean}` : `${SITE_URL}/`;
 }
 
+/**
+ * Hosts de las fotos de producto. Tienen que estar también en
+ * `images.remotePatterns` de next.config.mjs, o /_next/image responde 400.
+ */
+const REMOTE_IMAGE_HOSTS = ['lightpink-rook-704850.hostingersite.com'];
+
+/** Ancho de las imágenes que se le declaran a Google y a las redes. */
+const SHARE_IMAGE_WIDTH = 1200;
+
+/**
+ * URL de imagen que Googlebot puede rastrear, para el JSON-LD y el og:image.
+ *
+ * Las fotos de producto viven en el WordPress de Hostinger, y su robots.txt
+ * tiene `User-agent: Googlebot / Disallow: /`. Con la URL cruda de WP, Google
+ * no puede bajar la imagen del Product y la ficha pierde el resultado
+ * enriquecido y el listado gratuito de Shopping. Pasando por /_next/image la
+ * imagen se sirve desde hypestyle.com.ar, que sí permite el rastreo, y es la
+ * misma caché que ya usan las fichas.
+ *
+ * NO se arregla abriendo el robots.txt de WP: dejaría indexable el frontend de
+ * WordPress entero como un segundo sitio duplicado.
+ */
+export function crawlableImageUrl(src: string): string {
+  if (!src) return src;
+  if (!/^https?:\/\//.test(src)) return `${SITE_URL}/${src.replace(/^\/+/, '')}`;
+  let host: string;
+  try {
+    host = new URL(src).hostname;
+  } catch {
+    return src;
+  }
+  if (!REMOTE_IMAGE_HOSTS.includes(host)) return src;
+  return `${SITE_URL}/_next/image?url=${encodeURIComponent(src)}&w=${SHARE_IMAGE_WIDTH}&q=75`;
+}
+
 interface BuildMetadataArgs {
   /** Sin el sufijo de marca: se agrega salvo que `rawTitle` sea true. */
   title: string;
@@ -118,6 +153,7 @@ export function buildMetadata({
   const url = canonicalUrl(path);
   const fullTitle = rawTitle ? title : `${title}${TITLE_SUFFIX}`;
   const desc = truncate(description);
+  const shareImage = crawlableImageUrl(image);
 
   return {
     title: fullTitle,
@@ -131,13 +167,13 @@ export function buildMetadata({
       siteName: SITE_NAME,
       locale: 'es_AR',
       type,
-      images: [{ url: image, alt: imageAlt }],
+      images: [{ url: shareImage, alt: imageAlt }],
     },
     twitter: {
       card: 'summary_large_image',
       title: fullTitle,
       description: desc,
-      images: [image],
+      images: [shareImage],
     },
   };
 }
