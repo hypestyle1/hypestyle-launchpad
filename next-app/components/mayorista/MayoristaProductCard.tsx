@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { imgSrc } from '@/lib/img';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
-import { sizeLevel, stockKey, type MayoristaProduct } from '@/lib/mayorista-products';
+import { sizeLevel, stockKey, canOrder, isPurchasable, isUnconfirmed, type MayoristaProduct } from '@/lib/mayorista-products';
 import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
 
 export default function MayoristaProductCard({ product }: { product: MayoristaProduct }) {
@@ -16,6 +16,12 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
   const [imgIndex, setImgIndex] = useState(0);
 
   const outOfStock = product.sizes.every(s => sizeLevel(product, s) === 'out');
+  // Próximamente: se muestra, no se pide. Sin confirmar: ningún talle con
+  // cantidad cargada en Woo (lib/mayorista-products.ts), tampoco se pide.
+  const comingSoon = product.comingSoon;
+  const unconfirmed = !comingSoon && isUnconfirmed(product);
+  const purchasable = isPurchasable(product);
+  const blockedLabel = comingSoon ? 'Próximamente' : outOfStock ? 'Sin stock' : 'Stock sin confirmar';
   const images = product.images.length ? product.images : [product.image];
   const hasMultiple = images.length > 1;
   // Con más de un color el talle solo no alcanza para armar la línea del
@@ -28,7 +34,7 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
 
   function handleAdd(size: string, e: React.MouseEvent) {
     e.preventDefault();
-    if (hasColors || product.stock[stockKey(product, size, singleColor)] === 'out') return;
+    if (hasColors || !canOrder(product, product.stock[stockKey(product, size, singleColor)])) return;
     // El precio del carrito es orientativo (promo si hay campaña): el
     // servidor lo recalcula al confirmar.
     add({ slug: product.slug, name: product.name, price: product.promo?.price ?? product.wholesalePrice, image: product.image, size, ...(singleColor ? { color: singleColor } : {}), quantity: 1 });
@@ -60,9 +66,17 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
             className="object-cover object-top"
           />
         )}
-        {outOfStock ? (
+        {comingSoon ? (
+          <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-background/90 text-foreground border border-border">
+            Próximamente
+          </span>
+        ) : outOfStock ? (
           <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-foreground text-background">
             Sin stock
+          </span>
+        ) : unconfirmed ? (
+          <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-background/90 text-foreground border border-dashed border-foreground/40">
+            Stock sin confirmar
           </span>
         ) : product.promo ? (
           <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-sale text-sale-foreground">
@@ -122,15 +136,15 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
           </div>
         )}
 
-        {hasColors ? (
+        {!purchasable ? (
+          <span className="mt-2 block w-full text-center py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] bg-bg-alt text-text-light/70">
+            {blockedLabel}
+          </span>
+        ) : hasColors ? (
           <>
             <p className="mt-2 text-[11px] text-text-light">{product.colors.join(' · ')}</p>
-            <span
-              className={`mt-2 block w-full text-center py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] transition-colors ${
-                outOfStock ? 'bg-bg-alt text-text-light/60' : 'bg-bg-dark text-primary-foreground group-hover:bg-bg-dark/85'
-              }`}
-            >
-              {outOfStock ? 'Sin stock' : 'Elegir color y talle'}
+            <span className="mt-2 block w-full text-center py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] transition-colors bg-bg-dark text-primary-foreground group-hover:bg-bg-dark/85">
+              Elegir color y talle
             </span>
           </>
         ) : singleSize ? (
@@ -142,29 +156,28 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
             )}
             <button
               onClick={(e) => handleAdd(product.sizes[0], e)}
-              disabled={outOfStock}
-              className={`mt-2 w-full py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] transition-colors ${
-                outOfStock ? 'bg-bg-alt text-text-light/60 cursor-not-allowed' :
-                added === product.sizes[0] ? 'bg-bg-dark text-primary-foreground' :
-                'bg-bg-dark text-primary-foreground hover:bg-bg-dark/85'
-              }`}
+              className="mt-2 w-full py-1.5 text-[11px] font-semibold uppercase tracking-wide rounded-[6px] transition-colors bg-bg-dark text-primary-foreground hover:bg-bg-dark/85"
             >
-              {added === product.sizes[0] ? '✓ Agregado' : outOfStock ? 'Sin stock' : '+ Agregar'}
+              {added === product.sizes[0] ? '✓ Agregado' : '+ Agregar'}
             </button>
           </>
         ) : (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {product.sizes.map((size) => {
-              const isOut = sizeLevel(product, size) === 'out';
-              const isLow = sizeLevel(product, size) === 'low';
+              const level = sizeLevel(product, size);
+              const isOut = level === 'out';
+              const isUnconfirmed = level === 'unconfirmed';
+              const isLow = level === 'low';
               const qty = product.stockQty[stockKey(product, size, singleColor)];
               return (
                 <button
                   key={size}
                   onClick={(e) => handleAdd(size, e)}
-                  disabled={isOut}
+                  disabled={isOut || isUnconfirmed}
+                  title={isUnconfirmed ? 'Stock sin confirmar' : undefined}
                   className={`min-w-[28px] px-1.5 py-1 text-[11px] rounded-[6px] border transition-colors flex flex-col items-center leading-tight ${
                     isOut ? 'border-border text-text-light/60 line-through cursor-not-allowed' :
+                    isUnconfirmed ? 'border-dashed border-border text-text-light/60 cursor-not-allowed' :
                     added === size ? 'border-bg-dark bg-bg-dark text-primary-foreground' :
                     isLow ? 'border-orange-400/60 text-orange-600 hover:border-orange-500' :
                     'border-border-mid text-foreground/70 hover:border-foreground'

@@ -6,8 +6,9 @@ import Image from 'next/image';
 import { imgSrc } from '@/lib/img';
 import { formatArs } from '@/lib/mayorista-format';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
-import { stockKey, type MayoristaProduct } from '@/lib/mayorista-products';
+import { stockKey, canOrder, isPurchasable, type MayoristaProduct } from '@/lib/mayorista-products';
 import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
+import { WHATSAPP_URL } from '@/lib/mayorista-copy';
 
 export default function MayoristaProductDetail({ product }: { product: MayoristaProduct }) {
   const router = useRouter();
@@ -22,14 +23,26 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
   const keyFor = (s: string) => stockKey(product, s, color);
   const selectedStock = size && !needsColor ? product.stock[keyFor(size)] : null;
   const selectedQty = size && !needsColor ? product.stockQty[keyFor(size)] : null;
+  // Próximamente / sin stock confirmado: se ve, no se pide (lib/mayorista-products.ts).
+  const comingSoon = product.comingSoon;
+  const purchasable = isPurchasable(product);
+  const canAdd = !!size && !needsColor && canOrder(product, selectedStock ?? undefined);
 
   function handleAdd() {
-    if (!size || needsColor || selectedStock === 'out') return;
+    if (!size || !canAdd) return;
     // Precio orientativo (promo si hay campaña): el servidor lo recalcula al confirmar.
     add({ slug: product.slug, name: product.name, price: product.promo?.price ?? product.wholesalePrice, image: product.image, size, ...(color ? { color } : {}), quantity: 1 });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }
+
+  const buttonLabel = added ? '✓ Agregado al pedido'
+    : comingSoon ? 'Próximamente'
+    : needsColor ? 'Elegí un color'
+    : !size ? 'Elegí un talle'
+    : selectedStock === 'out' ? 'Sin stock'
+    : selectedStock === 'unconfirmed' ? 'Stock sin confirmar'
+    : 'Agregar al pedido';
 
   return (
     <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6">
@@ -47,7 +60,11 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
         <div>
           <div className="flex items-center gap-2.5">
             <p className="text-[11px] uppercase tracking-[0.2em] text-text-light">{product.category}</p>
-            {product.drop && (
+            {comingSoon ? (
+              <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] border border-border text-foreground">
+                Próximamente
+              </span>
+            ) : product.drop && (
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-bg-dark text-primary-foreground">
                 <span className="w-1.5 h-1.5 rounded-full bg-[hsl(142,70%,55%)]" aria-hidden />
                 Nuevo drop
@@ -80,7 +97,21 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
             </div>
           )}
 
-          {hasColors && (
+          {comingSoon ? (
+            <div role="status" className="mt-6 rounded-[12px] border border-border p-4 text-[13px]">
+              <p className="font-semibold">Todavía no se puede pedir.</p>
+              <p className="text-text-light mt-1">Lo mostramos para que lo tengas en el radar: te avisamos cuando se abra el pedido.</p>
+            </div>
+          ) : !purchasable && (
+            <div role="status" className="mt-6 rounded-[12px] border border-dashed border-foreground/40 p-4 text-[13px]">
+              <p className="font-semibold">Stock sin confirmar.</p>
+              <p className="text-text-light mt-1">Este modelo todavía no tiene la cantidad cargada en depósito, así que por ahora no se puede pedir.{' '}
+                <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="underline text-foreground">Consultanos por WhatsApp</a>.
+              </p>
+            </div>
+          )}
+
+          {hasColors && !comingSoon && (
             <div className="mt-6">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
                 Color{color && <span className="normal-case tracking-normal text-foreground"> — {color}</span>}
@@ -91,8 +122,8 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
                     key={c}
                     onClick={() => {
                       setColor(c);
-                      // Con stock por color, el talle elegido puede no existir en el nuevo color.
-                      if (product.colorAxis && size && product.stock[stockKey(product, size, c)] === 'out') setSize(null);
+                      // Con stock por color, el talle elegido puede no existir (o no poder pedirse) en el nuevo color.
+                      if (product.colorAxis && size && !canOrder(product, product.stock[stockKey(product, size, c)])) setSize(null);
                     }}
                     className={`px-3 py-2 text-[13px] rounded-[8px] border transition-colors ${
                       color === c ? 'bg-bg-dark text-primary-foreground border-bg-dark' : 'border-border-mid text-foreground/80 hover:border-foreground'
@@ -105,49 +136,59 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
             </div>
           )}
 
-          <div className="mt-6">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Talle</p>
-            <div className={`flex flex-wrap gap-2 ${needsColor ? 'opacity-50' : ''}`}>
-              {product.sizes.map((s) => {
-                const isOut = !needsColor && product.stock[keyFor(s)] === 'out';
-                const isLow = !needsColor && product.stock[keyFor(s)] === 'low';
-                const qty = needsColor ? null : product.stockQty[keyFor(s)];
-                return (
-                  <button
-                    key={s}
-                    onClick={() => !isOut && !needsColor && setSize(s)}
-                    disabled={isOut || needsColor}
-                    className={`min-w-[44px] px-3 py-2 text-[13px] rounded-[8px] border transition-colors ${
-                      isOut ? 'border-border text-text-light/60 line-through cursor-not-allowed' :
-                      size === s ? 'bg-bg-dark text-primary-foreground border-bg-dark' :
-                      isLow ? 'border-orange-400/60 text-orange-600 hover:border-orange-500' :
-                      'border-border-mid text-foreground/80 hover:border-foreground'
-                    }`}
-                  >
-                    {s}
-                    {isLow && qty != null && <span className="block text-[9px] mt-0.5">¡{qty}!</span>}
-                  </button>
-                );
-              })}
+          {!comingSoon && (
+            <div className="mt-6">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Talle</p>
+              <div className={`flex flex-wrap gap-2 ${needsColor ? 'opacity-50' : ''}`}>
+                {product.sizes.map((s) => {
+                  const level = needsColor ? null : product.stock[keyFor(s)];
+                  const isOut = level === 'out';
+                  const isUnconfirmed = level === 'unconfirmed';
+                  const isLow = level === 'low';
+                  const qty = needsColor ? null : product.stockQty[keyFor(s)];
+                  const blocked = isOut || isUnconfirmed || needsColor;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => !blocked && setSize(s)}
+                      disabled={blocked}
+                      title={isUnconfirmed ? 'Stock sin confirmar' : undefined}
+                      className={`min-w-[44px] px-3 py-2 text-[13px] rounded-[8px] border transition-colors ${
+                        isOut ? 'border-border text-text-light/60 line-through cursor-not-allowed' :
+                        isUnconfirmed ? 'border-dashed border-border text-text-light/60 cursor-not-allowed' :
+                        size === s ? 'bg-bg-dark text-primary-foreground border-bg-dark' :
+                        isLow ? 'border-orange-400/60 text-orange-600 hover:border-orange-500' :
+                        'border-border-mid text-foreground/80 hover:border-foreground'
+                      }`}
+                    >
+                      {s}
+                      {isLow && qty != null && <span className="block text-[9px] mt-0.5">¡{qty}!</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              {needsColor && (
+                <p className="mt-2 text-[12px] text-text-light">Elegí el color para ver los talles.</p>
+              )}
+              {size && selectedStock === 'low' && selectedQty != null && (
+                <p className="mt-2 text-[12px] font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-[6px] px-2.5 py-1.5 inline-block">
+                  ⚠ Últimas {selectedQty} unidades en talle {size}
+                </p>
+              )}
+              {purchasable && product.sizes.some(s => !needsColor && product.stock[keyFor(s)] === 'unconfirmed') && (
+                <p className="mt-2 text-[12px] text-text-light">Los talles punteados no tienen stock confirmado todavía.</p>
+              )}
             </div>
-            {needsColor && (
-              <p className="mt-2 text-[12px] text-text-light">Elegí el color para ver los talles.</p>
-            )}
-            {size && selectedStock === 'low' && selectedQty != null && (
-              <p className="mt-2 text-[12px] font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-[6px] px-2.5 py-1.5 inline-block">
-                ⚠ Últimas {selectedQty} unidades en talle {size}
-              </p>
-            )}
-          </div>
+          )}
 
           <button
             onClick={handleAdd}
-            disabled={!size || needsColor || selectedStock === 'out'}
+            disabled={!canAdd}
             className={`mt-8 w-full py-3 text-[12px] font-semibold uppercase tracking-wide rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               added ? 'bg-bg-dark/80 text-primary-foreground' : 'bg-bg-dark text-primary-foreground hover:bg-bg-dark/85'
             }`}
           >
-            {added ? '✓ Agregado al pedido' : needsColor ? 'Elegí un color' : !size ? 'Elegí un talle' : selectedStock === 'out' ? 'Sin stock' : 'Agregar al pedido'}
+            {buttonLabel}
           </button>
         </div>
       </div>
