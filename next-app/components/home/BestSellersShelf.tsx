@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
 import CollectionIndex from '@/components/collection/CollectionIndex';
 import { useScrollSpy } from '@/components/collection/useScrollSpy';
@@ -39,6 +39,8 @@ const GRUPOS: { id: string; label: string; slugs: string[] }[] = [
       'hypestation-white-tee',                // 18u
       'hypestation-black-tee',                // 16u
       'skyline-tee',                          // 8u
+      'race-tee',                             // 7u
+      'knitted-tshirt-sand',                  // 3u
     ],
   },
   {
@@ -125,9 +127,66 @@ const GRUPOS: { id: string; label: string; slugs: string[] }[] = [
   },
 ];
 
-// Densa a pedido: 3 col mobile / 5 desktop. Cada grupo trae 5 productos, así
-// la fila de desktop cierra exacta; en mobile quedan 2 filas (3+2).
-const GRID = 'grid grid-cols-3 lg:grid-cols-5 gap-x-1.5 md:gap-x-2.5 gap-y-5 lg:gap-y-7';
+// Una sola fila deslizable por grupo (pedido 12/10): en mobile se ven ~3
+// cards y en desktop ~5, y el resto se descubre deslizando. El bleed -mx/px
+// hace que la fila corte en el borde de la pantalla, como los carruseles de
+// la home. Cards en modo `dense` para que badge y precios no se pisen.
+const ROW = 'flex gap-x-1.5 md:gap-x-2.5 overflow-x-auto no-scrollbar snap-x -mx-4 px-4 md:-mx-6 md:px-6';
+const CELL = 'flex-none snap-start w-[31%] md:w-[23%] lg:w-[18.5%]';
+
+const enStock = (p: NormalizedProduct) => Object.values(p.stock).some((s) => s !== 'out');
+
+const ARROW =
+  'hidden lg:flex absolute top-[38%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm ' +
+  'border border-border shadow-[0_2px_12px_rgba(0,0,0,0.12)] items-center justify-center text-foreground ' +
+  'hover:bg-white transition-colors';
+
+/**
+ * Fila horizontal con flechas en desktop (pedido 13/10: con mouse no había
+ * forma visible de deslizar). En mobile/touch siguen el swipe y el snap; las
+ * flechas aparecen solo cuando hay más contenido hacia ese lado.
+ */
+function FilaDeslizable({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canIzq, setCanIzq] = useState(false);
+  const [canDer, setCanDer] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      setCanIzq(el.scrollLeft > 4);
+      setCanDer(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro.disconnect();
+    };
+  }, []);
+
+  const mover = (dir: number) =>
+    ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.8, behavior: 'smooth' });
+
+  return (
+    <div className="relative">
+      <div ref={ref} className={ROW}>{children}</div>
+      {canIzq && (
+        <button onClick={() => mover(-1)} aria-label="Anterior" className={`${ARROW} left-0`}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M10 3L5 8l5 5" /></svg>
+        </button>
+      )}
+      {canDer && (
+        <button onClick={() => mover(1)} aria-label="Siguiente" className={`${ARROW} right-0`}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 3l5 5-5 5" /></svg>
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function BestSellersShelf() {
   const { data: allProducts = [] } = useProducts(0);
@@ -135,10 +194,11 @@ export default function BestSellersShelf() {
 
   const grupos = useMemo(() => {
     const bySlug = new Map(allProducts.map((p) => [p.slug, p]));
-    return GRUPOS.map((g) => ({
-      ...g,
-      items: g.slugs.map((s) => bySlug.get(s)).filter(Boolean) as NormalizedProduct[],
-    })).filter((g) => g.items.length > 0);
+    return GRUPOS.map((g) => {
+      const items = g.slugs.map((s) => bySlug.get(s)).filter(Boolean) as NormalizedProduct[];
+      // Lo agotado va al fondo de la fila: primero lo que se puede comprar.
+      return { ...g, items: [...items.filter(enStock), ...items.filter((p) => !enStock(p))] };
+    }).filter((g) => g.items.length > 0);
   }, [allProducts]);
 
   if (grupos.length === 0) return null;
@@ -159,11 +219,13 @@ export default function BestSellersShelf() {
             <h3 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">{g.label}</h3>
             <span className="text-[12px] md:text-[13px] text-muted-foreground tabular-nums">{g.items.length}</span>
           </div>
-          <div className={GRID}>
+          <FilaDeslizable>
             {g.items.map((p) => (
-              <ProductCard key={p.slug} {...p} />
+              <div key={p.slug} className={CELL}>
+                <ProductCard {...p} dense />
+              </div>
             ))}
-          </div>
+          </FilaDeslizable>
         </div>
       ))}
     </section>

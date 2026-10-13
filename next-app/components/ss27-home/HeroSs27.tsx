@@ -51,6 +51,33 @@ export default function HeroSs27() {
   );
 }
 
+/**
+ * Flechita de scroll del hero mobile (12/10: "la gente no navegaba"): SCROLL +
+ * chevron que rebota, se desvanece al primer scroll y al tocarla baja un
+ * viewport. El desktop ya tenía la suya.
+ */
+function ScrollCue() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return (
+    <button
+      onClick={() => window.scrollBy({ top: window.innerHeight * 0.9, behavior: 'smooth' })}
+      aria-label="Scroll hacia abajo"
+      className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5
+                  text-white/85 transition-opacity duration-500 ${scrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+    >
+      <span className="text-[9px] uppercase tracking-[0.22em] font-medium [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">Scroll</span>
+      <svg className="animate-bounce" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.5))' }}>
+        <path d="M3 6l5 5 5-5" />
+      </svg>
+    </button>
+  );
+}
+
 function HeroMobile() {
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -70,32 +97,12 @@ function HeroMobile() {
   }, []);
 
   return (
-    <section className="md:hidden relative w-full h-[calc(100svh-var(--offset))] min-h-[560px] max-h-[980px] overflow-hidden bg-bg-dark text-white">
+    // Sin overflow-hidden en la sección: el S&C es sticky y el clip de un
+    // ancestro lo anularía (la media se recorta en el box de adentro).
+    <section className="md:hidden relative w-full h-[calc(100svh-var(--offset))] min-h-[560px] max-h-[980px] bg-bg-dark text-white">
       <div ref={boxRef} className="absolute inset-0 overflow-hidden">
         <MediaFill media={ESTUDIO} sizes="100vw" priority />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/45" />
-
-        {/* Marca al centro + bajada en dos puntas. */}
-        <div className="absolute inset-0 flex items-center justify-center px-5 pointer-events-none">
-          <div className="w-full max-w-[88vw]">
-            <Image
-              src="/STYLE&CULTURE WHITE.png"
-              alt="Style & Culture"
-              data-intro-target
-              width={1778}
-              height={113}
-              priority
-              // Ocupa el 88 % del ancho en mobile. Sin sizes, next/image pedía el
-              // ancho intrínseco (w=3840) para un logo de ~350 px.
-              sizes="88vw"
-              className="w-full h-auto [filter:drop-shadow(0_2px_24px_rgba(0,0,0,0.35))]"
-            />
-            <div className="mt-3 flex justify-between text-[13px] font-semibold tracking-[-0.01em] [text-shadow:0_1px_12px_rgba(0,0,0,0.35)]">
-              <span>Part 01</span>
-              <span>Spring Summer 27</span>
-            </div>
-          </div>
-        </div>
 
         {/* Kicker + botón liquid glass con contorno metálico. Bien arriba del borde: abajo flotan el badge de
             reseñas, el WhatsApp y el botón de accesibilidad. */}
@@ -106,6 +113,32 @@ function HeroMobile() {
           </LiquidButton>
         </div>
       </div>
+
+      {/* Marca al centro + bajada en dos puntas — STICKY (12/10): al scrollear
+          sube con la página, se clava justo debajo del navbar y la sección
+          siguiente se la lleva (mismo handoff que el índice de colección). */}
+      <div className="relative h-full flex flex-col justify-center px-5 pointer-events-none">
+        <div className="sticky top-[calc(var(--offset)+10px)] w-full max-w-[88vw] mx-auto">
+          <Image
+            src="/STYLE&CULTURE WHITE.png"
+            alt="Style & Culture"
+            data-intro-target
+            width={1778}
+            height={113}
+            priority
+            // Ocupa el 88 % del ancho en mobile. Sin sizes, next/image pedía el
+            // ancho intrínseco (w=3840) para un logo de ~350 px.
+            sizes="88vw"
+            className="w-full h-auto [filter:drop-shadow(0_2px_24px_rgba(0,0,0,0.35))]"
+          />
+          <div className="mt-3 flex justify-between text-[13px] font-semibold tracking-[-0.01em] [text-shadow:0_1px_12px_rgba(0,0,0,0.35)]">
+            <span>Part 01</span>
+            <span>Spring Summer 27</span>
+          </div>
+        </div>
+      </div>
+
+      <ScrollCue />
     </section>
   );
 }
