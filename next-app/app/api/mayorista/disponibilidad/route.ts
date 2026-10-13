@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
-import { resolveProducts, findUnavailable, type StockLine } from '@/lib/mayorista-stock';
+import { resolveProducts, findUnavailable, findVariation, type StockLine, type ResolvedProduct } from '@/lib/mayorista-stock';
 import { priceLines } from '@/lib/mayorista-pricing';
 import { applyCampaign } from '@/lib/wholesale-campaigns';
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
@@ -20,6 +20,13 @@ import { mayoristaDropTag } from '@/lib/mayorista-drop-server';
 // calculado en el servidor, para que un carrito o borrador viejo se actualice
 // solo. El precio que guarda el carrito nunca se cobra: /api/mayorista/pedido
 // vuelve a calcularlo.
+function availableOf(resolved: ResolvedProduct | null | undefined, line: StockLine): number | null {
+  if (!resolved) return null;
+  const v = findVariation(resolved, line);
+  const src = v && v.stock.manageStock === true ? v.stock : resolved.stock;
+  return src.manageStock === true && typeof src.stockQuantity === 'number' ? src.stockQuantity : null;
+}
+
 export async function POST(req: NextRequest) {
   const customerId = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
   if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
@@ -54,6 +61,9 @@ export async function POST(req: NextRequest) {
       prices: priced.lines.map(l => ({
         slug: l.slug, size: l.size, ...(l.color ? { color: l.color } : {}),
         unitPrice: l.unitPrice, wsRegular: l.wsRegular,
+        // Unidades disponibles de esta combinación hoy (null = sin cantidad
+        // gestionada): el carrito no deja pasar el "+" de ahí.
+        available: availableOf(resolved.get(l.slug), l),
         ...(l.campaign ? { campaign: { id: l.campaign.campaignId, name: l.campaign.campaignName, group: l.campaign.group, discount: l.campaign.discount, badge: l.campaign.badge } } : {}),
       })),
     });

@@ -11,10 +11,19 @@ import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/
 import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
 import { pickRecentOrder, recentOrdersPath, agoLabel } from '@/lib/mayorista-recent-order';
 import { parseBloqueo, mensajeBloqueo } from '@/lib/mayorista-exclusividad';
+import { rateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Woo puede tardar cerca de un minuto en crear una orden grande. Si la función
 // se corta antes, la orden queda creada pero el cliente ve un error.
 export const maxDuration = 300;
+
+// Tope de líneas por pedido: el mismo que drafts y disponibilidad. Un pedido
+// real grande anda por las 40-50 líneas.
+const MAX_ITEMS = 200;
+
+// Todo lo que viene del navegador (nombres, talle, color, dirección) entra en
+// HTML de mail: se escapa. Antes un cliente podía meter HTML en el mail del admin.
+const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
@@ -38,7 +47,7 @@ interface PedidoItem {
 
 // Celda "Talle" de los mails: talle y, si lo hay, color.
 function sizeLabel(it: PedidoItem): string {
-  return it.color ? `${it.size} · ${it.color}` : it.size;
+  return esc(it.color ? `${it.size} · ${it.color}` : it.size);
 }
 
 // Celda "Precio" de los mails: con campaña, el mayorista normal tachado y el
@@ -113,7 +122,7 @@ type CampaignSummary = { id: string; name: string; discountTotal: number } | nul
 async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, credit: number, orderNumber: string, campaign: CampaignSummary) {
   if (!BREVO_API_KEY) return;
   const rows = items.map(it => `<tr>
-    <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${esc(it.name)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${sizeLabel(it)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${priceCell(it)}</td>
@@ -121,9 +130,9 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Pedido mayorista — Hype.</h2>
-    <p style="font-size:13px">Cliente: <b>${label}</b> — DNI ${shipping.dni}</p>
-    <p style="font-size:12px;color:#444">${shipping.address_1}, ${shipping.city} ${shipping.state ?? ''} — ${shipping.phone}</p>
-    <p style="font-size:12px;color:#444">Envío: <b>${envioResumen(envioDe(shipping).metodo, envioDe(shipping).destino)}</b></p>
+    <p style="font-size:13px">Cliente: <b>${esc(label)}</b> — DNI ${esc(shipping.dni)}</p>
+    <p style="font-size:12px;color:#444">${esc(shipping.address_1)}, ${esc(shipping.city)} ${esc(shipping.state ?? '')} — ${esc(shipping.phone)}</p>
+    <p style="font-size:12px;color:#444">Envío: <b>${esc(envioResumen(envioDe(shipping).metodo, envioDe(shipping).destino))}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
         <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
@@ -155,7 +164,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string, envio: string, campaign: CampaignSummary) {
   if (!BREVO_API_KEY || !toEmail) return;
   const rows = items.map(it => `<tr>
-    <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${esc(it.name)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${sizeLabel(it)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${priceCell(it)}</td>
@@ -163,8 +172,8 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Hype. — Resumen de tu pedido</h2>
-    <p style="font-size:13px">Recibimos tu pedido <b>#${orderNumber}</b>. Te contactamos para coordinar preparación y entrega.</p>
-    <p style="font-size:12px;color:#444">Envío: <b>${envio}</b></p>
+    <p style="font-size:13px">Recibimos tu pedido <b>#${esc(orderNumber)}</b>. Te contactamos para coordinar preparación y entrega.</p>
+    <p style="font-size:12px;color:#444">Envío: <b>${esc(envio)}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
         <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
@@ -207,10 +216,17 @@ export async function POST(req: NextRequest) {
   const customerId = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
   if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
 
+  // Tope por cuenta (no por IP: varias cuentas pueden salir por la misma red).
+  const limited = rateLimited(req, RATE_LIMITS.pedido, String(customerId), 'Demasiados envíos seguidos. Esperá un momento; si ya confirmaste, revisá "Mis pedidos".');
+  if (limited) return limited;
+
   try {
     const { items: rawItems, shipping, confirmPrices, confirmDuplicate } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo; confirmPrices?: boolean; confirmDuplicate?: boolean };
     if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
+    }
+    if (rawItems.length > MAX_ITEMS) {
+      return NextResponse.json({ message: `El pedido tiene demasiadas líneas (máximo ${MAX_ITEMS}). Dividilo en dos.` }, { status: 400 });
     }
     if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone || !shipping?.dni) {
       return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
@@ -423,38 +439,58 @@ export async function POST(req: NextRequest) {
       ],
     };
 
-    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
-      method: 'POST',
+    // Saldo a favor: se descuenta ANTES de crear la orden y se repone si la
+    // creación falla con un error claro. Antes se descontaba después, y dos
+    // pedidos cercanos podían usar el mismo saldo dos veces (o un fallo del
+    // PUT dejaba la orden con el crédito aplicado y el saldo intacto).
+    const putCredit = (state: ReturnType<typeof addMovement>) => fetch(`${WP_URL}/wp-json/wc/v3/customers/${customerId}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-      body: JSON.stringify(order),
-    });
+      body: JSON.stringify({ meta_data: [creditMetaEntry(state)] }),
+    }).catch(() => null);
+    if (creditUsed) {
+      const next = addMovement(credit, { fecha: new Date().toISOString(), monto: -creditUsed, motivo: 'Aplicado a pedido' });
+      const upd = await putCredit(next);
+      if (!upd?.ok) {
+        console.error(`[mayorista/pedido] no se pudo reservar el saldo a favor (${creditUsed}) del cliente ${customerId}: ${upd?.status ?? 'sin respuesta'}`);
+        return NextResponse.json({ message: 'No pudimos aplicar tu saldo a favor. Esperá unos segundos e intentá de nuevo.' }, { status: 502 });
+      }
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+        body: JSON.stringify(order),
+      });
+    } catch (err) {
+      // Sin respuesta: la orden pudo haberse creado igual, así que el saldo NO
+      // se repone (quedaría aplicado dos veces si entró). El carrito verifica.
+      console.error('[mayorista/pedido] sin respuesta de WC al crear:', err);
+      return NextResponse.json({ message: 'Error al crear el pedido. Tu pedido sigue cargado: esperá unos segundos e intentá de nuevo.', maybeCreated: true }, { status: 502 });
+    }
 
     if (!res.ok) {
       const txt = await res.text();
       console.error('[mayorista/pedido] WC error:', res.status, txt);
-      // Un 5xx de WP no garantiza que la orden no se haya creado: el carrito
-      // lo verifica antes de ofrecer el reintento.
+      // Un 4xx es un rechazo claro: la orden no existe, el saldo vuelve. Un
+      // 5xx no garantiza que no se haya creado: el carrito lo verifica antes
+      // de ofrecer el reintento, y el saldo se deja como está.
+      if (creditUsed && res.status < 500) {
+        const back = await putCredit(credit);
+        if (!back?.ok) console.error(`[mayorista/pedido] la orden no se creó (${res.status}) y no se pudo reponer el saldo (${creditUsed}) del cliente ${customerId}: corregir a mano`);
+      }
       return NextResponse.json({ message: `Error de WooCommerce (${res.status})`, ...(res.status >= 500 ? { maybeCreated: true } : {}) }, { status: 502 });
     }
 
     const wcOrder = await res.json() as { id: number; number: string };
 
-    // Con la orden ya creada, se descuenta el saldo usado. Si falla, la orden
-    // queda igual (el crédito ya se aplicó en ella) y se avisa en el log para
-    // corregir el saldo a mano.
+    // El movimiento ya quedó descontado; se le agrega el número de orden.
     if (creditUsed) {
-      const next = addMovement(credit, {
-        fecha: new Date().toISOString(),
-        monto: -creditUsed,
-        motivo: 'Aplicado a pedido',
-        orden: String(wcOrder.number),
-      });
-      const upd = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${customerId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-        body: JSON.stringify({ meta_data: [creditMetaEntry(next)] }),
-      }).catch(() => null);
-      if (!upd?.ok) console.error(`[mayorista/pedido] orden #${wcOrder.number} usó ${creditUsed} de saldo pero no se pudo descontar del cliente ${customerId}`);
+      const withOrder = addMovement(credit, { fecha: new Date().toISOString(), monto: -creditUsed, motivo: 'Aplicado a pedido', orden: String(wcOrder.number) });
+      const upd = await putCredit(withOrder);
+      if (!upd?.ok) console.error(`[mayorista/pedido] orden #${wcOrder.number}: el saldo quedó descontado pero sin el número de orden en el movimiento`);
     }
 
     await Promise.all([

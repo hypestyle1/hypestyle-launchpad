@@ -22,7 +22,8 @@ const VERIFY_INTERVAL_MS = 8000;
 
 // Precio normal y campaña por línea, según lo que devolvió el servidor
 // (/api/mayorista/disponibilidad). El carrito guarda solo el precio vigente.
-type LineInfo = { wsRegular: number; campaign?: { id: string; name: string; group: string; discount: number; badge: string } };
+// `available`: unidades de esa combinación hoy (null = sin cantidad gestionada); el "+" no pasa de ahí.
+type LineInfo = { wsRegular: number; available?: number | null; campaign?: { id: string; name: string; group: string; discount: number; badge: string } };
 
 function csvEscape(value: string | number): string {
   const s = String(value ?? '');
@@ -196,9 +197,9 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
       if (!res.ok) return candidate; // si no se pudo verificar, el pedido igual se frena al confirmar
       const data = await res.json() as {
         unavailable: { slug: string; size: string; color?: string; reason: string; available?: number; message: string }[];
-        prices?: { slug: string; size: string; color?: string; unitPrice: number; wsRegular?: number; campaign?: LineInfo['campaign'] }[];
+        prices?: { slug: string; size: string; color?: string; unitPrice: number; wsRegular?: number; available?: number | null; campaign?: LineInfo['campaign'] }[];
       };
-      setLineInfo(Object.fromEntries((data.prices ?? []).map(p => [lineKey(p), { wsRegular: p.wsRegular ?? p.unitPrice, ...(p.campaign ? { campaign: p.campaign } : {}) }])));
+      setLineInfo(Object.fromEntries((data.prices ?? []).map(p => [lineKey(p), { wsRegular: p.wsRegular ?? p.unitPrice, available: p.available ?? null, ...(p.campaign ? { campaign: p.campaign } : {}) }])));
       const byKey = new Map((data.unavailable ?? []).map(u => [lineKey(u), u]));
       // El precio guardado en el carrito es una foto de cuando se agregó el
       // ítem; el vigente lo calcula el servidor. Se actualiza acá para que el
@@ -750,11 +751,21 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
                 ) : <p className="text-[13px] font-semibold mt-0.5">{formatArs(item.price)}</p>;
               })()}
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setQty(item, item.quantity - 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">−</button>
-              <span className="w-6 text-center text-[13px]">{item.quantity}</span>
-              <button onClick={() => setQty(item, item.quantity + 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">+</button>
-            </div>
+            {(() => {
+              // Tope por stock conocido (lo que devolvió /api/mayorista/disponibilidad).
+              const available = lineInfo[lineKey(item)]?.available ?? null;
+              const atMax = typeof available === 'number' && item.quantity >= available;
+              return (
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <button type="button" aria-label="Una menos" onClick={() => setQty(item, item.quantity - 1)} className="w-9 h-9 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">−</button>
+                    <span className="w-6 text-center text-[13px] tabular-nums">{item.quantity}</span>
+                    <button type="button" aria-label="Una más" onClick={() => !atMax && setQty(item, item.quantity + 1)} disabled={atMax} title={atMax ? `Hay ${available} en stock` : undefined} className="w-9 h-9 rounded-[6px] border border-border-mid hover:border-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed">+</button>
+                  </div>
+                  {atMax && <span className="text-[10px] text-text-light">máx. {available}</span>}
+                </div>
+              );
+            })()}
             <button onClick={() => remove(item)} className="text-text-light hover:text-destructive transition-colors text-[12px] ml-2">✕</button>
           </div>
         ))}
