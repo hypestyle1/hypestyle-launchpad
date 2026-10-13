@@ -38,7 +38,9 @@ const drops: Drop[] = [
     name: "Esenciales — Regular Tees",
     season: "Programa permanente",
     description: "Básicos que no son básicos. 100% algodón, corte perfecto, siempre disponible.",
-    image: "regular tee 1.webp",
+    // El 3-PACK Black/Navy/White: el producto más vendido del programa (la
+    // foto anterior era la Honda tee, que no es una básica).
+    image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/08/regular-tees-3pack-black-navy-white.png",
     href: "/colecciones/regular-tees/",
     status: "disponible",
   },
@@ -141,6 +143,9 @@ const drops: Drop[] = [
 // Archivo: ninguna URL se elimina, el valor SEO se conserva.
 const ACTUALES = new Set(["/colecciones/ss27/", "/colecciones/fw26/", "/colecciones/regular-tees/"]);
 
+/** Las fotos de los drops pueden ser locales (public/) o del WP (URL completa). */
+const dropSrc = (image: string) => (image.startsWith('http') ? image : `/${image}`);
+
 export default function Colecciones() {
   const actuales = drops.filter((d) => ACTUALES.has(d.href));
   const archivo = drops.filter((d) => !ACTUALES.has(d.href));
@@ -164,7 +169,7 @@ export default function Colecciones() {
             {actuales.map((drop, i) => (
               <a key={drop.name} href={drop.href} className="group flex flex-col md:flex-row gap-2 overflow-hidden">
                 <div className={`relative overflow-hidden rounded-[4px] bg-bg-alt flex-shrink-0 w-full md:w-[420px] lg:w-[560px] ${i % 2 === 0 ? "md:order-1" : "md:order-2"}`} style={{ aspectRatio: "4/3" }}>
-                  <img src={`/${drop.image}`} alt={drop.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+                  <img src={dropSrc(drop.image)} alt={drop.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
                     onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0"; }} />
                   {drop.status === "nuevo" && (
                     <span className="absolute top-4 left-4 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 bg-white text-foreground rounded-[4px] shadow-sm">Nuevo</span>
@@ -193,7 +198,7 @@ export default function Colecciones() {
             {archivo.map((drop) => (
               <a key={drop.name} href={drop.href} className="group block">
                 <div className="relative overflow-hidden rounded-[4px] bg-bg-alt" style={{ aspectRatio: "4/3" }}>
-                  <img src={`/${drop.image}`} alt={drop.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
+                  <img src={dropSrc(drop.image)} alt={drop.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
                     onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0"; }} />
                   {drop.status !== "disponible" && drop.status !== "nuevo" && (
                     <span className="absolute top-3 left-3 text-[9px] font-semibold uppercase tracking-wider px-2 py-1 bg-background/85 text-foreground backdrop-blur-sm rounded-[4px]">
