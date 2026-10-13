@@ -104,3 +104,10 @@ describe('normalizeMayoristaNode — color', () => {
     expect(p.colorAxis).toBe(false);
   });
 });
+
+describe('normalizeMayoristaNode — fecha de alta', () => {
+  it('guarda la fecha de Woo para "Novedades" y el badge Nuevo', () => {
+    expect(normalizeMayoristaNode(node({ date: '2026-10-12T10:00:00' })).createdAt).toBe('2026-10-12T10:00:00');
+    expect(normalizeMayoristaNode(node()).createdAt).toBeUndefined();
+  });
+});

@@ -16,14 +16,14 @@ const GET_PRODUCTS = `
       nodes {
         id databaseId name slug shortDescription
         ... on SimpleProduct {
-          regularPrice stockStatus stockQuantity
+          date regularPrice stockStatus stockQuantity
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name slug } }
           attributes { nodes { name options } }
         }
         ... on VariableProduct {
-          regularPrice
+          date regularPrice
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name slug } }
@@ -71,6 +71,9 @@ export interface MayoristaProduct {
   // Producto del drop nuevo (colección de Private Access abierta antes para
   // mayoristas, ver lib/mayorista-drop.ts). Va primero y con badge.
   drop?: boolean;
+  // Fecha de alta en Woo (ISO, sin zona). Para "Novedades" y el badge "Nuevo"
+  // (lib/mayorista-catalog-sort.ts).
+  createdAt?: string;
 }
 
 /** Clave del stock de una combinación talle/color. */
@@ -246,6 +249,7 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
     colorAxis,
     stock,
     stockQty,
+    ...(typeof node.date === 'string' && node.date ? { createdAt: node.date } : {}),
   };
 }
 
