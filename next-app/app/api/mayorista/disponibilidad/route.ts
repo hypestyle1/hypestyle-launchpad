@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
-import { resolveProducts, findUnavailable, type StockLine } from '@/lib/mayorista-stock';
+import { wcGet, resolveProducts, findUnavailable, type StockLine } from '@/lib/mayorista-stock';
 import { priceLines } from '@/lib/mayorista-pricing';
-import { applyCampaign } from '@/lib/wholesale-campaigns';
+import { applyCampaign, appliedCampaignMinOrder } from '@/lib/wholesale-campaigns';
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 import { mayoristaDropTag } from '@/lib/mayorista-drop-server';
+import { resolveMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
 
 // POST { items: [{ slug, name, size, color?, quantity, price? }] }
 //   -> { unavailable: [{ slug, size, color?, reason, available?, message }],
-//        prices: [{ slug, size, color?, unitPrice, wsRegular, campaign? }] }
+//        prices: [{ slug, size, color?, unitPrice, wsRegular, campaign? }],
+//        minOrder: number | null }
+//
+// `minOrder` es el mínimo que va a validar /api/mayorista/pedido para ESTAS
+// líneas (override del cliente, si no el de la campaña aplicada, si no el
+// general): el perfil no conoce el carrito, así que el de campaña solo puede
+// salir de acá. null = no se pudo leer; el carrito no deja continuar.
 //
 // El carrito lo llama al hidratar y al cargar un borrador: lo que ya no está
 // publicado o quedó sin stock se saca (o se recorta) antes de que el cliente
@@ -49,7 +56,15 @@ export async function POST(req: NextRequest) {
     // pedido sí exige leerlas.
     const campaigns = await readCampaigns().catch((e) => { console.error('[mayorista/disponibilidad] campañas:', e); return []; });
     const priced = applyCampaign(priceLines(lines, resolved), campaigns);
+    // Si el cliente no se pudo leer, el override queda en null y rige el
+    // general: el pedido vuelve a leer el override igual.
+    const customer = await wcGet(`customers/${customerId}?_fields=meta_data`).catch((e) => { console.error('[mayorista/disponibilidad] cliente:', e); return null; });
+    const minOrder = await resolveMinOrder({
+      override: customerMinOrderOverride(customer?.meta_data),
+      campaignMin: appliedCampaignMinOrder(priced, campaigns),
+    });
     return NextResponse.json({
+      minOrder,
       unavailable: findUnavailable(lines, resolved),
       prices: priced.lines.map(l => ({
         slug: l.slug, size: l.size, ...(l.color ? { color: l.color } : {}),

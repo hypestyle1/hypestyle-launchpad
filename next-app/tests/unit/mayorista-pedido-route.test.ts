@@ -28,10 +28,11 @@ vi.mock('@/lib/mayorista-auth', () => ({
   MAYORISTA_COOKIE: 'hype_mayorista_session',
   verifySessionToken: vi.fn(async (t?: string) => (t === 'ok' ? 19 : null)),
 }));
-vi.mock('@/lib/mayorista-settings', () => ({
-  getGlobalMinOrder: vi.fn(async () => 0),
-  customerMinOrderOverride: vi.fn(() => null),
-}));
+// Mínimo general de WordPress (ruta hypestyle/v1/mayorista-settings), simulado
+// en la red y no en el módulo: lib/mayorista-settings se usa real. $1 en la
+// mayoría de los tests (no es el tema); los de "pedido mínimo" lo cambian.
+let settingsResponse: () => Response = () => new Response(JSON.stringify({ minOrder: 1 }), { status: 200 });
+const settingsCalls: string[] = [];
 vi.mock('@/lib/mayorista-stock', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/mayorista-stock')>();
   return {
@@ -55,7 +56,10 @@ beforeEach(() => {
   wcOrderPosts.length = 0;
   recentOrders = [];
   customerMeta = [];
+  settingsResponse = () => new Response(JSON.stringify({ minOrder: 1 }), { status: 200 });
+  settingsCalls.length = 0;
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+    if (String(url).includes('/hypestyle/v1/mayorista-settings')) { settingsCalls.push(String(url)); return settingsResponse(); }
     if (String(url).includes('/wc/v3/orders')) {
       wcOrderPosts.push(JSON.parse(String(init?.body)));
       return new Response(JSON.stringify({ id: 5001, number: '5001' }), { status: 201 });
@@ -204,10 +208,62 @@ describe('POST /api/mayorista/pedido — pedido duplicado', () => {
   });
 
   it('si Woo responde 5xx al crear, la respuesta avisa que la orden pudo entrar', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => String(url).includes('/wc/v3/orders') ? new Response('timeout', { status: 504 }) : new Response('{}', { status: 200 })));
+    vi.stubGlobal('fetch', vi.fn(async (url: string) =>
+      String(url).includes('/wc/v3/orders') ? new Response('timeout', { status: 504 })
+      : String(url).includes('/hypestyle/v1/mayorista-settings') ? settingsResponse()
+      : new Response('{}', { status: 200 })));
     const r = await post({ items: [hoodieL(48000)], shipping });
     expect(r.status).toBe(502);
     expect(r.data.maybeCreated).toBe(true);
+  });
+});
+
+// 13/10/2026: el mínimo vive en WordPress ($600.000 general, override por
+// cliente, propio por campaña). Si no se puede leer, no se cae a $500.000 ni
+// se deja pasar: se pide reintento, igual que con las campañas.
+describe('POST /api/mayorista/pedido — pedido mínimo', () => {
+  it('por debajo del mínimo general: 400 con el monto y sin crear orden', async () => {
+    settingsResponse = () => new Response(JSON.stringify({ minOrder: 600000 }), { status: 200 });
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(400);
+    expect(r.data.message).toContain('600.000');
+    expect(wcOrderPosts).toHaveLength(0);
+  });
+
+  it('el override del cliente manda sobre el general (y no se consulta WordPress)', async () => {
+    settingsResponse = () => new Response(JSON.stringify({ minOrder: 600000 }), { status: 200 });
+    customerMeta = [{ key: 'mayorista_min_order', value: '90000' }];
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(200);
+    expect(settingsCalls).toHaveLength(0);
+  });
+
+  it('WordPress no responde el mínimo: 502 MIN_ORDER_UNAVAILABLE y no crea orden', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    settingsResponse = () => new Response('error', { status: 503 });
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(502);
+    expect(r.data.code).toBe('MIN_ORDER_UNAVAILABLE');
+    expect(r.data.message).toContain('pedido mínimo');
+    expect(wcOrderPosts).toHaveLength(0);
+    error.mockRestore();
+  });
+
+  it('mínimo inválido en WordPress (0 o vacío) también frena: no se asume "sin mínimo"', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    settingsResponse = () => new Response(JSON.stringify({ minOrder: 0 }), { status: 200 });
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(502);
+    expect(wcOrderPosts).toHaveLength(0);
+    error.mockRestore();
+  });
+
+  it('con override, que WordPress no responda el general no frena el pedido', async () => {
+    settingsResponse = () => new Response('error', { status: 503 });
+    customerMeta = [{ key: 'mayorista_min_order', value: '90000' }];
+    const r = await post({ items: [hoodieL(48000)], shipping });
+    expect(r.status).toBe(200);
+    expect(wcOrderPosts).toHaveLength(1);
   });
 });
 
