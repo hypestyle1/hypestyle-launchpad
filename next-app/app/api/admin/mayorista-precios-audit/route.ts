@@ -9,6 +9,11 @@ import { auditWholesalePrices, auditEmailHtml, type AuditInput } from '@/lib/may
 //   GET  (Vercel Cron, CRON_SECRET; o x-admin-key desde el panel)
 //     ?dry=1     no escribe la marca en los productos
 //     ?report=1  manda el mail aunque no haya cambios
+//     ?mail=0    no manda mail (consulta desde el panel)
+//
+// Además del regular_price mira el precio de venta de hoy (sale_price): con
+// la tienda en oferta el revendedor recarga menos del 100% sobre el
+// mayorista. Se informa (`saleMarkup`), no se cambia ningún precio.
 //
 // Lee todos los productos publicados por WC REST (con variaciones, porque el
 // regular_price de un variable vive en cada variación), compara el
@@ -44,24 +49,30 @@ const num = (v: unknown) => { const n = Number(v); return Number.isFinite(n) && 
 async function loadProducts(): Promise<AuditInput[]> {
   const all: any[] = [];
   for (let page = 1; ; page++) {
-    const data = await wc(`products?status=publish&per_page=100&page=${page}&_fields=id,name,slug,type,status,categories,regular_price,meta_data`);
+    const data = await wc(`products?status=publish&per_page=100&page=${page}&_fields=id,name,slug,type,status,categories,regular_price,sale_price,price,meta_data`);
     all.push(...data);
     if (data.length < 100) break;
   }
   // Variaciones de a 3: WP tira 500 con más fan-out.
   return mapLimit(all, 3, async (p): Promise<AuditInput> => {
     let regulars: number[] = [];
+    // Precio de venta de hoy si hay oferta: el menor entre lo publicado (lo
+    // peor para el revendedor).
+    let salePrice: number | null = null;
     if (p.type === 'variable') {
-      const vs = await wc(`products/${p.id}/variations?per_page=100&_fields=id,regular_price,status`);
+      const vs = await wc(`products/${p.id}/variations?per_page=100&_fields=id,regular_price,sale_price,price,status`);
       const seen = new Set<number>();
       for (const v of vs as any[]) {
         if (v.status !== 'publish') continue;
         const r = num(v.regular_price);
         if (r != null) seen.add(r);
+        const s = num(v.sale_price) != null ? num(v.price) : null;
+        if (s != null && (salePrice == null || s < salePrice)) salePrice = s;
       }
       regulars = [...seen];
     } else {
       const r = num(p.regular_price); if (r != null) regulars = [r];
+      salePrice = num(p.sale_price) != null ? num(p.price) : null;
     }
     return {
       id: p.id, name: p.name,
@@ -69,6 +80,7 @@ async function loadProducts(): Promise<AuditInput[]> {
       regulars,
       meta: p.meta_data ?? [],
       wholesale: !isExcludedFromMayoristaRest(p),
+      salePrice,
     };
   });
 }
@@ -92,17 +104,23 @@ export async function GET(req: NextRequest) {
   }
   const dry = req.nextUrl.searchParams.get('dry') === '1';
   const report = req.nextUrl.searchParams.get('report') === '1';
+  const noMail = req.nextUrl.searchParams.get('mail') === '0';
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Argentina/Buenos_Aires' });
 
   try {
     const products = await loadProducts();
     const result = auditWholesalePrices(products, today);
+    const critical = result.saleMarkup.filter(s => s.level === 'critical').length;
 
     let mailed = false;
-    if (result.changes.length || report) {
-      const subject = result.changes.length
-        ? `⚠ ${result.changes.length} precio(s) mayorista(s) cambiaron — ${today}`
-        : `Precios mayoristas sin cambios — ${today}`;
+    // Se manda con cambios de precio, con ofertas que dejan el recargo por
+    // debajo del crítico, o a pedido (report=1).
+    if (!noMail && (result.changes.length || critical || report)) {
+      const parts = [
+        result.changes.length ? `${result.changes.length} precio(s) mayorista(s) cambiaron` : '',
+        critical ? `${critical} oferta(s) con recargo crítico` : '',
+      ].filter(Boolean);
+      const subject = parts.length ? `⚠ ${parts.join(' · ')} — ${today}` : `Precios mayoristas sin cambios — ${today}`;
       mailed = await sendMail(auditEmailHtml(result, today), subject);
     }
 
@@ -119,6 +137,7 @@ export async function GET(req: NextRequest) {
       ok: true, today, dry, mailed, updated,
       audited: products.filter(p => p.wholesale).length,
       changes: result.changes, baseline: result.baseline.length, divergent: result.divergent, unpriced: result.unpriced, unchanged: result.unchanged,
+      saleMarkup: result.saleMarkup, critical,
     });
   } catch (err) {
     console.error('[mayorista-precios-audit]', err);

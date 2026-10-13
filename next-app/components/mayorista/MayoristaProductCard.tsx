@@ -127,13 +127,16 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
               <span className="text-[12px] text-text-light line-through">{formatArs(product.wholesalePrice)}</span>
               <span className="text-[10px] uppercase tracking-wide text-sale">{product.promo.label}</span>
             </div>
-            <p className="text-[11px] text-text-light mt-0.5">PVP {formatArs(product.regularPrice)} · {PROMO_TAG_LABEL[product.promo.tag]}</p>
+            <p className="text-[11px] text-text-light mt-0.5">Lista {formatArs(product.regularPrice)} · {PROMO_TAG_LABEL[product.promo.tag]}</p>
           </>
         ) : (
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[13px] font-semibold">{formatArs(product.wholesalePrice)}</span>
-            <span className="text-[12px] text-text-light line-through">{formatArs(product.regularPrice)}</span>
+            <span className="text-[12px] text-text-light"><span className="uppercase tracking-wide text-[9px] mr-1">Lista</span>{formatArs(product.regularPrice)}</span>
           </div>
+        )}
+        {product.retailPrice != null && (
+          <p className="text-[11px] text-text-light mt-0.5">En la tienda hoy {formatArs(product.retailPrice)} (oferta)</p>
         )}
 
         {!purchasable ? (

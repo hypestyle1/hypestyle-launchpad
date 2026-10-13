@@ -105,6 +105,7 @@ describe('normalizeMayoristaNode — color', () => {
   });
 });
 
+<<<<<<< HEAD
 // 13/10/2026: ocho modelos del drop SS27 estaban publicados sin gestión de
 // stock (stockQuantity null) y el portal los mostraba como disponibles sin
 // límite. Sin cantidad cargada no se puede pedir; "proximamente" tampoco.
@@ -190,5 +191,23 @@ describe('buildMayoristaCatalog — qué entra y en qué orden', () => {
     const drop = { nodes: [withId(9, 'drop-privado', { status: 'private', productTags: { nodes: [{ slug: 'proximamente' }] } })], highlighted: true, info: { beforePublic: true } as any };
     const catalog = buildMayoristaCatalog([withId(4, 'disponible')], drop);
     expect(catalog.map(p => [p.slug, !!p.drop, p.comingSoon])).toEqual([['drop-privado', true, true], ['disponible', false, false]]);
+=======
+// 13/10/2026: el mayorista paga 50% de la lista aunque la tienda esté en
+// oferta. El precio público de hoy se muestra para que el local sepa contra
+// qué compite; no cambia su precio.
+describe('normalizeMayoristaNode — precio público de hoy', () => {
+  it('con oferta: retailPrice es el precio de hoy, el mayorista sigue siendo 50% de la lista', () => {
+    const p = normalizeMayoristaNode(node({ onSale: true, price: '$&nbsp;40.500,00' }));
+    expect(p.wholesalePrice).toBe(22500);
+    expect(p.retailPrice).toBe(40500);
+  });
+  it('sin oferta: null (aunque price venga igual a la lista)', () => {
+    expect(normalizeMayoristaNode(node({ onSale: false, price: '$&nbsp;45.000,00' })).retailPrice).toBeNull();
+    expect(normalizeMayoristaNode(node({ onSale: true, price: '$&nbsp;45.000,00' })).retailPrice).toBeNull();
+    expect(normalizeMayoristaNode(node()).retailPrice).toBeNull();
+  });
+  it('variable con rango "mín - máx": toma el mínimo', () => {
+    expect(normalizeMayoristaNode(node({ onSale: true, price: '$&nbsp;40.500,00 - $&nbsp;45.000,00' })).retailPrice).toBe(40500);
+>>>>>>> origin/feat/mayorista-recargo-ofertas
   });
 });

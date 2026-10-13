@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { mismaCiudad, type Exclusividad, type BloqueoExclusividad } from '@/lib/mayorista-exclusividad';
+import MayoristaRecargoOfertas from '@/components/admin/MayoristaRecargoOfertas';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -587,6 +588,8 @@ Ciudad:`, titular?.exclusividad?.ciudad || m.city || '');
           {globalMin != null && <p className="text-[11px] text-muted-foreground/70 mt-2">Actual: ${globalMin.toLocaleString('es-AR')}</p>}
           {globalMinError && <p className="text-[11px] font-semibold text-red-700 mt-2">{globalMinError}. Mientras tanto el portal no acepta pedidos sin mínimo propio.</p>}
         </div>
+
+        <MayoristaRecargoOfertas adminKey={adminKey} />
 
         {showForm && (
           <div className="mb-6">
