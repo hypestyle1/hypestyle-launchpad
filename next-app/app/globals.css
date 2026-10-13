@@ -192,6 +192,48 @@
   backdrop-filter: var(--glass-sticky-filter);
 }
 
+/* ─── Navbar: beam y logo (elegidos 13/10) ───────────────────────────────────
+   Beam: una luz beige recorre el borde del pill (conic-gradient + mask
+   exclude, el ángulo anima vía @property — CSS puro, cero JS). Se intensifica
+   con reduced-motion apagada queda estática y tenue. Logo: doble drop-shadow
+   sutil (contacto + elevación) para que el wordmark despegue del glass. */
+@property --hs-beam {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes hs-beam-spin {
+  to { --hs-beam: 360deg; }
+}
+.hs-nav-beam {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 15px;
+  padding: 2px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--hs-beam),
+    transparent 0deg,
+    transparent 240deg,
+    rgba(255, 246, 224, 0.65) 300deg,
+    #ffffff 335deg,
+    rgba(255, 246, 224, 0.65) 352deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 6px rgba(255, 250, 238, 0.8));
+  animation: hs-beam-spin 4.5s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-nav-beam { animation: none; opacity: 0.4; }
+}
+.hs-logo-3d {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3)) drop-shadow(0 3px 7px rgba(0, 0, 0, 0.14));
+}
+
 /* ─── Hype Panel (admin) ─────────────────────────────────────────────────────
    El panel redefine el set semántico dentro de .admin-theme, así el sitio
    público no se entera. El modo oscuro se activa con la clase `dark` en el

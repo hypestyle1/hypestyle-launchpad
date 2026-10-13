@@ -19,7 +19,10 @@ export const metadata = buildMetadata({ title: TITLE, description: DESCRIPTION, 
 export const revalidate = 60;
 
 export default async function Page() {
-  const initialProducts = (await fetchCatalogForSsr()).slice(0, 8);
+  // El catálogo completo: el client component recorta los 8 MÁS NUEVOS
+  // (la consulta viene en fecha ascendente — recortar acá los primeros 8
+  // mostraba los más viejos).
+  const initialProducts = await fetchCatalogForSsr();
   return (
     <>
       <JsonLd

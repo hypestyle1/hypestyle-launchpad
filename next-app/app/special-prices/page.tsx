@@ -1,7 +1,4 @@
-import AnnouncementBar from "@/components/AnnouncementBar";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ProductCard from "@/components/ProductCard";
+import SaleView from "./SaleView";
 import { fetchAllProducts } from "@/lib/products-server";
 import { BEST_SELLERS_SLUGS } from "@/lib/best-sellers";
 import JsonLd from "@/components/JsonLd";
@@ -35,24 +32,6 @@ function hayStock(p: { stock: Record<string, 'ok' | 'low' | 'out'> }) {
 
 function descuento(p: { originalPrice?: number; price: number }) {
   return p.originalPrice ? 1 - p.price / p.originalPrice : 0;
-}
-
-/**
- * Cabecera de la pagina SALE. Misma receta que el resto de las cabeceras de
- * coleccion: fondo oscuro, centrada, volanta + H1 + linea de detalle.
- */
-function SaleHeader({ maxOff, total }: { maxOff: number; total: number }) {
-  return (
-    <section className="bg-bg-dark text-primary-foreground py-20 px-6 text-center">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 mb-3">Precios especiales</p>
-      <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3 text-white">Sale</h1>
-      <p className="text-[14px] text-white/40">
-        {total > 0
-          ? `${total} ${total === 1 ? 'producto' : 'productos'} · hasta ${maxOff}% OFF · mientras haya stock`
-          : 'Mientras haya stock'}
-      </p>
-    </section>
-  );
 }
 
 export default async function SalePage() {
@@ -89,78 +68,9 @@ export default async function SalePage() {
           breadcrumbJsonLd([{ name: TITLE, path: PATH }]),
         ]}
       />
-      <AnnouncementBar />
-      <Navbar />
-      <main className="pt-[var(--offset)]">
-
-        <SaleHeader maxOff={maxOff} total={total} />
-
-        {destacados.length > 0 && (
-          <section className="max-w-[1400px] mx-auto px-4 pt-10 md:pt-14">
-            <div className="flex items-baseline gap-3 mb-5">
-              <h2 className="text-[18px] md:text-[22px] font-bold uppercase tracking-tight">Destacados</h2>
-              <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Los mejores productos al mejor precio
-              </span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
-              {destacados.map(p => (
-                <ProductCard
-                  key={p.slug}
-                  id={p.slug}
-                  name={p.name}
-                  category={p.category}
-                  price={p.price}
-                  originalPrice={p.originalPrice}
-                  badge={p.badge}
-                  image={p.image}
-                  images={p.images}
-                  sizes={p.sizes}
-                  stock={p.stock}
-                  href={p.href}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {resto.length > 0 && (
-          <section className="max-w-[1400px] mx-auto px-4 pt-10 md:pt-14 pb-10 md:pb-16">
-            <div className="flex items-baseline gap-3 mb-5">
-              <h2 className="text-[18px] md:text-[22px] font-bold uppercase tracking-tight">Todo el sale</h2>
-              <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                {resto.length} productos, del mayor descuento al menor
-              </span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
-              {resto.map(p => (
-                <ProductCard
-                  key={p.slug}
-                  id={p.slug}
-                  name={p.name}
-                  category={p.category}
-                  price={p.price}
-                  originalPrice={p.originalPrice}
-                  badge={p.badge}
-                  image={p.image}
-                  images={p.images}
-                  sizes={p.sizes}
-                  stock={p.stock}
-                  href={p.href}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {total === 0 && (
-          <p className="text-center text-muted-foreground py-20">
-            El sale vuelve pronto. Mientras tanto, mirá las novedades.
-          </p>
-        )}
-
-      </main>
-      <Footer />
+      {/* La vista vive en SaleView (cliente); los datos y el SEO quedan acá,
+          server con ISR. */}
+      <SaleView destacados={destacados} resto={resto} maxOff={maxOff} />
     </>
   );
 }

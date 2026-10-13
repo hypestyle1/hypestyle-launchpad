@@ -118,6 +118,12 @@ export const CATEGORY_MAP: Record<string, CategoryConfig> = {
     seoDescription: 'Pantalones y joggers de HYPESTYLE. Jogger fit y cargo fit, frisa premium. Combinan con los hoodies de la temporada.',
     categories: ['Pantalón'],
   },
+  '/longsleeves': {
+    title: 'Longsleeves',
+    subtitle: 'Manga larga, waffle y raglan',
+    seoDescription: 'Longsleeves de HYPESTYLE: manga larga, waffle knit y raglan. Boxy fit, estampas de edición limitada. Envíos a todo el mundo.',
+    categories: ['Longsleeve'],
+  },
   '/jorts': {
     title: 'Jorts',
     subtitle: 'Jorts y shorts',

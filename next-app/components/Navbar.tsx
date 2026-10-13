@@ -12,62 +12,61 @@ import { useProducts } from '@/hooks/useProducts';
 import LocalePopup from '@/components/LocalePopup';
 import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 
-// wideOnly: entre 1024 y ~1270 px no entran todos y el logo centrado se pisa con
-// los últimos; esos dos quedan en el footer y en el menú mobile.
+// Arquitectura 2026: Shop (mega menú) · Colecciones · Nosotros · Contacto.
+// FAQs y Políticas viven en el footer y al pie del menú mobile. Los lookbooks
+// salen del flujo de compra: están integrados en /colecciones (Archivo).
 const navLinks = [
-  { label: 'Shop',          href: '/productos/',               hasDropdown: true,  routeMatch: '/productos' },
-  { label: 'Colecciones',   href: '/colecciones/',             hasDropdown: false, routeMatch: '/colecciones', menu: 'colecciones' },
-  { label: 'Contacto',      href: '/contacto/',                hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
-  { label: 'FAQs',          href: '/faqs/',                    hasDropdown: false, routeMatch: '/faqs' },
-  { label: 'Políticas',     href: '/politicas-de-devolucion/', hasDropdown: false, routeMatch: '/politicas', wideOnly: true },
-  { label: 'Quiénes Somos', href: '/nosotros/',                hasDropdown: false, routeMatch: '/nosotros', wideOnly: true },
+  { label: 'Shop',        href: '/productos/',   hasDropdown: true,  routeMatch: '/productos' },
+  { label: 'Colecciones', href: '/colecciones/', hasDropdown: false, routeMatch: '/colecciones', menu: 'colecciones' },
+  { label: 'Nosotros',    href: '/nosotros/',    hasDropdown: false, routeMatch: '/nosotros' },
+  { label: 'Contacto',    href: '/contacto/',    hasDropdown: false, routeMatch: '/contacto', menu: 'contacto' },
 ];
 
-// Desplegables chicos (flecha como Shop). Colecciones junta las colecciones
-// de la tienda con los lookbooks: la idea es que acá vivan las carpetas de
-// todos los shootings profesionales de cada colección, uno por temporada.
-const menuColecciones = [
-  { label: 'Ver colecciones',   href: '/colecciones/' },
+// Desplegable chico de Colecciones: colecciones de tienda + el hub de colabs
+// (con flecha: despliega las cuatro adentro del mismo menú).
+type MenuItem = { label: string; href: string; children?: { label: string; href: string }[] };
+const menuColecciones: MenuItem[] = [
   { label: 'Spring Summer 27 · Part 01', href: '/colecciones/ss27/' },
-  { label: 'Lookbook FW26 — Rio de Janeiro', href: '/lookbook-fw26/' },
-  { label: 'Lookbook — Faith Is The Real Hype', href: '/lookbook-faith/' },
-  { label: 'Lookbook — CULTO x Neo Pistea', href: '/lookbook-neo/' },
-  { label: 'Lookbook — La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir/' },
-  { label: 'Lookbook — Fileteado Porteño x Alfredo Genovese', href: '/lookbook-genovese/' },
-  { label: 'Lookbook — Tie Dye Hoodie Drop x Ferpa', href: '/lookbook-ferpa/' },
+  { label: 'Fall Winter 26',             href: '/colecciones/fw26/' },
+  { label: 'Esenciales — Regular Tees',  href: '/colecciones/regular-tees/' },
+  { label: 'Colaboraciones', href: '/colaboraciones/', children: [
+    { label: 'Fileteado Porteño x Genovese',    href: '/lookbook-genovese/' },
+    { label: 'La Ciudad del Pop x Mir Nicolás', href: '/lookbook-mir/' },
+    { label: 'CULTO x Neo Pistea',              href: '/lookbook-neo/' },
+    { label: 'Tie Dye x Ferpa',                 href: '/lookbook-ferpa/' },
+  ] },
+  { label: 'Ver todas las colecciones',  href: '/colecciones/' },
 ];
 const menuContacto = [
   { label: 'Escribinos',              href: '/contacto/' },
   { label: 'Crea contenido con Hype', href: '/creadores/' },
   { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud/' },
 ];
-const smallMenus: Record<string, { label: string; href: string }[]> = { colecciones: menuColecciones, contacto: menuContacto };
+const smallMenus: Record<string, MenuItem[]> = { colecciones: menuColecciones, contacto: menuContacto };
 
+// Mega menú 2026: Comprar / Prendas (tipo de prenda a 1 click) / Colecciones.
+// SALE sin rojo permanente (liquidación ≠ lanzamiento); FW26 presente.
 const megaMenu = {
   general: [
-    { label: 'Ver todo',       href: '/productos/',      homeHash: null,             isNew: false },
-    { label: 'New In',         href: '/new-in/',          homeHash: 'best-sellers',   isNew: true  },
-    { label: 'Colecciones',    href: '/colecciones/',    homeHash: null,             isNew: false },
-    { label: 'Básicos',        href: '/colecciones/regular-tees/', homeHash: 'basicos', isNew: false },
-    // homeHash null: la sección Más Hype salió de la home con el rediseño
-    // 2026 — el link va siempre a su colección.
-    { label: 'Más Hype',       href: '/colecciones/mas-hype/', homeHash: null,    isNew: false },
-    { label: 'SALE', href: '/special-prices/', homeHash: 'back-in-stock', isNew: false, isSale: true },
+    { label: 'New In',    href: '/new-in/',         homeHash: null, isNew: true },
+    { label: 'Ver todo',  href: '/productos/',      homeHash: null, isNew: false },
+    { label: 'Gift Card', href: '/gift-cards/',     homeHash: null, isNew: false },
+    { label: 'SALE',      href: '/special-prices/', homeHash: null, isNew: false },
   ],
   categorias: [
-    { label: 'Arriba',     href: '/arriba/',     indent: false },
-    { label: 'Abajo',      href: '/abajo/',      indent: false },
-    { label: 'Accesorios', href: '/accesorios/', indent: false },
-    { label: 'Sets',       href: '/sets/',       indent: false },
-    { label: 'Gift Card',  href: '/gift-cards/', indent: false },
+    { label: 'Remeras',     href: '/tees/',        indent: false },
+    { label: 'Hoodies',     href: '/hoodies/',     indent: false },
+    { label: 'Longsleeves', href: '/longsleeves/', indent: false },
+    { label: 'Pantalones',  href: '/pants/',       indent: false },
+    { label: 'Jorts',       href: '/jorts/',       indent: false },
+    { label: 'Conjuntos',   href: '/sets/',        indent: false },
+    { label: 'Accesorios',  href: '/accesorios/',  indent: false },
   ],
   colecciones: [
-    { label: 'Spring Summer 27',    href: '/colecciones/ss27/' },
-    { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
-    { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop/' },
-    { label: 'Race Drop',           href: '/colecciones/race/' },
-    { label: 'Summer 26',           href: '/colecciones/summer-26/' },
-    { label: 'Regular Tees',        href: '/colecciones/regular-tees/' },
+    { label: 'Spring Summer 27', href: '/colecciones/ss27/' },
+    { label: 'Fall Winter 26',   href: '/colecciones/fw26/' },
+    { label: 'Esenciales',       href: '/colecciones/regular-tees/' },
+    { label: 'Ver todas',        href: '/colecciones/' },
   ],
 };
 
@@ -76,29 +75,32 @@ const mobilePanels = {
     title: 'Shop',
     items: [
       { label: 'Ver todos los productos', href: '/productos/',      homeHash: null,             panel: null },
-      { label: 'New In',                   href: '/new-in/',          homeHash: 'best-sellers',   panel: null },
-      { label: 'Colecciones',              href: '/colecciones/',    homeHash: null,             panel: null },
-      { label: 'Básicos',                  href: '/colecciones/regular-tees/', homeHash: 'basicos', panel: null },
-      { label: 'Más Hype',                 href: '/colecciones/mas-hype/', homeHash: null,    panel: null },
-      { label: 'SALE',                     href: '/special-prices/', homeHash: 'back-in-stock', panel: null, isSale: true },
-      { label: 'Arriba',                   href: null,               homeHash: null,             panel: 'arriba' },
-      { label: 'Abajo',                    href: null,               homeHash: null,             panel: 'abajo' },
-      { label: 'Accesorios',               href: null,               homeHash: null,             panel: 'accesorios' },
-      { label: 'Sets',                     href: '/sets/',           homeHash: null,             panel: null },
-      { label: 'Gift Card',                href: '/gift-cards/',     homeHash: null,             panel: null },
+      { label: 'New In',                   href: '/new-in/',          homeHash: null,   panel: null },
+      { label: 'Remeras',                  href: '/tees/',            homeHash: null,   panel: null },
+      { label: 'Hoodies',                  href: '/hoodies/',         homeHash: null,   panel: null },
+      { label: 'Longsleeves',              href: '/longsleeves/',     homeHash: null,   panel: null },
+      { label: 'Pantalones',               href: '/pants/',           homeHash: null,   panel: null },
+      { label: 'Jorts',                    href: '/jorts/',           homeHash: null,   panel: null },
+      { label: 'Conjuntos',                href: '/sets/',            homeHash: null,   panel: null },
+      { label: 'Accesorios',               href: '/accesorios/',      homeHash: null,   panel: null },
+      { label: 'Gift Card',                href: '/gift-cards/',      homeHash: null,   panel: null },
+      { label: 'SALE',                     href: '/special-prices/',  homeHash: null,   panel: null },
     ],
     collections: [
-      { label: 'Spring Summer 27',    href: '/colecciones/ss27/' },
-      { label: 'No Love, Only Style', href: '/colecciones/no-love-only-style/' },
-      { label: 'Camo Set Drop',       href: '/colecciones/camo-set-drop/' },
-      { label: 'Race Drop',           href: '/colecciones/race/' },
-      { label: 'Summer 26',           href: '/colecciones/summer-26/' },
-      { label: 'Regular Tees',        href: '/colecciones/regular-tees/' },
+      { label: 'Spring Summer 27', href: '/colecciones/ss27/' },
+      { label: 'Fall Winter 26',   href: '/colecciones/fw26/' },
+      { label: 'Esenciales',       href: '/colecciones/regular-tees/' },
+      { label: 'Colaboraciones',   href: '/colaboraciones/' },
+      { label: 'Ver todas',        href: '/colecciones/' },
     ],
   },
-  arriba:     { title: 'Arriba',     verTodo: '/arriba/',     items: [{ label: 'Hoodies', href: '/hoodies/', panel: null }, { label: 'Remeras', href: '/tees/', panel: null }, { label: 'Accesorios', href: '/accesorios/', panel: null }] },
-  abajo:      { title: 'Abajo',      verTodo: '/abajo/',      items: [{ label: 'Pantalones', href: '/abajo/', panel: null }, { label: 'Jorts', href: '/abajo/', panel: null }] },
-  accesorios: { title: 'Accesorios', verTodo: '/accesorios/', items: [{ label: 'Gorras', href: '/accesorios/', panel: null }, { label: 'Beanies', href: '/accesorios/', panel: null }, { label: 'Rings', href: '/accesorios/', panel: null }] },
+  // Los viejos sub-paneles Arriba/Abajo/Accesorios se retiran: tenían links
+  // rotos (Pantalones y Jorts iban los dos a /abajo; Gorras/Beanies/Rings los
+  // tres a /accesorios) y con las prendas a 1 click ya no hacen falta. Quedan
+  // vacíos para no tocar el tipo del estado mobilePanel.
+  arriba:     { title: 'Arriba',     verTodo: '/arriba/',     items: [] },
+  abajo:      { title: 'Abajo',      verTodo: '/abajo/',      items: [] },
+  accesorios: { title: 'Accesorios', verTodo: '/accesorios/', items: [] },
 };
 
 const glassStyle = {
@@ -123,6 +125,8 @@ export default function Navbar() {
   const [shopOpen, setShopOpen]       = useState(false);
   // Qué desplegable chico está abierto ('colecciones' | 'contacto'), o ninguno.
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  // Sub-lista expandida adentro de un desplegable (Colaboraciones).
+  const [openSub, setOpenSub] = useState<string | null>(null);
   const [logoError, setLogoError]     = useState(false);
   const [searchOpen, setSearchOpen]   = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -203,6 +207,8 @@ export default function Navbar() {
         }}
         onMouseLeave={() => { setShopOpen(false); setOpenMenu(null); }}
       >
+        {/* La luz que recorre el borde del pill (elegida 13/10). */}
+        <span aria-hidden className="hs-nav-beam" />
         <div className="h-full max-w-[1400px] mx-auto px-4 flex items-center relative">
           {searchOpen ? (
             <div className="flex items-center w-full gap-3">
@@ -257,14 +263,42 @@ export default function Navbar() {
                           onMouseLeave={() => setOpenMenu(null)}
                         >
                           {smallMenus[(link as { menu?: string }).menu!].map((l) => (
-                            <Link
-                              key={t(l.label)}
-                              href={l.href}
-                              onClick={() => setOpenMenu(null)}
-                              className="block px-4 py-2 text-[13px] text-foreground/70 hover:text-foreground hover:bg-black/[0.05] transition-colors"
-                            >
-                              {t(l.label)}
-                            </Link>
+                            l.children ? (
+                              <div key={t(l.label)}>
+                                <button
+                                  onClick={() => setOpenSub(openSub === l.label ? null : l.label)}
+                                  aria-expanded={openSub === l.label}
+                                  className="w-full flex items-center justify-between px-4 py-2 text-[13px] text-foreground/70 hover:text-foreground hover:bg-black/[0.05] transition-colors text-left"
+                                >
+                                  {t(l.label)}
+                                  <ChevronDown className="w-3 h-3 transition-transform duration-200" strokeWidth={1.2}
+                                    style={{ transform: openSub === l.label ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                                </button>
+                                {openSub === l.label && (
+                                  <>
+                                    {l.children.map((c) => (
+                                      <Link key={t(c.label)} href={c.href} onClick={() => { setOpenMenu(null); setOpenSub(null); }}
+                                        className="block pl-7 pr-4 py-1.5 text-[12px] text-foreground/60 hover:text-foreground hover:bg-black/[0.05] transition-colors">
+                                        {t(c.label)}
+                                      </Link>
+                                    ))}
+                                    <Link href={l.href} onClick={() => { setOpenMenu(null); setOpenSub(null); }}
+                                      className="block pl-7 pr-4 py-1.5 text-[12px] font-semibold underline underline-offset-4 text-foreground/70 hover:text-foreground transition-colors">
+                                      {t('Ver todas')}
+                                    </Link>
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <Link
+                                key={t(l.label)}
+                                href={l.href}
+                                onClick={() => setOpenMenu(null)}
+                                className="block px-4 py-2 text-[13px] text-foreground/70 hover:text-foreground hover:bg-black/[0.05] transition-colors"
+                              >
+                                {t(l.label)}
+                              </Link>
+                            )
                           ))}
                         </div>
                       )}
@@ -277,7 +311,7 @@ export default function Navbar() {
               <Link href="/" className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center z-10">
                 {!logoError ? (
                   <img src={LOGO_NAV} alt="Hypestyle"
-                    className="w-auto transition-all duration-300"
+                    className="w-auto transition-all duration-300 hs-logo-3d"
                     style={{ height: scrolled ? '20px' : '25px' }}
                     onError={() => setLogoError(true)} />
                 ) : (
@@ -294,7 +328,7 @@ export default function Navbar() {
                 <Link href="/">
                   {!logoError ? (
                     <img src={LOGO_NAV} alt="Hypestyle"
-                      className="w-auto" style={{ height: scrolled ? '18px' : '22px' }}
+                      className="w-auto hs-logo-3d" style={{ height: scrolled ? '18px' : '22px' }}
                       onError={() => setLogoError(true)} />
                   ) : (
                     <span className="text-[15px] font-normal tracking-[0.08em] text-foreground">Hypestyle</span>
@@ -344,7 +378,7 @@ export default function Navbar() {
             onMouseEnter={() => setShopOpen(true)}>
             <div className="max-w-[1400px] mx-auto px-4 py-8 grid grid-cols-[1fr_1fr_1fr_280px] gap-8">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Explorar')}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Comprar')}</p>
                 {megaMenu.general.map((l) => (
                   <button key={t(l.label)} onClick={() => handleSmartLink(l.href, l.homeHash)}
                     className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 hover:text-foreground transition-colors mb-2.5 w-full text-left">
@@ -356,7 +390,7 @@ export default function Navbar() {
                 ))}
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Categorías')}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Prendas')}</p>
                 {megaMenu.categorias.map((l) => (
                   <Link key={t(l.label)} href={l.href} onClick={() => setShopOpen(false)}
                     className="block text-[13px] font-medium text-foreground/70 hover:text-foreground transition-colors mb-2.5">
@@ -374,7 +408,9 @@ export default function Navbar() {
                 ))}
               </div>
               <div className="relative overflow-hidden rounded-sm">
-                <img src="/ss27/coleccion/hero-duo-grey.webp" alt="Spring Summer 27"
+                {/* OJO: era hero-duo-grey.webp (sin -hd), que no existe en
+                    public/ — la foto del mega menú estaba rota en producción. */}
+                <img src="/ss27/coleccion/hero-duo-grey-hd.webp" alt="Spring Summer 27"
                   className="w-full h-full object-cover" style={{ maxHeight: '220px' }} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-4">
                   <div>
@@ -512,17 +548,10 @@ export default function Navbar() {
                   ))}
                 </div>
                 <div className="border-t border-foreground/10 pt-4 space-y-1">
+                  {/* Los lookbooks salen del menú de compra: viven en el
+                      Archivo de /colecciones. Acá quedan las institucionales. */}
                   {[
-                    { label: 'Colecciones',   href: '/colecciones/' },
-                    { label: 'Spring Summer 27', href: '/colecciones/ss27/' },
-                    { label: 'Lookbook FW26', href: '/lookbook-fw26/' },
-                    { label: 'Lookbook Faith', href: '/lookbook-faith/' },
-                    { label: 'Lookbook CULTO', href: '/lookbook-neo/' },
-                    { label: 'Lookbook La Ciudad del Pop', href: '/lookbook-mir/' },
-                    { label: 'Lookbook Fileteado Porteño', href: '/lookbook-genovese/' },
-                    { label: 'Lookbook Tie Dye x Ferpa', href: '/lookbook-ferpa/' },
                     { label: 'Reseñas',       href: '/reviews/' },
-
                     { label: 'FAQs',          href: '/faqs/' },
                     { label: 'Quiénes Somos', href: '/nosotros/' },
                     { label: 'Políticas',     href: '/politicas-de-devolucion/' },

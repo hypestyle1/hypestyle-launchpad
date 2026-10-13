@@ -4,30 +4,28 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
+import CatalogHeader from "@/components/collection/CatalogHeader";
 import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 import type { NormalizedProduct } from "@/lib/products-normalize";
 
 /** `initialProducts`: traídos en el servidor (lib/catalog.ts) para el HTML inicial. */
 export default function NovedadesPage({ initialProducts }: { initialProducts?: NormalizedProduct[] }) {
-  const { data: products = [] } = useProducts(8, undefined, undefined, initialProducts);
+  // /api/products ordena por fecha ASCENDENTE: useProducts(8) traía los 8
+  // productos MÁS VIEJOS del catálogo con badge "New" (bug, auditoría 12/10).
+  // Se trae el catálogo completo y se muestran los 8 más nuevos.
+  const { data: allProducts = [] } = useProducts(0, undefined, undefined, initialProducts);
+  const products = allProducts.slice(-8).reverse();
   const ref = useReveal([products]);
 
   return (
     <>
       <AnnouncementBar />
       <Navbar />
-      <main className="pt-[var(--offset)]">
-
-        <section className="bg-bg-dark text-primary-foreground py-20 px-6 text-center">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Shop</p>
-          <h1 className="text-[36px] md:text-[52px] font-bold uppercase leading-none mb-3">Novedades</h1>
-          <p className="text-[14px] text-primary-foreground/40">Lo último de Hypestyle</p>
-        </section>
-
-        <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={ref}>
-          <p className="text-[12px] text-muted-foreground mb-6">{products.length} productos</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[2px]">
+      <main className="pt-[var(--offset)] bg-white">
+        <CatalogHeader kicker="Shop" title="Novedades" count={products.length} description="Lo último que entró al catálogo." />
+        <section className="px-4 md:px-6 pt-3 pb-10 md:pb-14" ref={ref}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9">
             {products.map((p, i) => (
               <div key={p.slug} className={`reveal rd${Math.min(i + 1, 8)}`}>
                 <ProductCard
@@ -48,7 +46,6 @@ export default function NovedadesPage({ initialProducts }: { initialProducts?: N
             ))}
           </div>
         </section>
-
       </main>
       <Footer />
     </>
