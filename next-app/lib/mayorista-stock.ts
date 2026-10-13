@@ -8,6 +8,7 @@
 import { mapLimit } from './map-limit';
 import { unavailableReason, unavailableMessage, type StockInfo, type Unavailable } from './mayorista-availability';
 import { isDropPrivateProduct } from './mayorista-drop';
+import { COMING_SOON_TAG } from './private-access/normalize';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -63,6 +64,8 @@ function stockInfo(x: any): StockInfo {
     stockStatus: x.stock_status ?? null,
     manageStock: x.manage_stock ?? null,
     stockQuantity: typeof x.stock_quantity === 'number' ? x.stock_quantity : null,
+    // Solo el producto trae tags (las variaciones no).
+    ...(Array.isArray(x.tags) ? { comingSoon: x.tags.some((t: any) => t?.slug === COMING_SOON_TAG) } : {}),
   };
 }
 
@@ -147,8 +150,9 @@ export function findUnavailable(lines: StockLine[], resolvedBySlug: Map<string, 
   for (const line of lines) {
     const resolved = resolvedBySlug.get(line.slug);
     // Producto borrado de Woo: para el cliente es lo mismo que despublicado.
+    // Regla mayorista: sin cantidad cargada no se vende (ver lib/mayorista-availability.ts).
     const why: Unavailable | null = resolved
-      ? unavailableReason(resolved.stock, findVariation(resolved, line)?.stock ?? null, line.quantity)
+      ? unavailableReason(resolved.stock, findVariation(resolved, line)?.stock ?? null, line.quantity, { requireConfirmedStock: true })
       : { reason: 'not-published' };
     if (!why) continue;
     out.push({

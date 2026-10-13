@@ -11,7 +11,12 @@ const hoodie: ResolvedProduct = {
   variations: [{ id: 2058, options: ['m'], stock, regularPrice: 96000 }, { id: 2059, options: ['l'], stock, regularPrice: 96000 }],
 };
 const cap: ResolvedProduct = { product_id: 924, stock, regularPrice: 43000, variations: [] };
-const catalog = new Map<string, ResolvedProduct | null>([['faith-hoodie', hoodie], ['camo-cap', cap]]);
+// Sin gestión de stock (caso University tees / Chain Hype del 13/10): se ve, no se pide.
+const unmanaged = { status: 'publish', stockStatus: 'instock', manageStock: false, stockQuantity: null };
+const universityTee: ResolvedProduct = { product_id: 3662, stock: unmanaged, regularPrice: null, variations: [{ id: 3663, options: ['m'], stock: unmanaged, regularPrice: 39000 }] };
+// Tag "proximamente" con stock cargado: tampoco se pide todavía.
+const equestrian: ResolvedProduct = { product_id: 3898, stock: { ...stock, comingSoon: true }, regularPrice: null, variations: [{ id: 3899, options: ['m'], stock, regularPrice: 67000 }] };
+const catalog = new Map<string, ResolvedProduct | null>([['faith-hoodie', hoodie], ['camo-cap', cap], ['university-tee', universityTee], ['equestrian', equestrian]]);
 // Últimos pedidos del cliente en Woo (freno al pedido duplicado).
 let recentOrders: any[] = [];
 // Metas del cliente en Woo (exclusividad por ciudad).
@@ -132,6 +137,21 @@ describe('POST /api/mayorista/pedido — precio calculado en el servidor', () =>
     const r = await post({ items: [hoodieL(48000, { variation_id: 924, variationId: 924, product_id: 924 })], shipping });
     expect(r.status).toBe(200);
     expect(wcOrderPosts[0].line_items[0]).toMatchObject({ product_id: 2033, variation_id: 2059, total: '96000' });
+  });
+
+  it('variación sin gestión de stock: 409 "unconfirmed" y no crea orden (antes entraba como ilimitado)', async () => {
+    const r = await post({ items: [{ slug: 'university-tee', name: 'UNIVERSITY TEE', size: 'M', quantity: 40, price: 19500 }], shipping, confirmPrices: true });
+    expect(r.status).toBe(409);
+    expect(r.data.unavailable).toEqual([expect.objectContaining({ slug: 'university-tee', reason: 'unconfirmed' })]);
+    expect(r.data.message).toContain('no tiene stock confirmado');
+    expect(wcOrderPosts).toHaveLength(0);
+  });
+
+  it('producto "proximamente": 409 "coming-soon" aunque tenga stock', async () => {
+    const r = await post({ items: [{ slug: 'equestrian', name: 'EQUESTRIAN', size: 'M', quantity: 1, price: 33500 }], shipping, confirmPrices: true });
+    expect(r.status).toBe(409);
+    expect(r.data.unavailable).toEqual([expect.objectContaining({ slug: 'equestrian', reason: 'coming-soon' })]);
+    expect(wcOrderPosts).toHaveLength(0);
   });
 
   it('un producto sin regular_price en Woo no se puede pedir', async () => {

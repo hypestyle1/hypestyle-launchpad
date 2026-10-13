@@ -6,7 +6,7 @@
 // caro/best seller solo entra si lo barato no alcanza a cubrir lo que falta.
 
 import type { MayoristaProduct } from './mayorista-products';
-import { sizeLevel, stockKey } from './mayorista-products';
+import { sizeLevel, stockKey, canOrder } from './mayorista-products';
 
 /** Productos que se venden solos: no se sugieren para rellenar. */
 export const BEST_SELLER_SLUGS = new Set([
@@ -34,7 +34,8 @@ function firstSizeInStock(p: MayoristaProduct): { size: string; color?: string; 
   const color = p.colors.length === 1 ? p.colors[0] : undefined;
   if (p.colorAxis) return null; // elegir color es decisión del cliente, no se sugiere
   for (const s of p.sizes) {
-    if (sizeLevel(p, s) === 'out') continue;
+    // Solo lo que se puede pedir: ni agotado, ni sin stock confirmado, ni "próximamente".
+    if (!canOrder(p, sizeLevel(p, s))) continue;
     return { size: s, color, qty: p.stockQty[stockKey(p, s, color)] ?? null };
   }
   return null;

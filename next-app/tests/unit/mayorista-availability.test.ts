@@ -2,11 +2,40 @@ import { describe, it, expect } from 'vitest';
 import { unavailableReason, unavailableMessage } from '@/lib/mayorista-availability';
 
 const published = { status: 'publish', stockStatus: 'instock', manageStock: false, stockQuantity: null };
+const managed = { status: 'publish', stockStatus: 'instock', manageStock: true, stockQuantity: 12 };
 
 describe('unavailableReason', () => {
-  it('deja pasar un producto publicado con stock', () => {
-    expect(unavailableReason(published, null, 3)).toBeNull();
+  it('deja pasar un producto publicado con stock cargado', () => {
+    expect(unavailableReason(managed, null, 3)).toBeNull();
     expect(unavailableReason(published, { stockStatus: 'instock', manageStock: true, stockQuantity: 5 }, 3)).toBeNull();
+  });
+
+  // 13/10/2026: ocho modelos del drop SS27 estaban publicados sin gestión de
+  // stock y el portal los ofrecía como ilimitados. Con requireConfirmedStock
+  // (regla del portal mayorista, lib/mayorista-stock.ts) sin cantidad no hay venta.
+  const strict = { requireConfirmedStock: true };
+  it('mayorista: sin stock gestionado NO alcanza con instock, queda "sin confirmar"', () => {
+    expect(unavailableReason({ status: 'publish', stockStatus: 'instock', manageStock: false }, null, 1, strict)).toEqual({ reason: 'unconfirmed' });
+    expect(unavailableReason(published, { stockStatus: 'instock', manageStock: false, stockQuantity: null }, 1, strict)).toEqual({ reason: 'unconfirmed' });
+    // Variación que delega en un padre que tampoco gestiona.
+    expect(unavailableReason(published, { stockStatus: 'instock', manageStock: 'parent', stockQuantity: null }, 1, strict)).toEqual({ reason: 'unconfirmed' });
+    // manage_stock true pero sin cantidad legible: tampoco.
+    expect(unavailableReason({ ...managed, stockQuantity: null }, null, 1, strict)).toEqual({ reason: 'unconfirmed' });
+    // Con cantidad cargada, igual que siempre.
+    expect(unavailableReason(managed, null, 12, strict)).toBeNull();
+    expect(unavailableReason(managed, null, 13, strict)).toEqual({ reason: 'insufficient', available: 12 });
+  });
+
+  it('mayorista: tag "proximamente" se ve pero no se vende, aunque tenga stock', () => {
+    expect(unavailableReason({ ...managed, comingSoon: true }, null, 1, strict)).toEqual({ reason: 'coming-soon' });
+    expect(unavailableReason({ ...published, comingSoon: true }, { stockStatus: 'instock', manageStock: true, stockQuantity: 7 }, 1, strict)).toEqual({ reason: 'coming-soon' });
+    // Privado manda sobre próximamente.
+    expect(unavailableReason({ ...managed, status: 'private', comingSoon: true }, null, 1, strict)).toEqual({ reason: 'not-published' });
+  });
+
+  it('minorista (repago, sin la opción): instock sin gestión alcanza y próximamente no frena', () => {
+    expect(unavailableReason({ status: 'publish', stockStatus: 'instock', manageStock: false }, null, 40)).toBeNull();
+    expect(unavailableReason({ ...managed, comingSoon: true }, null, 1)).toBeNull();
   });
 
   it('rechaza un producto privado aunque la variación diga instock', () => {
@@ -43,8 +72,9 @@ describe('unavailableReason', () => {
       .toEqual({ reason: 'out-of-stock' });
   });
 
-  it('sin stock gestionado, instock alcanza (accesorios, "Única")', () => {
-    expect(unavailableReason({ status: 'publish', stockStatus: 'instock', manageStock: false }, null, 40)).toBeNull();
+  it('mayorista: accesorio "Única" con cantidad cargada pasa; sin cantidad, no', () => {
+    expect(unavailableReason({ status: 'publish', stockStatus: 'instock', manageStock: true, stockQuantity: 28 }, null, 20, strict)).toBeNull();
+    expect(unavailableReason({ status: 'publish', stockStatus: 'instock', manageStock: false }, null, 40, strict)).toEqual({ reason: 'unconfirmed' });
   });
 });
 
@@ -56,6 +86,10 @@ describe('unavailableMessage', () => {
       .toBe('Chain Hype ya no está disponible en el catálogo.');
     expect(unavailableMessage('Camo Cap', 'única', { reason: 'insufficient', available: 2 }))
       .toBe('Camo Cap: quedan 2 unidades.');
+    expect(unavailableMessage('UNIVERSITY TEE', 'M', { reason: 'unconfirmed' }))
+      .toBe('UNIVERSITY TEE (talle M) no tiene stock confirmado todavía.');
+    expect(unavailableMessage('EQUESTRIAN LONGSLEEVE', 'L', { reason: 'coming-soon' }))
+      .toBe('EQUESTRIAN LONGSLEEVE (talle L) todavía no está a la venta.');
   });
 });
 

@@ -4,7 +4,7 @@ import type { MayoristaProduct } from '@/lib/mayorista-products';
 
 const prod = (slug: string, name: string, ws: number, category: string, stock: Record<string, number>, promoPrice?: number, colorAxis = false): MayoristaProduct => ({
   id: slug, productId: 1, name, slug, category, shortDescription: '', wholesalePrice: ws, regularPrice: ws * 2, image: '', images: [],
-  sizes: Object.keys(stock), colors: [], colorAxis,
+  sizes: Object.keys(stock), colors: [], colorAxis, comingSoon: false,
   stock: Object.fromEntries(Object.entries(stock).map(([s, q]) => [s, q === 0 ? 'out' : q <= 5 ? 'low' : 'ok'])) as any,
   stockQty: stock,
   ...(promoPrice ? { promo: { campaignId: 'c', group: '10', label: '10% EXTRA', discount: 0.1, price: promoPrice, saving: ws - promoPrice, badge: 'LIQUIDACIÓN', tag: 'unidades-limitadas' } } : {}),
