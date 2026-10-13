@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { esFirst10, errorEsDeCupon, regaloFirst10DeLineas, textoFirst10, FIRST10_LINE_META } from '@/lib/first10';
+import { esFirst10, errorEsDeCupon, razonCupon, regaloFirst10DeLineas, textoFirst10, FIRST10_LINE_META } from '@/lib/first10';
 
 describe('first10', () => {
   it('reconoce el código sin importar mayúsculas ni espacios', () => {
@@ -14,6 +14,14 @@ describe('first10', () => {
     expect(errorEsDeCupon(400, '{"code":"woocommerce_rest_coupon_usage_limit_reached","message":"Coupon usage limit has been reached."}')).toBe(true);
     expect(errorEsDeCupon(400, '{"code":"woocommerce_rest_invalid_product_id"}')).toBe(false);
     expect(errorEsDeCupon(500, 'coupon')).toBe(false);
+  });
+
+  it('traduce el motivo del rechazo de Woo sin entidades HTML', () => {
+    expect(razonCupon('Coupon usage limit has been reached.')).toBe('se agotaron los cupos');
+    expect(razonCupon('This coupon has expired.')).toBe('venció');
+    expect(razonCupon('The minimum spend for this coupon is $100.000.')).toBe('no se alcanzó la compra mínima');
+    expect(razonCupon('Please enter a valid email at checkout to use coupon code &quot;gracias-52acfe&quot;.')).toBe('no está habilitado para este mail');
+    expect(razonCupon('')).toBe('ya no estaba disponible');
   });
 
   it('encuentra la línea de regalo por su meta y la deja a $0', () => {

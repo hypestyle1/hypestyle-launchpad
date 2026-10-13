@@ -6,7 +6,7 @@ import { lineasDeEnvio } from '@/lib/andreani-shipping-line';
 import { PRIVATE_ACCESS_COOKIE } from '@/lib/private-access/config';
 import { privateAccessForOrder, privateAccessMeta } from '@/lib/private-access/order';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
-import { errorEsDeCupon, regaloFirst10DeLineas } from '@/lib/first10';
+import { errorEsDeCupon, razonCupon, regaloFirst10DeLineas } from '@/lib/first10';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -214,8 +214,8 @@ export async function POST(req: NextRequest) {
     if (!res.ok && couponCode) {
       const txt = await res.text();
       if (errorEsDeCupon(res.status, txt)) {
-        let reason = 'El código ya no está disponible';
-        try { reason = String(JSON.parse(txt)?.message || reason); } catch { /* texto plano */ }
+        let reason = razonCupon('');
+        try { reason = razonCupon(JSON.parse(txt)?.message); } catch { /* texto plano */ }
         console.warn('[create-order-gocuotas] cupón rechazado por Woo, reintento sin cupón:', couponCode, txt);
         delete order.coupon_lines;
         couponDropped = { code: String(couponCode).toUpperCase(), reason };

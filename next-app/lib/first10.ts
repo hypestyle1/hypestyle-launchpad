@@ -34,6 +34,20 @@ export function errorEsDeCupon(status: number, body: string): boolean {
   return /coupon|cup[oó]n/i.test(body);
 }
 
+/**
+ * Motivo legible (en castellano, sin entidades HTML) a partir del mensaje con
+ * el que Woo rechazó el cupón al crear el pedido.
+ */
+export function razonCupon(mensajeWoo: string | undefined | null): string {
+  const m = String(mensajeWoo ?? '').replace(/&quot;|&#0?39;|&amp;/g, (e) => ({ '&quot;': '"', '&#039;': "'", '&#39;': "'", '&amp;': '&' }[e] ?? e));
+  if (/usage limit/i.test(m)) return 'se agotaron los cupos';
+  if (/expired/i.test(m)) return 'venció';
+  if (/minimum spend/i.test(m)) return 'no se alcanzó la compra mínima';
+  if (/valid email/i.test(m)) return 'no está habilitado para este mail';
+  if (/already/i.test(m)) return 'ya fue usado';
+  return m || 'ya no estaba disponible';
+}
+
 interface WcLineItem { name?: string; quantity?: number; total?: string; meta_data?: { key?: string; value?: unknown }[] }
 
 /** La línea de regalo FIRST10 de un pedido de Woo, lista para el mail de confirmación. */
