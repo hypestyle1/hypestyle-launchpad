@@ -9,27 +9,25 @@ volver a usarse o para inspirar el próximo drop.
 
 | Hero | Componente | Qué hace |
 |---|---|---|
-| **SS27 Mobile** (aprobado) | `components/ss27-home/HeroSs27.tsx` → `HeroMobile` | Video de estudio a pantalla completa, STYLE&CULTURE al centro (destino de la intro), aparición scale 0.88→1, CTA liquid glass con metal rim. |
-| **SS27 Desktop "card que crece"** (en prod; candidato a archivo) | `components/ss27-home/HeroSs27.tsx` → `HeroDesktop` | Card 767→1220px con pin GSAP de 200%, tríos de fotos verticales que rotan cada 4,5s, film de estudio desenfocado de fondo, card glass con la prenda del slide, STYLE&CULTURE que escala ×2,1 con el scroll. **Feature distintiva a conservar**: el timeline grow+hold y el patrón de slides por tríos. Nació en `HeroLookbookFW26`. |
-
-## Alternativas en evaluación (12/10/2026, solo desktop)
-
-`components/ss27-home/HeroDesktopLab.tsx` — conmutables desde el panel LAB:
-
-| Variante | Principio (benchmark) | Composición |
-|---|---|---|
-| **A · Editorial** | EME/Nude: una sola foto de campaña a sangre, texto mínimo | `hero-duo-grey-hd` full-bleed 88svh, display 64–84px abajo-izq, CTA liquid abajo-der. Cero JS. |
-| **B · Split dúo** | Nude "For him / For her", con líneas de producto propias | Dos verticales de campaña (Athletic LS / Hoodie Eagle) con labels linkeando a /longsleeves y /hoodies; STYLE&CULTURE + CTA al centro sobre la costura. |
-| **C · Showroom** | ALD/Entire, producto primero | `hero-flatlay-hd` (la colección completa desde arriba) en 62svh: el feed entra casi de inmediato. |
+| **SS27 Desktop "Showroom split"** (elegido 13/10/2026) | `components/ss27-home/HeroSs27.tsx` → `HeroDesktopSplit` | Split pantalla completa: flatlay de la colección a la izquierda + film de estudio vertical a sangre a la derecha; STYLE&CULTURE (crece 0.62→1 con el scroll) + CTA liquid sobre la costura; cortina blanca sticky con CSS puro (sin GSAP) + hold de 45svh; flechita SCROLL. Principio ALD/Entire: producto primero. |
+| **SS27 Mobile dúo al azar** (elegido 13/10/2026) | `components/ss27-home/HeroSs27.tsx` → `HeroMobile` / `HeroMobileFlatlay` | 50/50 al azar por visita: el video de estudio aprobado (aparición scale 0.88→1) o el flatlay a sangre (S&C crece 0.68→1). En los dos, STYLE&CULTURE sticky que se clava bajo el navbar con handoff, CTA liquid glass con metal rim y flechita SCROLL. El server siempre manda el video (sin mismatch de hidratación); el swap es al montar. |
 
 ## Archivo (fuera de uso, completos en el repo)
 
 | Hero | Componente | Época |
 |---|---|---|
+| **SS27 Desktop "card que crece"** | `components/ss27-home/HeroCardQueCrece.tsx` | drop SS27 (11–13/10/2026) — card 767→1220px con pin GSAP de 200%, tríos de fotos verticales que rotan cada 4,5s, film de estudio desenfocado de fondo, card glass con la prenda del slide, STYLE&CULTURE que escala ×2,1 con el scroll. **Feature distintiva a conservar**: el timeline grow+hold y el patrón de slides por tríos. Nació en `HeroLookbookFW26`. OJO al remontarlo: va adentro de un wrapper con key (el pin de GSAP crashea al desmontar sin él). |
 | Hero + EventCountdown + PinnedIntro | `components/Hero.tsx` y afines | pre-SS27 |
 | HeroLaNuestra | `components/HeroLaNuestra.tsx` | Mundial 26 |
 | HeroHannaDrop | `components/HeroHannaDrop.tsx` | drop Hanna |
 | HeroLookbookFW26 | `components/HeroLookbookFW26.tsx` | FW26 — el padre del "card que crece" |
+
+## Alternativas evaluadas y descartadas (12–13/10/2026, en el lab)
+
+`components/ss27-home/HeroDesktopLab.tsx` de la rama `feature/rediseno-lab`:
+**A · Editorial** (EME/Nude: `hero-duo-grey-hd` a sangre, cero JS) y **B · Split
+dúo** (Nude "For him / For her" con Athletic LS / Hoodie Eagle). La C
+"Showroom" ganó y es la que está en uso.
 
 ## Reglas
 
