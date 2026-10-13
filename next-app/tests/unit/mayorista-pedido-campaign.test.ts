@@ -184,3 +184,32 @@ describe('campaña vencida / futura / WP caído', () => {
     expect(wcOrderPosts).toHaveLength(0);
   });
 });
+
+// 13/10/2026: el copy prometía "te mandamos los datos con el resumen" y el
+// mail del pedido no traía cómo pagar (lib/mayorista-pago.ts).
+describe('mail del cliente — cómo pagar', () => {
+  it('con los datos en el entorno: alias, CBU y pasos en el mail del cliente; el del admin no', async () => {
+    vi.stubEnv('MAYORISTA_PAGO_ALIAS', 'hype.mayoristas');
+    vi.stubEnv('MAYORISTA_PAGO_CBU', '0000003100012345678901');
+    vi.stubEnv('MAYORISTA_PAGO_PLAZO_RESERVA_DIAS', '3');
+    const r = await post({ items: [{ slug: 'find-jesus', name: 'FIND JESUS', size: 'M', quantity: 2, price: 26800 }], shipping });
+    expect(r.status).toBe(200);
+    const cliente = brevoPosts.find(b => b.to?.[0]?.email === 'mask@test.com');
+    const admin = brevoPosts.find(b => b.to?.[0]?.email !== 'mask@test.com');
+    expect(cliente.htmlContent).toContain('Cómo pagar el pedido #6001');
+    expect(cliente.htmlContent).toContain('hype.mayoristas');
+    expect(cliente.htmlContent).toContain('0000003100012345678901');
+    expect(cliente.htmlContent).toContain('más de 3 días');
+    expect(admin.htmlContent).not.toContain('Cómo pagar');
+  });
+
+  it('sin datos en el entorno: el mail dice que los mandamos por WhatsApp y no inventa cuenta', async () => {
+    vi.stubEnv('MAYORISTA_PAGO_ALIAS', '');
+    vi.stubEnv('MAYORISTA_PAGO_CBU', '');
+    const r = await post({ items: [{ slug: 'find-jesus', name: 'FIND JESUS', size: 'M', quantity: 2, price: 26800 }], shipping });
+    expect(r.status).toBe(200);
+    const cliente = brevoPosts.find(b => b.to?.[0]?.email === 'mask@test.com');
+    expect(cliente.htmlContent).toContain('te mandamos los datos de la cuenta por WhatsApp');
+    expect(cliente.htmlContent).not.toContain('CBU / CVU');
+  });
+});

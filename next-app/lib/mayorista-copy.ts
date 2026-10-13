@@ -67,7 +67,7 @@ export const HOW_IT_WORKS_SECTIONS = [
       'Ves el PVP al lado de tu precio, así sabés de entrada cuánto marcás por prenda.',
       'Sumás talles sueltos desde la card o la ficha. Podés guardar borradores y retomarlos después.',
       'Hay un pedido mínimo a precio mayorista: lo ves en tu cuenta, la barra te muestra cuánto falta y el carrito te sugiere cómo completarlo.',
-      'Al confirmar, cargás los datos de envío una sola vez y te llega el resumen por mail, con PDF y planilla.',
+      'Al confirmar, cargás los datos de envío una sola vez y te llega el resumen por mail con los datos para pagar. El PDF y la planilla los descargás desde la pantalla de confirmación.',
     ],
   },
   {

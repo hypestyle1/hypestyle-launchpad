@@ -13,6 +13,8 @@ import MayoristaMinBar from './MayoristaMinBar';
 import { completarMinimo } from '@/lib/mayorista-completar-minimo';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
 import { agoLabel, type RecentOrder } from '@/lib/mayorista-recent-order';
+import { pagoSteps, pagoDetailLines, type PagoInfo } from '@/lib/mayorista-pago';
+import { WHATSAPP_URL } from '@/lib/mayorista-copy';
 import MayoristaExclusividadBanner from './MayoristaExclusividadBanner';
 
 // Cuánto se espera a que aparezca la orden cuando el envío falló sin respuesta
@@ -166,6 +168,8 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   const [minOrder, setMinOrder] = useState<number | null>(null);
   // Saldo a favor de la cuenta (nota de crédito): se descuenta solo del pedido.
   const [credit, setCredit] = useState(0);
+  // Datos para pagar (lib/mayorista-pago.ts), del perfil. null hasta que llega.
+  const [pago, setPago] = useState<PagoInfo | null>(null);
   // Otro local tiene la exclusividad de la ciudad de esta cuenta: no se puede
   // confirmar (lib/mayorista-exclusividad.ts). Viene del perfil o del 403 del pedido.
   const [bloqueo, setBloqueo] = useState<string | null>(null);
@@ -296,6 +300,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         if (!data) return;
         if (typeof data.minOrder === 'number') setMinOrder(data.minOrder);
         if (typeof data.credit === 'number') setCredit(data.credit);
+        if (data.pago && typeof data.pago === 'object') setPago(data.pago as PagoInfo);
         if (data.bloqueoExclusividad?.mensaje) setBloqueo(data.bloqueoExclusividad.mensaje);
         if (data.email) setEmail(data.email);
         const b = data.billing;
@@ -497,10 +502,37 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Pedido enviado</p>
           <h1 className="text-2xl font-bold tracking-tight mt-2">Pedido #{confirmed.orderNumber}</h1>
           <p className="text-[13px] text-muted-foreground mt-3">
-            Ya lo recibimos. Te contactamos para coordinar preparación y entrega.
+            Ya lo recibimos. Abajo tenés cómo pagarlo; una vez acreditado lo preparamos y te avisamos con el seguimiento.
             {email && <> Te mandamos este resumen a <span className="text-foreground">{email}</span>.</>}
           </p>
         </div>
+
+        {(() => {
+          // Sin datos cargados en el entorno el bloque manda a WhatsApp: no se inventan alias ni CBU.
+          const info: PagoInfo = pago ?? { alias: null, cbu: null, titular: null, cuit: null, banco: null, plazoReservaDias: null };
+          const details = pagoDetailLines(info);
+          return (
+            <div className="rounded-[16px] border border-foreground p-4 mb-4">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Cómo pagar</p>
+              <ol className="list-decimal pl-4 space-y-1 text-[13px]">
+                {pagoSteps(info).map((s, i) => <li key={i}>{s}</li>)}
+              </ol>
+              {details.length > 0 && (
+                <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px]">
+                  {details.map(d => (
+                    <div key={d.label} className="contents">
+                      <dt className="text-muted-foreground">{d.label}</dt>
+                      <dd className="font-semibold select-all break-all">{d.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-[11px] font-semibold uppercase tracking-wide underline">
+                Mandar comprobante por WhatsApp
+              </a>
+            </div>
+          );
+        })()}
 
         <div className="rounded-[16px] border border-border bg-bg-alt/50 p-4">
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">Resumen del pedido</p>
