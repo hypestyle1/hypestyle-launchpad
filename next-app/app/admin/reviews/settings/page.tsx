@@ -10,6 +10,10 @@ type Settings = {
   test_mode: boolean;
   test_allowlist: string;
   dispatch_on_tracking: boolean;
+  // Desde el plugin 1.5.0. Con 1.4.0 no vienen y la tarjeta "Canal" lo avisa.
+  channel?: ReviewChannel;
+  whatsapp_webhook_url?: string;
+  whatsapp_ready?: boolean;
   delay_days: number;
   token_expiry_days: number;
   request_email_enabled: boolean;
@@ -26,6 +30,14 @@ type Settings = {
   incentive_individual_use: boolean;
   incentive_exclude_sale_items: boolean;
 };
+
+type ReviewChannel = 'email' | 'whatsapp' | 'both';
+
+const CHANNELS: { id: ReviewChannel; label: string; hint: string }[] = [
+  { id: 'email', label: 'Mail', hint: 'Como hasta ahora.' },
+  { id: 'whatsapp', label: 'WhatsApp', hint: 'Si el pedido no tiene un celular válido, sale por mail.' },
+  { id: 'both', label: 'Los dos', hint: 'Mail y WhatsApp con el mismo link: la reseña cuenta una sola vez.' },
+];
 
 function Toggle({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string }) {
   return (
@@ -94,7 +106,12 @@ export default function ReviewsSettingsPage() {
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify(settings),
       });
-      if (!res.ok) { setMsg('No se pudo guardar la configuración.'); return; }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMsg(data.error ? `No se pudo guardar: ${data.error}` : 'No se pudo guardar la configuración.');
+        return;
+      }
+      setSettings(prev => prev && 'channel' in prev ? { ...prev, whatsapp_ready: !!prev.whatsapp_webhook_url?.trim() } : prev);
       setMsg('✓ Configuración guardada.');
     } catch {
       setMsg('Error al conectar.');
@@ -160,7 +177,7 @@ export default function ReviewsSettingsPage() {
             checked={settings.system_enabled}
             onChange={v => set('system_enabled', v)}
             label="Sistema de reseñas activado"
-            hint="Apagado: ninguna orden despachada programa un email, sin importar el resto de la configuración."
+            hint="Apagado: ninguna orden despachada programa una solicitud, ni por mail ni por WhatsApp."
           />
           <Toggle
             checked={settings.test_mode}
@@ -179,6 +196,56 @@ export default function ReviewsSettingsPage() {
             label="Tracking como fallback de despacho"
             hint="Apagado por defecto. Si se prende, la primera guía de Andreani cargada también dispara el despacho, además del botón manual."
           />
+        </div>
+
+        <div className="bg-card rounded-lg border border-border px-5 py-4">
+          <h2 className="text-[13px] font-semibold text-foreground mb-1">Canal</h2>
+          {settings.channel === undefined ? (
+            <p className="text-[12px] text-muted-foreground py-2">
+              Para mandar la solicitud por WhatsApp hay que actualizar el plugin de reseñas a la versión 1.5.0.
+            </p>
+          ) : (
+            <>
+              <p className="text-[11px] text-muted-foreground/70 mb-2">Por dónde le llega al cliente el pedido de reseña.</p>
+              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Canal de la solicitud">
+                {CHANNELS.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={settings.channel === c.id}
+                    onClick={() => set('channel', c.id)}
+                    className={`text-left border rounded-lg px-3 py-2 transition-colors ${settings.channel === c.id ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-border-mid'}`}
+                  >
+                    <div className="text-[13px] font-medium">{c.label}</div>
+                    <div className={`text-[11px] ${settings.channel === c.id ? 'text-background/70' : 'text-muted-foreground/70'}`}>{c.hint}</div>
+                  </button>
+                ))}
+              </div>
+              <Field
+                label="Webhook de n8n para WhatsApp"
+                hint="Sin esto, WhatsApp y Los dos salen solo por mail."
+              >
+                <input
+                  type="url"
+                  className={inputCls}
+                  value={settings.whatsapp_webhook_url ?? ''}
+                  onChange={e => set('whatsapp_webhook_url', e.target.value)}
+                  placeholder="https://n8n.hypestyle.com.ar/webhook/hs-resena-solicitud"
+                />
+              </Field>
+              {settings.channel !== 'email' && !settings.whatsapp_ready && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                  WhatsApp todavía no está listo: falta el webhook guardado. Mientras tanto todo sale por mail.
+                </p>
+              )}
+              {settings.channel !== 'email' && !settings.request_email_enabled && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-2">
+                  El mail de solicitud está apagado: los pedidos sin celular válido no van a recibir el pedido de reseña.
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         <div className="bg-card rounded-lg border border-border px-5 py-4">
