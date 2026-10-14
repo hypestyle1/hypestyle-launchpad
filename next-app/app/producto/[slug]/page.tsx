@@ -4,6 +4,7 @@ import { fetchProductSlugs } from '@/lib/wp-products';
 import { getCachedDiscountStatus, GOAL_PRODUCT_SLUG } from '@/lib/goal-discount';
 import { fetchProductDetail } from '@/lib/product-detail';
 import { buildMetadata, truncate } from '@/lib/seo';
+import { SLUGS_INTERNOS } from '@/lib/catalog';
 import { productJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 import JsonLd from '@/components/JsonLd';
 import ProductoClient from './ProductoClient';
@@ -53,6 +54,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     path: `/producto/${product.slug}/`,
     image: product.images.find(Boolean) || '/og-image.png',
     imageAlt: product.name,
+    // Productos técnicos (regalo, gift card, el sleeveless que junta los cuatro
+    // colores): siguen publicados y funcionando para el checkout y los regalos,
+    // pero no son páginas para buscar. Fuera del índice y del sitemap.
+    ...(SLUGS_INTERNOS.has(product.slug) ? { noindex: true, follow: true } : {}),
   });
 }
 

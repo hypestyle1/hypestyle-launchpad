@@ -18,6 +18,8 @@ interface OrderData {
   items: { id?: string; name: string; price: number; quantity: number; size: string; image: string }[];
   total: number; email: string; nombre: string; apellido: string; ciudad: string; provincia: string;
   metodo?: string; pais?: string; telefono?: string;
+  couponDropped?: { code: string; reason: string } | null;
+  first10?: boolean;
 }
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '412944573148639';
@@ -288,6 +290,16 @@ export default function ConfirmacionClient() {
           </p>
           <h1 className="text-[26px] md:text-[32px] font-bold leading-tight mb-4">{t.thanks}</h1>
           <p className="text-[14px] text-muted-foreground leading-relaxed">{t.body}</p>
+          {order?.first10 && (
+            <p className="mt-4 rounded-[8px] border border-green-100 bg-green-50/60 px-3 py-2 text-[12px] text-green-800">
+              Tu pack de medias blancas de regalo (FIRST10) va en el pedido.
+            </p>
+          )}
+          {order?.couponDropped && (
+            <p className="mt-4 rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+              El código {order.couponDropped.code} no se pudo aplicar al confirmar ({order.couponDropped.reason}). El pedido se creó sin ese beneficio.
+            </p>
+          )}
         </div>
 
         <ReceiptPrinter stage={stage}>

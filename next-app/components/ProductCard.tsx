@@ -74,6 +74,13 @@ interface ProductCardProps {
    * cards vacías.
    */
   mountMargin?: string;
+  /**
+   * Prioridad de la foto principal en las cards de la primera fila de un
+   * listado. 'lcp': la que suele ser el LCP (precarga y fetchpriority alta).
+   * 'eager': visible al cargar, sin lazy. Sin esto, lazy como siempre. Usarlo
+   * en 2 a 4 cards como mucho: priorizar muchas le saca banda a la que importa.
+   */
+  imagePriority?: 'lcp' | 'eager';
 }
 
 /** Margen de precarga de las cards con mountMargin una vez pintado el hero. */
@@ -82,7 +89,7 @@ const PRECARGA_TRAS_HERO = "2000px";
 export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
   href = "/productos", sizes, stock, giftNote, customizable, mutedPrice,
-  dense, blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin,
+  dense, blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin, imagePriority,
 }: ProductCardProps) {
   // Escalas de la card densa vs. la normal (ver prop `dense`).
   const badgePos = dense ? "top-2 left-2 px-1.5 py-0.5 text-[8px] tracking-[0.06em]" : "top-3 left-3 px-2.5 py-1 text-[10px] tracking-wider";
@@ -166,11 +173,15 @@ export default function ProductCard({
   // Producto totalmente agotado: todos los talles sin stock.
   const outOfStock = !!sizes && sizes.length > 0 && !!stock && sizes.every(s => stock[s] === "out");
 
+  // Sin link (vidriera de un drop que todavía no se vende) la card es un
+  // <div>: un <a> sin href no es un link para Google ni para un lector de
+  // pantalla, y Lighthouse lo marca como enlace no rastreable.
+  const Card = (disableLink ? 'div' : 'a') as 'a';
+
   return (
-    <a
+    <Card
       ref={cardRef}
-      href={disableLink ? undefined : href}
-      onClick={(e) => { if (disableLink) e.preventDefault(); }}
+      {...(disableLink ? {} : { href })}
       className={`group block ${disableLink ? "cursor-default" : ""}`}
       onMouseEnter={() => { setHovered(true); setHoverReady(true); }}
       onMouseLeave={() => setHovered(false)}
@@ -190,6 +201,8 @@ export default function ProductCard({
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            priority={imagePriority === 'lcp'}
+            loading={imagePriority === 'eager' ? 'eager' : undefined}
             onLoad={() => setFotoLista(true)}
             className={`object-cover object-top transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
               (hovered && hoverImage && hoverLoaded) || (miniatura && !fotoLista) ? "opacity-0" : "opacity-100"
@@ -340,6 +353,6 @@ export default function ProductCard({
           </div>
         )}
       </div>
-    </a>
+    </Card>
   );
 }

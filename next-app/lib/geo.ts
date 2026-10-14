@@ -67,6 +67,40 @@ export function localeForCountry(code: string | null | undefined): LocaleGuess |
   return { language: 'EN', currency: 'USD', label: 'English · US Dollar' };
 }
 
+// Nombre de cada idioma en su propio idioma, para el botón de la sugerencia
+// cuando no hay país (solo se ofrece el idioma, la moneda queda en pesos).
+const LANGUAGE_LABEL: Record<Language, string> = {
+  ES: 'Español', EN: 'English', PT: 'Português', DE: 'Deutsch', FR: 'Français', IT: 'Italiano',
+};
+const SITE_LANGUAGES = Object.keys(LANGUAGE_LABEL) as Language[];
+
+export interface LocaleOffer {
+  language: Language;
+  /** Sin moneda cuando la sugerencia sale del idioma del navegador. */
+  currency?: Currency;
+  label: string;
+}
+
+/**
+ * Qué idioma y moneda OFRECERLE a quien nunca eligió. Nunca se aplica sola:
+ * LocaleSuggestion la muestra y solo cambia si la persona la acepta.
+ *
+ * Con país, manda el país (Argentina no tiene nada que ofrecer). Sin país
+ * (cookie ausente), se mira el idioma del navegador: así una persona de afuera
+ * con el navegador en inglés sigue teniendo a mano el inglés aunque Vercel no
+ * haya resuelto su ubicación. `navLanguages` viene como 'en-GB', 'pt-BR': solo
+ * cuenta el prefijo, y solo si el sitio está traducido a ese idioma.
+ */
+export function localeOffer(country: string | null | undefined, navLanguages: readonly string[]): LocaleOffer | null {
+  if (country) return localeForCountry(country);
+  for (const p of navLanguages) {
+    const code = (p || '').slice(0, 2).toUpperCase() as Language;
+    if (!SITE_LANGUAGES.includes(code)) continue;
+    return code === 'ES' ? null : { language: code, label: LANGUAGE_LABEL[code] };
+  }
+  return null;
+}
+
 // Donde rige el RGPD (UE + EEE), más Reino Unido y Suiza, que tienen su
 // equivalente. Solo ahí hace falta el cartel de cookies completo con la opción
 // de rechazar la medición; en Argentina la ley de datos no lo exige y cada

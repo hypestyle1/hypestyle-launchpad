@@ -69,6 +69,10 @@ export interface CreateOrderResponse {
   initPoint: string | null;
   paypalUrl: string | null;
   taloPaymentData: TaloPaymentData | null;
+  /** El pedido se creó sin el cupón porque Woo lo rechazó (ver create-order-gocuotas). */
+  couponDropped?: { code: string; reason: string } | null;
+  /** El pedido salió con el regalo FIRST10 (línea a $0 agregada por WordPress). */
+  first10?: boolean;
   error?: string;
 }
 

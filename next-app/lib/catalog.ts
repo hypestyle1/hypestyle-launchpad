@@ -1,4 +1,5 @@
-import { fetchAllProducts } from '@/lib/products-server';
+import { PHASE_PRODUCTION_BUILD } from 'next/constants';
+import { fetchAllProductsStrict } from '@/lib/products-server';
 import { productsForCategory, type CategoryConfig } from '@/lib/category-config';
 import type { NormalizedProduct } from '@/lib/products-normalize';
 
@@ -36,15 +37,33 @@ export const SLUGS_INTERNOS = new Set(['par-de-medias-hype', 'gift-card', 'sleev
  * `placeholderData` y pide /api/products igual que siempre, así que el stock y
  * los precios que quedan en pantalla son los de ese pedido.
  *
- * Si WordPress falla devuelve una lista vacía: la página queda como antes de
- * este cambio (la grilla la carga el cliente) en vez de dar error.
+ * Si WordPress falla (HTTP de error, sin datos, timeout o la paginación cortada
+ * a la mitad) NO se devuelve una lista vacía como si fuera el catálogo: el
+ * 13/10/2026 una regeneración de ISR con WP caído dejó varios listados
+ * cacheados con 0 productos en el HTML, que es lo que ve Google.
+ *
+ * - En runtime (regeneración de ISR) el error se propaga: Next descarta esa
+ *   regeneración y sigue sirviendo la última versión buena hasta que WP vuelva.
+ *   No es info vieja presentada como actual: el navegador igual pide
+ *   /api/products y pinta el stock y el precio del momento.
+ * - En el build devuelve [] para no tirar el deploy por un WP lento: la página
+ *   sale como antes de #550 (la grilla la carga el cliente) y se rehace sola en
+ *   la primera regeneración (revalidate = 60).
+ *
+ * Un catálogo vacío de verdad (WP responde OK sin productos) sí devuelve [].
  */
 export async function fetchCatalogForSsr(): Promise<NormalizedProduct[]> {
   try {
-    return (await fetchAllProducts()).filter(p => !SLUGS_INTERNOS.has(p.slug));
+    return (await fetchAllProductsStrict()).filter(p => !SLUGS_INTERNOS.has(p.slug));
   } catch (err) {
-    console.error('[catalog] SSR sin catálogo, la grilla la carga el cliente:', err);
-    return [];
+    // Solo el mensaje: el error de fetch puede traer la request entera.
+    const motivo = err instanceof Error ? err.message : String(err);
+    if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) {
+      console.error(`[catalog] build sin catálogo (${motivo}); la grilla la carga el cliente y la página se rehace en la próxima regeneración`);
+      return [];
+    }
+    console.error(`[catalog] WordPress no respondió (${motivo}); se conserva la última versión del listado`);
+    throw err;
   }
 }
 

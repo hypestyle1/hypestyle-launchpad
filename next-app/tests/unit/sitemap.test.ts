@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-vi.mock('@/lib/wp-products', () => ({ fetchProductSlugs: async () => ['regular-tee-black'] }));
+vi.mock('@/lib/wp-products', () => ({ fetchProductSlugs: async () => ['regular-tee-black', 'gift-card', 'par-de-medias-hype'], fetchAllProducts: async () => [] }));
 
 import sitemap from '@/app/sitemap';
 
@@ -43,5 +43,30 @@ describe('sitemap', () => {
     const urls = (await sitemap()).map((e) => e.url);
     expect(urls.filter((u) => u !== 'https://hypestyle.com.ar/' && u.endsWith('/'))).toEqual([]);
     expect(new Set(urls).size).toBe(urls.length);
+  });
+});
+
+describe('sitemap — fase 2 de huérfanas', () => {
+  it('saca /novedades (redirige a /new-in) y los productos técnicos', async () => {
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls).not.toContain('https://hypestyle.com.ar/novedades');
+    expect(urls).not.toContain('https://hypestyle.com.ar/producto/gift-card');
+    expect(urls).not.toContain('https://hypestyle.com.ar/producto/par-de-medias-hype');
+    expect(urls).toContain('https://hypestyle.com.ar/producto/regular-tee-black');
+  });
+
+  it('/novedades redirige 301 a /new-in', async () => {
+    const config = (await import('../../next.config.mjs')).default;
+    const redirects = await config.redirects();
+    expect(redirects).toContainEqual(expect.objectContaining({ source: '/novedades', destination: '/new-in', permanent: true }));
+  });
+});
+
+describe('buildMetadata — noindex con follow para los productos técnicos', () => {
+  it('index false, follow true', async () => {
+    const { buildMetadata } = await import('@/lib/seo');
+    expect(buildMetadata({ title: 'Gift Card', description: 'x', path: '/producto/gift-card', noindex: true, follow: true }).robots)
+      .toEqual({ index: false, follow: true });
+    expect(buildMetadata({ title: 'x', description: 'x', path: '/x', noindex: true }).robots).toEqual({ index: false, follow: false });
   });
 });

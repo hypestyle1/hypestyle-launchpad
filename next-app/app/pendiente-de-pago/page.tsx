@@ -67,6 +67,16 @@ export default function PendientePago() {
             </p>
             <p className="text-[22px] font-bold">#{displayOrderNum}</p>
           </div>
+          {order.first10 && (
+            <p className="rounded-[8px] border border-green-100 bg-green-50/60 px-3 py-2 text-[12px] text-green-800">
+              Tu pack de medias blancas de regalo (FIRST10) ya quedó en el pedido. Se reserva 90 minutos: con el pago acreditado es tuyo.
+            </p>
+          )}
+          {order.couponDropped && (
+            <p className="rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+              El código {order.couponDropped.code} no se pudo aplicar al confirmar ({order.couponDropped.reason}). El pedido se creó sin ese beneficio.
+            </p>
+          )}
 
           {/* La misma impresora de /confirmacion, en espera: el ticket que sale
               trae los datos para transferir. Cuando el pago se acredita, el

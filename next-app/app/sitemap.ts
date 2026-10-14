@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { fetchProductSlugs } from '@/lib/wp-products';
 import { canonicalUrl } from '@/lib/seo';
+import { SLUGS_INTERNOS } from '@/lib/catalog';
 
 // Las URLs del sitemap pasan por canonicalUrl() para que coincidan exactamente
 // con el <link rel="canonical"> de cada página. Los paths de acá abajo se
@@ -12,7 +13,6 @@ const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[numb
   { path: '/', changeFrequency: 'daily', priority: 1 },
   { path: '/productos/', changeFrequency: 'daily', priority: 0.9 },
   { path: '/new-in/', changeFrequency: 'daily', priority: 0.8 },
-  { path: '/novedades/', changeFrequency: 'daily', priority: 0.7 },
   { path: '/special-prices/', changeFrequency: 'daily', priority: 0.9 },
   { path: '/back-in-stock/', changeFrequency: 'daily', priority: 0.6 },
   { path: '/looks/', changeFrequency: 'weekly', priority: 0.6 },
@@ -68,7 +68,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority,
   }));
 
-  const productEntries: MetadataRoute.Sitemap = productSlugs.map(slug => ({
+  // Los productos técnicos (ver SLUGS_INTERNOS) llevan noindex: no van al sitemap.
+  const productEntries: MetadataRoute.Sitemap = productSlugs.filter(slug => !SLUGS_INTERNOS.has(slug)).map(slug => ({
     url: canonicalUrl(`/producto/${slug}/`),
     lastModified: now,
     changeFrequency: 'daily',
