@@ -34,7 +34,35 @@ const GET_PRODUCTS = `
   }
 `;
 
-export async function fetchAllProducts(): Promise<NormalizedProduct[]> {
+/**
+ * WordPress no respondió bien (HTTP de error, GraphQL sin datos o un corte a
+ * mitad de la paginación). Es distinto de un catálogo vacío de verdad, que
+ * llega con `nodes: []` y una respuesta OK.
+ */
+export class CatalogUnavailableError extends Error {
+  constructor(detail: string) {
+    super(`catálogo de WordPress no disponible: ${detail}`);
+    this.name = 'CatalogUnavailableError';
+  }
+}
+
+/**
+ * En modo estricto, una respuesta mala de WordPress lanza CatalogUnavailableError
+ * en vez de devolver lo que haya juntado hasta ahí (que puede ser [] o media
+ * lista). Lo usan los listados (lib/catalog.ts) para no cachear como válido un
+ * catálogo vacío o recortado. fetchAllProducts se comporta como siempre: el
+ * checkout (pedido-servidor), la home y las alertas de stock no cambian.
+ */
+export function fetchAllProducts(): Promise<NormalizedProduct[]> {
+  return fetchCatalog(false);
+}
+
+/** Igual que fetchAllProducts pero lanza CatalogUnavailableError si WordPress falla. */
+export function fetchAllProductsStrict(): Promise<NormalizedProduct[]> {
+  return fetchCatalog(true);
+}
+
+async function fetchCatalog(strict: boolean): Promise<NormalizedProduct[]> {
   // WPGraphQL cachea el "first" a 100 por página sin importar lo que se pida
   // (confirmado en vivo) — hay que paginar por cursor igual que en
   // app/api/products/route.ts, si no los productos más allá del top-100
@@ -51,10 +79,16 @@ export async function fetchAllProducts(): Promise<NormalizedProduct[]> {
       body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100, after } }),
       next: { revalidate: 60 },
     });
-    if (!res.ok) break;
+    if (!res.ok) {
+      if (strict) throw new CatalogUnavailableError(`HTTP ${res.status} en la página ${i + 1}`);
+      break;
+    }
     const { data } = await res.json();
     const page = data?.products;
-    if (!page) break;
+    if (!page) {
+      if (strict) throw new CatalogUnavailableError(`respuesta sin products en la página ${i + 1}`);
+      break;
+    }
     allNodes.push(...page.nodes);
     if (!page.pageInfo?.hasNextPage) break;
     after = page.pageInfo.endCursor;
