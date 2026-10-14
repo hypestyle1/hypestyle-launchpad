@@ -210,7 +210,7 @@ export default function BestSellersShelf() {
         items={grupos.map((g) => ({ id: g.id, label: g.label }))}
         active={active}
         prefix="bs-"
-        cta={{ href: '/productos', label: 'Ver todo' }}
+        cta={{ href: '/back-in-stock', label: 'Ver todo' }}
         onSelect={onAnchorClick}
       />
       {grupos.map((g) => (

@@ -20,6 +20,10 @@ const shopLinks = [
   { label: "Accesorios",  href: "/accesorios" },
   { label: "Gift Card",   href: "/gift-cards" },
   { label: "SALE",        href: "/special-prices" },
+  // Arriba y Abajo salieron del menú con el rediseño (#558) pero tienen
+  // tráfico orgánico propio: el footer las mantiene enlazadas sin sumar al menú.
+  { label: "Prendas de arriba", href: "/arriba" },
+  { label: "Prendas de abajo",  href: "/abajo" },
   { label: "Ver todo",    href: "/productos" },
 ];
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { rememberMayoristaUser } from '@/context/MayoristaCartContext';
 
@@ -31,7 +30,6 @@ const glassInput = {
 } as React.CSSProperties;
 
 export default function MayoristaLoginPage() {
-  const router = useRouter();
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
@@ -62,8 +60,10 @@ export default function MayoristaLoginPage() {
       // Carrito por cuenta (context/MayoristaCartContext.tsx).
       const data = await res.json().catch(() => ({}));
       if (data?.customerId != null) rememberMayoristaUser(data.customerId);
-      router.push('/mayoristas');
-      router.refresh();
+      // Navegación completa, no SPA: el provider del carrito lee la cuenta
+      // (hy_mayorista_uid) al montar; con router.push seguía con la clave y los
+      // ítems de la sesión anterior hasta recargar (PC compartida entre cuentas).
+      window.location.assign('/mayoristas');
     } else {
       const data = await res.json().catch(() => ({}));
       // El fallback NO puede ser "usuario o contraseña incorrectos": un 500 con

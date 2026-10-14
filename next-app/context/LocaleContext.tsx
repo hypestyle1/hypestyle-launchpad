@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { translate } from '@/lib/i18n';
 import { FxRates, FX_FALLBACK, mergeRates } from '@/lib/fx';
 import { Currency, formatMoney, isCurrency } from '@/lib/currency';
-import { readCountryCookie, localeForCountry } from '@/lib/geo';
+import { readCountryCookie } from '@/lib/geo';
 
 export type Language = 'ES' | 'EN' | 'PT' | 'DE' | 'FR' | 'IT';
 // Las monedas viven en lib/currency.ts (lista, símbolos y formato, con tests).
@@ -62,47 +62,27 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   // layout.
   const [rates, setRates] = useState<FxRates>(FX_FALLBACK);
 
-  // navigator.language viene como 'en-GB', 'pt-BR', 'es-AR'. Solo interesa el
-  // prefijo, y solo si es un idioma que realmente tenemos traducido: sumar uno
-  // al selector sin poblar su columna del diccionario deja la interfaz en
-  // español igual, y encima confunde.
-  function idiomaDelNavegador(): Language | null {
-    if (typeof navigator === 'undefined') return null;
-    const prefs = [navigator.language, ...(navigator.languages || [])].filter(Boolean);
-    for (const p of prefs) {
-      const code = p.slice(0, 2).toUpperCase();
-      if ((LANGUAGES as string[]).includes(code)) return code as Language;
-    }
-    return null;
-  }
-
-  // Idioma y moneda: la elección explícita de la persona manda siempre. Si
-  // nunca eligió, se toma la del país detectado. El estado inicial se deja en
-  // ES/ARS para que el HTML del server y el del cliente coincidan, y el ajuste
-  // pasa acá, después de hidratar.
+  // Idioma y moneda: el sitio es español y pesos para todos, personas y
+  // buscadores, salvo que la persona haya elegido otra cosa a mano (selector o
+  // aceptando la sugerencia de LocaleSuggestion). Hasta el 13/10/2026 acá se
+  // aplicaba solo la del país detectado (o la del navegador), y como Googlebot
+  // rastrea desde EE.UU. indexaba las páginas en inglés y con US$ mientras el
+  // JSON-LD decía ARS. Ver "SEO 2.0 — Etapa 3" en el vault, alternativa A.
+  //
+  // Lo guardado se aplica después de hidratar para que el HTML del server y el
+  // del cliente coincidan.
   useEffect(() => {
-    const storedLang = localStorage.getItem('hs-language') as Language | null;
-    const storedRaw = localStorage.getItem('hs-currency');
-    const storedCurr = isCurrency(storedRaw) ? storedRaw : null;
+    const storedRaw = localStorage.getItem('hs-language');
+    const storedLang = (LANGUAGES as string[]).includes(storedRaw ?? '') ? (storedRaw as Language) : null;
+    const storedCurrRaw = localStorage.getItem('hs-currency');
+    const storedCurr = isCurrency(storedCurrRaw) ? storedCurrRaw : null;
 
-    const detected = readCountryCookie();
-    setCountry(detected);
-    const guess = localeForCountry(detected);
+    // El país se sigue leyendo: el checkout lo usa para preseleccionar el
+    // destino del envío, y LocaleSuggestion para ofrecer el cambio.
+    setCountry(readCountryCookie());
 
-    // Orden: la elección explícita manda; después el país que detecta Vercel;
-    // y recién ahí el idioma del navegador. Este último escalón es nuevo y es
-    // aditivo: antes, alguien de afuera cuyo país no estuviera mapeado veía
-    // todo en español aunque tuviera el navegador en inglés. Eso fue lo que
-    // dejó a una creadora extranjera sin poder completar el formulario.
     if (storedLang) setLanguageState(storedLang);
-    else if (guess) setLanguageState(guess.language);
-    else {
-      const delNavegador = idiomaDelNavegador();
-      if (delNavegador) setLanguageState(delNavegador);
-    }
-
     if (storedCurr) { setCurrencyState(storedCurr); setCurrencyChosen(true); }
-    else if (guess) setCurrencyState(guess.currency);
   }, []);
 
   // El server siempre manda <html lang="es"> porque la elección vive en

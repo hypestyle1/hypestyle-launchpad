@@ -130,6 +130,8 @@ interface BuildMetadataArgs {
   /** No agregar " | HYPESTYLE" (lo usa la home, que va con branding limpio). */
   rawTitle?: boolean;
   noindex?: boolean;
+  /** Con noindex: que Google siga los links de la página aunque no la indexe. */
+  follow?: boolean;
 }
 
 /**
@@ -149,6 +151,7 @@ export function buildMetadata({
   type = 'website',
   rawTitle = false,
   noindex = false,
+  follow = false,
 }: BuildMetadataArgs): Metadata {
   const url = canonicalUrl(path);
   const fullTitle = rawTitle ? title : `${title}${TITLE_SUFFIX}`;
@@ -159,7 +162,7 @@ export function buildMetadata({
     title: fullTitle,
     description: desc,
     alternates: { canonical: url },
-    ...(noindex ? { robots: { index: false, follow: false } } : {}),
+    ...(noindex ? { robots: { index: false, follow } } : {}),
     openGraph: {
       title: fullTitle,
       description: desc,

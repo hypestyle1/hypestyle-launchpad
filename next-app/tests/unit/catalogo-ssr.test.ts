@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  * que ser lo mismo que después pinta el navegador con /api/products.
  */
 const catalogo = vi.fn();
-vi.mock('@/lib/products-server', () => ({ fetchAllProducts: () => catalogo() }));
+vi.mock('@/lib/products-server', () => ({ fetchAllProductsStrict: () => catalogo() }));
 
 const { fetchCatalogForSsr, initialProductsFor, initialProductsBySlugs, initialProductsByTag, SLUGS_INTERNOS } =
   await import('@/lib/catalog');
@@ -34,10 +34,35 @@ describe('fetchCatalogForSsr', () => {
     expect(slugs).toEqual(['remera-a', 'remera-b', 'hoodie-a']);
   });
 
-  it('si WordPress falla devuelve [] (la grilla la carga el cliente, como antes)', async () => {
-    catalogo.mockRejectedValue(new Error('timeout'));
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('en runtime, si WordPress falla, el error sube: ISR conserva la última versión buena', async () => {
+    catalogo.mockRejectedValue(new Error('HTTP 503'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(fetchCatalogForSsr()).rejects.toThrow('HTTP 503');
+    expect(log.mock.calls[0][0]).toContain('se conserva la última versión');
+  });
+
+  it('en el build, si WordPress falla, devuelve [] para no tirar el deploy', async () => {
+    const antes = process.env.NEXT_PHASE;
+    process.env.NEXT_PHASE = 'phase-production-build';
+    try {
+      catalogo.mockRejectedValue(new Error('timeout'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      expect(await fetchCatalogForSsr()).toEqual([]);
+    } finally {
+      if (antes === undefined) delete process.env.NEXT_PHASE; else process.env.NEXT_PHASE = antes;
+    }
+  });
+
+  it('un catálogo vacío de verdad (WP responde OK sin productos) es []', async () => {
+    catalogo.mockResolvedValue([]);
     expect(await fetchCatalogForSsr()).toEqual([]);
+  });
+
+  it('se recupera solo: la siguiente regeneración con WP sano trae el catálogo', async () => {
+    catalogo.mockRejectedValueOnce(new Error('timeout'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(fetchCatalogForSsr()).rejects.toThrow();
+    expect((await fetchCatalogForSsr()).length).toBe(3);
   });
 });
 
