@@ -43,7 +43,9 @@ export function ventanaEntrega(hoy: Date = new Date()): string {
  * sin decir quién es: se declara por número, mirando cada foto.
  */
 const porNumero = (el: number[], ella: number[]) => {
-  const regla = (n: number[]) => new RegExp(`-(?:${n.map((x) => String(x).padStart(2, '0')).join('|')})(?:-scaled|-\\d+x\\d+)?\\.(?:jpe?g|webp)(?:\\?|$)`, 'i');
+  // Acepta `-01.jpg`, los tamaños de WP (`-01-768x1024.jpg`, `-01-scaled.jpg`) y las
+  // fotos recortadas 4:5 (`-01-4x5.jpg`, que WP renombra `-01-4x5-1.jpg`).
+  const regla = (n: number[]) => new RegExp(`-(?:${n.map((x) => String(x).padStart(2, '0')).join('|')})(?:-scaled|-\\d+x\\d+(?:-\\d+)?)?\\.(?:jpe?g|webp)(?:\\?|$)`, 'i');
   return { el: regla(el), ella: regla(ella), estudioSS27: true };
 };
 
@@ -61,6 +63,8 @@ const MODELOS_POR_SLUG: Record<string, { el: RegExp; ella: RegExp; estudioSS27?:
   'hype-distressed-grey-hoodie': porNumero([1, 3, 5, 7], [2, 4, 6]),
   'athletic-dept-blue-longsleeve': porNumero([2, 4, 6, 8], [1, 3, 5, 7]),
   'athletic-dept-pink-longsleeve': porNumero([2, 4, 6], [1, 3, 5, 7]),
+  // Mustard: 01 y 03 él (cara y perchero), 04-06 ella (espalda, frente, detalle); 02 flatlay y 07 dúo son neutras.
+  'athletic-dept-navy-mustard-print-tee': porNumero([1, 3], [4, 5, 6]),
 };
 
 export type Modelo = 'el' | 'ella';
