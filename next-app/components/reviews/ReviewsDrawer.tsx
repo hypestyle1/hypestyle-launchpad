@@ -16,6 +16,17 @@ const HIDDEN_PREFIXES = ['/checkout', '/admin', '/mayoristas', '/review/', '/rev
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+/**
+ * Invitación a abrir la píldora sin hover (demo local, se elige con ?pill=A|B|off):
+ *  A — entra a los 3 s desde el borde y después hace 3 "nudges" que replican el hover.
+ *      Una sola vez por sesión; si ya se abrió, no se repite.
+ *  B — la estrella titila y un brillo cruza la píldora, en loop suave.
+ */
+type PillVariant = 'A' | 'B' | 'off';
+const PILL_VARIANT_KEY = 'hs-reviews-pill-variant';
+const PILL_INTRO_KEY = 'hs-reviews-pill-intro';
+const PILL_INTRO_DELAY_MS = 3000;
+
 export default function ReviewsDrawer() {
   const { t } = useLocale();
   const pathname = usePathname() ?? '';
@@ -26,6 +37,41 @@ export default function ReviewsDrawer() {
   const tabTriggerRef = useRef<HTMLButtonElement>(null);
   const pillTriggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [variant, setVariant] = useState<PillVariant>('off');
+  // 'pending' = todavía oculta (esperando el delay); 'play' = animando; 'done' = quieta.
+  const [intro, setIntro] = useState<'pending' | 'play' | 'done'>('done');
+
+  // Elección de variante (demo) + intro de la variante A, una vez por sesión.
+  useEffect(() => {
+    let v: PillVariant = 'A';
+    try {
+      const q = new URLSearchParams(window.location.search).get('pill');
+      if (q === 'A' || q === 'B' || q === 'off') localStorage.setItem(PILL_VARIANT_KEY, q);
+      const stored = localStorage.getItem(PILL_VARIANT_KEY);
+      if (stored === 'A' || stored === 'B' || stored === 'off') v = stored;
+    } catch { /* storage bloqueado: variante por defecto */ }
+    setVariant(v);
+    if (v !== 'A') return;
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let seen = false;
+    try { seen = sessionStorage.getItem(PILL_INTRO_KEY) === '1'; } catch { /* idem */ }
+    if (reduce || seen) return;
+
+    setIntro('pending');
+    const id = window.setTimeout(() => {
+      setIntro('play');
+      try { sessionStorage.setItem(PILL_INTRO_KEY, '1'); } catch { /* idem */ }
+    }, PILL_INTRO_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  const openDrawer = () => {
+    setOpen(true);
+    // Abrirla una vez alcanza: la invitación ya cumplió.
+    setIntro('done');
+    try { sessionStorage.setItem(PILL_INTRO_KEY, '1'); } catch { /* idem */ }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +131,11 @@ export default function ReviewsDrawer() {
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
   if (!summary || summary.total === 0) return null;
+  if (intro === 'pending') return null;
+
+  const tabAnim = variant === 'A' && intro === 'play' ? 'hs-pill-a-tab' : variant === 'B' ? 'hs-pill-b' : '';
+  const pillAnim = variant === 'A' && intro === 'play' ? 'hs-pill-a-pill' : variant === 'B' ? 'hs-pill-b' : '';
+  const starAnim = variant === 'B' ? 'hs-pill-star' : '';
 
   return (
     <>
@@ -92,15 +143,16 @@ export default function ReviewsDrawer() {
       <button
         ref={tabTriggerRef}
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openDrawer}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`${t('Reseñas')} — ${t('promedio')} ${summary.average?.toFixed(1)} / 5`}
-        className="hidden sm:flex fixed z-[90] right-0 top-1/2 -translate-y-1/2 items-center gap-2 bg-white border border-border border-r-0 shadow-lg rounded-l-[10px] px-2.5 py-4 hover:px-3.5 transition-all"
+        className={`hidden sm:flex fixed z-[90] right-0 top-1/2 -translate-y-1/2 items-center gap-2 bg-white border border-border border-r-0 shadow-lg rounded-l-[10px] px-2.5 py-4 hover:px-3.5 transition-all ${tabAnim}`}
         style={{ writingMode: 'vertical-rl' }}
       >
+        {variant === 'B' && <span aria-hidden="true" className="hs-pill-sheen hs-pill-sheen-y" />}
         <span className="text-[12px] font-bold tabular-nums">{summary.average?.toFixed(1)}</span>
-        <span aria-hidden="true" className="text-[13px]">★</span>
+        <span aria-hidden="true" className={`text-[13px] ${starAnim}`}>★</span>
         <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">{t('Reseñas')}</span>
       </button>
 
@@ -112,13 +164,14 @@ export default function ReviewsDrawer() {
       <button
         ref={pillTriggerRef}
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openDrawer}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`${pathname === '/' || pathname.startsWith('/producto/') ? 'hidden' : 'flex'} sm:hidden fixed z-[90] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow`}
+        className={`${pathname === '/' || pathname.startsWith('/producto/') ? 'hidden' : 'flex'} sm:hidden fixed z-[90] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow ${pillAnim}`}
         style={shiftedBottom(92)}
       >
-        <StarRating rating={summary.average ?? 0} size={12} />
+        {variant === 'B' && <span aria-hidden="true" className="hs-pill-sheen hs-pill-sheen-x" />}
+        <span className={`inline-flex ${starAnim}`}><StarRating rating={summary.average ?? 0} size={12} /></span>
         <span className="text-[12px] font-semibold tabular-nums">{summary.average?.toFixed(1)}</span>
         <span className="text-[11px] text-muted-foreground">{t('Reseñas')}</span>
       </button>
