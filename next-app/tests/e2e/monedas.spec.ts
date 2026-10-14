@@ -36,7 +36,7 @@ async function abrirCheckout(page: Page, opts: { currency?: string; country?: st
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(FX) }),
   );
   await page.addInitScript((cur) => {
-    window.localStorage.setItem('hs-locale-prompted', '1');
+    window.localStorage.setItem('hs-locale-prompted-v2', '1');
     if (cur) window.localStorage.setItem('hs-currency', cur);
   }, opts.currency ?? '');
   if (opts.country) {

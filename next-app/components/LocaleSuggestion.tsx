@@ -5,7 +5,10 @@ import { X } from "lucide-react";
 import { useLocale, Language } from "@/context/LocaleContext";
 import { readCountryCookie, localeOffer, LocaleOffer } from "@/lib/geo";
 
-const STORAGE_KEY = "hs-locale-prompted";
+// v2 (13/10): la clave vieja la grabó también quien descartó el aviso cuando el
+// sitio ya le había puesto inglés y dólares solo. Ahora arranca en español y
+// pesos para todos, así que a esa persona hay que volver a ofrecerle el cambio.
+const STORAGE_KEY = "hs-locale-prompted-v2";
 
 // El aviso estaba escrito en español justo para quien probablemente no lo lea.
 // Ahora se muestra en el idioma que se está ofreciendo.

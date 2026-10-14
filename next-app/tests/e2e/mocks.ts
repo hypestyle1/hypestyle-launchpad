@@ -121,7 +121,7 @@ export async function acceptCookies(page: Page) {
     window.localStorage.setItem('hy_cookie_consent', 'all');
     // Y la sugerencia de idioma/moneda ya respondida: con el navegador de CI en
     // inglés aparece abajo y taparía botones. La cubre tests/e2e/idioma-moneda.spec.ts.
-    window.localStorage.setItem('hs-locale-prompted', '1');
+    window.localStorage.setItem('hs-locale-prompted-v2', '1');
   });
 }
 
