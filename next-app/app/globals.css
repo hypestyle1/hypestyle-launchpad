@@ -1032,3 +1032,196 @@
 @media (prefers-reduced-motion: reduce) {
   .hs-pill-a-tab, .hs-pill-a-pill, .hs-pill-sheen, .hs-pill-star { animation: none; }
 }
+
+/* ------------------------------------------------------------------
+   Píldora de reseñas (components/reviews/ReviewsDrawer.tsx): invitación
+   a abrirla sin hover. Variantes en prueba, se eligen con ?pill=<letra>.
+   La pestaña desktop ya usa transform (-translate-y-1/2) y la píldora
+   mobile ya usa `translate` inline (shiftedBottom): acá la pestaña anima
+   `translate`/`padding` y la píldora anima `transform`/`scale`, para que
+   nada pise lo que ya tienen.
+   ------------------------------------------------------------------ */
+
+/* A — entra a los 3 s desde el borde derecho y después "respira" 3 veces
+   (cada 8 s) replicando el hover. Al terminar queda quieta. */
+.hs-pill-a-tab {
+  animation:
+    hs-pill-tab-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    hs-pill-tab-nudge 8s 4s ease-in-out 3;
+}
+@keyframes hs-pill-tab-in {
+  0%   { opacity: 0; translate: 110% 0; }
+  70%  { translate: -5px 0; }
+  100% { opacity: 1; translate: 0 0; }
+}
+@keyframes hs-pill-tab-nudge {
+  0%, 14%, 100% { padding-left: 10px; padding-right: 10px; }
+  5%, 9%        { padding-left: 16px; padding-right: 16px; }
+}
+.hs-pill-a-pill {
+  animation:
+    hs-pill-pill-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    hs-pill-pill-nudge 8s 4s ease-in-out 3;
+}
+@keyframes hs-pill-pill-in {
+  0%   { opacity: 0; transform: translateX(calc(100% + 24px)); }
+  70%  { transform: translateX(-6px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes hs-pill-pill-nudge {
+  0%, 14%, 100% { scale: 1; }
+  5%, 9%        { scale: 1.07; }
+}
+
+/* B — la estrella titila cada 6 s y un brillo cruza la píldora cada 7 s. */
+.hs-pill-b { overflow: hidden; }
+.hs-pill-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(0, 0, 0, 0.08) 50%, transparent 65%);
+  animation: hs-pill-sheen-x 7s 2s ease-in-out infinite;
+}
+.hs-pill-sheen-y {
+  background: linear-gradient(170deg, transparent 35%, rgba(0, 0, 0, 0.08) 50%, transparent 65%);
+  animation-name: hs-pill-sheen-y;
+}
+@keyframes hs-pill-sheen-x {
+  0%        { translate: -120% 0; }
+  30%, 100% { translate: 120% 0; }
+}
+@keyframes hs-pill-sheen-y {
+  0%        { translate: 0 -120%; }
+  30%, 100% { translate: 0 120%; }
+}
+.hs-pill-star {
+  display: inline-block;
+  transform-origin: center;
+  animation: hs-pill-twinkle 6s 1s ease-in-out infinite;
+}
+@keyframes hs-pill-twinkle {
+  0%, 10%, 100% { scale: 1; filter: none; }
+  3%            { scale: 1.45; filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35)); }
+  6%            { scale: 0.95; }
+}
+
+/* C — la mini tarjeta con una reseña real asoma desde el borde y vuelve. */
+.hs-pill-peek-in  { animation: hs-pill-peek-in 550ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hs-pill-peek-out { animation: hs-pill-peek-out 400ms cubic-bezier(0.4, 0, 1, 1) both; }
+@keyframes hs-pill-peek-in {
+  from { opacity: 0; transform: translateX(110%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes hs-pill-peek-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(110%); }
+}
+/* La pestaña desktop lleva -translate-y-1/2 en transform: la tarjeta
+   desktop también, así que sumamos el eje Y en sus keyframes. */
+@media (min-width: 640px) {
+  @keyframes hs-pill-peek-in {
+    from { opacity: 0; transform: translate(110%, -50%); }
+    to   { opacity: 1; transform: translate(0, -50%); }
+  }
+  @keyframes hs-pill-peek-out {
+    from { opacity: 1; transform: translate(0, -50%); }
+    to   { opacity: 0; transform: translate(110%, -50%); }
+  }
+}
+
+/* D — cada mensaje del ticker entra con un fundido desde abajo. */
+.hs-pill-tick { animation: hs-pill-tick 450ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes hs-pill-tick {
+  from { opacity: 0; translate: 0 6px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+
+/* E — anillo que se expande y desvanece, como el botón de WhatsApp. */
+.hs-pill-e { overflow: visible; }
+.hs-pill-ring {
+  position: absolute;
+  inset: -2px;
+  border: 2px solid currentColor;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  animation: hs-pill-ring 2.4s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+@keyframes hs-pill-ring {
+  0%   { opacity: 0.55; scale: 1; }
+  70%  { opacity: 0; scale: 1.55; }
+  100% { opacity: 0; scale: 1.55; }
+}
+
+/* F — píldora negra con el texto en marquee. */
+.hs-pill-marquee-x {
+  display: block;
+  width: 150px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.hs-pill-marquee-x-inner {
+  display: inline-block;
+  animation: hs-pill-marquee-x 9s linear infinite;
+}
+@keyframes hs-pill-marquee-x {
+  from { translate: 0 0; }
+  to   { translate: -50% 0; }
+}
+.hs-pill-marquee-y {
+  display: block;
+  height: 170px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.hs-pill-marquee-y-inner {
+  display: inline-block;
+  animation: hs-pill-marquee-y 9s linear infinite;
+}
+@keyframes hs-pill-marquee-y {
+  from { translate: 0 0; }
+  to   { translate: 0 -50%; }
+}
+
+/* G — sacudida tipo notificación cada 6 s. */
+.hs-pill-g {
+  transform-origin: center;
+  animation: hs-pill-shake 6s 1.5s ease-in-out infinite;
+}
+@keyframes hs-pill-shake {
+  0%, 12%, 100% { rotate: 0deg; scale: 1; }
+  2%            { rotate: -6deg; scale: 1.04; }
+  4%            { rotate: 6deg; }
+  6%            { rotate: -5deg; }
+  8%            { rotate: 4deg; }
+  10%           { rotate: -2deg; scale: 1.02; }
+}
+
+/* H — invierte color (blanca ↔ negra) cada 6 s. */
+.hs-pill-h { animation: hs-pill-invert 6s 1s ease-in-out infinite; }
+.hs-pill-h .text-foreground,
+.hs-pill-h .text-muted-foreground { color: inherit; }
+@keyframes hs-pill-invert {
+  0%, 38%   { background-color: #fff; color: #000; border-color: hsl(var(--border)); }
+  48%, 86%  { background-color: #000; color: #fff; border-color: #000; }
+  96%, 100% { background-color: #fff; color: #000; border-color: hsl(var(--border)); }
+}
+
+/* Con el drawer abierto la invitación no tiene sentido; con reduced-motion
+   tampoco (la variante A además saltea el delay desde JS). */
+[aria-expanded="true"].hs-pill-a-tab,
+[aria-expanded="true"].hs-pill-a-pill,
+[aria-expanded="true"].hs-pill-g,
+[aria-expanded="true"].hs-pill-h,
+[aria-expanded="true"] .hs-pill-sheen,
+[aria-expanded="true"] .hs-pill-star,
+[aria-expanded="true"] .hs-pill-ring,
+[aria-expanded="true"] .hs-pill-marquee-x-inner,
+[aria-expanded="true"] .hs-pill-marquee-y-inner {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-pill-a-tab, .hs-pill-a-pill, .hs-pill-sheen, .hs-pill-star, .hs-pill-ring,
+  .hs-pill-g, .hs-pill-h, .hs-pill-tick, .hs-pill-peek-in, .hs-pill-peek-out,
+  .hs-pill-marquee-x-inner, .hs-pill-marquee-y-inner { animation: none; }
+}
