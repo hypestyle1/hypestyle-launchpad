@@ -188,7 +188,6 @@ describe('colorways SS27', () => {
   it('cada producto del drop con más de un color ve a sus hermanos', async () => {
     const { getColorwaysForSlug } = await import('@/lib/product-detail');
     const grupos: Record<string, number> = {
-      'athletic-dept-white-tee': 2, 'athletic-dept-navy-tee': 2,
       'athletic-dept-white-grey-print-tee': 2, 'athletic-dept-navy-mustard-print-tee': 2,
       'worn-varsity-club-white-tee': 2, 'worn-varsity-club-navy-tee': 2,
       'h-hype-white-tee': 2, 'h-hype-navy-tee': 2,
@@ -200,6 +199,9 @@ describe('colorways SS27', () => {
       expect(g?.length, slug).toBe(n);
       expect(g?.some(c => c.slug === slug), slug).toBe(true);
     }
+    // La White y la Navy comunes son modelos aislados: sin selector.
+    expect(getColorwaysForSlug('athletic-dept-white-tee')).toBeNull();
+    expect(getColorwaysForSlug('athletic-dept-navy-tee')).toBeNull();
   });
 });
 
