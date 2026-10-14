@@ -68,7 +68,7 @@ function buildHtml(order: {
     <tr>
       <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
         <span style="font-size:13px;color:#111;font-weight:600;">${item.name}</span><br/>
-        <span style="font-size:12px;color:#888;">${esGift(item.name) ? 'Digital' : `Talle: ${item.size}`} · Cant: ${item.quantity}</span>
+        <span style="font-size:12px;color:#888;">${esGift(item.name) ? 'Digital' : item.price === 0 ? 'Regalo' : `Talle: ${item.size}`} · Cant: ${item.quantity}</span>
         ${dorsalText(item.customization) ? `<br/><span style="font-size:12px;color:#888;">Dorsal: ${dorsalText(item.customization)}</span>` : ''}
       </td>
       <td style="padding:12px 0;border-bottom:1px solid #f0f0f0;text-align:right;font-size:13px;color:#111;white-space:nowrap;">
