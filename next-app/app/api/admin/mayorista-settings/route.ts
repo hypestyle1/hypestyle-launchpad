@@ -9,8 +9,16 @@ function authorized(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  const minOrder = await getGlobalMinOrder();
-  return NextResponse.json({ minOrder });
+  try {
+    const minOrder = await getGlobalMinOrder();
+    return NextResponse.json({ minOrder });
+  } catch (err) {
+    // Sin mínimo legible no se muestra ninguno: el panel avisa en vez de
+    // mostrar un número que no es el de WordPress.
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error('[admin/mayorista-settings]', detail);
+    return NextResponse.json({ message: 'No se pudo leer el mínimo de WordPress', detail }, { status: 502 });
+  }
 }
 
 export async function POST(req: NextRequest) {

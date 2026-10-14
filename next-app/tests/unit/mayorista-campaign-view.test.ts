@@ -10,7 +10,7 @@ const DURING = '2026-09-28T15:00:00-03:00', AFTER = '2026-10-03T00:00:01-03:00';
 
 const prod = (productId: number, slug: string, name: string, regular: number, category = 'Remera'): MayoristaProduct => ({
   id: slug, productId, name, slug, category, shortDescription: '', wholesalePrice: Math.round(regular / 2), regularPrice: regular,
-  image: '', images: [], sizes: ['M'], colors: [], colorAxis: false, stock: { M: 'ok' }, stockQty: { M: 10 },
+  image: '', images: [], sizes: ['M'], colors: [], colorAxis: false, stock: { M: 'ok' }, stockQty: { M: 10 }, comingSoon: false,
 });
 const catalog = [
   prod(2107, 'lamb-of-god', 'LAMB OF GOD PINK TEE', 45000),

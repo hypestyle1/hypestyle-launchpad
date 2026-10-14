@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, createSessionToken, authenticateMayoristaCustomer } from '@/lib/mayorista-auth';
+import { rateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -38,6 +39,9 @@ async function trackLogin(customerId: number) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimited(req, RATE_LIMITS.login, undefined, 'Demasiados intentos de ingreso. Esperá unos minutos y probá de nuevo.');
+  if (limited) return limited;
+
   const { user, pass } = await req.json();
   if (typeof user !== 'string' || typeof pass !== 'string') {
     return NextResponse.json({ ok: false }, { status: 400 });
@@ -76,7 +80,10 @@ export async function POST(req: NextRequest) {
 
   await trackLogin(result.customerId);
 
-  const res = NextResponse.json({ ok: true, label: result.label });
+  // customerId: el navegador lo usa para guardar el carrito por cuenta
+  // (context/MayoristaCartContext.tsx). No es secreto; la sesión sigue en la
+  // cookie firmada.
+  const res = NextResponse.json({ ok: true, label: result.label, customerId: result.customerId });
   res.cookies.set(MAYORISTA_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',

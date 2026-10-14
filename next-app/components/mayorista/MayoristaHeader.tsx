@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMayoristaCart } from '@/context/MayoristaCartContext';
+import { useMayoristaCart, forgetMayoristaUser } from '@/context/MayoristaCartContext';
 import MayoristaMinBar from './MayoristaMinBar';
 
 const glassBar = {
@@ -16,7 +16,7 @@ const glassBar = {
 
 export default function MayoristaHeader() {
   const router = useRouter();
-  const { count, total, hydrated } = useMayoristaCart();
+  const { count, total, hydrated, clear } = useMayoristaCart();
   const [name, setName] = useState('');
   const [minOrder, setMinOrder] = useState<number | null>(null);
 
@@ -34,39 +34,50 @@ export default function MayoristaHeader() {
 
   async function logout() {
     await fetch('/api/mayorista/logout', { method: 'POST' });
+    // El pedido en curso no queda para el próximo que use este navegador
+    // (los borradores guardados en la cuenta sí siguen).
+    clear();
+    forgetMayoristaUser();
     router.push('/mayoristas/login');
     router.refresh();
   }
 
+  // Mobile: links cortos, separación de 12 px y 44 px de alto táctil; la barra
+  // de mínimo va como franja debajo (en el header no entra).
+  const link = 'inline-flex items-center min-h-[44px] text-foreground/70 hover:text-foreground transition-colors';
+
   return (
-    <header className="flex items-center justify-between px-5 sm:px-8 py-4 sticky top-0 z-20" style={glassBar}>
-      <Link href="/mayoristas" className="flex items-center gap-2.5">
-        <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-5 w-auto" />
-        <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/40 hidden sm:inline">Mayoristas</span>
-      </Link>
-      <nav className="flex items-center gap-5 text-[12px] uppercase tracking-wide">
-        {hydrated && count > 0 && <MayoristaMinBar total={total} minOrder={minOrder} compact />}
-        {name && (
-          <Link href="/mayoristas/cuenta" className="text-foreground/50 normal-case tracking-normal hidden sm:inline hover:text-foreground transition-colors">
-            {name}
+    <header className="sticky top-0 z-20" style={glassBar}>
+      <div className="flex items-center justify-between px-5 sm:px-8 py-2 md:py-4">
+        <Link href="/mayoristas" className="flex items-center gap-2.5 min-h-[44px]">
+          <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-5 w-auto" />
+          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/40 hidden sm:inline">Mayoristas</span>
+        </Link>
+        <nav className="flex items-center gap-3 md:gap-5 text-[11px] md:text-[12px] uppercase tracking-wide">
+          {hydrated && count > 0 && <MayoristaMinBar total={total} minOrder={minOrder} compact />}
+          {name && (
+            <Link href="/mayoristas/cuenta" className="text-foreground/50 normal-case tracking-normal hidden sm:inline hover:text-foreground transition-colors">
+              {name}
+            </Link>
+          )}
+          <Link href="/mayoristas/como-funciona" className="text-foreground/50 hover:text-foreground transition-colors hidden md:inline">
+            Cómo funciona
           </Link>
-        )}
-        <Link href="/mayoristas/como-funciona" className="text-foreground/50 hover:text-foreground transition-colors hidden md:inline">
-          Cómo funciona
-        </Link>
-        <Link href="/mayoristas/pedidos" className="text-foreground/70 hover:text-foreground transition-colors">
-          Mis pedidos
-        </Link>
-        <Link href="/mayoristas/carrito" className="text-foreground/70 hover:text-foreground transition-colors">
-          Pedido{count > 0 ? ` (${count})` : ''}
-        </Link>
-        <Link href="/mayoristas/cuenta" className="text-foreground/70 hover:text-foreground transition-colors sm:hidden">
-          Cuenta
-        </Link>
-        <button onClick={logout} className="text-foreground/40 hover:text-foreground transition-colors">
-          Salir
-        </button>
-      </nav>
+          <Link href="/mayoristas/pedidos" className={link}>
+            <span className="md:hidden">Pedidos</span><span className="hidden md:inline">Mis pedidos</span>
+          </Link>
+          <Link href="/mayoristas/carrito" className={link}>
+            Pedido{count > 0 ? ` (${count})` : ''}
+          </Link>
+          <Link href="/mayoristas/cuenta" className={`${link} sm:hidden`}>
+            Cuenta
+          </Link>
+          <button onClick={logout} className="inline-flex items-center min-h-[44px] text-foreground/40 hover:text-foreground transition-colors">
+            Salir
+          </button>
+        </nav>
+      </div>
+      {hydrated && count > 0 && <MayoristaMinBar total={total} minOrder={minOrder} strip />}
     </header>
   );
 }

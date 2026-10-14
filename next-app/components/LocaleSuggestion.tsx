@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { useLocale, Language } from "@/context/LocaleContext";
 import { readCountryCookie, localeOffer, LocaleOffer } from "@/lib/geo";
+import { isRetailChromeHidden } from "@/lib/retail-chrome";
 
 // v2 (13/10): la clave vieja la grabó también quien descartó el aviso cuando el
 // sitio ya le había puesto inglés y dólares solo. Ahora arranca en español y
@@ -46,6 +48,7 @@ const COPY: Record<Language, { title: string; note: string; dismiss: string }> =
 };
 
 export default function LocaleSuggestion() {
+  const pathname = usePathname();
   const [suggestion, setSuggestion] = useState<LocaleOffer | null>(null);
   const [visible, setVisible] = useState(false);
   const { setLanguage, setCurrency } = useLocale();
@@ -80,7 +83,8 @@ export default function LocaleSuggestion() {
     setVisible(false);
   }
 
-  if (!visible || !suggestion) return null;
+  // El portal mayorista es solo en castellano y pesos (lib/retail-chrome.ts).
+  if (!visible || !suggestion || isRetailChromeHidden(pathname)) return null;
 
   const copy = COPY[suggestion.language];
 

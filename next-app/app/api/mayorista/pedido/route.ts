@@ -1,20 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
-import { getGlobalMinOrder, customerMinOrderOverride } from '@/lib/mayorista-settings';
+import { resolveMinOrder, customerMinOrderOverride, MIN_ORDER_UNAVAILABLE_MESSAGE } from '@/lib/mayorista-settings';
 import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '@/lib/mayorista-stock';
 import { priceLines } from '@/lib/mayorista-pricing';
-import { applyCampaign, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
+import { applyCampaign, appliedCampaignMinOrder, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 import { mayoristaDropTag } from '@/lib/mayorista-drop-server';
 import { parseCredit, creditToApply, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { metodoDef, validarEnvio, envioResumen, envioOrderMeta, METODO_DEFAULT, type MetodoEnvio } from '@/lib/mayorista-envio';
 import { pickRecentOrder, recentOrdersPath, agoLabel } from '@/lib/mayorista-recent-order';
 import { parseBloqueo, mensajeBloqueo } from '@/lib/mayorista-exclusividad';
+import { IDEMPOTENCY_META, isValidIdempotencyKey, ordersWithKey, replayOf, resolveDuplicate } from '@/lib/mayorista-idempotency';
+import { pagoInfoFromEnv, pagoHtml } from '@/lib/mayorista-pago';
+import { rateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Woo puede tardar cerca de un minuto en crear una orden grande. Si la función
 // se corta antes, la orden queda creada pero el cliente ve un error.
 export const maxDuration = 300;
+
+// Tope de líneas por pedido: el mismo que drafts y disponibilidad. Un pedido
+// real grande anda por las 40-50 líneas.
+const MAX_ITEMS = 200;
+
+// Todo lo que viene del navegador (nombres, talle, color, dirección) entra en
+// HTML de mail: se escapa. Antes un cliente podía meter HTML en el mail del admin.
+const esc = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
@@ -38,7 +49,7 @@ interface PedidoItem {
 
 // Celda "Talle" de los mails: talle y, si lo hay, color.
 function sizeLabel(it: PedidoItem): string {
-  return it.color ? `${it.size} · ${it.color}` : it.size;
+  return esc(it.color ? `${it.size} · ${it.color}` : it.size);
 }
 
 // Celda "Precio" de los mails: con campaña, el mayorista normal tachado y el
@@ -113,7 +124,7 @@ type CampaignSummary = { id: string; name: string; discountTotal: number } | nul
 async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, credit: number, orderNumber: string, campaign: CampaignSummary) {
   if (!BREVO_API_KEY) return;
   const rows = items.map(it => `<tr>
-    <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${esc(it.name)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${sizeLabel(it)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${priceCell(it)}</td>
@@ -121,9 +132,9 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Pedido mayorista — Hype.</h2>
-    <p style="font-size:13px">Cliente: <b>${label}</b> — DNI ${shipping.dni}</p>
-    <p style="font-size:12px;color:#444">${shipping.address_1}, ${shipping.city} ${shipping.state ?? ''} — ${shipping.phone}</p>
-    <p style="font-size:12px;color:#444">Envío: <b>${envioResumen(envioDe(shipping).metodo, envioDe(shipping).destino)}</b></p>
+    <p style="font-size:13px">Cliente: <b>${esc(label)}</b> — DNI ${esc(shipping.dni)}</p>
+    <p style="font-size:12px;color:#444">${esc(shipping.address_1)}, ${esc(shipping.city)} ${esc(shipping.state ?? '')} — ${esc(shipping.phone)}</p>
+    <p style="font-size:12px;color:#444">Envío: <b>${esc(envioResumen(envioDe(shipping).metodo, envioDe(shipping).destino))}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
         <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
@@ -155,7 +166,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string, envio: string, campaign: CampaignSummary) {
   if (!BREVO_API_KEY || !toEmail) return;
   const rows = items.map(it => `<tr>
-    <td style="padding:6px 8px;border:1px solid #eee">${it.name}</td>
+    <td style="padding:6px 8px;border:1px solid #eee">${esc(it.name)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${sizeLabel(it)}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${it.quantity}</td>
     <td style="padding:6px 8px;border:1px solid #eee">${priceCell(it)}</td>
@@ -163,8 +174,8 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Hype. — Resumen de tu pedido</h2>
-    <p style="font-size:13px">Recibimos tu pedido <b>#${orderNumber}</b>. Te contactamos para coordinar preparación y entrega.</p>
-    <p style="font-size:12px;color:#444">Envío: <b>${envio}</b></p>
+    <p style="font-size:13px">Recibimos tu pedido <b>#${esc(orderNumber)}</b>. Abajo tenés cómo pagarlo; una vez acreditado lo preparamos y te avisamos con el seguimiento.</p>
+    <p style="font-size:12px;color:#444">Envío: <b>${esc(envio)}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
         <th style="padding:6px 8px;border:1px solid #eee;text-align:left">Producto</th>
@@ -175,6 +186,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
       <tbody>${rows}</tbody>
     </table>
     ${totalsHtml(total, credit, campaign)}
+    ${pagoHtml(pagoInfoFromEnv(), orderNumber)}
   </div>`;
 
   await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -207,11 +219,22 @@ export async function POST(req: NextRequest) {
   const customerId = await verifySessionToken(req.cookies.get(MAYORISTA_COOKIE)?.value);
   if (!customerId) return NextResponse.json({ message: 'No autorizado' }, { status: 401 });
 
+  // Tope por cuenta (no por IP: varias cuentas pueden salir por la misma red).
+  const limited = rateLimited(req, RATE_LIMITS.pedido, String(customerId), 'Demasiados envíos seguidos. Esperá un momento; si ya confirmaste, revisá "Mis pedidos".');
+  if (limited) return limited;
+
   try {
-    const { items: rawItems, shipping, confirmPrices, confirmDuplicate } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo; confirmPrices?: boolean; confirmDuplicate?: boolean };
+    const { items: rawItems, shipping, confirmPrices, confirmDuplicate, idempotencyKey: rawKey } = await req.json() as { items: PedidoItem[]; shipping: ShippingInfo; confirmPrices?: boolean; confirmDuplicate?: boolean; idempotencyKey?: unknown };
     if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json({ message: 'El pedido está vacío' }, { status: 400 });
     }
+    if (rawItems.length > MAX_ITEMS) {
+      return NextResponse.json({ message: `El pedido tiene demasiadas líneas (máximo ${MAX_ITEMS}). Dividilo en dos.` }, { status: 400 });
+    }
+    // Clave del carrito (lib/mayorista-idempotency.ts). Un carrito viejo
+    // abierto antes del cambio no la manda: sigue con el freno por pedido
+    // reciente de siempre.
+    const idempotencyKey = isValidIdempotencyKey(rawKey) ? rawKey : null;
     if (!shipping?.first_name || !shipping?.address_1 || !shipping?.city || !shipping?.phone || !shipping?.dni) {
       return NextResponse.json({ message: 'Faltan datos de envío' }, { status: 400 });
     }
@@ -346,9 +369,16 @@ export async function POST(req: NextRequest) {
     const total = pricing.total;
 
     // Mínimo: el override del cliente manda; si no, el mínimo propio de la
-    // campaña aplicada; si no, el general.
-    const campaignMin = appliedCampaign ? campaigns.find(c => c.id === appliedCampaign.campaignId)?.minOrder ?? null : null;
-    const minOrder = customerMinOrderOverride(customer.meta_data) ?? campaignMin ?? await getGlobalMinOrder();
+    // campaña aplicada; si no, el general (lib/mayorista-settings.ts). Si el
+    // general hace falta y WordPress no responde, no se asume ninguno: se pide
+    // reintento, como con las campañas.
+    const minOrder = await resolveMinOrder({
+      override: customerMinOrderOverride(customer.meta_data),
+      campaignMin: appliedCampaignMinOrder(pricing, campaigns),
+    });
+    if (minOrder == null) {
+      return NextResponse.json({ code: 'MIN_ORDER_UNAVAILABLE', message: MIN_ORDER_UNAVAILABLE_MESSAGE }, { status: 502 });
+    }
     if (total < minOrder) {
       return NextResponse.json({ message: `El pedido mínimo es ${formatArs(minOrder)}` }, { status: 400 });
     }
@@ -358,18 +388,34 @@ export async function POST(req: NextRequest) {
     const credit = parseCredit(customer.meta_data);
     const creditUsed = creditToApply(credit.saldo, total);
 
-    // Pedido duplicado: si el cliente ya tiene una orden de hace minutos, lo
-    // más probable es que sea un reintento después de un error. Se le muestra
-    // esa orden y recién con `confirmDuplicate: true` se crea otra. Va lo más
-    // cerca posible de la creación para achicar la ventana entre dos envíos.
-    if (confirmDuplicate !== true) {
-      let recentOrders: any[];
+    // Últimos pedidos del cliente: para la clave de idempotencia y para el
+    // freno por pedido reciente. Si no se pueden leer, no se crea nada.
+    let recentOrders: any[] = [];
+    if (idempotencyKey || confirmDuplicate !== true) {
       try {
         recentOrders = await wcGet(recentOrdersPath(customerId));
       } catch (err) {
         console.error('[mayorista/pedido] no se pudo verificar si hay un pedido reciente:', err);
         return NextResponse.json({ message: 'No pudimos verificar tu pedido. Esperá unos segundos e intentá de nuevo.' }, { status: 502 });
       }
+    }
+
+    // Misma clave que una orden viva: es el mismo envío (reintento de red,
+    // doble click, segunda pestaña). Se devuelve esa orden como si recién se
+    // hubiera creado; no se crea otra.
+    if (idempotencyKey) {
+      const existing = ordersWithKey(recentOrders, idempotencyKey)[0];
+      if (existing) {
+        const r = replayOf(existing);
+        return NextResponse.json({ wcOrderId: r.id, wcOrderNumber: r.number, creditUsed: r.creditUsed, total: r.total, items: pricedItems, campaign: campaignSummary, replayed: true });
+      }
+    }
+
+    // Pedido duplicado: si el cliente ya tiene una orden de hace minutos, lo
+    // más probable es que sea un reintento después de un error. Se le muestra
+    // esa orden y recién con `confirmDuplicate: true` se crea otra. Va lo más
+    // cerca posible de la creación para achicar la ventana entre dos envíos.
+    if (confirmDuplicate !== true) {
       const recent = pickRecentOrder(recentOrders, Date.now());
       if (recent) {
         return NextResponse.json(
@@ -419,42 +465,85 @@ export async function POST(req: NextRequest) {
         ] : []),
         { key: '_es_mayorista', value: 'true' },
         { key: '_billing_dni', value: shipping.dni },
+        ...(idempotencyKey ? [{ key: IDEMPOTENCY_META, value: idempotencyKey }] : []),
         ...envioOrderMeta(envio.metodo, envio.destino),
       ],
     };
 
-    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
-      method: 'POST',
+    // Saldo a favor: se descuenta ANTES de crear la orden y se repone si la
+    // creación falla con un error claro. Antes se descontaba después, y dos
+    // pedidos cercanos podían usar el mismo saldo dos veces (o un fallo del
+    // PUT dejaba la orden con el crédito aplicado y el saldo intacto).
+    const putCredit = (state: ReturnType<typeof addMovement>) => fetch(`${WP_URL}/wp-json/wc/v3/customers/${customerId}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-      body: JSON.stringify(order),
-    });
+      body: JSON.stringify({ meta_data: [creditMetaEntry(state)] }),
+    }).catch(() => null);
+    if (creditUsed) {
+      const next = addMovement(credit, { fecha: new Date().toISOString(), monto: -creditUsed, motivo: 'Aplicado a pedido' });
+      const upd = await putCredit(next);
+      if (!upd?.ok) {
+        console.error(`[mayorista/pedido] no se pudo reservar el saldo a favor (${creditUsed}) del cliente ${customerId}: ${upd?.status ?? 'sin respuesta'}`);
+        return NextResponse.json({ message: 'No pudimos aplicar tu saldo a favor. Esperá unos segundos e intentá de nuevo.' }, { status: 502 });
+      }
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+        body: JSON.stringify(order),
+      });
+    } catch (err) {
+      // Sin respuesta: la orden pudo haberse creado igual, así que el saldo NO
+      // se repone (quedaría aplicado dos veces si entró). El carrito verifica.
+      console.error('[mayorista/pedido] sin respuesta de WC al crear:', err);
+      return NextResponse.json({ message: 'Error al crear el pedido. Tu pedido sigue cargado: esperá unos segundos e intentá de nuevo.', maybeCreated: true }, { status: 502 });
+    }
 
     if (!res.ok) {
       const txt = await res.text();
       console.error('[mayorista/pedido] WC error:', res.status, txt);
-      // Un 5xx de WP no garantiza que la orden no se haya creado: el carrito
-      // lo verifica antes de ofrecer el reintento.
+      // Un 4xx es un rechazo claro: la orden no existe, el saldo vuelve. Un
+      // 5xx no garantiza que no se haya creado: el carrito lo verifica antes
+      // de ofrecer el reintento, y el saldo se deja como está.
+      if (creditUsed && res.status < 500) {
+        const back = await putCredit(credit);
+        if (!back?.ok) console.error(`[mayorista/pedido] la orden no se creó (${res.status}) y no se pudo reponer el saldo (${creditUsed}) del cliente ${customerId}: corregir a mano`);
+      }
       return NextResponse.json({ message: `Error de WooCommerce (${res.status})`, ...(res.status >= 500 ? { maybeCreated: true } : {}) }, { status: 502 });
     }
 
     const wcOrder = await res.json() as { id: number; number: string };
 
-    // Con la orden ya creada, se descuenta el saldo usado. Si falla, la orden
-    // queda igual (el crédito ya se aplicó en ella) y se avisa en el log para
-    // corregir el saldo a mano.
+    // Carrera: dos envíos con la misma clave pasaron el chequeo previo a la
+    // vez y los dos crearon. Se vuelve a leer y, si hay otra orden viva con la
+    // clave más vieja que la nuestra, la nuestra se cancela (Woo repone el
+    // stock) y se responde con la otra: los mails y el perfil los hace el
+    // envío que ganó. El saldo a favor NO se repone acá: los dos envíos
+    // leyeron el mismo saldo y escribieron el mismo resultado (saldo − usado),
+    // así que reponerlo desharía el descuento del ganador.
+    if (idempotencyKey) {
+      const after = await wcGet(recentOrdersPath(customerId)).catch((err) => { console.error('[mayorista/pedido] no se pudo verificar la clave tras crear:', err); return null; });
+      const dup = after ? resolveDuplicate(after, idempotencyKey, Number(wcOrder.id)) : null;
+      if (dup?.cancel) {
+        const cancel = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${wcOrder.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+          body: JSON.stringify({ status: 'cancelled', customer_note: `Duplicada de #${dup.keep.number ?? dup.keep.id} (misma clave de envío). Cancelada automáticamente.` }),
+        }).catch(() => null);
+        if (!cancel?.ok) console.error(`[mayorista/pedido] orden #${wcOrder.number} duplica a #${dup.keep.number} y no se pudo cancelar (${cancel?.status ?? 'sin respuesta'}): cancelar a mano`);
+        const r = replayOf(dup.keep);
+        return NextResponse.json({ wcOrderId: r.id, wcOrderNumber: r.number, creditUsed: r.creditUsed, total: r.total, items: pricedItems, campaign: campaignSummary, replayed: true });
+      }
+    }
+
+    // El movimiento ya quedó descontado; se le agrega el número de orden.
     if (creditUsed) {
-      const next = addMovement(credit, {
-        fecha: new Date().toISOString(),
-        monto: -creditUsed,
-        motivo: 'Aplicado a pedido',
-        orden: String(wcOrder.number),
-      });
-      const upd = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${customerId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-        body: JSON.stringify({ meta_data: [creditMetaEntry(next)] }),
-      }).catch(() => null);
-      if (!upd?.ok) console.error(`[mayorista/pedido] orden #${wcOrder.number} usó ${creditUsed} de saldo pero no se pudo descontar del cliente ${customerId}`);
+      const withOrder = addMovement(credit, { fecha: new Date().toISOString(), monto: -creditUsed, motivo: 'Aplicado a pedido', orden: String(wcOrder.number) });
+      const upd = await putCredit(withOrder);
+      if (!upd?.ok) console.error(`[mayorista/pedido] orden #${wcOrder.number}: el saldo quedó descontado pero sin el número de orden en el movimiento`);
     }
 
     await Promise.all([

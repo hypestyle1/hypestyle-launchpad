@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { isRetailChromeHidden } from '@/lib/retail-chrome';
 
 const SESSION_KEY = 'hs-intro-seen';
 
@@ -34,10 +36,14 @@ type Phase = 'idle' | 'run' | 'travel' | 'fade' | 'done';
  * leer el logo.
  */
 export default function LoadingScreen() {
+  const pathname = usePathname();
+  // Sin intro en el panel, el checkout ni el portal mayorista (lib/retail-chrome.ts).
+  const hidden = isRetailChromeHidden(pathname);
   const [phase, setPhase] = useState<Phase>('idle');
   const logoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (hidden) { setPhase('done'); return; }
     if (sessionStorage.getItem(SESSION_KEY)) { setPhase('done'); return; }
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -63,9 +69,9 @@ export default function LoadingScreen() {
     }, DONE_AT_MS);
 
     return () => { clearTimeout(start); clearTimeout(exit); clearTimeout(done); };
-  }, []);
+  }, [hidden]);
 
-  if (phase === 'done') return null;
+  if (hidden || phase === 'done') return null;
 
   return (
     <>

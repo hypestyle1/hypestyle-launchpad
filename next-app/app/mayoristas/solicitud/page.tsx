@@ -93,7 +93,9 @@ export default function SolicitudMayoristaPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-10 overflow-hidden">
+    // pb-24 en mobile: el cartel de cookies es fijo al pie y tapaba los últimos
+    // campos (la contraseña) cuando el formulario termina al borde de la pantalla.
+    <div className="relative min-h-screen flex items-center justify-center px-4 pt-10 pb-24 md:pb-10 overflow-hidden">
       <div
         className="absolute -inset-6 bg-cover bg-center"
         style={{

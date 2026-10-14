@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import fixture from '../fixtures/private-stock-sale.json';
 import type { ResolvedProduct } from '@/lib/mayorista-stock';
+import { rateLimitReset } from '@/lib/rate-limit';
 
 // C2: /api/mayorista/pedido bajo una campaña mayorista. La ruta real con Woo,
 // campañas y mails simulados; se mira la orden que crea y las metas.
@@ -22,7 +23,7 @@ const catalog = new Map<string, ResolvedProduct | null>([
 let campaignsResponse: () => Promise<any[]> = async () => [fixture.campaign];
 vi.mock('@/lib/wholesale-campaigns-store', () => ({ readCampaigns: vi.fn(() => campaignsResponse()) }));
 vi.mock('@/lib/mayorista-auth', () => ({ MAYORISTA_COOKIE: 'hype_mayorista_session', verifySessionToken: vi.fn(async (t?: string) => (t === 'ok' ? 19 : null)) }));
-vi.mock('@/lib/mayorista-settings', () => ({ getGlobalMinOrder: vi.fn(async () => 0), customerMinOrderOverride: vi.fn(() => null) }));
+// El mínimo general se simula en la red (ver el stub de fetch): $1, no es el tema acá.
 vi.mock('@/lib/mayorista-stock', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/mayorista-stock')>();
   return {
@@ -41,6 +42,7 @@ const wcOrderPosts: any[] = [];
 const brevoPosts: any[] = [];
 beforeEach(() => {
   wcOrderPosts.length = 0; brevoPosts.length = 0;
+  rateLimitReset();
   campaignsResponse = async () => [fixture.campaign];
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-09-28T15:00:00-03:00')); // en plena campaña
@@ -48,6 +50,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
     if (String(url).includes('/wc/v3/orders')) { wcOrderPosts.push(JSON.parse(String(init?.body))); return new Response(JSON.stringify({ id: 6001, number: '6001' }), { status: 201 }); }
     if (String(url).includes('api.brevo.com')) { brevoPosts.push(JSON.parse(String(init?.body))); return new Response('{}', { status: 201 }); }
+    if (String(url).includes('/hypestyle/v1/mayorista-settings')) return new Response(JSON.stringify({ minOrder: 1 }), { status: 200 });
     return new Response('{}', { status: 200 });
   }));
 });
@@ -182,5 +185,51 @@ describe('campaña vencida / futura / WP caído', () => {
     const r = await post({ items: [{ slug: 'find-jesus', name: 'FIND JESUS', size: 'M', quantity: 1, price: 26800 }], shipping, confirmPrices: true });
     expect(r.status).toBe(502);
     expect(wcOrderPosts).toHaveLength(0);
+  });
+});
+
+// 13/10/2026: el copy prometía "te mandamos los datos con el resumen" y el
+// mail del pedido no traía cómo pagar (lib/mayorista-pago.ts).
+describe('mail del cliente — cómo pagar', () => {
+  it('con los datos en el entorno: alias, CBU y pasos en el mail del cliente; el del admin no', async () => {
+    vi.stubEnv('MAYORISTA_PAGO_ALIAS', 'hype.mayoristas');
+    vi.stubEnv('MAYORISTA_PAGO_CBU', '0000003100012345678901');
+    vi.stubEnv('MAYORISTA_PAGO_PLAZO_RESERVA_DIAS', '3');
+    const r = await post({ items: [{ slug: 'find-jesus', name: 'FIND JESUS', size: 'M', quantity: 2, price: 26800 }], shipping });
+    expect(r.status).toBe(200);
+    const cliente = brevoPosts.find(b => b.to?.[0]?.email === 'mask@test.com');
+    const admin = brevoPosts.find(b => b.to?.[0]?.email !== 'mask@test.com');
+    expect(cliente.htmlContent).toContain('Cómo pagar el pedido #6001');
+    expect(cliente.htmlContent).toContain('hype.mayoristas');
+    expect(cliente.htmlContent).toContain('0000003100012345678901');
+    expect(cliente.htmlContent).toContain('más de 3 días');
+    expect(admin.htmlContent).not.toContain('Cómo pagar');
+  });
+
+  it('sin datos en el entorno: el mail dice que los mandamos por WhatsApp y no inventa cuenta', async () => {
+    vi.stubEnv('MAYORISTA_PAGO_ALIAS', '');
+    vi.stubEnv('MAYORISTA_PAGO_CBU', '');
+    const r = await post({ items: [{ slug: 'find-jesus', name: 'FIND JESUS', size: 'M', quantity: 2, price: 26800 }], shipping });
+    expect(r.status).toBe(200);
+    const cliente = brevoPosts.find(b => b.to?.[0]?.email === 'mask@test.com');
+    expect(cliente.htmlContent).toContain('te mandamos los datos de la cuenta por WhatsApp');
+    expect(cliente.htmlContent).not.toContain('CBU / CVU');
+  });
+});
+
+// 13/10/2026: lo que viene del navegador se escapa en los mails HTML.
+describe('mails — escape de HTML', () => {
+  it('un nombre o dirección con HTML llega escapado al mail del admin y del cliente', async () => {
+    const r = await post({
+      items: [{ slug: 'find-jesus', name: 'FIND <script>alert(1)</script>', size: 'M', quantity: 1, price: 26800 }],
+      shipping: { ...shipping, address_1: '<img src=x onerror=alert(1)>', company: 'MASK & <b>CO</b>' },
+    });
+    expect(r.status).toBe(200);
+    for (const mail of brevoPosts) {
+      expect(mail.htmlContent).not.toContain('<script>');
+      expect(mail.htmlContent).not.toContain('<img src=x');
+      expect(mail.htmlContent).toContain('&lt;script&gt;');
+    }
+    expect(brevoPosts.find(b => b.to?.[0]?.email !== 'mask@test.com').htmlContent).toContain('MASK &amp; &lt;b&gt;CO&lt;/b&gt;');
   });
 });

@@ -13,6 +13,9 @@ import MayoristaMinBar from './MayoristaMinBar';
 import { completarMinimo } from '@/lib/mayorista-completar-minimo';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
 import { agoLabel, type RecentOrder } from '@/lib/mayorista-recent-order';
+import { MIN_ORDER_UNAVAILABLE_MESSAGE, WHATSAPP_URL } from '@/lib/mayorista-copy';
+import { newIdempotencyKey } from '@/lib/mayorista-idempotency';
+import { pagoSteps, pagoDetailLines, type PagoInfo } from '@/lib/mayorista-pago';
 import MayoristaExclusividadBanner from './MayoristaExclusividadBanner';
 
 // Cuánto se espera a que aparezca la orden cuando el envío falló sin respuesta
@@ -22,7 +25,8 @@ const VERIFY_INTERVAL_MS = 8000;
 
 // Precio normal y campaña por línea, según lo que devolvió el servidor
 // (/api/mayorista/disponibilidad). El carrito guarda solo el precio vigente.
-type LineInfo = { wsRegular: number; campaign?: { id: string; name: string; group: string; discount: number; badge: string } };
+// `available`: unidades de esa combinación hoy (null = sin cantidad gestionada); el "+" no pasa de ahí.
+type LineInfo = { wsRegular: number; available?: number | null; campaign?: { id: string; name: string; group: string; discount: number; badge: string } };
 
 function csvEscape(value: string | number): string {
   const s = String(value ?? '');
@@ -163,9 +167,17 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   const [recentNotice, setRecentNotice] = useState<RecentOrder | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number; campaign?: { name: string; discountTotal: number } | null } | null>(null);
+  // Mínimo que va a validar el servidor (override, campaña o general). Mientras
+  // es null no se puede continuar: si WordPress no respondió, `minOrderError`
+  // lo explica y ofrece reintentar en vez de dejar pasar un pedido que el
+  // servidor va a rechazar (o aceptar con otro mínimo).
   const [minOrder, setMinOrder] = useState<number | null>(null);
+  const [minOrderError, setMinOrderError] = useState<string | null>(null);
+  const [minOrderRetry, setMinOrderRetry] = useState(0);
   // Saldo a favor de la cuenta (nota de crédito): se descuenta solo del pedido.
   const [credit, setCredit] = useState(0);
+  // Datos para pagar (lib/mayorista-pago.ts), del perfil. null hasta que llega.
+  const [pago, setPago] = useState<PagoInfo | null>(null);
   // Otro local tiene la exclusividad de la ciudad de esta cuenta: no se puede
   // confirmar (lib/mayorista-exclusividad.ts). Viene del perfil o del 403 del pedido.
   const [bloqueo, setBloqueo] = useState<string | null>(null);
@@ -183,6 +195,13 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   const [checkingStock, setCheckingStock] = useState(false);
   const [stockNotice, setStockNotice] = useState<string[]>([]);
   const checkedOnHydrate = useRef(false);
+  // Clave de idempotencia del envío (lib/mayorista-idempotency.ts): una por
+  // carrito. Se repite en los reintentos (precio cambiado, pedido reciente,
+  // corte de red) y se renueva cuando cambian productos o cantidades, así dos
+  // envíos del mismo carrito nunca crean dos órdenes.
+  const itemsSignature = items.map(i => `${lineKey(i)}:${i.quantity}`).join('|');
+  const [idempotencyKey, setIdempotencyKey] = useState(() => newIdempotencyKey());
+  useEffect(() => { setIdempotencyKey(newIdempotencyKey()); }, [itemsSignature]);
 
   async function pruneUnavailable(candidate: MayoristaCartItem[]): Promise<MayoristaCartItem[]> {
     if (candidate.length === 0) return candidate;
@@ -196,9 +215,12 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
       if (!res.ok) return candidate; // si no se pudo verificar, el pedido igual se frena al confirmar
       const data = await res.json() as {
         unavailable: { slug: string; size: string; color?: string; reason: string; available?: number; message: string }[];
-        prices?: { slug: string; size: string; color?: string; unitPrice: number; wsRegular?: number; campaign?: LineInfo['campaign'] }[];
+        prices?: { slug: string; size: string; color?: string; unitPrice: number; wsRegular?: number; available?: number | null; campaign?: LineInfo['campaign'] }[];
+        minOrder?: number | null;
       };
-      setLineInfo(Object.fromEntries((data.prices ?? []).map(p => [lineKey(p), { wsRegular: p.wsRegular ?? p.unitPrice, ...(p.campaign ? { campaign: p.campaign } : {}) }])));
+      // El mínimo efectivo para estas líneas (con el de campaña, si aplica).
+      if (typeof data.minOrder === 'number') { setMinOrder(data.minOrder); setMinOrderError(null); }
+      setLineInfo(Object.fromEntries((data.prices ?? []).map(p => [lineKey(p), { wsRegular: p.wsRegular ?? p.unitPrice, available: p.available ?? null, ...(p.campaign ? { campaign: p.campaign } : {}) }])));
       const byKey = new Map((data.unavailable ?? []).map(u => [lineKey(u), u]));
       // El precio guardado en el carrito es una foto de cuando se agregó el
       // ítem; el vigente lo calcula el servidor. Se actualiza acá para que el
@@ -290,12 +312,14 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   }
 
   useEffect(() => {
-    fetch('/api/mayorista/perfil')
+    fetch('/api/mayorista/perfil', { cache: 'no-store' })
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-        if (!data) return;
-        if (typeof data.minOrder === 'number') setMinOrder(data.minOrder);
+        if (!data) { setMinOrderError(MIN_ORDER_UNAVAILABLE_MESSAGE); return; }
+        if (typeof data.minOrder === 'number') { setMinOrder(data.minOrder); setMinOrderError(null); }
+        else setMinOrderError(data.minOrderError || MIN_ORDER_UNAVAILABLE_MESSAGE);
         if (typeof data.credit === 'number') setCredit(data.credit);
+        if (data.pago && typeof data.pago === 'object') setPago(data.pago as PagoInfo);
         if (data.bloqueoExclusividad?.mensaje) setBloqueo(data.bloqueoExclusividad.mensaje);
         if (data.email) setEmail(data.email);
         const b = data.billing;
@@ -317,10 +341,12 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         const inicial = metodo ?? METODO_DEFAULT;
         setShipping(s => ({ ...s, envio_metodo: inicial, envio_destino: savedDestinos.current[inicial] ?? '' }));
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => setMinOrderError(MIN_ORDER_UNAVAILABLE_MESSAGE));
+  }, [minOrderRetry]);
 
   const belowMin = minOrder != null && total < minOrder;
+  // Sin mínimo legible no se continúa (ver minOrderError).
+  const minUnknown = minOrder == null;
   const creditUsed = Math.min(credit, total);
   const toPay = total - creditUsed;
 
@@ -399,7 +425,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         res = await fetch('/api/mayorista/pedido', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items, shipping, ...(confirmPrices ? { confirmPrices: true } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
+          body: JSON.stringify({ items, shipping, idempotencyKey, ...(confirmPrices ? { confirmPrices: true } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}) }),
         });
         data = await res.json();
       } catch {
@@ -497,10 +523,37 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Pedido enviado</p>
           <h1 className="text-2xl font-bold tracking-tight mt-2">Pedido #{confirmed.orderNumber}</h1>
           <p className="text-[13px] text-muted-foreground mt-3">
-            Ya lo recibimos. Te contactamos para coordinar preparación y entrega.
+            Ya lo recibimos. Abajo tenés cómo pagarlo; una vez acreditado lo preparamos y te avisamos con el seguimiento.
             {email && <> Te mandamos este resumen a <span className="text-foreground">{email}</span>.</>}
           </p>
         </div>
+
+        {(() => {
+          // Sin datos cargados en el entorno el bloque manda a WhatsApp: no se inventan alias ni CBU.
+          const info: PagoInfo = pago ?? { alias: null, cbu: null, titular: null, cuit: null, banco: null, plazoReservaDias: null };
+          const details = pagoDetailLines(info);
+          return (
+            <div className="rounded-[16px] border border-foreground p-4 mb-4">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Cómo pagar</p>
+              <ol className="list-decimal pl-4 space-y-1 text-[13px]">
+                {pagoSteps(info).map((s, i) => <li key={i}>{s}</li>)}
+              </ol>
+              {details.length > 0 && (
+                <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[13px]">
+                  {details.map(d => (
+                    <div key={d.label} className="contents">
+                      <dt className="text-muted-foreground">{d.label}</dt>
+                      <dd className="font-semibold select-all break-all">{d.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-[11px] font-semibold uppercase tracking-wide underline">
+                Mandar comprobante por WhatsApp
+              </a>
+            </div>
+          );
+        })()}
 
         <div className="rounded-[16px] border border-border bg-bg-alt/50 p-4">
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-3">Resumen del pedido</p>
@@ -693,7 +746,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
 
         {verifying && <p className="mt-4 text-[12px] text-muted-foreground">El envío está tardando. Estamos verificando si tu pedido entró: dejá esta página abierta.</p>}
 
-        <Button type="submit" variant="hype" size="ctaFull" disabled={sending || !!priceChange || !!recentOrder || !!bloqueo} className="mt-8 py-3 rounded-full">
+        <Button type="submit" variant="hype" size="ctaFull" disabled={sending || !!priceChange || !!recentOrder || !!bloqueo || minUnknown} className="mt-8 py-3 rounded-full">
           {verifying ? 'Verificando…' : sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(toPay)}`}
         </Button>
       </form>
@@ -750,11 +803,21 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
                 ) : <p className="text-[13px] font-semibold mt-0.5">{formatArs(item.price)}</p>;
               })()}
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setQty(item, item.quantity - 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">−</button>
-              <span className="w-6 text-center text-[13px]">{item.quantity}</span>
-              <button onClick={() => setQty(item, item.quantity + 1)} className="w-7 h-7 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">+</button>
-            </div>
+            {(() => {
+              // Tope por stock conocido (lo que devolvió /api/mayorista/disponibilidad).
+              const available = lineInfo[lineKey(item)]?.available ?? null;
+              const atMax = typeof available === 'number' && item.quantity >= available;
+              return (
+                <div className="flex flex-col items-end gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <button type="button" aria-label="Una menos" onClick={() => setQty(item, item.quantity - 1)} className="w-9 h-9 rounded-[6px] border border-border-mid hover:border-foreground transition-colors">−</button>
+                    <span className="w-6 text-center text-[13px] tabular-nums">{item.quantity}</span>
+                    <button type="button" aria-label="Una más" onClick={() => !atMax && setQty(item, item.quantity + 1)} disabled={atMax} title={atMax ? `Hay ${available} en stock` : undefined} className="w-9 h-9 rounded-[6px] border border-border-mid hover:border-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed">+</button>
+                  </div>
+                  {atMax && <span className="text-[10px] text-text-light">máx. {available}</span>}
+                </div>
+              );
+            })()}
             <button onClick={() => remove(item)} className="text-text-light hover:text-destructive transition-colors text-[12px] ml-2">✕</button>
           </div>
         ))}
@@ -803,6 +866,18 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
 
       <div className="mt-4">
         <MayoristaMinBar total={total} minOrder={minOrder} />
+        {minUnknown && (
+          <div role="status" className={`rounded-[12px] border p-3 text-[12px] ${minOrderError ? 'border-destructive/40 text-destructive' : 'border-border text-muted-foreground'}`}>
+            {minOrderError ? (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span>{minOrderError}</span>
+                <button type="button" onClick={() => { setMinOrderError(null); setMinOrderRetry(n => n + 1); }} className="text-[11px] font-semibold uppercase tracking-wide underline">
+                  Reintentar
+                </button>
+              </div>
+            ) : 'Cargando el pedido mínimo…'}
+          </div>
+        )}
       </div>
 
       {belowMin && catalog.length > 0 && (() => {
@@ -838,7 +913,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         );
       })()}
 
-      <Button variant="hype" size="ctaFull" onClick={() => setStep('shipping')} disabled={belowMin || checkingStock} className="mt-6 py-3 rounded-full disabled:cursor-not-allowed">
+      <Button variant="hype" size="ctaFull" onClick={() => setStep('shipping')} disabled={belowMin || minUnknown || checkingStock} className="mt-6 py-3 rounded-full disabled:cursor-not-allowed">
         {checkingStock ? 'Verificando stock…' : 'Continuar'}
       </Button>
       <button

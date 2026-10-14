@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findActiveMayoristaByEmail, createResetToken, sendResetLinkEmail } from '@/lib/mayorista-account';
+import { rateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 // "Olvidé mi contraseña" del catálogo mayorista.
 //
@@ -8,6 +9,10 @@ import { findActiveMayoristaByEmail, createResetToken, sendResetLinkEmail } from
 // Lo que pasó o dejó de pasar se ve en los logs, no en la respuesta.
 
 export async function POST(req: NextRequest) {
+  // Cada intento manda un mail (si la cuenta existe): tope por IP.
+  const limited = rateLimited(req, RATE_LIMITS.forgot);
+  if (limited) return limited;
+
   const { email } = await req.json().catch(() => ({ email: '' }));
   if (typeof email !== 'string' || !email.includes('@')) {
     return NextResponse.json({ ok: false, message: 'Escribí un mail válido' }, { status: 400 });

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { rememberMayoristaUser } from '@/context/MayoristaCartContext';
 
 // Mismas fotos y misma técnica (blur + oscurecido + scrim) que usamos en el
 // gate de early access (/acceso) — le da branding sin competir con la tarjeta.
@@ -30,7 +30,6 @@ const glassInput = {
 } as React.CSSProperties;
 
 export default function MayoristaLoginPage() {
-  const router = useRouter();
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
@@ -58,8 +57,13 @@ export default function MayoristaLoginPage() {
     });
     setLoading(false);
     if (res.ok) {
-      router.push('/mayoristas');
-      router.refresh();
+      // Carrito por cuenta (context/MayoristaCartContext.tsx).
+      const data = await res.json().catch(() => ({}));
+      if (data?.customerId != null) rememberMayoristaUser(data.customerId);
+      // Navegación completa, no SPA: el provider del carrito lee la cuenta
+      // (hy_mayorista_uid) al montar; con router.push seguía con la clave y los
+      // ítems de la sesión anterior hasta recargar (PC compartida entre cuentas).
+      window.location.assign('/mayoristas');
     } else {
       const data = await res.json().catch(() => ({}));
       // El fallback NO puede ser "usuario o contraseña incorrectos": un 500 con
@@ -105,7 +109,7 @@ export default function MayoristaLoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-10 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center px-4 pt-10 pb-24 md:pb-10 overflow-hidden">
       {/* Fondo — slideshow blureado */}
       {SLIDES.map((src, i) => (
         <div

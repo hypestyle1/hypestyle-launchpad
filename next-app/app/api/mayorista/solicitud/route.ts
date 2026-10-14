@@ -6,6 +6,7 @@ import {
   sendSolicitudAdminEmail,
   type SolicitudData,
 } from '@/lib/mayorista-account';
+import { rateLimited, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Alta de mayoristas hecha por el propio comercio.
 //
@@ -29,6 +30,10 @@ function normalizeCuit(v: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  // Cada solicitud crea un customer en Woo y manda un mail al admin: tope por IP.
+  const limited = rateLimited(req, RATE_LIMITS.solicitud, undefined, 'Ya recibimos varias solicitudes desde esta conexión. Si todavía no te contestamos, escribinos por WhatsApp.');
+  if (limited) return limited;
+
   const body = await req.json().catch(() => ({}));
 
   const email = clean(body.email).toLowerCase();

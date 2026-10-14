@@ -1,11 +1,17 @@
 // Catálogo mayorista: mismos productos del sitio público, pero precio = 50% del
 // regular_price (precio de lista), ignorando cualquier promo/sale_price vigente.
+//
+// Stock (política del 13/10/2026): solo se puede pedir lo que tiene cantidad
+// cargada en Woo. Una variación sin gestión de stock no es "ilimitada": queda
+// visible como "stock sin confirmar" y no se agrega al pedido hasta que el
+// depósito cargue la cantidad. Lo que lleva el tag `proximamente` se ve (los
+// mayoristas conocen las novedades antes) pero tampoco se pide todavía.
 
 import { fetchWithRetry } from './fetch-retry';
 import { wholesalePrice } from './mayorista-pricing';
 import type { ProductPromo } from './mayorista-campaign-view';
 import type { MayoristaDrop } from './mayorista-drop-server';
-import { decodeEntities, withPlainPrices } from './private-access/normalize';
+import { decodeEntities, withPlainPrices, isComingSoonNode } from './private-access/normalize';
 
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
@@ -16,21 +22,23 @@ const GET_PRODUCTS = `
       nodes {
         id databaseId name slug shortDescription
         ... on SimpleProduct {
-          regularPrice stockStatus stockQuantity
+          date regularPrice price onSale stockStatus stockQuantity manageStock
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name slug } }
+          productTags { nodes { slug } }
           attributes { nodes { name options } }
         }
         ... on VariableProduct {
-          regularPrice
+          date regularPrice price onSale stockStatus stockQuantity manageStock
           image { sourceUrl }
           galleryImages { nodes { sourceUrl } }
           productCategories { nodes { name slug } }
+          productTags { nodes { slug } }
           attributes { nodes { name options } }
           variations(first: 100) {
             nodes {
-              stockStatus stockQuantity
+              stockStatus stockQuantity manageStock
               attributes { nodes { name value } }
             }
           }
@@ -50,6 +58,11 @@ export interface MayoristaProduct {
   shortDescription: string;
   wholesalePrice: number;
   regularPrice: number;
+  // Precio al que la tienda vende hoy si está en oferta (menor que la lista),
+  // o null. No cambia el precio mayorista: se muestra para que el local sepa
+  // contra qué precio público compite. (Variable: WPGraphQL devuelve un rango
+  // "mín - máx"; se toma el mínimo, lo peor para el revendedor.)
+  retailPrice?: number | null;
   image: string;
   images: string[];
   sizes: string[];
@@ -63,32 +76,63 @@ export interface MayoristaProduct {
   // talle y el color viaja como dato del pedido.
   colorAxis: boolean;
   // Clave = stockKey(product, size, color).
-  stock: Record<string, 'ok' | 'low' | 'out'>;
+  stock: Record<string, StockLevel>;
   stockQty: Record<string, number | null>;
+  // Tag `proximamente` en Woo: se muestra como novedad pero todavía no se
+  // puede pedir (ni acá ni en /api/mayorista/pedido).
+  comingSoon: boolean;
   // Promo de la campaña mayorista vigente (lib/mayorista-campaign-view.ts).
   // Solo para mostrar: el precio que se cobra lo recalcula el servidor.
   promo?: ProductPromo;
   // Producto del drop nuevo (colección de Private Access abierta antes para
   // mayoristas, ver lib/mayorista-drop.ts). Va primero y con badge.
   drop?: boolean;
+  // Fecha de alta en Woo (ISO, sin zona). Para "Novedades" y el badge "Nuevo"
+  // (lib/mayorista-catalog-sort.ts).
+  createdAt?: string;
 }
+
+/**
+ * Disponibilidad de una combinación talle/color:
+ *   ok          cantidad cargada, más de 5
+ *   low         cantidad cargada, 1 a 5
+ *   unconfirmed sin cantidad en Woo (la variación o el producto no gestiona
+ *               stock): se ve, no se pide
+ *   out         agotado
+ */
+export type StockLevel = 'ok' | 'low' | 'unconfirmed' | 'out';
 
 /** Clave del stock de una combinación talle/color. */
 export function stockKey(p: Pick<MayoristaProduct, 'colorAxis'>, size: string, color?: string | null): string {
   return p.colorAxis && color ? `${color} / ${size}` : size;
 }
 
-const LEVEL_RANK = { ok: 0, low: 1, out: 2 } as const;
+const LEVEL_RANK: Record<StockLevel, number> = { ok: 0, low: 1, unconfirmed: 2, out: 3 };
 
 /** Disponibilidad de un talle mirando todos sus colores (la mejor de todas). */
-export function sizeLevel(p: MayoristaProduct, size: string): 'ok' | 'low' | 'out' {
+export function sizeLevel(p: MayoristaProduct, size: string): StockLevel {
   if (!p.colorAxis) return p.stock[size] ?? 'out';
-  let best: 'ok' | 'low' | 'out' = 'out';
+  let best: StockLevel = 'out';
   for (const c of p.colors) {
     const lvl = p.stock[stockKey(p, size, c)];
     if (lvl && LEVEL_RANK[lvl] < LEVEL_RANK[best]) best = lvl;
   }
   return best;
+}
+
+/** ¿Se puede agregar al pedido esta combinación? Solo con cantidad cargada y si el producto no es "próximamente". */
+export function canOrder(p: Pick<MayoristaProduct, 'comingSoon'>, level: StockLevel | undefined): boolean {
+  return !p.comingSoon && (level === 'ok' || level === 'low');
+}
+
+/** ¿Hay algún talle (de algún color) que se pueda pedir? */
+export function isPurchasable(p: MayoristaProduct): boolean {
+  return !p.comingSoon && p.sizes.some(s => canOrder(p, sizeLevel(p, s)));
+}
+
+/** Todos los talles sin cantidad cargada (ninguno agotado del todo ni pedible). */
+export function isUnconfirmed(p: MayoristaProduct): boolean {
+  return p.sizes.length > 0 && !isPurchasable(p) && p.sizes.some(s => sizeLevel(p, s) === 'unconfirmed');
 }
 
 // La descripción corta de WP viene con HTML (<p>, &nbsp;, etc.) — acá solo
@@ -126,11 +170,20 @@ function isColorAttr(name?: string | null): boolean {
   return n === 'color' || n === 'pa_color' || n === 'colour';
 }
 
-function stockLevel(status: string, qty: number | null): 'ok' | 'low' | 'out' {
+function stockLevel(status: string, qty: number | null): StockLevel {
   if (status === 'OUT_OF_STOCK') return 'out';
-  if (qty !== null && qty <= 0) return 'out';
-  if (qty !== null && qty <= 5) return 'low';
+  // Sin cantidad no hay stock confirmado. Antes esto era 'ok' y el portal
+  // ofrecía como ilimitado lo que el depósito nunca contó.
+  if (qty === null) return 'unconfirmed';
+  if (qty <= 0) return 'out';
+  if (qty <= 5) return 'low';
   return 'ok';
+}
+
+/** Cantidad gestionada de un nodo de WPGraphQL (null si no gestiona stock). */
+function managedQty(x: any): number | null {
+  if (x?.manageStock === false) return null;
+  return typeof x?.stockQuantity === 'number' ? x.stockQuantity : null;
 }
 
 // Combos/packs (ej. "Regular Tees 3 PACK", "CAMO FULL SET - COMBO") son
@@ -159,15 +212,28 @@ export function isExcludedFromMayoristaRest(product: { slug?: string; status?: s
 // (a mano, no hay una regla automática detrás — pedido explícito).
 const EXCLUDED_SLUGS = new Set(['hs-ring-silver-925', 'zip-hoodie-pink']);
 
-// Con cuántas unidades "de esfuerzo de stock" carga un producto: 2 por talle
-// agotado, 1 por talle con poco stock, 0 si está todo ok. Se usa para orden
-// (más bajo = más disponible = va primero) y para sacar del todo los que no
-// tienen ningún talle disponible.
+// Con cuántas unidades "de esfuerzo de stock" carga un producto: 3 por talle
+// agotado, 2 sin confirmar, 1 con poco stock, 0 si está todo ok. Se usa para
+// orden (más bajo = más disponible = va primero) y para sacar del todo los
+// que no tienen ningún talle disponible.
 function stockScore(p: MayoristaProduct): number {
   return p.sizes.reduce((sum, s) => sum + LEVEL_RANK[sizeLevel(p, s)], 0);
 }
+// Agotado en todos los talles: fuera del catálogo. Lo "sin confirmar" y lo
+// "próximamente" se quedan, visibles y sin botón de pedido.
 function isFullyOut(p: MayoristaProduct): boolean {
   return p.sizes.length > 0 && p.sizes.every((s) => sizeLevel(p, s) === 'out');
+}
+
+/** Precio público de hoy si hay oferta y es menor que la lista; si no, null. */
+export function retailPriceOf(node: { onSale?: boolean | null; price?: string | null }, regularPrice: number): number | null {
+  if (!node.onSale) return null;
+  // Variable: "$ 40.500,00 - $ 45.000,00". Se parsea cada tramo por separado
+  // (parsePrice sobre el rango entero pega los dos números).
+  const prices = String(node.price ?? '').split(/\s+[-–]\s+/).map(parsePrice).filter(n => n > 0);
+  if (!prices.length) return null;
+  const p = Math.round(Math.min(...prices));
+  return p < regularPrice ? p : null;
 }
 
 export function normalizeMayoristaNode(node: any): MayoristaProduct {
@@ -175,6 +241,7 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
   // Lo que ve el catálogo es orientativo: el precio que se cobra se recalcula
   // en el servidor al confirmar (lib/mayorista-pricing.ts), con la misma regla.
   const wholesale = wholesalePrice(regularPrice);
+  const retailPrice = retailPriceOf(node, regularPrice);
 
   const images: string[] = [];
   if (node.image?.sourceUrl) images.push(node.image.sourceUrl);
@@ -193,10 +260,13 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
   }
 
   const sizes: string[] = [];
-  const stock: Record<string, 'ok' | 'low' | 'out'> = {};
+  const stock: Record<string, StockLevel> = {};
   const stockQty: Record<string, number | null> = {};
   const variations: any[] = node.variations?.nodes ?? [];
   let colorAxis = false;
+  // Stock del padre: vale para las variaciones que delegan en él (Woo:
+  // manage_stock 'parent'), que vienen sin cantidad propia.
+  const parentQty = managedQty(node);
 
   if (variations.length) {
     for (const v of variations) {
@@ -211,14 +281,15 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
       if (!sizes.includes(sz)) sizes.push(sz);
       const key = colorVal ? `${colorVal} / ${sz}` : sz;
       if (!(key in stock)) {
-        stock[key] = stockLevel(v.stockStatus, v.stockQuantity ?? null);
-        stockQty[key] = v.stockQuantity ?? null;
+        const qty = managedQty(v) ?? parentQty;
+        stock[key] = stockLevel(v.stockStatus, qty);
+        stockQty[key] = qty;
       }
     }
   } else {
     sizes.push('Única');
-    stock['Única'] = stockLevel(node.stockStatus || 'IN_STOCK', node.stockQuantity ?? null);
-    stockQty['Única'] = node.stockQuantity ?? null;
+    stock['Única'] = stockLevel(node.stockStatus || 'IN_STOCK', parentQty);
+    stockQty['Única'] = parentQty;
   }
 
   // Con Color como eje, cada talle/color tiene su clave aunque Woo no haya
@@ -239,6 +310,7 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
     shortDescription: stripHtml(node.shortDescription),
     wholesalePrice: wholesale,
     regularPrice,
+    retailPrice,
     image: images[0] ?? '',
     images,
     sizes: sortSizes(sizes),
@@ -246,6 +318,8 @@ export function normalizeMayoristaNode(node: any): MayoristaProduct {
     colorAxis,
     stock,
     stockQty,
+    comingSoon: isComingSoonNode(node),
+    ...(typeof node.date === 'string' && node.date ? { createdAt: node.date } : {}),
   };
 }
 
@@ -294,12 +368,16 @@ export function buildMayoristaCatalog(publicNodes: any[], drop?: Pick<MayoristaD
     })
     .filter((p: MayoristaProduct) => p.regularPrice > 0 && !isFullyOut(p));
 
-  // Drop primero; después, por disponibilidad. Estable: entre productos con el
-  // mismo puntaje se mantiene el orden que ya traían (fecha de alta, ver la
-  // query; el drop, en el orden del menú de Woo).
+  // Drop primero; después lo que se puede pedir; después, por disponibilidad.
+  // Estable: entre productos con el mismo puntaje se mantiene el orden que ya
+  // traían (fecha de alta, ver la query; el drop, en el orden del menú de Woo).
   return products
     .map((p, i) => ({ p, i }))
-    .sort((a, b) => Number(!!b.p.drop) - Number(!!a.p.drop) || stockScore(a.p) - stockScore(b.p) || a.i - b.i)
+    .sort((a, b) =>
+      Number(!!b.p.drop) - Number(!!a.p.drop)
+      || Number(isPurchasable(b.p)) - Number(isPurchasable(a.p))
+      || stockScore(a.p) - stockScore(b.p)
+      || a.i - b.i)
     .map(({ p }) => p);
 }
 
