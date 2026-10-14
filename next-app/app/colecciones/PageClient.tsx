@@ -140,6 +140,35 @@ const drops: Drop[] = [
     status: "not for sale",
     cta: "Ver lookbook",
   },
+  // Sin enlace interno desde el rediseño #558 (auditoría SEO 2.0, 13/10):
+  // páginas indexables con productos y tráfico propio. Textos tomados de su
+  // propia página; van al Archivo, sin sección nueva.
+  {
+    name: "Pink Set Drop",
+    season: "Drop limitado",
+    description: "Todo en rosa. Zip hoodie, sweatpant, remeras y jorts de un drop limitado de HYPESTYLE.",
+    image: "stl-look-pink-set.png",
+    href: "/colecciones/pink-set-drop",
+    status: "disponible",
+  },
+  {
+    name: "Lookbook Faith Is The Real Hype",
+    season: "Shooting — Buenos Aires",
+    description: "La colección Faith Is The Real Hype puesta, en Buenos Aires. Cada foto con acceso directo al producto.",
+    image: "lookbook-faith/03126.webp",
+    href: "/lookbook-faith",
+    status: "disponible",
+    cta: "Ver lookbook",
+  },
+  {
+    name: "Más Hype",
+    season: "Catálogo",
+    description: "El resto del catálogo: piezas únicas, colabs y clásicos que siguen disponibles.",
+    image: "https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/09/crewneck-hyped-up-black-destacada-v2.png",
+    href: "/colecciones/mas-hype",
+    status: "disponible",
+    mockup: true,
+  },
 ];
 
 // Temporada actual (aprobado 12/10): SS27 · FW26 · Esenciales. El resto es

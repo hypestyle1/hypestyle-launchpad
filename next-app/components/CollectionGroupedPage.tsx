@@ -22,6 +22,8 @@ export interface CollectionConfig {
   headerImage?: string;
   dark?: boolean;
   groups: Group[];
+  /** Enlace a una página hermana (p. ej. el lookbook de la colección). */
+  related?: { href: string; label: string };
 }
 
 /**
@@ -51,6 +53,11 @@ export default function CollectionGroupedPage({ config, initialProducts }: { con
       <main className="pt-[var(--offset)] bg-white">
         <section className="px-4 md:px-6 pt-2 pb-10 md:pb-14" ref={ref}>
           <CatalogHeader kicker="Colección" title={config.title} count={total} description={config.subtitle} />
+          {config.related && (
+            <a href={config.related.href} className="inline-block -mt-2 mb-8 text-[11px] md:text-[12px] font-semibold uppercase underline underline-offset-4">
+              {config.related.label} <span aria-hidden>→</span>
+            </a>
+          )}
           {config.groups.map(group => {
             const items = group.slugs.map(s => bySlug[s]).filter(Boolean);
             if (items.length === 0) return null;

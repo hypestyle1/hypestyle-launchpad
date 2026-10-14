@@ -70,6 +70,10 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // /novedades mostraba los 8 productos más nuevos: un recorte de /new-in con
+      // otra URL y sin enlaces internos (auditoría SEO 2.0, 13/10). Una sola página.
+      { source: '/novedades',           destination: '/new-in',                         permanent: true },
+      { source: '/novedades/',          destination: '/new-in',                         permanent: true },
       // /best-sellers/ y /special-prices/ eran dos vistas del mismo sale (una
       // curada, otra con el resto) y no compartian ni un producto. Quedo una
       // sola pagina SALE; la vieja redirige para no perder los links de afuera.
