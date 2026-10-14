@@ -63,7 +63,7 @@ export const HOW_IT_WORKS_SECTIONS = [
     items: [
       'Revisamos cada solicitud a mano. Buscamos locales y proyectos que cuiden la marca.',
       'Te avisamos por mail cuando la cuenta queda aprobada; desde ese momento entrás con tu usuario y contraseña.',
-      'Si tu ciudad tiene un local con exclusividad, mientras la mantenga no podemos aprobar cuentas nuevas ahí. Te lo decimos antes de aprobar.',
+      'Si tu zona tiene un local con exclusividad, mientras la mantenga no podemos aprobar cuentas nuevas ahí. Te lo decimos antes de aprobar.',
     ],
   },
   {
@@ -123,10 +123,10 @@ export const HOW_IT_WORKS_SECTIONS = [
     items: [
       'Se gana con $3.000.000 en pedidos pagados dentro de 120 días.',
       'Se mantiene con al menos un pedido pagado por mes y $3.000.000 en compras por cuatrimestre.',
-      'Si alguna de las dos no se cumple, la exclusividad se libera y la ciudad vuelve a abrirse.',
-      'Vale para tu ciudad, no para la provincia.',
-      'Mientras la tengas, no damos de alta otros locales en tu ciudad y las cuentas mayoristas que ya existían ahí no pueden hacer pedidos.',
-      'La confirmamos por mail cuando la ganás.',
+      'Si alguna de las dos no se cumple, la exclusividad se libera y la zona vuelve a abrirse.',
+      'Vale para tu zona comercial (tu ciudad y las localidades que acordemos al confirmarla), no para la provincia.',
+      'Mientras la tengas, no damos de alta otros locales en tu zona y las cuentas mayoristas que ya existían ahí no pueden hacer pedidos.',
+      'La revisamos nosotros con tus pedidos pagados y te la confirmamos: no se activa sola.',
     ],
   },
   {

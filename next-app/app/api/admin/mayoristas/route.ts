@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { statusFromMeta } from '@/lib/mayorista-account';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { parseCredit } from '@/lib/mayorista-credit';
-import { parseExclusividad, parseBloqueo } from '@/lib/mayorista-exclusividad';
+import { parseExclusividad, parseBloqueo, evaluarExclusividad } from '@/lib/mayorista-exclusividad';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -110,6 +110,14 @@ export async function GET(req: NextRequest) {
       instagram: metaVal(meta, 'mayorista_instagram'),
       exclusividad: parseExclusividad(meta),
       bloqueoExclusividad: parseBloqueo(meta),
+      // Elegibilidad / cumplimiento con los pedidos pagados (solo informa; el
+      // admin decide): lib/mayorista-exclusividad.ts.
+      exclusividadEvaluacion: evaluarExclusividad(
+        suyos.pagados.map((o: any) => ({ fecha: String(o.date_created ?? ''), total: parseFloat(o.total || '0') })),
+        !!parseExclusividad(meta),
+        new Date(),
+        parseExclusividad(meta)?.desde,
+      ),
       localFisico: metaVal(meta, 'mayorista_local_fisico') === 'yes',
       modalidad: metaVal(meta, 'mayorista_modalidad'),
       solicitadoEl: metaVal(meta, 'mayorista_solicitud_fecha') || null,
