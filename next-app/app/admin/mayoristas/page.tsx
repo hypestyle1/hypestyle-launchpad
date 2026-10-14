@@ -348,7 +348,9 @@ Monto a favor en pesos (negativo para corregir):`);
   // Exclusividad por ciudad (lib/mayorista-exclusividad.ts): se administra a
   // mano. Dar/quitar en la cuenta titular; bloquear/desbloquear en las cuentas
   // de esa ciudad que no pueden pedir mientras dure.
-  async function patchExclusividad(m: Mayorista, body: Record<string, unknown>, apply: Partial<Mayorista>) {
+  // Devuelve false si no se guardó (así quien concede no sigue ofreciendo
+  // bloqueos de una exclusividad que no quedó grabada).
+  async function patchExclusividad(m: Mayorista, body: Record<string, unknown>, apply: Partial<Mayorista>): Promise<boolean> {
     setExclId(m.id);
     try {
       const res = await fetch(`/api/admin/mayoristas/${m.id}`, {
@@ -357,8 +359,9 @@ Monto a favor en pesos (negativo para corregir):`);
         body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { alert(data.message || 'No se pudo guardar'); return; }
+      if (!res.ok) { alert(data.message || 'No se pudo guardar'); return false; }
       setMayoristas(prev => prev.map(x => x.id === m.id ? { ...x, ...apply } : x));
+      return true;
     } finally {
       setExclId(null);
     }
@@ -392,7 +395,7 @@ Ciudad de la cuenta (ej. Córdoba Capital):`, m.city || '');
       ...(pedido.trim() ? { pedido: pedido.trim() } : {}),
       zona: { nombre: zonaNombre.trim(), alias: parseAliasInput(aliasRaw) },
     };
-    await patchExclusividad(m, { exclusividad: excl }, { exclusividad: excl });
+    if (!await patchExclusividad(m, { exclusividad: excl }, { exclusividad: excl })) return;
 
     // Las otras cuentas de la zona: se ofrece bloquearlas ahora, una por una.
     const afectadas = cuentasEnZona(mayoristas, { ...m, exclusividad: excl }).filter(x => !x.bloqueoExclusividad && !x.exclusividad);

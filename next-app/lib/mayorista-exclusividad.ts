@@ -193,7 +193,13 @@ export function cuatrimestreDe(hoy: Date): { desde: Date; hasta: Date } {
   return { desde: new Date(Date.UTC(y, m0, 1)), hasta: new Date(Date.UTC(y, m0 + 4, 0)) };
 }
 
-export function evaluarExclusividad(pagados: PedidoPagado[], tiene: boolean, hoy: Date = new Date()): EvaluacionExclusividad {
+/**
+ * `desdeExcl`: fecha en que se concedió la exclusividad (ISO). Los meses del
+ * cuatrimestre anteriores a esa fecha no cuentan como "sin pedido": una
+ * exclusividad dada en noviembre no debe nacer marcada "no cumple" por
+ * septiembre y octubre.
+ */
+export function evaluarExclusividad(pagados: PedidoPagado[], tiene: boolean, hoy: Date = new Date(), desdeExcl?: string | null): EvaluacionExclusividad {
   const orders = pagados
     .map(p => ({ t: Date.parse(p.fecha), total: Number(p.total) || 0 }))
     .filter(o => Number.isFinite(o.t) && o.t <= hoy.getTime() + DAY);
@@ -207,7 +213,10 @@ export function evaluarExclusividad(pagados: PedidoPagado[], tiene: boolean, hoy
   const mesesConPedido = new Set(enCuatri.map(o => ym(new Date(o.t))));
   // Solo los meses ya terminados: el mes en curso todavía puede cumplirse.
   const mesesSinPedido: string[] = [];
+  const inicioExcl = desdeExcl ? Date.parse(desdeExcl) : NaN;
+  const primerMesExigible = Number.isFinite(inicioExcl) ? ym(new Date(inicioExcl)) : '';
   for (let m = new Date(desde); ym(m) < ym(hoy); m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1))) {
+    if (ym(m) < primerMesExigible) continue;
     if (!mesesConPedido.has(ym(m))) mesesSinPedido.push(ym(m));
   }
   const diasRestantes = Math.max(0, Math.ceil((hasta.getTime() - hoy.getTime()) / DAY));

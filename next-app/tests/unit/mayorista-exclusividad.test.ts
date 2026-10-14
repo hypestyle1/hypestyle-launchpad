@@ -178,6 +178,17 @@ describe('evaluarExclusividad — con pedidos pagados, solo informa', () => {
     expect(r.detalle).toContain('en curso');
   });
 
+  it('vigente concedida este mes: los meses anteriores a la concesión no cuentan en contra', () => {
+    // Pagó en agosto, se le dio la exclusividad el 13/10: septiembre no es un mes exigible.
+    const r = evaluarExclusividad([p('2026-08-20', 3_200_000), p('2026-10-13', 400_000)], true, hoy, '2026-10-13');
+    expect(r.cuatrimestre.mesesSinPedido).toEqual([]);
+    expect(r.estado).toBe('vigente-cumple');
+    // Sin `desde` (meta vieja) se evalúa como antes.
+    expect(evaluarExclusividad([p('2026-10-13', 400_000)], true, hoy).cuatrimestre.mesesSinPedido).toEqual(['2026-09']);
+    // Concedida en agosto: septiembre sí se exige.
+    expect(evaluarExclusividad([p('2026-10-13', 400_000)], true, hoy, '2026-08-20').cuatrimestre.mesesSinPedido).toEqual(['2026-09']);
+  });
+
   it('fechas inválidas se ignoran', () => {
     expect(evaluarExclusividad([p('no-es-fecha', 9_000_000)], false, hoy).ventana120).toBe(0);
   });

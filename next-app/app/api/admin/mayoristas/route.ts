@@ -115,6 +115,8 @@ export async function GET(req: NextRequest) {
       exclusividadEvaluacion: evaluarExclusividad(
         suyos.pagados.map((o: any) => ({ fecha: String(o.date_created ?? ''), total: parseFloat(o.total || '0') })),
         !!parseExclusividad(meta),
+        new Date(),
+        parseExclusividad(meta)?.desde,
       ),
       localFisico: metaVal(meta, 'mayorista_local_fisico') === 'yes',
       modalidad: metaVal(meta, 'mayorista_modalidad'),
