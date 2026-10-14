@@ -309,7 +309,7 @@ export default function HeroLookbookFW26() {
         <div ref={titleRef} className="origin-top-left scale-[1.7] md:scale-100">
           <Image
             src="/STYLE&CULTURE WHITE.png"
-            alt="Style & Culture"
+            alt="STYLE&CULTURE"
             data-intro-target
             width={1778}
             height={113}

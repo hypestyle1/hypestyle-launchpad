@@ -18,7 +18,7 @@ const HYPE_BLACK: Producto = { producto: 'Hype Black Hoodie' };
 
 export const FAITH: Lookbook = {
   dir: '/lookbook-faith',
-  eyebrow: 'Style&Culture',
+  eyebrow: 'STYLE&CULTURE',
   title: 'Faith Is The Real Hype',
   intro: 'La colección Faith puesta, en Buenos Aires. Julio 2026.',
   bloques: [

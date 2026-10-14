@@ -125,7 +125,7 @@ export default function Footer() {
 
           {/* Brand */}
           <div>
-            <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-6 w-auto object-contain object-left mb-3" />
+            <img src="/STYLE&CULTURE WHITE.png" alt="STYLE&CULTURE" className="h-6 w-auto object-contain object-left mb-3" />
             <p className="text-[12px] text-primary-foreground/50 leading-relaxed">
               {t('Streetwear desde Buenos Aires. Drops limitados.')}<br />{t('Envíos a todo el mundo.')}
             </p>

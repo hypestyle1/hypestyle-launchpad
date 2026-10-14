@@ -15,7 +15,7 @@ const COLECCION: Producto = { producto: 'CULTO x Neo Pistea — la colección', 
 
 export const NEO: Lookbook = {
   dir: '/lookbook-neo',
-  eyebrow: 'Style&Culture',
+  eyebrow: 'STYLE&CULTURE',
   title: 'CULTO x Neo Pistea',
   artista: { nombre: 'Neo Pistea', instagram: 'neopistea' },
   intro: 'El merch oficial del disco. Neo con las remeras puestas arriba del escenario en Mar del Plata, y el shooting de la colección en Buenos Aires. Verano 2025.',

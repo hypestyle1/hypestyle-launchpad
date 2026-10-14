@@ -1551,7 +1551,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `SKYLINE TEE Remera negra con estampa frontal de ciudad al atardecer, pensada para la calle y las noches largas. Gráfico full color con vibe cinemática, ideal para levantar cualquier outfit. Fit relaxed, levemente oversize Estampa frontal full color de alta definición Tela suave y resistente, cómoda para uso diario Cuello redondo con rib reforzado Grifa lateral HYPESTYLE Style & Culture
+    description: `SKYLINE TEE Remera negra con estampa frontal de ciudad al atardecer, pensada para la calle y las noches largas. Gráfico full color con vibe cinemática, ideal para levantar cualquier outfit. Fit relaxed, levemente oversize Estampa frontal full color de alta definición Tela suave y resistente, cómoda para uso diario Cuello redondo con rib reforzado Grifa lateral HYPESTYLE STYLE&CULTURE
 
 •
 •
@@ -1586,7 +1586,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `HYPESTATION  BLACK TEE Remera negra regular fit, básica pero con actitud. Estampada en DTG de alta definición y confeccionada en algodón peinado 20/1 para uso diario. Corte regular, clásico y cómodo Tela 100% algodón peinado 20/1, suave y resistente Estampa frontal en DTG (impresión directa) Cuello redondo con rib reforzado Grifa HYPESTYLE Style & Culture en la terminación
+    description: `HYPESTATION  BLACK TEE Remera negra regular fit, básica pero con actitud. Estampada en DTG de alta definición y confeccionada en algodón peinado 20/1 para uso diario. Corte regular, clásico y cómodo Tela 100% algodón peinado 20/1, suave y resistente Estampa frontal en DTG (impresión directa) Cuello redondo con rib reforzado Grifa HYPESTYLE STYLE&CULTURE en la terminación
 
 •
 •
@@ -1621,7 +1621,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `HYPESTATION  WHITE TEE Remera blanca regular fit, básica pero con actitud. Estampada en DTG de alta definición y confeccionada en algodón peinado 20/1 para uso diario. Corte regular, clásico y cómodo Tela 100% algodón peinado 20/1, suave y resistente Estampa frontal en DTG (impresión directa) Cuello redondo con rib reforzado Grifa HYPESTYLE Style & Culture en la terminación
+    description: `HYPESTATION  WHITE TEE Remera blanca regular fit, básica pero con actitud. Estampada en DTG de alta definición y confeccionada en algodón peinado 20/1 para uso diario. Corte regular, clásico y cómodo Tela 100% algodón peinado 20/1, suave y resistente Estampa frontal en DTG (impresión directa) Cuello redondo con rib reforzado Grifa HYPESTYLE STYLE&CULTURE en la terminación
 
 •
 •
@@ -1656,7 +1656,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `Remera negra con diseño inspirado en billete/heráldica, pensada como complemento del encendedor HYPESTYLE x STARVOUND. Estampa pequeña en el frente y arte full back con el lema PER ASPERA AD ASTRA y Style & Culture. Esta pieza forma parte de la colaboración HYPESTYLE x STARVOUND. 100% algodón peinado, suave y resistente Fit medio oversize, cómodo y relajado Estampa frontal y trasera de alta definición Cuello redondo con rib reforzado Grifa lateral HYPESTYLE Style & Culture
+    description: `Remera negra con diseño inspirado en billete/heráldica, pensada como complemento del encendedor HYPESTYLE x STARVOUND. Estampa pequeña en el frente y arte full back con el lema PER ASPERA AD ASTRA y STYLE&CULTURE. Esta pieza forma parte de la colaboración HYPESTYLE x STARVOUND. 100% algodón peinado, suave y resistente Fit medio oversize, cómodo y relajado Estampa frontal y trasera de alta definición Cuello redondo con rib reforzado Grifa lateral HYPESTYLE STYLE&CULTURE
 
 •
 •
@@ -1693,7 +1693,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `Remera blanca con diseño inspirado en billete/heráldica, pensada como complemento del encendedor HYPESTYLE x STARVOUND. Estampa pequeña en el frente y arte full back con el lema PER ASPERA AD ASTRA y Style & Culture. Esta pieza forma parte de la colaboración HYPESTYLE x STARVOUND. 100% algodón peinado, suave y resistente Fit medio oversize, cómodo y relajado Estampa frontal y trasera de alta definición Cuello redondo con rib reforzado Grifa lateral HYPESTYLE Style & Culture
+    description: `Remera blanca con diseño inspirado en billete/heráldica, pensada como complemento del encendedor HYPESTYLE x STARVOUND. Estampa pequeña en el frente y arte full back con el lema PER ASPERA AD ASTRA y STYLE&CULTURE. Esta pieza forma parte de la colaboración HYPESTYLE x STARVOUND. 100% algodón peinado, suave y resistente Fit medio oversize, cómodo y relajado Estampa frontal y trasera de alta definición Cuello redondo con rib reforzado Grifa lateral HYPESTYLE STYLE&CULTURE
 
 •
 •
@@ -1763,7 +1763,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `AEROPINK TEES Remera regular fit con gráfico central Hype en rosa efecto aerógrafo, con vibra Y2K bien street. Disponible en blanco, gris melange y negro para elegir el contraste que más te guste. Fit medio oversize, calce unisex y relajado Estampa frontal estilo airbrush pink Tela 100% algodón peinado, suave y resistente para uso diario Grifa lateral HYPESTYLE STYLE & CULTURE
+    description: `AEROPINK TEES Remera regular fit con gráfico central Hype en rosa efecto aerógrafo, con vibra Y2K bien street. Disponible en blanco, gris melange y negro para elegir el contraste que más te guste. Fit medio oversize, calce unisex y relajado Estampa frontal estilo airbrush pink Tela 100% algodón peinado, suave y resistente para uso diario Grifa lateral HYPESTYLE STYLE&CULTURE
 
 •
 •
@@ -1862,7 +1862,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `AEROGREY TEES Remera regular fit con gráfico central Hype en rosa efecto aerógrafo, con vibra Y2K bien street. Disponible en blanco, gris melange y negro para elegir el contraste que más te guste. Fit medio oversize, calce unisex y relajado Estampa frontal estilo airbrush grey Tela 100% algodón peinado, suave y resistente para uso diario Grifa lateral HYPESTYLE STYLE & CULTURE
+    description: `AEROGREY TEES Remera regular fit con gráfico central Hype en rosa efecto aerógrafo, con vibra Y2K bien street. Disponible en blanco, gris melange y negro para elegir el contraste que más te guste. Fit medio oversize, calce unisex y relajado Estampa frontal estilo airbrush grey Tela 100% algodón peinado, suave y resistente para uso diario Grifa lateral HYPESTYLE STYLE&CULTURE
 
 •
 •
@@ -1898,7 +1898,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `HONDA BLACK - TEE Remera negra de corte medio oversize con gráfico frontal HYPE en tono crudo, logrando un contraste fuerte y bien street. Ideal para outfits oscuros, denim lavado o pantalones cargos. Color: negro con estampa en crudo Fit: medio oversize, calce relajado y unisex Estampa frontal de alta definición con look vintage Tela de algodón peinado premium, cómoda y respirable Cuello redondo con rib reforzado que mantiene la forma con el uso Grifa lateral HYPESTYLE STYLE & CULTURE
+    description: `HONDA BLACK - TEE Remera negra de corte medio oversize con gráfico frontal HYPE en tono crudo, logrando un contraste fuerte y bien street. Ideal para outfits oscuros, denim lavado o pantalones cargos. Color: negro con estampa en crudo Fit: medio oversize, calce relajado y unisex Estampa frontal de alta definición con look vintage Tela de algodón peinado premium, cómoda y respirable Cuello redondo con rib reforzado que mantiene la forma con el uso Grifa lateral HYPESTYLE STYLE&CULTURE
 
 •
 •
@@ -2009,7 +2009,7 @@ export const PRODUCTS: Product[] = [
     category: "Remera",
     price: 38250,
     originalPrice: 45000,
-    description: `HONDA WHITE - TEE Remera blanca de corte medio oversize con gráfico frontal HYPE inspirado en la cultura automotriz. El logo azul desgastado le da una vibra vintage/racing, perfecta para usar con jean, cargos o shorts. Color: blanco con estampa azul Fit: medio oversize, hombros levemente caídos y cuerpo amplio Estampa frontal de alta definición con textura cracked/vintage Tela de algodón peinado premium, suave al tacto y resistente al uso diario Cuello redondo con rib reforzado para mayor durabilidad Grifa lateral HYPESTYLE STYLE & CULTURE
+    description: `HONDA WHITE - TEE Remera blanca de corte medio oversize con gráfico frontal HYPE inspirado en la cultura automotriz. El logo azul desgastado le da una vibra vintage/racing, perfecta para usar con jean, cargos o shorts. Color: blanco con estampa azul Fit: medio oversize, hombros levemente caídos y cuerpo amplio Estampa frontal de alta definición con textura cracked/vintage Tela de algodón peinado premium, suave al tacto y resistente al uso diario Cuello redondo con rib reforzado para mayor durabilidad Grifa lateral HYPESTYLE STYLE&CULTURE
 
 •
 •

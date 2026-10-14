@@ -19,7 +19,7 @@ const WHITE_TOP: Producto = { producto: 'White Crop Top' };
 
 export const FW26: Lookbook = {
   dir: '/lookbook-fw26/book',
-  eyebrow: 'Style&Culture',
+  eyebrow: 'STYLE&CULTURE',
   title: 'Lookbook FW26',
   intro: 'La colección FW26 puesta, en Rio de Janeiro. Fotos de Fili.',
   bloques: [

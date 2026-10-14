@@ -7,13 +7,13 @@ export default function EditorialBanner() {
 
   return (
     <section className="reveal w-full relative" ref={ref}>
-      {/* La imagen ya dice "Style & Culture"; el cartelito encima repetía el
+      {/* La imagen ya dice "STYLE&CULTURE"; el cartelito encima repetía el
           mismo texto y quedaba pisando la foto. */}
       {/* width/height reservan el alto antes de que baje la foto: sin eso el
           banner ocupa 0px y todo lo de abajo salta al cargar (CLS). */}
       <img
         src="/style-culture.webp"
-        alt="Style & Culture"
+        alt="STYLE&CULTURE"
         width={1400}
         height={620}
         loading="lazy"

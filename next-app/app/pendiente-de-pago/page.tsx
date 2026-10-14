@@ -56,7 +56,7 @@ export default function PendientePago() {
             ? 'Thank you for your order. We\'ll confirm your shipment and send all details by email within 24 hours.'
             : 'Gracias por ser parte. Estamos preparando tu pedido con el respeto que merece la cultura.'}
         </p>
-        <img src="/STYLE&CULTURE WHITE.png" alt="Style & Culture" className="h-3 w-auto mx-auto mt-6 opacity-40" />
+        <img src="/STYLE&CULTURE WHITE.png" alt="STYLE&CULTURE" className="h-3 w-auto mx-auto mt-6 opacity-40" />
       </div>
 
       <div className="max-w-[1100px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12">

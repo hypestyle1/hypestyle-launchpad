@@ -19,7 +19,7 @@ export default function MayoristaFooter() {
           <Link href="/" className="text-foreground/40 hover:text-foreground transition-colors">hypestyle.com.ar</Link>
         </nav>
       </div>
-      <p className="max-w-6xl mx-auto mt-6 text-[10px] uppercase tracking-[0.2em] text-foreground/30">Hype. · Style &amp; Culture · Buenos Aires</p>
+      <p className="max-w-6xl mx-auto mt-6 text-[10px] uppercase tracking-[0.2em] text-foreground/30">Hype. · STYLE&amp;CULTURE · Buenos Aires</p>
     </footer>
   );
 }

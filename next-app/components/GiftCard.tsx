@@ -40,7 +40,7 @@ function Cara({ tone, centro, abajoIzq, abajoDer }: {
         <div className="flex items-start justify-end">
           <img
             src="/STYLE&CULTURE WHITE.png"
-            alt="Style & Culture"
+            alt="STYLE&CULTURE"
             className="h-[9px] w-auto object-contain opacity-80 sm:h-[10px]"
           />
         </div>

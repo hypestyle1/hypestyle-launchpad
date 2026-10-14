@@ -11,7 +11,7 @@ const JERSEY: Producto = {
 
 export const GENOVESE: Lookbook = {
   dir: '/lookbook-genovese',
-  eyebrow: 'Style&Culture',
+  eyebrow: 'STYLE&CULTURE',
   title: 'Fileteado Porteño x Alfredo Genovese',
   artista: { nombre: 'Alfredo Genovese', instagram: 'fileteado' },
   intro: 'El jersey fileteado por Alfredo Genovese, en la cancha de la Villa 31. Filete porteño sobre una camiseta de fútbol. Diciembre de 2025.',
