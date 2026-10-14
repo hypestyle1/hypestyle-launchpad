@@ -357,7 +357,7 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
               afuera y Escape). Una salida en texto, al pie, empuja menos a
               cerrar que un botón a la vista arriba de todo. */}
           <div className="mt-4 flex items-center justify-between gap-4 md:max-w-[400px]">
-            <img src="/STYLE&CULTURE WHITE.png" alt="Style&Culture" className="h-3 w-auto opacity-90" />
+            <img src="/STYLE&CULTURE WHITE.png" alt="STYLE&CULTURE" className="h-3 w-auto opacity-90" />
             <button
               type="button"
               onClick={onClose}

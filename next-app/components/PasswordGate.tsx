@@ -227,7 +227,7 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
 
         {/* Footer */}
         <p className="text-[8px] text-white/12 tracking-[0.2em] uppercase">
-          Style&Culture · Est. 2018 · Buenos Aires
+          STYLE&CULTURE · Est. 2018 · Buenos Aires
         </p>
       </div>
 

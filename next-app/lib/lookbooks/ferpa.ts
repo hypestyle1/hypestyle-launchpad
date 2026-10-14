@@ -9,7 +9,7 @@ const BUZO: Producto = { producto: 'Tie Dye Hoodie — x Ferpa', nota: 'Not for 
 
 export const FERPA: Lookbook = {
   dir: '/lookbook-ferpa',
-  eyebrow: 'Style&Culture',
+  eyebrow: 'STYLE&CULTURE',
   title: 'Tie Dye Hoodie Drop x Ferpa',
   artista: { nombre: 'Fer Palacio', instagram: 'ferpalaci0' },
   intro: 'Cuarenta buzos tie dye, ninguno a la venta: se repartieron entre los streamers y creadores del momento. Septiembre de 2020.',

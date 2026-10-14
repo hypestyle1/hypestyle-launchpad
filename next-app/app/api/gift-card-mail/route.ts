@@ -63,7 +63,7 @@ function tarjetaHtml(c: Code) {
   <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:380px;margin:0 auto;border-collapse:separate;">
     <tr><td style="background:${t.bg};background-color:${tone === 'negro' ? '#1a1a1a' : '#d9d9d9'};border-radius:10px;padding:20px 22px;color:${t.ink};font-family:Arial,Helvetica,sans-serif;">
       <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">
-        <tr><td style="text-align:right;"><img src="${SITE_URL}/STYLE%26CULTURE%20WHITE.png" alt="Style &amp; Culture" height="9" style="height:9px;width:auto;opacity:.85;"></td></tr>
+        <tr><td style="text-align:right;"><img src="${SITE_URL}/STYLE%26CULTURE%20WHITE.png" alt="STYLE&amp;CULTURE" height="9" style="height:9px;width:auto;opacity:.85;"></td></tr>
         <tr><td style="text-align:center;padding:26px 0 30px;"><img src="${LOGO_BLANCO}" alt="Hypestyle" width="150" style="width:150px;height:auto;"></td></tr>
         <tr>
           <td style="font-family:Consolas,'Courier New',monospace;font-size:12px;letter-spacing:.2em;color:rgba(255,255,255,.75);">${numeracion(c.code)}<span style="float:right;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;letter-spacing:0;color:#fff;">${formatGiftAmount(c.monto)}</span></td>

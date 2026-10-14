@@ -67,7 +67,7 @@ function Brand({ className = '' }: { className?: string }) {
   return (
     <Image
       src="/STYLE&CULTURE WHITE.png"
-      alt="Style & Culture"
+      alt="STYLE&CULTURE"
       data-intro-target
       width={1778}
       height={113}
@@ -168,7 +168,7 @@ function HeroMobile() {
         <div className="sticky top-[calc(var(--offset)+10px)] w-full max-w-[88vw] mx-auto">
           <Image
             src="/STYLE&CULTURE WHITE.png"
-            alt="Style & Culture"
+            alt="STYLE&CULTURE"
             data-intro-target
             width={1778}
             height={113}

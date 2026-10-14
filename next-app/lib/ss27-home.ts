@@ -90,8 +90,8 @@ export const SS27_MEDIA: Record<string, Ss27Media> = {
   distressed: { id: 'distressed', kind: 'img', src: B + '15-distressed.webp', alt: 'Hype Distressed Hoodie washed grey', kicker: 'Hoodie', title: 'Distressed', href: ficha('hype-distressed-grey-hoodie') },
   duoApoyada: { id: 'duoApoyada', kind: 'img', src: B + '16-duo-apoyada.webp', alt: 'Hoodie gris y Athletic Dept Polo', kicker: 'Spring Summer 27', title: 'Part 01', href: coleccion },
   hHype:      { id: 'hHype', kind: 'img', src: B + '17-h-hype-split.webp', alt: 'H Hype Tee navy y blanca', kicker: 'Tee', title: 'H Hype', href: ficha('h-hype-navy-tee') },
-  crestGrid:  { id: 'crestGrid', kind: 'img', src: B + '18-varsity-crest-grid.webp', alt: 'Style & Culture University tees en tres colores', kicker: 'Varsity', title: 'Style & Culture University', href: ficha('style-culture-university-black-tee') },
-  varsityNavy:{ id: 'varsityNavy', kind: 'img', src: P + '20-varsity-crest-navy.webp', alt: 'Style & Culture University Tee navy', kicker: 'Varsity', title: 'University navy', href: ficha('style-culture-university-navy-tee') },
+  crestGrid:  { id: 'crestGrid', kind: 'img', src: B + '18-varsity-crest-grid.webp', alt: 'STYLE&CULTURE University tees en tres colores', kicker: 'Varsity', title: 'STYLE&CULTURE University', href: ficha('style-culture-university-black-tee') },
+  varsityNavy:{ id: 'varsityNavy', kind: 'img', src: P + '20-varsity-crest-navy.webp', alt: 'STYLE&CULTURE University Tee navy', kicker: 'Varsity', title: 'University navy', href: ficha('style-culture-university-navy-tee') },
   flatlay:    { id: 'flatlay', kind: 'img', src: P + '29-flatlay-general.webp', alt: 'Spring Summer 27 Part 01 completa en el piso', kicker: 'Spring Summer 27', title: 'Part 01', href: coleccion },
 };
 
@@ -126,7 +126,7 @@ export const SS27_HOME_EXTRA_SLUGS = ['pack-x3-medias-hype'];
 export const SS27_REMERAS_CAROUSEL: { src: string; alt: string; title: string; href: string }[] = [
   { src: '/ss27/home/remeras/h-hype-navy.webp', alt: 'H Hype Tee navy', title: 'H Hype', href: '/producto/h-hype-navy-tee' },
   { src: '/ss27/home/remeras/worn-varsity-white.webp', alt: 'Worn Varsity Club Tee blanca', title: 'Worn Varsity Club', href: '/producto/worn-varsity-club-white-tee' },
-  { src: '/ss27/home/remeras/sc-university-black.webp', alt: 'Style & Culture University Tee negra', title: 'Style & Culture University', href: '/producto/style-culture-university-black-tee' },
+  { src: '/ss27/home/remeras/sc-university-black.webp', alt: 'STYLE&CULTURE University Tee negra', title: 'STYLE&CULTURE University', href: '/producto/style-culture-university-black-tee' },
   { src: '/ss27/home/remeras/athletic-grey-print.webp', alt: 'Athletic Dept Tee blanca, estampa gris', title: 'Athletic Dept', href: '/producto/athletic-dept-white-grey-print-tee' },
 ];
 

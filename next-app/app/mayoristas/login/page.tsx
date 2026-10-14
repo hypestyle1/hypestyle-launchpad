@@ -237,7 +237,7 @@ export default function MayoristaLoginPage() {
           )}
 
           <div className="flex justify-center mt-6">
-            <img src="/STYLE&CULTURE BLACK.png" alt="Style&Culture" className="h-4 w-auto object-contain opacity-70" />
+            <img src="/STYLE&CULTURE BLACK.png" alt="STYLE&CULTURE" className="h-4 w-auto object-contain opacity-70" />
           </div>
         </div>
       </div>

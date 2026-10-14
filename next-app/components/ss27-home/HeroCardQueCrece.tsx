@@ -38,7 +38,7 @@ const SLIDES = [
   { trio: [B + '02-eagle-18-el.webp', H + 'suelo-eagle-hoodie.webp', B + '03-eagle-18-ella.webp'], name1: 'Золотые купола', name2: 'Hoodie', href: SS27_MEDIA.eagleEl.href },
   { trio: [B + '01-duo.webp', H + 'suelo-distressed-hoodie.webp', B + '08-polo.webp'], name1: 'Washed Grey', name2: 'Hoodie + Polo', href: SS27_MEDIA.duo.href },
   { trio: [B + '12-cross-waffle.webp', B + '14-waffle-black.webp', H + 'suelo-sc-waffle.webp'], name1: 'Waffle', name2: 'Longsleeves', href: SS27_MEDIA.cross.href },
-  { trio: [P + '10-varsity-crest-white.webp', B + '18-varsity-crest-grid.webp', H + 'hero-sc-university-black.webp'], name1: 'Style & Culture', name2: 'University Tee', href: SS27_MEDIA.crestGrid.href },
+  { trio: [P + '10-varsity-crest-white.webp', B + '18-varsity-crest-grid.webp', H + 'hero-sc-university-black.webp'], name1: 'STYLE&CULTURE', name2: 'University Tee', href: SS27_MEDIA.crestGrid.href },
   { trio: [P + '03-018-varsity-navy.webp', B + '13-piso-018.webp', P + '16-018-varsity-white.webp'], name1: 'Worn Varsity Club', name2: 'Boxy Tee', href: SS27_MEDIA.piso018.href },
 ];
 
@@ -225,7 +225,7 @@ export default function HeroCardQueCrece() {
           <div ref={titleRef} className="origin-top-left">
             <Image
               src="/STYLE&CULTURE WHITE.png"
-              alt="Style & Culture"
+              alt="STYLE&CULTURE"
               data-intro-target
               width={1778}
               height={113}

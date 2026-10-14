@@ -1,7 +1,7 @@
 'use client';
 
 const items = [
-  "Style & Culture",
+  "STYLE&CULTURE",
   "Buenos Aires",
   "Worldwide Shipping",
   "Drops limitados",
