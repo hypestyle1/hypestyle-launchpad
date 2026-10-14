@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLocale } from '@/context/LocaleContext';
@@ -17,42 +17,18 @@ const HIDDEN_PREFIXES = ['/checkout', '/admin', '/mayoristas', '/review/', '/rev
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /**
- * Invitación a abrir la píldora sin hover. DEMO LOCAL: se elige con ?pill=<letra>
- * o con el selector flotante (solo en development); queda en localStorage.
- *  A — entra a los 3 s y hace 3 nudges que replican el hover (una vez por sesión).
- *  B — la estrella titila y un brillo cruza la píldora.
- *  C — cada 10 s se despliega una mini tarjeta con una reseña real, 4 s, y se repliega.
- *  D — ticker: el texto de la píldora rota (promedio → cita → total).
- *  E — anillo que se expande y desvanece, como el botón de WhatsApp.
- *  F — píldora negra con texto en marquee.
- *  G — sacudida tipo notificación cada 6 s.
- *  H — invierte color (blanca ↔ negra) cada 6 s.
+ * Invitación a abrir la píldora sin hover: la estrella titila y un brillo la
+ * cruza en loop, y cada PEEK_EVERY_MS asoma desde el borde una mini tarjeta con
+ * una reseña real durante PEEK_SHOW_MS. Pausa con el drawer abierto, se corta
+ * para la sesión cuando el drawer se abrió una vez y respeta reduced-motion.
  */
-type PillVariant = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'off';
-const PILL_VARIANTS: { id: PillVariant; label: string }[] = [
-  { id: 'A', label: 'A Entra+nudge' },
-  { id: 'B', label: 'B Titila+brillo' },
-  { id: 'C', label: 'C Peek reseña' },
-  { id: 'D', label: 'D Ticker' },
-  { id: 'E', label: 'E Anillo' },
-  { id: 'F', label: 'F Negra marquee' },
-  { id: 'G', label: 'G Sacudida' },
-  { id: 'H', label: 'H Invierte' },
-  { id: 'off', label: 'Actual' },
-];
-const isVariant = (v: string | null): v is PillVariant => PILL_VARIANTS.some((x) => x.id === v);
-const PILL_VARIANT_KEY = 'hs-reviews-pill-variant';
-const PILL_INTRO_KEY = 'hs-reviews-pill-intro';
-const PILL_INTRO_DELAY_MS = 3000;
+const PEEK_FIRST_MS = 2500;
 const PEEK_EVERY_MS = 10000;
 const PEEK_SHOW_MS = 4500;
-const TICK_EVERY_MS = 3200;
+const PEEK_OUT_MS = 400;
+const PEEK_SEEN_KEY = 'hs-reviews-peek-seen';
 
 const firstName = (n: string) => (n || '').trim().split(/\s+/)[0] || '';
-const shorten = (txt: string, max: number) => {
-  const t = (txt || '').replace(/\s+/g, ' ').trim();
-  return t.length <= max ? t : t.slice(0, max - 1).trimEnd() + '…';
-};
 
 export default function ReviewsDrawer() {
   const { t } = useLocale();
@@ -64,53 +40,34 @@ export default function ReviewsDrawer() {
   const tabTriggerRef = useRef<HTMLButtonElement>(null);
   const pillTriggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const [variant, setVariant] = useState<PillVariant>('off');
-  // 'pending' = todavía oculta (esperando el delay); 'play' = animando; 'done' = quieta.
-  const [intro, setIntro] = useState<'pending' | 'play' | 'done'>('done');
-  // C: índice de la reseña asomada (-1 = ninguna) y si está saliendo.
+  // Índice de la reseña asomada (-1 = ninguna), si está saliendo, y si ya no
+  // corresponde asomar más en esta sesión.
   const [peek, setPeek] = useState(-1);
   const [peekOut, setPeekOut] = useState(false);
-  // D: contador del ticker.
-  const [tick, setTick] = useState(0);
+  const [peekSeen, setPeekSeen] = useState(false);
 
-  // Elección de variante (demo) + intro de la variante A, una vez por sesión.
   useEffect(() => {
-    let v: PillVariant = 'A';
-    try {
-      const q = new URLSearchParams(window.location.search).get('pill');
-      if (isVariant(q)) localStorage.setItem(PILL_VARIANT_KEY, q);
-      const stored = localStorage.getItem(PILL_VARIANT_KEY);
-      if (isVariant(stored)) v = stored;
-    } catch { /* storage bloqueado: variante por defecto */ }
-    setVariant(v);
-    if (v !== 'A') return;
-
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let seen = false;
-    try { seen = sessionStorage.getItem(PILL_INTRO_KEY) === '1'; } catch { /* idem */ }
-    if (reduce || seen) return;
-
-    setIntro('pending');
-    const id = window.setTimeout(() => {
-      setIntro('play');
-      try { sessionStorage.setItem(PILL_INTRO_KEY, '1'); } catch { /* idem */ }
-    }, PILL_INTRO_DELAY_MS);
-    return () => window.clearTimeout(id);
+    let seen = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { seen = seen || sessionStorage.getItem(PEEK_SEEN_KEY) === '1'; } catch { /* storage bloqueado */ }
+    if (seen) setPeekSeen(true);
   }, []);
 
-  // C: asoma una reseña cada PEEK_EVERY_MS mientras el drawer está cerrado.
+  // Las que asoman: las de 5 estrellas entre las recientes (si no hay, todas).
+  const fiveStar = recent.filter((r) => r.rating >= 5);
+  const peekPool = fiveStar.length > 0 ? fiveStar : recent;
+
   useEffect(() => {
-    if (variant !== 'C' || open || recent.length === 0) return;
+    if (peekSeen || open || peekPool.length === 0) return;
     let i = 0;
     const timers: number[] = [];
     const show = () => {
-      setPeek(i % recent.length);
+      setPeek(i % peekPool.length);
       setPeekOut(false);
       i++;
       timers.push(window.setTimeout(() => setPeekOut(true), PEEK_SHOW_MS));
-      timers.push(window.setTimeout(() => { setPeek(-1); setPeekOut(false); }, PEEK_SHOW_MS + 400));
+      timers.push(window.setTimeout(() => { setPeek(-1); setPeekOut(false); }, PEEK_SHOW_MS + PEEK_OUT_MS));
     };
-    timers.push(window.setTimeout(show, 2500));
+    timers.push(window.setTimeout(show, PEEK_FIRST_MS));
     const iv = window.setInterval(show, PEEK_EVERY_MS);
     return () => {
       timers.forEach((id) => window.clearTimeout(id));
@@ -118,28 +75,13 @@ export default function ReviewsDrawer() {
       setPeek(-1);
       setPeekOut(false);
     };
-  }, [variant, open, recent.length]);
-
-  // D: rota el texto de la píldora.
-  useEffect(() => {
-    if (variant !== 'D' || open) return;
-    const iv = window.setInterval(() => setTick((n) => n + 1), TICK_EVERY_MS);
-    return () => window.clearInterval(iv);
-  }, [variant, open]);
-
-  const chooseVariant = (v: PillVariant) => {
-    try {
-      localStorage.setItem(PILL_VARIANT_KEY, v);
-      sessionStorage.removeItem(PILL_INTRO_KEY);
-    } catch { /* idem */ }
-    window.location.reload();
-  };
+  }, [peekSeen, open, peekPool.length]);
 
   const openDrawer = () => {
     setOpen(true);
-    // Abrirla una vez alcanza: la invitación ya cumplió.
-    setIntro('done');
-    try { sessionStorage.setItem(PILL_INTRO_KEY, '1'); } catch { /* idem */ }
+    // Abrirlo una vez alcanza: la invitación ya cumplió.
+    setPeekSeen(true);
+    try { sessionStorage.setItem(PEEK_SEEN_KEY, '1'); } catch { /* idem */ }
   };
 
   useEffect(() => {
@@ -200,42 +142,22 @@ export default function ReviewsDrawer() {
 
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
   if (!summary || summary.total === 0) return null;
-  if (intro === 'pending') return null;
 
   const avg = summary.average?.toFixed(1) ?? '';
-  const isA = variant === 'A' && intro === 'play';
-  const dark = variant === 'F';
-  const tabAnim = [
-    isA && 'hs-pill-a-tab',
-    variant === 'B' && 'hs-pill-b',
-    variant === 'E' && 'hs-pill-e',
-    variant === 'G' && 'hs-pill-g',
-    variant === 'H' && 'hs-pill-h',
-    variant === 'C' && peek >= 0 && 'opacity-0 pointer-events-none',
-  ].filter(Boolean).join(' ');
-  const pillAnim = [
-    isA && 'hs-pill-a-pill',
-    variant === 'B' && 'hs-pill-b',
-    variant === 'E' && 'hs-pill-e',
-    variant === 'G' && 'hs-pill-g',
-    variant === 'H' && 'hs-pill-h',
-    variant === 'C' && peek >= 0 && 'opacity-0 pointer-events-none',
-  ].filter(Boolean).join(' ');
-  const starAnim = variant === 'B' ? 'hs-pill-star' : '';
   const mobileHidden = pathname === '/' || pathname.startsWith('/producto/');
+  const peekReview = peek >= 0 ? peekPool[peek] ?? null : null;
+  // Mientras la tarjeta asoma, la píldora se esconde detrás.
+  const hiddenWhilePeek = peekReview ? 'opacity-0 pointer-events-none' : '';
+  const cardAnim = peekOut ? 'hs-pill-peek-out' : 'hs-pill-peek-in';
 
-  // D: mensajes del ticker.
-  const tickerMsgs: { key: string; node: ReactNode }[] = [
-    { key: 'avg', node: <>{avg} <span aria-hidden="true">★</span> {t('Reseñas')}</> },
-    ...recent.slice(0, 2).map((r) => ({
-      key: r.id,
-      node: <>«{shorten(r.text, 26)}» <span className="opacity-60">{firstName(r.customerName)}</span></>,
-    })),
-    { key: 'total', node: <>{summary.total} {t('reseñas')}</> },
-  ];
-  const tickerNow = tickerMsgs[tick % tickerMsgs.length];
-  const marqueeTxt = `${avg} ★ ${t('Reseñas').toUpperCase()} · `;
-  const peekReview = variant === 'C' && peek >= 0 ? recent[peek] : null;
+  const peekCardContent = peekReview && (
+    <>
+      <span aria-hidden="true" className="hs-pill-sheen hs-pill-sheen-once" />
+      <StarRating rating={peekReview.rating} size={11} />
+      <span className="text-[12px] leading-snug line-clamp-2">«{peekReview.text}»</span>
+      <span className="text-[11px] text-muted-foreground">{firstName(peekReview.customerName)} · {avg} ★ · {summary.total} {t('reseñas')}</span>
+    </>
+  );
 
   return (
     <>
@@ -247,36 +169,23 @@ export default function ReviewsDrawer() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`${t('Reseñas')} — ${t('promedio')} ${avg} / 5`}
-        className={`hidden sm:flex fixed z-[90] right-0 top-1/2 -translate-y-1/2 items-center gap-2 border border-r-0 shadow-lg rounded-l-[10px] px-2.5 py-4 hover:px-3.5 transition-all ${dark ? 'bg-black text-white border-black' : 'bg-white border-border'} ${tabAnim}`}
+        className={`hidden sm:flex fixed z-[90] right-0 top-1/2 -translate-y-1/2 items-center gap-2 bg-white border border-border border-r-0 shadow-lg rounded-l-[10px] px-2.5 py-4 hover:px-3.5 transition-all hs-pill ${hiddenWhilePeek}`}
         style={{ writingMode: 'vertical-rl' }}
       >
-        {variant === 'B' && <span aria-hidden="true" className="hs-pill-sheen hs-pill-sheen-y" />}
-        {variant === 'E' && <span aria-hidden="true" className="hs-pill-ring" />}
-        {variant === 'D' ? (
-          <span key={tickerNow.key} className="hs-pill-tick text-[11px] font-semibold uppercase tracking-[0.08em] whitespace-nowrap">{tickerNow.node}</span>
-        ) : variant === 'F' ? (
-          <span className="hs-pill-marquee-y" aria-hidden="true">
-            <span className="hs-pill-marquee-y-inner text-[11px] font-semibold uppercase tracking-[0.12em]">{marqueeTxt}{marqueeTxt}{marqueeTxt}{marqueeTxt}</span>
-          </span>
-        ) : (
-          <>
-            <span className="text-[12px] font-bold tabular-nums">{avg}</span>
-            <span aria-hidden="true" className={`text-[13px] ${starAnim}`}>★</span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">{t('Reseñas')}</span>
-          </>
-        )}
+        <span aria-hidden="true" className="hs-pill-sheen hs-pill-sheen-y" />
+        <span className="text-[12px] font-bold tabular-nums">{avg}</span>
+        <span aria-hidden="true" className="text-[13px] hs-pill-star">★</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">{t('Reseñas')}</span>
       </button>
 
-      {/* C desktop: mini tarjeta con una reseña real que asoma desde el borde. */}
+      {/* Desktop: mini tarjeta con una reseña real que asoma desde el borde. */}
       {peekReview && (
         <button
           type="button"
           onClick={openDrawer}
-          className={`hidden sm:flex fixed z-[91] right-0 top-1/2 -translate-y-1/2 w-[250px] flex-col items-start gap-1.5 bg-white border border-border border-r-0 shadow-xl rounded-l-[12px] px-4 py-3.5 text-left ${peekOut ? 'hs-pill-peek-out' : 'hs-pill-peek-in'}`}
+          className={`hidden sm:flex fixed z-[91] right-0 top-1/2 -translate-y-1/2 w-[250px] flex-col items-start gap-1.5 bg-white border border-border border-r-0 shadow-xl rounded-l-[12px] px-4 py-3.5 text-left overflow-hidden ${cardAnim}`}
         >
-          <StarRating rating={peekReview.rating} size={11} />
-          <span className="text-[12px] leading-snug line-clamp-2">«{peekReview.text}»</span>
-          <span className="text-[11px] text-muted-foreground">{firstName(peekReview.customerName)} · {avg} ★ · {summary.total} {t('reseñas')}</span>
+          {peekCardContent}
         </button>
       )}
 
@@ -291,54 +200,25 @@ export default function ReviewsDrawer() {
         onClick={openDrawer}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`${mobileHidden ? 'hidden' : 'flex'} sm:hidden fixed z-[90] right-5 items-center gap-1.5 border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow ${dark ? 'bg-black text-white border-black' : 'bg-white border-border'} ${pillAnim}`}
+        className={`${mobileHidden ? 'hidden' : 'flex'} sm:hidden fixed z-[90] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow hs-pill ${hiddenWhilePeek}`}
         style={shiftedBottom(92)}
       >
-        {variant === 'B' && <span aria-hidden="true" className="hs-pill-sheen hs-pill-sheen-x" />}
-        {variant === 'E' && <span aria-hidden="true" className="hs-pill-ring" />}
-        {variant === 'D' ? (
-          <span key={tickerNow.key} className="hs-pill-tick text-[12px] font-semibold whitespace-nowrap">{tickerNow.node}</span>
-        ) : variant === 'F' ? (
-          <span className="hs-pill-marquee-x" aria-hidden="true">
-            <span className="hs-pill-marquee-x-inner text-[11px] font-semibold uppercase tracking-[0.12em]">{marqueeTxt}{marqueeTxt}{marqueeTxt}{marqueeTxt}</span>
-          </span>
-        ) : (
-          <>
-            <span className={`inline-flex ${starAnim}`}><StarRating rating={summary.average ?? 0} size={12} /></span>
-            <span className="text-[12px] font-semibold tabular-nums">{avg}</span>
-            <span className="text-[11px] text-muted-foreground">{t('Reseñas')}</span>
-          </>
-        )}
+        <span aria-hidden="true" className="hs-pill-sheen" />
+        <span className="inline-flex hs-pill-star"><StarRating rating={summary.average ?? 0} size={12} /></span>
+        <span className="text-[12px] font-semibold tabular-nums">{avg}</span>
+        <span className="text-[11px] text-muted-foreground">{t('Reseñas')}</span>
       </button>
 
-      {/* C mobile: la tarjeta reemplaza a la píldora mientras asoma. */}
+      {/* Mobile: la tarjeta reemplaza a la píldora mientras asoma. */}
       {peekReview && !mobileHidden && (
         <button
           type="button"
           onClick={openDrawer}
-          className={`flex sm:hidden fixed z-[91] right-5 w-[min(280px,calc(100vw-40px))] flex-col items-start gap-1 bg-white border border-border shadow-xl rounded-[14px] px-4 py-3 text-left ${peekOut ? 'hs-pill-peek-out' : 'hs-pill-peek-in'}`}
+          className={`flex sm:hidden fixed z-[91] right-5 w-[min(280px,calc(100vw-40px))] flex-col items-start gap-1 bg-white border border-border shadow-xl rounded-[14px] px-4 py-3 text-left overflow-hidden ${cardAnim}`}
           style={shiftedBottom(92)}
         >
-          <StarRating rating={peekReview.rating} size={11} />
-          <span className="text-[12px] leading-snug line-clamp-2">«{peekReview.text}»</span>
-          <span className="text-[11px] text-muted-foreground">{firstName(peekReview.customerName)} · {avg} ★ · {summary.total} {t('reseñas')}</span>
+          {peekCardContent}
         </button>
-      )}
-
-      {/* Selector de variante: solo en development. */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed left-3 top-[88px] z-[200] flex flex-wrap gap-1 max-w-[230px] bg-black/85 text-white p-2 rounded-[8px] text-[10px] leading-none">
-          {PILL_VARIANTS.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => chooseVariant(v.id)}
-              className={`px-1.5 py-1 rounded-[4px] ${variant === v.id ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/25'}`}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
       )}
 
       {open && (
