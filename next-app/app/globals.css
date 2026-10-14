@@ -948,3 +948,81 @@
 @media (prefers-reduced-motion: reduce) {
   .hs-emboss-face { transition: none; }
 }
+
+/* ------------------------------------------------------------------
+   Píldora de reseñas (components/reviews/ReviewsDrawer.tsx): invitación
+   a abrirla sin hover. La estrella titila y un brillo cruza la píldora en
+   loop; cada tanto asoma una mini tarjeta con una reseña real.
+   La pestaña desktop ya usa transform (-translate-y-1/2) y la píldora
+   mobile ya usa `translate` inline (shiftedBottom): por eso el brillo y
+   la estrella animan `translate`/`scale` propios, y la tarjeta anima
+   `transform` (no tiene translate inline).
+   ------------------------------------------------------------------ */
+.hs-pill { overflow: hidden; }
+.hs-pill-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(0, 0, 0, 0.08) 50%, transparent 65%);
+  animation: hs-pill-sheen-x 7s 2s ease-in-out infinite;
+}
+.hs-pill-sheen-y {
+  background: linear-gradient(170deg, transparent 35%, rgba(0, 0, 0, 0.08) 50%, transparent 65%);
+  animation-name: hs-pill-sheen-y;
+}
+/* En la tarjeta el brillo pasa una sola vez, apenas termina de entrar. */
+.hs-pill-sheen-once {
+  animation: hs-pill-sheen-x 1.6s 350ms cubic-bezier(0.45, 0, 0.25, 1) 1 both;
+}
+@keyframes hs-pill-sheen-x {
+  0%        { translate: -120% 0; }
+  30%, 100% { translate: 120% 0; }
+}
+@keyframes hs-pill-sheen-y {
+  0%        { translate: 0 -120%; }
+  30%, 100% { translate: 0 120%; }
+}
+.hs-pill-star {
+  display: inline-block;
+  transform-origin: center;
+  animation: hs-pill-twinkle 6s 1s ease-in-out infinite;
+}
+@keyframes hs-pill-twinkle {
+  0%, 10%, 100% { scale: 1; filter: none; }
+  3%            { scale: 1.45; filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35)); }
+  6%            { scale: 0.95; }
+}
+
+/* La tarjeta asoma desde el borde y vuelve. */
+.hs-pill-peek-in  { animation: hs-pill-peek-in 550ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hs-pill-peek-out { animation: hs-pill-peek-out 400ms cubic-bezier(0.4, 0, 1, 1) both; }
+@keyframes hs-pill-peek-in {
+  from { opacity: 0; transform: translateX(110%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes hs-pill-peek-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(110%); }
+}
+/* La tarjeta desktop lleva -translate-y-1/2 en transform: sus keyframes
+   suman el eje Y para no perder el centrado. */
+@media (min-width: 640px) {
+  @keyframes hs-pill-peek-in {
+    from { opacity: 0; transform: translate(110%, -50%); }
+    to   { opacity: 1; transform: translate(0, -50%); }
+  }
+  @keyframes hs-pill-peek-out {
+    from { opacity: 1; transform: translate(0, -50%); }
+    to   { opacity: 0; transform: translate(110%, -50%); }
+  }
+}
+
+/* Con el drawer abierto la invitación no tiene sentido; con reduced-motion
+   tampoco (la tarjeta además no asoma, desde JS). */
+[aria-expanded="true"] .hs-pill-sheen,
+[aria-expanded="true"] .hs-pill-star {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs-pill-sheen, .hs-pill-star, .hs-pill-peek-in, .hs-pill-peek-out { animation: none; }
+}

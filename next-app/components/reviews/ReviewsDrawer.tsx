@@ -16,6 +16,20 @@ const HIDDEN_PREFIXES = ['/checkout', '/admin', '/mayoristas', '/review/', '/rev
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+/**
+ * Invitación a abrir la píldora sin hover: la estrella titila y un brillo la
+ * cruza en loop, y cada PEEK_EVERY_MS asoma desde el borde una mini tarjeta con
+ * una reseña real durante PEEK_SHOW_MS. Pausa con el drawer abierto, se corta
+ * para la sesión cuando el drawer se abrió una vez y respeta reduced-motion.
+ */
+const PEEK_FIRST_MS = 2500;
+const PEEK_EVERY_MS = 10000;
+const PEEK_SHOW_MS = 4500;
+const PEEK_OUT_MS = 400;
+const PEEK_SEEN_KEY = 'hs-reviews-peek-seen';
+
+const firstName = (n: string) => (n || '').trim().split(/\s+/)[0] || '';
+
 export default function ReviewsDrawer() {
   const { t } = useLocale();
   const pathname = usePathname() ?? '';
@@ -26,6 +40,49 @@ export default function ReviewsDrawer() {
   const tabTriggerRef = useRef<HTMLButtonElement>(null);
   const pillTriggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // Índice de la reseña asomada (-1 = ninguna), si está saliendo, y si ya no
+  // corresponde asomar más en esta sesión.
+  const [peek, setPeek] = useState(-1);
+  const [peekOut, setPeekOut] = useState(false);
+  const [peekSeen, setPeekSeen] = useState(false);
+
+  useEffect(() => {
+    let seen = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { seen = seen || sessionStorage.getItem(PEEK_SEEN_KEY) === '1'; } catch { /* storage bloqueado */ }
+    if (seen) setPeekSeen(true);
+  }, []);
+
+  // Las que asoman: las de 5 estrellas entre las recientes (si no hay, todas).
+  const fiveStar = recent.filter((r) => r.rating >= 5);
+  const peekPool = fiveStar.length > 0 ? fiveStar : recent;
+
+  useEffect(() => {
+    if (peekSeen || open || peekPool.length === 0) return;
+    let i = 0;
+    const timers: number[] = [];
+    const show = () => {
+      setPeek(i % peekPool.length);
+      setPeekOut(false);
+      i++;
+      timers.push(window.setTimeout(() => setPeekOut(true), PEEK_SHOW_MS));
+      timers.push(window.setTimeout(() => { setPeek(-1); setPeekOut(false); }, PEEK_SHOW_MS + PEEK_OUT_MS));
+    };
+    timers.push(window.setTimeout(show, PEEK_FIRST_MS));
+    const iv = window.setInterval(show, PEEK_EVERY_MS);
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+      window.clearInterval(iv);
+      setPeek(-1);
+      setPeekOut(false);
+    };
+  }, [peekSeen, open, peekPool.length]);
+
+  const openDrawer = () => {
+    setOpen(true);
+    // Abrirlo una vez alcanza: la invitación ya cumplió.
+    setPeekSeen(true);
+    try { sessionStorage.setItem(PEEK_SEEN_KEY, '1'); } catch { /* idem */ }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -86,23 +143,51 @@ export default function ReviewsDrawer() {
   if (HIDDEN_PREFIXES.some((p) => pathname.startsWith(p))) return null;
   if (!summary || summary.total === 0) return null;
 
+  const avg = summary.average?.toFixed(1) ?? '';
+  const mobileHidden = pathname === '/' || pathname.startsWith('/producto/');
+  const peekReview = peek >= 0 ? peekPool[peek] ?? null : null;
+  // Mientras la tarjeta asoma, la píldora se esconde detrás.
+  const hiddenWhilePeek = peekReview ? 'opacity-0 pointer-events-none' : '';
+  const cardAnim = peekOut ? 'hs-pill-peek-out' : 'hs-pill-peek-in';
+
+  const peekCardContent = peekReview && (
+    <>
+      <span aria-hidden="true" className="hs-pill-sheen hs-pill-sheen-once" />
+      <StarRating rating={peekReview.rating} size={11} />
+      <span className="text-[12px] leading-snug line-clamp-2">«{peekReview.text}»</span>
+      <span className="text-[11px] text-muted-foreground">{firstName(peekReview.customerName)} · {avg} ★ · {summary.total} {t('reseñas')}</span>
+    </>
+  );
+
   return (
     <>
       {/* Desktop: pestaña lateral fija, tipo EME Studios */}
       <button
         ref={tabTriggerRef}
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openDrawer}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={`${t('Reseñas')} — ${t('promedio')} ${summary.average?.toFixed(1)} / 5`}
-        className="hidden sm:flex fixed z-[90] right-0 top-1/2 -translate-y-1/2 items-center gap-2 bg-white border border-border border-r-0 shadow-lg rounded-l-[10px] px-2.5 py-4 hover:px-3.5 transition-all"
+        aria-label={`${t('Reseñas')} — ${t('promedio')} ${avg} / 5`}
+        className={`hidden sm:flex fixed z-[90] right-0 top-1/2 -translate-y-1/2 items-center gap-2 bg-white border border-border border-r-0 shadow-lg rounded-l-[10px] px-2.5 py-4 hover:px-3.5 transition-all hs-pill ${hiddenWhilePeek}`}
         style={{ writingMode: 'vertical-rl' }}
       >
-        <span className="text-[12px] font-bold tabular-nums">{summary.average?.toFixed(1)}</span>
-        <span aria-hidden="true" className="text-[13px]">★</span>
+        <span aria-hidden="true" className="hs-pill-sheen hs-pill-sheen-y" />
+        <span className="text-[12px] font-bold tabular-nums">{avg}</span>
+        <span aria-hidden="true" className="text-[13px] hs-pill-star">★</span>
         <span className="text-[11px] font-semibold uppercase tracking-[0.1em]">{t('Reseñas')}</span>
       </button>
+
+      {/* Desktop: mini tarjeta con una reseña real que asoma desde el borde. */}
+      {peekReview && (
+        <button
+          type="button"
+          onClick={openDrawer}
+          className={`hidden sm:flex fixed z-[91] right-0 top-1/2 -translate-y-1/2 w-[250px] flex-col items-start gap-1.5 bg-white border border-border border-r-0 shadow-xl rounded-l-[12px] px-4 py-3.5 text-left overflow-hidden ${cardAnim}`}
+        >
+          {peekCardContent}
+        </button>
+      )}
 
       {/* Mobile: botón fijo compacto, encima del botón de WhatsApp. En la home
           no va: en celulares de pantalla baja (o con el aviso de cookies) caía
@@ -112,16 +197,29 @@ export default function ReviewsDrawer() {
       <button
         ref={pillTriggerRef}
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openDrawer}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`${pathname === '/' || pathname.startsWith('/producto/') ? 'hidden' : 'flex'} sm:hidden fixed z-[90] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow`}
+        className={`${mobileHidden ? 'hidden' : 'flex'} sm:hidden fixed z-[90] right-5 items-center gap-1.5 bg-white border border-border shadow-lg rounded-full pl-3 pr-3.5 py-2 hover:shadow-xl transition-shadow hs-pill ${hiddenWhilePeek}`}
         style={shiftedBottom(92)}
       >
-        <StarRating rating={summary.average ?? 0} size={12} />
-        <span className="text-[12px] font-semibold tabular-nums">{summary.average?.toFixed(1)}</span>
+        <span aria-hidden="true" className="hs-pill-sheen" />
+        <span className="inline-flex hs-pill-star"><StarRating rating={summary.average ?? 0} size={12} /></span>
+        <span className="text-[12px] font-semibold tabular-nums">{avg}</span>
         <span className="text-[11px] text-muted-foreground">{t('Reseñas')}</span>
       </button>
+
+      {/* Mobile: la tarjeta reemplaza a la píldora mientras asoma. */}
+      {peekReview && !mobileHidden && (
+        <button
+          type="button"
+          onClick={openDrawer}
+          className={`flex sm:hidden fixed z-[91] right-5 w-[min(280px,calc(100vw-40px))] flex-col items-start gap-1 bg-white border border-border shadow-xl rounded-[14px] px-4 py-3 text-left overflow-hidden ${cardAnim}`}
+          style={shiftedBottom(92)}
+        >
+          {peekCardContent}
+        </button>
+      )}
 
       {open && (
         <>
