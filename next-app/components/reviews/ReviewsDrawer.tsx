@@ -30,10 +30,33 @@ const PEEK_SEEN_KEY = 'hs-reviews-peek-seen';
 
 const firstName = (n: string) => (n || '').trim().split(/\s+/)[0] || '';
 
+// Misma entrada/salida y mismo vidrio que el drawer del carrito (CartDrawer.tsx
+// y globals.css, "Drawer del carrito"). EXIT_MS cubre la transición de salida.
+const EXIT_MS = 440;
+const STAGGER_BASE_MS = 380;
+const STAGGER_STEP_MS = 90;
+const STAGGER_MAX = 8;
+const stagger = (i: number) => ({
+  '--d': `${STAGGER_BASE_MS + Math.min(i, STAGGER_MAX) * STAGGER_STEP_MS}ms`,
+}) as React.CSSProperties;
+
+const drawerGlassStyle = {
+  background: 'rgba(240, 238, 232, 0.55)',
+  '--muted-foreground': '0 0% 26%',
+  backdropFilter: 'blur(32px) saturate(200%)',
+  WebkitBackdropFilter: 'blur(32px) saturate(200%)',
+  borderLeft: '1px solid rgba(255,255,255,0.45)',
+  boxShadow: '-8px 0 32px rgba(0,0,0,0.18), inset 1px 0 0 rgba(255,255,255,0.6)',
+} as React.CSSProperties;
+
 export default function ReviewsDrawer() {
   const { t } = useLocale();
   const pathname = usePathname() ?? '';
   const [open, setOpen] = useState(false);
+  // `rendered`: el panel está en el DOM (un cuadro antes de abrir y mientras
+  // sale). `shown`: está a la vista. Ver CartDrawer.tsx.
+  const [rendered, setRendered] = useState(false);
+  const [shown, setShown] = useState(false);
   const [summary, setSummary] = useState<PublicReviewSummary | null>(null);
   const [recent, setRecent] = useState<PublicReview[]>([]);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -94,6 +117,21 @@ export default function ReviewsDrawer() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (!open) {
+      setShown(false);
+      const out = setTimeout(() => setRendered(false), EXIT_MS);
+      return () => clearTimeout(out);
+    }
+    setRendered(true);
+    let second = 0;
+    const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => setShown(true)); });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+  }, [open]);
+
   // Scroll lock solo mientras está abierto.
   useEffect(() => {
     if (!open) return;
@@ -101,9 +139,9 @@ export default function ReviewsDrawer() {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
-  // Foco inicial + trap + Escape.
+  // Foco inicial (cuando el panel ya está en el DOM) + trap + Escape.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !rendered) return;
     closeRef.current?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -130,7 +168,7 @@ export default function ReviewsDrawer() {
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open]);
+  }, [open, rendered]);
 
   const close = () => {
     setOpen(false);
@@ -221,10 +259,13 @@ export default function ReviewsDrawer() {
         </button>
       )}
 
-      {open && (
+      {rendered && (
         <>
+          {/* Termina donde empieza el panel, como en el carrito: si oscureciera
+              por detrás, el vidrio desenfocaría una imagen ya apagada. */}
           <div
-            className="fixed inset-0 z-[150] bg-black/40 animate-in fade-in duration-200"
+            className="hs-drawer-overlay fixed inset-0 min-[420px]:right-[420px] z-[150] bg-black/40"
+            data-open={shown}
             onClick={close}
             aria-hidden="true"
           />
@@ -233,11 +274,11 @@ export default function ReviewsDrawer() {
             role="dialog"
             aria-modal="true"
             aria-label={t('Reseñas de la tienda')}
-            className="fixed z-[160] bg-white shadow-2xl flex flex-col animate-in fade-in duration-300
-              inset-x-0 bottom-0 max-h-[85vh] rounded-t-[16px]
-              sm:inset-x-auto sm:right-0 sm:top-0 sm:bottom-0 sm:max-h-none sm:h-full sm:w-full sm:max-w-[400px] sm:rounded-t-none"
+            className="hs-drawer fixed right-0 top-0 bottom-0 z-[160] w-full max-w-[420px] flex flex-col"
+            data-open={shown}
+            style={drawerGlassStyle}
           >
-            <div className="flex items-center justify-between px-6 py-5 border-b border-border">
+            <div className="hs-drawer-in flex items-center justify-between px-6 py-5 border-b border-black/10" style={stagger(0)}>
               <span className="text-[13px] font-semibold uppercase tracking-wider">{t('Reseñas')}</span>
               <button
                 ref={closeRef}
@@ -252,7 +293,7 @@ export default function ReviewsDrawer() {
               </button>
             </div>
 
-            <div className="px-6 py-5 border-b border-border">
+            <div className="hs-drawer-in px-6 py-5 border-b border-black/10" style={stagger(1)}>
               <div className="flex items-center gap-3">
                 <span className="text-[28px] font-bold leading-none tabular-nums">{summary.average?.toFixed(1)}</span>
                 <div className="flex flex-col gap-1">
@@ -268,10 +309,14 @@ export default function ReviewsDrawer() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-              {recent.map((r) => <ReviewCard key={r.id} review={r} compact />)}
+              {recent.map((r, i) => (
+                <div key={r.id} className="hs-drawer-in" style={stagger(2 + i)}>
+                  <ReviewCard review={r} compact />
+                </div>
+              ))}
             </div>
 
-            <div className="px-6 py-5 border-t border-border">
+            <div className="hs-drawer-in px-6 py-5 border-t border-black/10" style={stagger(2 + recent.length)}>
               <Button asChild variant="hype" size="ctaFull" className="py-3.5 rounded-[10px]">
                 <Link href="/reviews" onClick={close}>{t('Ver todas las reseñas')}</Link>
               </Button>

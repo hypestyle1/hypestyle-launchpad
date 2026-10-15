@@ -25,8 +25,10 @@ export default function ReviewCard({ review, compact = false }: { review: Public
   const photos = review.photos ?? [];
   const [openPhoto, setOpenPhoto] = useState<number | null>(null);
 
+  // h-full iguala las tarjetas de una grilla. En la lista del drawer (compact)
+  // estiraba cada una al alto del panel y dejaba un hueco antes del producto.
   return (
-    <article className="border border-border rounded-[10px] p-5 bg-white flex flex-col gap-3 h-full">
+    <article className={`border border-border rounded-[10px] p-5 bg-white flex flex-col gap-3 ${compact ? '' : 'h-full'}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <StarRating rating={rating} size={14} />
