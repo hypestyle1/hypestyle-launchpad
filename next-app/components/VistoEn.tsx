@@ -72,7 +72,7 @@ export default function VistoEn() {
         <SectionHeader title="Visto en" />
       </div>
 
-      <div ref={dragRef} className="reveal rd2 flex gap-2 overflow-x-auto no-scrollbar cursor-grab select-none px-4 md:px-6 scroll-px-4 md:scroll-px-6">
+      <div ref={dragRef} className="reveal rd2 flex gap-1.5 md:gap-2 overflow-x-auto no-scrollbar cursor-grab select-none px-4 md:px-6 scroll-px-4 md:scroll-px-6">
         {posts.map(({ post }, i) => (
           <button
             key={post.id}
