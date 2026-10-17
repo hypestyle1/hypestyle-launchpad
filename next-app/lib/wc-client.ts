@@ -53,6 +53,9 @@ export interface CreateOrderPayload {
    *  grabación de la sesión desde el pedido. Ver lib/clarity-tracking.ts. */
   clarityUser?: string;
   claritySession?: string;
+  /** Pedido del intento de pago anterior, para reusarlo en vez de crear otro
+   *  (ver lib/retry-pedido.ts). El servidor decide si corresponde. */
+  retry?: { wcOrderId: number; orderKey: string };
 }
 
 export interface TaloPaymentData {

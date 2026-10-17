@@ -22,6 +22,7 @@ export type LineaComparable = {
 
 export type PedidoExistente = {
   id: number;
+  number?: string | number;
   status: string;
   created_via?: string;
   order_key: string;

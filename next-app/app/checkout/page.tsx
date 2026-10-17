@@ -752,6 +752,20 @@ export default function Checkout() {
     );
   };
 
+  // Pedido que dejó el intento anterior de pago, si lo hubo. Se manda al
+  // servidor para que lo reuse cuando siga correspondiendo (mismo carrito,
+  // mismo total, sin pagar): sin esto, cada reintento creaba un pedido nuevo.
+  const pedidoDelIntentoAnterior = (): { wcOrderId: number; orderKey: string } | undefined => {
+    try {
+      const guardado = JSON.parse(sessionStorage.getItem('hype_order') || 'null');
+      const id = Number(guardado?.wcOrderId);
+      const key = String(guardado?.orderKey ?? '');
+      return Number.isInteger(id) && id > 0 && key ? { wcOrderId: id, orderKey: key } : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pago.metodo || submitting) return;
@@ -792,6 +806,10 @@ export default function Checkout() {
           ...getFbCookies(),
           ...getClarityCookies(),
           attribution: captureAttribution(),
+          // Si el intento anterior ya dejó un pedido (falló la pasarela y el
+          // cliente volvió a apretar "Pagar"), se manda para reusarlo en vez
+          // de crear otro. El servidor valida que siga correspondiendo.
+          retry: pedidoDelIntentoAnterior(),
         });
       } catch (wcErr) {
         console.error('[checkout] create-order error:', wcErr);
