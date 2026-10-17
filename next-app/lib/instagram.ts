@@ -5,10 +5,11 @@
  * widget de terceros: nada de scripts externos en el bundle y el token nunca
  * sale del servidor.
  *
- * Token: es el token de system user del Business Manager (el mismo tipo que ya
- * usan los scripts de META/), que NO expira — a diferencia de un token de
- * usuario o de página, que hay que renovar cada 60 días. Necesita el permiso
- * `instagram_basic` además de los que ya tenía; ver Hype/11 - Automatizaciones.
+ * Token: hoy `INSTAGRAM_ACCESS_TOKEN` es el PAGE token de la app Hypes Bot
+ * (verificado con debug_token el 17/10/2026). No expira, pero su acceso a
+ * datos caduca a los ~90 días sin uso (`data_access_expires_at`). El plan de
+ * migración al system user —el único token sin mantenimiento— está en
+ * _claude/propuestas/_content-intelligence-2026-10-17/07-runbook-tokens.md.
  *
  * Nunca tira: si el token venció, lo revocaron o la API de Meta falla, devuelve
  * null y la sección directamente no se renderiza. Es a propósito — el audit de
