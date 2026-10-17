@@ -89,16 +89,24 @@ export default function VistoEn() {
             aria-label={`${post.artista}: ver lo que lleva`}
             className="group relative flex-none w-[62vw] sm:w-[38vw] md:w-[23vw] lg:w-[21vw] aspect-[4/5] overflow-hidden rounded-[6px] bg-bg-alt text-left"
           >
-            <img
-              src={vistoEnFoto(post)}
-              alt={post.alt}
-              width={1080}
-              height={1350}
-              loading={i < 3 ? 'eager' : 'lazy'}
-              decoding="async"
-              draggable={false}
-              className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(.25,1,.5,1)] md:group-hover:scale-[1.04] motion-reduce:transition-none"
-            />
+            {post.video ? (
+              <VideoEnVista
+                src={post.video}
+                poster={vistoEnFoto(post)}
+                className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(.25,1,.5,1)] md:group-hover:scale-[1.04] motion-reduce:transition-none"
+              />
+            ) : (
+              <img
+                src={vistoEnFoto(post)}
+                alt={post.alt}
+                width={1080}
+                height={1350}
+                loading={i < 3 ? 'eager' : 'lazy'}
+                decoding="async"
+                draggable={false}
+                className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(.25,1,.5,1)] md:group-hover:scale-[1.04] motion-reduce:transition-none"
+              />
+            )}
             <span className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" aria-hidden />
             <span className="absolute left-3 right-3 bottom-3 flex items-end justify-between gap-2 text-white">
               <span className="min-w-0">
@@ -166,15 +174,24 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
       >
         {/* Foto: arriba en mobile, a la derecha en desktop. */}
         <div className="md:order-2 relative bg-black min-h-0">
-          <img
-            key={post.id}
-            src={vistoEnFoto(post)}
-            alt={post.alt}
-            width={1080}
-            height={1350}
-            decoding="async"
-            className="w-full h-full max-h-[46vh] md:max-h-[88vh] object-cover md:aspect-[4/5]"
-          />
+          {post.video ? (
+            <VideoEnVista
+              key={post.id}
+              src={post.video}
+              poster={vistoEnFoto(post)}
+              className="w-full h-full max-h-[46vh] md:max-h-[88vh] object-cover md:aspect-[4/5]"
+            />
+          ) : (
+            <img
+              key={post.id}
+              src={vistoEnFoto(post)}
+              alt={post.alt}
+              width={1080}
+              height={1350}
+              decoding="async"
+              className="w-full h-full max-h-[46vh] md:max-h-[88vh] object-cover md:aspect-[4/5]"
+            />
+          )}
           {/* Cerrar: círculo con el mismo glass que las flechas, arriba a la derecha de la foto. */}
           <button
             ref={closeRef}
@@ -279,5 +296,39 @@ function NavBtn({ dir, onClick }: { dir: 'prev' | 'next'; onClick: () => void })
         <path d={dir === 'prev' ? 'M10 2 4 8l6 6' : 'm6 2 6 6-6 6'} />
       </svg>
     </button>
+  );
+}
+
+/**
+ * Video corto sin sonido, en loop. Se descarga y reproduce solo mientras está
+ * en pantalla (y nunca con "reducir movimiento": ahí queda el póster).
+ */
+function VideoEnVista({ src, poster, className }: { src: string; poster: string; className?: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) v.play().catch(() => {});
+      else v.pause();
+    }, { threshold: 0.4 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <video
+      ref={ref}
+      src={src}
+      poster={poster}
+      muted
+      loop
+      playsInline
+      preload="none"
+      aria-hidden
+      className={className}
+    />
   );
 }

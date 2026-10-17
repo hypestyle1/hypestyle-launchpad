@@ -30,6 +30,8 @@ export interface VistoEnPost {
   /** Link alternativo cuando sus prendas ya no están (ej. el lookbook de la colab). */
   link?: { href: string; label: string };
   alt: string;
+  /** Video corto (mp4 720x1280, sin audio). La foto <id>.webp es el póster. */
+  video?: string;
   slugs: string[];
 }
 
@@ -41,8 +43,8 @@ const CAMO = ['zip-hoodie-camo', 'sweatpant-camo'];
 
 export const VISTO_EN: VistoEnPost[] = [
   { id: 'nicki-auto', artista: 'Nicki Nicole', ig: ['nicki.nicole'], alt: 'Nicki Nicole en el auto con el conjunto Grey HStars', slugs: GREY_HSTARS },
-  // Polima: su Instagram es @richboywest (@polimawestcoast es su X).
-  { id: 'polima-01', artista: 'Polima Westcoast', ig: ['richboywest'], alt: 'Polima Westcoast con el Crewneck Hyped Up! Black', slugs: ['crewneck-hyped-up-black'] },
+  // Polima en vivo: 7 s (27-34 del IMG_9636.MOV), musculosa blanca "hypestyle" (no está en Woo).
+  { id: 'polima-video', artista: 'Polima Westcoast', ig: ['richboywest'], contexto: 'En vivo', alt: 'Polima Westcoast en el escenario con una musculosa Hypestyle', slugs: [], video: '/visto-en/polima-video.mp4' },
   { id: 'cerounno-01', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno con el Half-Zip Polo Black', slugs: CEROUNNO },
   { id: 'fro-f023', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! con el conjunto camo en la prueba de sonido', slugs: CAMO },
   // Mir Nicolás: merch de La Ciudad del Pop (StyleRap&Culture), no está en Woo.
@@ -54,6 +56,8 @@ export const VISTO_EN: VistoEnPost[] = [
   { id: 'fro-f025', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! sentado en el pasto con el conjunto camo', slugs: CAMO },
   { id: 'mir-04544', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, fueraDeCatalogo: [{ nombre: 'City Pop Tee Black', imagen: '/visto-en/prendas/city-pop-tee-black.webp' }], alt: 'Mir Nicolás y amigos con el merch de La Ciudad del Pop', slugs: [] },
   { id: 'nicki-tini', artista: 'Nicki Nicole y Tini', ig: ['nicki.nicole', 'tinistoessel'], alt: 'Nicki Nicole con la Mesh Camo Blue junto a Tini', slugs: ['mesh-camo-blue-tee'] },
+  // Polima: su Instagram es @richboywest (@polimawestcoast es su X).
+  { id: 'polima-01', artista: 'Polima Westcoast', ig: ['richboywest'], alt: 'Polima Westcoast con el Crewneck Hyped Up! Black', slugs: ['crewneck-hyped-up-black'] },
   { id: 'cerounno-07', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno de perfil con el Half-Zip Polo Black y el SweatPant Black HStars', slugs: CEROUNNO },
   { id: 'fro-f012', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! con el Zip Hoodie Camo', slugs: CAMO },
 ];
