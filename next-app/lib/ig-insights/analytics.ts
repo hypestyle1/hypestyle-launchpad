@@ -61,6 +61,9 @@ export function groupStats<T>(
   }
   return [...groups.entries()]
     .map(([key, values]) => summarize(key, values))
+    // n=0 (el segmento existe pero ninguna publicación tiene la métrica):
+    // no se lista, no hay nada que comparar.
+    .filter((s) => s.n > 0)
     .sort((a, b) => {
       if (a.smallSample !== b.smallSample) return a.smallSample ? 1 : -1;
       return (b.median ?? -Infinity) - (a.median ?? -Infinity);
