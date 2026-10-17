@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     // Validación de datos + rate limit (auditoría 17/10). Ver create-order-gocuotas.
     const guard = await guardCheckout({ req, customer, internacional: true, wpUrl: WP_URL, authHeader: wcAuth() });
-    if (!guard.ok) return NextResponse.json({ message: guard.mensaje }, { status: guard.status });
+    if (guard.bloqueo) return NextResponse.json({ message: guard.bloqueo.mensaje }, { status: guard.bloqueo.status });
 
     // Precio por línea calculado en el servidor (auditoría 28/09, C1), igual
     // que el envío de abajo: del navegador solo se toma qué se compra.

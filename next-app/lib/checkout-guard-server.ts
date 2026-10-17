@@ -54,8 +54,18 @@ function marcar(clave: string, ahora: number, ventanaMs: number) {
   }
 }
 
-export type GuardOk = { ok: true; riesgo: string[] | null };
-export type GuardBloqueo = { ok: false; status: number; mensaje: string };
+/**
+ * Un solo tipo en vez de una unión discriminada: el repo compila con
+ * `strictNullChecks: false` y en ese modo TypeScript no estrecha uniones por
+ * un discriminante booleano (`if (!guard.ok)` dejaba `guard` sin estrechar y
+ * el build fallaba). Con `bloqueo: … | null` el chequeo es directo.
+ */
+export type GuardResultado = {
+  /** Si viene, cortar la request con este status y mensaje. */
+  bloqueo: { status: number; mensaje: string } | null;
+  /** Motivos para etiquetar el pedido como riesgoso. Nunca bloquea. */
+  riesgo: string[] | null;
+};
 
 export async function guardCheckout(args: {
   req: NextRequest;
@@ -63,14 +73,14 @@ export async function guardCheckout(args: {
   internacional: boolean;
   wpUrl: string;
   authHeader: string;
-}): Promise<GuardOk | GuardBloqueo> {
+}): Promise<GuardResultado> {
   const { req, customer, internacional, wpUrl, authHeader } = args;
 
   const motivoDatos = validarClienteServidor(customer ?? {}, internacional);
-  if (motivoDatos) return { ok: false, status: 400, mensaje: motivoDatos };
+  if (motivoDatos) return { bloqueo: { status: 400, mensaje: motivoDatos }, riesgo: null };
 
   const riesgo = riesgoCliente(customer ?? {});
-  const resultado: GuardOk = { ok: true, riesgo: riesgo.alto ? riesgo.motivos : null };
+  const resultado: GuardResultado = { bloqueo: null, riesgo: riesgo.alto ? riesgo.motivos : null };
 
   const enTest = process.env.NODE_ENV === 'test' && process.env.CHECKOUT_GUARD_TEST !== '1';
   if (process.env.CHECKOUT_GUARD_OFF === 'true' || enTest) return resultado;
@@ -82,11 +92,11 @@ export async function guardCheckout(args: {
   // Capa 1 — ráfagas en memoria (solo cuenta pedidos CREADOS, ver registrarCreacion).
   if (ip && excedeVentana(ventanas.get(`ip:${ip}`) ?? [], ahora, BURST_IP)) {
     console.warn('[checkout-guard] ráfaga por IP bloqueada');
-    return { ok: false, status: 429, mensaje: MENSAJE_429 };
+    return { bloqueo: { status: 429, mensaje: MENSAJE_429 }, riesgo: null };
   }
   if (email && excedeVentana(ventanas.get(`em:${email}`) ?? [], ahora, BURST_EMAIL)) {
     console.warn('[checkout-guard] ráfaga por email bloqueada');
-    return { ok: false, status: 429, mensaje: MENSAJE_429 };
+    return { bloqueo: { status: 429, mensaje: MENSAJE_429 }, riesgo: null };
   }
 
   // Capa 2 — ventana de 1 h contra Woo (compartida entre instancias).
@@ -102,7 +112,7 @@ export async function guardCheckout(args: {
         const motivo = decidirBloqueo(contarPedidosRecientes(recientes, { email, ip }), HORA);
         if (motivo) {
           console.warn('[checkout-guard] ventana de 1h excedida:', motivo);
-          return { ok: false, status: 429, mensaje: MENSAJE_429 };
+          return { bloqueo: { status: 429, mensaje: MENSAJE_429 }, riesgo: null };
         }
       }
     } else {

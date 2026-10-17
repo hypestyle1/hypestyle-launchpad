@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     // Validación de datos + rate limit (auditoría 17/10): antes de esto, la
     // ruta era pública sin ningún freno y la validación vivía solo en el form.
     const guard = await guardCheckout({ req, customer, internacional: false, wpUrl: WP_URL, authHeader: wcAuth() });
-    if (!guard.ok) return NextResponse.json({ message: guard.mensaje }, { status: guard.status });
+    if (guard.bloqueo) return NextResponse.json({ message: guard.bloqueo.mensaje }, { status: guard.bloqueo.status });
 
     // Precio, descuento y envío salen del servidor (auditoría 28/09, C1). Del
     // body solo se toma qué se compra; lo que mandó el navegador como precio
