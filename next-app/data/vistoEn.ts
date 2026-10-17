@@ -43,8 +43,8 @@ const CAMO = ['zip-hoodie-camo', 'sweatpant-camo'];
 
 export const VISTO_EN: VistoEnPost[] = [
   { id: 'nicki-auto', artista: 'Nicki Nicole', ig: ['nicki.nicole'], alt: 'Nicki Nicole en el auto con el conjunto Grey HStars', slugs: GREY_HSTARS },
-  // Polima en vivo: 7 s (27-34 del IMG_9636.MOV), musculosa blanca "hypestyle" (no está en Woo).
-  { id: 'polima-video', artista: 'Polima Westcoast', ig: ['richboywest'], contexto: 'En vivo', alt: 'Polima Westcoast en el escenario con una musculosa Hypestyle', slugs: [], video: '/visto-en/polima-video.mp4' },
+  // Polima en vivo: 7 s (27-34 del IMG_9636.MOV), en La Bresh (Córdoba) con la Eye Sleeveless.
+  { id: 'polima-video', artista: 'Polima Westcoast', ig: ['richboywest'], contexto: 'En vivo en La Bresh, Córdoba', alt: 'Polima Westcoast en el escenario de La Bresh con la Eye Sleeveless', slugs: ['eye-sleveless-wheat'], video: '/visto-en/polima-video.mp4' },
   { id: 'cerounno-01', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno con el Half-Zip Polo Black', slugs: CEROUNNO },
   { id: 'fro-f023', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! con el conjunto camo en la prueba de sonido', slugs: CAMO },
   // Mir Nicolás: merch de La Ciudad del Pop (StyleRap&Culture), no está en Woo.
