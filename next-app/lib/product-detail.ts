@@ -273,11 +273,12 @@ const SS27_ATHLETIC_LS_COLORWAYS = [
   { label: 'Blue', value: '#3a6ea8', slug: 'athletic-dept-blue-longsleeve', image: `${WP}/2026/10/athletic-dept-blue-longsleeve-mockup-v2.png` },
 ];
 
-// Gorras: la Camo original (verde, bordado naranja) y la Grey Camo SS27
-// (gris, bordado rosa). Mismo modelo, distinto colorway.
+// Gorras: CAMO CAP — GREEN (verde, bordado naranja) y CAMO CAP — GREY
+// (gris, bordado rosa, SS27). Mismo modelo, distinto colorway; los labels
+// nombran color de estampa / color de bordado.
 const CAP_COLORWAYS = [
-  { label: 'Camo',      value: '#5b6b3a', slug: 'camo-cap',      image: `${WP}/2026/05/camo-cap-0.png` },
-  { label: 'Grey Camo', value: '#8a8a8a', slug: 'grey-camo-cap', image: `${WP}/2026/10/grey-camo-cap-0.png` },
+  { label: 'Green / Orange', value: '#5b6b3a', slug: 'camo-cap',      image: `${WP}/2026/05/camo-cap-0.png` },
+  { label: 'Grey / Pink',    value: '#8a8a8a', slug: 'grey-camo-cap', image: `${WP}/2026/10/grey-camo-cap-0.png` },
 ];
 
 /** Colorways hermanos de un slug (para los puntitos de color en la card). */
