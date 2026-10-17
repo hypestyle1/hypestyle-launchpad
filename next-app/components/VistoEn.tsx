@@ -16,7 +16,7 @@ import { VISTO_EN, vistoEnFoto, type VistoEnPost } from "@/data/vistoEn";
  *
  * Los productos salen de la query ['products'] (precargada en el home), así
  * que precio y stock están siempre al día. Un post sin ninguna prenda en el
- * catálogo se oculta.
+ * catálogo se muestra igual (las fotos viejas suman) y el modal lo aclara.
  */
 
 interface Prenda {
@@ -51,17 +51,17 @@ export default function VistoEn() {
 
   const posts = useMemo(() => {
     const bySlug = new Map(allProducts.map((p) => [p.slug, p]));
-    return VISTO_EN.map((post) => ({ post, prendas: prendas(post, bySlug) }))
-      .filter(({ prendas }) => prendas.length > 0);
+    return VISTO_EN.map((post) => ({ post, prendas: prendas(post, bySlug) }));
   }, [allProducts]);
 
-  // La sección devuelve null hasta que hay catálogo: sin estas deps los hooks
-  // corren con el ref vacío y no se enganchan nunca (ver useDragScroll).
-  const montada = posts.length > 0;
+  // Se espera al catálogo para no mostrar un instante los posts sin prendas.
+  // Sin estas deps los hooks correrían con el ref vacío y no se engancharían
+  // nunca (ver useDragScroll).
+  const montada = allProducts.length > 0;
   const dragRef = useDragScroll([montada]);
   const revealRef = useReveal([montada]);
 
-  if (posts.length === 0) return null;
+  if (!montada) return null;
   const sel = abierto !== null ? posts[abierto] : null;
 
   return (
@@ -93,7 +93,10 @@ export default function VistoEn() {
             />
             <span className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" aria-hidden />
             <span className="absolute left-3 right-3 bottom-3 flex items-end justify-between gap-2 text-white">
-              <span className="text-[12px] font-semibold uppercase tracking-[0.08em] leading-tight">{post.artista}</span>
+              <span className="min-w-0">
+                <span className="block text-[12px] font-semibold uppercase tracking-[0.08em] leading-tight">{post.artista}</span>
+                <span className="block text-[11px] lowercase opacity-80 mt-0.5 truncate">{post.ig.map((u) => `@${u}`).join(' · ')}</span>
+              </span>
               <span className="text-[11px] opacity-80 md:opacity-0 md:group-hover:opacity-100 transition-opacity whitespace-nowrap">Ver lo que lleva</span>
             </span>
           </button>
@@ -175,6 +178,19 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.15em] text-text-light">Visto en</p>
               <h3 className="text-[18px] md:text-[20px] font-semibold tracking-[-0.01em] leading-tight mt-1">{post.artista}</h3>
+              <p className="text-[12px] mt-1 flex flex-wrap gap-x-2">
+                {post.ig.map((u) => (
+                  <a
+                    key={u}
+                    href={`https://www.instagram.com/${u}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="lowercase text-foreground/60 hover:text-foreground underline-offset-[3px] hover:underline"
+                  >
+                    @{u}
+                  </a>
+                ))}
+              </p>
               {post.contexto && <p className="text-[12px] text-foreground/60 mt-1">{post.contexto}</p>}
             </div>
             <button
@@ -190,6 +206,9 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
             </button>
           </div>
 
+          {prendas.length === 0 && (
+            <p className="text-[12px] text-foreground/60 leading-snug">Lo que lleva en esta foto ya no está disponible.</p>
+          )}
           <ul className="flex flex-col gap-1.5">
             {prendas.map((p) => (
               <li key={p.slug}>
