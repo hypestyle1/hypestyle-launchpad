@@ -42,21 +42,24 @@ const CEROUNNO = ['half-zip-polo-black', 'only-god-can-judge-me-blanca', 'sweatp
 const CAMO = ['zip-hoodie-camo', 'sweatpant-camo'];
 
 export const VISTO_EN: VistoEnPost[] = [
-  // Una foto por artista; dos solo si muestran productos distintos (Nicki, Polima).
+  // Orden: seguidores de Instagram de mayor a menor (17/10/2026: Nicki 22,3M, Neo 1,4M,
+  // Polima y Ferpa ~1M, Cerounno 125K, FRO! 101K, Mir 57K, Jugo 45K). Al final, los
+  // extras: el video de Polima y Nicki con Tini. Una foto por artista; dos solo si
+  // muestran productos distintos (Nicki, Polima).
   { id: 'nicki-selfie', artista: 'Nicki Nicole', ig: ['nicki.nicole'], alt: 'Selfie de Nicki Nicole con el hoodie Grey HStars', slugs: ['hoodie-grey-hstars'] },
-  // Polima en vivo: 7 s (27-34 del IMG_9636.MOV), en La Bresh (Córdoba) con la Eye Sleeveless.
-  // Polima: su Instagram es @richboywest (@polimawestcoast es su X).
-  { id: 'polima-video', artista: 'Polima Westcoast', ig: ['richboywest'], contexto: 'En vivo en La Bresh, Córdoba', alt: 'Polima Westcoast en el escenario de La Bresh con la Eye Sleeveless', slugs: ['eye-sleveless-wheat'], video: '/visto-en/polima-video.mp4' },
+  // Neo Pistea: merch oficial de CULTO, no está en Woo.
+  { id: 'neo-blinblin', artista: 'Neo Pistea', ig: ['neopistea'], contexto: 'En vivo en Blin Blin, Mar del Plata', link: { href: '/lookbook-neo', label: 'Ver el lookbook' }, alt: 'Neo Pistea en vivo con la remera CULTO', slugs: [], fueraDeCatalogo: [{ nombre: 'CULTO Tee', imagen: '/visto-en/prendas/culto-tee.webp' }] },
+  { id: 'polima-02', artista: 'Polima Westcoast', ig: ['richboywest'], alt: 'Polima Westcoast con el Crewneck Hyped Up! Black', slugs: ['crewneck-hyped-up-black'] },
+  // Fer Palacio: Ferpa Drop 2020, tirada de 40 que nunca se vendió.
+  { id: 'ferpa-0142', artista: 'Fer Palacio', ig: ['ferpalaci0'], contexto: 'Ferpa Drop 2020', link: { href: '/lookbook-ferpa', label: 'Ver el lookbook' }, alt: 'Fer Palacio con el hoodie tie dye del Ferpa Drop', slugs: [], fueraDeCatalogo: [{ nombre: 'Ferpa Drop Hoodie Tie Dye', imagen: '/visto-en/prendas/ferpa-drop-hoodie.webp' }] },
   { id: 'cerounno-01', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno con el Half-Zip Polo Black', slugs: CEROUNNO },
   { id: 'fro-f023', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! con el conjunto camo en la prueba de sonido', slugs: CAMO },
   // Mir Nicolás: merch de La Ciudad del Pop (StyleRap&Culture), no está en Woo.
   { id: 'mir-04470', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, fueraDeCatalogo: [{ nombre: 'City Pop Tee Black', imagen: '/visto-en/prendas/city-pop-tee-black.webp' }], alt: 'Mir Nicolás con la remera de La Ciudad del Pop', slugs: [] },
-  // Neo Pistea: merch oficial de CULTO, no está en Woo.
-  { id: 'neo-blinblin', artista: 'Neo Pistea', ig: ['neopistea'], contexto: 'En vivo en Blin Blin, Mar del Plata', link: { href: '/lookbook-neo', label: 'Ver el lookbook' }, alt: 'Neo Pistea en vivo con la remera CULTO', slugs: [], fueraDeCatalogo: [{ nombre: 'CULTO Tee', imagen: '/visto-en/prendas/culto-tee.webp' }] },
-  { id: 'nicki-tini', artista: 'Nicki Nicole y Tini', ig: ['nicki.nicole', 'tinistoessel'], alt: 'Nicki Nicole con la Mesh Camo Blue junto a Tini', slugs: ['mesh-camo-blue-tee'] },
   // Jugo: Black Zip Hoodie V2 y Beanie Tribals, nunca estuvieron en Woo.
   { id: 'jugo-01', artista: 'Jugo', ig: ['juicynise7'], alt: 'Jugo con el Black Zip Hoodie V2 y el Beanie Tribals', slugs: [], fueraDeCatalogo: [{ nombre: 'Black Zip Hoodie V2', imagen: '/visto-en/prendas/black-zip-hoodie-v2.webp' }, { nombre: 'Beanie Tribals', imagen: '/visto-en/prendas/beanie-tribals.webp' }] },
-  // Fer Palacio: Ferpa Drop 2020, tirada de 40 que nunca se vendió.
-  { id: 'ferpa-0142', artista: 'Fer Palacio', ig: ['ferpalaci0'], contexto: 'Ferpa Drop 2020', link: { href: '/lookbook-ferpa', label: 'Ver el lookbook' }, alt: 'Fer Palacio con el hoodie tie dye del Ferpa Drop', slugs: [], fueraDeCatalogo: [{ nombre: 'Ferpa Drop Hoodie Tie Dye', imagen: '/visto-en/prendas/ferpa-drop-hoodie.webp' }] },
-  { id: 'polima-02', artista: 'Polima Westcoast', ig: ['richboywest'], alt: 'Polima Westcoast con el Crewneck Hyped Up! Black', slugs: ['crewneck-hyped-up-black'] },
+  // Polima en vivo: 7 s (27-34 del IMG_9636.MOV), en La Bresh (Córdoba) con la Eye Sleeveless.
+  // Polima: su Instagram es @richboywest (@polimawestcoast es su X).
+  { id: 'polima-video', artista: 'Polima Westcoast', ig: ['richboywest'], contexto: 'En vivo en La Bresh, Córdoba', alt: 'Polima Westcoast en el escenario de La Bresh con la Eye Sleeveless', slugs: ['eye-sleveless-wheat'], video: '/visto-en/polima-video.mp4' },
+  { id: 'nicki-tini', artista: 'Nicki Nicole y Tini', ig: ['nicki.nicole', 'tinistoessel'], alt: 'Nicki Nicole con la Mesh Camo Blue junto a Tini', slugs: ['mesh-camo-blue-tee'] },
 ];
