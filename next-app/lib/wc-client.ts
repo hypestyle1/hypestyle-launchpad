@@ -49,6 +49,10 @@ export interface CreateOrderPayload {
   fbc?: string;
   /** Origen de la visita (utm/fbclid/referrer/landing). Ver lib/attribution.ts. */
   attribution?: Attribution;
+  /** IDs anónimos de Microsoft Clarity (cookies _clck/_clsk) para encontrar la
+   *  grabación de la sesión desde el pedido. Ver lib/clarity-tracking.ts. */
+  clarityUser?: string;
+  claritySession?: string;
 }
 
 export interface TaloPaymentData {

@@ -16,6 +16,7 @@ import { chargeCurrency } from '@/lib/currency';
 import { createOrderAndPreference } from '@/lib/wc-client';
 import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
+import { getClarityCookies, tagClarityOrder } from '@/lib/clarity-tracking';
 import { captureAttribution } from '@/lib/attribution';
 import { gaBeginCheckout } from '@/lib/ga';
 import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
@@ -789,6 +790,7 @@ export default function Checkout() {
           // el texto de arriba es solo para mostrar. Ver Andreani_Order_Mapper::get_branch_code_for_order.
           shippingBranchCode: selectedBranch?.id || undefined,
           ...getFbCookies(),
+          ...getClarityCookies(),
           attribution: captureAttribution(),
         });
       } catch (wcErr) {
@@ -802,6 +804,9 @@ export default function Checkout() {
       // wcTotal refleja sale_price, cupones y cualquier descuento aplicado en Woo,
       // independientemente del precio que haya quedado guardado en el carrito del frontend.
       const authorizedTotal = orderRes.wcTotal || totalFinal;
+      // Etiqueta la sesión de Clarity con el número de pedido (custom tag
+      // filtrable en Recordings). Best-effort: si Clarity no cargó, no hace nada.
+      tagClarityOrder(orderRes.wcOrderNumber);
       sessionStorage.setItem('hype_order', JSON.stringify({
         wcOrderId: orderRes.wcOrderId, wcOrderNumber: orderRes.wcOrderNumber,
         orderKey: orderRes.orderKey,

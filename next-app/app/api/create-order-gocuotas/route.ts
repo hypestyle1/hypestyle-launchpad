@@ -7,6 +7,7 @@ import { PRIVATE_ACCESS_COOKIE } from '@/lib/private-access/config';
 import { privateAccessForOrder, privateAccessMeta } from '@/lib/private-access/order';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 import { errorEsDeCupon, razonCupon, regaloFirst10DeLineas } from '@/lib/first10';
+import { clientIp, clientUserAgent } from '@/lib/client-ip';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
     const {
       items, customer, shipping, discountAmount: descuentoCliente, couponCode,
       paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
-      fbp, fbc, attribution,
+      fbp, fbc, attribution, clarityUser, claritySession,
     } = { ...rawPayload, items: cleanItems };
 
     // Precio, descuento y envío salen del servidor (auditoría 28/09, C1). Del
@@ -186,6 +187,18 @@ export async function POST(req: NextRequest) {
     if (fbc)                meta.push({ key: '_fbc',             value: String(fbc) });
     // Por dónde entró (utm del ad, referrer, landing): sin esto no se sabe qué ad trajo la venta.
     meta.push(...attributionOrderMeta(attribution));
+    // Trazabilidad (auditoría 17/10): IP y user-agent del visitante. Los campos
+    // core customer_ip_address/customer_user_agent son readonly en la REST de
+    // Woo, así que viajan como meta propio; el mu-plugin los copia a los campos
+    // core al insertar el pedido (hype_order_client_ip_from_meta).
+    const ip = clientIp(req);
+    const ua = clientUserAgent(req);
+    if (ip)             meta.push({ key: '_hs_client_ip',    value: ip });
+    if (ua)             meta.push({ key: '_hs_client_ua',    value: ua });
+    // IDs anónimos de la sesión de Clarity: con esto la grabación del pedido se
+    // encuentra en el dashboard (ver lib/clarity-tracking.ts). Solo IDs, sin PII.
+    if (clarityUser)    meta.push({ key: '_clarity_user',    value: String(clarityUser).slice(0, 64) });
+    if (claritySession) meta.push({ key: '_clarity_session', value: String(claritySession).slice(0, 64) });
     // El plugin andreani-shipping valida el envío contra este meta, que WooCommerce
     // solo setea en el checkout nativo (sesión). Sin esto acá, el plugin rechaza el
     // pedido con "no es válida para envío Andreani" al querer empaquetarlo.
