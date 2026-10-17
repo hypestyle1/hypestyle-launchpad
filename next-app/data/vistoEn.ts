@@ -46,13 +46,13 @@ export const VISTO_EN: VistoEnPost[] = [
   { id: 'cerounno-01', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno con el Half-Zip Polo Black', slugs: CEROUNNO },
   { id: 'fro-f023', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! con el conjunto camo en la prueba de sonido', slugs: CAMO },
   // Mir Nicolás: merch de La Ciudad del Pop (StyleRap&Culture), no está en Woo.
-  { id: 'mir-04470', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, alt: 'Mir Nicolás con la remera de La Ciudad del Pop', slugs: [] },
+  { id: 'mir-04470', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, fueraDeCatalogo: [{ nombre: 'City Pop Tee Black', imagen: '/visto-en/prendas/city-pop-tee-black.webp' }], alt: 'Mir Nicolás con la remera de La Ciudad del Pop', slugs: [] },
   { id: 'nicki-selfie', artista: 'Nicki Nicole', ig: ['nicki.nicole'], alt: 'Selfie de Nicki Nicole con el hoodie Grey HStars', slugs: ['hoodie-grey-hstars'] },
   { id: 'cerounno-05', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno con el Half-Zip Polo Black', slugs: CEROUNNO },
   // Jugo: Black Zip Hoodie V2 y Beanie Tribals, nunca estuvieron en Woo.
   { id: 'jugo-01', artista: 'Jugo', ig: ['juicynise7'], alt: 'Jugo con el Black Zip Hoodie V2 y el Beanie Tribals', slugs: [], fueraDeCatalogo: [{ nombre: 'Black Zip Hoodie V2', imagen: '/visto-en/prendas/black-zip-hoodie-v2.webp' }, { nombre: 'Beanie Tribals', imagen: '/visto-en/prendas/beanie-tribals.webp' }] },
   { id: 'fro-f025', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! sentado en el pasto con el conjunto camo', slugs: CAMO },
-  { id: 'mir-04544', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, alt: 'Mir Nicolás y amigos con el merch de La Ciudad del Pop', slugs: [] },
+  { id: 'mir-04544', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, fueraDeCatalogo: [{ nombre: 'City Pop Tee Black', imagen: '/visto-en/prendas/city-pop-tee-black.webp' }], alt: 'Mir Nicolás y amigos con el merch de La Ciudad del Pop', slugs: [] },
   { id: 'nicki-tini', artista: 'Nicki Nicole y Tini', ig: ['nicki.nicole', 'tinistoessel'], alt: 'Nicki Nicole con la Mesh Camo Blue junto a Tini', slugs: ['mesh-camo-blue-tee'] },
   { id: 'cerounno-07', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno de perfil con el Half-Zip Polo Black y el SweatPant Black HStars', slugs: CEROUNNO },
   { id: 'fro-f012', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! con el Zip Hoodie Camo', slugs: CAMO },
