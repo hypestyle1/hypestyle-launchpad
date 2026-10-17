@@ -107,17 +107,19 @@ export default function ShopTheLook() {
   if (!sel) return null;
 
   return (
-    <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={revealRef}>
-      <div className="reveal rd1">
+    <section className="py-10 md:py-14" ref={revealRef}>
+      <div className="reveal rd1 max-w-[1400px] mx-auto px-4">
         <SectionHeader title="Shop the look" link="/looks/" />
       </div>
 
-      {/* Line-up estilo EME: figuras recortadas sobre el blanco de la página
-          (PNG sin fondo con la sombra de los pies incluida), con aire entre
-          una y otra. Al pasar el mouse la figura crece desde los pies. */}
+      {/* Line-up estilo EME, a todo el ancho de la pantalla: figuras recortadas
+          sobre el blanco de la página (PNG sin fondo con la sombra de los pies
+          incluida). El recuadro es 9:16 y la imagen 3:4 con object-cover: se
+          recorta el blanco de los costados y las figuras quedan juntas y
+          grandes. Al pasar el mouse la figura crece desde los pies. */}
       <div
         ref={dragRef}
-        className="reveal rd2 flex gap-5 md:gap-8 lg:gap-12 overflow-x-auto no-scrollbar cursor-grab select-none pt-4"
+        className="reveal rd2 flex overflow-x-auto no-scrollbar cursor-grab select-none pt-6"
       >
         {looks.map(({ look }, i) => {
           const activo = i === selIdx;
@@ -129,9 +131,9 @@ export default function ShopTheLook() {
               onClick={() => elegir(i)}
               aria-pressed={activo}
               aria-label={`Look ${i + 1}: ${look.etiqueta}`}
-              className="group flex-none w-[40vw] sm:w-[28vw] md:w-[calc((100%-4*32px)/5)] lg:w-[calc((100%-5*48px)/6)] text-left"
+              className="group flex-none w-[36vw] sm:w-[22vw] md:w-[16vw] lg:w-[12.5vw] 2xl:w-[11vw] text-left"
             >
-              <div className="aspect-[3/4]">
+              <div className="aspect-[9/16]">
                 <img
                   src={lookFoto(look, 'lineup')}
                   alt=""
@@ -140,7 +142,7 @@ export default function ShopTheLook() {
                   loading={i < 6 ? 'eager' : 'lazy'}
                   decoding="async"
                   draggable={false}
-                  className={`w-full h-full object-contain origin-bottom transition-[transform,opacity] duration-300 ease-[cubic-bezier(.25,1,.5,1)] md:group-hover:scale-[1.12] motion-reduce:transition-none ${
+                  className={`w-full h-full object-cover object-bottom origin-bottom transition-[transform,opacity] duration-300 ease-[cubic-bezier(.25,1,.5,1)] md:group-hover:scale-[1.12] motion-reduce:transition-none ${
                     activo ? 'scale-[1.06]' : ''
                   }`}
                 />
@@ -155,6 +157,7 @@ export default function ShopTheLook() {
         })}
       </div>
 
+      <div className="max-w-[1400px] mx-auto px-4">
       <LookPanel
         key={sel.look.id}
         look={sel.look}
@@ -165,6 +168,7 @@ export default function ShopTheLook() {
         onNext={() => elegir(selIdx + 1)}
         formatPrice={formatPrice}
       />
+      </div>
     </section>
   );
 }
