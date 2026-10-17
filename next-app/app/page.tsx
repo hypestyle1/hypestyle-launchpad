@@ -1,6 +1,7 @@
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import ShopTheLook from '@/components/ShopTheLook';
+import VistoEn from '@/components/VistoEn';
 import EsencialesShelf from '@/components/home/EsencialesShelf';
 import Fw26Shelf from '@/components/home/Fw26Shelf';
 import BestSellersShelf from '@/components/home/BestSellersShelf';
@@ -90,6 +91,9 @@ export default async function Home() {
           <FlashSaleSection />
           <Ss27Feed products={ss27.state === 'open' ? [...ss27.products, ...extras] : []} />
           <ShopTheLook />
+          {/* Visto en (17/10): artistas con Hype puesto, arriba de los estantes
+              para que la prueba social no quede al fondo del home. */}
+          <VistoEn />
           {/* Rediseño 2026 (aprobado 12/10): debajo del drop, los estantes del
               sistema nuevo con índice sticky propio y handoff nativo entre sí.
               Esenciales reemplaza a BasicosSection (conserva id="basicos"),
