@@ -209,6 +209,9 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
           {prendas.length === 0 && (
             <p className="text-[12px] text-foreground/60 leading-snug">Lo que lleva en esta foto ya no está disponible.</p>
           )}
+          {post.link && (
+            <a href={post.link.href} className="self-start text-[12px] font-semibold underline underline-offset-4">{post.link.label}</a>
+          )}
           <ul className="flex flex-col gap-1.5">
             {prendas.map((p) => (
               <li key={p.slug}>
