@@ -11,10 +11,12 @@
  * destacada de Woo y "Próximamente", sin precio ni link. Cuando se publica,
  * toma los datos reales sola.
  *
- * Fotos: 960x1280 (3:4) en public/looks/ss27/, exportadas de los originales de
- * `Redes & Pauta/CONTENT SS27/ESTUDIO`. Orden de los ángulos: frente, perfil,
- * espalda, detalle. Cada look tiene además <id>-lineup.webp, el frente achicado
- * a 420x560 para la tira de arriba.
+ * Fotos en public/looks/ss27/, de los originales de `Redes & Pauta/CONTENT
+ * SS27/ESTUDIO`. Frente, perfil y espalda son figuras recortadas (webp
+ * transparente 900x1200, misma altura de figura, sombra en los pies incluida);
+ * el detalle es la foto de cerca sin recortar (960x1280). <id>-lineup.webp es
+ * el frente recortado en 450x600 para la tira de arriba. Herramienta de
+ * recorte y mapeo foto → original: `_claude/propuestas/_STL-PROPUESTAS/v3/tool`.
  */
 
 export type Angulo = 'frente' | 'perfil' | 'espalda' | 'detalle';
@@ -72,10 +74,9 @@ const HYPE_WAFFLE = ss27('hype-washed-black-waffle-longsleeve', 'H.Y.P.E – WAS
 const CROSS = ss27('hype-dept-cross-white-waffle-longsleeve', 'HYPE DEPT CROSS – WHITE WAFFLE LONGSLEEVE', 'Longsleeve', 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/10/hype-dept-cross-white-waffle-longsleeve-mockup.png');
 
 /**
- * El orden es el del line-up. Primero los looks sobre pared lisa y después los
- * que tienen el ladrillo arriba (toda la cámara 2 y parte de la cámara 1), para
- * que la pared cambie una sola vez. Recortar el ladrillo no sirve: en esas
- * tomas el modelo está encuadrado más arriba y el corte le saca la cabeza.
+ * El orden es el del line-up. Viene de cuando las fotos tenían fondo (primero
+ * pared lisa, después ladrillo); con las figuras recortadas el fondo ya no
+ * importa y el orden se puede curar libremente.
  *
  * Fuera del line-up: Splatter Hoodie (no hay toma de cuerpo entero), y Hearts
  * Boxy Tee, Running Horses / Griffin Waffle y Mock Neck (no están en Woo).

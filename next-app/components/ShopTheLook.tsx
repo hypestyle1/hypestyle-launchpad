@@ -9,13 +9,13 @@ import { useProducts, type NormalizedProduct } from "@/hooks/useProducts";
 import { LOOKS, lookFoto, type Angulo, type Look } from "@/data/looks";
 
 /**
- * Shop the look — line-up + giro (SS27).
+ * Shop the look — line-up estilo EME + giro (SS27, rediseño 17/10).
  *
- * Arriba, todos los looks parados uno al lado del otro sobre la misma pared del
- * estudio (las fotos comparten fondo, distancia y altura de cámara, por eso se
- * leen como un solo plano). Al tocar una figura, abajo se abre el look: la foto
- * gira con el cursor por frente, perfil, espalda y detalle, y al lado van las
- * prendas con precio, stock y link a la ficha.
+ * Arriba, los looks como figuras recortadas sobre el blanco de la página, a la
+ * misma altura y con aire entre una y otra (referencia: emestudios.com). Al
+ * pasar el mouse la figura crece. Al tocar una, abajo se abre el look: la
+ * figura gira con el cursor por frente, perfil y espalda (más la foto de
+ * detalle), y al lado van las prendas con precio, stock y link a la ficha.
  *
  * Los datos de producto salen de la query ['products'] (precargada en el
  * servidor en el home), así que el primer render ya trae precios y no hay
@@ -112,10 +112,12 @@ export default function ShopTheLook() {
         <SectionHeader title="Shop the look" link="/looks/" />
       </div>
 
-      {/* Line-up: una sola pared, sin separación entre fotos. */}
+      {/* Line-up estilo EME: figuras recortadas sobre el blanco de la página
+          (PNG sin fondo con la sombra de los pies incluida), con aire entre
+          una y otra. Al pasar el mouse la figura crece desde los pies. */}
       <div
         ref={dragRef}
-        className="reveal rd2 flex overflow-x-auto no-scrollbar cursor-grab select-none rounded-[8px] bg-[#ecebe8]"
+        className="reveal rd2 flex gap-5 md:gap-8 lg:gap-12 overflow-x-auto no-scrollbar cursor-grab select-none pt-4"
       >
         {looks.map(({ look }, i) => {
           const activo = i === selIdx;
@@ -127,27 +129,27 @@ export default function ShopTheLook() {
               onClick={() => elegir(i)}
               aria-pressed={activo}
               aria-label={`Look ${i + 1}: ${look.etiqueta}`}
-              className={`flex-none w-[38vw] md:w-[calc(100%/5.5)] lg:w-[calc(100%/7)] text-left transition-[opacity,filter] duration-300 ${
-                activo ? '' : 'opacity-40 grayscale-[0.6] md:hover:opacity-80 md:hover:grayscale-0'
-              }`}
+              className="group flex-none w-[40vw] sm:w-[28vw] md:w-[calc((100%-4*32px)/5)] lg:w-[calc((100%-5*48px)/6)] text-left"
             >
-              <div className="aspect-[3/4] overflow-hidden">
+              <div className="aspect-[3/4]">
                 <img
                   src={lookFoto(look, 'lineup')}
                   alt=""
-                  width={420}
-                  height={560}
-                  loading={i < 4 ? 'eager' : 'lazy'}
+                  width={450}
+                  height={600}
+                  loading={i < 6 ? 'eager' : 'lazy'}
                   decoding="async"
                   draggable={false}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-contain origin-bottom transition-[transform,opacity] duration-300 ease-[cubic-bezier(.25,1,.5,1)] md:group-hover:scale-[1.12] motion-reduce:transition-none ${
+                    activo ? 'scale-[1.06]' : ''
+                  }`}
                 />
               </div>
-              <div className="flex items-baseline gap-2 px-2.5 pt-2.5 pb-3 text-[11px]">
+              <div className="flex items-baseline justify-center gap-2 pt-2 text-[11px]">
                 <span className="font-semibold text-[12px] tabular-nums">{String(i + 1).padStart(2, '0')}</span>
-                {activo && <span className="w-1.5 h-1.5 rounded-full bg-foreground self-center" aria-hidden />}
-                <span className="truncate text-foreground/60">{look.etiqueta}</span>
+                <span className={`truncate ${activo ? 'text-foreground' : 'text-foreground/50 group-hover:text-foreground/80'}`}>{look.etiqueta}</span>
               </div>
+              <span className={`block h-[2px] mx-auto mt-2 w-8 transition-colors ${activo ? 'bg-foreground' : 'bg-transparent'}`} aria-hidden />
             </button>
           );
         })}
@@ -240,18 +242,20 @@ function LookPanel({ look, piezas, numero, total, onPrev, onNext, formatPrice }:
             if (swipe.current?.movido) return;
             setAng((a) => (a + 1) % n);
           }}
-          className="relative aspect-[3/4] overflow-hidden rounded-[8px] bg-[#ecebe8] cursor-ew-resize touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+          className="relative aspect-[3/4] overflow-hidden cursor-ew-resize touch-pan-y select-none outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
         >
+          {/* Frente, perfil y espalda son figuras recortadas sobre blanco; el
+              detalle es una foto de cerca y va completa. */}
           {look.angulos.map((a, i) => (
             <img
               key={a}
               src={lookFoto(look, a)}
               alt={i === ang ? `${look.etiqueta}, ${ANGULO_LABEL[a].toLowerCase()}` : ''}
-              width={960}
-              height={1280}
+              width={a === 'detalle' ? 960 : 900}
+              height={a === 'detalle' ? 1280 : 1200}
               decoding="async"
               draggable={false}
-              className={`absolute inset-0 w-full h-full object-cover ${i === ang ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 w-full h-full ${a === 'detalle' ? 'object-cover' : 'object-contain'} ${i === ang ? 'opacity-100' : 'opacity-0'}`}
             />
           ))}
           <span className="absolute left-2.5 top-2.5 md:left-3 md:top-3 bg-white/85 text-[#0a0a0a] text-[10px] font-semibold uppercase tracking-[0.1em] px-2 py-1 rounded-[6px]">
@@ -362,8 +366,8 @@ function LookPanel({ look, piezas, numero, total, onPrev, onNext, formatPrice }:
               aria-label={`Ver ${ANGULO_LABEL[a].toLowerCase()}`}
               className="text-left group"
             >
-              <span className={`block aspect-[3/4] overflow-hidden rounded-[6px] bg-[#ecebe8] border transition-colors ${i === ang ? 'border-foreground' : 'border-transparent'}`}>
-                <img src={lookFoto(look, a)} alt="" width={96} height={128} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+              <span className={`block aspect-[3/4] overflow-hidden bg-bg-alt border transition-colors ${i === ang ? 'border-foreground' : 'border-transparent'}`}>
+                <img src={lookFoto(look, a)} alt="" width={96} height={128} loading="lazy" decoding="async" className={`w-full h-full ${a === 'detalle' ? 'object-cover' : 'object-contain'}`} />
               </span>
               <span className={`block text-[10px] uppercase tracking-[0.1em] mt-1.5 ${i === ang ? 'text-foreground' : 'text-foreground/45 group-hover:text-foreground/70'}`}>
                 {ANGULO_LABEL[a]}
