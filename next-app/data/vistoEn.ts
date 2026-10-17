@@ -10,7 +10,7 @@
  *
  * Fotos: 1080x1350 (4:5) en public/visto-en/, exportadas de las selecciones
  * aprobadas en `Redes & Pauta` (NICKI NICOLE/POST, CEROUNNO/FOTOS CEROUNNO/
- * SELECCION POST, FRO ART MEDIA/export, POLIMA, MIR NICOLAS). El orden alterna artistas a propósito.
+ * SELECCION POST, FRO ART MEDIA/export, POLIMA, MIR NICOLAS, JUGO). El orden alterna artistas a propósito.
  *
  * No se etiqueta a fotógrafos ni a modelos, solo al artista.
  */
@@ -22,6 +22,11 @@ export interface VistoEnPost {
   ig: string[];
   /** Línea corta debajo del nombre en el modal (dónde o cuándo). */
   contexto?: string;
+  /**
+   * Prendas que nunca estuvieron en Woo (merch de colabs): se muestran como
+   * agotadas, sin link. Mockup en public/visto-en/prendas/.
+   */
+  fueraDeCatalogo?: { nombre: string; imagen: string }[];
   /** Link alternativo cuando sus prendas ya no están (ej. el lookbook de la colab). */
   link?: { href: string; label: string };
   alt: string;
@@ -44,6 +49,8 @@ export const VISTO_EN: VistoEnPost[] = [
   { id: 'mir-04470', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, alt: 'Mir Nicolás con la remera de La Ciudad del Pop', slugs: [] },
   { id: 'nicki-selfie', artista: 'Nicki Nicole', ig: ['nicki.nicole'], alt: 'Selfie de Nicki Nicole con el hoodie Grey HStars', slugs: ['hoodie-grey-hstars'] },
   { id: 'cerounno-05', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno con el Half-Zip Polo Black', slugs: CEROUNNO },
+  // Jugo: zip hoodie negro con logo gótico y beanie, no están en Woo.
+  { id: 'jugo-01', artista: 'Jugo', ig: ['juicynise7'], alt: 'Jugo con el zip hoodie negro de Hype y beanie', slugs: [] },
   { id: 'fro-f025', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! sentado en el pasto con el conjunto camo', slugs: CAMO },
   { id: 'mir-04544', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, alt: 'Mir Nicolás y amigos con el merch de La Ciudad del Pop', slugs: [] },
   { id: 'nicki-tini', artista: 'Nicki Nicole y Tini', ig: ['nicki.nicole', 'tinistoessel'], alt: 'Nicki Nicole con la Mesh Camo Blue junto a Tini', slugs: ['mesh-camo-blue-tee'] },

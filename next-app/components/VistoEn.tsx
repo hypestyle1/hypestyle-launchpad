@@ -25,12 +25,20 @@ interface Prenda {
   image: string;
   price: number;
   originalPrice?: number;
-  href: string;
+  /** Sin href: prenda que nunca estuvo en Woo (merch de colabs), va como agotada. */
+  href?: string;
   agotado: boolean;
 }
 
 function prendas(post: VistoEnPost, bySlug: Map<string, NormalizedProduct>): Prenda[] {
-  return post.slugs.flatMap((slug) => {
+  const fuera: Prenda[] = (post.fueraDeCatalogo ?? []).map((x) => ({
+    slug: x.imagen,
+    name: x.nombre,
+    image: x.imagen,
+    price: 0,
+    agotado: true,
+  }));
+  return post.slugs.flatMap((slug): Prenda[] => {
     const p = bySlug.get(slug);
     if (!p) return [];
     return [{
@@ -42,7 +50,7 @@ function prendas(post: VistoEnPost, bySlug: Map<string, NormalizedProduct>): Pre
       href: p.href,
       agotado: Object.values(p.stock).every((s) => s === 'out'),
     }];
-  });
+  }).concat(fuera);
 }
 
 export default function VistoEn() {
@@ -167,6 +175,18 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
             decoding="async"
             className="w-full h-full max-h-[46vh] md:max-h-[88vh] object-cover md:aspect-[4/5]"
           />
+          {/* Cerrar: círculo con el mismo glass que las flechas, arriba a la derecha de la foto. */}
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="absolute top-2 right-2 md:top-3 md:right-3 w-9 h-9 grid place-items-center rounded-full bg-white/15 border border-white/30 text-white backdrop-blur-[12px] hover:bg-white/25 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+              <path d="M1 1l12 12M13 1L1 13" />
+            </svg>
+          </button>
           <div className="absolute inset-x-0 bottom-0 flex justify-between p-2 md:p-3">
             <NavBtn dir="prev" onClick={onPrev} />
             <NavBtn dir="next" onClick={onNext} />
@@ -174,7 +194,7 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
         </div>
 
         <div className="md:order-1 flex flex-col gap-4 p-4 md:p-5 overflow-y-auto min-h-0">
-          <div className="flex items-start justify-between gap-3">
+          <div>
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.15em] text-text-light">Visto en</p>
               <h3 className="text-[18px] md:text-[20px] font-semibold tracking-[-0.01em] leading-tight mt-1">{post.artista}</h3>
@@ -193,17 +213,6 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
               </p>
               {post.contexto && <p className="text-[12px] text-foreground/60 mt-1">{post.contexto}</p>}
             </div>
-            <button
-              ref={closeRef}
-              type="button"
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="w-9 h-9 -mr-2 -mt-1 flex-none grid place-items-center text-foreground/60 hover:text-foreground transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-                <path d="M1 1l12 12M13 1L1 13" />
-              </svg>
-            </button>
           </div>
 
           {prendas.length === 0 && (
@@ -213,12 +222,9 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
             <a href={post.link.href} className="self-start text-[12px] font-semibold underline underline-offset-4">{post.link.label}</a>
           )}
           <ul className="flex flex-col gap-1.5">
-            {prendas.map((p) => (
-              <li key={p.slug}>
-                <a
-                  href={p.href}
-                  className="group grid grid-cols-[52px_minmax(0,1fr)_auto] gap-3 items-center p-2 rounded-[4px] bg-background hover:bg-bg-alt transition-colors"
-                >
+            {prendas.map((p) => {
+              const contenido = (
+                <>
                   <img
                     src={p.image}
                     alt=""
@@ -239,10 +245,20 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
                       </span>
                     )}
                   </span>
-                  <span className="text-[11px] underline underline-offset-[3px] decoration-foreground/40 group-hover:decoration-foreground">Ver</span>
-                </a>
-              </li>
-            ))}
+                  {p.href && <span className="text-[11px] underline underline-offset-[3px] decoration-foreground/40 group-hover:decoration-foreground">Ver</span>}
+                </>
+              );
+              const cls = "group grid grid-cols-[52px_minmax(0,1fr)_auto] gap-3 items-center p-2 rounded-[4px] bg-background";
+              return (
+                <li key={p.slug}>
+                  {p.href ? (
+                    <a href={p.href} className={`${cls} hover:bg-bg-alt transition-colors`}>{contenido}</a>
+                  ) : (
+                    <div className={cls}>{contenido}</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
