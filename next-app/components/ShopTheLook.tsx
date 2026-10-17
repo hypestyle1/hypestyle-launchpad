@@ -108,7 +108,8 @@ export default function ShopTheLook() {
 
   return (
     <section className="py-10 md:py-14" ref={revealRef}>
-      <div className="reveal rd1 max-w-[1400px] mx-auto px-4">
+      {/* Mismo margen que el encabezado de Spring Summer 27: pegado a los bordes. */}
+      <div className="reveal rd1 px-4 md:px-6">
         <SectionHeader title="Shop the look" link="/looks/" />
       </div>
 
