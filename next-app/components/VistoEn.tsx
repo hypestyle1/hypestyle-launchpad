@@ -72,14 +72,14 @@ export default function VistoEn() {
         <SectionHeader title="Visto en" />
       </div>
 
-      <div ref={dragRef} className="reveal rd2 flex gap-2.5 overflow-x-auto no-scrollbar cursor-grab select-none px-4 md:px-6 scroll-px-4 md:scroll-px-6">
+      <div ref={dragRef} className="reveal rd2 flex gap-2 overflow-x-auto no-scrollbar cursor-grab select-none px-4 md:px-6 scroll-px-4 md:scroll-px-6">
         {posts.map(({ post }, i) => (
           <button
             key={post.id}
             type="button"
             onClick={() => setAbierto(i)}
             aria-label={`${post.artista}: ver lo que lleva`}
-            className="group relative flex-none w-[62vw] sm:w-[38vw] md:w-[23vw] lg:w-[21vw] aspect-[4/5] overflow-hidden rounded-[8px] bg-bg-alt text-left"
+            className="group relative flex-none w-[62vw] sm:w-[38vw] md:w-[23vw] lg:w-[21vw] aspect-[4/5] overflow-hidden rounded-[6px] bg-bg-alt text-left"
           >
             <img
               src={vistoEnFoto(post)}
