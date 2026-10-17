@@ -65,19 +65,21 @@ export default function VistoEn() {
   const sel = abierto !== null ? posts[abierto] : null;
 
   return (
-    <section className="max-w-[1400px] mx-auto px-4 py-10 md:py-14" ref={revealRef}>
-      <div className="reveal rd1">
+    <section className="py-10 md:py-14" ref={revealRef}>
+      {/* Misma línea que el Shop the look: encabezado pegado a los bordes y
+          tira a todo el ancho (arranca alineada al título y se va por el borde). */}
+      <div className="reveal rd1 px-4 md:px-6">
         <SectionHeader title="Visto en" />
       </div>
 
-      <div ref={dragRef} className="reveal rd2 flex gap-1.5 overflow-x-auto no-scrollbar cursor-grab select-none">
+      <div ref={dragRef} className="reveal rd2 flex gap-1.5 overflow-x-auto no-scrollbar cursor-grab select-none px-4 md:px-6 scroll-px-4 md:scroll-px-6">
         {posts.map(({ post }, i) => (
           <button
             key={post.id}
             type="button"
             onClick={() => setAbierto(i)}
             aria-label={`${post.artista}: ver lo que lleva`}
-            className="group relative flex-none w-[62vw] sm:w-[38vw] md:w-[calc((100%-4*6px)/4.4)] aspect-[4/5] overflow-hidden bg-bg-alt text-left"
+            className="group relative flex-none w-[62vw] sm:w-[38vw] md:w-[23vw] lg:w-[21vw] aspect-[4/5] overflow-hidden rounded-[4px] bg-bg-alt text-left"
           >
             <img
               src={vistoEnFoto(post)}
@@ -149,7 +151,7 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
         aria-modal="true"
         aria-label={`${post.artista}: lo que lleva`}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[880px] max-h-[88vh] grid grid-rows-[auto_minmax(0,1fr)] md:grid-rows-none md:grid-cols-[300px_minmax(0,1fr)] overflow-hidden bg-background/90 backdrop-blur-[20px] animate-in zoom-in-95 duration-200 motion-reduce:animate-none"
+        className="relative w-full max-w-[880px] max-h-[88vh] rounded-[10px] grid grid-rows-[auto_minmax(0,1fr)] md:grid-rows-none md:grid-cols-[300px_minmax(0,1fr)] overflow-hidden bg-background/90 backdrop-blur-[20px] animate-in zoom-in-95 duration-200 motion-reduce:animate-none"
       >
         {/* Foto: arriba en mobile, a la derecha en desktop. */}
         <div className="md:order-2 relative bg-black min-h-0">
@@ -193,7 +195,7 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
               <li key={p.slug}>
                 <a
                   href={p.href}
-                  className="group grid grid-cols-[52px_minmax(0,1fr)_auto] gap-3 items-center p-2 bg-background hover:bg-bg-alt transition-colors"
+                  className="group grid grid-cols-[52px_minmax(0,1fr)_auto] gap-3 items-center p-2 rounded-[4px] bg-background hover:bg-bg-alt transition-colors"
                 >
                   <img
                     src={p.image}
@@ -202,7 +204,7 @@ function PostModal({ post, prendas, onClose, onPrev, onNext }: ModalProps) {
                     height={52}
                     loading="lazy"
                     decoding="async"
-                    className={`w-[52px] h-[52px] object-cover bg-bg-alt ${p.agotado ? 'opacity-45 grayscale' : ''}`}
+                    className={`w-[52px] h-[52px] object-cover rounded-[4px] bg-bg-alt ${p.agotado ? 'opacity-45 grayscale' : ''}`}
                   />
                   <span className="min-w-0">
                     <span className={`block text-[12px] font-semibold uppercase leading-tight ${p.agotado ? 'text-text-light' : ''}`}>{p.name}</span>
@@ -233,7 +235,7 @@ function NavBtn({ dir, onClick }: { dir: 'prev' | 'next'; onClick: () => void })
       type="button"
       onClick={onClick}
       aria-label={dir === 'prev' ? 'Foto anterior' : 'Foto siguiente'}
-      className="w-9 h-9 grid place-items-center bg-white/15 border border-white/30 text-white backdrop-blur-[12px] hover:bg-white/25 transition-colors"
+      className="w-9 h-9 grid place-items-center rounded-[6px] bg-white/15 border border-white/30 text-white backdrop-blur-[12px] hover:bg-white/25 transition-colors"
     >
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-3.5 h-3.5" aria-hidden>
         <path d={dir === 'prev' ? 'M10 2 4 8l6 6' : 'm6 2 6 6-6 6'} />
