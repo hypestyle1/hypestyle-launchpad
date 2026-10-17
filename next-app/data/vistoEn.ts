@@ -58,5 +58,5 @@ export const VISTO_EN: VistoEnPost[] = [
   { id: 'jugo-01', artista: 'Jugo', ig: ['juicynise7'], alt: 'Jugo con el Black Zip Hoodie V2 y el Beanie Tribals', slugs: [], fueraDeCatalogo: [{ nombre: 'Black Zip Hoodie V2', imagen: '/visto-en/prendas/black-zip-hoodie-v2.webp' }, { nombre: 'Beanie Tribals', imagen: '/visto-en/prendas/beanie-tribals.webp' }] },
   // Fer Palacio: Ferpa Drop 2020, tirada de 40 que nunca se vendió.
   { id: 'ferpa-0142', artista: 'Fer Palacio', ig: ['ferpalaci0'], contexto: 'Ferpa Drop 2020', link: { href: '/lookbook-ferpa', label: 'Ver el lookbook' }, alt: 'Fer Palacio con el hoodie tie dye del Ferpa Drop', slugs: [], fueraDeCatalogo: [{ nombre: 'Ferpa Drop Hoodie Tie Dye', imagen: '/visto-en/prendas/ferpa-drop-hoodie.webp' }] },
-  { id: 'polima-01', artista: 'Polima Westcoast', ig: ['richboywest'], alt: 'Polima Westcoast con el Crewneck Hyped Up! Black', slugs: ['crewneck-hyped-up-black'] },
+  { id: 'polima-02', artista: 'Polima Westcoast', ig: ['richboywest'], alt: 'Polima Westcoast con el Crewneck Hyped Up! Black', slugs: ['crewneck-hyped-up-black'] },
 ];
