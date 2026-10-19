@@ -18,7 +18,8 @@ import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
 import { useBottomShift, setBuyBarVisible } from '@/lib/bottom-shift';
 import StockAlertForm from '@/components/StockAlertForm';
-import ShopTheLookProducto from '@/components/producto/ShopTheLookProducto';
+import ShopTheLook from '@/components/ShopTheLook';
+import TiraProductos from '@/components/producto/TiraProductos';
 import VistosRecientemente from '@/components/producto/VistosRecientemente';
 import { registrarVisto } from '@/lib/vistos-recientemente';
 import { isFlashSaleActive } from '@/lib/flash-sale';
@@ -193,12 +194,14 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // Descripción y ficha del modelo en el idioma elegido: IA, cacheada en el
   // servidor. Mientras carga o si falla se ve el español de Woo.
   const traduccion = useProductTranslation(product?.slug, language);
-  const { data: allProducts = [] } = useProducts(20);
+  // El catálogo completo (la misma query que ya usa el resto del sitio, así
+  // que sale de caché) para poder recomendar diez y no cuatro.
+  const { data: allProducts = [] } = useProducts(0);
   const related = useMemo(() => {
     if (!product) return [];
     return [...allProducts.filter(p => p.slug !== product.slug)]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 4);
+      .slice(0, 10);
   }, [allProducts, product?.slug]);
 
   const goalDiscount = useGoalDiscount(slug, initialGoalDiscount);
@@ -543,12 +546,15 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
             </div>
   );
 
+  // Estructura de Cold Culture: recomendados en una sola fila, el look con
+  // sus fotos, y abajo lo último que miró la persona. Las tres se borran solas
+  // si no hay nada para mostrar.
   const relacionados = privateAccess ? privateAccess.related : (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
-      {related.map(p => (
-        <ProductCard key={p.slug} {...p} />
-      ))}
-    </div>
+    <>
+      <TiraProductos titulo="Recomendados" productos={related} className="pb-4" />
+      <ShopTheLook slugDestacado={product.slug} />
+      <VistosRecientemente slugActual={product.slug} />
+    </>
   );
 
   return (
@@ -853,18 +859,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           </div>
         </div>
 
-        <section className="max-w-[1400px] mx-auto px-4 pb-16">
-          <h2 className="text-lg font-bold uppercase tracking-tight mb-6">{t('Completa el look')}</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
-            {related.map(p => (
-              <ProductCard key={p.slug} {...p} />
-            ))}
-          </div>
-        </section>
-
-        {/* El look al que pertenece la prenda y lo último que miró la persona.
-            Las dos secciones se borran solas si no hay nada que mostrar. */}
-        <ShopTheLookProducto slug={product.slug} />
+        {/* Estructura de Cold Culture: recomendados en una sola fila, el look
+            con sus fotos, y abajo lo último que miró la persona. Las tres se
+            borran solas si no hay nada que mostrar. */}
+        <TiraProductos titulo="Recomendados" productos={related} className="pb-4" />
+        <ShopTheLook slugDestacado={product.slug} />
         <VistosRecientemente slugActual={product.slug} />
       </main>
       )}

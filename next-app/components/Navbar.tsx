@@ -5,7 +5,9 @@ import { Search, ShoppingBag, Menu, X, ChevronDown, ChevronRight, ChevronLeft } 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { imgSrc } from '@/lib/img';
-import { MENU_DESTACADOS } from '@/data/menuDestacados';
+import MenuDestacados from '@/components/MenuDestacados';
+import { CURRENCIES } from '@/lib/currency';
+import type { Language } from '@/context/LocaleContext';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -104,6 +106,44 @@ const mobilePanels = {
   accesorios: { title: 'Accesorios', verTodo: '/accesorios', items: [] },
 };
 
+type GrupoMenu = 'prendas' | 'colecciones';
+
+/**
+ * Filas grandes del menú mobile. Las fotos tienen que asomarse sin scrollear,
+ * así que la lista es corta: las seis categorías de prendas y las colecciones
+ * viven adentro de un desplegable (referencia: emestudios.com, 19/10/2026).
+ */
+const MENU_MOBILE: { label: string; href?: string; grupo?: GrupoMenu; isSale?: boolean }[] = [
+  { label: 'New In',      href: '/new-in' },
+  { label: 'Prendas',     grupo: 'prendas' },
+  { label: 'Accesorios',  href: '/accesorios' },
+  { label: 'Colecciones', grupo: 'colecciones' },
+  { label: 'Gift Card',   href: '/gift-cards' },
+  { label: 'SALE',        href: '/special-prices', isSale: true },
+];
+
+const GRUPOS_MENU: Record<GrupoMenu, { label: string; href: string }[]> = {
+  prendas: [
+    { label: 'Ver todos los productos', href: '/productos' },
+    { label: 'Remeras',     href: '/tees' },
+    { label: 'Hoodies',     href: '/hoodies' },
+    { label: 'Longsleeves', href: '/longsleeves' },
+    { label: 'Pantalones',  href: '/pants' },
+    { label: 'Jorts',       href: '/jorts' },
+    { label: 'Conjuntos',   href: '/sets' },
+  ],
+  colecciones: [
+    { label: 'Spring Summer 27', href: '/colecciones/ss27' },
+    { label: 'Fall Winter 26',   href: '/colecciones/fw26' },
+    { label: 'Esenciales',       href: '/colecciones/regular-tees' },
+    { label: 'Colaboraciones',   href: '/colaboraciones' },
+    { label: 'Ver todas',        href: '/colecciones' },
+  ],
+};
+
+/** Mismo orden que LocalePopup; acá van solo los códigos, como en EME. */
+const IDIOMAS: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
+
 const glassStyle = {
   background: 'rgba(240, 238, 232, 0.82)',
   backdropFilter: 'blur(32px) saturate(200%)',
@@ -123,6 +163,7 @@ export default function Navbar() {
   const [scrolled, setScrolled]       = useState(false);
   const [mobileOpen, setMobileOpen]   = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'main' | 'arriba' | 'abajo' | 'accesorios'>('main');
+  const [grupoAbierto, setGrupoAbierto] = useState<GrupoMenu | null>(null);
   const [shopOpen, setShopOpen]       = useState(false);
   // Qué desplegable chico está abierto ('colecciones' | 'contacto'), o ninguno.
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -134,7 +175,7 @@ export default function Navbar() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { count, setDrawerOpen } = useCart();
   const { items: wishlistItems, setDrawerOpen: openWishlist } = useWishlist();
-  const { formatPrice, t } = useLocale();
+  const { formatPrice, t, language, setLanguage, currency, setCurrency } = useLocale();
   const { data: allProducts = [] } = useProducts(0);
   const { phase: promoPhase } = usePromo3x2Status();
   const argMode = promoPhase === 'pre' || promoPhase === 'live' || promoPhase === 'won';
@@ -167,7 +208,7 @@ export default function Navbar() {
   }, [searchOpen]);
 
   useEffect(() => {
-    if (!mobileOpen) setMobilePanel('main');
+    if (!mobileOpen) { setMobilePanel('main'); setGrupoAbierto(null); }
   }, [mobileOpen]);
 
   const closeMobile = () => setMobileOpen(false);
@@ -182,13 +223,6 @@ export default function Navbar() {
     }
   };
 
-  // En la ficha de producto el navbar deja el vidrio y se vuelve blanco sólido
-  // (referencia: emestudios.com, 19/10). Ahí la foto ocupa toda la pantalla y
-  // el fondo translúcido se mezclaba con la prenda; el blanco la separa. El
-  // modo argentino (promo 3x2) manda por encima, como siempre.
-  const fichaProducto = !!pathname?.startsWith('/producto/');
-  const navSolido = fichaProducto && !argMode;
-
   const navHeight = scrolled ? '40px' : '48px';
   const panel = mobilePanels[mobilePanel];
 
@@ -201,12 +235,11 @@ export default function Navbar() {
           borderRadius: '14px',
           // Material glass único (globals.css, --glass-nav-*). El modo
           // argentino (promo 3x2) conserva su celeste hardcodeado.
-          background: argMode ? 'rgba(117, 170, 219, 0.30)' : navSolido ? '#FFFFFF' : 'var(--glass-nav-bg)',
-          backdropFilter: navSolido ? 'none' : 'var(--glass-nav-filter)',
-          WebkitBackdropFilter: navSolido ? 'none' : 'var(--glass-nav-filter)',
+          background: argMode ? 'rgba(117, 170, 219, 0.30)' : 'var(--glass-nav-bg)',
+          backdropFilter: 'var(--glass-nav-filter)',
+          WebkitBackdropFilter: 'var(--glass-nav-filter)',
           border: argMode
             ? '1px solid rgba(212, 175, 55, 0.55)'
-            : navSolido ? '1px solid rgba(0,0,0,0.10)'
             : (scrolled || shopOpen ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.45)'),
           boxShadow: argMode
             ? '0 4px 24px rgba(212,175,55,0.22), inset 0 1px 0 rgba(255,255,255,0.4)'
@@ -487,9 +520,9 @@ export default function Navbar() {
             // página entera. Con 0.68 y más blur se ve el fondo desenfocado
             // detrás (referencia: emestudios.com, 19/10) sin perder contraste:
             // el texto es casi negro sobre un beige claro.
-            background: 'rgba(240, 238, 232, 0.68)',
-            backdropFilter: 'blur(40px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+            background: 'rgba(240, 238, 232, 0.55)',
+            backdropFilter: 'blur(44px) saturate(170%)',
+            WebkitBackdropFilter: 'blur(44px) saturate(170%)',
           }}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/8"
             style={{ paddingTop: 'calc(var(--announce-h) + 16px)' }}>
@@ -510,6 +543,16 @@ export default function Navbar() {
             </Link>
             <div className="flex items-center gap-3">
               <LocalePopup />
+              <button onClick={() => { closeMobile(); openWishlist(true); }} className="relative" aria-label="Favoritos">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </button>
               <button onClick={() => { closeMobile(); setDrawerOpen(true); }} className="relative" aria-label="Carrito">
                 <ShoppingBag className="w-4 h-4" strokeWidth={1.2} />
                 {count > 0 && (
@@ -536,62 +579,92 @@ export default function Navbar() {
           <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
             {mobilePanel === 'main' ? (
               <>
-                <div className="space-y-1 mb-8">
-                  {mobilePanels.main.items.map((item) => (
-                    item.panel ? (
-                      <button key={t(item.label)} onClick={() => setMobilePanel(item.panel as any)}
-                        className="w-full flex items-center justify-between py-2.5 border-b border-foreground/8 last:border-0">
-                        <span className="text-[22px] font-normal tracking-tight">{t(item.label)}</span>
-                        <ChevronRight className="w-4 h-4 text-foreground/30" strokeWidth={1.5} />
-                      </button>
-                    ) : (
-                      <button key={t(item.label)}
-                        onClick={() => { handleSmartLink(item.href!, item.homeHash); closeMobile(); }}
-                        className="w-full flex items-center justify-between py-2.5 border-b border-foreground/8 last:border-0 text-left">
-                        {(item as { isSale?: boolean }).isSale
-                          ? <span className="bg-red-600 text-white text-[16px] font-bold uppercase tracking-[0.1em] px-3 py-1 rounded-[5px]">{t(item.label)}</span>
-                          : <span className="text-[22px] font-normal tracking-tight">{t(item.label)}</span>}
-                      </button>
-                    )
-                  ))}
-                </div>
                 <div className="mb-6">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-foreground/35 mb-3">{t('Colecciones')}</p>
-                  {mobilePanels.main.collections.map((l) => (
+                  {MENU_MOBILE.map((item) => {
+                    const abierto = !!item.grupo && grupoAbierto === item.grupo;
+                    return (
+                      <div key={item.label} className="border-b border-foreground/8 last:border-0">
+                        {item.grupo ? (
+                          <>
+                            <button onClick={() => setGrupoAbierto(abierto ? null : item.grupo!)}
+                              aria-expanded={abierto}
+                              className="w-full flex items-center justify-between py-2.5 text-left">
+                              <span className="text-[20px] font-normal tracking-tight">{t(item.label)}</span>
+                              <ChevronDown strokeWidth={1.5}
+                                className={`w-4 h-4 text-foreground/35 transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`} />
+                            </button>
+                            {abierto && (
+                              <div className="pb-3">
+                                {GRUPOS_MENU[item.grupo].map((l) => (
+                                  <button key={l.label}
+                                    onClick={() => { handleSmartLink(l.href, null); closeMobile(); }}
+                                    className="block w-full text-left text-[15px] text-foreground/60 hover:text-foreground transition-colors py-1.5">
+                                    {t(l.label)}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <button onClick={() => { handleSmartLink(item.href!, null); closeMobile(); }}
+                            className="w-full flex items-center py-2.5 text-left">
+                            {item.isSale
+                              ? <span className="bg-red-600 text-white text-[15px] font-bold uppercase tracking-[0.1em] px-3 py-0.5 rounded-[5px]">{t(item.label)}</span>
+                              : <span className="text-[20px] font-normal tracking-tight">{t(item.label)}</span>}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <MenuDestacados onNavegar={closeMobile} />
+
+                {/* Lo que más se busca cuando el menú no es para comprar. */}
+                <div className="grid grid-cols-3 gap-2 mb-6">
+                  {[
+                    { label: 'FAQs',          href: '/faqs' },
+                    { label: 'Quiénes Somos', href: '/nosotros' },
+                    { label: 'Políticas',     href: '/politicas-de-devolucion' },
+                  ].map((l) => (
                     <Link key={t(l.label)} href={l.href} onClick={closeMobile}
-                      className="block text-[14px] text-foreground/60 hover:text-foreground transition-colors py-1.5">
+                      className="flex items-center justify-center text-center h-11 px-2 rounded-[6px] border border-foreground/12 text-[12px] font-medium leading-tight hover:border-foreground/35 transition-colors">
                       {t(l.label)}
                     </Link>
                   ))}
                 </div>
-                {/* Atajos con foto. El menú era una lista de texto y nada
-                    más; estas cuatro fotos son lo que se cambia cuando entra
-                    un drop, y viven en data/menuDestacados.ts. */}
-                <div className="grid grid-cols-2 gap-2 mb-7">
-                  {MENU_DESTACADOS.map((d) => (
-                    <Link key={d.label} href={d.href} onClick={closeMobile}
-                      className="relative block aspect-[4/5] overflow-hidden rounded-[6px] bg-foreground/5">
-                      <img src={imgSrc(d.img)} alt={t(d.label)} loading="lazy"
-                        className="absolute inset-0 w-full h-full object-cover"
-                        style={{ objectPosition: d.encuadre ?? 'center' }} />
-                      <span aria-hidden className="absolute inset-x-0 bottom-0 h-1/2"
-                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.48), transparent)' }} />
-                      <span className="absolute left-3 bottom-2.5 text-white text-[15px] font-medium tracking-tight">
-                        {t(d.label)}
-                      </span>
-                    </Link>
-                  ))}
+
+                {/* Idioma y moneda a la vista, como EME. El globo del encabezado
+                    sigue abriendo el popup completo, con los nombres enteros. */}
+                <div className="mb-6 space-y-2.5">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {IDIOMAS.map((code) => (
+                      <button key={code} onClick={() => setLanguage(code)}
+                        className={`text-[12px] tracking-[0.1em] pb-0.5 border-b transition-colors ${
+                          language === code ? 'border-foreground text-foreground' : 'border-transparent text-foreground/40 hover:text-foreground'
+                        }`}>
+                        {code}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {CURRENCIES.map((c) => (
+                      <button key={c.code} onClick={() => setCurrency(c.code)}
+                        className={`text-[12px] tracking-[0.1em] pb-0.5 border-b transition-colors ${
+                          currency === c.code ? 'border-foreground text-foreground' : 'border-transparent text-foreground/40 hover:text-foreground'
+                        }`}>
+                        {c.code}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="border-t border-foreground/10 pt-4 space-y-1">
                   {/* Los lookbooks salen del menú de compra: viven en el
                       Archivo de /colecciones. Acá quedan las institucionales. */}
                   {[
-                    { label: 'Reseñas',       href: '/reviews' },
-                    { label: 'FAQs',          href: '/faqs' },
-                    { label: 'Quiénes Somos', href: '/nosotros' },
-                    { label: 'Políticas',     href: '/politicas-de-devolucion' },
-                    { label: 'Contacto',      href: '/contacto' },
+                    { label: 'Reseñas',  href: '/reviews' },
+                    { label: 'Contacto', href: '/contacto' },
                     { label: 'Crea contenido con Hype', href: '/creadores' },
                     { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud' },
                   ].map((l) => (

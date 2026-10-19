@@ -31,7 +31,7 @@ export default function BackInStockPage({ initialProducts }: { initialProducts?:
               título y la identidad ahora dicen lo mismo. */}
           <CatalogHeader kicker="Shop" title="Best sellers" count={products.length}
             description="Los gráficos que más salen, siempre que haya stock." />
-          <div className="flex justify-end mb-3">
+          <div className="flex mb-3">
             <VistaControles cols={cols} setCols={setCols} foto={foto} setFoto={setFoto} />
           </div>
           {isLoading ? (

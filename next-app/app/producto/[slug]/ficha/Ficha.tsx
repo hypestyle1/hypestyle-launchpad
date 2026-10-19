@@ -158,10 +158,17 @@ export default function Ficha(p: FichaProps) {
         </div>
       </div>
 
-      <section className="max-w-[1400px] mx-auto px-4 pt-14 pb-20">
-        <h2 className="text-lg font-bold uppercase tracking-tight mb-6">{p.privateAccess ? `Más de ${p.privateAccess.collectionName}` : t('Completa el look')}</h2>
-        {p.related}
-      </section>
+      {/* En Private Access es una grilla con su propio título. En la ficha
+          normal, `related` ya trae sus secciones con encabezado (recomendados,
+          shop the look y vistos recientemente). */}
+      {p.privateAccess ? (
+        <section className="max-w-[1400px] mx-auto px-4 pt-14 pb-20">
+          <h2 className="text-lg font-bold uppercase tracking-tight mb-6">{`Más de ${p.privateAccess.collectionName}`}</h2>
+          {p.related}
+        </section>
+      ) : (
+        <div className="pt-8">{p.related}</div>
+      )}
     </main>
   );
 }

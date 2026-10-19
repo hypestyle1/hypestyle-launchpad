@@ -103,7 +103,7 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
         <div className="bg-background">
           <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
             {availableSizes.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="w-full flex items-center gap-1.5 flex-wrap">
                 {availableSizes.map(s => (
                   <button key={s} onClick={() => toggleSize(s)}
                     className={`px-3 py-1 text-[11px] font-semibold uppercase tracking-wide border transition-colors rounded-[6px] ${sizeFilter.includes(s) ? 'bg-foreground text-background border-foreground' : 'border-border text-foreground/60 hover:border-foreground/40 hover:text-foreground'}`}>
@@ -118,9 +118,9 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
                 )}
               </div>
             )}
-            <VistaControles cols={cols} setCols={setCols} foto={foto} setFoto={setFoto} className="ml-auto" />
+            <VistaControles cols={cols} setCols={setCols} foto={foto} setFoto={setFoto} />
 
-            <div className="flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2">
               <span className="text-[11px] text-muted-foreground hidden sm:block">Ordenar:</span>
               <select value={sort} onChange={e => setSort(e.target.value as SortKey)}
                 className="text-[11px] border border-border rounded-[6px] px-2.5 py-1.5 bg-background text-foreground cursor-pointer outline-none hover:border-foreground/40 transition-colors">

@@ -5,9 +5,14 @@ import { useLocale } from '@/context/LocaleContext';
 import type { VistaCols, VistaFoto } from '@/lib/catalogo-vista';
 
 /**
- * Selector de vista del catálogo: 1, 2 o 3 columnas, y mockup o modelo.
- * El estado vive en `useVistaCatalogo` (localStorage), así que la elección
- * sigue puesta al cambiar de categoría o al volver al día siguiente.
+ * Selector de vista del catálogo: 1, 2 o 3 columnas, y la prenda sola o
+ * puesta. El estado vive en `useVistaCatalogo` (localStorage), así que la
+ * elección sigue puesta al cambiar de categoría o al volver mañana.
+ *
+ * La opción activa lleva el nombre escrito ("Vista 2", "Prenda", "Puesta") y
+ * las otras quedan como número o ícono: con íconos solos no se entendía para
+ * qué servía (referencia: emestudios.com, 19/10/2026). El botón activo va en
+ * blanco con sombra, levantado sobre el grupo, en vez de negro sólido.
  */
 interface Props {
   cols: VistaCols;
@@ -19,37 +24,39 @@ interface Props {
 
 const OPCIONES: VistaCols[] = [1, 2, 3];
 
+const GRUPO = 'flex items-center gap-1 p-1 rounded-[8px] bg-black/[0.045]';
+
+const btn = (activo: boolean) =>
+  `h-7 px-2.5 text-[11.5px] font-medium rounded-[6px] transition-all duration-150 flex items-center gap-1.5 ${
+    activo
+      ? 'bg-white text-foreground shadow-[0_1px_5px_rgba(0,0,0,0.13)] border border-black/[0.06]'
+      : 'text-foreground/55 hover:text-foreground border border-transparent'
+  }`;
+
 export default function VistaControles({ cols, setCols, foto, setFoto, className = '' }: Props) {
   const { t } = useLocale();
 
-  const btn = (activo: boolean) =>
-    `h-7 px-2.5 text-[11px] font-medium rounded-[5px] border transition-colors ${
-      activo
-        ? 'border-foreground/70 bg-foreground text-primary-foreground'
-        : 'border-border text-foreground/60 hover:border-foreground/40 hover:text-foreground'
-    }`;
-
   return (
-    <div className={`flex items-center gap-1.5 ${className}`}>
-      <div className="flex items-center gap-1" role="group" aria-label={t('Columnas')}>
+    <div className={`flex items-center gap-2 ${className}`}>
+      <div className={GRUPO} role="group" aria-label={t('Columnas')}>
         {OPCIONES.map((n) => (
           <button key={n} type="button" onClick={() => setCols(n)} className={btn(cols === n)}
             aria-pressed={cols === n} aria-label={`${n} ${n === 1 ? t('columna') : t('columnas')}`}>
-            {n}
+            {cols === n ? `${t('Vista')} ${n}` : n}
           </button>
         ))}
       </div>
 
-      <span aria-hidden className="w-px h-4 bg-border mx-0.5" />
-
-      <div className="flex items-center gap-1" role="group" aria-label={t('Foto')}>
-        <button type="button" onClick={() => setFoto('mockup')} className={`${btn(foto === 'mockup')} flex items-center`}
-          aria-pressed={foto === 'mockup'} aria-label={t('Ver la prenda sola')} title={t('Ver la prenda sola')}>
+      <div className={GRUPO} role="group" aria-label={t('Cómo se ve la foto')}>
+        <button type="button" onClick={() => setFoto('mockup')} className={btn(foto === 'mockup')}
+          aria-pressed={foto === 'mockup'} title={t('Ver la prenda sola')}>
           <Shirt className="w-3.5 h-3.5" strokeWidth={1.4} />
+          {foto === 'mockup' && <span>{t('Prenda')}</span>}
         </button>
-        <button type="button" onClick={() => setFoto('modelo')} className={`${btn(foto === 'modelo')} flex items-center`}
-          aria-pressed={foto === 'modelo'} aria-label={t('Ver puesta')} title={t('Ver puesta')}>
+        <button type="button" onClick={() => setFoto('modelo')} className={btn(foto === 'modelo')}
+          aria-pressed={foto === 'modelo'} title={t('Ver la prenda puesta')}>
           <PersonStanding className="w-3.5 h-3.5" strokeWidth={1.4} />
+          {foto === 'modelo' && <span>{t('Puesta')}</span>}
         </button>
       </div>
     </div>

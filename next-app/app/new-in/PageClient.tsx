@@ -54,7 +54,7 @@ export default function NewInPage({ initialProducts }: { initialProducts?: Norma
             count={products.length}
             description="Lo último que entró, de más nuevo a más viejo. SS27 primero."
           />
-          <div className="flex justify-end mb-3">
+          <div className="flex mb-3">
             <VistaControles cols={cols} setCols={setCols} foto={foto} setFoto={setFoto} />
           </div>
           {isLoading ? (

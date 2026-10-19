@@ -71,7 +71,7 @@ export default function SaleView({ destacados, resto, maxOff }: Props) {
             count={total}
             description={total > 0 ? `Hasta ${maxOff}% OFF, mientras haya stock. Sin relleno: lo agotado no se muestra.` : 'Mientras haya stock.'}
           />
-          <div className="flex justify-end mb-3">
+          <div className="flex mb-3">
             <VistaControles cols={cols} setCols={setCols} foto={foto} setFoto={setFoto} />
           </div>
 
