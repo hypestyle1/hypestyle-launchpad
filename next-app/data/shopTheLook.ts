@@ -1,35 +1,32 @@
-import { VISTO_EN, type VistoEnPost } from './vistoEn';
+import type { VistoEnPost } from './vistoEn';
 
 /**
  * Shop the look de la ficha de producto — fotos UGC de prendas que se pueden
  * comprar hoy (referencia: coldcultureworldwide.com, 19/10/2026).
  *
- * Es una lista aparte de "Visto en" a propósito: el home muestra artistas de
- * la escena (aunque la prenda ya no esté), y acá la regla es otra — **solo
- * fotos de gente usando productos disponibles**. El componente además esconde
- * cualquier look cuyas prendas estén todas agotadas o fuera del catálogo, así
- * que una foto vieja nunca termina mandando a un producto que no se vende.
+ * Acá **no van artistas**: eso es "Visto en", en el home, y ahí la foto suma
+ * aunque la prenda ya no esté. Esta lista es de gente de la comunidad —
+ * creadoras, amigos, clientes— y la regla es otra: **solo productos
+ * disponibles**. El componente además esconde cualquier look cuyas prendas
+ * estén todas agotadas o fuera del catálogo, así que una foto vieja nunca
+ * termina mandando a un producto que no se vende.
  *
  * **Hay que actualizarla drop tras drop**, o cada vez que llegue material
- * nuevo de creadores: al salir un drop, las fotos del anterior pierden stock y
- * la sección se va quedando corta. El material vive en `Redes & Pauta`, una
- * carpeta por creador, y en las reseñas con foto del panel.
+ * nuevo: al salir un drop, las fotos del anterior pierden stock y la sección
+ * se va quedando corta. El material vive en `Redes & Pauta`, una carpeta por
+ * creador, y en las reseñas con foto del panel.
  *
  * Para sumar una entrada: foto 1080x1350 (4:5) en `public/shop-the-look/`,
- * entrada en `PROPIOS` con el nombre, el @ de Instagram y los `slugs` de Woo
- * de lo que lleva puesto. Nombre, precio y stock salen del catálogo.
- * No se etiqueta a fotógrafos ni a modelos.
- */
-
-/**
- * UGC propio de la ficha. Primera tanda cargada el 19/10/2026 contra el
- * catálogo en stock de ese día; las fotos salieron de `FAITH MICA` y
- * `fotos Sofi abate/SELECCION`.
+ * entrada acá con el nombre, el @ de Instagram y los `slugs` de Woo de lo que
+ * lleva puesto. Nombre, precio y stock salen del catálogo. No se etiqueta a
+ * fotógrafos ni a modelos.
  *
- * FALTAN LOS @: no los tengo verificados. Mientras estén vacíos, la tarjeta
- * muestra solo el nombre.
+ * Ojo al exportar: varias de estas fotos vienen con orientación EXIF, y las de
+ * Felipe son DNG. Siempre `sharp(...).rotate()` antes de recortar, o salen
+ * dadas vuelta. Las HEIC (Cande, Roy, Hanna) sharp no las abre: van con ffmpeg
+ * (ver `Redes & Pauta/fotos Sofi abate/convertir.mjs`).
  */
-const PROPIOS: VistoEnPost[] = [
+export const SHOP_THE_LOOK: VistoEnPost[] = [
   {
     id: 'mica-mesh-camo',
     artista: 'Mica',
@@ -37,6 +34,22 @@ const PROPIOS: VistoEnPost[] = [
     foto: '/shop-the-look/mica-mesh-camo.webp',
     alt: 'Mica con la Mesh Camo Blue y gorra, en la puerta de madera',
     slugs: ['mesh-camo-blue-tee'],
+  },
+  {
+    id: 'felipe-polo-navy',
+    artista: 'Felipe González',
+    ig: [],
+    foto: '/shop-the-look/felipe-polo-navy.webp',
+    alt: 'Felipe con el Half-Zip Polo Navy en la vereda',
+    slugs: ['half-zip-polo-navy'],
+  },
+  {
+    id: 'anny-pink-set',
+    artista: 'Anny Bellicoso',
+    ig: [],
+    foto: '/shop-the-look/anny-pink-set.webp',
+    alt: 'Anny con el conjunto rosa: hoodie y sweatpant',
+    slugs: ['hoodie-pink', 'sweatpant-pink'],
   },
   {
     id: 'sofi-camo-cap',
@@ -54,26 +67,4 @@ const PROPIOS: VistoEnPost[] = [
     alt: 'Mica con la Only God Can Judge Me blanca, en la vereda',
     slugs: ['only-god-can-judge-me-blanca'],
   },
-  {
-    id: 'mica-polo-navy',
-    artista: 'Mica',
-    ig: [],
-    foto: '/shop-the-look/mica-polo-navy.webp',
-    alt: 'Mica con el Half-Zip Polo Navy sentada en la escalinata',
-    slugs: ['half-zip-polo-navy'],
-  },
-];
-
-/**
- * Atrás van los posts de "Visto en" cuyas prendas siguen en el catálogo: son
- * fotos reales de artistas con Hype puesto y productos que se pueden comprar.
- * El resto queda solo en el home, que para eso no depende del stock.
- */
-const DESDE_VISTO_EN = ['nicki-selfie', 'polima-video', 'polima-02', 'nicki-tini'];
-
-export const SHOP_THE_LOOK: VistoEnPost[] = [
-  ...PROPIOS,
-  ...DESDE_VISTO_EN
-    .map((id) => VISTO_EN.find((p) => p.id === id))
-    .filter((p): p is VistoEnPost => !!p),
 ];

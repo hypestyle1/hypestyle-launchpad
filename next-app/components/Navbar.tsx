@@ -533,38 +533,54 @@ export default function Navbar() {
             backdropFilter: 'blur(52px) saturate(160%)',
             WebkitBackdropFilter: 'blur(52px) saturate(160%)',
           }}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-black/25">
-            {mobilePanel !== 'main' ? (
-              <button onClick={() => setMobilePanel('main')} className="flex items-center gap-1 text-foreground/60">
-                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-                <span className="text-[13px]">Shop</span>
-              </button>
-            ) : (
-              <button onClick={closeMobile} aria-label="Cerrar"><X className="w-5 h-5" strokeWidth={1.2} /></button>
-            )}
-            <Link href="/" onClick={closeMobile} className="absolute left-1/2 -translate-x-1/2">
-              {!logoError ? (
-                <img src={LOGO_NAV} alt="Hypestyle" className="h-5 w-auto" onError={() => setLogoError(true)} />
+          {/* Mismo material que la barra del navbar: el logo y los íconos
+              quedan del mismo tamaño y en el mismo lugar, así no saltan al
+              abrir el menú — la X ocupa el lugar de la hamburguesa. El globo
+              sale de acá: el idioma y la moneda están más abajo, a la vista. */}
+          <div className="flex items-center justify-between px-4 h-[48px] flex-none border-b border-black/25">
+            <div className="flex items-center gap-2.5 flex-none">
+              {mobilePanel !== 'main' ? (
+                <button onClick={() => setMobilePanel('main')} aria-label="Volver"
+                  className="hover:opacity-50 transition-opacity duration-200">
+                  <ChevronLeft className="w-5 h-5" strokeWidth={1.2} />
+                </button>
               ) : (
-                <span className="text-[15px] font-normal tracking-[0.08em]">Hypestyle</span>
+                <button onClick={closeMobile} aria-label="Cerrar"
+                  className="hover:opacity-50 transition-opacity duration-200">
+                  <X className="w-5 h-5" strokeWidth={1.2} />
+                </button>
               )}
-            </Link>
-            <div className="flex items-center gap-3">
-              <LocalePopup />
-              <button onClick={() => { closeMobile(); openWishlist(true); }} className="relative" aria-label="Favoritos">
+              <Link href="/" onClick={closeMobile}>
+                {!logoError ? (
+                  <img src={LOGO_NAV} alt="Hypestyle" className="w-auto hs-logo-3d" style={{ height: '22px' }}
+                    onError={() => setLogoError(true)} />
+                ) : (
+                  <span className="text-[15px] font-normal tracking-[0.08em]">Hypestyle</span>
+                )}
+              </Link>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button onClick={() => { closeMobile(); setSearchOpen(true); }} aria-label="Buscar"
+                className="p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150">
+                <Search className="w-4 h-4" strokeWidth={1.2} />
+              </button>
+              <button onClick={() => { closeMobile(); openWishlist(true); }} aria-label="Favoritos"
+                className="relative p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
                 {wishlistItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">
                     {wishlistItems.length}
                   </span>
                 )}
               </button>
-              <button onClick={() => { closeMobile(); setDrawerOpen(true); }} className="relative" aria-label="Carrito">
+              <button onClick={() => { closeMobile(); setDrawerOpen(true); }} aria-label="Carrito"
+                className="relative p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150">
                 <ShoppingBag className="w-4 h-4" strokeWidth={1.2} />
                 {count > 0 && (
-                  <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">
                     {count}
                   </span>
                 )}
