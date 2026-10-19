@@ -93,8 +93,32 @@ describe('shouldRefresh', () => {
 /* ─── collectBatch: aislamiento de errores ──────────────────────────────── */
 
 describe('collectBatch', () => {
-  it('un post con insights rotos queda en skipped y el resto sigue', async () => {
+  it('un error temporal queda PENDIENTE (no hueco) y no se escribe ese post', async () => {
     const lista = [media(5), media(10), media(20)];
+    const roto = lista[1].id;
+    const batch = await collectBatch(lista, {
+      now: NOW,
+      wantInsights: () => true,
+      throttleMs: 0,
+      backoffMs: [0, 0],
+      fetchImpl: fetchFalso({
+        insights: (id) =>
+          id === roto
+            ? { status: 500, body: { error: { message: 'boom', code: 2 } } }
+            : { status: 200, body: INSIGHTS_OK },
+      }),
+    });
+    // El post que no se pudo leer NO se guarda: una fila sin snapshot sería
+    // indistinguible de "publicación sin insights" (corrección C2).
+    expect(batch.posts).toHaveLength(2);
+    expect(batch.snapshots).toHaveLength(2);
+    expect(batch.skipped).toHaveLength(0);
+    expect(batch.pendientes).toHaveLength(1);
+    expect(batch.pendientes[0]).toMatchObject({ id: roto, kind: 'temporal' });
+  });
+
+  it('un hueco REAL (métrica inexistente) sí se guarda: la ausencia es dato', async () => {
+    const lista = [media(5), media(10)];
     const roto = lista[1].id;
     const batch = await collectBatch(lista, {
       now: NOW,
@@ -103,14 +127,17 @@ describe('collectBatch', () => {
       fetchImpl: fetchFalso({
         insights: (id) =>
           id === roto
-            ? { status: 500, body: { error: { message: 'boom', code: 2 } } }
+            ? {
+                status: 400,
+                body: { error: { message: '(#100) Unsupported get request for metric', code: 100 } },
+              }
             : { status: 200, body: INSIGHTS_OK },
       }),
     });
-    expect(batch.posts).toHaveLength(3); // el upsert del post va igual
-    expect(batch.snapshots).toHaveLength(2);
-    expect(batch.skipped).toHaveLength(1);
-    expect(batch.skipped[0].id).toBe(roto);
+    expect(batch.posts).toHaveLength(2);
+    expect(batch.snapshots).toHaveLength(1);
+    expect(batch.pendientes).toHaveLength(0);
+    expect(batch.skipped[0]).toMatchObject({ id: roto, kind: 'metrica' });
   });
 
   it('token vencido (190) ABORTA la corrida: no se acumulan huecos falsos', async () => {
