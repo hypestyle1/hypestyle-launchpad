@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { KpiCard, SectionTitle } from '@/components/admin/dashboard/blocks';
 import { DataTable } from '@/components/admin/DataTable';
 import {
+  AvisoCobertura,
+  AvisoDistribucion,
   CATEGORIA_LABELS,
   ESTILO_LABELS,
   FixtureBanner,
@@ -28,6 +30,7 @@ import {
   previousRange,
   type SegmentSummary,
 } from '@/lib/ig-insights/analytics';
+import { avisoDeCobertura, fetchAllIgPosts } from '@/lib/ig-insights/fetch-all';
 import { fmtFactor, fmtFecha, fmtInt, fmtPct } from '@/lib/ig-insights/format';
 import {
   engagementOverReach,
@@ -100,6 +103,7 @@ export default function IntelligencePage() {
 
   const [posts, setPosts] = useState<IgPostRecord[] | null>(null);
   const [fixture, setFixture] = useState(false);
+  const [cobertura, setCobertura] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [abierto, setAbierto] = useState<string | null>(null);
 
@@ -113,16 +117,16 @@ export default function IntelligencePage() {
     setError(null);
     const dias = Number(periodo);
     const desde = new Date(Date.now() - dias * 2 * 86_400_000);
-    const qs = new URLSearchParams({
-      limit: '200',
-      since: desde.toISOString().slice(0, 19).replace('T', ' '),
-    });
     try {
-      const res = await fetch(`/api/admin/ig-posts?${qs}`, { headers: headers() });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const d = await res.json();
-      setPosts(Array.isArray(d.rows) ? d.rows : []);
-      setFixture(Boolean(d.fixture));
+      // Paginado completo (C3): las medianas y los deltas se calculan sobre
+      // TODAS las publicaciones del período, no sobre las primeras 200.
+      const d = await fetchAllIgPosts(
+        { since: desde.toISOString().slice(0, 19).replace('T', ' ') },
+        { headers: headers() },
+      );
+      setPosts(d.rows);
+      setFixture(d.fixture);
+      setCobertura(avisoDeCobertura(d));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'error');
       setPosts([]);
@@ -277,6 +281,11 @@ export default function IntelligencePage() {
         {fixture && (
           <div className="mb-4">
             <FixtureBanner />
+          </div>
+        )}
+        {cobertura && (
+          <div className="mb-4">
+            <AvisoCobertura texto={cobertura} />
           </div>
         )}
 
@@ -469,12 +478,18 @@ export default function IntelligencePage() {
               ]}
             />
 
-            <div className="mt-4">
+            <div className="mt-4 space-y-1.5">
               <NotaMetodologica>
                 Comparado contra el período inmediatamente anterior de igual duración. Las
                 publicaciones de distinta época no se comparan en valores absolutos: la cuenta y el
                 algoritmo cambian.
               </NotaMetodologica>
+              {distribucion === 'organico' && (
+                <AvisoDistribucion
+                  n={actual.length}
+                  verificadas={actual.filter((p) => p.boostRef).length}
+                />
+              )}
             </div>
           </>
         )}

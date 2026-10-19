@@ -5,6 +5,8 @@ import { LayoutGrid, Table2 } from 'lucide-react';
 
 import { DataTable } from '@/components/admin/DataTable';
 import {
+  AvisoCobertura,
+  AvisoDistribucion,
   CATEGORIA_LABELS,
   CoverThumb,
   ESTILO_LABELS,
@@ -18,6 +20,7 @@ import { PostDrawer, type Benchmark } from '@/components/admin/intelligence/Post
 import { EmptyState, ErrorState, LoadingState, PageHeader } from '@/components/admin/ui';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { factorVsMedian, groupStats } from '@/lib/ig-insights/analytics';
+import { avisoDeCobertura, fetchAllIgPosts } from '@/lib/ig-insights/fetch-all';
 import { fmtFactor, fmtFecha, fmtInt, fmtPct } from '@/lib/ig-insights/format';
 import { engagementOverReach, likesOverReach, savedOverReach } from '@/lib/ig-insights/ratios';
 import type { IgPostRecord } from '@/lib/ig-insights/types';
@@ -62,6 +65,7 @@ export default function LibraryPage() {
   const [posts, setPosts] = useState<IgPostRecord[] | null>(null);
   const [total, setTotal] = useState(0);
   const [fixture, setFixture] = useState(false);
+  const [cobertura, setCobertura] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [abierto, setAbierto] = useState<string | null>(null);
   const [vista, setVista] = useState<'grilla' | 'tabla'>('grilla');
@@ -82,24 +86,24 @@ export default function LibraryPage() {
 
   const load = useCallback(async () => {
     setError(null);
-    const qs = new URLSearchParams({ limit: '200' });
-    if (f.productType) qs.set('productType', f.productType);
-    if (f.category) qs.set('category', f.category);
-    if (f.classified) qs.set('classified', f.classified);
-    if (f.search.trim()) qs.set('search', f.search.trim());
-    if (f.distribucion === 'organico') qs.set('boosted', '0');
-    if (f.distribucion === 'pago') qs.set('boosted', '1');
+    const params: Record<string, string> = {};
+    if (f.productType) params.productType = f.productType;
+    if (f.category) params.category = f.category;
+    if (f.classified) params.classified = f.classified;
+    if (f.search.trim()) params.search = f.search.trim();
+    if (f.distribucion === 'organico') params.boosted = '0';
+    if (f.distribucion === 'pago') params.boosted = '1';
     if (f.periodo !== 'all') {
       const desde = new Date(Date.now() - Number(f.periodo) * 86_400_000);
-      qs.set('since', desde.toISOString().slice(0, 19).replace('T', ' '));
+      params.since = desde.toISOString().slice(0, 19).replace('T', ' ');
     }
     try {
-      const res = await fetch(`/api/admin/ig-posts?${qs}`, { headers: headers() });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const d = await res.json();
-      setPosts(Array.isArray(d.rows) ? d.rows : []);
-      setTotal(Number(d.total) || 0);
-      setFixture(Boolean(d.fixture));
+      // Paginado completo (C3): el backend topea en 200 por pedido.
+      const d = await fetchAllIgPosts(params, { headers: headers() });
+      setPosts(d.rows);
+      setTotal(d.total);
+      setFixture(d.fixture);
+      setCobertura(avisoDeCobertura(d));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'error');
       setPosts([]);
@@ -194,6 +198,7 @@ export default function LibraryPage() {
 
       <div className="p-4 sm:p-6 space-y-4">
         {fixture && <FixtureBanner />}
+        {cobertura && <AvisoCobertura texto={cobertura} />}
 
         {/* Filtros */}
         <div className="flex flex-wrap gap-2">
@@ -415,6 +420,12 @@ export default function LibraryPage() {
         <NotaMetodologica>
           Los pauteados se filtran aparte: un ranking nunca mezcla distribución orgánica y paga.
         </NotaMetodologica>
+        {f.distribucion === 'organico' && (
+          <AvisoDistribucion
+            n={(posts ?? []).length}
+            verificadas={(posts ?? []).filter((p) => p.boostRef).length}
+          />
+        )}
       </div>
 
       {abierto && (

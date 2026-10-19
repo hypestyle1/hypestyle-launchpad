@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Clapperboard, FlaskConical, Image as ImageIcon, Images } from 'lucide-react';
+import { Clapperboard, FlaskConical, Image as ImageIcon, Images, TriangleAlert } from 'lucide-react';
 
 import { StatusBadge } from '@/components/admin/ui';
 import type { IgPostRecord } from '@/lib/ig-insights/types';
@@ -65,6 +65,42 @@ export function FixtureBanner() {
         reales sin cambios.
       </span>
     </div>
+  );
+}
+
+/**
+ * Aviso de cobertura incompleta (corrección C3).
+ *
+ * Aparece sólo si el conjunto cargado NO cubre el total que informa el
+ * backend: ninguna pantalla puede presentar como "el período" un recorte
+ * silencioso.
+ */
+export function AvisoCobertura({ texto }: { texto: string }) {
+  return (
+    <div className="flex items-center gap-2.5 bg-warning-soft border border-warning/40 text-warning rounded-lg px-4 py-2.5 text-[12.5px] font-medium">
+      <TriangleAlert size={15} className="shrink-0" />
+      <span>
+        <strong>Datos incompletos.</strong> {texto}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Aviso de distribución sin verificar (hallazgo A-a de la auditoría).
+ *
+ * `was_boosted` no lo escribe ningún proceso automático: hoy una publicación
+ * sin marca de pauta significa "no se verificó", no "orgánica confirmada".
+ * Mientras eso siga así, toda comparación "orgánica" lleva este cartel.
+ */
+export function AvisoDistribucion({ n, verificadas = 0 }: { n: number; verificadas?: number }) {
+  if (n <= 0) return null;
+  return (
+    <p className="text-[11px] text-warning/90 leading-relaxed">
+      Distribución sin verificar en {n - verificadas} de {n} publicaciones: la marca de pauta se
+      carga a mano y todavía no se cruzó con Meta Ads. Tratar este universo como{' '}
+      <strong>orgánico no confirmado</strong>.
+    </p>
   );
 }
 
