@@ -5,6 +5,7 @@ import { Search, ShoppingBag, Menu, X, ChevronDown, ChevronRight, ChevronLeft } 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { imgSrc } from '@/lib/img';
+import { MENU_DESTACADOS } from '@/data/menuDestacados';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -181,6 +182,13 @@ export default function Navbar() {
     }
   };
 
+  // En la ficha de producto el navbar deja el vidrio y se vuelve blanco sólido
+  // (referencia: emestudios.com, 19/10). Ahí la foto ocupa toda la pantalla y
+  // el fondo translúcido se mezclaba con la prenda; el blanco la separa. El
+  // modo argentino (promo 3x2) manda por encima, como siempre.
+  const fichaProducto = !!pathname?.startsWith('/producto/');
+  const navSolido = fichaProducto && !argMode;
+
   const navHeight = scrolled ? '40px' : '48px';
   const panel = mobilePanels[mobilePanel];
 
@@ -193,11 +201,12 @@ export default function Navbar() {
           borderRadius: '14px',
           // Material glass único (globals.css, --glass-nav-*). El modo
           // argentino (promo 3x2) conserva su celeste hardcodeado.
-          background: argMode ? 'rgba(117, 170, 219, 0.30)' : 'var(--glass-nav-bg)',
-          backdropFilter: 'var(--glass-nav-filter)',
-          WebkitBackdropFilter: 'var(--glass-nav-filter)',
+          background: argMode ? 'rgba(117, 170, 219, 0.30)' : navSolido ? '#FFFFFF' : 'var(--glass-nav-bg)',
+          backdropFilter: navSolido ? 'none' : 'var(--glass-nav-filter)',
+          WebkitBackdropFilter: navSolido ? 'none' : 'var(--glass-nav-filter)',
           border: argMode
             ? '1px solid rgba(212, 175, 55, 0.55)'
+            : navSolido ? '1px solid rgba(0,0,0,0.10)'
             : (scrolled || shopOpen ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.45)'),
           boxShadow: argMode
             ? '0 4px 24px rgba(212,175,55,0.22), inset 0 1px 0 rgba(255,255,255,0.4)'
@@ -473,7 +482,15 @@ export default function Navbar() {
           (z-[150]) y de los modales. */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
-          style={{ background: 'rgba(240, 238, 232, 0.96)', backdropFilter: 'blur(32px) saturate(200%)', WebkitBackdropFilter: 'blur(32px) saturate(200%)' }}>
+          style={{
+            // 0.96 era casi opaco: el blur no se veía y el menú tapaba la
+            // página entera. Con 0.68 y más blur se ve el fondo desenfocado
+            // detrás (referencia: emestudios.com, 19/10) sin perder contraste:
+            // el texto es casi negro sobre un beige claro.
+            background: 'rgba(240, 238, 232, 0.68)',
+            backdropFilter: 'blur(40px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+          }}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/8"
             style={{ paddingTop: 'calc(var(--announce-h) + 16px)' }}>
             {mobilePanel !== 'main' ? (
@@ -547,6 +564,25 @@ export default function Navbar() {
                     </Link>
                   ))}
                 </div>
+                {/* Atajos con foto. El menú era una lista de texto y nada
+                    más; estas cuatro fotos son lo que se cambia cuando entra
+                    un drop, y viven en data/menuDestacados.ts. */}
+                <div className="grid grid-cols-2 gap-2 mb-7">
+                  {MENU_DESTACADOS.map((d) => (
+                    <Link key={d.label} href={d.href} onClick={closeMobile}
+                      className="relative block aspect-[4/5] overflow-hidden rounded-[6px] bg-foreground/5">
+                      <img src={imgSrc(d.img)} alt={t(d.label)} loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ objectPosition: d.encuadre ?? 'center' }} />
+                      <span aria-hidden className="absolute inset-x-0 bottom-0 h-1/2"
+                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.48), transparent)' }} />
+                      <span className="absolute left-3 bottom-2.5 text-white text-[15px] font-medium tracking-tight">
+                        {t(d.label)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+
                 <div className="border-t border-foreground/10 pt-4 space-y-1">
                   {/* Los lookbooks salen del menú de compra: viven en el
                       Archivo de /colecciones. Acá quedan las institucionales. */}
