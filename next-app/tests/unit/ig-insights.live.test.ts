@@ -32,7 +32,7 @@ describe.runIf(vivo)('Graph API en vivo (lectura pura)', () => {
       if (media.media_product_type !== 'FEED' && media.media_product_type !== 'REELS') continue;
 
       const insights = await fetchMediaInsights(media.id, media.media_product_type);
-      const snap = toSnapshotInput(media, insights, new Date());
+      const snap = toSnapshotInput(media, insights.values, new Date());
 
       // Un post del feed con horas de vida tiene views y reach sí o sí.
       if ((snap.ageHours ?? 0) > 24) {

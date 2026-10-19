@@ -40,8 +40,13 @@ export const MEDIA_FIELDS = [
  * `base` está VERIFICADA contra la cuenta real (17/10/2026, carrusel y reel
  * respondieron con valores). `optional` es lo que Meta documenta pero no
  * probamos (reposts es de dic-2025; los totales de reels figuran "in
- * development"): si la API rechaza la lista completa con (#100), se reintenta
- * sólo con `base` — así una métrica nueva nunca tumba el sync.
+ * development").
+ *
+ * Ante un (#100) NO se cae a `base` entera: se descarta solamente la métrica
+ * que la API rechazó (ver `fetchMediaInsights`). La versión anterior tiraba
+ * todo el grupo `optional` junto y por eso los reels del backfill de prueba
+ * quedaron sin `reposts`, `profile_visits` ni `follows`: los arrastraba
+ * `ig_reels_video_view_total_time`, que no existe para la cuenta.
  *
  * likes y comments NO van por insights: salen de los campos `like_count` /
  * `comments_count` del media, que son en tiempo real y están verificados.
@@ -142,27 +147,121 @@ export async function fetchMediaPage(
 }
 
 /**
- * Insights lifetime de una publicación. Devuelve un mapa métrica → valor con
- * SOLO lo que la API contestó: lo ausente no aparece (y aguas abajo queda
- * en null, nunca en 0). Para STORY tener en cuenta que las métricas viven 24 h.
+ * Métricas que esta cuenta rechazó, por tipo de publicación. Se aprende en la
+ * primera publicación de cada tipo y no se vuelve a pedir en la misma corrida:
+ * sin esto, descartar métrica por métrica costaría varias llamadas extra por
+ * reel en todo el backfill.
+ */
+const noSoportadas = new Map<string, Set<string>>();
+
+/** Para los tests y para forzar un reaprendizaje entre corridas. */
+export function resetMetricSupport(): void {
+  noSoportadas.clear();
+}
+
+export function unsupportedMetrics(productType: string): string[] {
+  return [...(noSoportadas.get(productType) ?? [])].sort();
+}
+
+function recordarNoSoportadas(productType: string, metricas: string[]): void {
+  const set = noSoportadas.get(productType) ?? new Set<string>();
+  for (const m of metricas) set.add(m);
+  noSoportadas.set(productType, set);
+}
+
+/**
+ * Qué métricas de las pedidas nombra el mensaje de error.
+ *
+ * Meta a veces dice cuál falló ("ig_reels_video_view_total_time is not valid
+ * for this media type") y a veces contesta con la lista de valores válidos
+ * ("metric must be one of the following values: …"). En el segundo caso el
+ * mensaje contiene los nombres BUENOS, así que ahí no se extrae nada: se cae a
+ * probar de a una.
+ */
+export function metricasNombradasEnError(message: string, pedidas: string[]): string[] {
+  const msg = String(message).toLowerCase();
+  if (msg.includes('must be one of') || msg.includes('one of the following')) return [];
+  return pedidas.filter((m) => msg.includes(m.toLowerCase()));
+}
+
+/** Tope de llamadas a /insights por publicación (evita cascadas de sondeo). */
+const MAX_INSIGHT_CALLS = 6;
+
+export type IgInsightsResult = {
+  /** Sólo lo que la API contestó con un número. Lo ausente queda en null aguas abajo. */
+  values: IgInsightsValues;
+  /** Métricas que la API rechazó para este tipo de publicación. */
+  unsupported: string[];
+  /** Todo lo que se pidió: `requested - values - unsupported` = pedido y sin dato. */
+  requested: string[];
+  /** Llamadas a /insights que costó esta publicación. */
+  calls: number;
+};
+
+/**
+ * Insights lifetime de una publicación.
+ *
+ * Garantía (corrección M1): una métrica no soportada NO invalida a las demás.
+ * El camino es: pedir todo lo que se cree soportado → si la API rechaza con
+ * (#100), descartar sólo la métrica nombrada y repetir → si no nombra ninguna,
+ * asegurar `base` y después sondear las `optional` de a una. Cualquier otro
+ * error se propaga: lo clasifica `sync.ts` con `classifyIgFailure`.
+ *
+ * Para STORY tener en cuenta que las métricas viven 24 h.
  */
 export async function fetchMediaInsights(
   mediaId: string,
   productType: string,
   fetchImpl: FetchLike = fetch,
-): Promise<IgInsightsValues> {
+): Promise<IgInsightsResult> {
   const spec = INSIGHT_METRICS[productType as keyof typeof INSIGHT_METRICS];
-  if (!spec) return {}; // AD u otro tipo sin insights orgánicos
+  // AD u otro tipo sin insights orgánicos.
+  if (!spec) return { values: {}, unsupported: [], requested: [], calls: 0 };
 
-  try {
-    return await requestInsights(mediaId, [...spec.base, ...spec.optional], fetchImpl);
-  } catch (err) {
-    // (#100): alguna métrica optional no existe para esta cuenta/versión.
-    if (err instanceof IgApiError && err.code === 100 && spec.optional.length > 0) {
-      return requestInsights(mediaId, spec.base, fetchImpl);
+  const conocidas = noSoportadas.get(productType) ?? new Set<string>();
+  const requested = [...spec.base, ...spec.optional];
+  let pedidas = requested.filter((m) => !conocidas.has(m));
+  let calls = 0;
+
+  while (pedidas.length > 0 && calls < MAX_INSIGHT_CALLS) {
+    try {
+      const values = await requestInsights(mediaId, pedidas, fetchImpl);
+      calls++;
+      return { values, unsupported: unsupportedMetrics(productType), requested, calls };
+    } catch (err) {
+      calls++;
+      if (!(err instanceof IgApiError) || err.code !== 100) throw err;
+      const culpables = metricasNombradasEnError(err.message, pedidas);
+      if (culpables.length === 0) break; // la API no dijo cuál: a sondear
+      recordarNoSoportadas(productType, culpables);
+      pedidas = pedidas.filter((m) => !culpables.includes(m));
     }
-    throw err;
   }
+
+  // Sondeo: primero `base` (verificada contra la cuenta real), después cada
+  // `optional` por separado para no perder las que sí existen.
+  const values: IgInsightsValues = {};
+  const base = spec.base.filter((m) => !(noSoportadas.get(productType)?.has(m) ?? false));
+  if (base.length > 0 && calls < MAX_INSIGHT_CALLS) {
+    calls++;
+    Object.assign(values, await requestInsights(mediaId, base, fetchImpl));
+  }
+  for (const metrica of spec.optional) {
+    if (calls >= MAX_INSIGHT_CALLS) break;
+    if (noSoportadas.get(productType)?.has(metrica)) continue;
+    try {
+      calls++;
+      Object.assign(values, await requestInsights(mediaId, [metrica], fetchImpl));
+    } catch (err) {
+      if (err instanceof IgApiError && err.code === 100) {
+        recordarNoSoportadas(productType, [metrica]);
+        continue;
+      }
+      throw err; // token, permiso o rate limit: que lo vea el sync
+    }
+  }
+
+  return { values, unsupported: unsupportedMetrics(productType), requested, calls };
 }
 
 async function requestInsights(

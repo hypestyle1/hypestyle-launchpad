@@ -3,13 +3,15 @@
  * Los fixtures reproducen respuestas REALES de la cuenta (17/10/2026),
  * recortadas: un carrusel con insights completos y un reel con watch time.
  */
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   fetchMediaInsights,
   fetchMediaPage,
   IgApiError,
   INSIGHT_METRICS,
+  metricasNombradasEnError,
+  resetMetricSupport,
 } from '@/lib/ig-insights/client';
 import { mediaToPostInput, toMysqlUtc, toSnapshotInput } from '@/lib/ig-insights/normalize';
 import {
@@ -53,6 +55,25 @@ const INSIGHTS_CARRUSEL = {
     { name: 'total_interactions', period: 'lifetime', values: [{ value: 4694 }] },
     { name: 'profile_visits', period: 'lifetime', values: [{ value: 310 }] },
     { name: 'follows', period: 'lifetime', values: [{ value: 24 }] },
+  ],
+};
+
+/**
+ * Respuesta de /insights de un reel, derivada de la lectura real del
+ * 17/10/2026 (media 18114437132313822): la API NO devuelve
+ * `ig_reels_video_view_total_time` para esta cuenta.
+ */
+const INSIGHTS_REEL = {
+  data: [
+    { name: 'views', period: 'lifetime', values: [{ value: 38120 }] },
+    { name: 'reach', period: 'lifetime', values: [{ value: 21004 }] },
+    { name: 'saved', period: 'lifetime', values: [{ value: 41 }] },
+    { name: 'shares', period: 'lifetime', values: [{ value: 63 }] },
+    { name: 'total_interactions', period: 'lifetime', values: [{ value: 269 }] },
+    { name: 'ig_reels_avg_watch_time', period: 'lifetime', values: [{ value: 4120 }] },
+    { name: 'reposts', period: 'lifetime', values: [{ value: 4 }] },
+    { name: 'profile_visits', period: 'lifetime', values: [{ value: 88 }] },
+    { name: 'follows', period: 'lifetime', values: [{ value: 6 }] },
   ],
 };
 
@@ -199,8 +220,10 @@ describe('fetchMediaPage', () => {
 });
 
 describe('fetchMediaInsights', () => {
+  beforeEach(() => resetMetricSupport());
+
   it('mapea la respuesta real a métrica → valor', async () => {
-    const values = await fetchMediaInsights(
+    const { values } = await fetchMediaInsights(
       '17981913684090341',
       'FEED',
       fetchDevolviendo(200, INSIGHTS_CARRUSEL),
@@ -210,27 +233,87 @@ describe('fetchMediaInsights', () => {
     expect(values.reposts).toBeUndefined(); // no vino → no aparece (null aguas abajo)
   });
 
-  it('si una métrica optional da (#100), reintenta sólo con las verificadas', async () => {
+  /**
+   * Corrección M1. El comportamiento viejo (caer a `base` entera) es el que
+   * dejó a los 13 reels del backfill dry sin reposts/profile_visits/follows.
+   */
+  it('(#100) que nombra la métrica: descarta SOLO esa y conserva el resto', async () => {
     const llamadas: string[] = [];
     const fetchImpl = (async (url: RequestInfo | URL) => {
       const metric = new URL(String(url)).searchParams.get('metric') ?? '';
       llamadas.push(metric);
-      if (metric.includes('reposts')) {
+      if (metric.includes('ig_reels_video_view_total_time')) {
         return new Response(
-          JSON.stringify({ error: { message: 'metric[7] must be one of…', code: 100 } }),
+          JSON.stringify({
+            error: {
+              message: '(#100) ig_reels_video_view_total_time is not valid for this media type',
+              code: 100,
+            },
+          }),
           { status: 400 },
         );
       }
-      return new Response(JSON.stringify(INSIGHTS_CARRUSEL), { status: 200 });
+      return new Response(JSON.stringify(INSIGHTS_REEL), { status: 200 });
     }) as unknown as typeof fetch;
 
-    const values = await fetchMediaInsights('17981913684090341', 'FEED', fetchImpl);
+    const r = await fetchMediaInsights('18114437132313822', 'REELS', fetchImpl);
     expect(llamadas).toHaveLength(2);
-    expect(llamadas[1]).toBe(INSIGHT_METRICS.FEED.base.join(','));
-    expect(values.views).toBe(62089);
+    // La segunda llamada mantiene las optional que sí existen.
+    expect(llamadas[1]).toContain('reposts');
+    expect(llamadas[1]).toContain('profile_visits');
+    expect(llamadas[1]).toContain('follows');
+    expect(llamadas[1]).not.toContain('ig_reels_video_view_total_time');
+    expect(r.unsupported).toEqual(['ig_reels_video_view_total_time']);
+    expect(r.values.views).toBe(38120);
   });
 
-  it('un error de token NO se degrada a base: se tira', async () => {
+  it('(#100) que NO nombra la métrica: asegura base y sondea las optional de a una', async () => {
+    const llamadas: string[] = [];
+    const fetchImpl = (async (url: RequestInfo | URL) => {
+      const metric = new URL(String(url)).searchParams.get('metric') ?? '';
+      llamadas.push(metric);
+      // Rechaza cualquier pedido que incluya la métrica inexistente, con un
+      // mensaje que enumera los valores válidos (el caso ambiguo de Meta).
+      if (metric.includes('ig_reels_video_view_total_time')) {
+        return new Response(
+          JSON.stringify({ error: { message: 'metric must be one of the following values: …', code: 100 } }),
+          { status: 400 },
+        );
+      }
+      return new Response(JSON.stringify(INSIGHTS_REEL), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const r = await fetchMediaInsights('18114437132313822', 'REELS', fetchImpl);
+    // 1 fallida + base + una por cada optional (4) = 6
+    expect(llamadas[1]).toBe(INSIGHT_METRICS.REELS.base.join(','));
+    expect(llamadas.slice(2)).toEqual(INSIGHT_METRICS.REELS.optional);
+    expect(r.unsupported).toEqual(['ig_reels_video_view_total_time']);
+    // reposts/profile_visits/follows se piden igual y el valor queda.
+    expect(r.values.views).toBe(38120);
+  });
+
+  it('lo no soportado se aprende una vez y no se vuelve a pedir en la corrida', async () => {
+    const llamadas: string[] = [];
+    const fetchImpl = (async (url: RequestInfo | URL) => {
+      const metric = new URL(String(url)).searchParams.get('metric') ?? '';
+      llamadas.push(metric);
+      if (metric.includes('ig_reels_video_view_total_time')) {
+        return new Response(
+          JSON.stringify({ error: { message: '(#100) ig_reels_video_view_total_time no existe', code: 100 } }),
+          { status: 400 },
+        );
+      }
+      return new Response(JSON.stringify(INSIGHTS_REEL), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    await fetchMediaInsights('18114437132313822', 'REELS', fetchImpl);
+    const hastaAca = llamadas.length;
+    await fetchMediaInsights('18114437132313823', 'REELS', fetchImpl);
+    // El segundo reel cuesta UNA sola llamada: ya sabe qué no pedir.
+    expect(llamadas.length - hastaAca).toBe(1);
+  });
+
+  it('un error de token NO se degrada: se tira', async () => {
     const body = { error: { message: 'Invalid OAuth access token.', code: 190 } };
     await expect(
       fetchMediaInsights('17981913684090341', 'FEED', fetchDevolviendo(400, body)),
@@ -238,9 +321,33 @@ describe('fetchMediaInsights', () => {
   });
 
   it('tipo sin insights orgánicos (AD) → mapa vacío sin llamar a la API', async () => {
-    const values = await fetchMediaInsights('1', 'AD', (() => {
+    const r = await fetchMediaInsights('1', 'AD', (() => {
       throw new Error('no debería llamarse');
     }) as unknown as typeof fetch);
-    expect(values).toEqual({});
+    expect(r.values).toEqual({});
+    expect(r.calls).toBe(0);
+  });
+});
+
+describe('metricasNombradasEnError', () => {
+  const pedidas = ['views', 'reach', 'reposts', 'ig_reels_video_view_total_time'];
+
+  it('extrae la métrica que el mensaje señala', () => {
+    expect(
+      metricasNombradasEnError(
+        '(#100) ig_reels_video_view_total_time is not valid for this media type',
+        pedidas,
+      ),
+    ).toEqual(['ig_reels_video_view_total_time']);
+  });
+
+  it('NO extrae nada cuando el mensaje enumera los valores válidos', () => {
+    // Acá los nombres que aparecen son los BUENOS: descartarlos sería el bug.
+    expect(
+      metricasNombradasEnError(
+        'metric must be one of the following values: views, reach, reposts',
+        pedidas,
+      ),
+    ).toEqual([]);
   });
 });
