@@ -7,6 +7,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import CatalogHeader from '@/components/collection/CatalogHeader';
+import VistaControles from '@/components/collection/VistaControles';
+import { useVistaCatalogo, type VistaFoto } from '@/lib/catalogo-vista';
 import type { NormalizedProduct } from '@/hooks/useProducts';
 
 /**
@@ -27,7 +29,6 @@ const SALE_BANDA: { src: string; alt: string; label: string; href: string }[] = 
   { src: WP + '2026/08/hype-marado-DSC03306-scaled.jpg', alt: 'Lamb of God Pink Tee en campaña', label: 'Lamb of God Pink Tee · −10%', href: '/producto/lamb-of-god-pink-tee' },
 ];
 
-const GRID_AIRE = 'grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9';
 
 type Props = {
   destacados: NormalizedProduct[];
@@ -35,7 +36,9 @@ type Props = {
   maxOff: number;
 };
 
-const card = (p: NormalizedProduct) => (
+// Fábrica, no componente: la card necesita saber qué foto eligió el visitante
+// y `map` solo pasa (producto, índice).
+const card = (vistaFoto: VistaFoto) => (p: NormalizedProduct) => (
   <ProductCard
     key={p.slug}
     id={p.slug}
@@ -54,6 +57,7 @@ const card = (p: NormalizedProduct) => (
 
 export default function SaleView({ destacados, resto, maxOff }: Props) {
   const total = destacados.length + resto.length;
+  const { cols, setCols, foto, setFoto, grid } = useVistaCatalogo();
 
   return (
     <>
@@ -67,6 +71,9 @@ export default function SaleView({ destacados, resto, maxOff }: Props) {
             count={total}
             description={total > 0 ? `Hasta ${maxOff}% OFF, mientras haya stock. Sin relleno: lo agotado no se muestra.` : 'Mientras haya stock.'}
           />
+          <div className="flex justify-end mb-3">
+            <VistaControles cols={cols} setCols={setCols} foto={foto} setFoto={setFoto} />
+          </div>
 
           {destacados.length > 0 && (
             <div className="mb-12 md:mb-16">
@@ -74,7 +81,7 @@ export default function SaleView({ destacados, resto, maxOff }: Props) {
                 <h2 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">Destacados</h2>
                 <span className="text-[12px] md:text-[13px] text-muted-foreground tabular-nums">{destacados.length}</span>
               </div>
-              <div className={GRID_AIRE}>{destacados.map(card)}</div>
+              <div className={grid}>{destacados.map(card(foto))}</div>
             </div>
           )}
 
@@ -96,7 +103,7 @@ export default function SaleView({ destacados, resto, maxOff }: Props) {
                 <h2 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">Todo el sale</h2>
                 <span className="text-[12px] md:text-[13px] text-muted-foreground tabular-nums">{resto.length}</span>
               </div>
-              <div className={GRID_AIRE}>{resto.map(card)}</div>
+              <div className={grid}>{resto.map(card(foto))}</div>
             </div>
           )}
 

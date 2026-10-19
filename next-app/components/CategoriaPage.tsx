@@ -7,6 +7,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import CatalogHeader from '@/components/collection/CatalogHeader';
+import VistaControles from '@/components/collection/VistaControles';
+import { useVistaCatalogo } from '@/lib/catalogo-vista';
 import { useReveal } from '@/hooks/useReveal';
 import { useProducts } from '@/hooks/useProducts';
 import { CATEGORY_MAP, productsForCategory } from '@/lib/category-config';
@@ -35,6 +37,7 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
   const config = CATEGORY_MAP[normalizedPath] ?? CATEGORY_MAP['/productos'];
   const [activeTab, setActiveTab] = useState(0);
   const [sort, setSort] = useState<SortKey>('default');
+  const { cols, setCols, foto, setFoto, grid } = useVistaCatalogo();
   const [sizeFilter, setSizeFilter] = useState<string[]>([]);
 
   const { data: allProducts = [], isLoading } = useProducts(0, undefined, undefined, initialProducts);
@@ -115,7 +118,9 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
                 )}
               </div>
             )}
-            <div className="ml-auto flex items-center gap-2">
+            <VistaControles cols={cols} setCols={setCols} foto={foto} setFoto={setFoto} className="ml-auto" />
+
+            <div className="flex items-center gap-2">
               <span className="text-[11px] text-muted-foreground hidden sm:block">Ordenar:</span>
               <select value={sort} onChange={e => setSort(e.target.value as SortKey)}
                 className="text-[11px] border border-border rounded-[6px] px-2.5 py-1.5 bg-background text-foreground cursor-pointer outline-none hover:border-foreground/40 transition-colors">
@@ -135,7 +140,7 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
           ) : products.length === 0 ? (
             <p className="text-center text-muted-foreground py-20">No hay productos en esta categoría todavía.</p>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9">
+            <div className={grid}>
               {products.map((p, i) => (
                 // La primera fila (4 cards en desktop, 2 filas de 2 en mobile)
                 // se pinta de entrada: con .reveal arrancaba en opacity 0 hasta
@@ -146,6 +151,7 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
                   <ProductCard id={p.slug} name={p.name} category={p.category} price={p.price}
                     originalPrice={p.originalPrice} badge={p.badge} image={p.image} images={p.images}
                     sizes={p.sizes} stock={p.stock} href={p.href} customizable={p.customizable} tags={p.tags}
+                    vistaFoto={foto}
                     imagePriority={i < 2 ? 'lcp' : i < PRIMERA_FILA ? 'eager' : undefined} />
                 </div>
               ))}
