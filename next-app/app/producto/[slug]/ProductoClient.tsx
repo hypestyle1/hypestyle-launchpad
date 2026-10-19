@@ -18,7 +18,7 @@ import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
 import { useBottomShift, setBuyBarVisible } from '@/lib/bottom-shift';
 import StockAlertForm from '@/components/StockAlertForm';
-import ShopTheLook from '@/components/ShopTheLook';
+import VistoEn from '@/components/VistoEn';
 import TiraProductos from '@/components/producto/TiraProductos';
 import VistosRecientemente from '@/components/producto/VistosRecientemente';
 import { registrarVisto } from '@/lib/vistos-recientemente';
@@ -552,7 +552,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const relacionados = privateAccess ? privateAccess.related : (
     <>
       <TiraProductos titulo="Recomendados" productos={related} className="pb-4" />
-      <ShopTheLook slugDestacado={product.slug} />
+      <VistoEn titulo="Shop the look" variante="look" slugDestacado={product.slug} />
       <VistosRecientemente slugActual={product.slug} />
     </>
   );
@@ -863,7 +863,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
             con sus fotos, y abajo lo último que miró la persona. Las tres se
             borran solas si no hay nada que mostrar. */}
         <TiraProductos titulo="Recomendados" productos={related} className="pb-4" />
-        <ShopTheLook slugDestacado={product.slug} />
+        <VistoEn titulo="Shop the look" variante="look" slugDestacado={product.slug} />
         <VistosRecientemente slugActual={product.slug} />
       </main>
       )}

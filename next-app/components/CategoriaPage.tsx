@@ -103,13 +103,19 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
         <div className="bg-background">
           <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
             {availableSizes.length > 0 && (
-              <div className="w-full flex items-center gap-1.5 flex-wrap">
-                {availableSizes.map(s => (
-                  <button key={s} onClick={() => toggleSize(s)}
-                    className={`px-3 py-1 text-[11px] font-semibold uppercase tracking-wide border transition-colors rounded-[6px] ${sizeFilter.includes(s) ? 'bg-foreground text-background border-foreground' : 'border-border text-foreground/60 hover:border-foreground/40 hover:text-foreground'}`}>
-                    {s}
-                  </button>
-                ))}
+              <div className="w-full flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 p-1 rounded-[8px] bg-black/[0.045]">
+                  {availableSizes.map(s => (
+                    <button key={s} onClick={() => toggleSize(s)} aria-pressed={sizeFilter.includes(s)}
+                      className={`h-7 px-2.5 text-[11.5px] font-medium uppercase tracking-wide rounded-[6px] transition-all duration-150 ${
+                        sizeFilter.includes(s)
+                          ? 'bg-white text-foreground shadow-[0_1px_5px_rgba(0,0,0,0.13)] border border-black/[0.06]'
+                          : 'text-foreground/55 hover:text-foreground border border-transparent'
+                      }`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
                 {sizeFilter.length > 0 && (
                   <button onClick={() => setSizeFilter([])}
                     className="text-[11px] text-muted-foreground hover:text-foreground transition-colors ml-1 underline">

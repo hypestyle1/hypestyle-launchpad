@@ -113,13 +113,13 @@ type GrupoMenu = 'prendas' | 'colecciones';
  * así que la lista es corta: las seis categorías de prendas y las colecciones
  * viven adentro de un desplegable (referencia: emestudios.com, 19/10/2026).
  */
-const MENU_MOBILE: { label: string; href?: string; grupo?: GrupoMenu; isSale?: boolean }[] = [
+const MENU_MOBILE: { label: string; href?: string; grupo?: GrupoMenu; destacado?: boolean }[] = [
   { label: 'New In',      href: '/new-in' },
   { label: 'Prendas',     grupo: 'prendas' },
   { label: 'Accesorios',  href: '/accesorios' },
   { label: 'Colecciones', grupo: 'colecciones' },
   { label: 'Gift Card',   href: '/gift-cards' },
-  { label: 'SALE',        href: '/special-prices', isSale: true },
+  { label: 'Precios especiales', href: '/special-prices', destacado: true },
 ];
 
 const GRUPOS_MENU: Record<GrupoMenu, { label: string; href: string }[]> = {
@@ -140,6 +140,9 @@ const GRUPOS_MENU: Record<GrupoMenu, { label: string; href: string }[]> = {
     { label: 'Ver todas',        href: '/colecciones' },
   ],
 };
+
+/** Para lo que tiene que resaltar sin cartel (los precios especiales). */
+const AZUL_MARINO = '#1B3A6B';
 
 /** Mismo orden que LocalePopup; acá van solo los códigos, como en EME. */
 const IDIOMAS: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
@@ -520,9 +523,9 @@ export default function Navbar() {
             // página entera. Con 0.68 y más blur se ve el fondo desenfocado
             // detrás (referencia: emestudios.com, 19/10) sin perder contraste:
             // el texto es casi negro sobre un beige claro.
-            background: 'rgba(240, 238, 232, 0.55)',
-            backdropFilter: 'blur(44px) saturate(170%)',
-            WebkitBackdropFilter: 'blur(44px) saturate(170%)',
+            background: 'rgba(240, 238, 232, 0.40)',
+            backdropFilter: 'blur(56px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(56px) saturate(160%)',
           }}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/8"
             style={{ paddingTop: 'calc(var(--announce-h) + 16px)' }}>
@@ -608,9 +611,10 @@ export default function Navbar() {
                         ) : (
                           <button onClick={() => { handleSmartLink(item.href!, null); closeMobile(); }}
                             className="w-full flex items-center py-2.5 text-left">
-                            {item.isSale
-                              ? <span className="bg-red-600 text-white text-[15px] font-bold uppercase tracking-[0.1em] px-3 py-0.5 rounded-[5px]">{t(item.label)}</span>
-                              : <span className="text-[20px] font-normal tracking-tight">{t(item.label)}</span>}
+                            <span className="text-[20px] font-normal tracking-tight"
+                              style={item.destacado ? { color: AZUL_MARINO } : undefined}>
+                              {t(item.label)}
+                            </span>
                           </button>
                         )}
                       </div>
@@ -620,15 +624,17 @@ export default function Navbar() {
 
                 <MenuDestacados onNavegar={closeMobile} />
 
-                {/* Lo que más se busca cuando el menú no es para comprar. */}
-                <div className="grid grid-cols-3 gap-2 mb-6">
+                {/* Lo que más se busca cuando el menú no es para comprar.
+                    En recuadros chicos pasaba desapercibido: va grande, en
+                    negrita y alineado a la izquierda, como en EME. */}
+                <div className="mb-6 space-y-1.5">
                   {[
                     { label: 'FAQs',          href: '/faqs' },
                     { label: 'Quiénes Somos', href: '/nosotros' },
                     { label: 'Políticas',     href: '/politicas-de-devolucion' },
                   ].map((l) => (
                     <Link key={t(l.label)} href={l.href} onClick={closeMobile}
-                      className="flex items-center justify-center text-center h-11 px-2 rounded-[6px] border border-foreground/12 text-[12px] font-medium leading-tight hover:border-foreground/35 transition-colors">
+                      className="block text-[19px] font-semibold tracking-tight hover:opacity-70 transition-opacity">
                       {t(l.label)}
                     </Link>
                   ))}

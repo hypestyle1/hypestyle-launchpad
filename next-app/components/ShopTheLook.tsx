@@ -74,27 +74,18 @@ function resolver(look: Look, bySlug: Map<string, NormalizedProduct>): Pieza[] {
   });
 }
 
-/**
- * `slugDestacado`: en la ficha de producto, el look que incluye esa prenda va
- * primero en el line-up y es el que arranca abierto. En el home no se pasa y
- * el orden es el curado de data/looks.ts.
- */
-export default function ShopTheLook({ slugDestacado }: { slugDestacado?: string } = {}) {
+export default function ShopTheLook() {
+  const dragRef = useDragScroll();
+  const revealRef = useReveal();
   const { formatPrice } = useLocale();
   const { data: allProducts = [] } = useProducts(0);
 
   const looks = useMemo(() => {
     const bySlug = new Map(allProducts.map((p) => [p.slug, p]));
-    const vivos = LOOKS.map((look) => ({ look, piezas: resolver(look, bySlug) }))
+    return LOOKS.map((look) => ({ look, piezas: resolver(look, bySlug) }))
       // Un look se oculta solo si todo lo que tiene cargado en Woo está agotado.
       .filter(({ piezas }) => piezas.some((p) => p.pendiente || !p.agotado));
-    if (!slugDestacado) return vivos;
-    const tiene = ({ look }: { look: Look }) => look.items.some((i) => i.slug === slugDestacado);
-    return [...vivos.filter(tiene), ...vivos.filter((l) => !tiene(l))];
-  }, [allProducts, slugDestacado]);
-
-  const dragRef = useDragScroll([looks.length]);
-  const revealRef = useReveal([looks.length]);
+  }, [allProducts]);
 
   const [selId, setSelId] = useState<string | null>(null);
   const selIdx = Math.max(0, looks.findIndex((l) => l.look.id === selId));
