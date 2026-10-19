@@ -18,6 +18,9 @@ import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
 import { useBottomShift, setBuyBarVisible } from '@/lib/bottom-shift';
 import StockAlertForm from '@/components/StockAlertForm';
+import ShopTheLookProducto from '@/components/producto/ShopTheLookProducto';
+import VistosRecientemente from '@/components/producto/VistosRecientemente';
+import { registrarVisto } from '@/lib/vistos-recientemente';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
 import { gaViewItem, gaAddToCart } from '@/lib/ga';
@@ -300,6 +303,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // El precio es el que el cliente ve en ese momento. En el único producto con
   // descuento por gol el primer render puede tomar el precio de lista si la
   // consulta todavía no resolvió — se prefiere eso antes que duplicar el evento.
+  // Lo mira → queda en la lista de "vistos recientemente" de su navegador.
+  useEffect(() => {
+    if (product?.slug) registrarVisto(product.slug);
+  }, [product?.slug]);
+
   const viewContentSent = useRef<string | null>(null);
   useEffect(() => {
     if (!product || viewContentSent.current === product.slug) return;
@@ -845,7 +853,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           </div>
         </div>
 
-        <section className="max-w-[1400px] mx-auto px-4 pb-20">
+        <section className="max-w-[1400px] mx-auto px-4 pb-16">
           <h2 className="text-lg font-bold uppercase tracking-tight mb-6">{t('Completa el look')}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
             {related.map(p => (
@@ -853,6 +861,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
             ))}
           </div>
         </section>
+
+        {/* El look al que pertenece la prenda y lo último que miró la persona.
+            Las dos secciones se borran solas si no hay nada que mostrar. */}
+        <ShopTheLookProducto slug={product.slug} />
+        <VistosRecientemente slugActual={product.slug} />
       </main>
       )}
       <Footer />
