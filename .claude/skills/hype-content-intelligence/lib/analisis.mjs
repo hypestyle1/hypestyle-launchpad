@@ -111,6 +111,12 @@ const tiempoDe = (publishedAt) => {
  * Selecciona el universo a analizar.
  * `distribucion`: 'organico' (default) | 'pago' | 'todo' — nunca se mezclan
  * salvo que quien consulta lo pida de forma explícita.
+ *
+ * OJO (hallazgo A-a de la auditoría del 17/10): `wasBoosted` es un campo
+ * curado que no escribe ningún proceso automático. Hoy "sin marca de pauta"
+ * significa *no verificado*, no *orgánico confirmado*. Por eso 'organico'
+ * sigue incluyendo lo no verificado —si no, el universo quedaría vacío— pero
+ * `distribucionSinVerificar` lo cuenta y `nivelDeConfianza` lo castiga.
  */
 export function filtrar(posts, opciones = {}) {
   const {
@@ -167,12 +173,20 @@ export function filtrar(posts, opciones = {}) {
   });
 }
 
+/**
+ * Una publicación cuenta como distribución VERIFICADA si alguien la revisó:
+ * o está marcada como pauteada, o tiene `boostRef` (la referencia del chequeo
+ * contra Meta Ads que se carga a mano). Sin ninguna de las dos, no se sabe.
+ */
+export const distribucionVerificada = (p) => Boolean(p.wasBoosted || p.boostRef);
+
 /** Cuántas publicaciones del universo quedaron afuera por no tener métricas. */
 export function huecos(posts) {
   const sinMetricas = posts.filter((p) => !p.latest).length;
   const sinClasificar = posts.filter((p) => !p.category).length;
   const pauteadas = posts.filter((p) => p.wasBoosted).length;
-  return { total: posts.length, sinMetricas, sinClasificar, pauteadas };
+  const sinVerificar = posts.filter((p) => !distribucionVerificada(p)).length;
+  return { total: posts.length, sinMetricas, sinClasificar, pauteadas, sinVerificar };
 }
 
 /* ─── Consultas ─────────────────────────────────────────────────────────── */
@@ -278,10 +292,18 @@ export function contrastar(posts, { dimension = 'categoria', a, b, metrica = 'li
       ? segA.p25 <= segB.p75 && segB.p25 <= segA.p75
       : null;
 
+  const sinVerificar = posts.filter((p) => !distribucionVerificada(p)).length;
+
   const limitaciones = [];
   if (segA.n < MIN_SAMPLE) limitaciones.push(`"${a}" tiene n=${segA.n} (menos de ${MIN_SAMPLE})`);
   if (segB.n < MIN_SAMPLE) limitaciones.push(`"${b}" tiene n=${segB.n} (menos de ${MIN_SAMPLE})`);
   if (solapan) limitaciones.push('los rangos p25–p75 se solapan: la diferencia puede ser ruido');
+  if (sinVerificar > 0) {
+    limitaciones.push(
+      `${sinVerificar} de ${posts.length} publicaciones tienen distribución SIN VERIFICAR: ` +
+        'si alguna tuvo pauta, la diferencia puede ser plata y no contenido',
+    );
+  }
   limitaciones.push(
     'es una diferencia observada, no una causa: pueden explicarla el producto, el horario, la campaña o el momento de la cuenta',
   );
@@ -292,6 +314,7 @@ export function contrastar(posts, { dimension = 'categoria', a, b, metrica = 'li
     b: segB,
     factor,
     solapan,
+    sinVerificar,
     /** Solo con ambas muestras suficientes y sin solapamiento se habla de señal. */
     veredicto:
       segA.n >= MIN_SAMPLE && segB.n >= MIN_SAMPLE && solapan === false
@@ -383,8 +406,15 @@ function rachaDeCategoria(posts) {
  * Qué funcionó para un producto (por id de Woo o por texto del copy).
  * Devuelve las publicaciones encontradas y el corte por formato y portada.
  */
-export function porProducto(posts, { producto, metrica = 'savedReach' } = {}) {
-  const encontradas = filtrar(posts, { producto, dias: null, soloConMetricas: true });
+export function porProducto(posts, { producto, metrica = 'savedReach', opciones = {} } = {}) {
+  // `opciones` arrastra el resto del filtro de la consulta (distribución,
+  // formato, ventana): sin eso, un corte "orgánico" se colaba con pauteadas.
+  const encontradas = filtrar(posts, {
+    ...opciones,
+    producto,
+    dias: opciones.dias ?? null,
+    soloConMetricas: true,
+  });
   return {
     producto,
     n: encontradas.length,
@@ -399,7 +429,13 @@ export function porProducto(posts, { producto, metrica = 'savedReach' } = {}) {
  * Evaluación del respaldo de una afirmación: qué nivel de confianza admite.
  * El skill la usa para no presentar como evidencia lo que es una corazonada.
  */
-export function nivelDeConfianza({ n = 0, comparables = 0, solapan = null, pauteadasEnMuestra = 0 }) {
+export function nivelDeConfianza({
+  n = 0,
+  comparables = 0,
+  solapan = null,
+  pauteadasEnMuestra = 0,
+  sinVerificarEnMuestra = 0,
+}) {
   const razones = [];
   let nivel = 'alta';
 
@@ -421,6 +457,17 @@ export function nivelDeConfianza({ n = 0, comparables = 0, solapan = null, paute
   if (pauteadasEnMuestra > 0) {
     nivel = 'baja';
     razones.push(`${pauteadasEnMuestra} publicaciones pauteadas dentro de una muestra orgánica`);
+  }
+  // Distribución sin verificar: no es lo mismo que tener pauta adentro, pero
+  // tampoco se puede llamar "alta" a una conclusión sobre un universo que
+  // nadie cruzó con Meta Ads.
+  if (sinVerificarEnMuestra > 0 && nivel === 'alta') {
+    nivel = 'media';
+    razones.push(
+      `${sinVerificarEnMuestra} publicaciones con distribución sin verificar (ninguna cruzada con Meta Ads)`,
+    );
+  } else if (sinVerificarEnMuestra > 0) {
+    razones.push(`${sinVerificarEnMuestra} publicaciones con distribución sin verificar`);
   }
   if (razones.length === 0) razones.push('muestra suficiente y segmentos separados');
   return { nivel, razones };

@@ -46,7 +46,11 @@ Antes de atribuirle un resultado al formato o la portada, revisá si no lo expli
 
 - **El producto.** Un best-seller levanta cualquier formato.
 - **La pauta.** Por eso el universo es orgánico por defecto. Una publicación pauteada dentro de
-  una muestra orgánica invalida la comparación.
+  una muestra orgánica invalida la comparación. **Ojo:** `wasBoosted` es un campo curado que no
+  escribe ningún proceso automático, así que una publicación sin marca de pauta puede ser orgánica
+  o simplemente no revisada. El motor cuenta esas como *distribución sin verificar*, lo informa en
+  el encabezado y baja la confianza; recién cuando alguien las cruza con Meta Ads (y queda la
+  referencia en `boostRef`) se puede hablar de orgánico confirmado.
 - **El horario y el día.**
 - **El momento de campaña.** Un lanzamiento concentra atención que no tiene un posteo de valle.
 - **Las colaboraciones.** Un repost de una cuenta grande no es comparable con una publicación propia.

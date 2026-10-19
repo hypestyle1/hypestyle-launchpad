@@ -12,6 +12,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import * as analisisModule from '../../../.claude/skills/hype-content-intelligence/lib/analisis.mjs';
+import * as consultarModule from '../../../.claude/skills/hype-content-intelligence/lib/consultar.mjs';
 import { median as medianTs, MIN_SAMPLE as MIN_TS, outlierBounds as boundsTs, quantile as quantileTs, summarize as summarizeTs } from '@/lib/ig-insights/analytics';
 import { engagementOverReach as erTs, likesOverReach as likesTs, savedOverReach as savedTs } from '@/lib/ig-insights/ratios';
 import type { IgPostRecord, IgSnapshotRecord } from '@/lib/ig-insights/types';
@@ -21,6 +22,7 @@ import type { IgPostRecord, IgSnapshotRecord } from '@/lib/ig-insights/types';
 // (documentado en JSDoc). Se consume sin tipos; el contrato lo fijan estos tests.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const skill = analisisModule as unknown as Record<string, any>;
+const skillCli = consultarModule as unknown as Record<string, any>;
 
 const DEMO_PATH = resolve(
   __dirname,
@@ -160,7 +162,14 @@ describe('filtrar', () => {
   });
 
   it('huecos reporta lo que no entra en el análisis', () => {
-    expect(skill.huecos(posts)).toEqual({ total: 4, sinMetricas: 1, sinClasificar: 0, pauteadas: 1 });
+    expect(skill.huecos(posts)).toEqual({
+      total: 4,
+      sinMetricas: 1,
+      sinClasificar: 0,
+      pauteadas: 1,
+      // Las 3 no pauteadas tampoco están verificadas: nadie las cruzó con Ads.
+      sinVerificar: 3,
+    });
   });
 });
 
@@ -344,6 +353,164 @@ describe('nivelDeConfianza', () => {
   });
   it('rangos solapados bajan la confianza', () => {
     expect(skill.nivelDeConfianza({ n: 40, comparables: 3, solapan: true }).nivel).toBe('media');
+  });
+  it('distribución sin verificar impide hablar de confianza alta (hallazgo A-a)', () => {
+    const c = skill.nivelDeConfianza({
+      n: 40,
+      comparables: 3,
+      solapan: false,
+      sinVerificarEnMuestra: 12,
+    });
+    expect(c.nivel).toBe('media');
+    expect(c.razones.join(' ')).toContain('sin verificar');
+  });
+});
+
+/* ─── Distribución orgánico / pago (sección 5 del encargo) ──────────────── */
+
+describe('distribución sin verificar', () => {
+  const conMetricas = (id: string, likes: number, extra: Partial<IgPostRecord> = {}) =>
+    post({ igMediaId: id, latest: metrics({ reach: 1000, likes }), ...extra });
+
+  it('verificada sólo si está marcada como pauteada o tiene boostRef', () => {
+    expect(skill.distribucionVerificada(post({ igMediaId: '1' }))).toBe(false);
+    expect(skill.distribucionVerificada(post({ igMediaId: '2', wasBoosted: true }))).toBe(true);
+    expect(
+      skill.distribucionVerificada(post({ igMediaId: '3', boostRef: 'ads:2026-10-20:no' })),
+    ).toBe(true);
+  });
+
+  it('huecos cuenta las que nadie cruzó con Meta Ads', () => {
+    const h = skill.huecos([
+      conMetricas('1', 50),
+      conMetricas('2', 60, { boostRef: 'ads:2026-10-20:no' }),
+      conMetricas('3', 70, { wasBoosted: true }),
+    ]);
+    expect(h.sinVerificar).toBe(1);
+  });
+
+  it('contrastar avisa que la diferencia puede ser plata y no contenido', () => {
+    const rows = [
+      ...Array.from({ length: 10 }, (_, i) =>
+        conMetricas(`a${i}`, 100 + i, { category: 'flatlay' }),
+      ),
+      ...Array.from({ length: 10 }, (_, i) =>
+        conMetricas(`b${i}`, 20 + i, { category: 'editorial' }),
+      ),
+    ];
+    const r = skill.contrastar(rows, { dimension: 'categoria', a: 'flatlay', b: 'editorial' });
+    expect(r.sinVerificar).toBe(20);
+    expect(r.limitaciones.join(' ')).toContain('SIN VERIFICAR');
+    // Y sigue sin afirmar causalidad, con señal o sin ella.
+    expect(r.limitaciones.join(' ')).toContain('no una causa');
+  });
+});
+
+/* ─── porProducto respeta el filtro de la consulta (M1) ─────────────────── */
+
+describe('porProducto', () => {
+  const rows = [
+    post({
+      igMediaId: '11',
+      caption: 'camo cap nueva',
+      latest: metrics({ reach: 1000, likes: 50, saved: 10 }),
+    }),
+    post({
+      igMediaId: '12',
+      caption: 'camo cap con pauta',
+      wasBoosted: true,
+      latest: metrics({ reach: 1000, likes: 300, saved: 90 }),
+    }),
+  ];
+
+  it('sin opciones mantiene el default orgánico', () => {
+    const r = skill.porProducto(rows, { producto: 'camo cap' });
+    expect(r.n).toBe(1);
+    expect(r.ranking.items[0].pauteada).toBe(false);
+  });
+
+  /**
+   * El bug M1: `porProducto` ignoraba las opciones de la consulta, así que
+   * `--distribucion pago` devolvía igual el universo orgánico.
+   */
+  it('con --distribucion pago devuelve las pauteadas', () => {
+    const r = skill.porProducto(rows, {
+      producto: 'camo cap',
+      opciones: { distribucion: 'pago' },
+    });
+    expect(r.n).toBe(1);
+    expect(r.ranking.items[0].pauteada).toBe(true);
+  });
+
+  it('respeta también el corte por formato', () => {
+    const conReel = [
+      ...rows,
+      post({
+        igMediaId: '13',
+        caption: 'camo cap en reel',
+        mediaProductType: 'REELS',
+        mediaType: 'VIDEO',
+        latest: metrics({ reach: 1000, likes: 70 }),
+      }),
+    ];
+    expect(
+      skill.porProducto(conReel, { producto: 'camo cap', opciones: { formato: 'REELS' } }).n,
+    ).toBe(1);
+  });
+});
+
+/* ─── CLI: paginación completa (corrección C3) ──────────────────────────── */
+
+describe('CLI del skill: cargarReal', () => {
+  const TOTAL = 450;
+  const TODAS = Array.from({ length: TOTAL }, (_, i) =>
+    post({ igMediaId: `184${String(i).padStart(14, '0')}`, latest: metrics({ reach: 1000, likes: 50 + i }) }),
+  );
+
+  /** Backend de mentira: respeta limit/offset y devuelve `total`, como el PHP. */
+  const backend = (): typeof fetch =>
+    (async (url: RequestInfo | URL) => {
+      const u = new URL(String(url), 'http://panel.test');
+      const limit = Math.min(200, Number(u.searchParams.get('limit')) || 50);
+      const offset = Number(u.searchParams.get('offset')) || 0;
+      return new Response(
+        JSON.stringify({ rows: TODAS.slice(offset, offset + limit), total: TOTAL, fixture: false }),
+        { status: 200 },
+      );
+    }) as unknown as typeof fetch;
+
+  it('trae las 450 publicaciones, no sólo la primera página de 200', async () => {
+    expect(skillCli.TAMANIO_PAGINA).toBe(200);
+    const datos = await skillCli.cargarReal({
+      base: 'http://panel.test',
+      key: 'clave',
+      fetchImpl: backend(),
+    });
+    expect(datos.rows).toHaveLength(TOTAL);
+    expect(datos.total).toBe(TOTAL);
+    expect(datos.paginas).toBe(3);
+    expect(datos.completo).toBe(true);
+    expect(datos.fuente).toBe('REAL');
+    expect(datos.sintetico).toBe(false);
+  });
+
+  it('con el tope alcanzado avisa que NO es el histórico completo', async () => {
+    const datos = await skillCli.cargarReal({
+      base: 'http://panel.test',
+      key: 'clave',
+      fetchImpl: backend(),
+      maxPaginas: 1,
+    });
+    expect(datos.completo).toBe(false);
+    expect(datos.aviso).toContain('200 de 450');
+    expect(datos.aviso).toContain('NO cubre el histórico completo');
+  });
+
+  it('un 403 explica qué falta en lugar de devolver un universo vacío', async () => {
+    const fetchImpl = (async () => new Response('{}', { status: 403 })) as unknown as typeof fetch;
+    await expect(
+      skillCli.cargarReal({ base: 'http://panel.test', key: '', fetchImpl }),
+    ).rejects.toThrow(/HYPE_ADMIN_KEY/);
   });
 });
 

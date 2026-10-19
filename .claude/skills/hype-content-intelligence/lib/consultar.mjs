@@ -37,7 +37,7 @@
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   compararSegmentos,
@@ -74,43 +74,93 @@ function parseArgs(argv) {
 
 /* ─── Fuente de datos ───────────────────────────────────────────────────── */
 
-function cargarDemo() {
+export function cargarDemo() {
   const ruta = resolve(AQUI, '../fixtures/demo.json');
   const data = JSON.parse(readFileSync(ruta, 'utf8'));
   return {
     fuente: 'DEMO',
     sintetico: true,
     rows: data.rows,
+    total: data.rows.length,
+    completo: true,
+    paginas: 1,
     aviso: data._aviso,
   };
 }
 
-async function cargarReal({ base, key }) {
-  const url = new URL('/api/admin/ig-posts', base);
-  url.searchParams.set('limit', '200');
-  const res = await fetch(url, { headers: key ? { 'x-admin-key': key } : {} });
-  if (!res.ok) {
-    throw new Error(
-      `El panel respondió ${res.status} en ${url.pathname}. ` +
-        (res.status === 403
-          ? 'Falta la clave: exportá HYPE_ADMIN_KEY o pasá --key.'
-          : 'Verificá que el panel esté levantado y accesible.'),
-    );
+/** Techo de `limit` del mu-plugin, y tope de seguridad del recorrido. */
+export const TAMANIO_PAGINA = 200;
+export const MAX_PAGINAS = 40;
+
+/**
+ * Trae TODAS las publicaciones del panel (corrección C3).
+ *
+ * Antes pedía una sola página de 200 —el techo del backend— y nunca leía
+ * `total`: con dos años de historial eso descartaba en silencio alrededor del
+ * 40% de las publicaciones y el encabezado igual decía "todo el histórico".
+ * Ahora se pagina por `offset` hasta cubrir `total`, y si no se puede cubrir
+ * el resultado viaja con `completo: false` para que el encabezado lo diga.
+ */
+export async function cargarReal({ base, key, fetchImpl = fetch, maxPaginas = MAX_PAGINAS }) {
+  const rows = [];
+  const vistos = new Set();
+  let total = 0;
+  let fixture = false;
+  let paginas = 0;
+  let topeAlcanzado = false;
+
+  for (let offset = 0; ; offset += TAMANIO_PAGINA) {
+    const url = new URL('/api/admin/ig-posts', base);
+    url.searchParams.set('limit', String(TAMANIO_PAGINA));
+    url.searchParams.set('offset', String(offset));
+    const res = await fetchImpl(url, { headers: key ? { 'x-admin-key': key } : {} });
+    if (!res.ok) {
+      throw new Error(
+        `El panel respondió ${res.status} en ${url.pathname} (página ${paginas + 1}). ` +
+          (res.status === 403
+            ? 'Falta la clave: exportá HYPE_ADMIN_KEY o pasá --key.'
+            : 'Verificá que el panel esté levantado y accesible.'),
+      );
+    }
+    const data = await res.json();
+    paginas++;
+    fixture = Boolean(data.fixture);
+    total = Number(data.total) || 0;
+
+    const lote = Array.isArray(data.rows) ? data.rows : [];
+    for (const p of lote) {
+      if (!p?.igMediaId || vistos.has(p.igMediaId)) continue;
+      vistos.add(p.igMediaId);
+      rows.push(p);
+    }
+
+    if (lote.length < TAMANIO_PAGINA) break;
+    if (total > 0 && offset + TAMANIO_PAGINA >= total) break;
+    if (paginas >= maxPaginas) {
+      topeAlcanzado = true;
+      break;
+    }
   }
-  const data = await res.json();
+
   // El endpoint marca fixture:true cuando el backend de ingesta no está
   // desplegado todavía (gate B1): en ese caso los datos NO son reales.
+  const completo = !topeAlcanzado && rows.length >= total;
   return {
-    fuente: data.fixture ? 'DEMO (el panel todavía no tiene backend de ingesta)' : 'REAL',
-    sintetico: Boolean(data.fixture),
-    rows: Array.isArray(data.rows) ? data.rows : [],
-    aviso: data.fixture
+    fuente: fixture ? 'DEMO (el panel todavía no tiene backend de ingesta)' : 'REAL',
+    sintetico: fixture,
+    rows,
+    total: Math.max(total, rows.length),
+    completo,
+    paginas,
+    aviso: fixture
       ? 'El panel devolvió datos sintéticos porque el mu-plugin de ingesta no está desplegado (gate B1).'
-      : null,
+      : completo
+        ? null
+        : `Se trajeron ${rows.length} de ${total} publicaciones (tope de seguridad de ${maxPaginas} páginas): el resultado NO cubre el histórico completo.`,
   };
 }
 
-async function obtenerDatos(args) {
+export async function obtenerDatos(args) {
   if (args.demo) return cargarDemo();
   const base = args.base || process.env.HYPE_PANEL_URL || 'http://localhost:3000';
   const key = args.key || process.env.HYPE_ADMIN_KEY || '';
@@ -133,13 +183,29 @@ const int = (v) => (v == null ? '—' : new Intl.NumberFormat('es-AR').format(v)
 
 function cabecera(datos, universo, opciones) {
   const h = huecos(universo.todas);
+  // "todo el histórico" sólo se dice si de verdad se trajo todo (C3).
+  const alcance = opciones.dias
+    ? ` · últimos ${opciones.dias} días`
+    : datos.completo === false
+      ? ' · HISTÓRICO PARCIAL'
+      : ' · todo el histórico';
   const lineas = [
     `Fuente: ${datos.fuente}${datos.sintetico ? '  ⚠ DATOS SINTÉTICOS — no sirven para decidir' : ''}`,
+    `Descargadas: ${universo.todas.length} de ${datos.total ?? universo.todas.length} publicaciones` +
+      (datos.paginas ? ` (${datos.paginas} ${datos.paginas === 1 ? 'página' : 'páginas'})` : ''),
     `Universo: ${universo.filtradas.length} publicaciones ${opciones.distribucion === 'pago' ? 'CON PAUTA' : opciones.distribucion === 'todo' ? '(orgánicas + pauteadas, sin segmentar)' : 'orgánicas'}` +
-      (opciones.dias ? ` · últimos ${opciones.dias} días` : ' · todo el histórico'),
+      alcance,
   ];
+  if (datos.completo === false) {
+    lineas.push('⚠ COBERTURA INCOMPLETA: faltan publicaciones, los números de abajo no son del total.');
+  }
   if (h.sinMetricas) lineas.push(`Sin insights (excluidas): ${h.sinMetricas}`);
   if (h.sinClasificar) lineas.push(`Sin clasificar: ${h.sinClasificar} — no entran en cortes por categoría/portada/estilo`);
+  if (h.sinVerificar && opciones.distribucion !== 'pago') {
+    lineas.push(
+      `Distribución sin verificar: ${h.sinVerificar} — nadie las cruzó con Meta Ads, así que "orgánico" acá es "sin pauta declarada"`,
+    );
+  }
   if (datos.aviso) lineas.push(`Aviso: ${datos.aviso}`);
   return lineas.join('\n');
 }
@@ -181,8 +247,8 @@ function imprimirSegmentos(c) {
 
 /* ─── Comandos ──────────────────────────────────────────────────────────── */
 
-async function main() {
-  const args = parseArgs(process.argv.slice(2));
+export async function main(argv = process.argv.slice(2)) {
+  const args = parseArgs(argv);
   const comando = args._[0];
 
   if (!comando || args.help || args.h) {
@@ -192,7 +258,16 @@ async function main() {
 
   const datos = await obtenerDatos(args);
   const opciones = {
-    dias: args.dias === undefined ? 90 : args.dias === true || args.dias === 'todo' ? null : Number(args.dias),
+    // `producto` mira todo el histórico salvo que pidan --dias: son pocas
+    // publicaciones por producto y el default de 90 días las dejaría afuera.
+    dias:
+      args.dias === undefined
+        ? comando === 'producto'
+          ? null
+          : 90
+        : args.dias === true || args.dias === 'todo'
+          ? null
+          : Number(args.dias),
     distribucion: args.distribucion || 'organico',
     formato: args.formato || null,
     categoria: args.categoria || null,
@@ -234,6 +309,11 @@ async function main() {
         n: Math.min(resultado.a.n, resultado.b.n),
         comparables: 2,
         solapan: resultado.solapan,
+        // La guarda anti-pauta estaba muerta (hallazgo A-a): nadie le pasaba
+        // estos dos conteos, así que nunca bajaba la confianza.
+        pauteadasEnMuestra:
+          opciones.distribucion === 'organico' ? 0 : filtradas.filter((p) => p.wasBoosted).length,
+        sinVerificarEnMuestra: resultado.sinVerificar,
       });
       texto =
         `\n${args.a} vs ${args.b} — ${resultado.metrica}\n` +
@@ -246,7 +326,9 @@ async function main() {
     }
     case 'producto': {
       if (!args.producto) throw new Error('producto necesita --producto <id de Woo o texto del copy>');
-      resultado = porProducto(datos.rows, { producto: args.producto, metrica });
+      // `opciones` va entero: el corte por producto respeta distribución,
+      // formato y ventana como cualquier otra consulta (corrección M1).
+      resultado = porProducto(datos.rows, { producto: args.producto, metrica, opciones });
       texto =
         `\nProducto "${resultado.producto}" — ${resultado.n} publicaciones con métricas` +
         (resultado.muestraChica ? `  ⚠ menos de ${MIN_SAMPLE}: son referencias, no un patrón` : '') +
@@ -311,7 +393,13 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(`\nError: ${err.message}`);
-  process.exit(1);
-});
+// Se ejecuta sólo si lo invocaron como script; importado (tests) no corre nada.
+const esEntrada =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (esEntrada) {
+  main().catch((err) => {
+    console.error(`\nError: ${err.message}`);
+    process.exit(1);
+  });
+}

@@ -64,7 +64,14 @@ Está detallada en `referencias/metodologia.md`. Lo esencial:
   va con su aclaración: views cuenta varias vistas de la misma cuenta.
 - **Medianas, nunca promedios.** Un viral rompe cualquier media.
 - **n < 8 = no hay conclusión.** Se puede mostrar el número, diciendo que es un indicio.
-- **Orgánico y pago no se mezclan.** El CLI filtra orgánico por defecto.
+- **Orgánico y pago no se mezclan.** El CLI filtra orgánico por defecto. Pero hoy la marca de
+  pauta se carga a mano y todavía no se cruzó con Meta Ads: mientras el encabezado informe
+  publicaciones con **distribución sin verificar**, "orgánico" quiere decir *sin pauta declarada*,
+  no *orgánico confirmado*. Decilo así y nunca presentes una comparación sobre ese universo con
+  confianza alta.
+- **Si la cobertura viene incompleta, no hay conclusión.** El encabezado dice cuántas
+  publicaciones se descargaron de cuántas. Si falta alguna, el resultado es provisorio y hay que
+  aclararlo antes de cualquier número.
 - **Correlación no es causalidad.** Antes de atribuirle el resultado al formato, nombrá los
   confusores posibles: el producto, el horario, la campaña, una colaboración, el momento de la cuenta.
 - **Lo que falta se dice.** Publicaciones sin insights, sin clasificar o anteriores al sistema
