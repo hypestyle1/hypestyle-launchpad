@@ -514,8 +514,17 @@ export default function Navbar() {
           las del selector de idioma y moneda. Sigue por debajo del carrito
           (z-[150]) y de los modales. */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
+        <>
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          onClick={closeMobile}
+          className="fixed inset-0 z-[99] bg-black/10 cursor-default"
+        />
+        <div className="fixed left-4 right-4 z-[100] flex flex-col overflow-hidden rounded-[14px] border border-black/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
           style={{
+            top: 'var(--announce-h)',
+            maxHeight: 'calc(100dvh - var(--announce-h) - 16px)',
             // 0.96 era casi opaco: el blur no se veía y el menú tapaba la
             // página entera. Con 0.68 y más blur se ve el fondo desenfocado
             // detrás (referencia: emestudios.com, 19/10) sin perder contraste:
@@ -524,8 +533,7 @@ export default function Navbar() {
             backdropFilter: 'blur(52px) saturate(160%)',
             WebkitBackdropFilter: 'blur(52px) saturate(160%)',
           }}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/8"
-            style={{ paddingTop: 'calc(var(--announce-h) + 16px)' }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-black/25">
             {mobilePanel !== 'main' ? (
               <button onClick={() => setMobilePanel('main')} className="flex items-center gap-1 text-foreground/60">
                 <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
@@ -697,6 +705,7 @@ export default function Navbar() {
             )}
           </div>
         </div>
+        </>
       )}
     </>
   );
