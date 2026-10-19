@@ -119,7 +119,7 @@ const MENU_MOBILE: { label: string; href?: string; grupo?: GrupoMenu; destacado?
   { label: 'Accesorios',  href: '/accesorios' },
   { label: 'Colecciones', grupo: 'colecciones' },
   { label: 'Gift Card',   href: '/gift-cards' },
-  { label: 'Precios especiales', href: '/special-prices', destacado: true },
+  { label: 'Sale', href: '/special-prices', destacado: true },
 ];
 
 const GRUPOS_MENU: Record<GrupoMenu, { label: string; href: string }[]> = {
@@ -140,9 +140,6 @@ const GRUPOS_MENU: Record<GrupoMenu, { label: string; href: string }[]> = {
     { label: 'Ver todas',        href: '/colecciones' },
   ],
 };
-
-/** Para lo que tiene que resaltar sin cartel (los precios especiales). */
-const AZUL_MARINO = '#1B3A6B';
 
 /** Mismo orden que LocalePopup; acá van solo los códigos, como en EME. */
 const IDIOMAS: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
@@ -524,8 +521,8 @@ export default function Navbar() {
             // detrás (referencia: emestudios.com, 19/10) sin perder contraste:
             // el texto es casi negro sobre un beige claro.
             background: 'rgba(240, 238, 232, 0.40)',
-            backdropFilter: 'blur(56px) saturate(160%)',
-            WebkitBackdropFilter: 'blur(56px) saturate(160%)',
+            backdropFilter: 'blur(52px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(52px) saturate(160%)',
           }}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/8"
             style={{ paddingTop: 'calc(var(--announce-h) + 16px)' }}>
@@ -586,15 +583,15 @@ export default function Navbar() {
                   {MENU_MOBILE.map((item) => {
                     const abierto = !!item.grupo && grupoAbierto === item.grupo;
                     return (
-                      <div key={item.label} className="border-b border-foreground/8 last:border-0">
+                      <div key={item.label} className="border-b border-black/25 last:border-0">
                         {item.grupo ? (
                           <>
                             <button onClick={() => setGrupoAbierto(abierto ? null : item.grupo!)}
                               aria-expanded={abierto}
                               className="w-full flex items-center justify-between py-2.5 text-left">
                               <span className="text-[20px] font-normal tracking-tight">{t(item.label)}</span>
-                              <ChevronDown strokeWidth={1.5}
-                                className={`w-4 h-4 text-foreground/35 transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`} />
+                              <ChevronDown strokeWidth={2.25}
+                                className={`w-[22px] h-[22px] text-foreground transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`} />
                             </button>
                             {abierto && (
                               <div className="pb-3">
@@ -611,8 +608,7 @@ export default function Navbar() {
                         ) : (
                           <button onClick={() => { handleSmartLink(item.href!, null); closeMobile(); }}
                             className="w-full flex items-center py-2.5 text-left">
-                            <span className="text-[20px] font-normal tracking-tight"
-                              style={item.destacado ? { color: AZUL_MARINO } : undefined}>
+                            <span className={`text-[20px] tracking-tight ${item.destacado ? 'font-semibold' : 'font-normal'}`}>
                               {t(item.label)}
                             </span>
                           </button>

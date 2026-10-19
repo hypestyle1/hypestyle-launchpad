@@ -56,6 +56,14 @@ function prendas(post: VistoEnPost, bySlug: Map<string, NormalizedProduct>): Pre
 interface VistoEnProps {
   /** Encabezado de la sección. */
   titulo?: string;
+  /** Qué fotos mostrar. El home usa VISTO_EN; la ficha, data/shopTheLook.ts. */
+  fuente?: VistoEnPost[];
+  /**
+   * Esconde los looks cuyas prendas están todas agotadas o fuera del catálogo.
+   * En el home va en false (una foto vieja de un artista suma igual); en la
+   * ficha, en true: ahí la sección es para comprar.
+   */
+  soloDisponibles?: boolean;
   /**
    * 'tira' es el home: la foto lleva el nombre del artista y su @.
    * 'look' es la ficha de producto: fotos más grandes y un botón
@@ -66,19 +74,27 @@ interface VistoEnProps {
   slugDestacado?: string;
 }
 
-export default function VistoEn({ titulo = 'Visto en', variante = 'tira', slugDestacado }: VistoEnProps = {}) {
+export default function VistoEn({
+  titulo = 'Visto en',
+  fuente = VISTO_EN,
+  soloDisponibles = false,
+  variante = 'tira',
+  slugDestacado,
+}: VistoEnProps = {}) {
   const { data: allProducts = [] } = useProducts(0);
   const [abierto, setAbierto] = useState<number | null>(null);
 
   const posts = useMemo(() => {
     const bySlug = new Map(allProducts.map((p) => [p.slug, p]));
-    const todos = VISTO_EN.map((post) => ({ post, prendas: prendas(post, bySlug) }));
+    const todos = fuente
+      .map((post) => ({ post, prendas: prendas(post, bySlug) }))
+      .filter(({ prendas: ps }) => !soloDisponibles || ps.some((p) => !p.agotado));
     if (!slugDestacado) return todos;
     // En la ficha, primero las fotos de alguien usando justo esa prenda; el
     // resto queda atrás, que para eso es inspiración.
     const lleva = ({ post }: { post: VistoEnPost }) => post.slugs.includes(slugDestacado);
     return [...todos.filter(lleva), ...todos.filter((p) => !lleva(p))];
-  }, [allProducts, slugDestacado]);
+  }, [allProducts, fuente, soloDisponibles, slugDestacado]);
 
   // Se espera al catálogo para no mostrar un instante los posts sin prendas.
   // Sin estas deps los hooks correrían con el ref vacío y no se engancharían
@@ -87,7 +103,7 @@ export default function VistoEn({ titulo = 'Visto en', variante = 'tira', slugDe
   const dragRef = useDragScroll([montada]);
   const revealRef = useReveal([montada]);
 
-  if (!montada) return null;
+  if (!montada || posts.length === 0) return null;
   const sel = abierto !== null ? posts[abierto] : null;
 
   return (
