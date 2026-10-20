@@ -37,9 +37,10 @@ type Props = {
   maxOff: number;
 };
 
-// Fábrica, no componente: la card necesita saber qué foto eligió el visitante
-// y `map` solo pasa (producto, índice).
-const card = (vistaFoto: VistaFoto) => (p: NormalizedProduct) => (
+// Dos argumentos y no una fábrica que devuelve otra función: con la fábrica,
+// `react/display-name` lee la función devuelta como un componente anónimo y
+// hace fallar `next build` (el lint corre como error, no como warning).
+const card = (p: NormalizedProduct, vistaFoto: VistaFoto) => (
   <ProductCard
     key={p.slug}
     id={p.slug}
@@ -83,7 +84,7 @@ export default function SaleView({ destacados, resto, maxOff }: Props) {
                 <h2 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">{t('Destacados')}</h2>
                 <span className="text-[12px] md:text-[13px] text-muted-foreground tabular-nums">{destacados.length}</span>
               </div>
-              <div className={grid}>{destacados.map(card(foto))}</div>
+              <div className={grid}>{destacados.map((p) => card(p, foto))}</div>
             </div>
           )}
 
@@ -105,7 +106,7 @@ export default function SaleView({ destacados, resto, maxOff }: Props) {
                 <h2 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">{t('Todo el sale')}</h2>
                 <span className="text-[12px] md:text-[13px] text-muted-foreground tabular-nums">{resto.length}</span>
               </div>
-              <div className={grid}>{resto.map(card(foto))}</div>
+              <div className={grid}>{resto.map((p) => card(p, foto))}</div>
             </div>
           )}
 
