@@ -146,7 +146,7 @@ const IDIOMAS: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
 
 /** Mismo material que el menú del celular: se ve la página detrás, desenfocada. */
 const glassPanel = {
-  background: 'rgba(240, 238, 232, 0.40)',
+  background: 'rgba(240, 238, 232, 0.55)',
   backdropFilter: 'blur(52px) saturate(160%)',
   WebkitBackdropFilter: 'blur(52px) saturate(160%)',
   border: '1px solid rgba(0,0,0,0.08)',
