@@ -144,6 +144,15 @@ const GRUPOS_MENU: Record<GrupoMenu, { label: string; href: string }[]> = {
 /** Mismo orden que LocalePopup; acá van solo los códigos, como en EME. */
 const IDIOMAS: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
 
+/** Mismo material que el menú del celular: se ve la página detrás, desenfocada. */
+const glassPanel = {
+  background: 'rgba(240, 238, 232, 0.40)',
+  backdropFilter: 'blur(52px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(52px) saturate(160%)',
+  border: '1px solid rgba(0,0,0,0.08)',
+  boxShadow: '0 18px 60px rgba(0,0,0,0.14)',
+} as React.CSSProperties;
+
 const glassStyle = {
   background: 'rgba(240, 238, 232, 0.82)',
   backdropFilter: 'blur(32px) saturate(200%)',
@@ -416,7 +425,7 @@ export default function Navbar() {
         {/* Mega menu */}
         {shopOpen && !searchOpen && (
           <div className="absolute left-0 right-0 top-full animate-in fade-in slide-in-from-top-1 duration-200"
-            style={{ ...glassStyle, borderRadius: '0 0 14px 14px', borderTop: 'none' }}
+            style={{ ...glassPanel, borderRadius: '0 0 14px 14px', borderTop: 'none' }}
             onMouseEnter={() => setShopOpen(true)}>
             <div className="max-w-[1400px] mx-auto px-4 py-8 grid grid-cols-[1fr_1fr_1fr_minmax(0,560px)] gap-8">
               <div>

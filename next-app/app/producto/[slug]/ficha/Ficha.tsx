@@ -81,7 +81,7 @@ export default function Ficha(p: FichaProps) {
               chica y se ampliaba. */}
           <Foto key={actual} src={actual} alt={product.name} priority calidad={90}
             sizes="(max-width: 1024px) 100vw, 60vw"
-            className={entera ? 'object-contain' : 'object-cover object-top'} />
+            className={entera ? 'object-contain' : 'object-contain lg:object-cover lg:object-center'} />
 
           <div onClick={e => e.stopPropagation()}
             className="hidden lg:flex absolute left-4 bottom-4 flex-col gap-1.5 max-h-[62%] overflow-y-auto">
@@ -93,9 +93,9 @@ export default function Ficha(p: FichaProps) {
                   ? (videoPoster(img)
                     // Con poster, la miniatura es una imagen: antes cada miniatura
                     // de video pedía el archivo (preload="metadata").
-                    ? <Image src={videoPoster(img)!} alt="" fill sizes="96px" className="object-cover object-top" />
+                    ? <Image src={videoPoster(img)!} alt="" fill sizes="96px" className="object-cover object-center" />
                     : <video src={imgUrl(img)} muted playsInline preload="metadata" className="absolute inset-0 w-full h-full object-cover" />)
-                  : <Image src={imgUrl(img)} alt="" fill sizes="96px" className="object-cover object-top" />}
+                  : <Image src={imgUrl(img)} alt="" fill sizes="96px" className="object-cover object-center" />}
               </button>
             ))}
           </div>
