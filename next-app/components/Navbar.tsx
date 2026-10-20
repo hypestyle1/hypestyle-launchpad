@@ -54,7 +54,7 @@ const megaMenu = {
     { label: 'New In',    href: '/new-in',         homeHash: null, isNew: true },
     { label: 'Ver todo',  href: '/productos',      homeHash: null, isNew: false },
     { label: 'Gift Card', href: '/gift-cards',     homeHash: null, isNew: false },
-    { label: 'SALE',      href: '/special-prices', homeHash: null, isNew: false },
+    { label: 'Sale',      href: '/special-prices', homeHash: null, isNew: false, isSale: true },
   ],
   categorias: [
     { label: 'Remeras',     href: '/tees',        indent: false },
@@ -272,7 +272,7 @@ export default function Navbar() {
           ) : (
             <>
               {/* Desktop links */}
-              <div className="hidden items-center gap-1 flex-1">
+              <div className="hidden lg:flex items-center gap-1 flex-1">
                 {navLinks.map((link) => {
                   const isActive = link.routeMatch && pathname.startsWith(link.routeMatch);
                   return (
@@ -350,7 +350,7 @@ export default function Navbar() {
               </div>
 
               {/* Logo desktop */}
-              <Link href="/" className="hidden absolute left-1/2 -translate-x-1/2 items-center z-10">
+              <Link href="/" className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center z-10">
                 {!logoError ? (
                   <img src={LOGO_NAV} alt="Hypestyle"
                     className="w-auto transition-all duration-300 hs-logo-3d"
@@ -361,9 +361,8 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* Hamburguesa + logo, en todos los tamaños: desde el 19/10 el
-                  desktop usa el mismo menú que el celular. */}
-              <div className="flex items-center gap-2.5 flex-none flex-1">
+              {/* Hamburger + logo mobile */}
+              <div className="lg:hidden flex items-center gap-2.5 flex-none">
                 <button onClick={() => setMobileOpen(true)} aria-label="Menu"
                   className="hover:opacity-50 transition-opacity duration-200">
                   <Menu className="w-5 h-5" strokeWidth={1.2} />
@@ -384,7 +383,7 @@ export default function Navbar() {
                 {/* div y no span: LocalePopup devuelve un <div>, y un bloque
                     adentro de un inline es HTML inválido. Estaba en todas las
                     páginas porque el navbar es global. */}
-                <div><LocalePopup /></div>
+                <div className="hidden lg:block"><LocalePopup /></div>
                 <button onClick={() => setSearchOpen(true)}
                   className="p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150" aria-label="Buscar">
                   <Search className="w-4 h-4" strokeWidth={1.2} />
@@ -419,14 +418,14 @@ export default function Navbar() {
           <div className="absolute left-0 right-0 top-full animate-in fade-in slide-in-from-top-1 duration-200"
             style={{ ...glassStyle, borderRadius: '0 0 14px 14px', borderTop: 'none' }}
             onMouseEnter={() => setShopOpen(true)}>
-            <div className="max-w-[1400px] mx-auto px-4 py-8 grid grid-cols-[1fr_1fr_1fr_280px] gap-8">
+            <div className="max-w-[1400px] mx-auto px-4 py-8 grid grid-cols-[1fr_1fr_1fr_minmax(0,560px)] gap-8">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Comprar')}</p>
                 {megaMenu.general.map((l) => (
                   <button key={t(l.label)} onClick={() => handleSmartLink(l.href, l.homeHash)}
                     className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 hover:text-foreground transition-colors mb-2.5 w-full text-left">
                     {(l as { isSale?: boolean }).isSale
-                      ? <span className="text-[11px] font-bold uppercase tracking-[0.12em] bg-red-600 text-white px-2 py-0.5 rounded-[4px]">{t(l.label)}</span>
+                      ? <span className="font-semibold text-foreground">{t('Sale')}</span>
                       : t(l.label)}
                     {l.isNew && <span className="text-[9px] font-bold uppercase tracking-wider bg-foreground text-background px-1.5 py-0.5 rounded-[4px]">NEW</span>}
                   </button>
@@ -449,23 +448,22 @@ export default function Navbar() {
                     {t(l.label)}
                   </Link>
                 ))}
+
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mt-7 mb-4">{t('Ayuda')}</p>
+                {[
+                  { label: 'FAQs',          href: '/faqs' },
+                  { label: 'Quiénes Somos', href: '/nosotros' },
+                  { label: 'Políticas',     href: '/politicas-de-devolucion' },
+                ].map((l) => (
+                  <Link key={t(l.label)} href={l.href} onClick={() => setShopOpen(false)}
+                    className="block text-[13px] text-foreground/70 hover:text-foreground transition-colors mb-2.5">
+                    {t(l.label)}
+                  </Link>
+                ))}
               </div>
-              <div className="relative overflow-hidden rounded-sm">
-                {/* OJO: era hero-duo-grey.webp (sin -hd), que no existe en
-                    public/ — la foto del mega menú estaba rota en producción. */}
-                <img src="/ss27/coleccion/hero-duo-grey-hd.webp" alt="Spring Summer 27"
-                  className="w-full h-full object-cover" style={{ maxHeight: '220px' }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-4">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/60 mb-0.5">{t('Colección')}</p>
-                    <p className="text-[14px] font-bold text-white leading-tight">Spring Summer 27</p>
-                    <Link href="/colecciones/ss27" onClick={() => setShopOpen(false)}
-                      className="text-[11px] text-white/70 hover:text-white transition-colors mt-1 block">
-                      {t('Ver colección →')}
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              {/* Las mismas cuatro fotos del menú del celular, y se cambian
+                  en el mismo lugar: data/menuDestacados.ts. */}
+              <MenuDestacados onNavegar={() => setShopOpen(false)} className="mb-0" columnas={4} />
             </div>
           </div>
         )}
@@ -523,7 +521,7 @@ export default function Navbar() {
           className="fixed inset-0 z-[99] bg-black/10 cursor-default"
         />
         <div data-testid="menu-mobile"
-          className="fixed left-4 right-4 lg:right-auto lg:w-[460px] z-[100] flex flex-col overflow-hidden rounded-[14px] border border-black/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
+          className="fixed left-4 right-4 z-[100] flex flex-col overflow-hidden rounded-[14px] border border-black/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
           style={{
             top: 'var(--announce-h)',
             maxHeight: 'calc(100dvh - var(--announce-h) - 16px)',
