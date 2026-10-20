@@ -521,7 +521,8 @@ export default function Navbar() {
           onClick={closeMobile}
           className="fixed inset-0 z-[99] bg-black/10 cursor-default"
         />
-        <div className="fixed left-4 right-4 z-[100] flex flex-col overflow-hidden rounded-[14px] border border-black/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
+        <div data-testid="menu-mobile"
+          className="fixed left-4 right-4 z-[100] flex flex-col overflow-hidden rounded-[14px] border border-black/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
           style={{
             top: 'var(--announce-h)',
             maxHeight: 'calc(100dvh - var(--announce-h) - 16px)',

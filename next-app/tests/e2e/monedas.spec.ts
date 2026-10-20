@@ -145,15 +145,19 @@ test('mobile: el menú abierto queda por encima de los flotantes y el selector s
   const { x, y, width, height } = (await whatsapp.boundingBox())!;
 
   await page.getByRole('button', { name: /men/i }).first().click();
-  // En el punto donde estaba el botón de WhatsApp ahora manda el menú.
+  // En el punto donde estaba el botón de WhatsApp ahora manda la capa del menú:
+  // la tarjeta (z-[100]) o el fondo que la cierra (z-[99]). Lo que no puede
+  // pasar es que el flotante siga arriba y se lleve el toque.
   const arriba = await page.evaluate(([px, py]) => {
     const el = document.elementFromPoint(px, py);
-    return !!el?.closest('[class*="z-[100]"]');
+    return !!el?.closest('[class*="z-[100]"], [class*="z-[99]"]');
   }, [x + width / 2, y + height / 2]);
   expect(arriba).toBe(true);
 
-  await page.getByRole('button', { name: /Idioma y moneda|Language and currency/ }).filter({ visible: true }).first().click();
-  // La última fila era la que quedaba tapada. Sin trial: el click tiene que llegar.
-  await page.getByTestId('locale-popup').filter({ visible: true }).getByRole('button').filter({ hasText: 'UYU' }).click();
+  // El idioma y la moneda ahora están escritos adentro del menú, no en un
+  // popup. UYU es la última de la fila: es la que antes quedaba tapada.
+  const panel = page.getByTestId('menu-mobile');
+  await panel.getByRole('button', { name: 'UYU', exact: true }).scrollIntoViewIfNeeded();
+  await panel.getByRole('button', { name: 'UYU', exact: true }).click();
   expect(await page.evaluate(() => window.localStorage.getItem('hs-currency'))).toBe('UYU');
 });
