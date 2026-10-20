@@ -64,6 +64,13 @@ interface ProductCardProps {
    */
   tags?: string[];
   /**
+   * Qué foto manda en la card: 'mockup' (la destacada de Woo, como siempre) o
+   * 'modelo' (la segunda de la galería, alguien usando la prenda). Lo elige el
+   * visitante con el selector de vista del catálogo; si el producto no tiene
+   * segunda foto, se queda con el mockup. El hover muestra la otra.
+   */
+  vistaFoto?: 'mockup' | 'modelo';
+  /**
    * Monta la foto recién cuando la card está a esta distancia de la pantalla
    * (ej. "400px"). Sin esto, el lazy loading nativo de Chrome en conexiones
    * lentas empieza a bajar todas las cards hasta ~2.500 px más abajo, y en
@@ -90,6 +97,7 @@ export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
   href = "/productos", sizes, stock, giftNote, customizable, mutedPrice,
   dense, blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin, imagePriority,
+  vistaFoto = 'mockup',
 }: ProductCardProps) {
   // Escalas de la card densa vs. la normal (ver prop `dense`).
   const badgePos = dense ? "top-2 left-2 px-1.5 py-0.5 text-[8px] tracking-[0.06em]" : "top-3 left-3 px-2.5 py-1 text-[10px] tracking-wider";
@@ -109,8 +117,14 @@ export default function ProductCard({
   // (24 px, ~1 KB) desenfocada: la card nunca queda vacía en un scroll rápido,
   // y las ~30 miniaturas casi no le sacan banda al hero.
   const [fotoLista, setFotoLista] = useState(false);
-  const miniatura = mountMargin && image
-    ? getImageProps({ src: imgSrc(image), alt: "", width: 24, height: 24, quality: 40 }).props.src
+  // Foto de modelo = la primera de la galería (la del hover de siempre). Con
+  // vista 'modelo' pasa al frente y el mockup queda para el hover; sin segunda
+  // foto no hay nada que intercambiar y manda el mockup.
+  const fotoModelo = images && images.length > 1 ? images[1] : null;
+  const verModelo = vistaFoto === 'modelo' && !!fotoModelo;
+  const fotoPrincipal = verModelo ? fotoModelo : image;
+  const miniatura = mountMargin && fotoPrincipal
+    ? getImageProps({ src: imgSrc(fotoPrincipal), alt: "", width: 24, height: 24, quality: 40 }).props.src
     : null;
   useEffect(() => {
     if (near || !cardRef.current) return;
@@ -131,7 +145,7 @@ export default function ProductCard({
   const [liveOutSizes, setLiveOutSizes] = useState<Set<string>>(new Set());
   const wishlisted = id ? has(id) : false;
 
-  const hoverImage = images && images.length > 1 ? images[1] : null;
+  const hoverImage = verModelo ? (image ?? null) : fotoModelo;
   const colorways = id ? getColorwaysForSlug(id) : null;
 
   const handleAddToCart = async (size: string, e: React.MouseEvent) => {
@@ -195,16 +209,16 @@ export default function ProductCard({
             style={{ backgroundImage: `url(${miniatura})` }}
           />
         )}
-        {image && near ? (
+        {fotoPrincipal && near ? (
           <Image
-            src={imgSrc(image)}
+            src={imgSrc(fotoPrincipal)}
             alt={name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             priority={imagePriority === 'lcp'}
             loading={imagePriority === 'eager' ? 'eager' : undefined}
             onLoad={() => setFotoLista(true)}
-            className={`object-cover object-top transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
+            className={`object-cover ${verModelo ? "object-center" : "object-top"} transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
               (hovered && hoverImage && hoverLoaded) || (miniatura && !fotoLista) ? "opacity-0" : "opacity-100"
             }`}
           />
@@ -216,7 +230,7 @@ export default function ProductCard({
             fill
             onLoad={() => setHoverLoaded(true)}
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            className={`object-cover object-center transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
+            className={`object-cover ${verModelo ? "object-top" : "object-center"} transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
               hovered && hoverLoaded ? "opacity-100" : "opacity-0"
             }`}
           />

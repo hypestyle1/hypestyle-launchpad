@@ -7,6 +7,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import CatalogHeader from '@/components/collection/CatalogHeader';
+import VistaControles from '@/components/collection/VistaControles';
+import { useVistaCatalogo } from '@/lib/catalogo-vista';
 import { useReveal } from '@/hooks/useReveal';
 import { useProducts } from '@/hooks/useProducts';
 import { CATEGORY_MAP, productsForCategory } from '@/lib/category-config';
@@ -35,6 +37,7 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
   const config = CATEGORY_MAP[normalizedPath] ?? CATEGORY_MAP['/productos'];
   const [activeTab, setActiveTab] = useState(0);
   const [sort, setSort] = useState<SortKey>('default');
+  const { cols, setCols, foto, setFoto, grid } = useVistaCatalogo();
   const [sizeFilter, setSizeFilter] = useState<string[]>([]);
 
   const { data: allProducts = [], isLoading } = useProducts(0, undefined, undefined, initialProducts);
@@ -100,13 +103,19 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
         <div className="bg-background">
           <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-3">
             {availableSizes.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {availableSizes.map(s => (
-                  <button key={s} onClick={() => toggleSize(s)}
-                    className={`px-3 py-1 text-[11px] font-semibold uppercase tracking-wide border transition-colors rounded-[6px] ${sizeFilter.includes(s) ? 'bg-foreground text-background border-foreground' : 'border-border text-foreground/60 hover:border-foreground/40 hover:text-foreground'}`}>
-                    {s}
-                  </button>
-                ))}
+              <div className="w-full flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 p-1 rounded-[8px] bg-black/[0.045]">
+                  {availableSizes.map(s => (
+                    <button key={s} onClick={() => toggleSize(s)} aria-pressed={sizeFilter.includes(s)}
+                      className={`h-7 px-2.5 text-[11.5px] font-medium uppercase tracking-wide rounded-[6px] transition-all duration-150 ${
+                        sizeFilter.includes(s)
+                          ? 'bg-white text-foreground shadow-[0_1px_5px_rgba(0,0,0,0.13)] border border-black/[0.06]'
+                          : 'text-foreground/55 hover:text-foreground border border-transparent'
+                      }`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
                 {sizeFilter.length > 0 && (
                   <button onClick={() => setSizeFilter([])}
                     className="text-[11px] text-muted-foreground hover:text-foreground transition-colors ml-1 underline">
@@ -115,6 +124,8 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
                 )}
               </div>
             )}
+            <VistaControles cols={cols} setCols={setCols} foto={foto} setFoto={setFoto} />
+
             <div className="ml-auto flex items-center gap-2">
               <span className="text-[11px] text-muted-foreground hidden sm:block">Ordenar:</span>
               <select value={sort} onChange={e => setSort(e.target.value as SortKey)}
@@ -135,7 +146,7 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
           ) : products.length === 0 ? (
             <p className="text-center text-muted-foreground py-20">No hay productos en esta categoría todavía.</p>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9">
+            <div className={grid}>
               {products.map((p, i) => (
                 // La primera fila (4 cards en desktop, 2 filas de 2 en mobile)
                 // se pinta de entrada: con .reveal arrancaba en opacity 0 hasta
@@ -146,6 +157,7 @@ export default function CategoriaPage({ initialProducts }: { initialProducts?: N
                   <ProductCard id={p.slug} name={p.name} category={p.category} price={p.price}
                     originalPrice={p.originalPrice} badge={p.badge} image={p.image} images={p.images}
                     sizes={p.sizes} stock={p.stock} href={p.href} customizable={p.customizable} tags={p.tags}
+                    vistaFoto={foto}
                     imagePriority={i < 2 ? 'lcp' : i < PRIMERA_FILA ? 'eager' : undefined} />
                 </div>
               ))}

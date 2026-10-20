@@ -5,6 +5,9 @@ import { Search, ShoppingBag, Menu, X, ChevronDown, ChevronRight, ChevronLeft } 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { imgSrc } from '@/lib/img';
+import MenuDestacados from '@/components/MenuDestacados';
+import { CURRENCIES } from '@/lib/currency';
+import type { Language } from '@/context/LocaleContext';
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -103,6 +106,44 @@ const mobilePanels = {
   accesorios: { title: 'Accesorios', verTodo: '/accesorios', items: [] },
 };
 
+type GrupoMenu = 'prendas' | 'colecciones';
+
+/**
+ * Filas grandes del menú mobile. Las fotos tienen que asomarse sin scrollear,
+ * así que la lista es corta: las seis categorías de prendas y las colecciones
+ * viven adentro de un desplegable (referencia: emestudios.com, 19/10/2026).
+ */
+const MENU_MOBILE: { label: string; href?: string; grupo?: GrupoMenu; destacado?: boolean }[] = [
+  { label: 'New In',      href: '/new-in' },
+  { label: 'Prendas',     grupo: 'prendas' },
+  { label: 'Accesorios',  href: '/accesorios' },
+  { label: 'Colecciones', grupo: 'colecciones' },
+  { label: 'Gift Card',   href: '/gift-cards' },
+  { label: 'Sale', href: '/special-prices', destacado: true },
+];
+
+const GRUPOS_MENU: Record<GrupoMenu, { label: string; href: string }[]> = {
+  prendas: [
+    { label: 'Ver todos los productos', href: '/productos' },
+    { label: 'Remeras',     href: '/tees' },
+    { label: 'Hoodies',     href: '/hoodies' },
+    { label: 'Longsleeves', href: '/longsleeves' },
+    { label: 'Pantalones',  href: '/pants' },
+    { label: 'Jorts',       href: '/jorts' },
+    { label: 'Conjuntos',   href: '/sets' },
+  ],
+  colecciones: [
+    { label: 'Spring Summer 27', href: '/colecciones/ss27' },
+    { label: 'Fall Winter 26',   href: '/colecciones/fw26' },
+    { label: 'Esenciales',       href: '/colecciones/regular-tees' },
+    { label: 'Colaboraciones',   href: '/colaboraciones' },
+    { label: 'Ver todas',        href: '/colecciones' },
+  ],
+};
+
+/** Mismo orden que LocalePopup; acá van solo los códigos, como en EME. */
+const IDIOMAS: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
+
 const glassStyle = {
   background: 'rgba(240, 238, 232, 0.82)',
   backdropFilter: 'blur(32px) saturate(200%)',
@@ -122,6 +163,7 @@ export default function Navbar() {
   const [scrolled, setScrolled]       = useState(false);
   const [mobileOpen, setMobileOpen]   = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'main' | 'arriba' | 'abajo' | 'accesorios'>('main');
+  const [grupoAbierto, setGrupoAbierto] = useState<GrupoMenu | null>(null);
   const [shopOpen, setShopOpen]       = useState(false);
   // Qué desplegable chico está abierto ('colecciones' | 'contacto'), o ninguno.
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -133,7 +175,7 @@ export default function Navbar() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { count, setDrawerOpen } = useCart();
   const { items: wishlistItems, setDrawerOpen: openWishlist } = useWishlist();
-  const { formatPrice, t } = useLocale();
+  const { formatPrice, t, language, setLanguage, currency, setCurrency } = useLocale();
   const { data: allProducts = [] } = useProducts(0);
   const { phase: promoPhase } = usePromo3x2Status();
   const argMode = promoPhase === 'pre' || promoPhase === 'live' || promoPhase === 'won';
@@ -166,7 +208,7 @@ export default function Navbar() {
   }, [searchOpen]);
 
   useEffect(() => {
-    if (!mobileOpen) setMobilePanel('main');
+    if (!mobileOpen) { setMobilePanel('main'); setGrupoAbierto(null); }
   }, [mobileOpen]);
 
   const closeMobile = () => setMobileOpen(false);
@@ -472,31 +514,74 @@ export default function Navbar() {
           las del selector de idioma y moneda. Sigue por debajo del carrito
           (z-[150]) y de los modales. */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
-          style={{ background: 'rgba(240, 238, 232, 0.96)', backdropFilter: 'blur(32px) saturate(200%)', WebkitBackdropFilter: 'blur(32px) saturate(200%)' }}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-foreground/8"
-            style={{ paddingTop: 'calc(var(--announce-h) + 16px)' }}>
-            {mobilePanel !== 'main' ? (
-              <button onClick={() => setMobilePanel('main')} className="flex items-center gap-1 text-foreground/60">
-                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-                <span className="text-[13px]">Shop</span>
-              </button>
-            ) : (
-              <button onClick={closeMobile} aria-label="Cerrar"><X className="w-5 h-5" strokeWidth={1.2} /></button>
-            )}
-            <Link href="/" onClick={closeMobile} className="absolute left-1/2 -translate-x-1/2">
-              {!logoError ? (
-                <img src={LOGO_NAV} alt="Hypestyle" className="h-5 w-auto" onError={() => setLogoError(true)} />
+        <>
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          onClick={closeMobile}
+          className="fixed inset-0 z-[99] bg-black/10 cursor-default"
+        />
+        <div data-testid="menu-mobile"
+          className="fixed left-4 right-4 z-[100] flex flex-col overflow-hidden rounded-[14px] border border-black/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
+          style={{
+            top: 'var(--announce-h)',
+            maxHeight: 'calc(100dvh - var(--announce-h) - 16px)',
+            // 0.96 era casi opaco: el blur no se veía y el menú tapaba la
+            // página entera. Con 0.68 y más blur se ve el fondo desenfocado
+            // detrás (referencia: emestudios.com, 19/10) sin perder contraste:
+            // el texto es casi negro sobre un beige claro.
+            background: 'rgba(240, 238, 232, 0.40)',
+            backdropFilter: 'blur(52px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(52px) saturate(160%)',
+          }}>
+          {/* Mismo material que la barra del navbar: el logo y los íconos
+              quedan del mismo tamaño y en el mismo lugar, así no saltan al
+              abrir el menú — la X ocupa el lugar de la hamburguesa. El globo
+              sale de acá: el idioma y la moneda están más abajo, a la vista. */}
+          <div className="flex items-center justify-between px-4 h-[48px] flex-none border-b border-black/25">
+            <div className="flex items-center gap-2.5 flex-none">
+              {mobilePanel !== 'main' ? (
+                <button onClick={() => setMobilePanel('main')} aria-label="Volver"
+                  className="hover:opacity-50 transition-opacity duration-200">
+                  <ChevronLeft className="w-5 h-5" strokeWidth={1.2} />
+                </button>
               ) : (
-                <span className="text-[15px] font-normal tracking-[0.08em]">Hypestyle</span>
+                <button onClick={closeMobile} aria-label="Cerrar"
+                  className="hover:opacity-50 transition-opacity duration-200">
+                  <X className="w-5 h-5" strokeWidth={1.2} />
+                </button>
               )}
-            </Link>
-            <div className="flex items-center gap-3">
-              <LocalePopup />
-              <button onClick={() => { closeMobile(); setDrawerOpen(true); }} className="relative" aria-label="Carrito">
+              <Link href="/" onClick={closeMobile}>
+                {!logoError ? (
+                  <img src={LOGO_NAV} alt="Hypestyle" className="w-auto hs-logo-3d" style={{ height: '22px' }}
+                    onError={() => setLogoError(true)} />
+                ) : (
+                  <span className="text-[15px] font-normal tracking-[0.08em]">Hypestyle</span>
+                )}
+              </Link>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button onClick={() => { closeMobile(); setSearchOpen(true); }} aria-label="Buscar"
+                className="p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150">
+                <Search className="w-4 h-4" strokeWidth={1.2} />
+              </button>
+              <button onClick={() => { closeMobile(); openWishlist(true); }} aria-label="Favoritos"
+                className="relative p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </button>
+              <button onClick={() => { closeMobile(); setDrawerOpen(true); }} aria-label="Carrito"
+                className="relative p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150">
                 <ShoppingBag className="w-4 h-4" strokeWidth={1.2} />
                 {count > 0 && (
-                  <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-foreground text-primary-foreground text-[9px] font-medium flex items-center justify-center rounded-full">
                     {count}
                   </span>
                 )}
@@ -519,43 +604,94 @@ export default function Navbar() {
           <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
             {mobilePanel === 'main' ? (
               <>
-                <div className="space-y-1 mb-8">
-                  {mobilePanels.main.items.map((item) => (
-                    item.panel ? (
-                      <button key={t(item.label)} onClick={() => setMobilePanel(item.panel as any)}
-                        className="w-full flex items-center justify-between py-2.5 border-b border-foreground/8 last:border-0">
-                        <span className="text-[22px] font-normal tracking-tight">{t(item.label)}</span>
-                        <ChevronRight className="w-4 h-4 text-foreground/30" strokeWidth={1.5} />
-                      </button>
-                    ) : (
-                      <button key={t(item.label)}
-                        onClick={() => { handleSmartLink(item.href!, item.homeHash); closeMobile(); }}
-                        className="w-full flex items-center justify-between py-2.5 border-b border-foreground/8 last:border-0 text-left">
-                        {(item as { isSale?: boolean }).isSale
-                          ? <span className="bg-red-600 text-white text-[16px] font-bold uppercase tracking-[0.1em] px-3 py-1 rounded-[5px]">{t(item.label)}</span>
-                          : <span className="text-[22px] font-normal tracking-tight">{t(item.label)}</span>}
-                      </button>
-                    )
-                  ))}
-                </div>
                 <div className="mb-6">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-foreground/35 mb-3">{t('Colecciones')}</p>
-                  {mobilePanels.main.collections.map((l) => (
+                  {MENU_MOBILE.map((item) => {
+                    const abierto = !!item.grupo && grupoAbierto === item.grupo;
+                    return (
+                      <div key={item.label} className="border-b border-black/25 last:border-0">
+                        {item.grupo ? (
+                          <>
+                            <button onClick={() => setGrupoAbierto(abierto ? null : item.grupo!)}
+                              aria-expanded={abierto}
+                              className="w-full flex items-center justify-between py-2.5 text-left">
+                              <span className="text-[20px] font-normal tracking-tight">{t(item.label)}</span>
+                              <ChevronDown strokeWidth={2.25}
+                                className={`w-[22px] h-[22px] text-foreground transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`} />
+                            </button>
+                            {abierto && (
+                              <div className="pb-3">
+                                {GRUPOS_MENU[item.grupo].map((l) => (
+                                  <button key={l.label}
+                                    onClick={() => { handleSmartLink(l.href, null); closeMobile(); }}
+                                    className="block w-full text-left text-[15px] text-foreground/60 hover:text-foreground transition-colors py-1.5">
+                                    {t(l.label)}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <button onClick={() => { handleSmartLink(item.href!, null); closeMobile(); }}
+                            className="w-full flex items-center py-2.5 text-left">
+                            <span className={`text-[20px] tracking-tight ${item.destacado ? 'font-semibold' : 'font-normal'}`}>
+                              {t(item.label)}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <MenuDestacados onNavegar={closeMobile} />
+
+                {/* Lo que más se busca cuando el menú no es para comprar.
+                    En recuadros chicos pasaba desapercibido: va grande, en
+                    negrita y alineado a la izquierda, como en EME. */}
+                <div className="mb-6 space-y-1.5">
+                  {[
+                    { label: 'FAQs',          href: '/faqs' },
+                    { label: 'Quiénes Somos', href: '/nosotros' },
+                    { label: 'Políticas',     href: '/politicas-de-devolucion' },
+                  ].map((l) => (
                     <Link key={t(l.label)} href={l.href} onClick={closeMobile}
-                      className="block text-[14px] text-foreground/60 hover:text-foreground transition-colors py-1.5">
+                      className="block text-[19px] font-semibold tracking-tight hover:opacity-70 transition-opacity">
                       {t(l.label)}
                     </Link>
                   ))}
                 </div>
+
+                {/* Idioma y moneda a la vista, como EME. El globo del encabezado
+                    sigue abriendo el popup completo, con los nombres enteros. */}
+                <div className="mb-6 space-y-2.5">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {IDIOMAS.map((code) => (
+                      <button key={code} onClick={() => setLanguage(code)}
+                        className={`text-[12px] tracking-[0.1em] pb-0.5 border-b transition-colors ${
+                          language === code ? 'border-foreground text-foreground' : 'border-transparent text-foreground/40 hover:text-foreground'
+                        }`}>
+                        {code}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    {CURRENCIES.map((c) => (
+                      <button key={c.code} onClick={() => setCurrency(c.code)}
+                        className={`text-[12px] tracking-[0.1em] pb-0.5 border-b transition-colors ${
+                          currency === c.code ? 'border-foreground text-foreground' : 'border-transparent text-foreground/40 hover:text-foreground'
+                        }`}>
+                        {c.code}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="border-t border-foreground/10 pt-4 space-y-1">
                   {/* Los lookbooks salen del menú de compra: viven en el
                       Archivo de /colecciones. Acá quedan las institucionales. */}
                   {[
-                    { label: 'Reseñas',       href: '/reviews' },
-                    { label: 'FAQs',          href: '/faqs' },
-                    { label: 'Quiénes Somos', href: '/nosotros' },
-                    { label: 'Políticas',     href: '/politicas-de-devolucion' },
-                    { label: 'Contacto',      href: '/contacto' },
+                    { label: 'Reseñas',  href: '/reviews' },
+                    { label: 'Contacto', href: '/contacto' },
                     { label: 'Crea contenido con Hype', href: '/creadores' },
                     { label: 'Sumá Hype a tu local',    href: '/mayoristas/solicitud' },
                   ].map((l) => (
@@ -586,6 +722,7 @@ export default function Navbar() {
             )}
           </div>
         </div>
+        </>
       )}
     </>
   );

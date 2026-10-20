@@ -9,8 +9,10 @@ import { getPublicReviewSummary } from '@/lib/reviews/public';
 import type { PublicReviewSummary } from '@/lib/reviews/types';
 import ReviewsSummary from '@/components/reviews/ReviewsSummary';
 import ReviewsList from '@/components/reviews/ReviewsList';
+import { useLocale } from '@/context/LocaleContext';
 
 export default function ReviewsPage() {
+  const { t } = useLocale();
   const [summary, setSummary] = useState<PublicReviewSummary | null>(null);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function ReviewsPage() {
         {/* Encabezado */}
         <section className="bg-bg-dark text-primary-foreground text-center py-24 px-6">
           <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-4">Reseñas</p>
-          <h1 className="text-[32px] md:text-[48px] font-bold uppercase leading-none mb-4">Lo que dice nuestra comunidad</h1>
+          <h1 className="text-[32px] md:text-[48px] font-bold uppercase leading-none mb-4">{t('Lo que dice nuestra comunidad')}</h1>
           <p className="text-[13px] md:text-[14px] text-primary-foreground/50 max-w-md mx-auto mb-8">
             Calidad, talles, packaging y envíos, contado por quienes ya compraron.
           </p>

@@ -30,12 +30,14 @@ export interface VistoEnPost {
   /** Link alternativo cuando sus prendas ya no están (ej. el lookbook de la colab). */
   link?: { href: string; label: string };
   alt: string;
+  /** Ruta propia de la foto. Sin esto, /visto-en/<id>.webp. */
+  foto?: string;
   /** Video corto (mp4 720x1280, sin audio). La foto <id>.webp es el póster. */
   video?: string;
   slugs: string[];
 }
 
-export const vistoEnFoto = (post: VistoEnPost) => `/visto-en/${post.id}.webp`;
+export const vistoEnFoto = (post: VistoEnPost) => post.foto ?? `/visto-en/${post.id}.webp`;
 
 const GREY_HSTARS = ['hoodie-grey-hstars', 'sweatpant-grey-hstars'];
 const CEROUNNO = ['half-zip-polo-black', 'only-god-can-judge-me-blanca', 'sweatpant-black-hstars'];

@@ -18,6 +18,11 @@ import { type Product } from '@/data/products';
 import { checkStock } from '@/lib/checkStock';
 import { useBottomShift, setBuyBarVisible } from '@/lib/bottom-shift';
 import StockAlertForm from '@/components/StockAlertForm';
+import VistoEn from '@/components/VistoEn';
+import { SHOP_THE_LOOK } from '@/data/shopTheLook';
+import TiraProductos from '@/components/producto/TiraProductos';
+import VistosRecientemente from '@/components/producto/VistosRecientemente';
+import { registrarVisto } from '@/lib/vistos-recientemente';
 import { isFlashSaleActive } from '@/lib/flash-sale';
 import { useGoalDiscount, getGoalDiscountPrice, GOAL_DISCOUNT_SLUG, type GoalDiscount } from '@/hooks/useGoalDiscount';
 import { gaViewItem, gaAddToCart } from '@/lib/ga';
@@ -190,12 +195,14 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // Descripción y ficha del modelo en el idioma elegido: IA, cacheada en el
   // servidor. Mientras carga o si falla se ve el español de Woo.
   const traduccion = useProductTranslation(product?.slug, language);
-  const { data: allProducts = [] } = useProducts(20);
+  // El catálogo completo (la misma query que ya usa el resto del sitio, así
+  // que sale de caché) para poder recomendar diez y no cuatro.
+  const { data: allProducts = [] } = useProducts(0);
   const related = useMemo(() => {
     if (!product) return [];
     return [...allProducts.filter(p => p.slug !== product.slug)]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 4);
+      .slice(0, 10);
   }, [allProducts, product?.slug]);
 
   const goalDiscount = useGoalDiscount(slug, initialGoalDiscount);
@@ -300,6 +307,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // El precio es el que el cliente ve en ese momento. En el único producto con
   // descuento por gol el primer render puede tomar el precio de lista si la
   // consulta todavía no resolvió — se prefiere eso antes que duplicar el evento.
+  // Lo mira → queda en la lista de "vistos recientemente" de su navegador.
+  useEffect(() => {
+    if (product?.slug) registrarVisto(product.slug);
+  }, [product?.slug]);
+
   const viewContentSent = useRef<string | null>(null);
   useEffect(() => {
     if (!product || viewContentSent.current === product.slug) return;
@@ -535,12 +547,15 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
             </div>
   );
 
+  // Estructura de Cold Culture: recomendados en una sola fila, el look con
+  // sus fotos, y abajo lo último que miró la persona. Las tres se borran solas
+  // si no hay nada para mostrar.
   const relacionados = privateAccess ? privateAccess.related : (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
-      {related.map(p => (
-        <ProductCard key={p.slug} {...p} />
-      ))}
-    </div>
+    <>
+      <TiraProductos titulo="Recomendados" productos={related} className="pb-4" />
+      <VistoEn titulo="Así se usa" variante="look" fuente={SHOP_THE_LOOK} soloDisponibles slugDestacado={product.slug} />
+      <VistosRecientemente slugActual={product.slug} />
+    </>
   );
 
   return (
@@ -845,14 +860,12 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           </div>
         </div>
 
-        <section className="max-w-[1400px] mx-auto px-4 pb-20">
-          <h2 className="text-lg font-bold uppercase tracking-tight mb-6">{t('Completa el look')}</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-[2px]">
-            {related.map(p => (
-              <ProductCard key={p.slug} {...p} />
-            ))}
-          </div>
-        </section>
+        {/* Estructura de Cold Culture: recomendados en una sola fila, el look
+            con sus fotos, y abajo lo último que miró la persona. Las tres se
+            borran solas si no hay nada que mostrar. */}
+        <TiraProductos titulo="Recomendados" productos={related} className="pb-4" />
+        <VistoEn titulo="Así se usa" variante="look" fuente={SHOP_THE_LOOK} soloDisponibles slugDestacado={product.slug} />
+        <VistosRecientemente slugActual={product.slug} />
       </main>
       )}
       <Footer />
