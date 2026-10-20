@@ -6,6 +6,7 @@ import { PrecioError } from '@/lib/precio-servidor';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 import { clientIp, clientUserAgent } from '@/lib/client-ip';
 import { guardCheckout, registrarCreacion } from '@/lib/checkout-guard-server';
+import { pedidoReusable } from '@/lib/retry-pedido-server';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
       // shippingLabel del cliente ya no se usa: la etiqueta la arma el
       // recálculo de abajo, junto con el costo.
       paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
-      fbp, fbc, attribution, clarityUser, claritySession,
+      fbp, fbc, attribution, clarityUser, claritySession, retry,
     } = rawBody;
     // Nunca confiar en el navegador: cualquier línea marcada como regalo (o
     // manipulada para simularlo) se descarta acá. El Gift Engine (enganchado a
@@ -191,23 +192,43 @@ export async function POST(req: NextRequest) {
     if (shippingMethodId)   meta.push({ key: '_chosen_shipping', value: shippingMethodId });
     if (meta.length)        order.meta_data = meta;
 
-    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-      body:    JSON.stringify(order),
+    // Reintento de pago (auditoría 17/10): ver create-order-gocuotas.
+    const totalNuevo = lineItems.reduce((n, li) => n + Number(li.total ?? 0), 0) + Math.round(quote.cost);
+    const reusado = await pedidoReusable({
+      retry, email: customer?.email ?? '', lineasNuevas: lineItems as any,
+      totalNuevo, conCupon: !!couponCode,
+      wpUrl: WP_URL, authHeader: wcAuth(), etiqueta: 'create-order-intl',
     });
 
-    if (!res.ok) {
-      const txt = await res.text();
-      console.error('[create-order-intl] WC error:', res.status, txt);
-      return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
+    type WcOrderResp = { id: number; number: string; order_key: string; total: string };
+    let wcOrder: WcOrderResp;
+    if (reusado) {
+      wcOrder = {
+        id: reusado.id,
+        number: String(reusado.number ?? reusado.id),
+        order_key: reusado.order_key,
+        total: String(reusado.total ?? totalNuevo),
+      };
+    } else {
+      const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+        body:    JSON.stringify(order),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error('[create-order-intl] WC error:', res.status, txt);
+        return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
+      }
+
+      wcOrder = await res.json() as WcOrderResp;
+      registrarCreacion(req, customer?.email);
     }
 
-    const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string };
-    registrarCreacion(req, customer?.email);
-
+    // En un reintento sobre el mismo pedido el mail ya salió: no se manda otro.
     const SITE = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
-    fetch(`${SITE}/api/send-confirmation`, {
+    if (!reusado) fetch(`${SITE}/api/send-confirmation`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'x-hypestyle-secret': process.env.WP_SECRET || '' },
       body: JSON.stringify({

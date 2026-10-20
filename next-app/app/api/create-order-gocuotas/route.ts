@@ -9,6 +9,7 @@ import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 import { errorEsDeCupon, razonCupon, regaloFirst10DeLineas } from '@/lib/first10';
 import { clientIp, clientUserAgent } from '@/lib/client-ip';
 import { guardCheckout, registrarCreacion } from '@/lib/checkout-guard-server';
+import { pedidoReusable } from '@/lib/retry-pedido-server';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
     const {
       items, customer, shipping, discountAmount: descuentoCliente, couponCode,
       paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
-      fbp, fbc, attribution, clarityUser, claritySession,
+      fbp, fbc, attribution, clarityUser, claritySession, retry,
     } = { ...rawPayload, items: cleanItems };
 
     // Validación de datos + rate limit (auditoría 17/10): antes de esto, la
@@ -224,43 +225,68 @@ export async function POST(req: NextRequest) {
     if (paMeta && (items as any[]).some((it) => pa!.precios.has(String(it?.id)))) meta.push(paMeta);
     if (meta.length)        order.meta_data = meta;
 
-    const crear = () => fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-      body:    JSON.stringify(order),
+    // Reintento de pago (auditoría 17/10): si el intento anterior dejó un
+    // pedido pending de esta misma sesión, con el mismo carrito y el mismo
+    // total, se reusa en vez de crear otro. Precio, stock y envío ya se
+    // reverificaron arriba; cualquier cambio da pedido nuevo.
+    const totalNuevo = lineItems.reduce((n, li) => n + Number(li.total ?? 0), 0)
+      + envioCosto - calculo.descuento.monto;
+    const reusado = await pedidoReusable({
+      retry, email: customer?.email ?? '', lineasNuevas: lineItems as any,
+      totalNuevo, conCupon: !!couponCode,
+      wpUrl: WP_URL, authHeader: wcAuth(), etiqueta: 'create-order-gocuotas',
     });
-    let res = await crear();
 
+    type WcOrderResp = { id: number; number: string; order_key: string; total: string; line_items?: { name?: string; quantity?: number; total?: string; meta_data?: { key?: string; value?: unknown }[] }[] };
+    let wcOrder: WcOrderResp;
     // Woo rechaza el pedido entero si el cupón ya no vale (cupo de FIRST10
     // agotado entre que se validó y se confirmó, vencido, ya usado por ese mail).
     // Un cupón caído no puede tirar la venta: se reintenta sin el código y se le
     // avisa al cliente en la respuesta.
     let couponDropped: { code: string; reason: string } | null = null;
-    if (!res.ok && couponCode) {
-      const txt = await res.text();
-      if (errorEsDeCupon(res.status, txt)) {
-        let reason = razonCupon('');
-        try { reason = razonCupon(JSON.parse(txt)?.message); } catch { /* texto plano */ }
-        console.warn('[create-order-gocuotas] cupón rechazado por Woo, reintento sin cupón:', couponCode, txt);
-        delete order.coupon_lines;
-        couponDropped = { code: String(couponCode).toUpperCase(), reason };
-        res = await crear();
-      } else {
+
+    if (reusado) {
+      wcOrder = {
+        id: reusado.id,
+        number: String(reusado.number ?? reusado.id),
+        order_key: reusado.order_key,
+        total: String(reusado.total ?? totalNuevo),
+        line_items: reusado.line_items as WcOrderResp['line_items'],
+      };
+    } else {
+      const crear = () => fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+        body:    JSON.stringify(order),
+      });
+      let res = await crear();
+
+      if (!res.ok && couponCode) {
+        const txt = await res.text();
+        if (errorEsDeCupon(res.status, txt)) {
+          let reason = razonCupon('');
+          try { reason = razonCupon(JSON.parse(txt)?.message); } catch { /* texto plano */ }
+          console.warn('[create-order-gocuotas] cupón rechazado por Woo, reintento sin cupón:', couponCode, txt);
+          delete order.coupon_lines;
+          couponDropped = { code: String(couponCode).toUpperCase(), reason };
+          res = await crear();
+        } else {
+          console.error('[create-order-gocuotas] WC error:', res.status, txt);
+          return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
+        }
+      }
+
+      if (!res.ok) {
+        const txt = await res.text();
         console.error('[create-order-gocuotas] WC error:', res.status, txt);
         return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
       }
-    }
 
-    if (!res.ok) {
-      const txt = await res.text();
-      console.error('[create-order-gocuotas] WC error:', res.status, txt);
-      return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
+      wcOrder = await res.json() as WcOrderResp;
+      // El cupo de ráfaga se consume recién acá: un intento que falló antes
+      // (validación, stock, Woo caído) no cuenta contra el cliente.
+      registrarCreacion(req, customer?.email);
     }
-
-    const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string; line_items?: { name?: string; quantity?: number; total?: string; meta_data?: { key?: string; value?: unknown }[] }[] };
-    // El cupo de ráfaga se consume recién acá: un intento que falló antes
-    // (validación, stock, Woo caído) no cuenta contra el cliente.
-    registrarCreacion(req, customer?.email);
     // El regalo FIRST10 lo agrega WordPress sobre el pedido real; para el mail
     // de confirmación se lee de las líneas que devolvió Woo.
     const regaloFirst10 = regaloFirst10DeLineas(wcOrder.line_items);
@@ -291,9 +317,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send confirmation email server-side — don't rely on frontend sessionStorage
+    // Send confirmation email server-side — don't rely on frontend sessionStorage.
+    // En un reintento sobre el mismo pedido el mail ya salió: no se manda otro.
     const SITE = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
-    fetch(`${SITE}/api/send-confirmation`, {
+    if (!reusado) fetch(`${SITE}/api/send-confirmation`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', 'x-hypestyle-secret': process.env.WP_SECRET || '' },
       body: JSON.stringify({
