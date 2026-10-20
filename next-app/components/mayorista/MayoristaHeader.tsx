@@ -66,6 +66,10 @@ export default function MayoristaHeader() {
           <Link href="/mayoristas/pedidos" className={link}>
             <span className="md:hidden">Pedidos</span><span className="hidden md:inline">Mis pedidos</span>
           </Link>
+          {/* En mobile no entra; el acceso ahí es desde cada pedido entregado. */}
+          <Link href="/mayoristas/contenido" className={`${link} hidden sm:inline-flex`}>
+            Contenido
+          </Link>
           <Link href="/mayoristas/carrito" className={link}>
             Pedido{count > 0 ? ` (${count})` : ''}
           </Link>
