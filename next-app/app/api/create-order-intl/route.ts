@@ -5,6 +5,7 @@ import { attributionOrderMeta } from '@/lib/attribution';
 import { PrecioError } from '@/lib/precio-servidor';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 import { clientIp, clientUserAgent } from '@/lib/client-ip';
+import { guardCheckout, registrarCreacion } from '@/lib/checkout-guard-server';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -80,6 +81,10 @@ export async function POST(req: NextRequest) {
     const items = Array.isArray(rawBody.items) ? rawBody.items.filter((it: any) => it?.isGift !== true) : [];
 
     const country = (customer.pais && customer.pais !== 'OTHER') ? customer.pais : 'AR';
+
+    // Validación de datos + rate limit (auditoría 17/10). Ver create-order-gocuotas.
+    const guard = await guardCheckout({ req, customer, internacional: true, wpUrl: WP_URL, authHeader: wcAuth() });
+    if (guard.bloqueo) return NextResponse.json({ message: guard.bloqueo.mensaje }, { status: guard.bloqueo.status });
 
     // Precio por línea calculado en el servidor (auditoría 28/09, C1), igual
     // que el envío de abajo: del navegador solo se toma qué se compra.
@@ -176,6 +181,10 @@ export async function POST(req: NextRequest) {
     if (ua)             meta.push({ key: '_hs_client_ua',    value: ua });
     if (clarityUser)    meta.push({ key: '_clarity_user',    value: String(clarityUser).slice(0, 64) });
     if (claritySession) meta.push({ key: '_clarity_session', value: String(claritySession).slice(0, 64) });
+    if (guard.riesgo) {
+      meta.push({ key: '_hs_riesgo', value: 'alto' });
+      meta.push({ key: '_hs_riesgo_motivos', value: guard.riesgo.join('; ').slice(0, 200) });
+    }
     // El plugin andreani-shipping valida el envío contra este meta, que WooCommerce
     // solo setea en el checkout nativo (sesión). Sin esto acá, el plugin rechaza el
     // pedido con "no es válida para envío Andreani" al querer empaquetarlo.
@@ -195,6 +204,7 @@ export async function POST(req: NextRequest) {
     }
 
     const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string };
+    registrarCreacion(req, customer?.email);
 
     const SITE = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
     fetch(`${SITE}/api/send-confirmation`, {

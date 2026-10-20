@@ -8,6 +8,7 @@ import { privateAccessForOrder, privateAccessMeta } from '@/lib/private-access/o
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 import { errorEsDeCupon, razonCupon, regaloFirst10DeLineas } from '@/lib/first10';
 import { clientIp, clientUserAgent } from '@/lib/client-ip';
+import { guardCheckout, registrarCreacion } from '@/lib/checkout-guard-server';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -83,6 +84,11 @@ export async function POST(req: NextRequest) {
       paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
       fbp, fbc, attribution, clarityUser, claritySession,
     } = { ...rawPayload, items: cleanItems };
+
+    // Validación de datos + rate limit (auditoría 17/10): antes de esto, la
+    // ruta era pública sin ningún freno y la validación vivía solo en el form.
+    const guard = await guardCheckout({ req, customer, internacional: false, wpUrl: WP_URL, authHeader: wcAuth() });
+    if (guard.bloqueo) return NextResponse.json({ message: guard.bloqueo.mensaje }, { status: guard.bloqueo.status });
 
     // Precio, descuento y envío salen del servidor (auditoría 28/09, C1). Del
     // body solo se toma qué se compra; lo que mandó el navegador como precio
@@ -199,6 +205,12 @@ export async function POST(req: NextRequest) {
     // encuentra en el dashboard (ver lib/clarity-tracking.ts). Solo IDs, sin PII.
     if (clarityUser)    meta.push({ key: '_clarity_user',    value: String(clarityUser).slice(0, 64) });
     if (claritySession) meta.push({ key: '_clarity_session', value: String(claritySession).slice(0, 64) });
+    // Señales de datos inventados: el pedido entra igual (nunca se pierde una
+    // venta por una heurística), pero queda marcado para revisión humana.
+    if (guard.riesgo) {
+      meta.push({ key: '_hs_riesgo', value: 'alto' });
+      meta.push({ key: '_hs_riesgo_motivos', value: guard.riesgo.join('; ').slice(0, 200) });
+    }
     // El plugin andreani-shipping valida el envío contra este meta, que WooCommerce
     // solo setea en el checkout nativo (sesión). Sin esto acá, el plugin rechaza el
     // pedido con "no es válida para envío Andreani" al querer empaquetarlo.
@@ -246,6 +258,9 @@ export async function POST(req: NextRequest) {
     }
 
     const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string; line_items?: { name?: string; quantity?: number; total?: string; meta_data?: { key?: string; value?: unknown }[] }[] };
+    // El cupo de ráfaga se consume recién acá: un intento que falló antes
+    // (validación, stock, Woo caído) no cuenta contra el cliente.
+    registrarCreacion(req, customer?.email);
     // El regalo FIRST10 lo agrega WordPress sobre el pedido real; para el mail
     // de confirmación se lee de las líneas que devolvió Woo.
     const regaloFirst10 = regaloFirst10DeLineas(wcOrder.line_items);
