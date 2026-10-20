@@ -20,6 +20,7 @@ const DICT: Dict = {
   // idiomas, porque la clave del diccionario es el texto en español y nunca
   // se habían cargado (19/10/2026).
   'Secciones de': { EN: 'Sections of', PT: 'Seções de', DE: 'Bereiche von', FR: 'Sections de', IT: 'Sezioni di' },
+  'Ayuda': { EN: 'Help', PT: 'Ajuda', DE: 'Hilfe', FR: 'Aide', IT: 'Aiuto' },
   'Visto en': { EN: 'Seen on', PT: 'Visto em', DE: 'Gesehen an', FR: 'Vu sur', IT: 'Visto su' },
   'Shop the look': { EN: 'Shop the look', PT: 'Compre o look', DE: 'Den Look shoppen', FR: 'Shopper le look', IT: 'Compra il look' },
   'Así se usa': { EN: 'How it is worn', PT: 'Como se usa', DE: 'So wird es getragen', FR: 'Comment le porter', IT: 'Come si indossa' },
