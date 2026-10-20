@@ -15,6 +15,47 @@ import { Language } from '@/context/LocaleContext';
 type Dict = Record<string, Partial<Record<Exclude<Language, 'ES'>, string>>>;
 
 const DICT: Dict = {
+  // — Encabezados de sección (home, catálogo y ficha) —
+  // Faltaban todos: el traductor dejaba los títulos en español en los seis
+  // idiomas, porque la clave del diccionario es el texto en español y nunca
+  // se habían cargado (19/10/2026).
+  'Secciones de': { EN: 'Sections of', PT: 'Seções de', DE: 'Bereiche von', FR: 'Sections de', IT: 'Sezioni di' },
+  'Visto en': { EN: 'Seen on', PT: 'Visto em', DE: 'Gesehen an', FR: 'Vu sur', IT: 'Visto su' },
+  'Shop the look': { EN: 'Shop the look', PT: 'Compre o look', DE: 'Den Look shoppen', FR: 'Shopper le look', IT: 'Compra il look' },
+  'Así se usa': { EN: 'How it is worn', PT: 'Como se usa', DE: 'So wird es getragen', FR: 'Comment le porter', IT: 'Come si indossa' },
+  'Recomendados': { EN: 'Recommended', PT: 'Recomendados', DE: 'Empfohlen', FR: 'Recommandés', IT: 'Consigliati' },
+  'Vistos recientemente': { EN: 'Recently viewed', PT: 'Vistos recentemente', DE: 'Zuletzt angesehen', FR: 'Vus récemment', IT: 'Visti di recente' },
+  'Esenciales': { EN: 'Essentials', PT: 'Essenciais', DE: 'Essentials', FR: 'Essentiels', IT: 'Essenziali' },
+  'Best sellers': { EN: 'Best sellers', PT: 'Mais vendidos', DE: 'Bestseller', FR: 'Meilleures ventes', IT: 'Più venduti' },
+  'Más Hype': { EN: 'More Hype', PT: 'Mais Hype', DE: 'Mehr Hype', FR: 'Plus de Hype', IT: 'Più Hype' },
+  'SPECIAL PRICES': { EN: 'SPECIAL PRICES', PT: 'PREÇOS ESPECIAIS', DE: 'SONDERPREISE', FR: 'PRIX SPÉCIAUX', IT: 'PREZZI SPECIALI' },
+  'Destacados': { EN: 'Featured', PT: 'Destaques', DE: 'Highlights', FR: 'Sélection', IT: 'In evidenza' },
+  'Todo el sale': { EN: 'All sale', PT: 'Todo o sale', DE: 'Ganzer Sale', FR: 'Tout le sale', IT: 'Tutto il sale' },
+  'Lo que dice nuestra comunidad': { EN: 'What our community says', PT: 'O que diz a nossa comunidade', DE: 'Was unsere Community sagt', FR: 'Ce que dit notre communauté', IT: 'Cosa dice la nostra community' },
+
+  // — Menú mobile —
+  'Prendas': { EN: 'Clothing', PT: 'Roupas', DE: 'Kleidung', FR: 'Vêtements', IT: 'Abbigliamento' },
+  'Comprar': { EN: 'Shop', PT: 'Comprar', DE: 'Shoppen', FR: 'Acheter', IT: 'Acquista' },
+  'Ver todas': { EN: 'View all', PT: 'Ver todas', DE: 'Alle ansehen', FR: 'Tout voir', IT: 'Vedi tutte' },
+  'New In': { EN: 'New In', PT: 'Novidades', DE: 'Neu da', FR: 'Nouveautés', IT: 'Novità' },
+  'Gift Card': { EN: 'Gift Card', PT: 'Gift Card', DE: 'Geschenkkarte', FR: 'Carte cadeau', IT: 'Gift Card' },
+  'Sale': { EN: 'Sale', PT: 'Promoções', DE: 'Sale', FR: 'Soldes', IT: 'Saldi' },
+  'Reseñas': { EN: 'Reviews', PT: 'Avaliações', DE: 'Bewertungen', FR: 'Avis', IT: 'Recensioni' },
+
+  // — Selector de vista del catálogo —
+  'Vista': { EN: 'View', PT: 'Vista', DE: 'Ansicht', FR: 'Vue', IT: 'Vista' },
+  'Prenda': { EN: 'Garment', PT: 'Peça', DE: 'Kleidungsstück', FR: 'Vêtement', IT: 'Capo' },
+  'Puesta': { EN: 'Worn', PT: 'Vestida', DE: 'Getragen', FR: 'Portée', IT: 'Indossato' },
+  'Columnas': { EN: 'Columns', PT: 'Colunas', DE: 'Spalten', FR: 'Colonnes', IT: 'Colonne' },
+  'columna': { EN: 'column', PT: 'coluna', DE: 'Spalte', FR: 'colonne', IT: 'colonna' },
+  'columnas': { EN: 'columns', PT: 'colunas', DE: 'Spalten', FR: 'colonnes', IT: 'colonne' },
+  'Cómo se ve la foto': { EN: 'How the photo looks', PT: 'Como aparece a foto', DE: 'Wie das Foto aussieht', FR: "Comment s'affiche la photo", IT: 'Come si vede la foto' },
+  'Ver la prenda sola': { EN: 'See the garment alone', PT: 'Ver só a peça', DE: 'Nur das Kleidungsstück', FR: 'Voir le vêtement seul', IT: 'Vedi solo il capo' },
+  'Ver la prenda puesta': { EN: 'See it worn', PT: 'Ver vestida', DE: 'Getragen ansehen', FR: 'Voir portée', IT: 'Vedi indossato' },
+
+  // — Carrito —
+  'Regalo por compra': { EN: 'Gift with purchase', PT: 'Brinde por compra', DE: 'Geschenk zum Einkauf', FR: 'Cadeau offert', IT: 'Regalo con acquisto' },
+  'más y llevate el': { EN: 'more and get the', PT: 'mais e leve o', DE: 'mehr und du bekommst das', FR: 'de plus et reçois le', IT: 'in più e ricevi il' },
   // — Navbar —
   'Colecciones': { EN: 'Collections', PT: 'Coleções', DE: 'Kollektionen', FR: 'Collections', IT: 'Collezioni' },
   'Básicos': { EN: 'Basics', PT: 'Básicos', DE: 'Basics', FR: 'Basiques', IT: 'Basic' },
@@ -407,7 +448,6 @@ const DICT: Dict = {
   'Aceptamos cambios hasta 30 días desde la compra. El producto debe estar sin uso, con etiquetas y en su empaque original.': { EN: 'We accept exchanges up to 30 days after purchase. The product must be unused, with tags and in its original packaging.', PT: 'Aceitamos trocas em até 30 dias após a compra. O produto deve estar sem uso, com etiquetas e na embalagem original.', DE: 'Wir akzeptieren Umtausch bis 30 Tage nach dem Kauf. Das Produkt muss ungetragen, mit Etiketten und in der Originalverpackung sein.', FR: 'Nous acceptons les échanges jusqu’à 30 jours après l’achat. Le produit doit être non porté, avec ses étiquettes et dans son emballage d’origine.', IT: 'Accettiamo cambi fino a 30 giorni dall’acquisto. Il prodotto deve essere nuovo, con etichette e nella confezione originale.' },
   'Ver políticas completas →': { EN: 'See full policies →', PT: 'Ver políticas completas →', DE: 'Vollständige Richtlinien ansehen →', FR: 'Voir les politiques complètes →', IT: 'Vedi le politiche complete →' },
   // Reseñas (pestaña lateral y drawer)
-  'Reseñas': { EN: 'Reviews', PT: 'Avaliações', DE: 'Bewertungen', FR: 'Avis', IT: 'Recensioni' },
   'reseña': { EN: 'review', PT: 'avaliação', DE: 'Bewertung', FR: 'avis', IT: 'recensione' },
   'reseñas': { EN: 'reviews', PT: 'avaliações', DE: 'Bewertungen', FR: 'avis', IT: 'recensioni' },
   'Reseñas de la tienda': { EN: 'Store reviews', PT: 'Avaliações da loja', DE: 'Bewertungen des Shops', FR: 'Avis sur la boutique', IT: 'Recensioni del negozio' },

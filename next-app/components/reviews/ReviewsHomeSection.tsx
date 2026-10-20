@@ -8,6 +8,7 @@ import type { PublicReview, PublicReviewSummary } from '@/lib/reviews/types';
 import type { HomeReviewsData } from '@/lib/reviews/server';
 import { useReveal } from '@/hooks/useReveal';
 import { useDragScroll } from '@/hooks/useDragScroll';
+import { useLocale } from '@/context/LocaleContext';
 import CarouselArrows from '../CarouselArrows';
 import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
@@ -30,6 +31,7 @@ const FEATURED_COUNT = 8;
  * como antes y pide por su cuenta.
  */
 export default function ReviewsHomeSection({ initial }: { initial?: HomeReviewsData | null }) {
+  const { t } = useLocale();
   const [summary, setSummary] = useState<PublicReviewSummary | null>(initial?.summary ?? null);
   const [featured, setFeatured] = useState<PublicReview[]>(initial?.featured ?? []);
   const ref = useReveal([summary]);
@@ -64,7 +66,7 @@ export default function ReviewsHomeSection({ initial }: { initial?: HomeReviewsD
       <div className="reveal rd1 flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-9">
         <div>
           <h2 className="text-[22px] md:text-[28px] font-semibold tracking-[-0.01em] leading-none mb-3">
-            Lo que dice nuestra comunidad
+            {t('Lo que dice nuestra comunidad')}
           </h2>
           <p className="text-[13px] text-muted-foreground max-w-md">
             {hasReviews

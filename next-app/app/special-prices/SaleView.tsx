@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import CatalogHeader from '@/components/collection/CatalogHeader';
+import { useLocale } from '@/context/LocaleContext';
 import VistaControles from '@/components/collection/VistaControles';
 import { useVistaCatalogo, type VistaFoto } from '@/lib/catalogo-vista';
 import type { NormalizedProduct } from '@/hooks/useProducts';
@@ -56,6 +57,7 @@ const card = (vistaFoto: VistaFoto) => (p: NormalizedProduct) => (
 );
 
 export default function SaleView({ destacados, resto, maxOff }: Props) {
+  const { t } = useLocale();
   const total = destacados.length + resto.length;
   const { cols, setCols, foto, setFoto, grid } = useVistaCatalogo();
 
@@ -78,7 +80,7 @@ export default function SaleView({ destacados, resto, maxOff }: Props) {
           {destacados.length > 0 && (
             <div className="mb-12 md:mb-16">
               <div className="flex items-baseline gap-2 mb-4 md:mb-5">
-                <h2 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">Destacados</h2>
+                <h2 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">{t('Destacados')}</h2>
                 <span className="text-[12px] md:text-[13px] text-muted-foreground tabular-nums">{destacados.length}</span>
               </div>
               <div className={grid}>{destacados.map(card(foto))}</div>
@@ -100,7 +102,7 @@ export default function SaleView({ destacados, resto, maxOff }: Props) {
           {resto.length > 0 && (
             <div>
               <div className="flex items-baseline gap-2 mb-4 md:mb-5">
-                <h2 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">Todo el sale</h2>
+                <h2 className="text-[20px] md:text-[26px] font-semibold tracking-[-0.03em] leading-none">{t('Todo el sale')}</h2>
                 <span className="text-[12px] md:text-[13px] text-muted-foreground tabular-nums">{resto.length}</span>
               </div>
               <div className={grid}>{resto.map(card(foto))}</div>

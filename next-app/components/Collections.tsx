@@ -1,6 +1,7 @@
 'use client';
 
 import { useReveal } from "@/hooks/useReveal";
+import { useLocale } from "@/context/LocaleContext";
 
 const collections = [
   { name: "Tees", href: "/us/tees", image: "regular tee 1.webp" },
@@ -10,11 +11,12 @@ const collections = [
 ];
 
 export default function Collections() {
+  const { t } = useLocale();
   const ref = useReveal();
 
   return (
     <section id="categorias" className="max-w-[1400px] mx-auto px-4 py-16 md:py-24" ref={ref}>
-      <h2 className="reveal rd1 text-xl md:text-2xl font-bold uppercase tracking-tight mb-6">Colecciones</h2>
+      <h2 className="reveal rd1 text-xl md:text-2xl font-bold uppercase tracking-tight mb-6">{t("Colecciones")}</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[2px]">
         {collections.map((c, i) => (
           <a

@@ -1,5 +1,7 @@
 'use client';
 
+import { useLocale } from '@/context/LocaleContext';
+
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 
@@ -43,6 +45,7 @@ export default function CollectionIndex({
   cta?: { href: string; label: string };
   onSelect?: (id: string) => void;
 }) {
+  const { t } = useLocale();
   const navRef = useRef<HTMLElement>(null);
 
   // En mobile el riel no entra entero: se corre solo hasta la sección activa.
@@ -61,9 +64,9 @@ export default function CollectionIndex({
           {shortTitle ? (
             <>
               <span className="md:hidden">{shortTitle}</span>
-              <span className="hidden md:inline">{title}</span>
+              <span className="hidden md:inline">{t(title)}</span>
             </>
-          ) : title}
+          ) : t(title)}
         </h2>
         {items.length > 0 && (
           <span aria-hidden className="shrink-0 self-center w-px h-[1em] md:h-[0.85em] bg-foreground/20" />
@@ -71,7 +74,7 @@ export default function CollectionIndex({
         {items.length > 0 && (
           <nav
             ref={navRef}
-            aria-label={`Secciones de ${title}`}
+            aria-label={`${t('Secciones de')} ${t(title)}`}
             // Un escalón abajo del título (26px vs 34, peso 500 vs 600) y
             // separado por el filete: el título es el nombre del estante, el
             // riel son sus secciones — antes se leían como una sola frase.
