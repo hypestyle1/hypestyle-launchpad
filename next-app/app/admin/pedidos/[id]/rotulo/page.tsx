@@ -86,7 +86,7 @@ export default function RotuloPage() {
   }).join(' · ');
 
   return (
-    <div className="min-h-screen bg-[#e8e8e8] py-8 print:bg-card print:py-0">
+    <div className="rotulo-wrap min-h-screen bg-[#e8e8e8] py-8 print:bg-card print:py-0">
       <div className="no-print max-w-[480px] mx-auto mb-4 flex items-center justify-between px-2">
         <a href={`/admin/pedidos/${order.id}`} className="text-[12px] text-muted-foreground hover:text-foreground">← Volver al pedido</a>
         <button
@@ -99,81 +99,120 @@ export default function RotuloPage() {
 
       {/* Rótulo — 10x15cm exactos al imprimir (ver @page abajo); en pantalla se */}
       {/* previsualiza en la misma proporción 2:3 a un tamaño más cómodo de leer. */}
-      <div className="rotulo mx-auto bg-card border-2 border-foreground" style={{ width: '480px', height: '720px' }}>
-        <div className="p-8 flex flex-col h-full">
-          <div className="flex items-center justify-between pb-5 border-b-2 border-foreground">
-            <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-10 w-auto" />
-            <div className="text-right">
-              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground">Pedido</div>
-              <div className="text-[30px] font-bold leading-none">#{order.number}</div>
+      <div className="rotulo-hoja mx-auto" style={{ width: '480px' }}>
+        <div className="rotulo bg-card border-2 border-foreground" style={{ width: '480px', height: '720px' }}>
+          <div className="p-8 flex flex-col h-full">
+            <div className="flex items-center justify-between pb-5 border-b-2 border-foreground">
+              <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-10 w-auto" />
+              <div className="text-right">
+                <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground">Pedido</div>
+                <div className="text-[30px] font-bold leading-none">#{order.number}</div>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-6">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Destinatario</div>
-            <div className="text-[28px] font-bold leading-tight">
-              {order.shipping.first_name} {order.shipping.last_name}
-            </div>
-            {order.customer.dni && (
-              <div className="text-[17px] text-foreground/80 mt-1">DNI {order.customer.dni}</div>
-            )}
-          </div>
-
-          <div className="mt-6">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Dirección</div>
-            <div className="text-[20px] leading-snug">
-              {order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}
-            </div>
-            <div className="text-[20px] leading-snug">
-              {order.shipping.city}, {order.shipping.state} {order.shipping.postcode ? `(${order.shipping.postcode})` : ''}
-            </div>
-            {order.customer.phone && (
-              <div className="text-[17px] text-foreground/80 mt-1.5">Tel: {order.customer.phone}</div>
-            )}
-          </div>
-
-          {envioDef && (
-            <div className="mt-6 border-2 border-foreground p-4">
-              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Envío</div>
-              <div className="text-[22px] font-bold leading-tight">{envioDef.label}</div>
-              {envioDestino && envioDef.destinoLabel && (
-                <div className="text-[18px] leading-snug mt-1">{envioDestino}</div>
+            <div className="mt-6">
+              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Destinatario</div>
+              <div className="text-[28px] font-bold leading-tight">
+                {order.shipping.first_name} {order.shipping.last_name}
+              </div>
+              {order.customer.dni && (
+                <div className="text-[17px] text-foreground/80 mt-1">DNI {order.customer.dni}</div>
               )}
             </div>
-          )}
 
-          {/* Un pedido mayorista trae 20+ prendas: el detalle se corta a las
-              líneas que entran y la cantidad total queda siempre a la vista,
-              sin empujar el pie fuera del rótulo. */}
-          <div className="mt-6 flex-1 min-h-0 overflow-hidden">
-            <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">
-              Contenido · {unidades} {unidades === 1 ? 'unidad' : 'unidades'}
+            <div className="mt-6">
+              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Dirección</div>
+              <div className="text-[20px] leading-snug">
+                {order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}
+              </div>
+              <div className="text-[20px] leading-snug">
+                {order.shipping.city}, {order.shipping.state} {order.shipping.postcode ? `(${order.shipping.postcode})` : ''}
+              </div>
+              {order.customer.phone && (
+                <div className="text-[17px] text-foreground/80 mt-1.5">Tel: {order.customer.phone}</div>
+              )}
             </div>
-            <div className="text-[15px] text-foreground/80 leading-relaxed line-clamp-4">{itemsSummary}</div>
-          </div>
 
-          <div className="pt-4 mt-auto border-t border-border-mid flex items-center justify-between">
-            <span className="text-[13px] text-muted-foreground/70">Hypestyle · hypestyle.com.ar</span>
-            <span className="text-[13px] text-muted-foreground/70">{fmtDate(order.date)}</span>
+            {envioDef && (
+              <div className="mt-6 border-2 border-foreground p-4">
+                <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Envío</div>
+                <div className="text-[22px] font-bold leading-tight">{envioDef.label}</div>
+                {envioDestino && envioDef.destinoLabel && (
+                  <div className="text-[18px] leading-snug mt-1">{envioDestino}</div>
+                )}
+              </div>
+            )}
+
+            {/* Un pedido mayorista trae 20+ prendas: el detalle se corta a las
+                líneas que entran y la cantidad total queda siempre a la vista,
+                sin empujar el pie fuera del rótulo. */}
+            <div className="mt-6 flex-1 min-h-0 overflow-hidden">
+              <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">
+                Contenido · {unidades} {unidades === 1 ? 'unidad' : 'unidades'}
+              </div>
+              <div className="text-[15px] text-foreground/80 leading-relaxed line-clamp-4">{itemsSummary}</div>
+            </div>
+
+            <div className="pt-4 mt-auto border-t border-border-mid flex items-center justify-between">
+              <span className="text-[13px] text-muted-foreground/70">Hypestyle · hypestyle.com.ar</span>
+              <span className="text-[13px] text-muted-foreground/70">{fmtDate(order.date)}</span>
+            </div>
           </div>
         </div>
       </div>
 
       <style jsx global>{`
+        /* Fuera del @media: Chrome aplica mejor el tamaño de página cuando
+           @page está en el nivel de arriba, y solo rige al imprimir. */
+        @page { size: 100mm 150mm; margin: 0; }
         @media print {
           .no-print { display: none !important; }
-          body { background: white !important; }
-          /* Se imprime la misma caja de 480×720 px escalada a 100×150 mm
-             (377,95 px / 480 = 0,7874). Antes se achicaba la caja pero no las
-             letras (nombre a 28 px, dirección a 20 px) y el contenido se
-             desbordaba del rótulo. */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100mm;
+            height: 150mm;
+            overflow: hidden;
+            background: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          /* El contenedor de pantalla no aporta alto en papel. */
+          .rotulo-wrap {
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
+          /* Única caja del flujo: mide una etiqueta y recorta lo que sobre,
+             así nunca se arma una segunda hoja. Deja 1 mm de aire contra los
+             bordes, que la PC42t no imprime. */
+          .rotulo-hoja {
+            position: relative;
+            width: 100mm !important;
+            height: 149mm;
+            overflow: hidden;
+            margin: 0 !important;
+            padding: 0 !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            break-after: avoid;
+            page-break-after: avoid;
+          }
+          /* El rótulo sale del flujo y se escala entero: 480×720 px por
+             0,7715 son 98×147 mm. Va con transform y no con zoom porque zoom
+             sí ocupa lugar en el flujo, y por redondeo la última franja del
+             rótulo (el pie) se iba a una segunda hoja. */
           .rotulo {
-            zoom: 0.7874;
+            position: absolute;
+            top: 1mm;
+            left: 1mm;
+            transform: scale(0.7715);
+            transform-origin: top left;
             box-shadow: none !important;
             margin: 0 !important;
             overflow: hidden;
           }
-          @page { size: 100mm 150mm; margin: 0; }
         }
       `}</style>
     </div>
