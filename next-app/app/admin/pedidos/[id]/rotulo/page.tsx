@@ -11,6 +11,7 @@ type Order = {
   customer: { first_name: string; last_name: string; phone: string; dni: string };
   shipping: { first_name: string; last_name: string; address_1: string; address_2: string; city: string; state: string; postcode: string };
   viaCargoSucursal: string;
+  isMayorista?: boolean;
   envio?: { metodo: string | null; destino: string; resumen: string };
   items: { name: string; quantity: number; size: string; color?: string }[];
 };
@@ -143,14 +144,17 @@ export default function RotuloPage() {
               </div>
             )}
 
-            {/* Un pedido mayorista trae 20+ prendas: el detalle se corta a las
-                líneas que entran y la cantidad total queda siempre a la vista,
-                sin empujar el pie fuera del rótulo. */}
             <div className="mt-6 flex-1 min-h-0 overflow-hidden">
               <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">
                 Contenido · {unidades} {unidades === 1 ? 'unidad' : 'unidades'}
               </div>
-              <div className="text-[15px] text-foreground/80 leading-relaxed line-clamp-4">{itemsSummary}</div>
+              {/* Un pedido mayorista trae 20+ prendas: el detalle no entra en
+                  el rótulo y adentro del paquete no le sirve a nadie, así que
+                  queda solo el total de unidades. En un pedido normal el
+                  detalle ayuda a armarlo, y se corta a las líneas que entran. */}
+              {!order.isMayorista && (
+                <div className="text-[15px] text-foreground/80 leading-relaxed line-clamp-4">{itemsSummary}</div>
+              )}
             </div>
 
             <div className="pt-4 mt-auto border-t border-border-mid flex items-center justify-between">
