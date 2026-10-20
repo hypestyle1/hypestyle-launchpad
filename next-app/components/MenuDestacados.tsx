@@ -48,9 +48,13 @@ function Recuadro({ d, onNavegar }: { d: MenuDestacado; onNavegar: () => void })
   );
 }
 
-export default function MenuDestacados({ onNavegar }: { onNavegar: () => void }) {
+export default function MenuDestacados({
+  onNavegar,
+  className = 'mb-7',
+  columnas = 2,
+}: { onNavegar: () => void; className?: string; columnas?: 2 | 4 }) {
   return (
-    <div className="grid grid-cols-2 gap-2 mb-7">
+    <div className={`grid ${columnas === 4 ? 'grid-cols-4' : 'grid-cols-2'} gap-2 ${className}`}>
       {MENU_DESTACADOS.map((d) => (
         <Recuadro key={d.label} d={d} onNavegar={onNavegar} />
       ))}

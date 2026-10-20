@@ -54,7 +54,7 @@ const megaMenu = {
     { label: 'New In',    href: '/new-in',         homeHash: null, isNew: true },
     { label: 'Ver todo',  href: '/productos',      homeHash: null, isNew: false },
     { label: 'Gift Card', href: '/gift-cards',     homeHash: null, isNew: false },
-    { label: 'SALE',      href: '/special-prices', homeHash: null, isNew: false },
+    { label: 'Sale',      href: '/special-prices', homeHash: null, isNew: false, isSale: true },
   ],
   categorias: [
     { label: 'Remeras',     href: '/tees',        indent: false },
@@ -143,6 +143,15 @@ const GRUPOS_MENU: Record<GrupoMenu, { label: string; href: string }[]> = {
 
 /** Mismo orden que LocalePopup; acá van solo los códigos, como en EME. */
 const IDIOMAS: Language[] = ['ES', 'EN', 'PT', 'DE', 'FR', 'IT'];
+
+/** Mismo material que el menú del celular: se ve la página detrás, desenfocada. */
+const glassPanel = {
+  background: 'rgba(240, 238, 232, 0.40)',
+  backdropFilter: 'blur(52px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(52px) saturate(160%)',
+  border: '1px solid rgba(0,0,0,0.08)',
+  boxShadow: '0 18px 60px rgba(0,0,0,0.14)',
+} as React.CSSProperties;
 
 const glassStyle = {
   background: 'rgba(240, 238, 232, 0.82)',
@@ -416,16 +425,16 @@ export default function Navbar() {
         {/* Mega menu */}
         {shopOpen && !searchOpen && (
           <div className="absolute left-0 right-0 top-full animate-in fade-in slide-in-from-top-1 duration-200"
-            style={{ ...glassStyle, borderRadius: '0 0 14px 14px', borderTop: 'none' }}
+            style={{ ...glassPanel, borderRadius: '0 0 14px 14px', borderTop: 'none' }}
             onMouseEnter={() => setShopOpen(true)}>
-            <div className="max-w-[1400px] mx-auto px-4 py-8 grid grid-cols-[1fr_1fr_1fr_280px] gap-8">
+            <div className="max-w-[1400px] mx-auto px-4 py-8 grid grid-cols-[1fr_1fr_1fr_minmax(0,560px)] gap-8">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mb-4">{t('Comprar')}</p>
                 {megaMenu.general.map((l) => (
                   <button key={t(l.label)} onClick={() => handleSmartLink(l.href, l.homeHash)}
                     className="flex items-center gap-2 text-[13px] font-medium text-foreground/70 hover:text-foreground transition-colors mb-2.5 w-full text-left">
                     {(l as { isSale?: boolean }).isSale
-                      ? <span className="text-[11px] font-bold uppercase tracking-[0.12em] bg-red-600 text-white px-2 py-0.5 rounded-[4px]">{t(l.label)}</span>
+                      ? <span className="font-semibold text-foreground">{t('Sale')}</span>
                       : t(l.label)}
                     {l.isNew && <span className="text-[9px] font-bold uppercase tracking-wider bg-foreground text-background px-1.5 py-0.5 rounded-[4px]">NEW</span>}
                   </button>
@@ -448,23 +457,22 @@ export default function Navbar() {
                     {t(l.label)}
                   </Link>
                 ))}
+
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/35 mt-7 mb-4">{t('Ayuda')}</p>
+                {[
+                  { label: 'FAQs',          href: '/faqs' },
+                  { label: 'Quiénes Somos', href: '/nosotros' },
+                  { label: 'Políticas',     href: '/politicas-de-devolucion' },
+                ].map((l) => (
+                  <Link key={t(l.label)} href={l.href} onClick={() => setShopOpen(false)}
+                    className="block text-[13px] text-foreground/70 hover:text-foreground transition-colors mb-2.5">
+                    {t(l.label)}
+                  </Link>
+                ))}
               </div>
-              <div className="relative overflow-hidden rounded-sm">
-                {/* OJO: era hero-duo-grey.webp (sin -hd), que no existe en
-                    public/ — la foto del mega menú estaba rota en producción. */}
-                <img src="/ss27/coleccion/hero-duo-grey-hd.webp" alt="Spring Summer 27"
-                  className="w-full h-full object-cover" style={{ maxHeight: '220px' }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-4">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-white/60 mb-0.5">{t('Colección')}</p>
-                    <p className="text-[14px] font-bold text-white leading-tight">Spring Summer 27</p>
-                    <Link href="/colecciones/ss27" onClick={() => setShopOpen(false)}
-                      className="text-[11px] text-white/70 hover:text-white transition-colors mt-1 block">
-                      {t('Ver colección →')}
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              {/* Las mismas cuatro fotos del menú del celular, y se cambian
+                  en el mismo lugar: data/menuDestacados.ts. */}
+              <MenuDestacados onNavegar={() => setShopOpen(false)} className="mb-0" columnas={4} />
             </div>
           </div>
         )}
