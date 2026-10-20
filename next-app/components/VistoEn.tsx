@@ -145,23 +145,24 @@ export default function VistoEn({
                 className="w-full h-full object-cover transition-transform duration-500 ease-[cubic-bezier(.25,1,.5,1)] md:group-hover:scale-[1.04] motion-reduce:transition-none"
               />
             )}
-            {variante === 'look' && (
+            {variante === 'look' ? (
               <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <span className="border border-white/90 text-white text-[12px] tracking-[0.04em] px-4 py-2 bg-black/15 backdrop-blur-[2px] transition-colors duration-200 md:group-hover:bg-white md:group-hover:text-black">
                   Shop the look
                 </span>
               </span>
+            ) : (
+              <>
+                <span className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" aria-hidden />
+                <span className="absolute left-3 right-3 bottom-3 flex items-end justify-between gap-2 text-white">
+                  <span className="min-w-0">
+                    <span className="block text-[12px] font-semibold uppercase tracking-[0.08em] leading-tight">{post.artista}</span>
+                    <span className="block text-[11px] lowercase opacity-80 mt-0.5 truncate">{post.ig.map((u) => `@${u}`).join(' · ')}</span>
+                  </span>
+                  <span className="text-[11px] opacity-80 md:opacity-0 md:group-hover:opacity-100 transition-opacity whitespace-nowrap">Ver lo que lleva</span>
+                </span>
+              </>
             )}
-            <span className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/55 to-transparent pointer-events-none" aria-hidden />
-            <span className="absolute left-3 right-3 bottom-3 flex items-end justify-between gap-2 text-white">
-              <span className="min-w-0">
-                <span className="block text-[12px] font-semibold uppercase tracking-[0.08em] leading-tight">{post.artista}</span>
-                <span className="block text-[11px] lowercase opacity-80 mt-0.5 truncate">{post.ig.map((u) => `@${u}`).join(' · ')}</span>
-              </span>
-              {variante === 'tira' && (
-                <span className="text-[11px] opacity-80 md:opacity-0 md:group-hover:opacity-100 transition-opacity whitespace-nowrap">Ver lo que lleva</span>
-              )}
-            </span>
           </button>
         ))}
       </div>
@@ -169,6 +170,7 @@ export default function VistoEn({
       {sel && (
         <PostModal
           kicker={titulo}
+          conNombre={variante === 'tira'}
           post={sel.post}
           prendas={sel.prendas}
           onClose={() => setAbierto(null)}
@@ -181,8 +183,10 @@ export default function VistoEn({
 }
 
 interface ModalProps {
-  /** Línea chica arriba del nombre: "Visto en" en el home, "Shop the look" en la ficha. */
+  /** Línea chica arriba del nombre: "Visto en" en el home, el título en la ficha. */
   kicker: string;
+  /** El home acredita al artista; la ficha muestra solo la foto y las prendas. */
+  conNombre: boolean;
   post: VistoEnPost;
   prendas: Prenda[];
   onClose: () => void;
@@ -190,7 +194,7 @@ interface ModalProps {
   onNext: () => void;
 }
 
-function PostModal({ kicker, post, prendas, onClose, onPrev, onNext }: ModalProps) {
+function PostModal({ kicker, conNombre, post, prendas, onClose, onPrev, onNext }: ModalProps) {
   const { formatPrice } = useLocale();
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -264,9 +268,11 @@ function PostModal({ kicker, post, prendas, onClose, onPrev, onNext }: ModalProp
           <div>
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-[0.15em] text-text-light">{kicker}</p>
-              <h3 className="text-[18px] md:text-[20px] font-semibold tracking-[-0.01em] leading-tight mt-1">{post.artista}</h3>
+              {conNombre && (
+                <h3 className="text-[18px] md:text-[20px] font-semibold tracking-[-0.01em] leading-tight mt-1">{post.artista}</h3>
+              )}
               <p className="text-[12px] mt-1 flex flex-wrap gap-x-2">
-                {post.ig.map((u) => (
+                {conNombre && post.ig.map((u) => (
                   <a
                     key={u}
                     href={`https://www.instagram.com/${u}/`}

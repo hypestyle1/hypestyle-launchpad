@@ -553,7 +553,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const relacionados = privateAccess ? privateAccess.related : (
     <>
       <TiraProductos titulo="Recomendados" productos={related} className="pb-4" />
-      <VistoEn titulo="Shop the look" variante="look" fuente={SHOP_THE_LOOK} soloDisponibles slugDestacado={product.slug} />
+      <VistoEn titulo="Así se usa" variante="look" fuente={SHOP_THE_LOOK} soloDisponibles slugDestacado={product.slug} />
       <VistosRecientemente slugActual={product.slug} />
     </>
   );
@@ -864,7 +864,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
             con sus fotos, y abajo lo último que miró la persona. Las tres se
             borran solas si no hay nada que mostrar. */}
         <TiraProductos titulo="Recomendados" productos={related} className="pb-4" />
-        <VistoEn titulo="Shop the look" variante="look" fuente={SHOP_THE_LOOK} soloDisponibles slugDestacado={product.slug} />
+        <VistoEn titulo="Así se usa" variante="look" fuente={SHOP_THE_LOOK} soloDisponibles slugDestacado={product.slug} />
         <VistosRecientemente slugActual={product.slug} />
       </main>
       )}
