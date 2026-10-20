@@ -239,25 +239,35 @@ export default function Navbar() {
     <>
       <nav
         className="fixed top-[var(--announce-h)] left-4 right-4 z-40 transition-all duration-300 overflow-visible"
-        style={{
-          height: navHeight,
-          borderRadius: '14px',
-          // Material glass único (globals.css, --glass-nav-*). El modo
-          // argentino (promo 3x2) conserva su celeste hardcodeado.
-          background: argMode ? 'rgba(117, 170, 219, 0.30)' : 'var(--glass-nav-bg)',
-          backdropFilter: 'var(--glass-nav-filter)',
-          WebkitBackdropFilter: 'var(--glass-nav-filter)',
-          border: argMode
-            ? '1px solid rgba(212, 175, 55, 0.55)'
-            : (scrolled || shopOpen ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.45)'),
-          boxShadow: argMode
-            ? '0 4px 24px rgba(212,175,55,0.22), inset 0 1px 0 rgba(255,255,255,0.4)'
-            : (scrolled || shopOpen
-              ? '0 8px 40px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.55)'
-              : '0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.55)'),
-        }}
+        style={{ height: navHeight }}
         onMouseLeave={() => { setShopOpen(false); setOpenMenu(null); }}
       >
+        {/* El material del pill vive en esta capa y no en el <nav>: un elemento
+            con backdrop-filter abre un "backdrop root" y sus hijos solo pueden
+            desenfocar lo que se pinta adentro. Con el blur en el <nav>, los
+            desplegables —que caen debajo del pill, fuera de su caja— se
+            quedaban sin nada que desenfocar y mostraban la página nítida
+            detrás del vidrio. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none transition-all duration-300"
+          style={{
+            borderRadius: '14px',
+            // Material glass único (globals.css, --glass-nav-*). El modo
+            // argentino (promo 3x2) conserva su celeste hardcodeado.
+            background: argMode ? 'rgba(117, 170, 219, 0.30)' : 'var(--glass-nav-bg)',
+            backdropFilter: 'var(--glass-nav-filter)',
+            WebkitBackdropFilter: 'var(--glass-nav-filter)',
+            border: argMode
+              ? '1px solid rgba(212, 175, 55, 0.55)'
+              : (scrolled || shopOpen ? '1px solid rgba(0,0,0,0.12)' : '1px solid rgba(255,255,255,0.45)'),
+            boxShadow: argMode
+              ? '0 4px 24px rgba(212,175,55,0.22), inset 0 1px 0 rgba(255,255,255,0.4)'
+              : (scrolled || shopOpen
+                ? '0 8px 40px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.55)'
+                : '0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.55)'),
+          }}
+        />
         {/* La luz que recorre el borde del pill (elegida 13/10). */}
         <span aria-hidden className="hs-nav-beam" />
         <div className="h-full max-w-[1400px] mx-auto px-4 flex items-center relative">
