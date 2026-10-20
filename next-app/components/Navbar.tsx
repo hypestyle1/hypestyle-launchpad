@@ -272,7 +272,7 @@ export default function Navbar() {
           ) : (
             <>
               {/* Desktop links */}
-              <div className="hidden lg:flex items-center gap-1 flex-1">
+              <div className="hidden items-center gap-1 flex-1">
                 {navLinks.map((link) => {
                   const isActive = link.routeMatch && pathname.startsWith(link.routeMatch);
                   return (
@@ -350,7 +350,7 @@ export default function Navbar() {
               </div>
 
               {/* Logo desktop */}
-              <Link href="/" className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center z-10">
+              <Link href="/" className="hidden absolute left-1/2 -translate-x-1/2 items-center z-10">
                 {!logoError ? (
                   <img src={LOGO_NAV} alt="Hypestyle"
                     className="w-auto transition-all duration-300 hs-logo-3d"
@@ -361,8 +361,9 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* Hamburger + logo mobile */}
-              <div className="lg:hidden flex items-center gap-2.5 flex-none">
+              {/* Hamburguesa + logo, en todos los tamaños: desde el 19/10 el
+                  desktop usa el mismo menú que el celular. */}
+              <div className="flex items-center gap-2.5 flex-none flex-1">
                 <button onClick={() => setMobileOpen(true)} aria-label="Menu"
                   className="hover:opacity-50 transition-opacity duration-200">
                   <Menu className="w-5 h-5" strokeWidth={1.2} />
@@ -383,7 +384,7 @@ export default function Navbar() {
                 {/* div y no span: LocalePopup devuelve un <div>, y un bloque
                     adentro de un inline es HTML inválido. Estaba en todas las
                     páginas porque el navbar es global. */}
-                <div className="hidden lg:block"><LocalePopup /></div>
+                <div><LocalePopup /></div>
                 <button onClick={() => setSearchOpen(true)}
                   className="p-1.5 rounded-[8px] hover:bg-black/[0.06] transition-colors duration-150" aria-label="Buscar">
                   <Search className="w-4 h-4" strokeWidth={1.2} />
@@ -522,7 +523,7 @@ export default function Navbar() {
           className="fixed inset-0 z-[99] bg-black/10 cursor-default"
         />
         <div data-testid="menu-mobile"
-          className="fixed left-4 right-4 z-[100] flex flex-col overflow-hidden rounded-[14px] border border-black/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
+          className="fixed left-4 right-4 lg:right-auto lg:w-[460px] z-[100] flex flex-col overflow-hidden rounded-[14px] border border-black/10 shadow-[0_18px_60px_rgba(0,0,0,0.18)]"
           style={{
             top: 'var(--announce-h)',
             maxHeight: 'calc(100dvh - var(--announce-h) - 16px)',

@@ -6,17 +6,17 @@ import { useDragScroll } from '@/hooks/useDragScroll';
 import type { NormalizedProduct } from '@/hooks/useProducts';
 
 /**
- * Una fila de productos que se arrastra, abajo de la ficha
+ * Los productos de abajo de la ficha: recomendados y vistos recientemente
  * (referencia: coldcultureworldwide.com, 19/10/2026).
  *
- * Reemplaza a la grilla de 2x4: en el celular esa grilla eran cuatro filas de
- * scroll antes de llegar al pie. Así entran diez productos en una sola fila y
- * se pasan con el dedo.
+ * En el celular es una fila que se pasa con el dedo — ahí el gesto es natural
+ * y la grilla de 2x4 eran cuatro pantallas de scroll. En desktop, en cambio,
+ * arrastrar de costado no se entiende y no se ve bien, así que se dibuja como
+ * grilla de cinco y entra todo de una.
  */
 interface Props {
   titulo: string;
   productos: NormalizedProduct[];
-  /** Para no dibujar un título con la fila vacía. */
   className?: string;
 }
 
@@ -30,9 +30,10 @@ export default function TiraProductos({ titulo, productos, className = '' }: Pro
     <section className={`max-w-[1400px] mx-auto px-4 ${className}`}>
       <h2 className="text-lg font-bold uppercase tracking-tight mb-5">{t(titulo)}</h2>
       <div ref={ref}
-        className="flex gap-2 md:gap-3 overflow-x-auto no-scrollbar snap-x cursor-grab select-none">
+        className="flex gap-2 md:gap-3 overflow-x-auto no-scrollbar snap-x cursor-grab select-none
+                   lg:grid lg:grid-cols-5 lg:gap-x-3 lg:gap-y-8 lg:overflow-visible lg:cursor-auto">
         {productos.map((p) => (
-          <div key={p.slug} className="snap-start shrink-0 w-[44%] sm:w-[30%] lg:w-[19%]">
+          <div key={p.slug} className="snap-start shrink-0 w-[44%] sm:w-[30%] lg:w-auto">
             <ProductCard id={p.slug} name={p.name} category={p.category} price={p.price}
               originalPrice={p.originalPrice} badge={p.badge} image={p.image} images={p.images}
               sizes={p.sizes} stock={p.stock} href={p.href} tags={p.tags} />
