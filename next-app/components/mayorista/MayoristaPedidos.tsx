@@ -160,6 +160,11 @@ export default function MayoristaPedidos({ catalog = [] }: { catalog?: Mayorista
                         Volver a pedir
                       </button>
                     )}
+                    {p.status === 'completed' && (
+                      <Link href="/mayoristas/contenido" className="min-h-[36px] inline-flex items-center font-semibold underline underline-offset-4">
+                        Descargar contenido
+                      </Link>
+                    )}
                   </div>
                 </div>
                 {reorderNote?.id === p.id && (
