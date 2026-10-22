@@ -11,7 +11,7 @@ import StockAlertForm from '@/components/StockAlertForm';
 import { getPublicReviewSummary } from '@/lib/reviews/public';
 import { normalizeCpAr } from '@/lib/postal-code';
 import {
-  ENVIO_GRATIS_SLUGS, FREE_SHIPPING_THRESHOLD, costoEnvio, modoDeTarifa, ordenarTarifas, type TarifaEnvio,
+  FREE_SHIPPING_THRESHOLD, costoEnvio, incluyeEnvioGratis, modoDeTarifa, ordenarTarifas, type TarifaEnvio,
 } from '@/lib/envio';
 import { ventanaEntrega, medidasModelo, type Modelo } from '@/lib/ficha';
 
@@ -161,7 +161,7 @@ export function TablaPagos({ p }: { p: FichaProps }) {
       {/* Los hoodies SS27 traen el envío a sucursal incluido en el precio (lib/envio).
           Va acá, junto al precio, porque es parte de lo que vale: abajo del botón,
           como "promesa", no se leía. */}
-      {ENVIO_GRATIS_SLUGS.has(p.product.slug) && (
+      {incluyeEnvioGratis([p.product.slug]) && (
         <div className="flex justify-between gap-3 py-2.5 border-b border-border">
           <span>{t('Envío a sucursal Andreani')}</span>
           <span className="text-green-700 font-semibold whitespace-nowrap">{t('Gratis')}</span>
@@ -313,7 +313,7 @@ const pesosSinCentavos = (n: number) => `$ ${Math.round(n).toLocaleString('es-AR
 
 /** Este producto solo ya sale con envío gratis a sucursal (umbral o envío incluido, ver lib/envio). */
 const conEnvioGratis = (p: FichaProps) =>
-  p.displayPrice >= FREE_SHIPPING_THRESHOLD || ENVIO_GRATIS_SLUGS.has(p.product.slug);
+  p.displayPrice >= FREE_SHIPPING_THRESHOLD || incluyeEnvioGratis([p.product.slug]);
 
 /** Promesas en texto plano, sin íconos. */
 export function Promesas({ p }: { p: FichaProps }) {
@@ -322,7 +322,7 @@ export function Promesas({ p }: { p: FichaProps }) {
     <div className="flex flex-col gap-0.5 text-[13px]">
       {currency === 'ARS' && (
         <span>
-          {ENVIO_GRATIS_SLUGS.has(p.product.slug)
+          {incluyeEnvioGratis([p.product.slug])
             ? t('Envío a sucursal incluido en el precio.')
             : conEnvioGratis(p)
             ? t('Envío gratis a sucursal en este pedido.')
@@ -375,7 +375,7 @@ export function CuandoLlega({ p }: { p: FichaProps }) {
   }, [p.product.slug, p.displayPrice]);
 
   if (currency !== 'ARS') return null;
-  const ctx = { subtotalFisico: p.displayPrice, productoConEnvioGratis: ENVIO_GRATIS_SLUGS.has(p.product.slug) };
+  const ctx = { subtotalFisico: p.displayPrice, productoConEnvioGratis: incluyeEnvioGratis([p.product.slug]) };
   const ventana = ventanaEntrega();
 
   return (

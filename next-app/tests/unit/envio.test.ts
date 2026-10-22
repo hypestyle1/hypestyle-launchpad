@@ -5,6 +5,7 @@ import {
   alcanzaUmbral,
   costoEnvio,
   envioBonificado,
+  ENVIO_GRATIS_HOODIES_FIN,
   incluyeEnvioGratis,
   modoDeTarifa,
   ordenarTarifas,
@@ -133,10 +134,18 @@ describe('envíos al exterior', () => {
 describe('productos con el envío incluido', () => {
   const CON_HOODIE = { subtotalFisico: 110000, productoConEnvioGratis: true };
 
+  // El beneficio terminó el 22/10/2026 23:59 ART: la hora va explícita para que
+  // la suite no dependa del reloj de la máquina.
+  const VIGENTE = ENVIO_GRATIS_HOODIES_FIN - 1;
+
   it('reconoce los slugs de la lista', () => {
-    expect(incluyeEnvioGratis(['regular-tee-black', 'hype-distressed-grey-hoodie'])).toBe(true);
-    expect(incluyeEnvioGratis(['regular-tee-black'])).toBe(false);
-    expect(incluyeEnvioGratis([])).toBe(false);
+    expect(incluyeEnvioGratis(['regular-tee-black', 'hype-distressed-grey-hoodie'], VIGENTE)).toBe(true);
+    expect(incluyeEnvioGratis(['regular-tee-black'], VIGENTE)).toBe(false);
+    expect(incluyeEnvioGratis([], VIGENTE)).toBe(false);
+  });
+  it('desde el 22/10/2026 23:59 ART el beneficio no corre más', () => {
+    expect(incluyeEnvioGratis(['hype-distressed-grey-hoodie'], ENVIO_GRATIS_HOODIES_FIN)).toBe(false);
+    expect(incluyeEnvioGratis(['hype-distressed-grey-hoodie'], ENVIO_GRATIS_HOODIES_FIN + 1)).toBe(false);
   });
   it('la sucursal sale gratis aunque no se llegue al umbral', () => {
     expect(alcanzaUmbral(CON_HOODIE)).toBe(true);
