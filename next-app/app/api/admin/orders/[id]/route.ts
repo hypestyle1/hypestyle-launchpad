@@ -125,6 +125,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       city:       o.shipping.city,
       state:      o.shipping.state,
       postcode:   o.shipping.postcode,
+      // El rótulo de un envío al exterior necesita el país: sin él una
+      // etiqueta a Bagneux, Francia sale igual que una a Bagneux, Buenos Aires.
+      country:    o.shipping.country,
     },
     items: (o.line_items as any[]).map((i: any) => ({
       id:       i.id,
@@ -181,6 +184,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     adminNote:            getMeta('_hs_admin_note'),
     order_key:            o.order_key,
     viaCargoSucursal: getMeta('_via_cargo_sucursal'),
+    // Sucursal de Andreani que eligió el cliente, en texto. El código que usa
+    // el plugin (`_shipping_branch_code`) no se puede leer en un rótulo.
+    shippingBranch: getMeta('_shipping_branch'),
     // Método de envío mayorista (Via Cargo / Andreani / expreso). Las órdenes
     // viejas con solo la sucursal de Via Cargo salen como Via Cargo.
     envio: envioDeOrden(getMeta),

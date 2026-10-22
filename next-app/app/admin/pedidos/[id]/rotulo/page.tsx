@@ -9,15 +9,29 @@ const WP_SECRET_KEY = 'hype_admin_key';
 type Order = {
   id: number; number: string; date: string;
   customer: { first_name: string; last_name: string; phone: string; dni: string };
-  shipping: { first_name: string; last_name: string; address_1: string; address_2: string; city: string; state: string; postcode: string };
+  shipping: { first_name: string; last_name: string; address_1: string; address_2: string; city: string; state: string; postcode: string; country?: string };
   viaCargoSucursal: string;
-  isMayorista?: boolean;
+  shippingBranch?: string;
+  shipping_lines?: { method_title: string }[];
   envio?: { metodo: string | null; destino: string; resumen: string };
-  items: { name: string; quantity: number; size: string; color?: string }[];
+  // Del detalle solo se usa el total de unidades: el listado de prendas no va
+  // en el rótulo.
+  items: { quantity: number }[];
 };
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// Nombre del país para la etiqueta. Woo guarda el código ISO; el navegador lo
+// traduce y evita arrastrar una tabla de países hasta acá. Un código que no
+// conoce (el checkout permite 'OTHER') vuelve como vino.
+function nombrePais(code: string) {
+  try {
+    return new Intl.DisplayNames(['es-AR'], { type: 'region' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
 }
 
 export default function RotuloPage() {
@@ -77,14 +91,21 @@ export default function RotuloPage() {
   // Bloque destacado del envío: el servicio y, si hay, la sucursal o el
   // expreso. Una orden vieja con solo la sucursal se lee como Via Cargo.
   const envioDef = metodoDef(order.envio?.metodo ?? (order.viaCargoSucursal ? 'via_cargo' : null));
-  const envioDestino = order.envio?.destino || order.viaCargoSucursal || '';
+  // Un pedido normal no pasa por el selector mayorista: el transporte sale de
+  // la línea de envío de Woo ("Andreani (sucursal)") y la sucursal elegida, del
+  // meta que guarda el checkout.
+  const envioMetodo  = envioDef?.label || order.shipping_lines?.[0]?.method_title || '';
+  const envioDestino = envioDef
+    ? (envioDef.destinoLabel ? (order.envio?.destino || order.viaCargoSucursal || '') : '')
+    : (order.shippingBranch || '');
+
+  // Fuera de Argentina el país es el dato que decide el envío, así que va en la
+  // dirección y no abajo entre los detalles.
+  const pais = order.shipping.country && order.shipping.country !== 'AR'
+    ? nombrePais(order.shipping.country)
+    : '';
 
   const unidades = order.items.reduce((n, i) => n + i.quantity, 0);
-
-  const itemsSummary = order.items.map(i => {
-    const detail = [i.size, i.color].filter(Boolean).join(' ');
-    return `${i.quantity}× ${i.name}${detail ? ` (${detail})` : ''}`;
-  }).join(' · ');
 
   return (
     <div className="rotulo-wrap min-h-screen bg-[#e8e8e8] py-8 print:bg-card print:py-0">
@@ -127,18 +148,21 @@ export default function RotuloPage() {
                 {order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}
               </div>
               <div className="text-[20px] leading-snug">
-                {order.shipping.city}, {order.shipping.state} {order.shipping.postcode ? `(${order.shipping.postcode})` : ''}
+                {order.shipping.city}{order.shipping.state ? `, ${order.shipping.state}` : ''} {order.shipping.postcode ? `(${order.shipping.postcode})` : ''}
               </div>
+              {pais && (
+                <div className="text-[22px] font-bold uppercase leading-snug mt-1">{pais}</div>
+              )}
               {order.customer.phone && (
                 <div className="text-[17px] text-foreground/80 mt-1.5">Tel: {order.customer.phone}</div>
               )}
             </div>
 
-            {envioDef && (
+            {(envioMetodo || envioDestino) && (
               <div className="mt-6 border-2 border-foreground p-4">
                 <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Envío</div>
-                <div className="text-[22px] font-bold leading-tight">{envioDef.label}</div>
-                {envioDestino && envioDef.destinoLabel && (
+                {envioMetodo && <div className="text-[22px] font-bold leading-tight">{envioMetodo}</div>}
+                {envioDestino && (
                   <div className="text-[18px] leading-snug mt-1">{envioDestino}</div>
                 )}
               </div>
@@ -148,13 +172,6 @@ export default function RotuloPage() {
               <div className="text-[12px] uppercase tracking-[0.15em] text-muted-foreground mb-1">
                 Contenido · {unidades} {unidades === 1 ? 'unidad' : 'unidades'}
               </div>
-              {/* Un pedido mayorista trae 20+ prendas: el detalle no entra en
-                  el rótulo y adentro del paquete no le sirve a nadie, así que
-                  queda solo el total de unidades. En un pedido normal el
-                  detalle ayuda a armarlo, y se corta a las líneas que entran. */}
-              {!order.isMayorista && (
-                <div className="text-[15px] text-foreground/80 leading-relaxed line-clamp-4">{itemsSummary}</div>
-              )}
             </div>
 
             <div className="pt-4 mt-auto border-t border-border-mid flex items-center justify-between">
