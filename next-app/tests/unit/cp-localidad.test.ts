@@ -2,12 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { localidadPorCp } from '@/lib/cp-localidad';
 
 describe('localidadPorCp', () => {
-  it('resuelve CABA para los CP de capital', async () => {
-    expect(await localidadPorCp('1414')).toEqual({ ciudad: 'CABA', provincia: 'CABA' });
+  it('en CABA resuelve el barrio mayoritario del CP', async () => {
+    expect(await localidadPorCp('1414')).toEqual({ ciudad: 'Villa Crespo', provincia: 'CABA' });
+    expect(await localidadPorCp('1437')).toEqual({ ciudad: 'Nueva Pompeya', provincia: 'CABA' });
+  });
+
+  it('en CABA sin barrio dominante igual trae la provincia', async () => {
+    expect(await localidadPorCp('1426')).toEqual({ ciudad: '', provincia: 'CABA' });
   });
 
   it('acepta el CPA completo y lo normaliza', async () => {
-    expect(await localidadPorCp('C1414DNV')).toEqual({ ciudad: 'CABA', provincia: 'CABA' });
+    expect(await localidadPorCp('C1414DNV')).toEqual({ ciudad: 'Villa Crespo', provincia: 'CABA' });
   });
 
   it('resuelve ciudades cabecera conocidas', async () => {

@@ -10,7 +10,12 @@
 //   - "Barrio Z (X, Pdo. Y)" / "(X-Dpto. Y)" → X es la cabecera (señal media)
 //   - un nombre pelado sin paréntesis vota por sí mismo (señal débil)
 // Si ningún nombre junta votos, el CP queda solo con provincia (ciudad vacía).
-// CABA (ids de CP 1000-1499) se fija a ciudad "CABA".
+//
+// En CABA la "ciudad" del checkout es el BARRIO: sale de scripts/cp-barrios-caba.json,
+// un mapa CP → barrio mayoritario generado cruzando los CPAs georreferenciados de
+// OpenDataCordoba/codigo-postal-argentino contra los polígonos de barrios del GCBA
+// (barrios.geojson de datosabiertos). Los CPs repartidos entre barrios sin mayoría
+// quedan vacíos: mejor no prellenar que prellenar mal.
 //
 // Uso: node scripts/generar-cp-localidades.mjs <ruta-al-csv>
 
@@ -23,6 +28,10 @@ if (!csvPath) {
   console.error('Uso: node scripts/generar-cp-localidades.mjs <localidades.csv>');
   process.exit(1);
 }
+
+const BARRIOS_CABA = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'cp-barrios-caba.json'), 'utf8'),
+);
 
 // Mismos nombres (con tildes) que el select de provincia del checkout.
 // El CSV usa ids 1-24 en orden alfabético con CABA al final.
@@ -91,8 +100,9 @@ for (const [cp, filas] of porCp) {
   const provincia = PROVINCIAS[idProv];
 
   if (idProv === 24) {
-    salida[cp] = ['CABA', 'CABA'];
-    conCiudad++;
+    const barrio = BARRIOS_CABA[cp] ?? '';
+    salida[cp] = [barrio, 'CABA'];
+    if (barrio) conCiudad++;
     continue;
   }
 
@@ -123,6 +133,14 @@ for (const [cp, filas] of porCp) {
   }
   if (ciudad) conCiudad++;
   salida[cp] = [ciudad, provincia];
+}
+
+// CPs de CABA que el listado del Correo no trae pero el cruce de CPAs sí.
+for (const [cp, barrio] of Object.entries(BARRIOS_CABA)) {
+  if (!salida[cp]) {
+    salida[cp] = [barrio, 'CABA'];
+    conCiudad++;
+  }
 }
 
 const destino = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'cp-localidades.json');

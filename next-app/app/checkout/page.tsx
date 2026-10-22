@@ -465,9 +465,9 @@ export default function Checkout() {
       // Se captura el autofill anterior afuera del updater: React (StrictMode)
       // puede invocarlo dos veces y un ref mutado adentro rompe la comparación.
       const previo = autofillCp.current;
-      // En CABA el campo de ciudad pasa a ser "Barrio" y eso no se puede deducir
-      // del CP: queda vacío para que lo escriban. La provincia sí se completa.
-      const ciudadNueva = loc.provincia === 'CABA' ? '' : loc.ciudad;
+      // En CABA loc.ciudad trae el barrio mayoritario del CP (o vacío si el CP
+      // está repartido entre barrios sin mayoría clara).
+      const ciudadNueva = loc.ciudad;
       autofillCp.current = { ciudad: ciudadNueva, provincia: loc.provincia };
       setInfo(prev => {
         // Para cuando el mapa resolvió, el CP (o el país) pudo haber cambiado.
