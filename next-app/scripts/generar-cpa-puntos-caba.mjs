@@ -8,6 +8,13 @@
 // Se redondea a 4 decimales (~10 m) y se deduplican los repetidos.
 //
 // Uso: node scripts/generar-cpa-puntos-caba.mjs <cpa_geo_parcial.csv>
+//
+// Nota: el mapa CP → barrio (cp-barrios-caba.json) se genera aparte, cruzando
+// estos mismos puntos contra los polígonos de barrios del GCBA, y solo afirma
+// un barrio con dominancia >= 80% — una inferencia estadística no es una
+// dirección confirmada. Los CPs repartidos (1414, 1425, 1437...) quedan sin
+// barrio: en domicilio lo completa exacto la dirección vía USIG, y en retiro
+// en sucursal el barrio directamente no se pide.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

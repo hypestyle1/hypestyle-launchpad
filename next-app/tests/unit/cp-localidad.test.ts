@@ -2,17 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { localidadPorCp } from '@/lib/cp-localidad';
 
 describe('localidadPorCp', () => {
-  it('en CABA resuelve el barrio mayoritario del CP', async () => {
-    expect(await localidadPorCp('1414')).toEqual({ ciudad: 'Villa Crespo', provincia: 'CABA' });
-    expect(await localidadPorCp('1437')).toEqual({ ciudad: 'Nueva Pompeya', provincia: 'CABA' });
+  it('en CABA afirma el barrio solo con dominancia real (>= 80%)', async () => {
+    expect(await localidadPorCp('1428')).toEqual({ ciudad: 'Belgrano', provincia: 'CABA' });
+    expect(await localidadPorCp('1045')).toEqual({ ciudad: 'Balvanera', provincia: 'CABA' });
   });
 
-  it('en CABA sin barrio dominante igual trae la provincia', async () => {
-    expect(await localidadPorCp('1426')).toEqual({ ciudad: '', provincia: 'CABA' });
+  it('un CP repartido entre barrios queda sin barrio, con provincia', async () => {
+    // 1414 es ~51% Villa Crespo y ~43% Palermo: prellenarlo sería adivinar.
+    expect(await localidadPorCp('1414')).toEqual({ ciudad: '', provincia: 'CABA' });
+    expect(await localidadPorCp('1425')).toEqual({ ciudad: '', provincia: 'CABA' });
   });
 
   it('acepta el CPA completo y lo normaliza', async () => {
-    expect(await localidadPorCp('C1414DNV')).toEqual({ ciudad: 'Villa Crespo', provincia: 'CABA' });
+    expect(await localidadPorCp('C1428DNV')).toEqual({ ciudad: 'Belgrano', provincia: 'CABA' });
   });
 
   it('resuelve ciudades cabecera conocidas', async () => {
