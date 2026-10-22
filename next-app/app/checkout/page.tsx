@@ -18,7 +18,7 @@ import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
 import { getClarityCookies, tagClarityOrder } from '@/lib/clarity-tracking';
 import { captureAttribution } from '@/lib/attribution';
-import { gaBeginCheckout } from '@/lib/ga';
+import { gaBeginCheckout, gaViewShippingOptions, gaAddShippingInfo, gaAddPaymentInfo, gaIrAPagar, type ShippingTier, type GaItem } from '@/lib/ga';
 import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
 import { imgSrc } from '@/lib/img';
 import { normalizeCpAr } from '@/lib/postal-code';
@@ -49,6 +49,7 @@ import { Panel, Recap, RadioCard, BarraEnvioGratis } from '@/components/checkout
 import { useSyncExternalStore } from 'react';
 
 type Step = 'info' | 'pago';
+type OrdenCreada = Awaited<ReturnType<typeof createOrderAndPreference>>;
 
 // En desktop el resumen es la columna de la derecha; en mobile pasa a ser una
 // barra colapsable arriba del formulario (antes quedaba debajo del botón de
@@ -175,6 +176,11 @@ export default function Checkout() {
   // La dirección detectó un CP distinto del que la persona TIPEÓ: no se pisa
   // nada, se ofrece ("Para esa dirección el CP es X · Usar").
   const [cpSugerido, setCpSugerido] = useState<{ cp: string; barrio: string } | null>(null);
+  // El total de Woo vino distinto del que el cliente estuvo viendo (un precio
+  // cambió entre armar el carrito y confirmar): la orden queda en espera y no
+  // se cobra nada hasta que acepte el monto nuevo.
+  const [totalAjustado, setTotalAjustado] = useState<number | null>(null);
+  const ordenPendiente = useRef<OrdenCreada | null>(null);
   // País y provincia casi nunca se cambian: viven colapsados como texto con
   // "Cambiar" y el select aparece recién si hace falta. Menos pantalla ocupada.
   const [paisExpandido, setPaisExpandido] = useState(false);
@@ -258,6 +264,9 @@ export default function Checkout() {
   // El pedido viaja con el CP de 4 dígitos: es el que sabe leer el plugin de
   // Andreani para generar la guía. El ZIP internacional se deja tal cual.
   const cpEnvio = isInternational ? info.cp : normalizeCpAr(info.cp);
+
+  const tierEnvio = (): ShippingTier => (soloGift ? 'gift' : isInternational ? 'internacional' : isSucursal ? 'sucursal' : 'domicilio');
+  const gaItems = (): GaItem[] => items.map(i => ({ item_id: i.id, item_name: i.name, item_variant: i.size, price: i.price, quantity: i.quantity }));
 
   const optsValidacion = { soloGift, internacional: isInternational, provinciaObligatoria: stateRequired, retiraEnSucursal: isSucursal };
   const errores = validarInfo(info as unknown as DatosInfo, optsValidacion);
@@ -562,6 +571,10 @@ export default function Checkout() {
   // que ya no es el del formulario. Solo la última solicitud toca el estado.
   const ratesSeq = useRef(0);
   const branchesSeq = useRef(0);
+  // Embudo: cada evento una sola vez por lo que mide (tarifas vistas por CP,
+  // envío confirmado por modalidad) — recargar o volver atrás no lo infla.
+  const tarifasVistas = useRef(new Set<string>());
+  const ultimoShippingInfo = useRef<ShippingTier | null>(null);
 
   const fetchRates = async () => {
     if (!info.cp) return;
@@ -585,6 +598,11 @@ export default function Checkout() {
         setShippingRates(ordenarTarifas(data.rates));
         setSelectedRate(elegida);
         if (elegida) fetchBranches(elegida);
+        const cpNorm = normalizeCpAr(info.cp);
+        if (!tarifasVistas.current.has(cpNorm)) {
+          tarifasVistas.current.add(cpNorm);
+          gaViewShippingOptions();
+        }
       } else {
         setRatesError('No se encontraron opciones de envío para este código postal.');
       }
@@ -623,6 +641,11 @@ export default function Checkout() {
     const rate = intlQuote ? { id: 'fedex_international', label: intlQuote.label, cost: intlQuote.cost } : null;
     setSelectedRate(rate);
     setShippingRates(rate ? [rate] : []);
+    if (rate && !tarifasVistas.current.has(`intl:${info.pais}`)) {
+      tarifasVistas.current.add(`intl:${info.pais}`);
+      gaViewShippingOptions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInternational, intlQuote]);
 
   const handleInfoSubmit = (e: React.FormEvent) => {
@@ -644,6 +667,10 @@ export default function Checkout() {
       // Nada que enviar: directo a pagar.
       setSelectedRate(null);
       setShippingRates([]);
+      if (ultimoShippingInfo.current !== 'gift') {
+        ultimoShippingInfo.current = 'gift';
+        gaAddShippingInfo(gaItems(), totalFinal, 'gift');
+      }
       setStep('pago');
       return;
     }
@@ -663,6 +690,13 @@ export default function Checkout() {
       return;
     }
     setEnvioAviso(null);
+    // Envío resuelto de verdad (método y sucursal si aplica): acá se mide, no
+    // en un render. Una vez por modalidad — volver y re-confirmar no lo duplica.
+    const tier = tierEnvio();
+    if (ultimoShippingInfo.current !== tier) {
+      ultimoShippingInfo.current = tier;
+      gaAddShippingInfo(gaItems(), totalFinal, tier);
+    }
     setStep('pago');
   };
 
@@ -722,8 +756,13 @@ export default function Checkout() {
   const addPaymentInfoSent = useRef(false);
   const handleMetodoChange = (metodo: string) => {
     setPago(prev => ({ ...prev, metodo }));
+    // Si quedó un total ajustado esperando confirmación, cambiar de medio lo
+    // descarta: la orden pendiente ya no refleja la elección.
+    setTotalAjustado(null);
+    ordenPendiente.current = null;
     if (addPaymentInfoSent.current) return;
     addPaymentInfoSent.current = true;
+    gaAddPaymentInfo(gaItems(), totalFinal, metodo);
     fbAddPaymentInfo(
       items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
       totalFinal,
@@ -734,9 +773,23 @@ export default function Checkout() {
     );
   };
 
+  // El cliente aceptó el total actualizado: la orden que quedó en espera sigue
+  // su camino a la pasarela sin crear otra.
+  const confirmarTotalAjustado = async () => {
+    const orden = ordenPendiente.current;
+    if (!orden || submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    setTotalAjustado(null);
+    ordenPendiente.current = null;
+    await continuarAlPago(orden);
+  };
+
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pago.metodo || submitting) return;
+    // Con un total ajustado en espera, el único camino es aceptarlo (o cambiar
+    // de medio): volver a enviar crearía una segunda orden.
+    if (!pago.metodo || submitting || totalAjustado !== null) return;
     // Si escribió un usuario válido y pagó sin tocar "Sumarme", igual se guarda.
     const instagram = pago.instagram || (instagramValido(igBorrador.current) ? '@' + igBorrador.current : '');
     if (instagram) guardarDatos({ instagram });
@@ -786,6 +839,37 @@ export default function Checkout() {
       // wcTotal refleja sale_price, cupones y cualquier descuento aplicado en Woo,
       // independientemente del precio que haya quedado guardado en el carrito del frontend.
       const authorizedTotal = orderRes.wcTotal || totalFinal;
+      // Si Woo calculó un total distinto del que el cliente estuvo viendo, no se
+      // lo manda a pagar un monto que no vio: se muestra el nuevo y sigue recién
+      // cuando lo acepta (ver el panel de total ajustado en el paso de pago).
+      if (Math.abs(authorizedTotal - montoAPagar) > 1) {
+        ordenPendiente.current = orderRes;
+        setTotalAjustado(authorizedTotal);
+        setSubmitting(false);
+        return;
+      }
+      await continuarAlPago(orderRes);
+    } catch (err) {
+      console.error('[checkout] unexpected error:', err);
+      setSubmitError('Error inesperado. Revisá la consola del navegador.');
+      setSubmitting(false);
+    }
+  };
+
+  // La orden ya existe en Woo: guarda el comprobante en sessionStorage y sale
+  // hacia la pasarela (o la pantalla de transferencia/confirmación).
+  const continuarAlPago = async (orderRes: OrdenCreada) => {
+    const isTransfer      = pago.metodo === 'transferencia';
+    const isLocalTransfer = isTransfer && !isInternational;
+    const isPaypal        = pago.metodo === 'paypal';
+    const isMp            = pago.metodo === 'mercadopago' || pago.metodo === 'tarjeta';
+    const isGocuotas      = pago.metodo === 'gocuotas';
+    const authorizedTotal = orderRes.wcTotal || totalFinal;
+    const salirAPagar = () => {
+      gaIrAPagar(pago.metodo, authorizedTotal, tierEnvio());
+      snapshotAndClear();
+    };
+    try {
       // Etiqueta la sesión de Clarity con el número de pedido (custom tag
       // filtrable en Recordings). Best-effort: si Clarity no cargó, no hace nada.
       tagClarityOrder(orderRes.wcOrderNumber);
@@ -834,7 +918,7 @@ export default function Checkout() {
           setSubmitting(false);
           return;
         }
-        snapshotAndClear();
+        salirAPagar();
         window.location.href = gcData.urlInit;
         return;
       }
@@ -870,7 +954,7 @@ export default function Checkout() {
           setSubmitting(false);
           return;
         }
-        snapshotAndClear();
+        salirAPagar();
         window.location.href = ppData.approvalUrl;
         return;
       }
@@ -879,7 +963,7 @@ export default function Checkout() {
         setSubmitting(false);
         return;
       }
-      snapshotAndClear();
+      salirAPagar();
       if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
       else if (isTransfer)            { router.push('/pendiente-de-pago'); }
       else                            { router.push('/confirmacion'); }
@@ -1680,6 +1764,22 @@ export default function Checkout() {
               </div>
 
               {submitError && <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{submitError}</p>}
+              {totalAjustado !== null && (
+                <div className="border border-amber-300 bg-amber-50 px-4 py-3.5 rounded-[10px] space-y-2.5" aria-live="polite">
+                  <p className="text-[13px] font-semibold text-amber-900">
+                    {isInternational ? 'The total was updated' : 'El total se actualizó'}
+                  </p>
+                  <p className="text-[12px] text-amber-900/80 leading-relaxed">
+                    {isInternational
+                      ? <>A price changed while you were shopping. The final total is <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Nothing was charged yet.</>
+                      : <>Algún precio cambió mientras comprabas. El total final es <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Todavía no se cobró nada.</>}
+                  </p>
+                  <button type="button" onClick={confirmarTotalAjustado} disabled={submitting}
+                    className="inline-flex items-center gap-2 rounded-[8px] bg-amber-900 px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em] text-white hover:bg-amber-800 disabled:opacity-60">
+                    {isInternational ? 'Pay' : 'Pagar'} {formatPriceIn(totalAjustado, cobro)}
+                  </button>
+                </div>
+              )}
               <div className="space-y-3 pt-1">
                 {isDesktop && (
                 <DynamicButton
