@@ -1176,20 +1176,22 @@ export default function Checkout() {
                     </>
                   ) : (
                     <>
+                      {/* El CP va primero: al tipearlo se autocompletan barrio/ciudad
+                          y provincia, que quedan justo abajo para verse llenarse. */}
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => handleCpChange(e.target.value)} />
+                        <FloatingInput label={info.provincia === 'CABA' ? 'Barrio' : 'Ciudad'} required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                      </div>
                       <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => { provinciaTocada.current = true; setInfo({ ...info, provincia: e.target.value }); }}>
                         {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
                       </FloatingSelect>
+                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" {...campo('direccion')} value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                      <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
                       <div className="grid grid-cols-2 gap-2.5">
                         <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
                         <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                       </div>
                       <FloatingInput label="DNI" required inputMode="numeric" hint="Lo pide el correo para que tu envío llegue seguro" {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
-                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" {...campo('direccion')} value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
-                      <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => handleCpChange(e.target.value)} />
-                        <FloatingInput label={info.provincia === 'CABA' ? 'Barrio' : 'Ciudad'} required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
-                      </div>
                       <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
                     </>
                   )}
