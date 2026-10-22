@@ -124,6 +124,8 @@ export function filtrar(posts, opciones = {}) {
     desde = null,
     hasta = null,
     distribucion = 'organico',
+    /** 'grilla' (default) | 'prueba' | 'todos' — ver `esReelDePrueba`. */
+    reels = 'grilla',
     formato = null,
     categoria = null,
     portada = null,
@@ -141,6 +143,11 @@ export function filtrar(posts, opciones = {}) {
   return posts.filter((p) => {
     if (distribucion === 'organico' && p.wasBoosted) return false;
     if (distribucion === 'pago' && !p.wasBoosted) return false;
+
+    // Los reels de prueba van afuera salvo que se pidan: distinta audiencia,
+    // distinta mecánica, no son comparables con los de la grilla.
+    if (reels === 'grilla' && esReelDePrueba(p)) return false;
+    if (reels === 'prueba' && !esReelDePrueba(p)) return false;
 
     const t = tiempoDe(p.publishedAt);
     if (limiteInferior != null && !(t >= limiteInferior)) return false;
@@ -180,13 +187,161 @@ export function filtrar(posts, opciones = {}) {
  */
 export const distribucionVerificada = (p) => Boolean(p.wasBoosted || p.boostRef);
 
+/* ─── Calidad de las métricas históricas ────────────────────────────────── */
+
+/**
+ * Espejo de `next-app/lib/ig-insights/calidad.ts` (hay test de paridad sobre
+ * las 37 lecturas reales medidas el 19/10/2026).
+ *
+ * Para las publicaciones viejas la Graph API devuelve un alcance implausible
+ * —un reel de 2021 informa alcance 7 con 4.232 views y 163 likes— y `views = 0`
+ * en todo el feed anterior a octubre de 2024, cuando la métrica no existía.
+ * No es "falta el dato": el dato está y es incorrecto.
+ *
+ * Nada se borra ni se corrige: esto es una lectura derivada. El veredicto es
+ * POR MÉTRICA y no mira la fecha — las reglas de coherencia reproducen solas
+ * el corte observado.
+ */
+export const REGLA_CALIDAD_VERSION = 1;
+export const UMBRAL_VIEWS_REACH = { FEED: 8, REELS: 12 };
+export const UMBRAL_LIKES_REACH = 0.25;
+export const UMBRAL_INTERACCIONES_REACH = 0.5;
+export const CORTE_OBSERVADO = '2024-10-19';
+
+const METRICAS_SNAPSHOT = [
+  'views', 'reach', 'likes', 'comments', 'saved', 'shares', 'reposts',
+  'totalInteractions', 'profileVisits', 'follows', 'avgWatchTimeMs',
+  'videoViewTotalTimeMs',
+];
+
+const pctTxt = (v) => (v * 100).toFixed(1).replace('.', ',') + '%';
+const numTxt = (v) => v.toFixed(1).replace('.', ',');
+
+export function evaluarCalidad(post, snap) {
+  const epocaDegradada = String(post?.publishedAt ?? '') < CORTE_OBSERVADO;
+  if (!snap) {
+    return { estado: 'sin-metricas', metricas: {}, motivos: [], epocaDegradada, regla: REGLA_CALIDAD_VERSION };
+  }
+
+  const metricas = {};
+  for (const k of METRICAS_SNAPSHOT) {
+    metricas[k] = snap[k] == null ? { estado: 'ausente', motivo: null } : { estado: 'ok', motivo: null };
+  }
+
+  const motivos = [];
+  const marcar = (k, motivo) => {
+    const actual = metricas[k];
+    if (!actual || actual.estado !== 'ok') return;
+    metricas[k] = { estado: 'no-confiable', motivo };
+    if (!motivos.includes(motivo)) motivos.push(motivo);
+  };
+
+  const tipo = String(post?.mediaProductType ?? '').toUpperCase();
+  const { views, reach, likes, totalInteractions } = snap;
+
+  if (reach != null && reach <= 0) marcar('reach', 'alcance informado en cero');
+
+  if (tipo !== 'STORY' && views === 0 && ((likes ?? 0) > 0 || (reach ?? 0) > 0)) {
+    marcar('views', 'views en cero con interacciones: la métrica no estaba disponible, no es un cero medido');
+    marcar('reach', 'lectura de una época sin views: el alcance no es comparable con el de hoy');
+  }
+
+  const techo = UMBRAL_VIEWS_REACH[tipo] ?? UMBRAL_VIEWS_REACH.FEED;
+  if (views != null && views > 0 && reach != null && reach > 0 && views / reach > techo) {
+    marcar('reach', `views/alcance = ${numTxt(views / reach)} (máximo plausible ${techo}): el alcance está subinformado`);
+  }
+
+  if (likes != null && likes > 0 && reach != null && reach > 0 && likes / reach > UMBRAL_LIKES_REACH) {
+    marcar('reach', `likes/alcance = ${pctTxt(likes / reach)} (máximo plausible ${pctTxt(UMBRAL_LIKES_REACH)})`);
+  }
+
+  if (totalInteractions != null && totalInteractions > 0 && reach != null && reach > 0 &&
+      totalInteractions / reach > UMBRAL_INTERACCIONES_REACH) {
+    marcar('reach', `interacciones/alcance = ${pctTxt(totalInteractions / reach)} (máximo plausible ${pctTxt(UMBRAL_INTERACCIONES_REACH)})`);
+  }
+
+  const hayNoConfiable = Object.values(metricas).some((m) => m.estado === 'no-confiable');
+  return {
+    estado: hayNoConfiable ? 'parcial' : 'ok',
+    metricas, motivos, epocaDegradada, regla: REGLA_CALIDAD_VERSION,
+  };
+}
+
+/** Las métricas usables de una publicación: lo no confiable queda en null. */
+export function metricasDe(post) {
+  const snap = post?.latest;
+  if (!snap) return {};
+  const calidad = evaluarCalidad(post, snap);
+  const out = {};
+  for (const k of METRICAS_SNAPSHOT) {
+    out[k] = calidad.metricas[k]?.estado === 'ok' ? snap[k] : null;
+  }
+  return out;
+}
+
+export const tieneAlcanceConfiable = (p) => metricasDe(p).reach != null;
+
+/** El universo analizado y el excluido, con el motivo de cada exclusión. */
+export function resumenDeCalidad(posts) {
+  const porMotivo = {};
+  let sinMetricas = 0, analizables = 0, excluidas = 0;
+  let excluidasAnterioresAlCorte = 0, anterioresAlCorteQuePasan = 0;
+
+  for (const p of posts) {
+    const c = evaluarCalidad(p, p.latest);
+    if (c.estado === 'sin-metricas') { sinMetricas++; continue; }
+    if (c.metricas.reach?.estado === 'ok') {
+      analizables++;
+      if (c.epocaDegradada) anterioresAlCorteQuePasan++;
+    } else {
+      excluidas++;
+      if (c.epocaDegradada) excluidasAnterioresAlCorte++;
+      for (const m of c.motivos) porMotivo[m] = (porMotivo[m] ?? 0) + 1;
+    }
+  }
+  return {
+    total: posts.length, sinMetricas, analizables, excluidas, porMotivo,
+    excluidasAnterioresAlCorte, anterioresAlCorteQuePasan,
+    regla: REGLA_CALIDAD_VERSION, corteObservado: CORTE_OBSERVADO,
+  };
+}
+
+/* ─── Formato y reels de prueba ─────────────────────────────────────────── */
+
+/**
+ * Un reel con `isSharedToFeed === false` es un **trial reel**: Instagram se lo
+ * muestra sólo a gente que no sigue la cuenta. No es comparable con un reel de
+ * la grilla, así que es su propio formato y no entra en el universo por
+ * defecto.
+ */
+export const esReelDePrueba = (p) => p.mediaProductType === 'REELS' && p.isSharedToFeed === false;
+
+export function formatoDe(p) {
+  if (esReelDePrueba(p)) return 'reel-prueba';
+  if (p.mediaProductType === 'REELS') return 'reel';
+  if (p.mediaProductType === 'STORY') return 'story';
+  return p.mediaType === 'CAROUSEL_ALBUM' ? 'carrusel' : 'imagen';
+}
+
 /** Cuántas publicaciones del universo quedaron afuera por no tener métricas. */
 export function huecos(posts) {
   const sinMetricas = posts.filter((p) => !p.latest).length;
   const sinClasificar = posts.filter((p) => !p.category).length;
   const pauteadas = posts.filter((p) => p.wasBoosted).length;
   const sinVerificar = posts.filter((p) => !distribucionVerificada(p)).length;
-  return { total: posts.length, sinMetricas, sinClasificar, pauteadas, sinVerificar };
+  const dePrueba = posts.filter(esReelDePrueba).length;
+  const calidad = resumenDeCalidad(posts);
+  return {
+    total: posts.length,
+    sinMetricas,
+    sinClasificar,
+    pauteadas,
+    sinVerificar,
+    dePrueba,
+    noConfiables: calidad.excluidas,
+    analizables: calidad.analizables,
+    calidad,
+  };
 }
 
 /* ─── Consultas ─────────────────────────────────────────────────────────── */
@@ -195,18 +350,20 @@ const etiquetaPost = (p) => ({
   igMediaId: p.igMediaId,
   permalink: p.permalink,
   fecha: String(p.publishedAt ?? '').slice(0, 10),
-  formato: p.mediaProductType === 'REELS' ? 'reel' : p.mediaType === 'CAROUSEL_ALBUM' ? 'carrusel' : 'imagen',
+  formato: formatoDe(p),
   categoria: p.category || null,
   portada: p.coverType || null,
   estilo: p.visualStyle || null,
   pauteada: Boolean(p.wasBoosted),
+  dePrueba: esReelDePrueba(p),
 });
 
 /** Ranking por una métrica, con el contexto necesario para citarlo. */
 export function rankear(posts, { metrica = 'likesReach', limite = 10 } = {}) {
   const def = metricaDe(metrica);
+  // metricasDe() y no p.latest: lo no confiable queda en null y no rankea.
   const conValor = posts
-    .map((p) => ({ post: p, valor: def.fn(p.latest ?? {}) }))
+    .map((p) => ({ post: p, valor: def.fn(metricasDe(p)) }))
     .filter((x) => x.valor != null)
     .sort((a, b) => b.valor - a.valor);
 
@@ -226,7 +383,7 @@ export function rankear(posts, { metrica = 'likesReach', limite = 10 } = {}) {
       valor: x.valor,
       vsMediana: factorVsMedian(x.valor, med),
       atipico: Boolean(bounds && x.valor > bounds.high),
-      alcance: x.post.latest?.reach ?? null,
+      alcance: metricasDe(x.post).reach ?? null,
     })),
   };
 }
@@ -235,8 +392,7 @@ const CLAVES_DIM = {
   categoria: (p) => p.category || null,
   portada: (p) => p.coverType || null,
   estilo: (p) => p.visualStyle || null,
-  formato: (p) =>
-    p.mediaProductType === 'REELS' ? 'reel' : p.mediaType === 'CAROUSEL_ALBUM' ? 'carrusel' : 'imagen',
+  formato: formatoDe,
   escenario: (p) => p.scenario || null,
   campania: (p) => (p.campaignId != null ? `campaña ${p.campaignId}` : null),
 };
@@ -254,7 +410,7 @@ export function compararSegmentos(posts, { dimension = 'categoria', metrica = 'l
     const k = claveDe(p);
     if (!k) continue;
     if (!grupos.has(k)) grupos.set(k, []);
-    grupos.get(k).push(def.fn(p.latest ?? {}));
+    grupos.get(k).push(def.fn(metricasDe(p)));
   }
 
   const segmentos = [...grupos.entries()]

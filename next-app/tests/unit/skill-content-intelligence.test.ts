@@ -14,6 +14,14 @@ import { describe, expect, it } from 'vitest';
 import * as analisisModule from '../../../.claude/skills/hype-content-intelligence/lib/analisis.mjs';
 import * as consultarModule from '../../../.claude/skills/hype-content-intelligence/lib/consultar.mjs';
 import { median as medianTs, MIN_SAMPLE as MIN_TS, outlierBounds as boundsTs, quantile as quantileTs, summarize as summarizeTs } from '@/lib/ig-insights/analytics';
+import {
+  CORTE_OBSERVADO as CORTE_OBSERVADO_TS,
+  evaluarCalidad as evaluarCalidadTs,
+  metricasUsables as metricasUsablesTs,
+  REGLA_CALIDAD_VERSION as REGLA_CALIDAD_VERSION_TS,
+  UMBRAL_LIKES_REACH as UMBRAL_LIKES_REACH_TS,
+  UMBRAL_VIEWS_REACH as UMBRAL_VIEWS_REACH_TS,
+} from '@/lib/ig-insights/calidad';
 import { engagementOverReach as erTs, likesOverReach as likesTs, savedOverReach as savedTs } from '@/lib/ig-insights/ratios';
 import type { IgPostRecord, IgSnapshotRecord } from '@/lib/ig-insights/types';
 
@@ -162,13 +170,14 @@ describe('filtrar', () => {
   });
 
   it('huecos reporta lo que no entra en el análisis', () => {
-    expect(skill.huecos(posts)).toEqual({
+    expect(skill.huecos(posts)).toMatchObject({
       total: 4,
       sinMetricas: 1,
       sinClasificar: 0,
       pauteadas: 1,
       // Las 3 no pauteadas tampoco están verificadas: nadie las cruzó con Ads.
       sinVerificar: 3,
+      dePrueba: 0,
     });
   });
 });
@@ -419,7 +428,9 @@ describe('porProducto', () => {
       igMediaId: '12',
       caption: 'camo cap con pauta',
       wasBoosted: true,
-      latest: metrics({ reach: 1000, likes: 300, saved: 90 }),
+      // 20% de likes sobre alcance: alto pero plausible (el control de calidad
+      // descarta de 25% para arriba).
+      latest: metrics({ reach: 1000, likes: 200, saved: 90 }),
     }),
   ];
 
@@ -456,6 +467,107 @@ describe('porProducto', () => {
     expect(
       skill.porProducto(conReel, { producto: 'camo cap', opciones: { formato: 'REELS' } }).n,
     ).toBe(1);
+  });
+});
+
+/* ─── Paridad del control de calidad ────────────────────────────────────── */
+
+describe('paridad del control de calidad con lib/ig-insights/calidad.ts', () => {
+  /** Las mismas lecturas reales que fija `ig-calidad.test.ts`. */
+  const CASOS: Array<[string, 'FEED' | 'REELS', number, number, number]> = [
+    ['2021-01-22', 'REELS', 7, 4232, 163],
+    ['2021-01-29', 'FEED', 154, 0, 235],
+    ['2022-12-20', 'REELS', 1036, 22495, 659],
+    ['2023-03-16', 'REELS', 176, 32577, 1091],
+    ['2024-06-05', 'FEED', 631, 0, 296],
+    ['2024-07-03', 'FEED', 2437, 30123, 536],
+    ['2024-10-03', 'FEED', 1438, 14433, 164],
+    ['2024-10-19', 'REELS', 3010, 15636, 141],
+    ['2024-12-17', 'FEED', 11552, 24347, 691],
+    ['2025-06-30', 'FEED', 13853, 81519, 236],
+    ['2026-03-29', 'FEED', 39199, 82973, 2210],
+    ['2026-10-18', 'REELS', 6813, 12605, 156],
+  ];
+
+  const armar = ([fecha, tipo, reach, views, likes]: (typeof CASOS)[number]) =>
+    post({
+      igMediaId: `20${String(reach).padStart(13, '0')}`,
+      publishedAt: `${fecha} 12:00:00`,
+      mediaProductType: tipo,
+      mediaType: tipo === 'REELS' ? 'VIDEO' : 'CAROUSEL_ALBUM',
+      likeCount: likes,
+      latest: metrics({ reach, views, likes, comments: 3, saved: 10, shares: 4 }),
+    });
+
+  it.each(CASOS)('%s %s: los dos motores dan el mismo veredicto', (...caso) => {
+    const p = armar(caso);
+    const tsCalidad = evaluarCalidadTs(p, p.latest);
+    const skillCalidad = skill.evaluarCalidad(p, p.latest);
+
+    expect(skillCalidad.estado).toBe(tsCalidad.estado);
+    expect(skillCalidad.metricas.reach.estado).toBe(tsCalidad.metricas.reach!.estado);
+    expect(skillCalidad.metricas.reach.motivo).toBe(tsCalidad.metricas.reach!.motivo);
+    expect(skillCalidad.metricas.views.estado).toBe(tsCalidad.metricas.views!.estado);
+    expect(skillCalidad.epocaDegradada).toBe(tsCalidad.epocaDegradada);
+  });
+
+  it('las constantes de la regla son las mismas', () => {
+    expect(skill.REGLA_CALIDAD_VERSION).toBe(REGLA_CALIDAD_VERSION_TS);
+    expect(skill.CORTE_OBSERVADO).toBe(CORTE_OBSERVADO_TS);
+    expect(skill.UMBRAL_LIKES_REACH).toBe(UMBRAL_LIKES_REACH_TS);
+    expect(skill.UMBRAL_VIEWS_REACH).toEqual(UMBRAL_VIEWS_REACH_TS);
+  });
+
+  it('metricasDe deja en null exactamente lo mismo en los dos', () => {
+    for (const caso of CASOS) {
+      const p = armar(caso);
+      expect(skill.metricasDe(p)).toEqual(metricasUsablesTs(p, p.latest));
+    }
+  });
+});
+
+/* ─── Reels fuera de la grilla ──────────────────────────────────────────── */
+
+describe('reels de prueba (is_shared_to_feed = false)', () => {
+  const reel = (id: string, trial: boolean) =>
+    post({
+      igMediaId: id,
+      mediaProductType: 'REELS',
+      mediaType: 'VIDEO',
+      isSharedToFeed: !trial,
+      latest: metrics({ reach: 2000, views: 6000, likes: 60 }),
+    });
+  const rows = [reel('30', false), reel('31', true), post({ igMediaId: '32', latest: metrics({ reach: 1000, likes: 50 }) })];
+
+  it('son su propio formato, no "reel"', () => {
+    expect(skill.formatoDe(reel('x', true))).toBe('reel-prueba');
+    expect(skill.formatoDe(reel('y', false))).toBe('reel');
+    expect(skill.esReelDePrueba(reel('z', true))).toBe(true);
+  });
+
+  it('quedan fuera del universo por defecto', () => {
+    const u = skill.filtrar(rows, { dias: null, ahora: AHORA });
+    expect(u).toHaveLength(2);
+    expect(u.some((p: IgPostRecord) => skill.esReelDePrueba(p))).toBe(false);
+  });
+
+  it('se pueden analizar solos', () => {
+    const u = skill.filtrar(rows, { dias: null, ahora: AHORA, reels: 'prueba' });
+    expect(u).toHaveLength(1);
+    expect(skill.esReelDePrueba(u[0])).toBe(true);
+  });
+
+  it('con "todos" entran, pero nunca en el mismo segmento', () => {
+    const u = skill.filtrar(rows, { dias: null, ahora: AHORA, reels: 'todos' });
+    expect(u).toHaveLength(3);
+    const seg = skill.compararSegmentos(u, { dimension: 'formato' });
+    const claves = seg.segmentos.map((s: { key: string }) => s.key);
+    expect(claves).toContain('reel');
+    expect(claves).toContain('reel-prueba');
+  });
+
+  it('huecos los cuenta aparte', () => {
+    expect(skill.huecos(rows).dePrueba).toBe(1);
   });
 });
 

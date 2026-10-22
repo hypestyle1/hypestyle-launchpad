@@ -27,6 +27,7 @@
  *   --dias 90            ventana temporal (default 90)
  *   --metrica likesReach likesReach|erReach|savedReach|sharesReach|commentsReach|followsReach|likesViews
  *   --distribucion organico|pago|todo   (default organico)
+ *   --reels grilla|prueba|todos         (default grilla: los trial reels no se mezclan)
  *   --dimension categoria
  *   --formato REELS|FEED|CARRUSEL
  *   --categoria flatlay   --portada producto-piso   --estilo luz-natural
@@ -189,15 +190,34 @@ function cabecera(datos, universo, opciones) {
     : datos.completo === false
       ? ' · HISTÓRICO PARCIAL'
       : ' · todo el histórico';
+  const hf = huecos(universo.filtradas);
   const lineas = [
     `Fuente: ${datos.fuente}${datos.sintetico ? '  ⚠ DATOS SINTÉTICOS — no sirven para decidir' : ''}`,
     `Descargadas: ${universo.todas.length} de ${datos.total ?? universo.todas.length} publicaciones` +
       (datos.paginas ? ` (${datos.paginas} ${datos.paginas === 1 ? 'página' : 'páginas'})` : ''),
     `Universo: ${universo.filtradas.length} publicaciones ${opciones.distribucion === 'pago' ? 'CON PAUTA' : opciones.distribucion === 'todo' ? '(orgánicas + pauteadas, sin segmentar)' : 'orgánicas'}` +
+      (opciones.reels === 'prueba' ? ', SÓLO reels de prueba' : opciones.reels === 'todos' ? ', con reels de prueba' : '') +
       alcance,
+    `Analizables: ${hf.analizables} (las que tienen alcance confiable; sobre esas se calcula todo)`,
   ];
   if (datos.completo === false) {
     lineas.push('⚠ COBERTURA INCOMPLETA: faltan publicaciones, los números de abajo no son del total.');
+  }
+  if (hf.noConfiables) {
+    lineas.push(
+      `Métricas históricas NO confiables (excluidas): ${hf.noConfiables} — regla v${hf.calidad.regla}. Motivos:`,
+    );
+    for (const [motivo, n] of Object.entries(hf.calidad.porMotivo).sort((a, b) => b[1] - a[1])) {
+      lineas.push(`   · ${n} × ${motivo}`);
+    }
+    if (hf.calidad.anterioresAlCorteQuePasan) {
+      lineas.push(
+        `   (${hf.calidad.anterioresAlCorteQuePasan} anteriores al ${hf.calidad.corteObservado} pasaron igual los controles: la exclusión es por coherencia, no por fecha)`,
+      );
+    }
+  }
+  if (h.dePrueba && opciones.reels === 'grilla') {
+    lineas.push(`Reels de prueba (fuera de la grilla, excluidos): ${h.dePrueba} — se analizan con --reels prueba`);
   }
   if (h.sinMetricas) lineas.push(`Sin insights (excluidas): ${h.sinMetricas}`);
   if (h.sinClasificar) lineas.push(`Sin clasificar: ${h.sinClasificar} — no entran en cortes por categoría/portada/estilo`);
@@ -269,6 +289,7 @@ export async function main(argv = process.argv.slice(2)) {
           ? null
           : Number(args.dias),
     distribucion: args.distribucion || 'organico',
+    reels: args.reels || 'grilla',
     formato: args.formato || null,
     categoria: args.categoria || null,
     portada: args.portada || null,
