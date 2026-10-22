@@ -50,7 +50,10 @@ export function validarCampo(campo: CampoInfo, datos: DatosInfo, opts: Opciones)
       // Andreani necesita los 4 dígitos: "1425" o el CPA "C1425ABC" sirven.
       return /^\d{4}$/.test(normalizeCpAr(v)) ? null : 'El código postal tiene 4 números (ej. 1425)';
     case 'ciudad':
-      return v ? null : (en ? 'Enter your city' : 'Ingresá la ciudad');
+      if (v) return null;
+      if (en) return 'Enter your city';
+      // Con provincia CABA el campo se llama "Barrio": la ciudad ya se sabe.
+      return datos.provincia === 'CABA' ? 'Ingresá el barrio' : 'Ingresá la ciudad';
     case 'provincia':
       return !opts.provinciaObligatoria || v ? null : 'Enter your state or province';
     case 'telefono': {

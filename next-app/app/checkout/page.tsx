@@ -465,13 +465,18 @@ export default function Checkout() {
       // Se captura el autofill anterior afuera del updater: React (StrictMode)
       // puede invocarlo dos veces y un ref mutado adentro rompe la comparación.
       const previo = autofillCp.current;
-      autofillCp.current = { ciudad: loc.ciudad || previo.ciudad, provincia: loc.provincia };
+      // En CABA el campo de ciudad pasa a ser "Barrio" y eso no se puede deducir
+      // del CP: queda vacío para que lo escriban. La provincia sí se completa.
+      const ciudadNueva = loc.provincia === 'CABA' ? '' : loc.ciudad;
+      autofillCp.current = { ciudad: ciudadNueva, provincia: loc.provincia };
       setInfo(prev => {
         // Para cuando el mapa resolvió, el CP (o el país) pudo haber cambiado.
         if (prev.pais !== 'AR' || normalizeCpAr(prev.cp) !== normalizeCpAr(cp)) return prev;
         const next = { ...prev };
-        if (loc.ciudad && (!prev.ciudad.trim() || prev.ciudad === previo.ciudad)) {
-          next.ciudad = loc.ciudad;
+        // Si lo que hay era de un autofill anterior se reemplaza (o se limpia,
+        // cuando el CP nuevo no trae ciudad); lo escrito a mano no se toca.
+        if (!prev.ciudad.trim() || prev.ciudad === previo.ciudad) {
+          next.ciudad = ciudadNueva;
         }
         if (!provinciaTocada.current || prev.provincia === previo.provincia) {
           next.provincia = loc.provincia;
@@ -1183,7 +1188,7 @@ export default function Checkout() {
                       <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
                       <div className="grid grid-cols-2 gap-2.5">
                         <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => handleCpChange(e.target.value)} />
-                        <FloatingInput label="Ciudad" required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                        <FloatingInput label={info.provincia === 'CABA' ? 'Barrio' : 'Ciudad'} required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
                       </div>
                       <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
                     </>
