@@ -29,7 +29,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export function camposVisibles({ soloGift, internacional, retiraEnSucursal }: Omit<Opciones, 'provinciaObligatoria'>): CampoInfo[] {
   if (soloGift) return ['email', 'nombre', 'apellido', 'telefono'];
   if (internacional) return ['email', 'nombre', 'apellido', 'direccion', 'ciudad', 'provincia', 'cp', 'telefono'];
-  if (retiraEnSucursal) return ['email', 'nombre', 'apellido', 'dni', 'cp', 'ciudad', 'telefono'];
+  // Retiro en sucursal: ni dirección ni barrio/ciudad — el destino es la sucursal.
+  if (retiraEnSucursal) return ['email', 'nombre', 'apellido', 'dni', 'cp', 'telefono'];
   return ['email', 'nombre', 'apellido', 'dni', 'direccion', 'cp', 'ciudad', 'telefono'];
 }
 

@@ -175,6 +175,10 @@ export default function Checkout() {
   // La dirección detectó un CP distinto del que la persona TIPEÓ: no se pisa
   // nada, se ofrece ("Para esa dirección el CP es X · Usar").
   const [cpSugerido, setCpSugerido] = useState<{ cp: string; barrio: string } | null>(null);
+  // País y provincia casi nunca se cambian: viven colapsados como texto con
+  // "Cambiar" y el select aparece recién si hace falta. Menos pantalla ocupada.
+  const [paisExpandido, setPaisExpandido] = useState(false);
+  const [provinciaExpandida, setProvinciaExpandida] = useState(false);
   // Campos por los que ya pasó la persona: el error se muestra recién al salir
   // del campo (o al intentar continuar), no mientras escribe por primera vez.
   const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
@@ -453,6 +457,7 @@ export default function Checkout() {
     autofillCp.current = { cp: '', ciudad: '', provincia: '' };
     cotizado.current = '';
     setCpSugerido(null);
+    if (pais === 'AR') setPaisExpandido(false); // vuelve a Argentina: fila compacta otra vez
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
     // La moneda de la vitrina es pesos salvo elección explícita. Si la
@@ -1184,6 +1189,7 @@ export default function Checkout() {
                     <RadioCard
                       key={rate.id}
                       name="envio"
+                      className="py-3"
                       checked={selectedRate?.id === rate.id}
                       onSelect={() => handleRateSelect(rate)}
                       icon={esSucursal ? Store : Home}
@@ -1210,6 +1216,12 @@ export default function Checkout() {
                   );
                 })}
               </div>
+              {/* La barra de envío gratis motiva cuando el umbral está cerca;
+                  con menos de la mitad del camino hecho solo mete ruido en el
+                  momento de pagar (no cambia ninguna condición comercial:
+                  el umbral sigue siendo el mismo y el descuento lo aplica
+                  lib/envio igual que siempre). */}
+              {(couponFreeShip || sobreUmbral || envioCtx.subtotalFisico >= FREE_SHIPPING_THRESHOLD / 2) && (
               <BarraEnvioGratis
                 falta={couponFreeShip || sobreUmbral ? 0 : FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico}
                 progreso={couponFreeShip || sobreUmbral ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
@@ -1222,10 +1234,25 @@ export default function Checkout() {
                   <>Sumá <span className="font-semibold text-foreground">{formatPrice(FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico)}</span> y el envío a sucursal es gratis.</>
                 )}
               </BarraEnvioGratis>
+              )}
             </>
           )}
 
-          {isSucursal && (
+          {isSucursal && selectedBranch && (
+            // Elegida la sucursal, la lista se va: queda la card con "Cambiar".
+            <div className="flex items-start justify-between gap-3 rounded-[10px] border border-foreground bg-foreground/[0.02] px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-0.5">Retirás en</p>
+                <p className="text-[13px] font-semibold leading-tight">{selectedBranch.label}</p>
+                {selectedBranch.direccion && <p className="text-[11px] text-muted-foreground mt-0.5">{selectedBranch.direccion}</p>}
+              </div>
+              <button type="button" onClick={() => setSelectedBranch(null)}
+                className="flex-shrink-0 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                Cambiar
+              </button>
+            </div>
+          )}
+          {isSucursal && !selectedBranch && (
             <div className="pt-1">
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-2">Elegí tu sucursal Andreani</p>
               {loadingBranches && (
@@ -1255,7 +1282,13 @@ export default function Checkout() {
                       key={b.id}
                       name="sucursal"
                       checked={selectedBranch?.id === b.id}
-                      onSelect={() => { setEnvioAviso(null); setSelectedBranch(b); }}
+                      onSelect={() => {
+                        setEnvioAviso(null);
+                        setSelectedBranch(b);
+                        // Con la sucursal resuelta, lo que sigue son los datos:
+                        // se acompaña con scroll, sin robar el foco ni abrir teclado.
+                        setTimeout(() => document.getElementById('tus-datos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+                      }}
                       title={b.label}
                       sub={b.direccion || undefined}
                       className="py-3"
@@ -1377,6 +1410,9 @@ export default function Checkout() {
           >
           {step === 'info' && (
             <form onSubmit={handleInfoSubmit} noValidate className="space-y-4">
+              {/* En el flujo argentino el email vive dentro de "Tus datos": el
+                  primer campo del checkout es el CP, que desbloquea todo. */}
+              {(soloGift || isInternational) && (
               <Panel
                 icon={Mail}
                 title={isInternational ? 'Contact' : 'Contacto'}
@@ -1401,6 +1437,7 @@ export default function Checkout() {
                   {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
                 </Check>
               </Panel>
+              )}
 
               {soloGift ? (
               // Sólo gift cards: nada se envía. Alcanza con nombre y teléfono
@@ -1417,6 +1454,16 @@ export default function Checkout() {
               ) : (
               <Panel icon={Truck} title={isInternational ? 'Shipping' : 'Envío'} sub={isInternational ? 'Where and how you get your order' : 'Elegí cómo y dónde recibís tu pedido'}>
                 <div className="space-y-2.5">
+                  {/* Con Argentina determinado, el select de país es una fila de
+                      texto: casi nadie lo cambia y ocupa media pantalla menos. */}
+                  {info.pais === 'AR' && !paisExpandido ? (
+                    <div className="flex items-center justify-between rounded-[10px] border border-border bg-foreground/[0.02] px-4 py-2.5">
+                      <p className="text-[12px]"><span className="text-muted-foreground">País: </span><span className="font-medium">Argentina</span></p>
+                      <button type="button" onClick={() => setPaisExpandido(true)} className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                        Cambiar
+                      </button>
+                    </div>
+                  ) : (
                   <FloatingSelect
                     label={isInternational ? 'Country' : 'País'}
                     autoComplete="country"
@@ -1429,6 +1476,7 @@ export default function Checkout() {
                         : <option key={c.code} value={c.code}>{c.name}</option>
                     )}
                   </FloatingSelect>
+                  )}
 
                   {/* International notice */}
                   {isInternational && (
@@ -1464,9 +1512,10 @@ export default function Checkout() {
                     </>
                   ) : (
                     <>
-                      {/* El CP va primero: al tipearlo se autocompletan barrio/ciudad
-                          y provincia, que quedan justo abajo para verse llenarse. */}
-                      <div className="grid grid-cols-2 gap-2.5">
+                      {/* El CP va primero: cotiza el envío y autocompleta lo
+                          geográfico. Con retiro en sucursal, barrio, provincia
+                          y domicilio directamente no se piden. */}
+                      <div className={isSucursal ? '' : 'grid grid-cols-2 gap-2.5'}>
                         <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp}
                           hint={cpSugerido ? (
                             <button type="button" onClick={aplicarCpSugerido} className="text-left text-foreground/70 hover:text-foreground">
@@ -1474,20 +1523,29 @@ export default function Checkout() {
                             </button>
                           ) : undefined}
                           onChange={e => handleCpChange(e.target.value)} />
-                        <FloatingInput label={info.provincia === 'CABA' ? 'Barrio' : 'Ciudad'} required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                        {!isSucursal && (
+                          <FloatingInput label={info.provincia === 'CABA' ? 'Barrio' : 'Ciudad'} required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                        )}
                       </div>
-                      <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => { provinciaTocada.current = true; setInfo({ ...info, provincia: e.target.value }); }}>
-                        {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
-                      </FloatingSelect>
                       {metodoEnvio}
-                      {/* Retiro en sucursal: el paquete va a la sucursal, el
-                          domicilio no hace falta y no se pide. */}
                       {!isSucursal && (
                         <>
                           <FloatingInput label="Dirección y número" required autoComplete="address-line1" error={tocados.direccion ? errores.direccion ?? null : null}
                             onBlur={() => { setTocados(t => (t.direccion ? t : { ...t, direccion: true })); buscarCpPorDireccion(); }}
                             value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
                           <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
+                          {provinciaExpandida ? (
+                            <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => { provinciaTocada.current = true; setInfo({ ...info, provincia: e.target.value }); }}>
+                              {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
+                            </FloatingSelect>
+                          ) : (
+                            <div className="flex items-center justify-between rounded-[10px] border border-border bg-foreground/[0.02] px-4 py-2.5">
+                              <p className="text-[12px]"><span className="text-muted-foreground">Provincia: </span><span className="font-medium">{info.provincia}</span></p>
+                              <button type="button" onClick={() => setProvinciaExpandida(true)} className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                                Cambiar
+                              </button>
+                            </div>
+                          )}
                         </>
                       )}
                     </>
@@ -1497,16 +1555,35 @@ export default function Checkout() {
               )}
 
               {!soloGift && !isInternational && (
-              <Panel icon={User} title="Tus datos" sub="Para el pedido y la entrega">
+              <div id="tus-datos">
+              <Panel icon={User} title="Tus datos"
+                sub={precargado ? 'Completamos con los datos de tu última compra' : 'La confirmación y el seguimiento van a tu mail'}
+                action={precargado ? (
+                  <button type="button" onClick={olvidarDatos} className="flex-shrink-0 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                    ¿No sos vos?
+                  </button>
+                ) : undefined}
+              >
                 <div className="space-y-2.5">
+                  <FloatingInput type="email" label="Email" required autoComplete="email" inputMode="email" {...campo('email')} value={info.email}
+                    hint={sugerenciaEmail ? (
+                      <button type="button" onClick={() => setInfo(i => ({ ...i, email: sugerenciaEmail }))} className="text-left text-foreground/70 hover:text-foreground">
+                        ¿Quisiste decir <span className="font-semibold text-foreground underline underline-offset-2">{sugerenciaEmail}</span>?
+                      </button>
+                    ) : undefined}
+                    onChange={e => setInfo({ ...info, email: e.target.value })} />
                   <div className="grid grid-cols-2 gap-2.5">
                     <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
                     <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                   </div>
-                  <FloatingInput label="DNI" required inputMode="numeric" hint="Lo pide el correo para que tu envío llegue seguro" {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
+                  <FloatingInput label="DNI" required inputMode="numeric" hint={isSucursal ? 'Lo vas a necesitar para retirar el paquete' : 'Lo pide el correo para que tu envío llegue seguro'} {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
                   <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                  <Check className="mt-1" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })}>
+                    Recibir novedades, drops y acceso anticipado
+                  </Check>
                 </div>
               </Panel>
+              </div>
               )}
 
               <Button type="submit" variant="hype" size="ctaFull" className="rounded-[10px] gap-2">
