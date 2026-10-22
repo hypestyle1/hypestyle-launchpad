@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { textoFirst10, type First10Info } from '@/lib/first10';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
@@ -22,7 +22,8 @@ import { gaBeginCheckout } from '@/lib/ga';
 import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
 import { imgSrc } from '@/lib/img';
 import { normalizeCpAr } from '@/lib/postal-code';
-import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
+import { localidadPorCp } from '@/lib/cp-localidad';
+import { useProducts } from '@/hooks/useProducts';
 import PriceChangeNotice from '@/components/PriceChangeNotice';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import { FREE_SHIPPING_THRESHOLD, ahorroSucursal, alcanzaUmbral, costoEnvio, incluyeEnvioGratis, modoDeTarifa, ordenarTarifas, tarifaPorDefecto } from '@/lib/envio';
@@ -136,186 +137,6 @@ const COUNTRIES = [
 // eso el correo no emite la etiqueta y el pedido se traba después de cobrado.
 const STATE_REQUIRED = ['US', 'CA', 'AU'];
 
-const UPSELL_VISIBLE = 2; // tarjetas visibles al mismo tiempo
-
-function shuffled<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function UpsellCard({ p, selectedSizes, setSelectedSizes, added, onAdd }: {
-  p: NormalizedProduct;
-  selectedSizes: Record<string, string>;
-  setSelectedSizes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  added: Record<string, boolean>;
-  onAdd: (p: NormalizedProduct, size: string) => void;
-}) {
-  const { formatPrice } = useLocale();
-  const available = p.sizes.filter(s => p.stock[s] !== 'out');
-  const hasManyS = available.length > 5;
-  const size = selectedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
-  const isAdded = !!added[p.slug];
-
-  return (
-    <div className="flex flex-col border border-border rounded-[10px] overflow-hidden flex-1 min-w-0">
-      <a href={p.href} tabIndex={-1} className="block w-full h-[110px] bg-bg-alt overflow-hidden flex-shrink-0">
-        {p.image && <img src={imgSrc(p.image)} alt={p.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />}
-      </a>
-      <div className="p-2.5 flex flex-col gap-1.5 flex-1">
-        <p className="text-[10px] font-medium leading-tight line-clamp-2 text-foreground">{p.name}</p>
-        <p className="text-[11px] font-bold">{formatPrice(p.price)}</p>
-
-        {/* Pills para pocos talles */}
-        {!hasManyS && available.length > 1 && (
-          <div className="flex flex-wrap gap-[3px]">
-            {available.map(s => (
-              <button key={s} type="button"
-                onClick={() => setSelectedSizes(prev => ({ ...prev, [p.slug]: s }))}
-                className={`text-[9px] font-semibold px-1.5 py-[2px] border rounded-[4px] transition-colors leading-none ${
-                  size === s ? 'border-foreground bg-foreground text-white' : 'border-border text-foreground/55 hover:border-foreground/50'
-                }`}>{s}</button>
-            ))}
-          </div>
-        )}
-
-        {/* Select para muchos talles (anillos, etc.) */}
-        {hasManyS && (
-          <select value={size}
-            onChange={e => setSelectedSizes(prev => ({ ...prev, [p.slug]: e.target.value }))}
-            className="text-[10px] border border-border rounded-[6px] px-1.5 py-1 bg-white focus:outline-none focus:border-foreground w-full">
-            <option value="">Talle</option>
-            {available.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        )}
-
-        <button type="button" onClick={() => onAdd(p, size)} disabled={!size || isAdded}
-          className={`mt-auto w-full py-1.5 text-[9px] font-bold uppercase tracking-wider rounded-[6px] transition-colors ${
-            isAdded ? 'bg-green-600 text-white' :
-            size ? 'bg-foreground text-white hover:bg-foreground/80' :
-            'bg-foreground/[0.06] text-foreground/30 cursor-default'
-          }`}>
-          {isAdded ? '✓ Agregado' : size ? 'Agregar' : 'Elegí talle'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function UpsellCarousel() {
-  const { items, add } = useCart();
-  const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
-  const [added, setAdded] = useState<Record<string, boolean>>({});
-  const [idx, setIdx] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Rotaba cada 3 s al lado del formulario y distraía justo mientras la
-  // persona escribe. Se frena con un campo en foco y con el mouse encima.
-  const pausadoRef = useRef(false);
-  const hoverRef = useRef(false);
-  useEffect(() => {
-    const enCampo = () => {
-      const el = document.activeElement;
-      return !!el && el.matches('input:not([type=radio]):not([type=checkbox]), select, textarea');
-    };
-    const sync = () => { pausadoRef.current = enCampo(); };
-    document.addEventListener('focusin', sync);
-    // Al salir de un campo el foco todavía no llegó al siguiente: se mira en el próximo tick.
-    const alSalir = () => { setTimeout(sync, 0); };
-    document.addEventListener('focusout', alSalir);
-    return () => {
-      document.removeEventListener('focusin', sync);
-      document.removeEventListener('focusout', alSalir);
-    };
-  }, []);
-
-  // Pool grande + shuffle (mismo patrón que CartDrawer) — antes traía solo los primeros 20
-  // productos por menu_order y los mostraba siempre en el mismo orden, así que terminaba
-  // pareciendo una lista fija sin importar qué hubiera en el carrito.
-  const { data: allProducts = [] } = useProducts(0);
-  const cartIdsKey = items.map(i => i.id).join(',');
-  const upsell = useMemo(() => {
-    const cartIds = new Set(items.map(i => i.id));
-    return shuffled(
-      allProducts.filter(p => !cartIds.has(p.slug) && Object.values(p.stock).some(s => s !== 'out'))
-    ).slice(0, 10);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartIdsKey, allProducts.length]);
-  const total = upsell.length;
-
-  const startTimer = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (!total) return;
-    timerRef.current = setInterval(() => {
-      if (pausadoRef.current || hoverRef.current) return;
-      setIdx(c => (c + 1) % total);
-    }, 3000);
-  }, [total]);
-
-  useEffect(() => {
-    startTimer();
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [startTimer]);
-
-  if (!total) return null;
-
-  const safeIdx = idx % total;
-  const go = (n: number) => { setIdx((safeIdx + n + total) % total); startTimer(); };
-
-  const visible = [
-    upsell[safeIdx],
-    upsell[(safeIdx + 1) % total],
-  ].filter(Boolean).slice(0, UPSELL_VISIBLE);
-
-  const handleAdd = (p: NormalizedProduct, size: string) => {
-    if (!size) return;
-    add({ id: p.slug, name: p.name, price: p.price, image: p.image, size, quantity: 1 });
-    setAdded(prev => ({ ...prev, [p.slug]: true }));
-    setTimeout(() => setAdded(prev => ({ ...prev, [p.slug]: false })), 2000);
-  };
-
-  return (
-    <div
-      className="rounded-[10px] border border-border bg-white p-5"
-      onMouseEnter={() => { hoverRef.current = true; }}
-      onMouseLeave={() => { hoverRef.current = false; }}
-    >
-      <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 mb-3">
-        Completá el look
-      </p>
-
-      <div className="flex items-center gap-1.5">
-        <button type="button" onClick={() => go(-1)} aria-label="Anterior"
-          className="flex-shrink-0 w-6 h-6 rounded-full border border-border flex items-center justify-center text-foreground/40 hover:text-foreground hover:border-foreground/40 transition-colors text-[16px] leading-none">
-          ‹
-        </button>
-
-        <div className="flex-1 flex gap-2 min-w-0">
-          {visible.map(p => (
-            <UpsellCard key={p.slug} p={p}
-              selectedSizes={selectedSizes} setSelectedSizes={setSelectedSizes}
-              added={added} onAdd={handleAdd} />
-          ))}
-        </div>
-
-        <button type="button" onClick={() => go(1)} aria-label="Siguiente"
-          className="flex-shrink-0 w-6 h-6 rounded-full border border-border flex items-center justify-center text-foreground/40 hover:text-foreground hover:border-foreground/40 transition-colors text-[16px] leading-none">
-          ›
-        </button>
-      </div>
-
-      <div className="flex justify-center gap-1 mt-2.5">
-        {upsell.map((_, i) => (
-          <button key={i} type="button" onClick={() => { setIdx(i); startTimer(); }}
-            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === safeIdx ? 'bg-foreground' : 'bg-foreground/20'}`} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 interface ShippingRate { id: string; label: string; cost: number }
 interface AndBranch { id: string; label: string; direccion: string }
 interface InfoForm {
@@ -369,6 +190,10 @@ export default function Checkout() {
   const [recovered, setRecovered] = useState<'failed' | 'generic' | null>(null);
   const restoreChecked = useRef(false);
   const countryTouched = useRef(false);
+  // Autocompletado por CP: qué dejó puesto el último autofill y si la persona
+  // eligió provincia a mano (en ese caso el select no se pisa nunca).
+  const provinciaTocada = useRef(false);
+  const autofillCp = useRef({ ciudad: '', provincia: '' });
 
   const [flashActive, setFlashActive] = useState(false);
   const { promoActive: promo3x2Won } = usePromo3x2Status();
@@ -444,6 +269,8 @@ export default function Checkout() {
     if (instagram) setPago(p => (p.instagram ? p : { ...p, instagram }));
     // El país guardado manda sobre el de la geo, igual que si lo hubiera elegido.
     countryTouched.current = true;
+    // La provincia recordada vale como elección propia: el CP no la pisa.
+    if (dir.provincia) provinciaTocada.current = true;
     if (dir.pais && dir.pais !== 'AR' && !currencyChosen) setCurrency(localeForCountry(dir.pais)?.currency ?? 'ARS', false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
@@ -452,6 +279,8 @@ export default function Checkout() {
     borrarDatos();
     setPrecargado(false);
     setTocados({});
+    provinciaTocada.current = false;
+    autofillCp.current = { ciudad: '', provincia: '' };
     setInfo({
       email: '', newsletter: false, nombre: '', apellido: '', dni: '',
       direccion: '', depto: '', cp: '', ciudad: '', provincia: 'Buenos Aires', pais: 'AR', telefono: '',
@@ -606,6 +435,9 @@ export default function Checkout() {
 
   const handleCountryChange = (pais: string) => {
     countryTouched.current = true;
+    // Cambió el destino: el autocompletado por CP arranca de cero.
+    provinciaTocada.current = false;
+    autofillCp.current = { ciudad: '', provincia: '' };
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
     // La moneda de la vitrina es pesos salvo elección explícita. Si la
@@ -620,6 +452,33 @@ export default function Checkout() {
     setBranches([]);
     setSelectedBranch(null);
     setPago(prev => ({ ...prev, metodo: '' }));
+  };
+
+  // Autocompletar ciudad y provincia a partir del CP (solo Argentina). Los dos
+  // campos siguen a la vista y editables, y lo escrito a mano nunca se pisa:
+  // ciudad solo si está vacía o quedó de un autocompletado anterior; provincia
+  // solo mientras no hayan elegido una en el select.
+  const handleCpChange = (cp: string) => {
+    setInfo(prev => ({ ...prev, cp }));
+    void localidadPorCp(cp).then(loc => {
+      if (!loc) return;
+      // Se captura el autofill anterior afuera del updater: React (StrictMode)
+      // puede invocarlo dos veces y un ref mutado adentro rompe la comparación.
+      const previo = autofillCp.current;
+      autofillCp.current = { ciudad: loc.ciudad || previo.ciudad, provincia: loc.provincia };
+      setInfo(prev => {
+        // Para cuando el mapa resolvió, el CP (o el país) pudo haber cambiado.
+        if (prev.pais !== 'AR' || normalizeCpAr(prev.cp) !== normalizeCpAr(cp)) return prev;
+        const next = { ...prev };
+        if (loc.ciudad && (!prev.ciudad.trim() || prev.ciudad === previo.ciudad)) {
+          next.ciudad = loc.ciudad;
+        }
+        if (!provinciaTocada.current || prev.provincia === previo.provincia) {
+          next.provincia = loc.provincia;
+        }
+        return next;
+      });
+    });
   };
 
   const fetchRates = async () => {
@@ -1312,18 +1171,18 @@ export default function Checkout() {
                     </>
                   ) : (
                     <>
-                      <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })}>
+                      <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => { provinciaTocada.current = true; setInfo({ ...info, provincia: e.target.value }); }}>
                         {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
                       </FloatingSelect>
                       <div className="grid grid-cols-2 gap-2.5">
                         <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
                         <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
                       </div>
-                      <FloatingInput label="DNI" required inputMode="numeric" {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
+                      <FloatingInput label="DNI" required inputMode="numeric" hint="Lo pide el correo para que tu envío llegue seguro" {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
                       <FloatingInput label="Dirección y número" required autoComplete="address-line1" {...campo('direccion')} value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
                       <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
                       <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
+                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => handleCpChange(e.target.value)} />
                         <FloatingInput label="Ciudad" required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
                       </div>
                       <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
@@ -1673,7 +1532,6 @@ export default function Checkout() {
               </div>
             )}
             {isDesktop && <PagoSeguroCard en={isInternational} className="bg-white" />}
-            <UpsellCarousel />
             </>
             )}
           </div>
