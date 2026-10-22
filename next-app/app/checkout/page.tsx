@@ -209,7 +209,10 @@ export default function Checkout() {
 
   const [branches, setBranches] = useState<AndBranch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<AndBranch | null>(null);
-  const [loadingBranches, setLoadingBranches] = useState(false);
+  // Estado de la búsqueda de sucursales. 'error' y 'vacio' son cosas distintas:
+  // un fallo del servicio no significa que el CP no tenga sucursales.
+  const [sucursalesEstado, setSucursalesEstado] = useState<'idle' | 'cargando' | 'ok' | 'vacio' | 'error'>('idle');
+  const loadingBranches = sucursalesEstado === 'cargando';
 
   const isInternational = info.pais !== 'AR';
   // El sitio muestra precios en ocho monedas pero cobra en dos: pesos si el
@@ -241,7 +244,9 @@ export default function Checkout() {
   // coordinar", pero exigir sucursal elegida dejaba el botón deshabilitado y el
   // pedido moría ahí (caso real: CP sin sucursales en la respuesta de Andreani).
   // Si no hay ninguna sucursal para elegir, no se le puede pedir al cliente que elija.
-  const sinSucursales = !loadingBranches && branches.length === 0;
+  // Solo una búsqueda que terminó bien y vino vacía habilita el camino "a
+  // coordinar"; un error del servicio pide reintentar (o elegir domicilio).
+  const sinSucursales = sucursalesEstado === 'vacio';
   const branchReady = isInternational || !isSucursal || !!selectedBranch || sinSucursales;
   // El pedido viaja con el CP de 4 dígitos: es el que sabe leer el plugin de
   // Andreani para generar la guía. El ZIP internacional se deja tal cual.
@@ -515,19 +520,28 @@ export default function Checkout() {
       .catch(() => {});
   };
 
+  // Número de secuencia de cada búsqueda: si el CP cambia rápido, la respuesta
+  // vieja llega después y pisaba a la nueva — tarifas (o sucursales) de un CP
+  // que ya no es el del formulario. Solo la última solicitud toca el estado.
+  const ratesSeq = useRef(0);
+  const branchesSeq = useRef(0);
+
   const fetchRates = async () => {
     if (!info.cp) return;
+    const seq = ++ratesSeq.current;
     setLoadingRates(true);
     setRatesError(null);
     setShippingRates([]);
     setSelectedRate(null);
     setBranches([]);
     setSelectedBranch(null);
+    setSucursalesEstado('idle');
     try {
       const res = await fetch(
         `/api/andreani-rates?cp=${encodeURIComponent(info.cp)}&provincia=${encodeURIComponent(info.provincia)}&valor=${subtotal}&peso=0.5`
       );
       const data: { rates?: ShippingRate[]; error?: string } = await res.json();
+      if (seq !== ratesSeq.current) return; // ya hay una búsqueda más nueva
       if (data.rates && data.rates.length > 0) {
         // Sucursal primero y preseleccionada: es el envío que menos cuesta.
         const elegida = tarifaPorDefecto(data.rates);
@@ -538,9 +552,10 @@ export default function Checkout() {
         setRatesError('No se encontraron opciones de envío para este código postal.');
       }
     } catch {
+      if (seq !== ratesSeq.current) return;
       setRatesError('No se pudo calcular el envío. Intentá de nuevo.');
     } finally {
-      setLoadingRates(false);
+      if (seq === ratesSeq.current) setLoadingRates(false);
     }
   };
 
@@ -604,7 +619,9 @@ export default function Checkout() {
     if (!shippingReady || !branchReady) {
       setEnvioAviso(!shippingReady
         ? (isInternational ? 'Choose a shipping method to continue.' : 'Elegí un método de envío para continuar.')
-        : 'Elegí tu sucursal de Andreani para continuar.');
+        : sucursalesEstado === 'error'
+          ? 'No pudimos cargar las sucursales. Reintentá o elegí envío a domicilio.'
+          : 'Elegí tu sucursal de Andreani para continuar.');
       document.getElementById('metodo-envio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
@@ -614,18 +631,26 @@ export default function Checkout() {
 
   const fetchBranches = async (rate: ShippingRate) => {
     const isSuc = rate.label?.toLowerCase().includes('sucursal') || rate.id?.toLowerCase().includes('sucursal');
-    if (!isSuc) { setBranches([]); setSelectedBranch(null); return; }
-    setLoadingBranches(true);
+    if (!isSuc) { setBranches([]); setSelectedBranch(null); setSucursalesEstado('idle'); return; }
+    const seq = ++branchesSeq.current;
+    setSucursalesEstado('cargando');
     setBranches([]);
     setSelectedBranch(null);
     try {
       const res = await fetch(`/api/andreani-branches?cp=${encodeURIComponent(info.cp)}`);
-      const data: { branches?: AndBranch[] } = await res.json();
+      const data: { branches?: AndBranch[]; error?: string } = await res.json();
+      if (seq !== branchesSeq.current) return;
+      // Un fallo del servicio NO es "no hay sucursales": antes se mostraba el
+      // mismo cartel y el pedido entraba "a coordinar" sin necesidad.
+      if (!res.ok || data.error) {
+        setSucursalesEstado('error');
+        return;
+      }
       setBranches(data.branches ?? []);
+      setSucursalesEstado((data.branches ?? []).length > 0 ? 'ok' : 'vacio');
     } catch {
-      setBranches([]);
-    } finally {
-      setLoadingBranches(false);
+      if (seq !== branchesSeq.current) return;
+      setSucursalesEstado('error');
     }
   };
 
@@ -1177,7 +1202,21 @@ export default function Checkout() {
                   Buscando sucursales cerca de CP {info.cp}...
                 </div>
               )}
-              {!loadingBranches && branches.length > 0 && (
+              {sucursalesEstado === 'error' && (
+                <div className="space-y-2">
+                  <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">
+                    No pudimos cargar las sucursales. Reintentá en un momento.
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <button type="button" onClick={() => selectedRate && fetchBranches(selectedRate)}
+                      className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
+                      Reintentar
+                    </button>
+                    <span className="text-[12px] text-muted-foreground">Si sigue sin andar, elegí envío a domicilio.</span>
+                  </div>
+                </div>
+              )}
+              {sucursalesEstado === 'ok' && (
                 <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
                   {branches.map(b => (
                     <RadioCard
@@ -1192,7 +1231,7 @@ export default function Checkout() {
                   ))}
                 </div>
               )}
-              {!loadingBranches && branches.length === 0 && (
+              {sucursalesEstado === 'vacio' && (
                 <div className="flex gap-3 rounded-[10px] bg-foreground/[0.04] px-4 py-3.5">
                   <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-foreground/50" strokeWidth={1.75} aria-hidden="true" />
                   <p className="text-[12px] text-foreground/70 leading-relaxed">
