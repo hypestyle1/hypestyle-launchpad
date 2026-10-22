@@ -172,6 +172,9 @@ export default function Checkout() {
   // Qué le falta al envío cuando intentan continuar (tarifa o sucursal):
   // el aviso aparece recién al tocar el botón, no de entrada.
   const [envioAviso, setEnvioAviso] = useState<string | null>(null);
+  // La dirección detectó un CP distinto del que la persona TIPEÓ: no se pisa
+  // nada, se ofrece ("Para esa dirección el CP es X · Usar").
+  const [cpSugerido, setCpSugerido] = useState<{ cp: string; barrio: string } | null>(null);
   // Campos por los que ya pasó la persona: el error se muestra recién al salir
   // del campo (o al intentar continuar), no mientras escribe por primera vez.
   const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
@@ -449,6 +452,7 @@ export default function Checkout() {
     provinciaTocada.current = false;
     autofillCp.current = { cp: '', ciudad: '', provincia: '' };
     cotizado.current = '';
+    setCpSugerido(null);
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
     // La moneda de la vitrina es pesos salvo elección explícita. Si la
@@ -470,6 +474,7 @@ export default function Checkout() {
   // ciudad solo si está vacía o quedó de un autocompletado anterior; provincia
   // solo mientras no hayan elegido una en el select.
   const handleCpChange = (cp: string) => {
+    setCpSugerido(null); // está escribiendo el CP: la sugerencia vieja no corre más
     setInfo(prev => ({ ...prev, cp }));
     void localidadPorCp(cp).then(loc => {
       if (!loc) return;
@@ -500,9 +505,10 @@ export default function Checkout() {
 
   // Camino inverso: dirección → CP y barrio, solo CABA (ver /api/direccion-caba;
   // para el resto del país no hay servicio público calle → CP). Corre al salir
-  // del campo dirección con provincia CABA. Acá la dirección manda: si el GCBA
-  // la valida, CP y barrio se actualizan aunque ya tuvieran algo — son datos
-  // derivados de la dirección, y el cambio se ve en los campos de arriba.
+  // del campo dirección con provincia CABA. Un CP vacío o puesto por este mismo
+  // autocompletado se actualiza directo; uno TIPEADO distinto no se pisa: se
+  // ofrece como sugerencia reversible. El barrio exacto de USIG llena el campo
+  // si estaba vacío o era nuestro.
   const buscarCpPorDireccion = () => {
     const dir = info.direccion.trim();
     if (info.pais !== 'AR' || info.provincia !== 'CABA' || dir.length < 5 || !/\d/.test(dir)) return;
@@ -510,14 +516,40 @@ export default function Checkout() {
       .then(r => (r.ok ? (r.json() as Promise<{ cp?: string; barrio?: string }>) : null))
       .then(data => {
         if (!data?.cp) return;
-        autofillCp.current = { cp: data.cp, ciudad: data.barrio || autofillCp.current.ciudad, provincia: 'CABA' };
+        const previo = autofillCp.current;
+        const cpTipeado = info.cp.trim();
+        const cpManual = !!cpTipeado && cpTipeado !== previo.cp;
+        if (cpManual && normalizeCpAr(cpTipeado) !== data.cp) {
+          setCpSugerido({ cp: data.cp, barrio: data.barrio ?? '' });
+          autofillCp.current = { ...previo, ciudad: data.barrio || previo.ciudad };
+        } else {
+          setCpSugerido(null);
+          autofillCp.current = { cp: data.cp, ciudad: data.barrio || previo.ciudad, provincia: 'CABA' };
+        }
         setInfo(prev => {
           // Si mientras tanto cambió la dirección (o el destino), no tocar.
           if (prev.pais !== 'AR' || prev.provincia !== 'CABA' || prev.direccion.trim() !== dir) return prev;
-          return { ...prev, cp: data.cp!, ciudad: data.barrio || prev.ciudad };
+          const next = { ...prev };
+          if (!cpManual) next.cp = data.cp!;
+          if (data.barrio && (!prev.ciudad.trim() || prev.ciudad === previo.ciudad)) next.ciudad = data.barrio;
+          return next;
         });
       })
       .catch(() => {});
+  };
+
+  const aplicarCpSugerido = () => {
+    if (!cpSugerido) return;
+    const { cp, barrio } = cpSugerido;
+    const previo = autofillCp.current;
+    autofillCp.current = { cp, ciudad: barrio || previo.ciudad, provincia: 'CABA' };
+    setInfo(prev => ({
+      ...prev,
+      cp,
+      ciudad: barrio && (!prev.ciudad.trim() || prev.ciudad === previo.ciudad) ? barrio : prev.ciudad,
+    }));
+    setCpSugerido(null);
+    // El CP nuevo recotiza solo (efecto sobre info.cp).
   };
 
   // Número de secuencia de cada búsqueda: si el CP cambia rápido, la respuesta
@@ -1435,7 +1467,13 @@ export default function Checkout() {
                       {/* El CP va primero: al tipearlo se autocompletan barrio/ciudad
                           y provincia, que quedan justo abajo para verse llenarse. */}
                       <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => handleCpChange(e.target.value)} />
+                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp}
+                          hint={cpSugerido ? (
+                            <button type="button" onClick={aplicarCpSugerido} className="text-left text-foreground/70 hover:text-foreground">
+                              Para esa dirección el CP es <span className="font-semibold text-foreground underline underline-offset-2">{cpSugerido.cp}</span> · Usar
+                            </button>
+                          ) : undefined}
+                          onChange={e => handleCpChange(e.target.value)} />
                         <FloatingInput label={info.provincia === 'CABA' ? 'Barrio' : 'Ciudad'} required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
                       </div>
                       <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => { provinciaTocada.current = true; setInfo({ ...info, provincia: e.target.value }); }}>
