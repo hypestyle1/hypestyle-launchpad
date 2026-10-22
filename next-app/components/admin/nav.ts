@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Home, Package, PackagePlus, Calculator, Store, MessageSquare,
   Users, Star, Mail, BarChart3, UserCog, ListChecks, Settings,
-  Wallet, TrendingUp, SlidersHorizontal, Bot, Receipt, Megaphone, Plug, LineChart, CalendarDays, Rocket, Boxes, Instagram, Globe, Scale, BellRing, Lock,
+  Wallet, TrendingUp, SlidersHorizontal, Bot, Receipt, Megaphone, Plug, LineChart, CalendarDays, Rocket, Boxes, Instagram, Globe, Scale, BellRing, Lock, Sparkles, Images,
 } from 'lucide-react';
 
 export type Seccion =
@@ -61,6 +61,8 @@ export const GRUPOS: NavGrupo[] = [
     titulo: 'Contenido',
     items: [
       { label: 'Contenido', href: '/admin/content', seccion: 'creadores', match: '/admin/content', Icono: CalendarDays },
+      { label: 'Intelligence', href: '/admin/content/intelligence', seccion: 'creadores', match: '/admin/content/intelligence', Icono: Sparkles },
+      { label: 'Biblioteca IG', href: '/admin/content/library', seccion: 'creadores', match: '/admin/content/library', Icono: Images },
       { label: 'Campañas', href: '/admin/content/campaigns', seccion: 'creadores', match: '/admin/content/campaigns', Icono: Rocket },
       { label: 'Close Friends', href: '/admin/content/close-friends', seccion: 'creadores', match: '/admin/content/close-friends', Icono: Instagram },
       { label: 'Private Access', href: '/admin/private-access', seccion: 'creadores', match: '/admin/private-access', Icono: Lock },

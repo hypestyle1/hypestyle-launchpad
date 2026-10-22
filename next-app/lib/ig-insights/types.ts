@@ -71,3 +71,47 @@ export type IgSnapshotInput = {
   ageHours: number | null;
   metrics: IgSnapshotMetrics;
 };
+
+/** Snapshot como lo devuelve el mu-plugin (hs_ig_snapshot_to_api). */
+export type IgSnapshotRecord = { takenAt: string; ageHours: number | null } & IgSnapshotMetrics;
+
+/**
+ * Publicación como la devuelve `GET hypestyle/v1/ig-posts`
+ * (hs_ig_post_to_api + la última lectura de métricas en `latest`).
+ */
+export type IgPostRecord = {
+  igMediaId: string;
+  permalink: string;
+  publishedAt: string;
+  mediaType: string;
+  mediaProductType: string;
+  caption: string | null;
+  isSharedToFeed: boolean | null;
+  mediaCount: number;
+  coverAttachmentId: number | null;
+  /** Portada servida desde la biblioteca de WP; null hasta que B2 las descargue. */
+  coverUrl: string | null;
+  children: Array<{ id: string; mediaType?: string | null }> | null;
+  likeCount: number | null;
+  commentsCount: number | null;
+  category: string;
+  coverType: string;
+  visualStyle: string;
+  objective: string;
+  scenario: string;
+  hasModels: string;
+  aiUsage: string;
+  classifiedBy: string;
+  classifiedAt: string | null;
+  reviewState: string;
+  wasBoosted: boolean;
+  boostRef: string;
+  contentItemId: number | null;
+  campaignId: number | null;
+  creatorId: number | null;
+  productIds: number[];
+  learnings: string | null;
+  experimentId: number | null;
+  updatedAt: string;
+  latest: IgSnapshotRecord | null;
+};
