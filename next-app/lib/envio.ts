@@ -32,6 +32,8 @@ export const FREE_SHIPPING_THRESHOLD = 180000;
  * estos en el carrito la sucursal sale gratis aunque no se llegue al umbral, y
  * el domicilio paga la diferencia, igual que sobre el umbral. 10/10/2026: los
  * tres hoodies SS27 pasaron de $98.000 a $110.000 para cubrir el envío.
+ * 22/10/2026: el beneficio termina (ver ENVIO_GRATIS_HOODIES_FIN); el precio
+ * de $110.000 queda.
  */
 export const ENVIO_GRATIS_SLUGS: ReadonlySet<string> = new Set([
   'splatter-hoodie-washed-grey',
@@ -39,8 +41,22 @@ export const ENVIO_GRATIS_SLUGS: ReadonlySet<string> = new Set([
   'hype-distressed-grey-hoodie',
 ]);
 
+/**
+ * Fin del beneficio: el 22/10/2026 a las 23:59 (hora argentina) los hoodies
+ * dejan de incluir el envío y pagan como cualquier producto. El corte vive en
+ * el código para poder mergear y anunciarlo antes, sin deploy a medianoche;
+ * pasada la fecha, la lista y este corte se pueden borrar.
+ */
+export const ENVIO_GRATIS_HOODIES_FIN = Date.parse('2026-10-23T02:59:00Z'); // 22/10/2026 23:59 ART
+
+/** ¿El envío incluido de los hoodies sigue vigente a esta hora? */
+export function envioGratisHoodiesVigente(ahora: number = Date.now()): boolean {
+  return ahora < ENVIO_GRATIS_HOODIES_FIN;
+}
+
 /** ¿Alguno de estos productos trae el envío a sucursal incluido? */
-export function incluyeEnvioGratis(slugs: Iterable<string>): boolean {
+export function incluyeEnvioGratis(slugs: Iterable<string>, ahora: number = Date.now()): boolean {
+  if (!envioGratisHoodiesVigente(ahora)) return false;
   for (const s of slugs) if (ENVIO_GRATIS_SLUGS.has(s)) return true;
   return false;
 }
