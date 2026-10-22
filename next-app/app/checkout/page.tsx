@@ -193,7 +193,7 @@ export default function Checkout() {
   // Autocompletado por CP: qué dejó puesto el último autofill y si la persona
   // eligió provincia a mano (en ese caso el select no se pisa nunca).
   const provinciaTocada = useRef(false);
-  const autofillCp = useRef({ ciudad: '', provincia: '' });
+  const autofillCp = useRef({ cp: '', ciudad: '', provincia: '' });
 
   const [flashActive, setFlashActive] = useState(false);
   const { promoActive: promo3x2Won } = usePromo3x2Status();
@@ -280,7 +280,7 @@ export default function Checkout() {
     setPrecargado(false);
     setTocados({});
     provinciaTocada.current = false;
-    autofillCp.current = { ciudad: '', provincia: '' };
+    autofillCp.current = { cp: '', ciudad: '', provincia: '' };
     setInfo({
       email: '', newsletter: false, nombre: '', apellido: '', dni: '',
       direccion: '', depto: '', cp: '', ciudad: '', provincia: 'Buenos Aires', pais: 'AR', telefono: '',
@@ -437,7 +437,7 @@ export default function Checkout() {
     countryTouched.current = true;
     // Cambió el destino: el autocompletado por CP arranca de cero.
     provinciaTocada.current = false;
-    autofillCp.current = { ciudad: '', provincia: '' };
+    autofillCp.current = { cp: '', ciudad: '', provincia: '' };
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
     // La moneda de la vitrina es pesos salvo elección explícita. Si la
@@ -468,7 +468,8 @@ export default function Checkout() {
       // En CABA loc.ciudad trae el barrio mayoritario del CP (o vacío si el CP
       // está repartido entre barrios sin mayoría clara).
       const ciudadNueva = loc.ciudad;
-      autofillCp.current = { ciudad: ciudadNueva, provincia: loc.provincia };
+      // Tipear el CP a mano lo vuelve propio: la búsqueda por dirección ya no lo pisa.
+      autofillCp.current = { cp: '', ciudad: ciudadNueva, provincia: loc.provincia };
       setInfo(prev => {
         // Para cuando el mapa resolvió, el CP (o el país) pudo haber cambiado.
         if (prev.pais !== 'AR' || normalizeCpAr(prev.cp) !== normalizeCpAr(cp)) return prev;
@@ -488,23 +489,21 @@ export default function Checkout() {
 
   // Camino inverso: dirección → CP y barrio, solo CABA (ver /api/direccion-caba;
   // para el resto del país no hay servicio público calle → CP). Corre al salir
-  // del campo dirección si la provincia es CABA y el CP sigue vacío, y solo
-  // llena lo que esté vacío: nunca pisa nada.
+  // del campo dirección con provincia CABA. Acá la dirección manda: si el GCBA
+  // la valida, CP y barrio se actualizan aunque ya tuvieran algo — son datos
+  // derivados de la dirección, y el cambio se ve en los campos de arriba.
   const buscarCpPorDireccion = () => {
     const dir = info.direccion.trim();
-    if (info.pais !== 'AR' || info.provincia !== 'CABA' || info.cp.trim() || dir.length < 5 || !/\d/.test(dir)) return;
+    if (info.pais !== 'AR' || info.provincia !== 'CABA' || dir.length < 5 || !/\d/.test(dir)) return;
     void fetch(`/api/direccion-caba?direccion=${encodeURIComponent(dir)}`)
       .then(r => (r.ok ? (r.json() as Promise<{ cp?: string; barrio?: string }>) : null))
       .then(data => {
         if (!data?.cp) return;
-        const previo = autofillCp.current;
-        autofillCp.current = { ciudad: data.barrio || previo.ciudad, provincia: 'CABA' };
+        autofillCp.current = { cp: data.cp, ciudad: data.barrio || autofillCp.current.ciudad, provincia: 'CABA' };
         setInfo(prev => {
-          // Si mientras tanto cambió la dirección o apareció un CP, no tocar.
-          if (prev.pais !== 'AR' || prev.provincia !== 'CABA' || prev.direccion.trim() !== dir || prev.cp.trim()) return prev;
-          const next = { ...prev, cp: data.cp! };
-          if (data.barrio && (!prev.ciudad.trim() || prev.ciudad === previo.ciudad)) next.ciudad = data.barrio;
-          return next;
+          // Si mientras tanto cambió la dirección (o el destino), no tocar.
+          if (prev.pais !== 'AR' || prev.provincia !== 'CABA' || prev.direccion.trim() !== dir) return prev;
+          return { ...prev, cp: data.cp!, ciudad: data.barrio || prev.ciudad };
         });
       })
       .catch(() => {});
@@ -1036,9 +1035,11 @@ export default function Checkout() {
       </div>
 
       {/* Mobile: el resumen arriba, colapsado en una barra con el total.
-          Antes quedaba debajo del botón de pagar. */}
+          Antes quedaba debajo del botón de pagar. Sticky: el total queda a la
+          vista mientras se scrollea el formulario (el header con el stepper sí
+          se va — pinearlo todo comería un quinto de la pantalla). */}
       {!isDesktop && (
-        <div className="border-b border-border bg-white">
+        <div className={`sticky z-30 border-b border-border bg-white ${flashActive ? 'top-[40px]' : 'top-0'}`}>
           <button
             type="button"
             onClick={() => setResumenAbierto(o => !o)}
@@ -1069,7 +1070,8 @@ export default function Checkout() {
                 transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
                 className="overflow-hidden"
               >
-                <div className="px-4 pt-5 pb-6">{resumen}</div>
+                {/* Desplegado también es sticky: si no entra, scrollea adentro. */}
+                <div className="max-h-[65vh] overflow-y-auto overscroll-contain px-4 pt-5 pb-6">{resumen}</div>
               </motion.div>
             )}
           </AnimatePresence>
