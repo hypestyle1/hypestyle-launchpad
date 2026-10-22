@@ -16,13 +16,20 @@ export type CampoInfo =
 
 export type DatosInfo = Record<CampoInfo, string> & { pais: string };
 
-type Opciones = { soloGift: boolean; internacional: boolean; provinciaObligatoria: boolean };
+type Opciones = {
+  soloGift: boolean;
+  internacional: boolean;
+  provinciaObligatoria: boolean;
+  /** Retiro en sucursal: el paquete no va al domicilio, la dirección no se pide. */
+  retiraEnSucursal?: boolean;
+};
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export function camposVisibles({ soloGift, internacional }: Omit<Opciones, 'provinciaObligatoria'>): CampoInfo[] {
+export function camposVisibles({ soloGift, internacional, retiraEnSucursal }: Omit<Opciones, 'provinciaObligatoria'>): CampoInfo[] {
   if (soloGift) return ['email', 'nombre', 'apellido', 'telefono'];
   if (internacional) return ['email', 'nombre', 'apellido', 'direccion', 'ciudad', 'provincia', 'cp', 'telefono'];
+  if (retiraEnSucursal) return ['email', 'nombre', 'apellido', 'dni', 'cp', 'ciudad', 'telefono'];
   return ['email', 'nombre', 'apellido', 'dni', 'direccion', 'cp', 'ciudad', 'telefono'];
 }
 

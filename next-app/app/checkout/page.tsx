@@ -48,7 +48,7 @@ import { CloseFriendsCard, instagramValido } from '@/components/checkout/CloseFr
 import { Panel, Recap, RadioCard, BarraEnvioGratis } from '@/components/checkout/Panel';
 import { useSyncExternalStore } from 'react';
 
-type Step = 'info' | 'envio' | 'pago';
+type Step = 'info' | 'pago';
 
 // En desktop el resumen es la columna de la derecha; en mobile pasa a ser una
 // barra colapsable arriba del formulario (antes quedaba debajo del botón de
@@ -169,6 +169,9 @@ export default function Checkout() {
   }, [step]);
   const [resumenAbierto, setResumenAbierto] = useState(false);
   const [pagoSinMetodo, setPagoSinMetodo] = useState(false);
+  // Qué le falta al envío cuando intentan continuar (tarifa o sucursal):
+  // el aviso aparece recién al tocar el botón, no de entrada.
+  const [envioAviso, setEnvioAviso] = useState<string | null>(null);
   // Campos por los que ya pasó la persona: el error se muestra recién al salir
   // del campo (o al intentar continuar), no mientras escribe por primera vez.
   const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
@@ -244,7 +247,7 @@ export default function Checkout() {
   // Andreani para generar la guía. El ZIP internacional se deja tal cual.
   const cpEnvio = isInternational ? info.cp : normalizeCpAr(info.cp);
 
-  const optsValidacion = { soloGift, internacional: isInternational, provinciaObligatoria: stateRequired };
+  const optsValidacion = { soloGift, internacional: isInternational, provinciaObligatoria: stateRequired, retiraEnSucursal: isSucursal };
   const errores = validarInfo(info as unknown as DatosInfo, optsValidacion);
   const sugerenciaEmail = sugerirEmail(info.email);
   /** Props de error para cada FloatingInput del primer paso. */
@@ -592,20 +595,21 @@ export default function Checkout() {
       setStep('pago');
       return;
     }
-    setStep('envio');
-    if (isInternational) {
-      const rate = intlQuote
-        ? { id: 'fedex_international', label: intlQuote.label, cost: intlQuote.cost }
-        : null;
-      setSelectedRate(rate);
-      setShippingRates(rate ? [rate] : []);
-      setLoadingRates(false);
-      setRatesError(rate ? null : 'No pudimos calcular el envío para este destino. Escribinos y lo resolvemos.');
-    } else if (cotizado.current !== `${normalizeCpAr(info.cp)}|${subtotal}` || shippingRates.length === 0) {
-      // Solo si el paso 1 no cotizó ya este CP con este carrito.
-      cotizado.current = `${normalizeCpAr(info.cp)}|${subtotal}`;
-      fetchRates();
+    // El envío se resuelve en este mismo paso: sin tarifa (o con sucursal sin
+    // elegir) no se avanza, y el aviso dice qué falta en vez de un botón muerto.
+    if (loadingRates) {
+      setEnvioAviso('Un segundo: estamos calculando el envío.');
+      return;
     }
+    if (!shippingReady || !branchReady) {
+      setEnvioAviso(!shippingReady
+        ? (isInternational ? 'Choose a shipping method to continue.' : 'Elegí un método de envío para continuar.')
+        : 'Elegí tu sucursal de Andreani para continuar.');
+      document.getElementById('metodo-envio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setEnvioAviso(null);
+    setStep('pago');
   };
 
   const fetchBranches = async (rate: ShippingRate) => {
@@ -626,6 +630,7 @@ export default function Checkout() {
   };
 
   const handleRateSelect = (rate: ShippingRate) => {
+    setEnvioAviso(null);
     setSelectedRate(rate);
     fetchBranches(rate);
   };
@@ -636,12 +641,6 @@ export default function Checkout() {
   const snapshotAndClear = () => {
     saveCartSnapshot(items);
     clear();
-  };
-
-  // Paso envío → paso pago.
-  const handleEnvioSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStep('pago');
   };
 
   // AddPaymentInfo del pixel: el evento no existía en el sitio. El punto natural
@@ -841,8 +840,8 @@ export default function Checkout() {
     </div>
   );
 
-  const stepLabel = (s: Step) => ({ info: 'Información', envio: 'Envío', pago: 'Pago' }[s]);
-  const stepIcon = { info: User, envio: Truck, pago: CreditCard } as const;
+  const stepLabel = (s: Step) => ({ info: soloGift ? 'Información' : 'Datos y envío', pago: 'Pago' }[s]);
+  const stepIcon = { info: soloGift ? User : Truck, pago: CreditCard } as const;
   const unidades = purchasableItems.reduce((n, i) => n + i.quantity, 0);
   // Lo que dice el botón "Pagar $X": con transferencia local, el total con el
   // 10% off; en la moneda en que se cobra, no en la de vitrina.
@@ -852,7 +851,10 @@ export default function Checkout() {
     document.getElementById('medio-de-pago')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   const montoAPagar = pago.metodo === 'transferencia' && !isInternational ? transferTotal : totalFinal;
-  const steps: Step[] = soloGift ? ['info', 'pago'] : ['info', 'envio', 'pago'];
+  // Dos pasos: "Datos y envío" (el CP cotiza en vivo y el método se elige ahí
+  // mismo) y "Pago". El paso de envío propio quedó vacío de contenido cuando
+  // la cotización pasó al primer paso, así que se fusionó.
+  const steps: Step[] = ['info', 'pago'];
 
   // Mercado Pago reactivado (12/07/2026): la cuenta fue devuelta tras la suspensión
   // del 05/07. Vuelve a ofrecerse como la forma más simple de cobrar con tarjeta
@@ -1055,6 +1057,156 @@ export default function Checkout() {
     </>
   );
 
+  // Selector de método de envío. Vivía en un paso propio; con la cotización en
+  // vivo por CP quedó sin razón de ser y ahora es parte del primer paso.
+  const metodoEnvio = (
+    <div id="metodo-envio" className="pt-2 space-y-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+        {isInternational ? 'Shipping method' : 'Método de envío'}
+      </p>
+      {isInternational ? (
+        <>
+          <RadioCard
+            name="envio"
+            checked
+            onSelect={() => {}}
+            icon={Plane}
+            title={selectedRate?.label ?? 'International shipping'}
+            sub="Door to door · tracked · insured"
+            right={<span className="text-[13px] font-semibold">{selectedRate ? formatPrice(selectedRate.cost) : '—'}</span>}
+          />
+          <div className="bg-foreground/[0.03] px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
+            {CUSTOMS_NOTICE}
+          </div>
+        </>
+      ) : (
+        <>
+          {!loadingRates && !ratesError && shippingRates.length === 0 && (
+            <p className="text-[12px] text-muted-foreground">
+              Completá tu código postal y te mostramos las opciones con su precio.
+            </p>
+          )}
+
+          {loadingRates && (
+            <div className="space-y-2" aria-live="polite">
+              {[0, 1].map(i => (
+                <div key={i} className="flex items-center gap-3.5 rounded-[10px] border border-border px-4 py-4">
+                  <span className="h-[18px] w-[18px] rounded-full bg-foreground/[0.06] animate-pulse" />
+                  <span className="h-10 w-10 rounded-[8px] bg-foreground/[0.06] animate-pulse" />
+                  <span className="flex-1 space-y-1.5">
+                    <span className="block h-3 w-1/3 rounded bg-foreground/[0.06] animate-pulse" />
+                    <span className="block h-2.5 w-1/4 rounded bg-foreground/[0.05] animate-pulse" />
+                  </span>
+                  <span className="h-3 w-14 rounded bg-foreground/[0.06] animate-pulse" />
+                </div>
+              ))}
+              <p className="text-[12px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
+            </div>
+          )}
+
+          {ratesError && !loadingRates && (
+            <div className="space-y-3">
+              <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
+              <button type="button" onClick={fetchRates}
+                className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
+                Intentar de nuevo
+              </button>
+            </div>
+          )}
+
+          {!loadingRates && shippingRates.length > 0 && (
+            <>
+              <div className="space-y-2">
+                {shippingRates.map(rate => {
+                  const esSucursal = modoDeTarifa(rate) === 'sucursal';
+                  const costo = costoDe(rate);
+                  // costoEnvio devuelve la tarifa cruda (con centavos) cuando no hay bonificación:
+                  // comparar redondeado, si no $5.555,6 < $5.556 mostraba el mismo precio tachado.
+                  const bonificado = Math.round(costo) < Math.round(rate.cost);
+                  return (
+                    <RadioCard
+                      key={rate.id}
+                      name="envio"
+                      checked={selectedRate?.id === rate.id}
+                      onSelect={() => handleRateSelect(rate)}
+                      icon={esSucursal ? Store : Home}
+                      title={esSucursal ? 'Retiro en sucursal' : 'Envío a domicilio'}
+                      sub={rate.label}
+                      right={
+                        <>
+                          {bonificado && (
+                            <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
+                          )}
+                          {costo === 0 ? (
+                            <span className="text-[13px] font-semibold text-green-700 block">Gratis</span>
+                          ) : (
+                            <span className="text-[13px] font-semibold block">{formatPrice(costo)}</span>
+                          )}
+                          {esSucursal && !bonificado && ahorroEnSucursal > 0 && (
+                            <span className="inline-block mt-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                              Ahorrás {formatPrice(ahorroEnSucursal)}
+                            </span>
+                          )}
+                        </>
+                      }
+                    />
+                  );
+                })}
+              </div>
+              <BarraEnvioGratis
+                falta={couponFreeShip || sobreUmbral ? 0 : FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico}
+                progreso={couponFreeShip || sobreUmbral ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
+              >
+                {couponFreeShip ? (
+                  'Cupón de envío gratis aplicado.'
+                ) : sobreUmbral ? (
+                  <>Tu compra tiene <span className="font-semibold text-foreground">envío gratis a sucursal</span>.</>
+                ) : (
+                  <>Sumá <span className="font-semibold text-foreground">{formatPrice(FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico)}</span> y el envío a sucursal es gratis.</>
+                )}
+              </BarraEnvioGratis>
+            </>
+          )}
+
+          {isSucursal && (
+            <div className="pt-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-2">Elegí tu sucursal Andreani</p>
+              {loadingBranches && (
+                <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
+                  <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                  Buscando sucursales cerca de CP {info.cp}...
+                </div>
+              )}
+              {!loadingBranches && branches.length > 0 && (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
+                  {branches.map(b => (
+                    <RadioCard
+                      key={b.id}
+                      name="sucursal"
+                      checked={selectedBranch?.id === b.id}
+                      onSelect={() => { setEnvioAviso(null); setSelectedBranch(b); }}
+                      title={b.label}
+                      sub={b.direccion || undefined}
+                      className="py-3"
+                    />
+                  ))}
+                </div>
+              )}
+              {!loadingBranches && branches.length === 0 && (
+                <div className="flex gap-3 rounded-[10px] bg-foreground/[0.04] px-4 py-3.5">
+                  <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-foreground/50" strokeWidth={1.75} aria-hidden="true" />
+                  <p className="text-[12px] text-foreground/70 leading-relaxed">
+                    No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className={`min-h-screen bg-[#f4f4f4]${flashActive ? ' pt-[40px]' : ''}`}>
       <div className="relative border-b border-border bg-white py-5 px-4 text-center">
@@ -1192,7 +1344,7 @@ export default function Checkout() {
                 </div>
               </Panel>
               ) : (
-              <Panel icon={MapPin} title={isInternational ? 'Shipping address' : 'Dirección de envío'} sub={isInternational ? 'Where we deliver your order' : 'Donde recibís o desde donde retirás tu pedido'}>
+              <Panel icon={Truck} title={isInternational ? 'Shipping' : 'Envío'} sub={isInternational ? 'Where and how you get your order' : 'Elegí cómo y dónde recibís tu pedido'}>
                 <div className="space-y-2.5">
                   <FloatingSelect
                     label={isInternational ? 'Country' : 'País'}
@@ -1212,7 +1364,7 @@ export default function Checkout() {
                     <div className="bg-foreground/[0.03] border border-border px-4 py-3 rounded-[10px]">
                       <p className="text-[12px] text-foreground/70 leading-relaxed">
                         <span className="font-semibold text-foreground">Worldwide shipping available.</span>
-                        {' '}Shipping is calculated on the next step and charged with your order — tracked and
+                        {' '}Shipping is quoted right below and charged with your order — tracked and
                         insured, door to door.
                       </p>
                     </div>
@@ -1237,6 +1389,7 @@ export default function Checkout() {
                       </div>
                       <FloatingInput label="Postal / ZIP code" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
                       <FloatingInput type="tel" label="Phone (with country code)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                      {metodoEnvio}
                     </>
                   ) : (
                     <>
@@ -1249,203 +1402,45 @@ export default function Checkout() {
                       <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => { provinciaTocada.current = true; setInfo({ ...info, provincia: e.target.value }); }}>
                         {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
                       </FloatingSelect>
-                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" error={tocados.direccion ? errores.direccion ?? null : null}
-                        onBlur={() => { setTocados(t => (t.direccion ? t : { ...t, direccion: true })); buscarCpPorDireccion(); }}
-                        value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
-                      <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
-                        <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
-                      </div>
-                      <FloatingInput label="DNI" required inputMode="numeric" hint="Lo pide el correo para que tu envío llegue seguro" {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
-                      <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                      {metodoEnvio}
+                      {/* Retiro en sucursal: el paquete va a la sucursal, el
+                          domicilio no hace falta y no se pide. */}
+                      {!isSucursal && (
+                        <>
+                          <FloatingInput label="Dirección y número" required autoComplete="address-line1" error={tocados.direccion ? errores.direccion ?? null : null}
+                            onBlur={() => { setTocados(t => (t.direccion ? t : { ...t, direccion: true })); buscarCpPorDireccion(); }}
+                            value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                          <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
+                        </>
+                      )}
                     </>
                   )}
                 </div>
               </Panel>
               )}
 
+              {!soloGift && !isInternational && (
+              <Panel icon={User} title="Tus datos" sub="Para el pedido y la entrega">
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                    <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                  </div>
+                  <FloatingInput label="DNI" required inputMode="numeric" hint="Lo pide el correo para que tu envío llegue seguro" {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
+                  <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                </div>
+              </Panel>
+              )}
+
               <Button type="submit" variant="hype" size="ctaFull" className="rounded-[10px] gap-2">
-                {soloGift ? 'Continuar con el pago' : isInternational ? 'Continue to shipping' : 'Continuar con el envío'}
+                {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
                 <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
               </Button>
+              {envioAviso && (
+                <p className="text-[12px] text-destructive" aria-live="polite">{envioAviso}</p>
+              )}
             </form>
           )}
-
-          {step === 'envio' && (
-            <form onSubmit={handleEnvioSubmit} className="space-y-4">
-              <Recap
-                cambiar={isInternational ? 'Change' : 'Cambiar'}
-                rows={[
-                  { icon: Mail, label: isInternational ? 'Contact' : 'Contacto', value: info.email, onChange: () => setStep('info') },
-                  { icon: MapPin, label: isInternational ? 'Ship to' : 'Enviar a', value: `${info.direccion}, ${lugar(info.ciudad, info.provincia)}`, onChange: () => setStep('info') },
-                ]}
-              />
-
-              <Panel
-                icon={Truck}
-                title={isInternational ? 'Shipping method' : 'Método de envío'}
-                sub={isInternational ? 'Door to door, tracked and insured' : `Opciones de Andreani para CP ${info.cp}`}
-              >
-                {isInternational ? (
-                  <div className="space-y-3">
-                    <RadioCard
-                      name="envio"
-                      checked
-                      onSelect={() => {}}
-                      icon={Plane}
-                      title={selectedRate?.label ?? 'International shipping'}
-                      sub="Door to door · tracked · insured"
-                      right={<span className="text-[13px] font-semibold">{selectedRate ? formatPrice(selectedRate.cost) : '—'}</span>}
-                    />
-                    <div className="bg-foreground/[0.03] px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
-                      {CUSTOMS_NOTICE}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {loadingRates && (
-                      <div className="space-y-2" aria-live="polite">
-                        {[0, 1].map(i => (
-                          <div key={i} className="flex items-center gap-3.5 rounded-[10px] border border-border px-4 py-4">
-                            <span className="h-[18px] w-[18px] rounded-full bg-foreground/[0.06] animate-pulse" />
-                            <span className="h-10 w-10 rounded-[8px] bg-foreground/[0.06] animate-pulse" />
-                            <span className="flex-1 space-y-1.5">
-                              <span className="block h-3 w-1/3 rounded bg-foreground/[0.06] animate-pulse" />
-                              <span className="block h-2.5 w-1/4 rounded bg-foreground/[0.05] animate-pulse" />
-                            </span>
-                            <span className="h-3 w-14 rounded bg-foreground/[0.06] animate-pulse" />
-                          </div>
-                        ))}
-                        <p className="text-[12px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
-                      </div>
-                    )}
-
-                    {ratesError && !loadingRates && (
-                      <div className="space-y-3">
-                        <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
-                        <button type="button" onClick={fetchRates}
-                          className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
-                          Intentar de nuevo
-                        </button>
-                      </div>
-                    )}
-
-                    {!loadingRates && shippingRates.length > 0 && (
-                      <>
-                        <div className="space-y-2">
-                          {shippingRates.map(rate => {
-                            const esSucursal = modoDeTarifa(rate) === 'sucursal';
-                            const costo = costoDe(rate);
-                            // costoEnvio devuelve la tarifa cruda (con centavos) cuando no hay bonificación:
-                            // comparar redondeado, si no $5.555,6 < $5.556 mostraba el mismo precio tachado.
-                            const bonificado = Math.round(costo) < Math.round(rate.cost);
-                            return (
-                              <RadioCard
-                                key={rate.id}
-                                name="envio"
-                                checked={selectedRate?.id === rate.id}
-                                onSelect={() => handleRateSelect(rate)}
-                                icon={esSucursal ? Store : Home}
-                                title={esSucursal ? 'Retiro en sucursal' : 'Envío a domicilio'}
-                                sub={rate.label}
-                                right={
-                                  <>
-                                    {bonificado && (
-                                      <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
-                                    )}
-                                    {costo === 0 ? (
-                                      <span className="text-[13px] font-semibold text-green-700 block">Gratis</span>
-                                    ) : (
-                                      <span className="text-[13px] font-semibold block">{formatPrice(costo)}</span>
-                                    )}
-                                    {esSucursal && !bonificado && ahorroEnSucursal > 0 && (
-                                      <span className="inline-block mt-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
-                                        Ahorrás {formatPrice(ahorroEnSucursal)}
-                                      </span>
-                                    )}
-                                  </>
-                                }
-                              />
-                            );
-                          })}
-                        </div>
-                        <BarraEnvioGratis
-                          falta={couponFreeShip || sobreUmbral ? 0 : FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico}
-                          progreso={couponFreeShip || sobreUmbral ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
-                        >
-                          {couponFreeShip ? (
-                            'Cupón de envío gratis aplicado.'
-                          ) : sobreUmbral ? (
-                            <>Tu compra tiene <span className="font-semibold text-foreground">envío gratis a sucursal</span>.</>
-                          ) : (
-                            <>Sumá <span className="font-semibold text-foreground">{formatPrice(FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico)}</span> y el envío a sucursal es gratis.</>
-                          )}
-                        </BarraEnvioGratis>
-                      </>
-                    )}
-
-                    {isSucursal && (
-                      <div className="pt-3">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-2">Elegí tu sucursal Andreani</p>
-                        {loadingBranches && (
-                          <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
-                            <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
-                            Buscando sucursales cerca de CP {info.cp}...
-                          </div>
-                        )}
-                        {!loadingBranches && branches.length > 0 && (
-                          <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
-                            {branches.map(b => (
-                              <RadioCard
-                                key={b.id}
-                                name="sucursal"
-                                checked={selectedBranch?.id === b.id}
-                                onSelect={() => setSelectedBranch(b)}
-                                title={b.label}
-                                sub={b.direccion || undefined}
-                                className="py-3"
-                              />
-                            ))}
-                          </div>
-                        )}
-                        {!loadingBranches && branches.length === 0 && (
-                          <div className="flex gap-3 rounded-[10px] bg-foreground/[0.04] px-4 py-3.5">
-                            <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-foreground/50" strokeWidth={1.75} aria-hidden="true" />
-                            <p className="text-[12px] text-foreground/70 leading-relaxed">
-                              No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Panel>
-
-              <div className="space-y-3 pt-1">
-                <Button type="submit" variant="hype" size="ctaFull" disabled={loadingRates || !shippingReady || !branchReady}
-                  className="rounded-[10px] gap-2 disabled:cursor-not-allowed">
-                  {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
-                  <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
-                </Button>
-                {/* El botón gris solo no dice qué falta (auditoría 11/10, UX-06):
-                    sin sucursal elegida parece que el checkout está trabado. */}
-                {!loadingRates && (!shippingReady || !branchReady) && (
-                  <p className="text-[12px] text-muted-foreground" aria-live="polite">
-                    {!shippingReady
-                      ? (isInternational ? 'Choose a shipping method to continue.' : 'Elegí un método de envío para continuar.')
-                      : 'Elegí una sucursal de Andreani para continuar.'}
-                  </p>
-                )}
-                <button type="button" onClick={() => setStep('info')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
-                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                  {isInternational ? 'Back to information' : 'Volver a información'}
-                </button>
-              </div>
-            </form>
-          )}
-
           {step === 'pago' && (
             <form onSubmit={handlePagoSubmit} noValidate className={`space-y-4${isDesktop ? '' : ' pb-24'}`}>
               {/* Mobile: total y botón pegados al pie. El botón en el flujo quedaba
@@ -1479,14 +1474,21 @@ export default function Checkout() {
                   { icon: Mail, label: isInternational ? 'Contact' : 'Contacto', value: info.email, onChange: () => setStep('info') },
                   ...(soloGift
                     ? [{ icon: Gift, label: 'Entrega', value: `Gift card digital · por mail a ${info.email}` }]
-                    : [{ icon: MapPin, label: isInternational ? 'Ship to' : 'Enviar a', value: `${info.direccion}, ${lugar(info.ciudad, info.provincia)}`, onChange: () => setStep('info') }]),
+                    // Retiro en sucursal: no hay domicilio cargado, el destino es la sucursal.
+                    : isSucursal
+                      ? []
+                      : [{ icon: MapPin, label: isInternational ? 'Ship to' : 'Enviar a', value: `${info.direccion}, ${lugar(info.ciudad, info.provincia)}`, onChange: () => setStep('info') }]),
                   ...(selectedRate
                     ? [{
                         icon: Truck,
                         label: isInternational ? 'Shipping' : 'Envío',
                         value: selectedRate.label,
-                        extra: selectedBranch ? `${selectedBranch.label} — ${selectedBranch.direccion}` : undefined,
-                        onChange: () => setStep('envio'),
+                        extra: selectedBranch
+                          ? `${selectedBranch.label} — ${selectedBranch.direccion}`
+                          : isSucursal
+                            ? 'Sucursal a coordinar'
+                            : undefined,
+                        onChange: () => setStep('info'),
                       }]
                     : []),
                 ]}
@@ -1546,9 +1548,9 @@ export default function Checkout() {
                 {isDesktop
                   ? <NotaPagoSeguro en={isInternational} />
                   : <PagoSeguroCard en={isInternational} className="bg-white" />}
-                <button type="button" onClick={() => setStep(soloGift ? 'info' : 'envio')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" onClick={() => setStep('info')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                  {soloGift ? 'Volver' : isInternational ? 'Back to shipping' : 'Volver al envío'}
+                  {isInternational ? 'Back' : 'Volver'}
                 </button>
               </div>
             </form>
