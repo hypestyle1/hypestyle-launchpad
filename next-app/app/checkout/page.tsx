@@ -392,13 +392,15 @@ export default function Checkout() {
   const packRegularDescuento = packRegularActive ? computePackRegularDiscount(fisicos, precioPackRegular(catalog)) : 0;
   const packRegularFaltanN = packRegularActive ? packRegularFaltan(fisicos) : 0;
   const descuento = cuponDescuento + promo3x2Descuento + championDescuento + packRegularDescuento;
-  const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
-  const totalFinal = subtotal - descuento + envioEnPaso;
-  // Lo que dice la línea "Total" del resumen: sin envío hasta que haya uno elegido.
-  const totalMostrado = step === 'info' || !shippingReady ? subtotal - descuento : totalFinal;
+  // El envío entra al total apenas hay tarifa — desde el paso 1, donde la
+  // cotiza el CP (sucursal preseleccionada). El costo sorpresa al final es la
+  // causa #1 de abandono; sin tarifa todavía, envioCosto es 0 y la línea de
+  // envío del resumen lo aclara.
+  const totalFinal = subtotal - descuento + envioCosto;
+  const totalMostrado = totalFinal;
   // El 10% de transferencia va sobre lo físico; la gift card se paga entera.
   // Y va después del pack libre, igual que en el servidor.
-  const transferTotal = Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.90) + subtotalGift - (descuento - packRegularDescuento) + envioEnPaso;
+  const transferTotal = Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.90) + subtotalGift - (descuento - packRegularDescuento) + envioCosto;
 
   // InitiateCheckout / begin_checkout: al ENTRAR al checkout con carrito, no en el
   // paso 2. Estaba enganchado a la transición envío → pago, que es el tercer paso
@@ -435,9 +437,10 @@ export default function Checkout() {
 
   const handleCountryChange = (pais: string) => {
     countryTouched.current = true;
-    // Cambió el destino: el autocompletado por CP arranca de cero.
+    // Cambió el destino: el autocompletado por CP y la cotización arrancan de cero.
     provinciaTocada.current = false;
     autofillCp.current = { cp: '', ciudad: '', provincia: '' };
+    cotizado.current = '';
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
     // La moneda de la vitrina es pesos salvo elección explícita. Si la
@@ -538,6 +541,35 @@ export default function Checkout() {
     }
   };
 
+  // Cotizar apenas el CP está completo, ya en el paso 1. Debounce corto para
+  // no pegarle a Andreani en cada tecla; la clave evita recotizar lo mismo al
+  // avanzar de paso. Si cambia el carrito (subtotal) se recotiza: el valor
+  // declarado afecta la tarifa.
+  const cotizado = useRef('');
+  useEffect(() => {
+    if (!hydrated || isInternational || soloGift) return;
+    const cp = normalizeCpAr(info.cp);
+    if (!/^\d{4}$/.test(cp)) return;
+    const clave = `${cp}|${subtotal}`;
+    if (cotizado.current === clave) return;
+    const t = setTimeout(() => {
+      if (cotizado.current === clave) return;
+      cotizado.current = clave;
+      fetchRates();
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, isInternational, soloGift, info.cp, subtotal]);
+
+  // Internacional: la cotización sale del tarifario local (Boxfly) y existe
+  // desde el paso 1 — la tarifa se fija apenas se conoce, no al cambiar de paso.
+  useEffect(() => {
+    if (!isInternational) return;
+    const rate = intlQuote ? { id: 'fedex_international', label: intlQuote.label, cost: intlQuote.cost } : null;
+    setSelectedRate(rate);
+    setShippingRates(rate ? [rate] : []);
+  }, [isInternational, intlQuote]);
+
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (Object.keys(errores).length > 0) {
@@ -569,7 +601,9 @@ export default function Checkout() {
       setShippingRates(rate ? [rate] : []);
       setLoadingRates(false);
       setRatesError(rate ? null : 'No pudimos calcular el envío para este destino. Escribinos y lo resolvemos.');
-    } else {
+    } else if (cotizado.current !== `${normalizeCpAr(info.cp)}|${subtotal}` || shippingRates.length === 0) {
+      // Solo si el paso 1 no cotizó ya este CP con este carrito.
+      cotizado.current = `${normalizeCpAr(info.cp)}|${subtotal}`;
       fetchRates();
     }
   };
@@ -968,11 +1002,15 @@ export default function Checkout() {
                 </p>
               )}
               <div className="flex justify-between text-[13px]">
-                <span className="text-muted-foreground">{isInternational ? 'Shipping' : 'Envío'}</span>
+                <span className="text-muted-foreground">
+                  {isInternational ? 'Shipping' : step === 'info' && isSucursal ? 'Envío a sucursal' : 'Envío'}
+                </span>
                 <span>
-                  {step === 'info' ? (
+                  {/* En el paso 1 la tarifa ya está apenas hay CP (cotización en
+                      vivo); mientras no la haya, se dice qué falta en vez de "—". */}
+                  {step === 'info' && !selectedRate && !loadingRates ? (
                     <span className="text-muted-foreground text-[11px]">
-                      {isInternational ? 'Calculated on the next step' : 'Se calcula a continuación'}
+                      {isInternational ? 'Calculated with your country' : 'Se calcula con tu código postal'}
                     </span>
                   ) : isInternational ? (
                     selectedRate ? formatPrice(selectedRate.cost) : <span className="text-muted-foreground">—</span>
