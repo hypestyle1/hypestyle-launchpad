@@ -60,9 +60,11 @@ test('el checkout llega al pago en dos pasos', async ({ page }) => {
   await completarDatos(page);
   await esperarTarifas(page);
 
-  // Con domicilio hay que cargar la dirección (con sucursal, no).
+  // Con domicilio hay que cargar dirección y barrio (con sucursal, ninguno).
+  // 1425 quedó sin barrio deducible (CP repartido): se escribe a mano.
   await page.getByText(ANDREANI_RATES[0].label).click();
   await page.getByPlaceholder('Dirección y número').fill(COMPRADOR.direccion);
+  await page.getByPlaceholder('Barrio').fill('Palermo');
 
   await page.getByRole('button', { name: 'Continuar con el pago' }).click();
 
@@ -92,13 +94,72 @@ test('elegir domicilio cambia el costo y pide la dirección', async ({ page }) =
   await page.getByPlaceholder('Código postal').fill(COMPRADOR.cp);
   await esperarTarifas(page);
 
-  // Con sucursal preseleccionada la dirección no se pide.
+  // Con sucursal preseleccionada no se pide nada del domicilio: ni dirección,
+  // ni barrio/ciudad, ni provincia.
   await expect(page.getByPlaceholder('Dirección y número')).toBeHidden();
+  await expect(page.getByPlaceholder('Barrio')).toBeHidden();
+  await expect(page.getByPlaceholder('Ciudad')).toBeHidden();
+  await expect(page.locator('body')).not.toContainText('Provincia:');
 
   await page.getByText(ANDREANI_RATES[0].label).click();
   // 100.000 + 12.000 = 112.000
   await expect(page.locator('body')).toContainText('112.000');
   await expect(page.getByPlaceholder('Dirección y número')).toBeVisible();
+  // La provincia vuelve, como fila compacta de texto.
+  await expect(page.locator('body')).toContainText('Provincia:');
+});
+
+test('la sucursal elegida colapsa a una card y se puede cambiar', async ({ page }) => {
+  await irAlCheckout(page);
+
+  await page.getByPlaceholder('Código postal').fill(COMPRADOR.cp);
+  await esperarTarifas(page);
+  await page.getByText('Sucursal Palermo').click();
+
+  // La lista se va; queda la elegida con su dirección y "Cambiar".
+  await expect(page.locator('body')).toContainText('Retirás en');
+  await expect(page.locator('body')).toContainText('Av. Santa Fe 3200');
+  await page.locator('#metodo-envio').getByRole('button', { name: 'Cambiar' }).click();
+  await expect(page.getByText('Sucursal Palermo')).toBeVisible();
+});
+
+test('cambiar el CP invalida la sucursal elegida y recotiza', async ({ page }) => {
+  await irAlCheckout(page);
+
+  await page.getByPlaceholder('Código postal').fill(COMPRADOR.cp);
+  await esperarTarifas(page);
+  await page.getByText('Sucursal Palermo').click();
+  await expect(page.locator('body')).toContainText('Retirás en');
+
+  await page.getByPlaceholder('Código postal').fill('7600');
+  await esperarTarifas(page);
+  // La selección anterior no sobrevive a un CP nuevo.
+  await expect(page.locator('body')).not.toContainText('Retirás en');
+});
+
+test('un error del buscador de sucursales no es "no hay sucursales"', async ({ page }) => {
+  await irAlCheckout(page);
+
+  // El servicio falla: tiene que verse como error con reintento, no como un
+  // CP sin sucursales que habilita continuar "a coordinar".
+  await page.route('**/api/andreani-branches**', (route) =>
+    route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ branches: [], error: 'Andreani auth' }) }),
+  );
+  await completarDatos(page);
+  await esperarTarifas(page);
+  await expect(page.locator('body')).toContainText('No pudimos cargar las sucursales');
+  await expect(page.locator('body')).not.toContainText('te contactamos para coordinar');
+
+  await page.getByRole('button', { name: 'Continuar con el pago' }).click();
+  await expect(page.getByRole('heading', { name: /medio de pago/i })).toBeHidden();
+
+  // El servicio se recupera: reintentar trae la lista sin perder ningún dato.
+  await page.route('**/api/andreani-branches**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ branches: [{ id: 'suc-1', label: 'Sucursal Palermo', direccion: 'Av. Santa Fe 3200' }] }) }),
+  );
+  await page.getByRole('button', { name: 'Reintentar' }).click();
+  await expect(page.getByText('Sucursal Palermo')).toBeVisible();
+  await expect(page.getByPlaceholder('DNI')).toHaveValue(COMPRADOR.dni);
 });
 
 test('con sucursal hay que elegir cuál antes de pagar', async ({ page }) => {
@@ -136,6 +197,7 @@ test('ningún test dispara un cobro real', async ({ page }) => {
   await esperarTarifas(page);
   await page.getByText(ANDREANI_RATES[0].label).click();
   await page.getByPlaceholder('Dirección y número').fill(COMPRADOR.direccion);
+  await page.getByPlaceholder('Barrio').fill('Palermo');
   await page.getByRole('button', { name: 'Continuar con el pago' }).click();
   await expect(page.getByRole('heading', { name: /medio de pago/i })).toBeVisible({ timeout: 20_000 });
 

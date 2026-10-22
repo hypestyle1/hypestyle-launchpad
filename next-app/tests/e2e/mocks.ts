@@ -77,6 +77,10 @@ export async function mockCheckoutServices(page: Page) {
     ),
   );
 
+  // Dirección → CP/barrio (USIG): sin resultado, para que ningún test dependa
+  // de un servicio externo real.
+  await page.route('**/api/direccion-caba**', (route) => route.fulfill(json({})));
+
   // Un cupón inexistente: el checkout tiene que poder avanzar igual.
   await page.route('**/api/validate-coupon**', (route) =>
     route.fulfill(json({ valid: false, error: 'Cupón inválido' })),
