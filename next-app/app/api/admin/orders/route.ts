@@ -93,6 +93,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ orders: [mapOrder(await res.json())], total: 1, totalPages: 1, page: 1 });
   }
 
+  // 'canje' no es un estado de Woo: son los pedidos de $0 (regalos, canjes de
+  // creadores, cargas manuales sin cobro) en cualquier estado. Se consultan
+  // todos los estados, se filtra acá por total 0 y llega al cliente ya resuelto.
+  const esCanje = status === 'canje';
+
   const fetchPage = (p: string) => {
     const params = new URLSearchParams({
       per_page: '100',
@@ -101,7 +106,7 @@ export async function GET(req: NextRequest) {
       order:   'desc',
       after,
       _cb:     String(Date.now()), // evita el caché de LiteSpeed en el server de WP (devuelve meta_data vieja)
-      ...(status !== 'any' && { status }),
+      ...(status !== 'any' && !esCanje && { status }),
       ...(search && { search }),
     });
     return fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
@@ -114,8 +119,9 @@ export async function GET(req: NextRequest) {
   // y recién filtran por rótulo/guía en el cliente. Si acá se pagina, los pedidos
   // sin empaquetar quedan dispersos entre páginas y los más viejos enterrados al
   // fondo (así se traspapelaron #3103, #3127 y #3261 durante semanas). Para
-  // 'processing' se traen TODAS las páginas y se devuelve una lista única.
-  const paginado = status !== 'processing';
+  // 'processing' (y para 'canje', que filtra sobre todos los estados) se traen
+  // TODAS las páginas y se devuelve una lista única.
+  const paginado = status !== 'processing' && !esCanje;
 
   const res = await fetchPage(paginado ? page : '1');
 
@@ -146,6 +152,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  if (esCanje) raw = raw.filter((o) => !(parseFloat(o.total) > 0));
+
   // El search de WC matchea también dirección, teléfono, DNI e ítems; acá la
   // búsqueda por texto se limita a nombre y email del cliente.
   if (q) {
@@ -159,9 +167,9 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     orders,
-    // Con búsqueda por texto el total de WC incluye los matches descartados; si
+    // Con canje o búsqueda por texto el total de WC incluye lo descartado; si
     // entró todo en una página, el conteo real es lo que queda tras filtrar.
-    total: q && totalPages === 1 ? orders.length : total,
+    total: (esCanje || q) && totalPages === 1 ? orders.length : total,
     totalPages,
     page: paginado ? parseInt(page) : 1,
   });
