@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { textoFirst10, type First10Info } from '@/lib/first10';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
@@ -18,11 +18,12 @@ import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
 import { getClarityCookies, tagClarityOrder } from '@/lib/clarity-tracking';
 import { captureAttribution } from '@/lib/attribution';
-import { gaBeginCheckout } from '@/lib/ga';
+import { gaBeginCheckout, gaViewShippingOptions, gaAddShippingInfo, gaAddPaymentInfo, gaIrAPagar, type ShippingTier, type GaItem } from '@/lib/ga';
 import { fbInitiateCheckout, fbAddPaymentInfo } from '@/lib/fbpixel';
 import { imgSrc } from '@/lib/img';
 import { normalizeCpAr } from '@/lib/postal-code';
-import { useProducts, NormalizedProduct } from '@/hooks/useProducts';
+import { localidadPorCp } from '@/lib/cp-localidad';
+import { useProducts } from '@/hooks/useProducts';
 import PriceChangeNotice from '@/components/PriceChangeNotice';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import { FREE_SHIPPING_THRESHOLD, ahorroSucursal, alcanzaUmbral, costoEnvio, incluyeEnvioGratis, modoDeTarifa, ordenarTarifas, tarifaPorDefecto } from '@/lib/envio';
@@ -47,7 +48,8 @@ import { CloseFriendsCard, instagramValido } from '@/components/checkout/CloseFr
 import { Panel, Recap, RadioCard, BarraEnvioGratis } from '@/components/checkout/Panel';
 import { useSyncExternalStore } from 'react';
 
-type Step = 'info' | 'envio' | 'pago';
+type Step = 'info' | 'pago';
+type OrdenCreada = Awaited<ReturnType<typeof createOrderAndPreference>>;
 
 // En desktop el resumen es la columna de la derecha; en mobile pasa a ser una
 // barra colapsable arriba del formulario (antes quedaba debajo del botón de
@@ -136,186 +138,6 @@ const COUNTRIES = [
 // eso el correo no emite la etiqueta y el pedido se traba después de cobrado.
 const STATE_REQUIRED = ['US', 'CA', 'AU'];
 
-const UPSELL_VISIBLE = 2; // tarjetas visibles al mismo tiempo
-
-function shuffled<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function UpsellCard({ p, selectedSizes, setSelectedSizes, added, onAdd }: {
-  p: NormalizedProduct;
-  selectedSizes: Record<string, string>;
-  setSelectedSizes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  added: Record<string, boolean>;
-  onAdd: (p: NormalizedProduct, size: string) => void;
-}) {
-  const { formatPrice } = useLocale();
-  const available = p.sizes.filter(s => p.stock[s] !== 'out');
-  const hasManyS = available.length > 5;
-  const size = selectedSizes[p.slug] ?? (available.length === 1 ? available[0] : '');
-  const isAdded = !!added[p.slug];
-
-  return (
-    <div className="flex flex-col border border-border rounded-[10px] overflow-hidden flex-1 min-w-0">
-      <a href={p.href} tabIndex={-1} className="block w-full h-[110px] bg-bg-alt overflow-hidden flex-shrink-0">
-        {p.image && <img src={imgSrc(p.image)} alt={p.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />}
-      </a>
-      <div className="p-2.5 flex flex-col gap-1.5 flex-1">
-        <p className="text-[10px] font-medium leading-tight line-clamp-2 text-foreground">{p.name}</p>
-        <p className="text-[11px] font-bold">{formatPrice(p.price)}</p>
-
-        {/* Pills para pocos talles */}
-        {!hasManyS && available.length > 1 && (
-          <div className="flex flex-wrap gap-[3px]">
-            {available.map(s => (
-              <button key={s} type="button"
-                onClick={() => setSelectedSizes(prev => ({ ...prev, [p.slug]: s }))}
-                className={`text-[9px] font-semibold px-1.5 py-[2px] border rounded-[4px] transition-colors leading-none ${
-                  size === s ? 'border-foreground bg-foreground text-white' : 'border-border text-foreground/55 hover:border-foreground/50'
-                }`}>{s}</button>
-            ))}
-          </div>
-        )}
-
-        {/* Select para muchos talles (anillos, etc.) */}
-        {hasManyS && (
-          <select value={size}
-            onChange={e => setSelectedSizes(prev => ({ ...prev, [p.slug]: e.target.value }))}
-            className="text-[10px] border border-border rounded-[6px] px-1.5 py-1 bg-white focus:outline-none focus:border-foreground w-full">
-            <option value="">Talle</option>
-            {available.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        )}
-
-        <button type="button" onClick={() => onAdd(p, size)} disabled={!size || isAdded}
-          className={`mt-auto w-full py-1.5 text-[9px] font-bold uppercase tracking-wider rounded-[6px] transition-colors ${
-            isAdded ? 'bg-green-600 text-white' :
-            size ? 'bg-foreground text-white hover:bg-foreground/80' :
-            'bg-foreground/[0.06] text-foreground/30 cursor-default'
-          }`}>
-          {isAdded ? '✓ Agregado' : size ? 'Agregar' : 'Elegí talle'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function UpsellCarousel() {
-  const { items, add } = useCart();
-  const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
-  const [added, setAdded] = useState<Record<string, boolean>>({});
-  const [idx, setIdx] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Rotaba cada 3 s al lado del formulario y distraía justo mientras la
-  // persona escribe. Se frena con un campo en foco y con el mouse encima.
-  const pausadoRef = useRef(false);
-  const hoverRef = useRef(false);
-  useEffect(() => {
-    const enCampo = () => {
-      const el = document.activeElement;
-      return !!el && el.matches('input:not([type=radio]):not([type=checkbox]), select, textarea');
-    };
-    const sync = () => { pausadoRef.current = enCampo(); };
-    document.addEventListener('focusin', sync);
-    // Al salir de un campo el foco todavía no llegó al siguiente: se mira en el próximo tick.
-    const alSalir = () => { setTimeout(sync, 0); };
-    document.addEventListener('focusout', alSalir);
-    return () => {
-      document.removeEventListener('focusin', sync);
-      document.removeEventListener('focusout', alSalir);
-    };
-  }, []);
-
-  // Pool grande + shuffle (mismo patrón que CartDrawer) — antes traía solo los primeros 20
-  // productos por menu_order y los mostraba siempre en el mismo orden, así que terminaba
-  // pareciendo una lista fija sin importar qué hubiera en el carrito.
-  const { data: allProducts = [] } = useProducts(0);
-  const cartIdsKey = items.map(i => i.id).join(',');
-  const upsell = useMemo(() => {
-    const cartIds = new Set(items.map(i => i.id));
-    return shuffled(
-      allProducts.filter(p => !cartIds.has(p.slug) && Object.values(p.stock).some(s => s !== 'out'))
-    ).slice(0, 10);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartIdsKey, allProducts.length]);
-  const total = upsell.length;
-
-  const startTimer = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (!total) return;
-    timerRef.current = setInterval(() => {
-      if (pausadoRef.current || hoverRef.current) return;
-      setIdx(c => (c + 1) % total);
-    }, 3000);
-  }, [total]);
-
-  useEffect(() => {
-    startTimer();
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [startTimer]);
-
-  if (!total) return null;
-
-  const safeIdx = idx % total;
-  const go = (n: number) => { setIdx((safeIdx + n + total) % total); startTimer(); };
-
-  const visible = [
-    upsell[safeIdx],
-    upsell[(safeIdx + 1) % total],
-  ].filter(Boolean).slice(0, UPSELL_VISIBLE);
-
-  const handleAdd = (p: NormalizedProduct, size: string) => {
-    if (!size) return;
-    add({ id: p.slug, name: p.name, price: p.price, image: p.image, size, quantity: 1 });
-    setAdded(prev => ({ ...prev, [p.slug]: true }));
-    setTimeout(() => setAdded(prev => ({ ...prev, [p.slug]: false })), 2000);
-  };
-
-  return (
-    <div
-      className="rounded-[10px] border border-border bg-white p-5"
-      onMouseEnter={() => { hoverRef.current = true; }}
-      onMouseLeave={() => { hoverRef.current = false; }}
-    >
-      <p className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 mb-3">
-        Completá el look
-      </p>
-
-      <div className="flex items-center gap-1.5">
-        <button type="button" onClick={() => go(-1)} aria-label="Anterior"
-          className="flex-shrink-0 w-6 h-6 rounded-full border border-border flex items-center justify-center text-foreground/40 hover:text-foreground hover:border-foreground/40 transition-colors text-[16px] leading-none">
-          ‹
-        </button>
-
-        <div className="flex-1 flex gap-2 min-w-0">
-          {visible.map(p => (
-            <UpsellCard key={p.slug} p={p}
-              selectedSizes={selectedSizes} setSelectedSizes={setSelectedSizes}
-              added={added} onAdd={handleAdd} />
-          ))}
-        </div>
-
-        <button type="button" onClick={() => go(1)} aria-label="Siguiente"
-          className="flex-shrink-0 w-6 h-6 rounded-full border border-border flex items-center justify-center text-foreground/40 hover:text-foreground hover:border-foreground/40 transition-colors text-[16px] leading-none">
-          ›
-        </button>
-      </div>
-
-      <div className="flex justify-center gap-1 mt-2.5">
-        {upsell.map((_, i) => (
-          <button key={i} type="button" onClick={() => { setIdx(i); startTimer(); }}
-            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === safeIdx ? 'bg-foreground' : 'bg-foreground/20'}`} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 interface ShippingRate { id: string; label: string; cost: number }
 interface AndBranch { id: string; label: string; direccion: string }
 interface InfoForm {
@@ -348,6 +170,21 @@ export default function Checkout() {
   }, [step]);
   const [resumenAbierto, setResumenAbierto] = useState(false);
   const [pagoSinMetodo, setPagoSinMetodo] = useState(false);
+  // Qué le falta al envío cuando intentan continuar (tarifa o sucursal):
+  // el aviso aparece recién al tocar el botón, no de entrada.
+  const [envioAviso, setEnvioAviso] = useState<string | null>(null);
+  // La dirección detectó un CP distinto del que la persona TIPEÓ: no se pisa
+  // nada, se ofrece ("Para esa dirección el CP es X · Usar").
+  const [cpSugerido, setCpSugerido] = useState<{ cp: string; barrio: string } | null>(null);
+  // El total de Woo vino distinto del que el cliente estuvo viendo (un precio
+  // cambió entre armar el carrito y confirmar): la orden queda en espera y no
+  // se cobra nada hasta que acepte el monto nuevo.
+  const [totalAjustado, setTotalAjustado] = useState<number | null>(null);
+  const ordenPendiente = useRef<OrdenCreada | null>(null);
+  // País y provincia casi nunca se cambian: viven colapsados como texto con
+  // "Cambiar" y el select aparece recién si hace falta. Menos pantalla ocupada.
+  const [paisExpandido, setPaisExpandido] = useState(false);
+  const [provinciaExpandida, setProvinciaExpandida] = useState(false);
   // Campos por los que ya pasó la persona: el error se muestra recién al salir
   // del campo (o al intentar continuar), no mientras escribe por primera vez.
   const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
@@ -369,6 +206,10 @@ export default function Checkout() {
   const [recovered, setRecovered] = useState<'failed' | 'generic' | null>(null);
   const restoreChecked = useRef(false);
   const countryTouched = useRef(false);
+  // Autocompletado por CP: qué dejó puesto el último autofill y si la persona
+  // eligió provincia a mano (en ese caso el select no se pisa nunca).
+  const provinciaTocada = useRef(false);
+  const autofillCp = useRef({ cp: '', ciudad: '', provincia: '' });
 
   const [flashActive, setFlashActive] = useState(false);
   const { promoActive: promo3x2Won } = usePromo3x2Status();
@@ -381,7 +222,10 @@ export default function Checkout() {
 
   const [branches, setBranches] = useState<AndBranch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<AndBranch | null>(null);
-  const [loadingBranches, setLoadingBranches] = useState(false);
+  // Estado de la búsqueda de sucursales. 'error' y 'vacio' son cosas distintas:
+  // un fallo del servicio no significa que el CP no tenga sucursales.
+  const [sucursalesEstado, setSucursalesEstado] = useState<'idle' | 'cargando' | 'ok' | 'vacio' | 'error'>('idle');
+  const loadingBranches = sucursalesEstado === 'cargando';
 
   const isInternational = info.pais !== 'AR';
   // El sitio muestra precios en ocho monedas pero cobra en dos: pesos si el
@@ -413,13 +257,18 @@ export default function Checkout() {
   // coordinar", pero exigir sucursal elegida dejaba el botón deshabilitado y el
   // pedido moría ahí (caso real: CP sin sucursales en la respuesta de Andreani).
   // Si no hay ninguna sucursal para elegir, no se le puede pedir al cliente que elija.
-  const sinSucursales = !loadingBranches && branches.length === 0;
+  // Solo una búsqueda que terminó bien y vino vacía habilita el camino "a
+  // coordinar"; un error del servicio pide reintentar (o elegir domicilio).
+  const sinSucursales = sucursalesEstado === 'vacio';
   const branchReady = isInternational || !isSucursal || !!selectedBranch || sinSucursales;
   // El pedido viaja con el CP de 4 dígitos: es el que sabe leer el plugin de
   // Andreani para generar la guía. El ZIP internacional se deja tal cual.
   const cpEnvio = isInternational ? info.cp : normalizeCpAr(info.cp);
 
-  const optsValidacion = { soloGift, internacional: isInternational, provinciaObligatoria: stateRequired };
+  const tierEnvio = (): ShippingTier => (soloGift ? 'gift' : isInternational ? 'internacional' : isSucursal ? 'sucursal' : 'domicilio');
+  const gaItems = (): GaItem[] => items.map(i => ({ item_id: i.id, item_name: i.name, item_variant: i.size, price: i.price, quantity: i.quantity }));
+
+  const optsValidacion = { soloGift, internacional: isInternational, provinciaObligatoria: stateRequired, retiraEnSucursal: isSucursal };
   const errores = validarInfo(info as unknown as DatosInfo, optsValidacion);
   const sugerenciaEmail = sugerirEmail(info.email);
   /** Props de error para cada FloatingInput del primer paso. */
@@ -444,6 +293,8 @@ export default function Checkout() {
     if (instagram) setPago(p => (p.instagram ? p : { ...p, instagram }));
     // El país guardado manda sobre el de la geo, igual que si lo hubiera elegido.
     countryTouched.current = true;
+    // La provincia recordada vale como elección propia: el CP no la pisa.
+    if (dir.provincia) provinciaTocada.current = true;
     if (dir.pais && dir.pais !== 'AR' && !currencyChosen) setCurrency(localeForCountry(dir.pais)?.currency ?? 'ARS', false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
@@ -452,6 +303,8 @@ export default function Checkout() {
     borrarDatos();
     setPrecargado(false);
     setTocados({});
+    provinciaTocada.current = false;
+    autofillCp.current = { cp: '', ciudad: '', provincia: '' };
     setInfo({
       email: '', newsletter: false, nombre: '', apellido: '', dni: '',
       direccion: '', depto: '', cp: '', ciudad: '', provincia: 'Buenos Aires', pais: 'AR', telefono: '',
@@ -563,13 +416,15 @@ export default function Checkout() {
   const packRegularDescuento = packRegularActive ? computePackRegularDiscount(fisicos, precioPackRegular(catalog)) : 0;
   const packRegularFaltanN = packRegularActive ? packRegularFaltan(fisicos) : 0;
   const descuento = cuponDescuento + promo3x2Descuento + championDescuento + packRegularDescuento;
-  const envioEnPaso = step === 'pago' || step === 'envio' ? envioCosto : 0;
-  const totalFinal = subtotal - descuento + envioEnPaso;
-  // Lo que dice la línea "Total" del resumen: sin envío hasta que haya uno elegido.
-  const totalMostrado = step === 'info' || !shippingReady ? subtotal - descuento : totalFinal;
+  // El envío entra al total apenas hay tarifa — desde el paso 1, donde la
+  // cotiza el CP (sucursal preseleccionada). El costo sorpresa al final es la
+  // causa #1 de abandono; sin tarifa todavía, envioCosto es 0 y la línea de
+  // envío del resumen lo aclara.
+  const totalFinal = subtotal - descuento + envioCosto;
+  const totalMostrado = totalFinal;
   // El 10% de transferencia va sobre lo físico; la gift card se paga entera.
   // Y va después del pack libre, igual que en el servidor.
-  const transferTotal = Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.90) + subtotalGift - (descuento - packRegularDescuento) + envioEnPaso;
+  const transferTotal = Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.90) + subtotalGift - (descuento - packRegularDescuento) + envioCosto;
 
   // InitiateCheckout / begin_checkout: al ENTRAR al checkout con carrito, no en el
   // paso 2. Estaba enganchado a la transición envío → pago, que es el tercer paso
@@ -606,6 +461,12 @@ export default function Checkout() {
 
   const handleCountryChange = (pais: string) => {
     countryTouched.current = true;
+    // Cambió el destino: el autocompletado por CP y la cotización arrancan de cero.
+    provinciaTocada.current = false;
+    autofillCp.current = { cp: '', ciudad: '', provincia: '' };
+    cotizado.current = '';
+    setCpSugerido(null);
+    if (pais === 'AR') setPaisExpandido(false); // vuelve a Argentina: fila compacta otra vez
     const provincia = pais === 'AR' ? 'Buenos Aires' : '';
     setInfo(prev => ({ ...prev, pais, provincia }));
     // La moneda de la vitrina es pesos salvo elección explícita. Si la
@@ -622,34 +483,170 @@ export default function Checkout() {
     setPago(prev => ({ ...prev, metodo: '' }));
   };
 
+  // Autocompletar ciudad y provincia a partir del CP (solo Argentina). Los dos
+  // campos siguen a la vista y editables, y lo escrito a mano nunca se pisa:
+  // ciudad solo si está vacía o quedó de un autocompletado anterior; provincia
+  // solo mientras no hayan elegido una en el select.
+  const handleCpChange = (cp: string) => {
+    setCpSugerido(null); // está escribiendo el CP: la sugerencia vieja no corre más
+    setInfo(prev => ({ ...prev, cp }));
+    void localidadPorCp(cp).then(loc => {
+      if (!loc) return;
+      // Se captura el autofill anterior afuera del updater: React (StrictMode)
+      // puede invocarlo dos veces y un ref mutado adentro rompe la comparación.
+      const previo = autofillCp.current;
+      // En CABA loc.ciudad trae el barrio mayoritario del CP (o vacío si el CP
+      // está repartido entre barrios sin mayoría clara).
+      const ciudadNueva = loc.ciudad;
+      // Tipear el CP a mano lo vuelve propio: la búsqueda por dirección ya no lo pisa.
+      autofillCp.current = { cp: '', ciudad: ciudadNueva, provincia: loc.provincia };
+      setInfo(prev => {
+        // Para cuando el mapa resolvió, el CP (o el país) pudo haber cambiado.
+        if (prev.pais !== 'AR' || normalizeCpAr(prev.cp) !== normalizeCpAr(cp)) return prev;
+        const next = { ...prev };
+        // Si lo que hay era de un autofill anterior se reemplaza (o se limpia,
+        // cuando el CP nuevo no trae ciudad); lo escrito a mano no se toca.
+        if (!prev.ciudad.trim() || prev.ciudad === previo.ciudad) {
+          next.ciudad = ciudadNueva;
+        }
+        if (!provinciaTocada.current || prev.provincia === previo.provincia) {
+          next.provincia = loc.provincia;
+        }
+        return next;
+      });
+    });
+  };
+
+  // Camino inverso: dirección → CP y barrio, solo CABA (ver /api/direccion-caba;
+  // para el resto del país no hay servicio público calle → CP). Corre al salir
+  // del campo dirección con provincia CABA. Un CP vacío o puesto por este mismo
+  // autocompletado se actualiza directo; uno TIPEADO distinto no se pisa: se
+  // ofrece como sugerencia reversible. El barrio exacto de USIG llena el campo
+  // si estaba vacío o era nuestro.
+  const buscarCpPorDireccion = () => {
+    const dir = info.direccion.trim();
+    if (info.pais !== 'AR' || info.provincia !== 'CABA' || dir.length < 5 || !/\d/.test(dir)) return;
+    void fetch(`/api/direccion-caba?direccion=${encodeURIComponent(dir)}`)
+      .then(r => (r.ok ? (r.json() as Promise<{ cp?: string; barrio?: string }>) : null))
+      .then(data => {
+        if (!data?.cp) return;
+        const previo = autofillCp.current;
+        const cpTipeado = info.cp.trim();
+        const cpManual = !!cpTipeado && cpTipeado !== previo.cp;
+        if (cpManual && normalizeCpAr(cpTipeado) !== data.cp) {
+          setCpSugerido({ cp: data.cp, barrio: data.barrio ?? '' });
+          autofillCp.current = { ...previo, ciudad: data.barrio || previo.ciudad };
+        } else {
+          setCpSugerido(null);
+          autofillCp.current = { cp: data.cp, ciudad: data.barrio || previo.ciudad, provincia: 'CABA' };
+        }
+        setInfo(prev => {
+          // Si mientras tanto cambió la dirección (o el destino), no tocar.
+          if (prev.pais !== 'AR' || prev.provincia !== 'CABA' || prev.direccion.trim() !== dir) return prev;
+          const next = { ...prev };
+          if (!cpManual) next.cp = data.cp!;
+          if (data.barrio && (!prev.ciudad.trim() || prev.ciudad === previo.ciudad)) next.ciudad = data.barrio;
+          return next;
+        });
+      })
+      .catch(() => {});
+  };
+
+  const aplicarCpSugerido = () => {
+    if (!cpSugerido) return;
+    const { cp, barrio } = cpSugerido;
+    const previo = autofillCp.current;
+    autofillCp.current = { cp, ciudad: barrio || previo.ciudad, provincia: 'CABA' };
+    setInfo(prev => ({
+      ...prev,
+      cp,
+      ciudad: barrio && (!prev.ciudad.trim() || prev.ciudad === previo.ciudad) ? barrio : prev.ciudad,
+    }));
+    setCpSugerido(null);
+    // El CP nuevo recotiza solo (efecto sobre info.cp).
+  };
+
+  // Número de secuencia de cada búsqueda: si el CP cambia rápido, la respuesta
+  // vieja llega después y pisaba a la nueva — tarifas (o sucursales) de un CP
+  // que ya no es el del formulario. Solo la última solicitud toca el estado.
+  const ratesSeq = useRef(0);
+  const branchesSeq = useRef(0);
+  // Embudo: cada evento una sola vez por lo que mide (tarifas vistas por CP,
+  // envío confirmado por modalidad) — recargar o volver atrás no lo infla.
+  const tarifasVistas = useRef(new Set<string>());
+  const ultimoShippingInfo = useRef<ShippingTier | null>(null);
+
   const fetchRates = async () => {
     if (!info.cp) return;
+    const seq = ++ratesSeq.current;
     setLoadingRates(true);
     setRatesError(null);
     setShippingRates([]);
     setSelectedRate(null);
     setBranches([]);
     setSelectedBranch(null);
+    setSucursalesEstado('idle');
     try {
       const res = await fetch(
         `/api/andreani-rates?cp=${encodeURIComponent(info.cp)}&provincia=${encodeURIComponent(info.provincia)}&valor=${subtotal}&peso=0.5`
       );
       const data: { rates?: ShippingRate[]; error?: string } = await res.json();
+      if (seq !== ratesSeq.current) return; // ya hay una búsqueda más nueva
       if (data.rates && data.rates.length > 0) {
         // Sucursal primero y preseleccionada: es el envío que menos cuesta.
         const elegida = tarifaPorDefecto(data.rates);
         setShippingRates(ordenarTarifas(data.rates));
         setSelectedRate(elegida);
         if (elegida) fetchBranches(elegida);
+        const cpNorm = normalizeCpAr(info.cp);
+        if (!tarifasVistas.current.has(cpNorm)) {
+          tarifasVistas.current.add(cpNorm);
+          gaViewShippingOptions();
+        }
       } else {
         setRatesError('No se encontraron opciones de envío para este código postal.');
       }
     } catch {
+      if (seq !== ratesSeq.current) return;
       setRatesError('No se pudo calcular el envío. Intentá de nuevo.');
     } finally {
-      setLoadingRates(false);
+      if (seq === ratesSeq.current) setLoadingRates(false);
     }
   };
+
+  // Cotizar apenas el CP está completo, ya en el paso 1. Debounce corto para
+  // no pegarle a Andreani en cada tecla; la clave evita recotizar lo mismo al
+  // avanzar de paso. Si cambia el carrito (subtotal) se recotiza: el valor
+  // declarado afecta la tarifa.
+  const cotizado = useRef('');
+  useEffect(() => {
+    if (!hydrated || isInternational || soloGift) return;
+    const cp = normalizeCpAr(info.cp);
+    if (!/^\d{4}$/.test(cp)) return;
+    const clave = `${cp}|${subtotal}`;
+    if (cotizado.current === clave) return;
+    const t = setTimeout(() => {
+      if (cotizado.current === clave) return;
+      cotizado.current = clave;
+      fetchRates();
+    }, 600);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, isInternational, soloGift, info.cp, subtotal]);
+
+  // Internacional: la cotización sale del tarifario local (Boxfly) y existe
+  // desde el paso 1 — la tarifa se fija apenas se conoce, no al cambiar de paso.
+  useEffect(() => {
+    if (!isInternational) return;
+    const rate = intlQuote ? { id: 'fedex_international', label: intlQuote.label, cost: intlQuote.cost } : null;
+    setSelectedRate(rate);
+    setShippingRates(rate ? [rate] : []);
+    if (rate && !tarifasVistas.current.has(`intl:${info.pais}`)) {
+      tarifasVistas.current.add(`intl:${info.pais}`);
+      gaViewShippingOptions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInternational, intlQuote]);
 
   const handleInfoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -670,41 +667,66 @@ export default function Checkout() {
       // Nada que enviar: directo a pagar.
       setSelectedRate(null);
       setShippingRates([]);
+      if (ultimoShippingInfo.current !== 'gift') {
+        ultimoShippingInfo.current = 'gift';
+        gaAddShippingInfo(gaItems(), totalFinal, 'gift');
+      }
       setStep('pago');
       return;
     }
-    setStep('envio');
-    if (isInternational) {
-      const rate = intlQuote
-        ? { id: 'fedex_international', label: intlQuote.label, cost: intlQuote.cost }
-        : null;
-      setSelectedRate(rate);
-      setShippingRates(rate ? [rate] : []);
-      setLoadingRates(false);
-      setRatesError(rate ? null : 'No pudimos calcular el envío para este destino. Escribinos y lo resolvemos.');
-    } else {
-      fetchRates();
+    // El envío se resuelve en este mismo paso: sin tarifa (o con sucursal sin
+    // elegir) no se avanza, y el aviso dice qué falta en vez de un botón muerto.
+    if (loadingRates) {
+      setEnvioAviso('Un segundo: estamos calculando el envío.');
+      return;
     }
+    if (!shippingReady || !branchReady) {
+      setEnvioAviso(!shippingReady
+        ? (isInternational ? 'Choose a shipping method to continue.' : 'Elegí un método de envío para continuar.')
+        : sucursalesEstado === 'error'
+          ? 'No pudimos cargar las sucursales. Reintentá o elegí envío a domicilio.'
+          : 'Elegí tu sucursal de Andreani para continuar.');
+      document.getElementById('metodo-envio')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    setEnvioAviso(null);
+    // Envío resuelto de verdad (método y sucursal si aplica): acá se mide, no
+    // en un render. Una vez por modalidad — volver y re-confirmar no lo duplica.
+    const tier = tierEnvio();
+    if (ultimoShippingInfo.current !== tier) {
+      ultimoShippingInfo.current = tier;
+      gaAddShippingInfo(gaItems(), totalFinal, tier);
+    }
+    setStep('pago');
   };
 
   const fetchBranches = async (rate: ShippingRate) => {
     const isSuc = rate.label?.toLowerCase().includes('sucursal') || rate.id?.toLowerCase().includes('sucursal');
-    if (!isSuc) { setBranches([]); setSelectedBranch(null); return; }
-    setLoadingBranches(true);
+    if (!isSuc) { setBranches([]); setSelectedBranch(null); setSucursalesEstado('idle'); return; }
+    const seq = ++branchesSeq.current;
+    setSucursalesEstado('cargando');
     setBranches([]);
     setSelectedBranch(null);
     try {
       const res = await fetch(`/api/andreani-branches?cp=${encodeURIComponent(info.cp)}`);
-      const data: { branches?: AndBranch[] } = await res.json();
+      const data: { branches?: AndBranch[]; error?: string } = await res.json();
+      if (seq !== branchesSeq.current) return;
+      // Un fallo del servicio NO es "no hay sucursales": antes se mostraba el
+      // mismo cartel y el pedido entraba "a coordinar" sin necesidad.
+      if (!res.ok || data.error) {
+        setSucursalesEstado('error');
+        return;
+      }
       setBranches(data.branches ?? []);
+      setSucursalesEstado((data.branches ?? []).length > 0 ? 'ok' : 'vacio');
     } catch {
-      setBranches([]);
-    } finally {
-      setLoadingBranches(false);
+      if (seq !== branchesSeq.current) return;
+      setSucursalesEstado('error');
     }
   };
 
   const handleRateSelect = (rate: ShippingRate) => {
+    setEnvioAviso(null);
     setSelectedRate(rate);
     fetchBranches(rate);
   };
@@ -715,12 +737,6 @@ export default function Checkout() {
   const snapshotAndClear = () => {
     saveCartSnapshot(items);
     clear();
-  };
-
-  // Paso envío → paso pago.
-  const handleEnvioSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStep('pago');
   };
 
   // AddPaymentInfo del pixel: el evento no existía en el sitio. El punto natural
@@ -740,8 +756,13 @@ export default function Checkout() {
   const addPaymentInfoSent = useRef(false);
   const handleMetodoChange = (metodo: string) => {
     setPago(prev => ({ ...prev, metodo }));
+    // Si quedó un total ajustado esperando confirmación, cambiar de medio lo
+    // descarta: la orden pendiente ya no refleja la elección.
+    setTotalAjustado(null);
+    ordenPendiente.current = null;
     if (addPaymentInfoSent.current) return;
     addPaymentInfoSent.current = true;
+    gaAddPaymentInfo(gaItems(), totalFinal, metodo);
     fbAddPaymentInfo(
       items.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity })),
       totalFinal,
@@ -752,9 +773,23 @@ export default function Checkout() {
     );
   };
 
+  // El cliente aceptó el total actualizado: la orden que quedó en espera sigue
+  // su camino a la pasarela sin crear otra.
+  const confirmarTotalAjustado = async () => {
+    const orden = ordenPendiente.current;
+    if (!orden || submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    setTotalAjustado(null);
+    ordenPendiente.current = null;
+    await continuarAlPago(orden);
+  };
+
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pago.metodo || submitting) return;
+    // Con un total ajustado en espera, el único camino es aceptarlo (o cambiar
+    // de medio): volver a enviar crearía una segunda orden.
+    if (!pago.metodo || submitting || totalAjustado !== null) return;
     // Si escribió un usuario válido y pagó sin tocar "Sumarme", igual se guarda.
     const instagram = pago.instagram || (instagramValido(igBorrador.current) ? '@' + igBorrador.current : '');
     if (instagram) guardarDatos({ instagram });
@@ -804,6 +839,37 @@ export default function Checkout() {
       // wcTotal refleja sale_price, cupones y cualquier descuento aplicado en Woo,
       // independientemente del precio que haya quedado guardado en el carrito del frontend.
       const authorizedTotal = orderRes.wcTotal || totalFinal;
+      // Si Woo calculó un total distinto del que el cliente estuvo viendo, no se
+      // lo manda a pagar un monto que no vio: se muestra el nuevo y sigue recién
+      // cuando lo acepta (ver el panel de total ajustado en el paso de pago).
+      if (Math.abs(authorizedTotal - montoAPagar) > 1) {
+        ordenPendiente.current = orderRes;
+        setTotalAjustado(authorizedTotal);
+        setSubmitting(false);
+        return;
+      }
+      await continuarAlPago(orderRes);
+    } catch (err) {
+      console.error('[checkout] unexpected error:', err);
+      setSubmitError('Error inesperado. Revisá la consola del navegador.');
+      setSubmitting(false);
+    }
+  };
+
+  // La orden ya existe en Woo: guarda el comprobante en sessionStorage y sale
+  // hacia la pasarela (o la pantalla de transferencia/confirmación).
+  const continuarAlPago = async (orderRes: OrdenCreada) => {
+    const isTransfer      = pago.metodo === 'transferencia';
+    const isLocalTransfer = isTransfer && !isInternational;
+    const isPaypal        = pago.metodo === 'paypal';
+    const isMp            = pago.metodo === 'mercadopago' || pago.metodo === 'tarjeta';
+    const isGocuotas      = pago.metodo === 'gocuotas';
+    const authorizedTotal = orderRes.wcTotal || totalFinal;
+    const salirAPagar = () => {
+      gaIrAPagar(pago.metodo, authorizedTotal, tierEnvio());
+      snapshotAndClear();
+    };
+    try {
       // Etiqueta la sesión de Clarity con el número de pedido (custom tag
       // filtrable en Recordings). Best-effort: si Clarity no cargó, no hace nada.
       tagClarityOrder(orderRes.wcOrderNumber);
@@ -852,7 +918,7 @@ export default function Checkout() {
           setSubmitting(false);
           return;
         }
-        snapshotAndClear();
+        salirAPagar();
         window.location.href = gcData.urlInit;
         return;
       }
@@ -888,7 +954,7 @@ export default function Checkout() {
           setSubmitting(false);
           return;
         }
-        snapshotAndClear();
+        salirAPagar();
         window.location.href = ppData.approvalUrl;
         return;
       }
@@ -897,7 +963,7 @@ export default function Checkout() {
         setSubmitting(false);
         return;
       }
-      snapshotAndClear();
+      salirAPagar();
       if (isMp && orderRes.initPoint) { window.location.href = orderRes.initPoint; }
       else if (isTransfer)            { router.push('/pendiente-de-pago'); }
       else                            { router.push('/confirmacion'); }
@@ -920,8 +986,8 @@ export default function Checkout() {
     </div>
   );
 
-  const stepLabel = (s: Step) => ({ info: 'Información', envio: 'Envío', pago: 'Pago' }[s]);
-  const stepIcon = { info: User, envio: Truck, pago: CreditCard } as const;
+  const stepLabel = (s: Step) => ({ info: soloGift ? 'Información' : 'Datos y envío', pago: 'Pago' }[s]);
+  const stepIcon = { info: soloGift ? User : Truck, pago: CreditCard } as const;
   const unidades = purchasableItems.reduce((n, i) => n + i.quantity, 0);
   // Lo que dice el botón "Pagar $X": con transferencia local, el total con el
   // 10% off; en la moneda en que se cobra, no en la de vitrina.
@@ -931,7 +997,10 @@ export default function Checkout() {
     document.getElementById('medio-de-pago')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
   const montoAPagar = pago.metodo === 'transferencia' && !isInternational ? transferTotal : totalFinal;
-  const steps: Step[] = soloGift ? ['info', 'pago'] : ['info', 'envio', 'pago'];
+  // Dos pasos: "Datos y envío" (el CP cotiza en vivo y el método se elige ahí
+  // mismo) y "Pago". El paso de envío propio quedó vacío de contenido cuando
+  // la cotización pasó al primer paso, así que se fusionó.
+  const steps: Step[] = ['info', 'pago'];
 
   // Mercado Pago reactivado (12/07/2026): la cuenta fue devuelta tras la suspensión
   // del 05/07. Vuelve a ofrecerse como la forma más simple de cobrar con tarjeta
@@ -1081,11 +1150,15 @@ export default function Checkout() {
                 </p>
               )}
               <div className="flex justify-between text-[13px]">
-                <span className="text-muted-foreground">{isInternational ? 'Shipping' : 'Envío'}</span>
+                <span className="text-muted-foreground">
+                  {isInternational ? 'Shipping' : step === 'info' && isSucursal ? 'Envío a sucursal' : 'Envío'}
+                </span>
                 <span>
-                  {step === 'info' ? (
+                  {/* En el paso 1 la tarifa ya está apenas hay CP (cotización en
+                      vivo); mientras no la haya, se dice qué falta en vez de "—". */}
+                  {step === 'info' && !selectedRate && !loadingRates ? (
                     <span className="text-muted-foreground text-[11px]">
-                      {isInternational ? 'Calculated on the next step' : 'Se calcula a continuación'}
+                      {isInternational ? 'Calculated with your country' : 'Se calcula con tu código postal'}
                     </span>
                   ) : isInternational ? (
                     selectedRate ? formatPrice(selectedRate.cost) : <span className="text-muted-foreground">—</span>
@@ -1130,6 +1203,198 @@ export default function Checkout() {
     </>
   );
 
+  // Selector de método de envío. Vivía en un paso propio; con la cotización en
+  // vivo por CP quedó sin razón de ser y ahora es parte del primer paso.
+  const metodoEnvio = (
+    <div id="metodo-envio" className="pt-2 space-y-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
+        {isInternational ? 'Shipping method' : 'Método de envío'}
+      </p>
+      {isInternational ? (
+        <>
+          <RadioCard
+            name="envio"
+            checked
+            onSelect={() => {}}
+            icon={Plane}
+            title={selectedRate?.label ?? 'International shipping'}
+            sub="Door to door · tracked · insured"
+            right={<span className="text-[13px] font-semibold">{selectedRate ? formatPrice(selectedRate.cost) : '—'}</span>}
+          />
+          <div className="bg-foreground/[0.03] px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
+            {CUSTOMS_NOTICE}
+          </div>
+        </>
+      ) : (
+        <>
+          {!loadingRates && !ratesError && shippingRates.length === 0 && (
+            <p className="text-[12px] text-muted-foreground">
+              Completá tu código postal y te mostramos las opciones con su precio.
+            </p>
+          )}
+
+          {loadingRates && (
+            <div className="space-y-2" aria-live="polite">
+              {[0, 1].map(i => (
+                <div key={i} className="flex items-center gap-3.5 rounded-[10px] border border-border px-4 py-4">
+                  <span className="h-[18px] w-[18px] rounded-full bg-foreground/[0.06] animate-pulse" />
+                  <span className="h-10 w-10 rounded-[8px] bg-foreground/[0.06] animate-pulse" />
+                  <span className="flex-1 space-y-1.5">
+                    <span className="block h-3 w-1/3 rounded bg-foreground/[0.06] animate-pulse" />
+                    <span className="block h-2.5 w-1/4 rounded bg-foreground/[0.05] animate-pulse" />
+                  </span>
+                  <span className="h-3 w-14 rounded bg-foreground/[0.06] animate-pulse" />
+                </div>
+              ))}
+              <p className="text-[12px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
+            </div>
+          )}
+
+          {ratesError && !loadingRates && (
+            <div className="space-y-3">
+              <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
+              <button type="button" onClick={fetchRates}
+                className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
+                Intentar de nuevo
+              </button>
+            </div>
+          )}
+
+          {!loadingRates && shippingRates.length > 0 && (
+            <>
+              <div className="space-y-2">
+                {shippingRates.map(rate => {
+                  const esSucursal = modoDeTarifa(rate) === 'sucursal';
+                  const costo = costoDe(rate);
+                  // costoEnvio devuelve la tarifa cruda (con centavos) cuando no hay bonificación:
+                  // comparar redondeado, si no $5.555,6 < $5.556 mostraba el mismo precio tachado.
+                  const bonificado = Math.round(costo) < Math.round(rate.cost);
+                  return (
+                    <RadioCard
+                      key={rate.id}
+                      name="envio"
+                      className="py-3"
+                      checked={selectedRate?.id === rate.id}
+                      onSelect={() => handleRateSelect(rate)}
+                      icon={esSucursal ? Store : Home}
+                      title={esSucursal ? 'Retiro en sucursal' : 'Envío a domicilio'}
+                      sub={rate.label}
+                      right={
+                        <>
+                          {bonificado && (
+                            <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
+                          )}
+                          {costo === 0 ? (
+                            <span className="text-[13px] font-semibold text-green-700 block">Gratis</span>
+                          ) : (
+                            <span className="text-[13px] font-semibold block">{formatPrice(costo)}</span>
+                          )}
+                          {esSucursal && !bonificado && ahorroEnSucursal > 0 && (
+                            <span className="inline-block mt-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
+                              Ahorrás {formatPrice(ahorroEnSucursal)}
+                            </span>
+                          )}
+                        </>
+                      }
+                    />
+                  );
+                })}
+              </div>
+              {/* La barra de envío gratis motiva cuando el umbral está cerca;
+                  con menos de la mitad del camino hecho solo mete ruido en el
+                  momento de pagar (no cambia ninguna condición comercial:
+                  el umbral sigue siendo el mismo y el descuento lo aplica
+                  lib/envio igual que siempre). */}
+              {(couponFreeShip || sobreUmbral || envioCtx.subtotalFisico >= FREE_SHIPPING_THRESHOLD / 2) && (
+              <BarraEnvioGratis
+                falta={couponFreeShip || sobreUmbral ? 0 : FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico}
+                progreso={couponFreeShip || sobreUmbral ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
+              >
+                {couponFreeShip ? (
+                  'Cupón de envío gratis aplicado.'
+                ) : sobreUmbral ? (
+                  <>Tu compra tiene <span className="font-semibold text-foreground">envío gratis a sucursal</span>.</>
+                ) : (
+                  <>Sumá <span className="font-semibold text-foreground">{formatPrice(FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico)}</span> y el envío a sucursal es gratis.</>
+                )}
+              </BarraEnvioGratis>
+              )}
+            </>
+          )}
+
+          {isSucursal && selectedBranch && (
+            // Elegida la sucursal, la lista se va: queda la card con "Cambiar".
+            <div className="flex items-start justify-between gap-3 rounded-[10px] border border-foreground bg-foreground/[0.02] px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-0.5">Retirás en</p>
+                <p className="text-[13px] font-semibold leading-tight">{selectedBranch.label}</p>
+                {selectedBranch.direccion && <p className="text-[11px] text-muted-foreground mt-0.5">{selectedBranch.direccion}</p>}
+              </div>
+              <button type="button" onClick={() => setSelectedBranch(null)}
+                className="flex-shrink-0 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                Cambiar
+              </button>
+            </div>
+          )}
+          {isSucursal && !selectedBranch && (
+            <div className="pt-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-2">Elegí tu sucursal Andreani</p>
+              {loadingBranches && (
+                <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
+                  <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                  Buscando sucursales cerca de CP {info.cp}...
+                </div>
+              )}
+              {sucursalesEstado === 'error' && (
+                <div className="space-y-2">
+                  <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">
+                    No pudimos cargar las sucursales. Reintentá en un momento.
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <button type="button" onClick={() => selectedRate && fetchBranches(selectedRate)}
+                      className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
+                      Reintentar
+                    </button>
+                    <span className="text-[12px] text-muted-foreground">Si sigue sin andar, elegí envío a domicilio.</span>
+                  </div>
+                </div>
+              )}
+              {sucursalesEstado === 'ok' && (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
+                  {branches.map(b => (
+                    <RadioCard
+                      key={b.id}
+                      name="sucursal"
+                      checked={selectedBranch?.id === b.id}
+                      onSelect={() => {
+                        setEnvioAviso(null);
+                        setSelectedBranch(b);
+                        // Con la sucursal resuelta, lo que sigue son los datos:
+                        // se acompaña con scroll, sin robar el foco ni abrir teclado.
+                        setTimeout(() => document.getElementById('tus-datos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+                      }}
+                      title={b.label}
+                      sub={b.direccion || undefined}
+                      className="py-3"
+                    />
+                  ))}
+                </div>
+              )}
+              {sucursalesEstado === 'vacio' && (
+                <div className="flex gap-3 rounded-[10px] bg-foreground/[0.04] px-4 py-3.5">
+                  <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-foreground/50" strokeWidth={1.75} aria-hidden="true" />
+                  <p className="text-[12px] text-foreground/70 leading-relaxed">
+                    No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div className={`min-h-screen bg-[#f4f4f4]${flashActive ? ' pt-[40px]' : ''}`}>
       <div className="relative border-b border-border bg-white py-5 px-4 text-center">
@@ -1148,9 +1413,11 @@ export default function Checkout() {
       </div>
 
       {/* Mobile: el resumen arriba, colapsado en una barra con el total.
-          Antes quedaba debajo del botón de pagar. */}
+          Antes quedaba debajo del botón de pagar. Sticky: el total queda a la
+          vista mientras se scrollea el formulario (el header con el stepper sí
+          se va — pinearlo todo comería un quinto de la pantalla). */}
       {!isDesktop && (
-        <div className="border-b border-border bg-white">
+        <div className={`sticky z-30 border-b border-border bg-white ${flashActive ? 'top-[40px]' : 'top-0'}`}>
           <button
             type="button"
             onClick={() => setResumenAbierto(o => !o)}
@@ -1181,7 +1448,8 @@ export default function Checkout() {
                 transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
                 className="overflow-hidden"
               >
-                <div className="px-4 pt-5 pb-6">{resumen}</div>
+                {/* Desplegado también es sticky: si no entra, scrollea adentro. */}
+                <div className="max-h-[65vh] overflow-y-auto overscroll-contain px-4 pt-5 pb-6">{resumen}</div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1226,6 +1494,9 @@ export default function Checkout() {
           >
           {step === 'info' && (
             <form onSubmit={handleInfoSubmit} noValidate className="space-y-4">
+              {/* En el flujo argentino el email vive dentro de "Tus datos": el
+                  primer campo del checkout es el CP, que desbloquea todo. */}
+              {(soloGift || isInternational) && (
               <Panel
                 icon={Mail}
                 title={isInternational ? 'Contact' : 'Contacto'}
@@ -1250,6 +1521,7 @@ export default function Checkout() {
                   {isInternational ? 'Get early access to drops & restocks' : 'Recibir novedades, drops y acceso anticipado'}
                 </Check>
               </Panel>
+              )}
 
               {soloGift ? (
               // Sólo gift cards: nada se envía. Alcanza con nombre y teléfono
@@ -1264,8 +1536,18 @@ export default function Checkout() {
                 </div>
               </Panel>
               ) : (
-              <Panel icon={MapPin} title={isInternational ? 'Shipping address' : 'Dirección de envío'} sub={isInternational ? 'Where we deliver your order' : 'Donde recibís o desde donde retirás tu pedido'}>
+              <Panel icon={Truck} title={isInternational ? 'Shipping' : 'Envío'} sub={isInternational ? 'Where and how you get your order' : 'Elegí cómo y dónde recibís tu pedido'}>
                 <div className="space-y-2.5">
+                  {/* Con Argentina determinado, el select de país es una fila de
+                      texto: casi nadie lo cambia y ocupa media pantalla menos. */}
+                  {info.pais === 'AR' && !paisExpandido ? (
+                    <div className="flex items-center justify-between rounded-[10px] border border-border bg-foreground/[0.02] px-4 py-2.5">
+                      <p className="text-[12px]"><span className="text-muted-foreground">País: </span><span className="font-medium">Argentina</span></p>
+                      <button type="button" onClick={() => setPaisExpandido(true)} className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                        Cambiar
+                      </button>
+                    </div>
+                  ) : (
                   <FloatingSelect
                     label={isInternational ? 'Country' : 'País'}
                     autoComplete="country"
@@ -1278,13 +1560,14 @@ export default function Checkout() {
                         : <option key={c.code} value={c.code}>{c.name}</option>
                     )}
                   </FloatingSelect>
+                  )}
 
                   {/* International notice */}
                   {isInternational && (
                     <div className="bg-foreground/[0.03] border border-border px-4 py-3 rounded-[10px]">
                       <p className="text-[12px] text-foreground/70 leading-relaxed">
                         <span className="font-semibold text-foreground">Worldwide shipping available.</span>
-                        {' '}Shipping is calculated on the next step and charged with your order — tracked and
+                        {' '}Shipping is quoted right below and charged with your order — tracked and
                         insured, door to door.
                       </p>
                     </div>
@@ -1309,211 +1592,93 @@ export default function Checkout() {
                       </div>
                       <FloatingInput label="Postal / ZIP code" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
                       <FloatingInput type="tel" label="Phone (with country code)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                      {metodoEnvio}
                     </>
                   ) : (
                     <>
-                      <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => setInfo({ ...info, provincia: e.target.value })}>
-                        {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
-                      </FloatingSelect>
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
-                        <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                      {/* El CP va primero: cotiza el envío y autocompleta lo
+                          geográfico. Con retiro en sucursal, barrio, provincia
+                          y domicilio directamente no se piden. */}
+                      <div className={isSucursal ? '' : 'grid grid-cols-2 gap-2.5'}>
+                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp}
+                          hint={cpSugerido ? (
+                            <button type="button" onClick={aplicarCpSugerido} className="text-left text-foreground/70 hover:text-foreground">
+                              Para esa dirección el CP es <span className="font-semibold text-foreground underline underline-offset-2">{cpSugerido.cp}</span> · Usar
+                            </button>
+                          ) : undefined}
+                          onChange={e => handleCpChange(e.target.value)} />
+                        {!isSucursal && (
+                          <FloatingInput label={info.provincia === 'CABA' ? 'Barrio' : 'Ciudad'} required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
+                        )}
                       </div>
-                      <FloatingInput label="DNI" required inputMode="numeric" {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
-                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" {...campo('direccion')} value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
-                      <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <FloatingInput label="Código postal" required autoComplete="postal-code" {...campo('cp')} value={info.cp} onChange={e => setInfo({ ...info, cp: e.target.value })} />
-                        <FloatingInput label="Ciudad" required autoComplete="address-level2" {...campo('ciudad')} value={info.ciudad} onChange={e => setInfo({ ...info, ciudad: e.target.value })} />
-                      </div>
-                      <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                      {metodoEnvio}
+                      {!isSucursal && (
+                        <>
+                          <FloatingInput label="Dirección y número" required autoComplete="address-line1" error={tocados.direccion ? errores.direccion ?? null : null}
+                            onBlur={() => { setTocados(t => (t.direccion ? t : { ...t, direccion: true })); buscarCpPorDireccion(); }}
+                            value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                          <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
+                          {provinciaExpandida ? (
+                            <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => { provinciaTocada.current = true; setInfo({ ...info, provincia: e.target.value }); }}>
+                              {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
+                            </FloatingSelect>
+                          ) : (
+                            <div className="flex items-center justify-between rounded-[10px] border border-border bg-foreground/[0.02] px-4 py-2.5">
+                              <p className="text-[12px]"><span className="text-muted-foreground">Provincia: </span><span className="font-medium">{info.provincia}</span></p>
+                              <button type="button" onClick={() => setProvinciaExpandida(true)} className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                                Cambiar
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </>
                   )}
                 </div>
               </Panel>
               )}
 
+              {!soloGift && !isInternational && (
+              <div id="tus-datos">
+              <Panel icon={User} title="Tus datos"
+                sub={precargado ? 'Completamos con los datos de tu última compra' : 'La confirmación y el seguimiento van a tu mail'}
+                action={precargado ? (
+                  <button type="button" onClick={olvidarDatos} className="flex-shrink-0 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                    ¿No sos vos?
+                  </button>
+                ) : undefined}
+              >
+                <div className="space-y-2.5">
+                  <FloatingInput type="email" label="Email" required autoComplete="email" inputMode="email" {...campo('email')} value={info.email}
+                    hint={sugerenciaEmail ? (
+                      <button type="button" onClick={() => setInfo(i => ({ ...i, email: sugerenciaEmail }))} className="text-left text-foreground/70 hover:text-foreground">
+                        ¿Quisiste decir <span className="font-semibold text-foreground underline underline-offset-2">{sugerenciaEmail}</span>?
+                      </button>
+                    ) : undefined}
+                    onChange={e => setInfo({ ...info, email: e.target.value })} />
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
+                    <FloatingInput label="Apellido" required autoComplete="family-name" {...campo('apellido')} value={info.apellido} onChange={e => setInfo({ ...info, apellido: e.target.value })} />
+                  </div>
+                  <FloatingInput label="DNI" required inputMode="numeric" hint={isSucursal ? 'Lo vas a necesitar para retirar el paquete' : 'Lo pide el correo para que tu envío llegue seguro'} {...campo('dni')} value={info.dni} onChange={e => setInfo({ ...info, dni: e.target.value })} />
+                  <FloatingInput type="tel" label="Teléfono (con código de área)" required autoComplete="tel" {...campo('telefono')} value={info.telefono} onChange={e => setInfo({ ...info, telefono: e.target.value })} />
+                  <Check className="mt-1" checked={info.newsletter} onChange={e => setInfo({ ...info, newsletter: e.target.checked })}>
+                    Recibir novedades, drops y acceso anticipado
+                  </Check>
+                </div>
+              </Panel>
+              </div>
+              )}
+
               <Button type="submit" variant="hype" size="ctaFull" className="rounded-[10px] gap-2">
-                {soloGift ? 'Continuar con el pago' : isInternational ? 'Continue to shipping' : 'Continuar con el envío'}
+                {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
                 <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
               </Button>
+              {envioAviso && (
+                <p className="text-[12px] text-destructive" aria-live="polite">{envioAviso}</p>
+              )}
             </form>
           )}
-
-          {step === 'envio' && (
-            <form onSubmit={handleEnvioSubmit} className="space-y-4">
-              <Recap
-                cambiar={isInternational ? 'Change' : 'Cambiar'}
-                rows={[
-                  { icon: Mail, label: isInternational ? 'Contact' : 'Contacto', value: info.email, onChange: () => setStep('info') },
-                  { icon: MapPin, label: isInternational ? 'Ship to' : 'Enviar a', value: `${info.direccion}, ${lugar(info.ciudad, info.provincia)}`, onChange: () => setStep('info') },
-                ]}
-              />
-
-              <Panel
-                icon={Truck}
-                title={isInternational ? 'Shipping method' : 'Método de envío'}
-                sub={isInternational ? 'Door to door, tracked and insured' : `Opciones de Andreani para CP ${info.cp}`}
-              >
-                {isInternational ? (
-                  <div className="space-y-3">
-                    <RadioCard
-                      name="envio"
-                      checked
-                      onSelect={() => {}}
-                      icon={Plane}
-                      title={selectedRate?.label ?? 'International shipping'}
-                      sub="Door to door · tracked · insured"
-                      right={<span className="text-[13px] font-semibold">{selectedRate ? formatPrice(selectedRate.cost) : '—'}</span>}
-                    />
-                    <div className="bg-foreground/[0.03] px-4 py-3.5 rounded-[10px] text-[12px] text-foreground/60 leading-relaxed">
-                      {CUSTOMS_NOTICE}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {loadingRates && (
-                      <div className="space-y-2" aria-live="polite">
-                        {[0, 1].map(i => (
-                          <div key={i} className="flex items-center gap-3.5 rounded-[10px] border border-border px-4 py-4">
-                            <span className="h-[18px] w-[18px] rounded-full bg-foreground/[0.06] animate-pulse" />
-                            <span className="h-10 w-10 rounded-[8px] bg-foreground/[0.06] animate-pulse" />
-                            <span className="flex-1 space-y-1.5">
-                              <span className="block h-3 w-1/3 rounded bg-foreground/[0.06] animate-pulse" />
-                              <span className="block h-2.5 w-1/4 rounded bg-foreground/[0.05] animate-pulse" />
-                            </span>
-                            <span className="h-3 w-14 rounded bg-foreground/[0.06] animate-pulse" />
-                          </div>
-                        ))}
-                        <p className="text-[12px] text-muted-foreground">Calculando opciones de envío para CP {info.cp}...</p>
-                      </div>
-                    )}
-
-                    {ratesError && !loadingRates && (
-                      <div className="space-y-3">
-                        <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{ratesError}</p>
-                        <button type="button" onClick={fetchRates}
-                          className="text-[12px] underline text-muted-foreground hover:text-foreground transition-colors">
-                          Intentar de nuevo
-                        </button>
-                      </div>
-                    )}
-
-                    {!loadingRates && shippingRates.length > 0 && (
-                      <>
-                        <div className="space-y-2">
-                          {shippingRates.map(rate => {
-                            const esSucursal = modoDeTarifa(rate) === 'sucursal';
-                            const costo = costoDe(rate);
-                            // costoEnvio devuelve la tarifa cruda (con centavos) cuando no hay bonificación:
-                            // comparar redondeado, si no $5.555,6 < $5.556 mostraba el mismo precio tachado.
-                            const bonificado = Math.round(costo) < Math.round(rate.cost);
-                            return (
-                              <RadioCard
-                                key={rate.id}
-                                name="envio"
-                                checked={selectedRate?.id === rate.id}
-                                onSelect={() => handleRateSelect(rate)}
-                                icon={esSucursal ? Store : Home}
-                                title={esSucursal ? 'Retiro en sucursal' : 'Envío a domicilio'}
-                                sub={rate.label}
-                                right={
-                                  <>
-                                    {bonificado && (
-                                      <span className="text-[12px] text-muted-foreground line-through block">{formatPrice(rate.cost)}</span>
-                                    )}
-                                    {costo === 0 ? (
-                                      <span className="text-[13px] font-semibold text-green-700 block">Gratis</span>
-                                    ) : (
-                                      <span className="text-[13px] font-semibold block">{formatPrice(costo)}</span>
-                                    )}
-                                    {esSucursal && !bonificado && ahorroEnSucursal > 0 && (
-                                      <span className="inline-block mt-1 text-[11px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
-                                        Ahorrás {formatPrice(ahorroEnSucursal)}
-                                      </span>
-                                    )}
-                                  </>
-                                }
-                              />
-                            );
-                          })}
-                        </div>
-                        <BarraEnvioGratis
-                          falta={couponFreeShip || sobreUmbral ? 0 : FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico}
-                          progreso={couponFreeShip || sobreUmbral ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
-                        >
-                          {couponFreeShip ? (
-                            'Cupón de envío gratis aplicado.'
-                          ) : sobreUmbral ? (
-                            <>Tu compra tiene <span className="font-semibold text-foreground">envío gratis a sucursal</span>.</>
-                          ) : (
-                            <>Sumá <span className="font-semibold text-foreground">{formatPrice(FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico)}</span> y el envío a sucursal es gratis.</>
-                          )}
-                        </BarraEnvioGratis>
-                      </>
-                    )}
-
-                    {isSucursal && (
-                      <div className="pt-3">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-2">Elegí tu sucursal Andreani</p>
-                        {loadingBranches && (
-                          <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-4 py-3 border border-border rounded-[10px]">
-                            <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
-                            Buscando sucursales cerca de CP {info.cp}...
-                          </div>
-                        )}
-                        {!loadingBranches && branches.length > 0 && (
-                          <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
-                            {branches.map(b => (
-                              <RadioCard
-                                key={b.id}
-                                name="sucursal"
-                                checked={selectedBranch?.id === b.id}
-                                onSelect={() => setSelectedBranch(b)}
-                                title={b.label}
-                                sub={b.direccion || undefined}
-                                className="py-3"
-                              />
-                            ))}
-                          </div>
-                        )}
-                        {!loadingBranches && branches.length === 0 && (
-                          <div className="flex gap-3 rounded-[10px] bg-foreground/[0.04] px-4 py-3.5">
-                            <Info className="h-4 w-4 flex-shrink-0 mt-0.5 text-foreground/50" strokeWidth={1.75} aria-hidden="true" />
-                            <p className="text-[12px] text-foreground/70 leading-relaxed">
-                              No se encontraron sucursales para CP {info.cp}. Podés igualmente continuar y te contactamos para coordinar.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Panel>
-
-              <div className="space-y-3 pt-1">
-                <Button type="submit" variant="hype" size="ctaFull" disabled={loadingRates || !shippingReady || !branchReady}
-                  className="rounded-[10px] gap-2 disabled:cursor-not-allowed">
-                  {isInternational ? 'Continue to payment' : 'Continuar con el pago'}
-                  <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
-                </Button>
-                {/* El botón gris solo no dice qué falta (auditoría 11/10, UX-06):
-                    sin sucursal elegida parece que el checkout está trabado. */}
-                {!loadingRates && (!shippingReady || !branchReady) && (
-                  <p className="text-[12px] text-muted-foreground" aria-live="polite">
-                    {!shippingReady
-                      ? (isInternational ? 'Choose a shipping method to continue.' : 'Elegí un método de envío para continuar.')
-                      : 'Elegí una sucursal de Andreani para continuar.'}
-                  </p>
-                )}
-                <button type="button" onClick={() => setStep('info')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
-                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                  {isInternational ? 'Back to information' : 'Volver a información'}
-                </button>
-              </div>
-            </form>
-          )}
-
           {step === 'pago' && (
             <form onSubmit={handlePagoSubmit} noValidate className={`space-y-4${isDesktop ? '' : ' pb-24'}`}>
               {/* Mobile: total y botón pegados al pie. El botón en el flujo quedaba
@@ -1547,14 +1712,21 @@ export default function Checkout() {
                   { icon: Mail, label: isInternational ? 'Contact' : 'Contacto', value: info.email, onChange: () => setStep('info') },
                   ...(soloGift
                     ? [{ icon: Gift, label: 'Entrega', value: `Gift card digital · por mail a ${info.email}` }]
-                    : [{ icon: MapPin, label: isInternational ? 'Ship to' : 'Enviar a', value: `${info.direccion}, ${lugar(info.ciudad, info.provincia)}`, onChange: () => setStep('info') }]),
+                    // Retiro en sucursal: no hay domicilio cargado, el destino es la sucursal.
+                    : isSucursal
+                      ? []
+                      : [{ icon: MapPin, label: isInternational ? 'Ship to' : 'Enviar a', value: `${info.direccion}, ${lugar(info.ciudad, info.provincia)}`, onChange: () => setStep('info') }]),
                   ...(selectedRate
                     ? [{
                         icon: Truck,
                         label: isInternational ? 'Shipping' : 'Envío',
                         value: selectedRate.label,
-                        extra: selectedBranch ? `${selectedBranch.label} — ${selectedBranch.direccion}` : undefined,
-                        onChange: () => setStep('envio'),
+                        extra: selectedBranch
+                          ? `${selectedBranch.label} — ${selectedBranch.direccion}`
+                          : isSucursal
+                            ? 'Sucursal a coordinar'
+                            : undefined,
+                        onChange: () => setStep('info'),
                       }]
                     : []),
                 ]}
@@ -1592,6 +1764,22 @@ export default function Checkout() {
               </div>
 
               {submitError && <p className="text-[12px] text-destructive bg-destructive/10 px-4 py-3 rounded-[8px]">{submitError}</p>}
+              {totalAjustado !== null && (
+                <div className="border border-amber-300 bg-amber-50 px-4 py-3.5 rounded-[10px] space-y-2.5" aria-live="polite">
+                  <p className="text-[13px] font-semibold text-amber-900">
+                    {isInternational ? 'The total was updated' : 'El total se actualizó'}
+                  </p>
+                  <p className="text-[12px] text-amber-900/80 leading-relaxed">
+                    {isInternational
+                      ? <>A price changed while you were shopping. The final total is <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Nothing was charged yet.</>
+                      : <>Algún precio cambió mientras comprabas. El total final es <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Todavía no se cobró nada.</>}
+                  </p>
+                  <button type="button" onClick={confirmarTotalAjustado} disabled={submitting}
+                    className="inline-flex items-center gap-2 rounded-[8px] bg-amber-900 px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em] text-white hover:bg-amber-800 disabled:opacity-60">
+                    {isInternational ? 'Pay' : 'Pagar'} {formatPriceIn(totalAjustado, cobro)}
+                  </button>
+                </div>
+              )}
               <div className="space-y-3 pt-1">
                 {isDesktop && (
                 <DynamicButton
@@ -1614,9 +1802,9 @@ export default function Checkout() {
                 {isDesktop
                   ? <NotaPagoSeguro en={isInternational} />
                   : <PagoSeguroCard en={isInternational} className="bg-white" />}
-                <button type="button" onClick={() => setStep(soloGift ? 'info' : 'envio')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" onClick={() => setStep('info')} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                  {soloGift ? 'Volver' : isInternational ? 'Back to shipping' : 'Volver al envío'}
+                  {isInternational ? 'Back' : 'Volver'}
                 </button>
               </div>
             </form>
@@ -1673,7 +1861,6 @@ export default function Checkout() {
               </div>
             )}
             {isDesktop && <PagoSeguroCard en={isInternational} className="bg-white" />}
-            <UpsellCarousel />
             </>
             )}
           </div>

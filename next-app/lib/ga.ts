@@ -71,6 +71,34 @@ export function gaBeginCheckout(items: GaItem[], value?: number): void {
 }
 
 /**
+ * Embudo del checkout entre begin_checkout y purchase. Antes ese tramo era
+ * ciego: no se podía ver dónde abandona la gente ni separar sucursal de
+ * domicilio. `shipping_tier` viaja en los eventos estándar de GA4; ningún
+ * evento lleva datos personales.
+ */
+export type ShippingTier = 'sucursal' | 'domicilio' | 'internacional' | 'gift';
+
+/** Llegaron tarifas para un CP: el cliente vio opciones de envío con precio. */
+export function gaViewShippingOptions(): void {
+  gaEvent('view_shipping_options', { currency: CURRENCY });
+}
+
+/** Método de envío confirmado (y sucursal elegida, si aplica): pasa a pago. */
+export function gaAddShippingInfo(items: GaItem[], value: number, tier: ShippingTier): void {
+  gaEvent('add_shipping_info', { currency: CURRENCY, value, shipping_tier: tier, items });
+}
+
+export function gaAddPaymentInfo(items: GaItem[], value: number, paymentType: string): void {
+  gaEvent('add_payment_info', { currency: CURRENCY, value, payment_type: paymentType, items });
+}
+
+/** La orden ya existe en Woo y el cliente sale hacia la pasarela (o al
+ *  instructivo de transferencia): última señal medible antes del pago. */
+export function gaIrAPagar(paymentType: string, value: number, tier: ShippingTier): void {
+  gaEvent('ir_a_pagar', { currency: CURRENCY, value, payment_type: paymentType, shipping_tier: tier });
+}
+
+/**
  * Solo debe llamarse con el pago efectivamente confirmado — ver el comentario en
  * app/confirmacion/ConfirmacionClient.tsx. `transactionId` es además la clave de
  * deduplicación de GA4: si el cliente recarga la pantalla de confirmación, GA

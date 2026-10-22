@@ -16,13 +16,21 @@ export type CampoInfo =
 
 export type DatosInfo = Record<CampoInfo, string> & { pais: string };
 
-type Opciones = { soloGift: boolean; internacional: boolean; provinciaObligatoria: boolean };
+type Opciones = {
+  soloGift: boolean;
+  internacional: boolean;
+  provinciaObligatoria: boolean;
+  /** Retiro en sucursal: el paquete no va al domicilio, la dirección no se pide. */
+  retiraEnSucursal?: boolean;
+};
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export function camposVisibles({ soloGift, internacional }: Omit<Opciones, 'provinciaObligatoria'>): CampoInfo[] {
+export function camposVisibles({ soloGift, internacional, retiraEnSucursal }: Omit<Opciones, 'provinciaObligatoria'>): CampoInfo[] {
   if (soloGift) return ['email', 'nombre', 'apellido', 'telefono'];
   if (internacional) return ['email', 'nombre', 'apellido', 'direccion', 'ciudad', 'provincia', 'cp', 'telefono'];
+  // Retiro en sucursal: ni dirección ni barrio/ciudad — el destino es la sucursal.
+  if (retiraEnSucursal) return ['email', 'nombre', 'apellido', 'dni', 'cp', 'telefono'];
   return ['email', 'nombre', 'apellido', 'dni', 'direccion', 'cp', 'ciudad', 'telefono'];
 }
 
@@ -50,7 +58,10 @@ export function validarCampo(campo: CampoInfo, datos: DatosInfo, opts: Opciones)
       // Andreani necesita los 4 dígitos: "1425" o el CPA "C1425ABC" sirven.
       return /^\d{4}$/.test(normalizeCpAr(v)) ? null : 'El código postal tiene 4 números (ej. 1425)';
     case 'ciudad':
-      return v ? null : (en ? 'Enter your city' : 'Ingresá la ciudad');
+      if (v) return null;
+      if (en) return 'Enter your city';
+      // Con provincia CABA el campo se llama "Barrio": la ciudad ya se sabe.
+      return datos.provincia === 'CABA' ? 'Ingresá el barrio' : 'Ingresá la ciudad';
     case 'provincia':
       return !opts.provinciaObligatoria || v ? null : 'Enter your state or province';
     case 'telefono': {
