@@ -10,6 +10,63 @@ function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 }
 
+// Para comparar búsquedas: minúsculas y sin tildes ("Pré" matchea "pre").
+function norm(s: string) {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function mapOrder(o: any) {
+  const meta = (o.meta_data as any[]) || [];
+  const mv = (k: string) => meta.find((m: any) => m.key === k)?.value || '';
+  const tracking = String(mv('_tracking_number')).trim();
+  const andreani = String(mv('_order_andreani_numero_interno') || mv('_andreani_tracking_number')).trim();
+  const pedidoId = String(mv('_order_andreani_pedido_id')).trim();
+  // Empaquetado = se generó el rótulo en Andreani (pedidoId/numero interno), pero
+  // Andreani todavía no le asignó guía real — para eso hace falta pagar el envío en
+  // su portal. Enviado = ya tiene guía (_tracking_number), prueba real de que entró
+  // al circuito de despacho. Antes se los trataba como lo mismo ("dispatched").
+  const packaged = !!(pedidoId || andreani);
+  const shipped  = !!tracking;
+  return {
+    id:            o.id,
+    number:        o.number,
+    date:          o.date_created,
+    status:        o.status,
+    isMayorista:   mv('_es_mayorista') === 'true',
+    customer:      {
+      first_name: o.billing.first_name,
+      last_name:  o.billing.last_name,
+      email:      o.billing.email,
+      phone:      o.billing.phone,
+    },
+    items: (o.line_items as any[]).map((i) => ({
+      name:     i.name,
+      quantity: i.quantity,
+      size:     (i.meta_data as any[])?.find((m: any) =>
+        ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
+      )?.value || '',
+      dorsalName:   (i.meta_data as any[])?.find((m: any) =>
+        ['nombre dorsal', 'player name'].includes((m.key || '').toLowerCase())
+      )?.value || '',
+      dorsalNumber: (i.meta_data as any[])?.find((m: any) =>
+        ['número dorsal', 'numero dorsal', 'number'].includes((m.key || '').toLowerCase())
+      )?.value || '',
+    })),
+    total:                parseFloat(o.total),
+    shipping_total:       parseFloat(o.shipping_total),
+    payment_method_title: o.payment_method_title,
+    tracking,
+    andreani,
+    packaged,
+    shipped,
+    // Sólo gift cards: el código sale por mail, no hay nada que empaquetar.
+    digital:       esSoloDigital(o.line_items),
+    notified:      String(mv('_tracking_notified')).trim(),
+    order_key:     o.order_key,
+    customer_note: o.customer_note || '',
+  };
+}
+
 export async function GET(req: NextRequest) {
   if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -20,6 +77,21 @@ export async function GET(req: NextRequest) {
   const status = sp.get('status') || 'any';
   const search = sp.get('search') || '';
   const after  = sp.get('after')  || '2026-05-10T00:00:00';
+
+  // Un término numérico es un # de pedido (acá number = post_id): se trae directo
+  // por id, al instante y sin el search de WC, que es lento y matchea cualquier
+  // campo indexado (dirección, teléfono, DNI) — buscar "3352" devolvía pedidos
+  // ajenos. Encuentra el pedido sin importar el tab ni la fecha.
+  const q = search.trim();
+  if (/^#?\d+$/.test(q)) {
+    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${q.replace('#', '')}?_cb=${Date.now()}`, {
+      headers: { Authorization: wcAuth() },
+      next:    { revalidate: 0 },
+    });
+    if (res.status === 404) return NextResponse.json({ orders: [], total: 0, totalPages: 1, page: 1 });
+    if (!res.ok) return NextResponse.json({ error: `WC ${res.status}` }, { status: 502 });
+    return NextResponse.json({ orders: [mapOrder(await res.json())], total: 1, totalPages: 1, page: 1 });
+  }
 
   const fetchPage = (p: string) => {
     const params = new URLSearchParams({
@@ -74,57 +146,23 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const orders = raw.map((o) => {
-    const meta = (o.meta_data as any[]) || [];
-    const mv = (k: string) => meta.find((m: any) => m.key === k)?.value || '';
-    const tracking = String(mv('_tracking_number')).trim();
-    const andreani = String(mv('_order_andreani_numero_interno') || mv('_andreani_tracking_number')).trim();
-    const pedidoId = String(mv('_order_andreani_pedido_id')).trim();
-    // Empaquetado = se generó el rótulo en Andreani (pedidoId/numero interno), pero
-    // Andreani todavía no le asignó guía real — para eso hace falta pagar el envío en
-    // su portal. Enviado = ya tiene guía (_tracking_number), prueba real de que entró
-    // al circuito de despacho. Antes se los trataba como lo mismo ("dispatched").
-    const packaged = !!(pedidoId || andreani);
-    const shipped  = !!tracking;
-    return {
-      id:            o.id,
-      number:        o.number,
-      date:          o.date_created,
-      status:        o.status,
-      isMayorista:   mv('_es_mayorista') === 'true',
-      customer:      {
-        first_name: o.billing.first_name,
-        last_name:  o.billing.last_name,
-        email:      o.billing.email,
-        phone:      o.billing.phone,
-      },
-      items: (o.line_items as any[]).map((i) => ({
-        name:     i.name,
-        quantity: i.quantity,
-        size:     (i.meta_data as any[])?.find((m: any) =>
-          ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
-        )?.value || '',
-        dorsalName:   (i.meta_data as any[])?.find((m: any) =>
-          ['nombre dorsal', 'player name'].includes((m.key || '').toLowerCase())
-        )?.value || '',
-        dorsalNumber: (i.meta_data as any[])?.find((m: any) =>
-          ['número dorsal', 'numero dorsal', 'number'].includes((m.key || '').toLowerCase())
-        )?.value || '',
-      })),
-      total:                parseFloat(o.total),
-      shipping_total:       parseFloat(o.shipping_total),
-      payment_method_title: o.payment_method_title,
-      tracking,
-      andreani,
-      packaged,
-      shipped,
-      // Sólo gift cards: el código sale por mail, no hay nada que empaquetar.
-      digital:       esSoloDigital(o.line_items),
-      notified:      String(mv('_tracking_notified')).trim(),
-      order_key:     o.order_key,
-      customer_note: o.customer_note || '',
-    };
-  });
+  // El search de WC matchea también dirección, teléfono, DNI e ítems; acá la
+  // búsqueda por texto se limita a nombre y email del cliente.
+  if (q) {
+    const nq = norm(q);
+    raw = raw.filter((o) =>
+      norm(`${o.billing?.first_name || ''} ${o.billing?.last_name || ''} ${o.billing?.email || ''}`).includes(nq)
+    );
+  }
 
-  return NextResponse.json({ orders, total, totalPages, page: paginado ? parseInt(page) : 1 });
+  const orders = raw.map(mapOrder);
+
+  return NextResponse.json({
+    orders,
+    // Con búsqueda por texto el total de WC incluye los matches descartados; si
+    // entró todo en una página, el conteo real es lo que queda tras filtrar.
+    total: q && totalPages === 1 ? orders.length : total,
+    totalPages,
+    page: paginado ? parseInt(page) : 1,
+  });
 }

@@ -112,6 +112,10 @@ export default function PedidosPage() {
   const [cancelNotify, setCancelNotify]   = useState(true);
   const [cancelLoading, setCancelLoading] = useState(false);
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Secuencia de fetches: si una respuesta vieja llega después de una más nueva
+  // (el search de WC puede tardar varios segundos), se descarta en vez de pisar
+  // la lista — antes la búsqueda "aparecía y desaparecía" según cuál llegara última.
+  const fetchSeq  = useRef(0);
   // Pedidos desplegados con la flecha + detalle ya cargado de cada uno.
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const detailCache = useRef(new Map<number, OrderDetail>());
@@ -122,6 +126,7 @@ export default function PedidosPage() {
   }, []);
 
   const fetchOrders = useCallback(async (key: string, f: string, q: string, p: number) => {
+    const seq = ++fetchSeq.current;
     setLoading(true);
     setSelected(new Set());
     try {
@@ -129,6 +134,7 @@ export default function PedidosPage() {
       const res = await fetch(`/api/admin/orders?${params}`, { headers: { 'x-admin-key': key } });
       if (res.status === 403) { setAuthed(false); sessionStorage.removeItem(WP_SECRET_KEY); return; }
       const data = await res.json();
+      if (seq !== fetchSeq.current) return; // ya hay un fetch más nuevo en vuelo o resuelto
       setOrders(data.orders || []);
       setTotal(data.total || 0);
       setTotalPages(data.totalPages || 1);
@@ -136,7 +142,7 @@ export default function PedidosPage() {
       (data.orders || []).forEach((o: Order) => { smap[o.id] = o.status; });
       setStatusMap(smap);
     } finally {
-      setLoading(false);
+      if (seq === fetchSeq.current) setLoading(false);
     }
   }, []);
 
@@ -276,7 +282,10 @@ export default function PedidosPage() {
 
   // Vista afinada por rótulo/guía para los tabs de empaquetado y envío; el resto muestra lo cargado.
   // "Por empaquetar" va del más viejo al más nuevo: lo más atrasado arriba, imposible de pasar por alto.
-  const visibleOrders = filter === 'por-empaquetar'
+  // Buscar un # de pedido lo muestra siempre, sin importar en qué tab se esté parado.
+  const visibleOrders = /^#?\d+$/.test(search.trim())
+    ? orders
+    : filter === 'por-empaquetar'
     ? orders.filter(o => !o.packaged && !o.digital).sort((a, b) => +new Date(a.date) - +new Date(b.date))
     : filter === 'empaquetado'
       ? orders.filter(o => o.packaged && !o.shipped)
@@ -385,7 +394,7 @@ export default function PedidosPage() {
           {!enGiftCards && <input
             type="text"
             className="flex-1 min-w-[180px] border border-border rounded-lg px-3 py-1.5 text-[13px] bg-card focus:outline-none focus:border-border-mid"
-            placeholder="Buscar por nombre, email u orden..."
+            placeholder="Buscar por nombre o # de pedido..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />}
