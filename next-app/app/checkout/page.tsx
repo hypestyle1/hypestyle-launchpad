@@ -486,6 +486,30 @@ export default function Checkout() {
     });
   };
 
+  // Camino inverso: dirección → CP y barrio, solo CABA (ver /api/direccion-caba;
+  // para el resto del país no hay servicio público calle → CP). Corre al salir
+  // del campo dirección si la provincia es CABA y el CP sigue vacío, y solo
+  // llena lo que esté vacío: nunca pisa nada.
+  const buscarCpPorDireccion = () => {
+    const dir = info.direccion.trim();
+    if (info.pais !== 'AR' || info.provincia !== 'CABA' || info.cp.trim() || dir.length < 5 || !/\d/.test(dir)) return;
+    void fetch(`/api/direccion-caba?direccion=${encodeURIComponent(dir)}`)
+      .then(r => (r.ok ? (r.json() as Promise<{ cp?: string; barrio?: string }>) : null))
+      .then(data => {
+        if (!data?.cp) return;
+        const previo = autofillCp.current;
+        autofillCp.current = { ciudad: data.barrio || previo.ciudad, provincia: 'CABA' };
+        setInfo(prev => {
+          // Si mientras tanto cambió la dirección o apareció un CP, no tocar.
+          if (prev.pais !== 'AR' || prev.provincia !== 'CABA' || prev.direccion.trim() !== dir || prev.cp.trim()) return prev;
+          const next = { ...prev, cp: data.cp! };
+          if (data.barrio && (!prev.ciudad.trim() || prev.ciudad === previo.ciudad)) next.ciudad = data.barrio;
+          return next;
+        });
+      })
+      .catch(() => {});
+  };
+
   const fetchRates = async () => {
     if (!info.cp) return;
     setLoadingRates(true);
@@ -1185,7 +1209,9 @@ export default function Checkout() {
                       <FloatingSelect label="Provincia" autoComplete="address-level1" value={info.provincia} onChange={e => { provinciaTocada.current = true; setInfo({ ...info, provincia: e.target.value }); }}>
                         {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
                       </FloatingSelect>
-                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" {...campo('direccion')} value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
+                      <FloatingInput label="Dirección y número" required autoComplete="address-line1" error={tocados.direccion ? errores.direccion ?? null : null}
+                        onBlur={() => { setTocados(t => (t.direccion ? t : { ...t, direccion: true })); buscarCpPorDireccion(); }}
+                        value={info.direccion} onChange={e => setInfo({ ...info, direccion: e.target.value })} />
                       <FloatingInput label="Departamento / Piso (opcional)" autoComplete="address-line2" value={info.depto} onChange={e => setInfo({ ...info, depto: e.target.value })} />
                       <div className="grid grid-cols-2 gap-2.5">
                         <FloatingInput label="Nombre" required autoComplete="given-name" {...campo('nombre')} value={info.nombre} onChange={e => setInfo({ ...info, nombre: e.target.value })} />
