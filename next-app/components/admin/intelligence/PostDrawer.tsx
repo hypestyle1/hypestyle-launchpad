@@ -6,6 +6,7 @@ import { ExternalLink, X } from 'lucide-react';
 import { Sparkline } from '@/components/admin/Sparkline';
 import { LoadingState, StatusBadge } from '@/components/admin/ui';
 import { factorVsMedian } from '@/lib/ig-insights/analytics';
+import { metricasDe } from '@/lib/ig-insights/calidad';
 import { fmtFactor, fmtFecha, fmtInt, fmtPct, fmtSegundos } from '@/lib/ig-insights/format';
 import {
   commentsOverReach,
@@ -105,10 +106,13 @@ function Cuerpo({
   onClose: () => void;
 }) {
   const { post, snapshots } = detalle;
-  const m = post.latest;
+  // La ficha muestra las métricas USABLES: lo que el control de calidad
+  // descarta aparece como "—" y el badge de EstadoBadges dice por qué. La
+  // lectura original queda intacta en `post.latest` y en la curva de abajo.
+  const m = metricasDe(post);
   const esReel = post.mediaProductType === 'REELS';
 
-  const erReach = engagementOverReach(m ?? {});
+  const erReach = engagementOverReach(m);
   const factor = factorVsMedian(erReach, benchmark?.median ?? null);
 
   // Serie para el sparkline: engagement acumulado por snapshot.

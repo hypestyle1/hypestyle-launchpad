@@ -5,10 +5,12 @@ import { LayoutGrid, Table2 } from 'lucide-react';
 
 import { DataTable } from '@/components/admin/DataTable';
 import {
+  AvisoCalidad,
   AvisoCobertura,
   AvisoDistribucion,
   CATEGORIA_LABELS,
   CoverThumb,
+  esReelDePrueba,
   ESTILO_LABELS,
   EstadoBadges,
   FixtureBanner,
@@ -20,6 +22,7 @@ import { PostDrawer, type Benchmark } from '@/components/admin/intelligence/Post
 import { EmptyState, ErrorState, LoadingState, PageHeader } from '@/components/admin/ui';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { factorVsMedian, groupStats } from '@/lib/ig-insights/analytics';
+import { avisoDeCalidad, metricasDe, resumenDeCalidad } from '@/lib/ig-insights/calidad';
 import { avisoDeCobertura, fetchAllIgPosts } from '@/lib/ig-insights/fetch-all';
 import { fmtFactor, fmtFecha, fmtInt, fmtPct } from '@/lib/ig-insights/format';
 import { engagementOverReach, likesOverReach, savedOverReach } from '@/lib/ig-insights/ratios';
@@ -51,9 +54,11 @@ const PERIODOS = [
 ];
 
 function valorDe(post: IgPostRecord, orden: Orden): number | null {
-  const m = post.latest;
-  if (!m) return null;
-  if (orden === 'reach') return m.reach;
+  // Métricas usables: lo que el control de calidad descarta queda en null y no
+  // ordena ni compara.
+  const m = metricasDe(post);
+  if (!post.latest) return null;
+  if (orden === 'reach') return m.reach ?? null;
   if (orden === 'likesReach') return likesOverReach(m);
   if (orden === 'savedReach') return savedOverReach(m);
   return engagementOverReach(m);
@@ -80,6 +85,7 @@ export default function LibraryPage() {
     campaignId: '',
     productId: '',
     distribucion: 'organico',
+    reels: 'grilla',
     classified: '',
     search: '',
   });
@@ -114,9 +120,12 @@ export default function LibraryPage() {
     if (autorizado) void load();
   }, [autorizado, load]);
 
-  // Filtros que no viajan al backend (portada, estilo, campaña, producto).
+  // Filtros que no viajan al backend (portada, estilo, campaña, producto, reels).
   const visibles = useMemo(() => {
     let rows = posts ?? [];
+    // Los trial reels no se mezclan con los de la grilla.
+    if (f.reels === 'grilla') rows = rows.filter((p) => !esReelDePrueba(p));
+    if (f.reels === 'prueba') rows = rows.filter(esReelDePrueba);
     if (f.coverType) rows = rows.filter((p) => p.coverType === f.coverType);
     if (f.visualStyle) rows = rows.filter((p) => p.visualStyle === f.visualStyle);
     if (f.campaignId) rows = rows.filter((p) => String(p.campaignId ?? '') === f.campaignId);
@@ -125,7 +134,10 @@ export default function LibraryPage() {
       rows = [...rows].sort((a, b) => (valorDe(b, orden) ?? -1) - (valorDe(a, orden) ?? -1));
     }
     return rows;
-  }, [posts, f.coverType, f.visualStyle, f.campaignId, f.productId, orden]);
+  }, [posts, f.reels, f.coverType, f.visualStyle, f.campaignId, f.productId, orden]);
+
+  // Universo analizado vs excluido, siempre a la vista.
+  const calidad = useMemo(() => resumenDeCalidad(visibles), [visibles]);
 
   // Benchmark por categoría sobre lo cargado (excluyendo pauteados: nunca se
   // mezclan orgánico y pago en una misma comparación).
@@ -134,7 +146,7 @@ export default function LibraryPage() {
       groupStats(
         (posts ?? []).filter((p) => !p.wasBoosted),
         (p) => p.category || null,
-        (p) => engagementOverReach(p.latest ?? {}),
+        (p) => engagementOverReach(metricasDe(p)),
       ),
     [posts],
   );
@@ -199,6 +211,7 @@ export default function LibraryPage() {
       <div className="p-4 sm:p-6 space-y-4">
         {fixture && <FixtureBanner />}
         {cobertura && <AvisoCobertura texto={cobertura} />}
+        {avisoDeCalidad(calidad) && <AvisoCalidad resumen={calidad} />}
 
         {/* Filtros */}
         <div className="flex flex-wrap gap-2">
@@ -304,6 +317,16 @@ export default function LibraryPage() {
             <option value="todo">Ambos (sin segmentar)</option>
           </select>
           <select
+            value={f.reels}
+            onChange={(e) => setF((s) => ({ ...s, reels: e.target.value }))}
+            className={SELECT_CLS}
+            title="Los reels fuera de la grilla sólo se muestran a no seguidores: no son comparables con los de la grilla"
+          >
+            <option value="grilla">Reels de la grilla</option>
+            <option value="prueba">Solo reels de prueba</option>
+            <option value="todos">Todos los reels</option>
+          </select>
+          <select
             value={f.classified}
             onChange={(e) => setF((s) => ({ ...s, classified: e.target.value }))}
             className={SELECT_CLS}
@@ -329,7 +352,7 @@ export default function LibraryPage() {
             {visibles.map((post) => {
               const bench = benchmarkDe(post);
               const factor = factorVsMedian(
-                engagementOverReach(post.latest ?? {}),
+                engagementOverReach(metricasDe(post)),
                 bench?.median ?? null,
               );
               return (
@@ -351,13 +374,13 @@ export default function LibraryPage() {
                     <div className="flex items-baseline justify-between gap-2 tabular-nums">
                       <span className="text-[11px] text-muted-foreground">Alcance</span>
                       <span className="text-[12px] font-semibold text-foreground">
-                        {fmtInt(post.latest?.reach)}
+                        {fmtInt(metricasDe(post).reach)}
                       </span>
                     </div>
                     <div className="flex items-baseline justify-between gap-2 tabular-nums">
                       <span className="text-[11px] text-muted-foreground">ER / alcance</span>
                       <span className="text-[12px] font-semibold text-foreground">
-                        {fmtPct(engagementOverReach(post.latest ?? {}), 1)}
+                        {fmtPct(engagementOverReach(metricasDe(post)), 1)}
                       </span>
                     </div>
                     {factor != null && (
@@ -393,25 +416,25 @@ export default function LibraryPage() {
                 key: 'reach',
                 header: 'Alcance',
                 align: 'right',
-                render: (p) => fmtInt(p.latest?.reach),
+                render: (p) => fmtInt(metricasDe(p).reach),
               },
               {
                 key: 'likes',
                 header: 'Likes / alcance',
                 align: 'right',
-                render: (p) => fmtPct(likesOverReach(p.latest ?? {}), 2),
+                render: (p) => fmtPct(likesOverReach(metricasDe(p)), 2),
               },
               {
                 key: 'er',
                 header: 'ER / alcance',
                 align: 'right',
-                render: (p) => fmtPct(engagementOverReach(p.latest ?? {}), 2),
+                render: (p) => fmtPct(engagementOverReach(metricasDe(p)), 2),
               },
               {
                 key: 'saved',
                 header: 'Guard. / alcance',
                 align: 'right',
-                render: (p) => fmtPct(savedOverReach(p.latest ?? {}), 2),
+                render: (p) => fmtPct(savedOverReach(metricasDe(p)), 2),
               },
             ]}
           />

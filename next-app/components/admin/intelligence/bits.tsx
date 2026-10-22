@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import { Clapperboard, FlaskConical, Image as ImageIcon, Images, TriangleAlert } from 'lucide-react';
 
 import { StatusBadge } from '@/components/admin/ui';
+import { avisoDeCalidad, evaluarCalidad, type ResumenCalidad } from '@/lib/ig-insights/calidad';
 import type { IgPostRecord } from '@/lib/ig-insights/types';
 
 // Piezas compartidas de Content Intelligence (Library + Overview). Todo en
@@ -46,7 +47,16 @@ export const FORMATO_LABELS: Record<string, string> = {
   STORY: 'Story',
 };
 
+/**
+ * Un reel con `isSharedToFeed === false` es un trial reel: Instagram lo muestra
+ * sólo a gente que no sigue la cuenta. Distinta audiencia, distinta mecánica:
+ * es su propio formato y no se mezcla con los de la grilla.
+ */
+export const esReelDePrueba = (post: IgPostRecord): boolean =>
+  post.mediaProductType === 'REELS' && post.isSharedToFeed === false;
+
 export function formatoDe(post: IgPostRecord): string {
+  if (esReelDePrueba(post)) return 'Reel de prueba';
   if (post.mediaProductType === 'REELS') return 'Reel';
   if (post.mediaProductType === 'STORY') return 'Story';
   if (post.mediaType === 'CAROUSEL_ALBUM') return `Carrusel ×${post.mediaCount}`;
@@ -83,6 +93,42 @@ export function AvisoCobertura({ texto }: { texto: string }) {
         <strong>Datos incompletos.</strong> {texto}
       </span>
     </div>
+  );
+}
+
+/**
+ * Universo analizado y universo excluido, con el motivo de cada exclusión.
+ *
+ * No es un cartel de error: es parte del resultado. Si no se ve cuántas
+ * publicaciones quedaron afuera y por qué, los números de arriba no se pueden
+ * leer.
+ */
+export function AvisoCalidad({ resumen }: { resumen: ResumenCalidad }) {
+  const motivos = Object.entries(resumen.porMotivo).sort((a, b) => b[1] - a[1]);
+  return (
+    <details className="bg-warning-soft border border-warning/40 text-warning rounded-lg px-4 py-2.5 text-[12.5px]">
+      <summary className="cursor-pointer font-medium list-none flex items-center gap-2.5">
+        <TriangleAlert size={15} className="shrink-0" />
+        <span>{avisoDeCalidad(resumen)}</span>
+      </summary>
+      <div className="mt-2.5 pl-[25px] space-y-1 font-normal">
+        {motivos.map(([motivo, n]) => (
+          <p key={motivo} className="leading-snug">
+            <strong className="tabular-nums">{n}</strong> · {motivo}
+          </p>
+        ))}
+        {resumen.anterioresAlCorteQuePasan > 0 && (
+          <p className="leading-snug opacity-80">
+            {resumen.anterioresAlCorteQuePasan} anteriores al {resumen.corteObservado} pasaron igual
+            los controles: se excluye por coherencia de los datos, no por fecha.
+          </p>
+        )}
+        <p className="leading-snug opacity-80">
+          Las métricas originales no se modifican: esto es una lectura derivada (regla v
+          {resumen.regla}).
+        </p>
+      </div>
+    </details>
   );
 }
 
@@ -149,10 +195,18 @@ export function CoverThumb({ post, className = '' }: { post: IgPostRecord; class
 /* ── Estados de una publicación (requisito: estados claros) ── */
 
 export function EstadoBadges({ post }: { post: IgPostRecord }) {
+  const calidad = evaluarCalidad(post, post.latest);
+  const alcanceRoto = calidad.metricas.reach?.estado === 'no-confiable';
   return (
     <>
       {post.wasBoosted && <StatusBadge tone="info">Pauteado</StatusBadge>}
+      {esReelDePrueba(post) && <StatusBadge tone="neutral">Fuera de la grilla</StatusBadge>}
       {!post.latest && <StatusBadge tone="warning">Sin insights</StatusBadge>}
+      {alcanceRoto && (
+        <StatusBadge tone="warning">
+          <span title={calidad.metricas.reach?.motivo ?? ''}>Métricas no confiables</span>
+        </StatusBadge>
+      )}
       {post.category === '' && <StatusBadge tone="warning">Sin clasificar</StatusBadge>}
       {post.category !== '' && post.reviewState === 'pending' && (
         <StatusBadge tone="neutral">Clasif. a revisar</StatusBadge>

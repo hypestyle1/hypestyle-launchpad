@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { KpiCard, SectionTitle } from '@/components/admin/dashboard/blocks';
 import { DataTable } from '@/components/admin/DataTable';
 import {
+  AvisoCalidad,
   AvisoCobertura,
   AvisoDistribucion,
   CATEGORIA_LABELS,
+  esReelDePrueba,
   ESTILO_LABELS,
   FixtureBanner,
   formatoDe,
@@ -30,6 +32,12 @@ import {
   previousRange,
   type SegmentSummary,
 } from '@/lib/ig-insights/analytics';
+import {
+  avisoDeCalidad,
+  metricasDe,
+  resumenDeCalidad,
+  tieneAlcanceConfiable,
+} from '@/lib/ig-insights/calidad';
 import { avisoDeCobertura, fetchAllIgPosts } from '@/lib/ig-insights/fetch-all';
 import { fmtFactor, fmtFecha, fmtInt, fmtPct } from '@/lib/ig-insights/format';
 import {
@@ -111,6 +119,7 @@ export default function IntelligencePage() {
   const [dim, setDim] = useState<Dim>('category');
   const [metrica, setMetrica] = useState<MetricaKey>('likesReach');
   const [distribucion, setDistribucion] = useState<'organico' | 'pago'>('organico');
+  const [reels, setReels] = useState<'grilla' | 'prueba' | 'todos'>('grilla');
 
   // Se traen dos períodos de una (actual + anterior) para poder comparar.
   const load = useCallback(async () => {
@@ -143,10 +152,16 @@ export default function IntelligencePage() {
     return { actual: { desde, hasta }, anterior: previousRange(desde, hasta) };
   }, [periodo]);
 
-  // Segmentación dura: el conjunto analizado es orgánico O pauteado, nunca la mezcla.
+  // Segmentación dura: el conjunto analizado es orgánico O pauteado, nunca la
+  // mezcla. Los reels fuera de la grilla tampoco se mezclan con los demás.
   const porDistribucion = useCallback(
-    (rows: IgPostRecord[]) => rows.filter((p) => (distribucion === 'pago' ? p.wasBoosted : !p.wasBoosted)),
-    [distribucion],
+    (rows: IgPostRecord[]) =>
+      rows
+        .filter((p) => (distribucion === 'pago' ? p.wasBoosted : !p.wasBoosted))
+        .filter((p) =>
+          reels === 'todos' ? true : reels === 'prueba' ? esReelDePrueba(p) : !esReelDePrueba(p),
+        ),
+    [distribucion, reels],
   );
 
   const actual = useMemo(
@@ -167,13 +182,16 @@ export default function IntelligencePage() {
   );
 
   const conInsights = useMemo(() => actual.filter((p) => p.latest), [actual]);
+  /** Universo que de verdad entra a los números: con alcance confiable. */
+  const analizables = useMemo(() => actual.filter(tieneAlcanceConfiable), [actual]);
+  const calidad = useMemo(() => resumenDeCalidad(actual), [actual]);
 
   /** Mediana de una métrica en un conjunto. */
   const medianaDe = useCallback(
     (rows: IgPostRecord[], key: MetricaKey) =>
       median(
         rows
-          .map((p) => METRICAS[key].fn(p.latest ?? {}))
+          .map((p) => METRICAS[key].fn(metricasDe(p)))
           .filter((v): v is number => v != null),
       ),
     [],
@@ -189,16 +207,16 @@ export default function IntelligencePage() {
   }, [actual, anterior, medianaDe]);
 
   const reachMediano = useMemo(
-    () => median(conInsights.map((p) => p.latest!.reach).filter((v): v is number => v != null)),
-    [conInsights],
+    () => median(analizables.map((p) => metricasDe(p).reach).filter((v): v is number => v != null)),
+    [analizables],
   );
   const followsTotal = useMemo(
-    () => conInsights.reduce((acc, p) => acc + (p.latest!.follows ?? 0), 0),
-    [conInsights],
+    () => analizables.reduce((acc, p) => acc + (metricasDe(p).follows ?? 0), 0),
+    [analizables],
   );
 
   const segmentos = useMemo(
-    () => groupStats(actual, (p) => claveDim(p, dim), (p) => METRICAS[metrica].fn(p.latest ?? {})),
+    () => groupStats(actual, (p) => claveDim(p, dim), (p) => METRICAS[metrica].fn(metricasDe(p))),
     [actual, dim, metrica],
   );
 
@@ -206,7 +224,7 @@ export default function IntelligencePage() {
     () =>
       [...conInsights].sort(
         (a, b) =>
-          (METRICAS[metrica].fn(b.latest ?? {}) ?? -1) - (METRICAS[metrica].fn(a.latest ?? {}) ?? -1),
+          (METRICAS[metrica].fn(metricasDe(b)) ?? -1) - (METRICAS[metrica].fn(metricasDe(a)) ?? -1),
       ),
     [conInsights, metrica],
   );
@@ -216,7 +234,7 @@ export default function IntelligencePage() {
     () =>
       outlierBounds(
         conInsights
-          .map((p) => METRICAS[metrica].fn(p.latest ?? {}))
+          .map((p) => METRICAS[metrica].fn(metricasDe(p)))
           .filter((v): v is number => v != null),
       ),
     [conInsights, metrica],
@@ -224,7 +242,7 @@ export default function IntelligencePage() {
 
   const benchPorCategoria = useMemo(
     () =>
-      groupStats(actual, (p) => p.category || null, (p) => engagementOverReach(p.latest ?? {})),
+      groupStats(actual, (p) => p.category || null, (p) => engagementOverReach(metricasDe(p))),
     [actual],
   );
   const benchmarkDe = useCallback(
@@ -275,6 +293,16 @@ export default function IntelligencePage() {
           <option value="organico">Orgánico</option>
           <option value="pago">Con pauta</option>
         </select>
+        <select
+          value={reels}
+          onChange={(e) => setReels(e.target.value as 'grilla' | 'prueba' | 'todos')}
+          className={SELECT_CLS}
+          title="Los reels fuera de la grilla sólo se muestran a no seguidores: no son comparables con los de la grilla"
+        >
+          <option value="grilla">Reels de la grilla</option>
+          <option value="prueba">Solo reels de prueba</option>
+          <option value="todos">Todos los reels</option>
+        </select>
       </PageHeader>
 
       <div className="p-4 sm:p-6">
@@ -301,10 +329,16 @@ export default function IntelligencePage() {
               </div>
             )}
 
+            {avisoDeCalidad(calidad) && (
+              <div className="mb-4">
+                <AvisoCalidad resumen={calidad} />
+              </div>
+            )}
+
             <SectionTitle
               right={
                 <span className="text-[11px] text-muted-foreground/70 tabular-nums">
-                  n={actual.length} · con métricas: {conInsights.length}
+                  n={actual.length} · analizables: {analizables.length}
                 </span>
               }
             >
@@ -348,7 +382,11 @@ export default function IntelligencePage() {
               <KpiCard
                 label="Publicaciones"
                 value={fmtInt(actual.length)}
-                sub={`${actual.length - conInsights.length} sin insights`}
+                sub={
+                  calidad.excluidas > 0
+                    ? `${calidad.sinMetricas} sin insights · ${calidad.excluidas} no confiables`
+                    : `${calidad.sinMetricas} sin insights`
+                }
               />
               <KpiCard
                 label="Seguidores atribuidos"
@@ -458,14 +496,14 @@ export default function IntelligencePage() {
                   key: 'reach',
                   header: 'Alcance',
                   align: 'right',
-                  render: (p) => fmtInt(p.latest?.reach),
+                  render: (p) => fmtInt(metricasDe(p).reach),
                 },
                 {
                   key: 'metrica',
                   header: metricaActual.label,
                   align: 'right',
                   render: (p) => {
-                    const v = metricaActual.fn(p.latest ?? {});
+                    const v = metricaActual.fn(metricasDe(p));
                     const esAlto = bounds && v != null && v > bounds.high;
                     return (
                       <span className="inline-flex items-center gap-1.5 justify-end">
