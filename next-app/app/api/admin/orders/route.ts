@@ -21,30 +21,58 @@ export async function GET(req: NextRequest) {
   const search = sp.get('search') || '';
   const after  = sp.get('after')  || '2026-05-10T00:00:00';
 
-  const params = new URLSearchParams({
-    per_page: '100',
-    page,
-    orderby: 'date',
-    order:   'desc',
-    after,
-    _cb:     String(Date.now()), // evita el caché de LiteSpeed en el server de WP (devuelve meta_data vieja)
-    ...(status !== 'any' && { status }),
-    ...(search && { search }),
-  });
+  const fetchPage = (p: string) => {
+    const params = new URLSearchParams({
+      per_page: '100',
+      page:     p,
+      orderby: 'date',
+      order:   'desc',
+      after,
+      _cb:     String(Date.now()), // evita el caché de LiteSpeed en el server de WP (devuelve meta_data vieja)
+      ...(status !== 'any' && { status }),
+      ...(search && { search }),
+    });
+    return fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
+      headers: { Authorization: wcAuth() },
+      next:    { revalidate: 0 },
+    });
+  };
 
-  const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
-    headers: { Authorization: wcAuth() },
-    next:    { revalidate: 0 },
-  });
+  // Los tabs "Por empaquetar"/"Empaquetado"/"Enviado sin marcar" piden 'processing'
+  // y recién filtran por rótulo/guía en el cliente. Si acá se pagina, los pedidos
+  // sin empaquetar quedan dispersos entre páginas y los más viejos enterrados al
+  // fondo (así se traspapelaron #3103, #3127 y #3261 durante semanas). Para
+  // 'processing' se traen TODAS las páginas y se devuelve una lista única.
+  const paginado = status !== 'processing';
+
+  const res = await fetchPage(paginado ? page : '1');
 
   if (!res.ok) {
     const txt = await res.text();
     return NextResponse.json({ error: `WC ${res.status}` }, { status: 502 });
   }
 
-  const raw        = await res.json() as any[];
+  let raw          = await res.json() as any[];
   const total      = parseInt(res.headers.get('X-WP-Total')      || '0');
-  const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1');
+  let   totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1');
+
+  if (!paginado && totalPages > 1) {
+    const MAX_PAGES = 15; // tope de seguridad: 1500 pedidos processing
+    try {
+      const resto = await Promise.all(
+        Array.from({ length: Math.min(totalPages, MAX_PAGES) - 1 }, (_, i) =>
+          fetchPage(String(i + 2)).then(r => {
+            if (!r.ok) throw new Error(`WC ${r.status}`);
+            return r.json() as Promise<any[]>;
+          })
+        )
+      );
+      raw = raw.concat(...resto);
+      totalPages = 1;
+    } catch {
+      return NextResponse.json({ error: 'WC error al traer todas las páginas de processing' }, { status: 502 });
+    }
+  }
 
   const orders = raw.map((o) => {
     const meta = (o.meta_data as any[]) || [];
@@ -98,5 +126,5 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ orders, total, totalPages, page: parseInt(page) });
+  return NextResponse.json({ orders, total, totalPages, page: paginado ? parseInt(page) : 1 });
 }

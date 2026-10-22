@@ -275,8 +275,9 @@ export default function PedidosPage() {
   }
 
   // Vista afinada por rótulo/guía para los tabs de empaquetado y envío; el resto muestra lo cargado.
+  // "Por empaquetar" va del más viejo al más nuevo: lo más atrasado arriba, imposible de pasar por alto.
   const visibleOrders = filter === 'por-empaquetar'
-    ? orders.filter(o => !o.packaged && !o.digital)
+    ? orders.filter(o => !o.packaged && !o.digital).sort((a, b) => +new Date(a.date) - +new Date(b.date))
     : filter === 'empaquetado'
       ? orders.filter(o => o.packaged && !o.shipped)
       : filter === 'enviado-sin-marcar'
