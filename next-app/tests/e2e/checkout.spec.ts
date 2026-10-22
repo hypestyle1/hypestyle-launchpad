@@ -63,6 +63,9 @@ test('el checkout llega al pago en dos pasos', async ({ page }) => {
   // Con domicilio hay que cargar dirección y barrio (con sucursal, ninguno).
   // 1425 quedó sin barrio deducible (CP repartido): se escribe a mano.
   await page.getByText(ANDREANI_RATES[0].label).click();
+  // El campo de dirección aparece recién con domicilio elegido: esperarlo
+  // evita que en CI (más lento) el fill le gane al re-render.
+  await expect(page.getByPlaceholder('Dirección y número')).toBeVisible();
   await page.getByPlaceholder('Dirección y número').fill(COMPRADOR.direccion);
   await page.getByPlaceholder('Barrio').fill('Palermo');
 
@@ -196,6 +199,9 @@ test('ningún test dispara un cobro real', async ({ page }) => {
   await completarDatos(page);
   await esperarTarifas(page);
   await page.getByText(ANDREANI_RATES[0].label).click();
+  // El campo de dirección aparece recién con domicilio elegido: esperarlo
+  // evita que en CI (más lento) el fill le gane al re-render.
+  await expect(page.getByPlaceholder('Dirección y número')).toBeVisible();
   await page.getByPlaceholder('Dirección y número').fill(COMPRADOR.direccion);
   await page.getByPlaceholder('Barrio').fill('Palermo');
   await page.getByRole('button', { name: 'Continuar con el pago' }).click();
