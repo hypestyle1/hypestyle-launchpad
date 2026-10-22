@@ -36,26 +36,39 @@ const STATUS_LABELS: Record<string, string> = {
   failed:     'Fallido',
 };
 
+// Pills de estado: par claro + oscuro (el dark del panel es diseño propio, no inversión).
 const STATUS_COLORS: Record<string, string> = {
-  pending:    'bg-yellow-100 text-yellow-800',
-  processing: 'bg-blue-100 text-blue-800',
-  'on-hold':  'bg-orange-100 text-orange-800',
-  enviado:    'bg-green-100 text-green-700',
-  completed:  'bg-emerald-100 text-emerald-800',
-  cancelled:  'bg-red-100 text-red-700',
-  refunded:   'bg-purple-100 text-purple-700',
-  failed:     'bg-red-100 text-red-700',
+  pending:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300',
+  processing: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
+  'on-hold':  'bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300',
+  enviado:    'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
+  completed:  'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
+  cancelled:  'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  refunded:   'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
+  failed:     'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
 };
 
-const FILTERS = ['por-empaquetar','empaquetado','enviado-sin-marcar','mayorista','gift-cards','pending','enviado','completed','cancelled','any'];
-const FILTER_LABELS: Record<string, string> = {
-  'por-empaquetar':     'Por empaquetar',
-  'empaquetado':        'Empaquetado',
-  'enviado-sin-marcar': 'Enviado sin marcar',
-  mayorista:            'Mayoristas',
-  'gift-cards':         'Gift cards',
-  any:                  'Todos',
-};
+// La barra de filtros se agrupa por lo que significa cada uno, no en una tira plana:
+// FLUJO = el circuito de despacho (lo operativo del día), TIPO = cortes transversales,
+// y los estados de Woo viven en un select aparte para no ocupar lugar.
+const FLUJO_FILTERS = [
+  { f: 'por-empaquetar',     label: 'Por empaquetar' },
+  { f: 'empaquetado',        label: 'Empaquetado' },
+  { f: 'enviado-sin-marcar', label: 'Enviado s/ marcar' },
+];
+const TIPO_FILTERS = [
+  { f: 'mayorista',  label: 'Mayoristas' },
+  { f: 'canje',      label: 'Canje / Regalo' },
+  { f: 'gift-cards', label: 'Gift cards' },
+];
+const ESTADO_OPTIONS = [
+  { f: 'any',       label: 'Todos' },
+  { f: 'pending',   label: 'Pendiente' },
+  { f: 'enviado',   label: 'Enviado' },
+  { f: 'completed', label: 'Completado' },
+  { f: 'cancelled', label: 'Cancelado' },
+];
+const ESTADO_SET = new Set(ESTADO_OPTIONS.map(o => o.f));
 const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','cancelled'];
 
 // Los tabs 'por-empaquetar'/'empaquetado'/'enviado-sin-marcar' consultan 'processing' en
@@ -63,6 +76,7 @@ const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','
 const PROCESSING_SPLIT_FILTERS = ['por-empaquetar', 'empaquetado', 'enviado-sin-marcar'];
 // 'mayorista' se afina en el cliente por meta _es_mayorista (no por status: el pedido
 // puede pasar de on-hold a processing/completed una vez coordinado el pago).
+// 'canje' lo resuelve el server (pedidos $0 en cualquier estado), llega ya filtrado.
 const CLIENT_REFINED_FILTERS = [...PROCESSING_SPLIT_FILTERS, 'mayorista'];
 // 'gift-cards' no lista pedidos: muestra las tarjetas emitidas y dónde se usaron.
 const GIFT_CARDS_FILTER = 'gift-cards';
@@ -112,6 +126,10 @@ export default function PedidosPage() {
   const [cancelNotify, setCancelNotify]   = useState(true);
   const [cancelLoading, setCancelLoading] = useState(false);
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Secuencia de fetches: si una respuesta vieja llega después de una más nueva
+  // (el search de WC puede tardar varios segundos), se descarta en vez de pisar
+  // la lista — antes la búsqueda "aparecía y desaparecía" según cuál llegara última.
+  const fetchSeq  = useRef(0);
   // Pedidos desplegados con la flecha + detalle ya cargado de cada uno.
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const detailCache = useRef(new Map<number, OrderDetail>());
@@ -122,6 +140,7 @@ export default function PedidosPage() {
   }, []);
 
   const fetchOrders = useCallback(async (key: string, f: string, q: string, p: number) => {
+    const seq = ++fetchSeq.current;
     setLoading(true);
     setSelected(new Set());
     try {
@@ -129,6 +148,7 @@ export default function PedidosPage() {
       const res = await fetch(`/api/admin/orders?${params}`, { headers: { 'x-admin-key': key } });
       if (res.status === 403) { setAuthed(false); sessionStorage.removeItem(WP_SECRET_KEY); return; }
       const data = await res.json();
+      if (seq !== fetchSeq.current) return; // ya hay un fetch más nuevo en vuelo o resuelto
       setOrders(data.orders || []);
       setTotal(data.total || 0);
       setTotalPages(data.totalPages || 1);
@@ -136,7 +156,7 @@ export default function PedidosPage() {
       (data.orders || []).forEach((o: Order) => { smap[o.id] = o.status; });
       setStatusMap(smap);
     } finally {
-      setLoading(false);
+      if (seq === fetchSeq.current) setLoading(false);
     }
   }, []);
 
@@ -275,8 +295,12 @@ export default function PedidosPage() {
   }
 
   // Vista afinada por rótulo/guía para los tabs de empaquetado y envío; el resto muestra lo cargado.
-  const visibleOrders = filter === 'por-empaquetar'
-    ? orders.filter(o => !o.packaged && !o.digital)
+  // "Por empaquetar" va del más viejo al más nuevo: lo más atrasado arriba, imposible de pasar por alto.
+  // Buscar un # de pedido lo muestra siempre, sin importar en qué tab se esté parado.
+  const visibleOrders = /^#?\d+$/.test(search.trim())
+    ? orders
+    : filter === 'por-empaquetar'
+    ? orders.filter(o => !o.packaged && !o.digital).sort((a, b) => +new Date(a.date) - +new Date(b.date))
     : filter === 'empaquetado'
       ? orders.filter(o => o.packaged && !o.shipped)
       : filter === 'enviado-sin-marcar'
@@ -322,8 +346,8 @@ export default function PedidosPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Stats globales reales */}
-          {counts && counts.porEmpaquetar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">{counts.porEmpaquetar} por empaquetar</span>}
-          {counts && counts.empaquetados > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800">{counts.empaquetados} empaquetados</span>}
+          {counts && counts.porEmpaquetar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300">{counts.porEmpaquetar} por empaquetar</span>}
+          {counts && counts.empaquetados > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300">{counts.empaquetados} empaquetados</span>}
           {!enGiftCards && <span className="hidden md:inline text-[11px] text-muted-foreground font-medium">{fmt(revenue)}</span>}
           <Link
             href="/admin/pedidos/nuevo"
@@ -345,11 +369,11 @@ export default function PedidosPage() {
         {counts && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
             {([
-              { f: 'por-empaquetar',     n: counts.porEmpaquetar,     label: 'Por empaquetar',       num: 'text-red-600',    active: 'border-red-400 ring-red-200' },
-              { f: 'empaquetado',        n: counts.empaquetados,      label: 'Empaquetado',          num: 'text-orange-600', active: 'border-orange-400 ring-orange-200' },
-              { f: 'enviado-sin-marcar', n: counts.enviadosSinMarcar, label: 'Enviado (con guía)',   num: 'text-blue-600',   active: 'border-blue-400 ring-blue-200' },
-              { f: 'pending',            n: counts.pendientes,        label: 'Sin pagar',            num: 'text-yellow-600', active: 'border-yellow-400 ring-yellow-200' },
-              { f: 'enviado',            n: counts.despachados,       label: 'Marcados enviados',    num: 'text-green-600',  active: 'border-green-400 ring-green-200' },
+              { f: 'por-empaquetar',     n: counts.porEmpaquetar,     label: 'Por empaquetar',       num: 'text-red-600 dark:text-red-400',       active: 'border-red-400 ring-red-200 dark:border-red-500/60 dark:ring-red-500/25' },
+              { f: 'empaquetado',        n: counts.empaquetados,      label: 'Empaquetado',          num: 'text-orange-600 dark:text-orange-400', active: 'border-orange-400 ring-orange-200 dark:border-orange-500/60 dark:ring-orange-500/25' },
+              { f: 'enviado-sin-marcar', n: counts.enviadosSinMarcar, label: 'Enviado (con guía)',   num: 'text-blue-600 dark:text-blue-400',     active: 'border-blue-400 ring-blue-200 dark:border-blue-500/60 dark:ring-blue-500/25' },
+              { f: 'pending',            n: counts.pendientes,        label: 'Sin pagar',            num: 'text-yellow-600 dark:text-yellow-400', active: 'border-yellow-400 ring-yellow-200 dark:border-yellow-500/60 dark:ring-yellow-500/25' },
+              { f: 'enviado',            n: counts.despachados,       label: 'Marcados enviados',    num: 'text-green-600 dark:text-green-400',   active: 'border-green-400 ring-green-200 dark:border-green-500/60 dark:ring-green-500/25' },
             ]).map(k => (
               <button
                 key={k.f}
@@ -366,25 +390,71 @@ export default function PedidosPage() {
         {/* Cola de estampado de las prendas print on demand por empaquetar. */}
         <PendienteEstampar adminKey={adminKey} />
 
-        {/* Filters + Search */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-4">
-          <div className="flex gap-1 flex-wrap">
-            {FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
-                  filter === f ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground border border-border hover:border-border-mid'
-                }`}
-              >
-                {FILTER_LABELS[f] ?? STATUS_LABELS[f] ?? f}
-              </button>
-            ))}
+        {/* Toolbar: flujo de despacho · tipos · estados · búsqueda */}
+        <div className="flex flex-col lg:flex-row lg:items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0 pb-1 lg:pb-0 [scrollbar-width:none]">
+            {/* Flujo de despacho — lo operativo del día, "Por empaquetar" manda */}
+            <div className="flex flex-none rounded-lg border border-border bg-card p-0.5">
+              {FLUJO_FILTERS.map(({ f, label }) => {
+                const active = filter === f;
+                const n = f === 'por-empaquetar' ? counts?.porEmpaquetar : f === 'empaquetado' ? counts?.empaquetados : counts?.enviadosSinMarcar;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium whitespace-nowrap transition-colors ${
+                      active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {label}
+                    {typeof n === 'number' && n > 0 && (
+                      <span className={`text-[10px] font-bold px-1.5 py-px rounded-full leading-[14px] ${
+                        active
+                          ? 'bg-primary-foreground/20 text-primary-foreground'
+                          : f === 'por-empaquetar'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300'
+                            : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {n}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tipos de pedido */}
+            <div className="flex flex-none rounded-lg border border-border bg-card p-0.5">
+              {TIPO_FILTERS.map(({ f, label }) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium whitespace-nowrap transition-colors ${
+                    filter === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Estados de Woo, colapsados en un select */}
+            <select
+              value={ESTADO_SET.has(filter) ? filter : ''}
+              onChange={e => e.target.value && setFilter(e.target.value)}
+              className={`flex-none h-[34px] rounded-lg border bg-card px-2.5 text-[12px] font-medium cursor-pointer focus:outline-none ${
+                ESTADO_SET.has(filter) ? 'border-primary text-foreground' : 'border-border text-muted-foreground'
+              }`}
+            >
+              <option value="" disabled>Estado…</option>
+              {ESTADO_OPTIONS.map(({ f, label }) => <option key={f} value={f}>{label}</option>)}
+            </select>
           </div>
+
           {!enGiftCards && <input
             type="text"
-            className="flex-1 min-w-[180px] border border-border rounded-lg px-3 py-1.5 text-[13px] bg-card focus:outline-none focus:border-border-mid"
-            placeholder="Buscar por nombre, email u orden..."
+            className="lg:ml-auto lg:w-[280px] border border-border rounded-lg px-3 py-1.5 text-[13px] bg-card focus:outline-none focus:border-border-mid"
+            placeholder="Buscar por nombre o # de pedido..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />}
@@ -438,8 +508,7 @@ export default function PedidosPage() {
         ) : (
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             {/* Table header */}
-            <div className="hidden lg:grid grid-cols-[28px_32px_80px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-2.5 border-b border-border bg-muted/50">
-              <div />
+            <div className="hidden lg:grid grid-cols-[32px_84px_1fr_1fr_100px_120px_80px] gap-3 px-4 py-2.5 border-b border-border bg-muted/50">
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -461,26 +530,15 @@ export default function PedidosPage() {
               const isOpen = expanded.has(order.id);
               return (
               <Fragment key={order.id}>
+              {/* Toda la fila despliega el pedido; los controles internos frenan la propagación. */}
               <div
-                className={`grid grid-cols-[28px_1fr_auto] gap-x-3 gap-y-1.5 lg:gap-y-3 lg:grid-cols-[28px_32px_80px_1fr_1fr_100px_120px_80px] px-4 py-3 items-center border-b border-border hover:bg-muted/50 transition-colors group ${
-                  selected.has(order.id) ? 'bg-blue-50 hover:bg-blue-50' : ''
+                onClick={() => toggleExpanded(order.id)}
+                className={`grid grid-cols-[28px_1fr_auto] gap-x-3 gap-y-1.5 lg:gap-y-3 lg:grid-cols-[32px_84px_1fr_1fr_100px_120px_80px] px-4 py-3 items-center border-b border-border hover:bg-muted/50 transition-colors group cursor-pointer ${
+                  selected.has(order.id) ? 'bg-blue-50 hover:bg-blue-50 dark:bg-blue-500/10 dark:hover:bg-blue-500/10' : ''
                 } ${isOpen ? 'bg-muted/30' : ''} ${idx === visibleOrders.length - 1 && !isOpen ? 'border-b-0' : ''}`}
               >
-                {/* Flecha: despliega el pedido sin entrar */}
-                <div className="flex items-center col-start-1 row-start-2 lg:col-start-auto lg:row-start-auto">
-                  <button
-                    type="button"
-                    onClick={() => toggleExpanded(order.id)}
-                    aria-expanded={isOpen}
-                    aria-label={isOpen ? `Cerrar pedido #${order.number}` : `Ver pedido #${order.number}`}
-                    className="w-7 h-7 -ml-1 flex items-center justify-center rounded border border-border hover:border-border-mid hover:bg-card text-muted-foreground hover:text-foreground"
-                  >
-                    <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
-                  </button>
-                </div>
-
                 {/* Checkbox */}
-                <div className="flex items-center col-start-1 row-start-1 lg:col-start-auto lg:row-start-auto">
+                <div className="flex items-center col-start-1 row-start-1 lg:col-start-auto lg:row-start-auto" onClick={e => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selected.has(order.id)}
@@ -493,6 +551,7 @@ export default function PedidosPage() {
                 <div className="col-start-2 row-start-1 lg:col-start-auto lg:row-start-auto">
                   <Link
                     href={`/admin/pedidos/${order.id}`}
+                    onClick={e => e.stopPropagation()}
                     className="text-[13px] font-bold text-foreground hover:underline"
                   >
                     #{order.number}
@@ -503,38 +562,43 @@ export default function PedidosPage() {
                     rel="noopener noreferrer"
                     onClick={e => e.stopPropagation()}
                     title="Imprimir rótulo de envío"
-                    className="ml-1.5 text-[11px] text-muted-foreground/50 hover:text-foreground opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
+                    className="ml-1.5 inline-flex align-middle text-muted-foreground/50 hover:text-foreground opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                   >
-                    🖨
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v7H6z" /></svg>
                   </a>
                   {order.isMayorista && (
-                    <div className="text-[9px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 rounded px-1 inline-block mt-0.5">
+                    <div className="text-[9px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 dark:bg-purple-500/15 dark:text-purple-300 rounded px-1 inline-block mt-0.5 mr-1">
                       Mayorista
                     </div>
                   )}
+                  {order.total === 0 && !order.digital && (
+                    <div className="text-[9px] font-bold uppercase tracking-wide text-teal-700 bg-teal-100 dark:bg-teal-500/15 dark:text-teal-300 rounded px-1 inline-block mt-0.5">
+                      Canje/Regalo
+                    </div>
+                  )}
                   {order.shipped ? (
-                    <div className="text-[10px] text-green-600 font-medium mt-0.5 truncate max-w-[80px]" title={order.tracking}>
+                    <div className="text-[10px] text-green-600 dark:text-green-400 font-medium mt-0.5 truncate max-w-[80px]" title={order.tracking}>
                       ✓ Enviado
                     </div>
                   ) : order.packaged ? (
-                    <div className="text-[10px] text-orange-600 font-medium mt-0.5 truncate max-w-[80px]" title={order.andreani}>
+                    <div className="text-[10px] text-orange-600 dark:text-orange-400 font-medium mt-0.5 truncate max-w-[80px]" title={order.andreani}>
                       Empaquetado
                     </div>
                   ) : order.digital ? (
                     <div className="text-[10px] text-muted-foreground font-medium mt-0.5">Digital</div>
                   ) : order.status === 'processing' ? (
-                    <div className="text-[10px] text-red-600 font-semibold mt-0.5">Sin empaquetar</div>
+                    <div className="text-[10px] text-red-600 dark:text-red-400 font-semibold mt-0.5">Sin empaquetar</div>
                   ) : null}
                 </div>
 
                 {/* Customer */}
-                <div className="min-w-0 col-start-2 col-span-2 row-start-2 lg:col-span-1 lg:col-start-auto lg:row-start-auto">
-                  <Link href={`/admin/pedidos/${order.id}`} className="text-[13px] font-medium text-foreground hover:underline truncate block">
+                <div className="min-w-0 col-start-2 col-span-1 row-start-2 lg:col-span-1 lg:col-start-auto lg:row-start-auto">
+                  <Link href={`/admin/pedidos/${order.id}`} onClick={e => e.stopPropagation()} className="text-[13px] font-medium text-foreground hover:underline truncate block">
                     {order.customer.first_name} {order.customer.last_name}
                   </Link>
                   {order.customer_note && (
-                    <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 mt-0.5 truncate max-w-full lg:max-w-[260px]" title={order.customer_note}>
-                      📝 {order.customer_note}
+                    <div className="text-[11px] text-muted-foreground italic border-l-2 border-warning/60 pl-1.5 mt-1 truncate max-w-full lg:max-w-[260px]" title={order.customer_note}>
+                      {order.customer_note}
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-0.5">
@@ -556,11 +620,35 @@ export default function PedidosPage() {
                   </div>
                 </div>
 
-                {/* Products */}
-                <div className="hidden lg:block min-w-0 text-[12px] text-muted-foreground truncate">
-                  {order.items.map((it, i) => (
-                    <span key={i}>{i > 0 && ' · '}{it.name.replace(/\s*—\s*Talle\s*\S+/i, '')}{it.size ? ` ${it.size}` : ''}{(it.dorsalNumber || it.dorsalName) ? ` [${it.dorsalNumber ? `#${it.dorsalNumber}` : ''}${it.dorsalName ? ` ${it.dorsalName}` : ''}]` : ''} ×{it.quantity}</span>
-                  ))}
+                {/* Chevron mobile: a la derecha de la fila del cliente */}
+                <div className="flex items-center justify-end col-start-3 row-start-2 lg:hidden">
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); toggleExpanded(order.id); }}
+                    aria-expanded={isOpen}
+                    aria-label={isOpen ? `Cerrar pedido #${order.number}` : `Ver pedido #${order.number}`}
+                    className="w-6 h-6 flex items-center justify-center rounded-md border border-border text-muted-foreground"
+                  >
+                    <svg viewBox="0 0 24 24" className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+                  </button>
+                </div>
+
+                {/* Products — con la flecha de desglose al lado */}
+                <div className="hidden lg:flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); toggleExpanded(order.id); }}
+                    aria-expanded={isOpen}
+                    aria-label={isOpen ? `Cerrar pedido #${order.number}` : `Ver pedido #${order.number}`}
+                    className="w-6 h-6 flex-none flex items-center justify-center rounded-md border border-border hover:border-border-mid hover:bg-card text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <svg viewBox="0 0 24 24" className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+                  </button>
+                  <span className="min-w-0 truncate text-[12px] text-muted-foreground">
+                    {order.items.map((it, i) => (
+                      <span key={i}>{i > 0 && ' · '}{it.name.replace(/\s*—\s*Talle\s*\S+/i, '')}{it.size ? ` ${it.size}` : ''}{(it.dorsalNumber || it.dorsalName) ? ` [${it.dorsalNumber ? `#${it.dorsalNumber}` : ''}${it.dorsalName ? ` ${it.dorsalName}` : ''}]` : ''} ×{it.quantity}</span>
+                    ))}
+                  </span>
                 </div>
 
                 {/* Total */}
@@ -575,7 +663,7 @@ export default function PedidosPage() {
                     value={statusMap[order.id] || order.status}
                     onChange={e => onStatusSelect(order, e.target.value)}
                     onClick={e => e.stopPropagation()}
-                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-gray-300 ${
+                    className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring/40 ${
                       STATUS_COLORS[statusMap[order.id] || order.status] || 'bg-muted text-muted-foreground'
                     }`}
                   >
@@ -585,11 +673,11 @@ export default function PedidosPage() {
 
                 {/* Date + antigüedad */}
                 <div className="text-right col-start-3 row-start-3 lg:col-start-auto lg:row-start-auto">
-                  <Link href={`/admin/pedidos/${order.id}`} className="text-[11px] text-muted-foreground/70 hover:text-foreground block">
+                  <Link href={`/admin/pedidos/${order.id}`} onClick={e => e.stopPropagation()} className="text-[11px] text-muted-foreground/70 hover:text-foreground block">
                     {fmtDate(order.date)}
                   </Link>
                   {order.status === 'processing' && !order.shipped && !order.digital && (
-                    <div className={`text-[10px] font-semibold mt-0.5 ${daysSince(order.date) >= 3 ? 'text-red-600' : daysSince(order.date) >= 1 ? 'text-amber-600' : 'text-muted-foreground/70'}`}>
+                    <div className={`text-[10px] font-semibold mt-0.5 ${daysSince(order.date) >= 3 ? 'text-red-600 dark:text-red-400' : daysSince(order.date) >= 1 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground/70'}`}>
                       hace {daysSince(order.date)}d
                     </div>
                   )}

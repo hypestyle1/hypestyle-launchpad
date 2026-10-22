@@ -10,6 +10,63 @@ function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 }
 
+// Para comparar búsquedas: minúsculas y sin tildes ("Pré" matchea "pre").
+function norm(s: string) {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function mapOrder(o: any) {
+  const meta = (o.meta_data as any[]) || [];
+  const mv = (k: string) => meta.find((m: any) => m.key === k)?.value || '';
+  const tracking = String(mv('_tracking_number')).trim();
+  const andreani = String(mv('_order_andreani_numero_interno') || mv('_andreani_tracking_number')).trim();
+  const pedidoId = String(mv('_order_andreani_pedido_id')).trim();
+  // Empaquetado = se generó el rótulo en Andreani (pedidoId/numero interno), pero
+  // Andreani todavía no le asignó guía real — para eso hace falta pagar el envío en
+  // su portal. Enviado = ya tiene guía (_tracking_number), prueba real de que entró
+  // al circuito de despacho. Antes se los trataba como lo mismo ("dispatched").
+  const packaged = !!(pedidoId || andreani);
+  const shipped  = !!tracking;
+  return {
+    id:            o.id,
+    number:        o.number,
+    date:          o.date_created,
+    status:        o.status,
+    isMayorista:   mv('_es_mayorista') === 'true',
+    customer:      {
+      first_name: o.billing.first_name,
+      last_name:  o.billing.last_name,
+      email:      o.billing.email,
+      phone:      o.billing.phone,
+    },
+    items: (o.line_items as any[]).map((i) => ({
+      name:     i.name,
+      quantity: i.quantity,
+      size:     (i.meta_data as any[])?.find((m: any) =>
+        ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
+      )?.value || '',
+      dorsalName:   (i.meta_data as any[])?.find((m: any) =>
+        ['nombre dorsal', 'player name'].includes((m.key || '').toLowerCase())
+      )?.value || '',
+      dorsalNumber: (i.meta_data as any[])?.find((m: any) =>
+        ['número dorsal', 'numero dorsal', 'number'].includes((m.key || '').toLowerCase())
+      )?.value || '',
+    })),
+    total:                parseFloat(o.total),
+    shipping_total:       parseFloat(o.shipping_total),
+    payment_method_title: o.payment_method_title,
+    tracking,
+    andreani,
+    packaged,
+    shipped,
+    // Sólo gift cards: el código sale por mail, no hay nada que empaquetar.
+    digital:       esSoloDigital(o.line_items),
+    notified:      String(mv('_tracking_notified')).trim(),
+    order_key:     o.order_key,
+    customer_note: o.customer_note || '',
+  };
+}
+
 export async function GET(req: NextRequest) {
   if (!adminSecretMatches(req.headers.get('x-admin-key'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -21,82 +78,99 @@ export async function GET(req: NextRequest) {
   const search = sp.get('search') || '';
   const after  = sp.get('after')  || '2026-05-10T00:00:00';
 
-  const params = new URLSearchParams({
-    per_page: '100',
-    page,
-    orderby: 'date',
-    order:   'desc',
-    after,
-    _cb:     String(Date.now()), // evita el caché de LiteSpeed en el server de WP (devuelve meta_data vieja)
-    ...(status !== 'any' && { status }),
-    ...(search && { search }),
-  });
+  // Un término numérico es un # de pedido (acá number = post_id): se trae directo
+  // por id, al instante y sin el search de WC, que es lento y matchea cualquier
+  // campo indexado (dirección, teléfono, DNI) — buscar "3352" devolvía pedidos
+  // ajenos. Encuentra el pedido sin importar el tab ni la fecha.
+  const q = search.trim();
+  if (/^#?\d+$/.test(q)) {
+    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${q.replace('#', '')}?_cb=${Date.now()}`, {
+      headers: { Authorization: wcAuth() },
+      next:    { revalidate: 0 },
+    });
+    if (res.status === 404) return NextResponse.json({ orders: [], total: 0, totalPages: 1, page: 1 });
+    if (!res.ok) return NextResponse.json({ error: `WC ${res.status}` }, { status: 502 });
+    return NextResponse.json({ orders: [mapOrder(await res.json())], total: 1, totalPages: 1, page: 1 });
+  }
 
-  const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
-    headers: { Authorization: wcAuth() },
-    next:    { revalidate: 0 },
-  });
+  // 'canje' no es un estado de Woo: son los pedidos de $0 (regalos, canjes de
+  // creadores, cargas manuales sin cobro) en cualquier estado. Se consultan
+  // todos los estados, se filtra acá por total 0 y llega al cliente ya resuelto.
+  const esCanje = status === 'canje';
+
+  const fetchPage = (p: string) => {
+    const params = new URLSearchParams({
+      per_page: '100',
+      page:     p,
+      orderby: 'date',
+      order:   'desc',
+      after,
+      _cb:     String(Date.now()), // evita el caché de LiteSpeed en el server de WP (devuelve meta_data vieja)
+      ...(status !== 'any' && !esCanje && { status }),
+      ...(search && { search }),
+    });
+    return fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
+      headers: { Authorization: wcAuth() },
+      next:    { revalidate: 0 },
+    });
+  };
+
+  // Los tabs "Por empaquetar"/"Empaquetado"/"Enviado sin marcar" piden 'processing'
+  // y recién filtran por rótulo/guía en el cliente. Si acá se pagina, los pedidos
+  // sin empaquetar quedan dispersos entre páginas y los más viejos enterrados al
+  // fondo (así se traspapelaron #3103, #3127 y #3261 durante semanas). Para
+  // 'processing' (y para 'canje', que filtra sobre todos los estados) se traen
+  // TODAS las páginas y se devuelve una lista única.
+  const paginado = status !== 'processing' && !esCanje;
+
+  const res = await fetchPage(paginado ? page : '1');
 
   if (!res.ok) {
     const txt = await res.text();
     return NextResponse.json({ error: `WC ${res.status}` }, { status: 502 });
   }
 
-  const raw        = await res.json() as any[];
+  let raw          = await res.json() as any[];
   const total      = parseInt(res.headers.get('X-WP-Total')      || '0');
-  const totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1');
+  let   totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1');
 
-  const orders = raw.map((o) => {
-    const meta = (o.meta_data as any[]) || [];
-    const mv = (k: string) => meta.find((m: any) => m.key === k)?.value || '';
-    const tracking = String(mv('_tracking_number')).trim();
-    const andreani = String(mv('_order_andreani_numero_interno') || mv('_andreani_tracking_number')).trim();
-    const pedidoId = String(mv('_order_andreani_pedido_id')).trim();
-    // Empaquetado = se generó el rótulo en Andreani (pedidoId/numero interno), pero
-    // Andreani todavía no le asignó guía real — para eso hace falta pagar el envío en
-    // su portal. Enviado = ya tiene guía (_tracking_number), prueba real de que entró
-    // al circuito de despacho. Antes se los trataba como lo mismo ("dispatched").
-    const packaged = !!(pedidoId || andreani);
-    const shipped  = !!tracking;
-    return {
-      id:            o.id,
-      number:        o.number,
-      date:          o.date_created,
-      status:        o.status,
-      isMayorista:   mv('_es_mayorista') === 'true',
-      customer:      {
-        first_name: o.billing.first_name,
-        last_name:  o.billing.last_name,
-        email:      o.billing.email,
-        phone:      o.billing.phone,
-      },
-      items: (o.line_items as any[]).map((i) => ({
-        name:     i.name,
-        quantity: i.quantity,
-        size:     (i.meta_data as any[])?.find((m: any) =>
-          ['talle', 'pa_talle', 'size', 'pa_size'].includes((m.key || '').toLowerCase())
-        )?.value || '',
-        dorsalName:   (i.meta_data as any[])?.find((m: any) =>
-          ['nombre dorsal', 'player name'].includes((m.key || '').toLowerCase())
-        )?.value || '',
-        dorsalNumber: (i.meta_data as any[])?.find((m: any) =>
-          ['número dorsal', 'numero dorsal', 'number'].includes((m.key || '').toLowerCase())
-        )?.value || '',
-      })),
-      total:                parseFloat(o.total),
-      shipping_total:       parseFloat(o.shipping_total),
-      payment_method_title: o.payment_method_title,
-      tracking,
-      andreani,
-      packaged,
-      shipped,
-      // Sólo gift cards: el código sale por mail, no hay nada que empaquetar.
-      digital:       esSoloDigital(o.line_items),
-      notified:      String(mv('_tracking_notified')).trim(),
-      order_key:     o.order_key,
-      customer_note: o.customer_note || '',
-    };
+  if (!paginado && totalPages > 1) {
+    const MAX_PAGES = 15; // tope de seguridad: 1500 pedidos processing
+    try {
+      const resto = await Promise.all(
+        Array.from({ length: Math.min(totalPages, MAX_PAGES) - 1 }, (_, i) =>
+          fetchPage(String(i + 2)).then(r => {
+            if (!r.ok) throw new Error(`WC ${r.status}`);
+            return r.json() as Promise<any[]>;
+          })
+        )
+      );
+      raw = raw.concat(...resto);
+      totalPages = 1;
+    } catch {
+      return NextResponse.json({ error: 'WC error al traer todas las páginas de processing' }, { status: 502 });
+    }
+  }
+
+  if (esCanje) raw = raw.filter((o) => !(parseFloat(o.total) > 0));
+
+  // El search de WC matchea también dirección, teléfono, DNI e ítems; acá la
+  // búsqueda por texto se limita a nombre y email del cliente.
+  if (q) {
+    const nq = norm(q);
+    raw = raw.filter((o) =>
+      norm(`${o.billing?.first_name || ''} ${o.billing?.last_name || ''} ${o.billing?.email || ''}`).includes(nq)
+    );
+  }
+
+  const orders = raw.map(mapOrder);
+
+  return NextResponse.json({
+    orders,
+    // Con canje o búsqueda por texto el total de WC incluye lo descartado; si
+    // entró todo en una página, el conteo real es lo que queda tras filtrar.
+    total: (esCanje || q) && totalPages === 1 ? orders.length : total,
+    totalPages,
+    page: paginado ? parseInt(page) : 1,
   });
-
-  return NextResponse.json({ orders, total, totalPages, page: parseInt(page) });
 }
