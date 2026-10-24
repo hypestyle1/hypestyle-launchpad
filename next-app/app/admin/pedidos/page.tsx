@@ -27,6 +27,21 @@ type Order = {
 /** Anomalía de datos que no reclama ninguna cola operativa (total negativo, pedido sin productos). */
 type Anomalia = { id: number; number: string; tipo: string; detalle: string };
 /** Un conteo en `null` es "no se pudo consultar", que no es lo mismo que cero. */
+/** Respuesta de /api/admin/orders. */
+type ApiPedidos = { orders: Order[]; total: number; totalPages: number; page: number; parcial?: boolean };
+/**
+ * Mientras la respuesta guardada tenga menos de FRESCO_MS se usa tal cual, sin
+ * pegarle a WooCommerce: recorrer los tabs de flujo sale gratis. Entre FRESCO_MS
+ * y CACHE_TTL_MS se muestra al instante y se revalida en segundo plano. Más
+ * viejo que eso, se vuelve a pedir esperando la respuesta.
+ *
+ * Si revalidáramos en cada cambio de tab, tres clics seguirían siendo tres
+ * consultas de ~6 s a WP: no bloquearían la pantalla, pero el server igual las
+ * paga. El encabezado muestra siempre de cuándo es el dato.
+ */
+const FRESCO_MS = 15_000;
+const CACHE_TTL_MS = 60_000;
+
 type Counts = {
   porEmpaquetar: number | null; empaquetados: number | null; enviadosSinMarcar: number | null;
   pendientes: number | null; enEspera: number | null; fallidos: number | null; completados: number | null;
@@ -97,6 +112,17 @@ function daysSince(s: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(s).getTime()) / 86400000));
 }
 
+/** "ahora" / "hace 40 s" / "hace 3 min": de cuándo son los pedidos en pantalla. */
+function Frescura({ at }: { at: number }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick(n => n + 1), 10_000);
+    return () => clearInterval(t);
+  }, []);
+  const s = Math.max(0, Math.round((Date.now() - at) / 1000));
+  return <span>{s < 15 ? 'ahora' : s < 60 ? `hace ${s} s` : `hace ${Math.round(s / 60)} min`}</span>;
+}
+
 function waLink(phone: string, name: string, orderNum: string) {
   const digits  = phone.replace(/\D/g, '');
   const clean   = digits.startsWith('0') ? digits.slice(1) : digits;
@@ -117,6 +143,8 @@ export default function PedidosPage() {
   // tienen que verse distinto: así se perdieron semanas con #3103.
   const [loadError, setLoadError]     = useState<string | null>(null);
   const [parcial, setParcial]         = useState(false);
+  /** Momento del que son los pedidos que se están mostrando (para no pasar un dato guardado por recién traído). */
+  const [dataAt, setDataAt]           = useState<number | null>(null);
   const [countsError, setCountsError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch]           = useState('');
@@ -132,10 +160,16 @@ export default function PedidosPage() {
   const [cancelNotify, setCancelNotify]   = useState(true);
   const [cancelLoading, setCancelLoading] = useState(false);
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Último término buscado: distingue "cambió el tab" de "está tipeando". */
+  const buscadoRef = useRef('');
   // Secuencia de fetches: si una respuesta vieja llega después de una más nueva
   // (el search de WC puede tardar varios segundos), se descarta en vez de pisar
   // la lista — antes la búsqueda "aparecía y desaparecía" según cuál llegara última.
   const fetchSeq  = useRef(0);
+  // Respuestas de /api/admin/orders por clave de consulta. Los 3 tabs de flujo
+  // comparten la misma clave ('processing'), así que cambiar de tab no vuelve a
+  // descargar nada: se filtra lo que ya está en memoria.
+  const cacheRef  = useRef(new Map<string, { at: number; data: ApiPedidos }>());
   // Pedidos desplegados con la flecha + detalle ya cargado de cada uno.
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const detailCache = useRef(new Map<number, OrderDetail>());
@@ -145,43 +179,87 @@ export default function PedidosPage() {
     if (stored) { setAdminKey(stored); setAuthed(true); }
   }, []);
 
-  const fetchOrders = useCallback(async (key: string, f: string, q: string, p: number) => {
+  /** Aplica una respuesta de la API a la vista. */
+  const aplicar = useCallback((data: ApiPedidos, at: number) => {
+    setLoadError(null);
+    setParcial(!!data.parcial);
+    setOrders(data.orders);
+    setTotal(data.total || 0);
+    setTotalPages(data.totalPages || 1);
+    setDataAt(at);
+    const smap: Record<number, string> = {};
+    data.orders.forEach((o: Order) => { smap[o.id] = o.status; });
+    setStatusMap(smap);
+  }, []);
+
+  /**
+   * Trae la lista. Los tres tabs de flujo ("Por empaquetar", "Empaquetado",
+   * "Enviado s/ marcar") piden exactamente la misma consulta — `processing` — y
+   * se diferencian recién al filtrar en el cliente. Antes cada cambio de tab
+   * volvía a descargar los mismos 479 pedidos: ~6 s de espera por cambio, para
+   * los mismos datos que ya estaban en memoria.
+   *
+   * Acá la respuesta se guarda por clave de consulta y se reutiliza al
+   * instante, revalidando en segundo plano. Para que no se pueda confundir un
+   * dato guardado con uno recién traído, el encabezado muestra de cuándo es y
+   * hay un botón para forzar la relectura; cualquier escritura tira el caché.
+   */
+  const fetchOrders = useCallback(async (key: string, f: string, q: string, p: number, forzar = false) => {
+    const params = new URLSearchParams({ status: apiStatusFor(f), page: String(p), ...(q && { search: q }) });
+    const cacheKey = params.toString();
     const seq = ++fetchSeq.current;
-    setLoading(true);
+    const cached = cacheRef.current.get(cacheKey);
+    const edad = cached ? Date.now() - cached.at : Infinity;
+    const sirve = !forzar && !!cached && edad < CACHE_TTL_MS;
+
     setSelected(new Set());
+    if (sirve) {
+      aplicar(cached!.data, cached!.at);
+      setLoading(false);
+      // Recién traído: no hay nada que revalidar. Cambiar de tab no cuesta una
+      // consulta a WP.
+      if (edad < FRESCO_MS) return;
+    } else {
+      setLoading(true);
+    }
+
     try {
-      const params = new URLSearchParams({ status: apiStatusFor(f), page: String(p), ...(q && { search: q }) });
       const res = await fetch(`/api/admin/orders?${params}`, { headers: { 'x-admin-key': key } });
       if (res.status === 403) { setAuthed(false); sessionStorage.removeItem(WP_SECRET_KEY); return; }
       const data = await res.json().catch(() => null);
-      if (seq !== fetchSeq.current) return; // ya hay un fetch más nuevo en vuelo o resuelto
+      // La revalidación en segundo plano no compite con el fetch del usuario:
+      // si la vista ya cambió de consulta, lo que llega sólo va al caché.
+      const vigente = seq === fetchSeq.current;
 
       // Antes acá sólo se miraba el 403: un 502 de WC dejaba data.orders en
       // undefined → setOrders([]) → "No hay pedidos". Un corte de WP se veía
       // igual que una bandeja vacía. La lista anterior se conserva: es vieja,
       // pero es mejor que una pantalla en blanco que miente.
       if (!res.ok || !Array.isArray(data?.orders)) {
-        setLoadError(data?.error ? `${data.error}` : `No se pudieron cargar los pedidos (HTTP ${res.status})`);
-        setParcial(false);
+        cacheRef.current.delete(cacheKey); // nunca servir como "bueno" algo que falló
+        // Si ya se mostró lo guardado, el aviso dice que es viejo y no se pudo refrescar.
+        if (vigente) {
+          setLoadError(data?.error ? `${data.error}` : `No se pudieron cargar los pedidos (HTTP ${res.status})`);
+          if (!sirve) setParcial(false);
+        }
         return;
       }
 
-      setLoadError(null);
-      setParcial(!!data.parcial);
-      setOrders(data.orders);
-      setTotal(data.total || 0);
-      setTotalPages(data.totalPages || 1);
-      const smap: Record<number, string> = {};
-      data.orders.forEach((o: Order) => { smap[o.id] = o.status; });
-      setStatusMap(smap);
+      const at = Date.now();
+      cacheRef.current.set(cacheKey, { at, data });
+      if (vigente) aplicar(data, at);
     } catch (e) {
+      cacheRef.current.delete(cacheKey);
       if (seq === fetchSeq.current) {
         setLoadError(`No se pudieron cargar los pedidos: ${e instanceof Error ? e.message : 'error de red'}`);
       }
     } finally {
       if (seq === fetchSeq.current) setLoading(false);
     }
-  }, []);
+  }, [aplicar]);
+
+  /** Tras cualquier escritura el caché no vale: lo que hay en Woo cambió. */
+  const invalidar = useCallback(() => { cacheRef.current.clear(); }, []);
 
   const fetchCounts = useCallback(async (key: string) => {
     try {
@@ -203,12 +281,29 @@ export default function PedidosPage() {
 
   useEffect(() => {
     if (!authed || !adminKey || filter === GIFT_CARDS_FILTER) return;
+    // Tipear en el buscador se espera 400 ms; cambiar de tab, no: sale del
+    // caché y tiene que sentirse instantáneo.
+    const soloCambioDeTab = buscadoRef.current === search;
+    buscadoRef.current = search;
     if (searchRef.current) clearTimeout(searchRef.current);
-    searchRef.current = setTimeout(() => {
-      setPage(1);
-      fetchOrders(adminKey, filter, search, 1);
-    }, 400);
+    const correr = () => { setPage(1); fetchOrders(adminKey, filter, search, 1); };
+    if (soloCambioDeTab) correr();
+    else searchRef.current = setTimeout(correr, 400);
   }, [authed, adminKey, filter, search, fetchOrders]);
+
+  // Al volver a la pestaña, revalidar: el equipo deja el panel abierto y los
+  // pedidos cambian desde el checkout y desde el portal de Andreani.
+  useEffect(() => {
+    if (!authed || !adminKey) return;
+    const alVolver = () => {
+      if (document.visibilityState !== 'visible') return;
+      invalidar();
+      fetchCounts(adminKey);
+      if (filter !== GIFT_CARDS_FILTER) fetchOrders(adminKey, filter, search, page, true);
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    return () => document.removeEventListener('visibilitychange', alVolver);
+  }, [authed, adminKey, filter, search, page, fetchOrders, fetchCounts, invalidar]);
 
   useEffect(() => {
     if (!authed || !adminKey || filter === GIFT_CARDS_FILTER) return;
@@ -271,6 +366,7 @@ export default function PedidosPage() {
         return false;
       }
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      invalidar();
       return true;
     } catch (e) {
       setStatusMap(s => ({ ...s, [orderId]: previo }));
@@ -308,6 +404,7 @@ export default function PedidosPage() {
       if (!res.ok) { alert('No se pudo cancelar el pedido'); return; }
       setStatusMap(s => ({ ...s, [cancelTarget.id]: 'cancelled' }));
       setOrders(prev => prev.map(o => o.id === cancelTarget.id ? { ...o, status: 'cancelled' } : o));
+      invalidar();
       fetchCounts(adminKey);
       setCancelTarget(null);
     } finally {
@@ -327,6 +424,7 @@ export default function PedidosPage() {
       }).then(() => {
         setStatusMap(s => ({ ...s, [id]: 'cancelled' }));
         setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'cancelled' } : o));
+        invalidar();
       })
     ));
   }
@@ -409,6 +507,19 @@ export default function PedidosPage() {
           {!!counts?.porEmpaquetar && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300">{counts.porEmpaquetar} por empaquetar</span>}
           {!!counts?.empaquetados && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300">{counts.empaquetados} empaquetados</span>}
           {!enGiftCards && <span className="hidden md:inline text-[11px] text-muted-foreground font-medium">{fmt(revenue)}</span>}
+          {/* De cuándo es lo que se está viendo + relectura forzada. Sin esto, un
+              dato reutilizado del caché sería indistinguible de uno recién traído. */}
+          {!enGiftCards && dataAt !== null && (
+            <button
+              onClick={() => { invalidar(); fetchOrders(adminKey, filter, search, page, true); fetchCounts(adminKey); }}
+              disabled={loading}
+              title="Volver a leer los pedidos desde WooCommerce"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-foreground px-2 py-1 rounded hover:bg-muted disabled:opacity-50"
+            >
+              <svg viewBox="0 0 24 24" className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 11-2.64-6.36M21 3v6h-6" /></svg>
+              {loading ? 'Actualizando' : <Frescura at={dataAt} />}
+            </button>
+          )}
           <Link
             href="/admin/pedidos/nuevo"
             className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-colors"
@@ -433,7 +544,7 @@ export default function PedidosPage() {
                 <span className="font-semibold">No se pudieron cargar los pedidos.</span>
                 <span className="text-[12px] opacity-80">{loadError}</span>
                 <button
-                  onClick={() => { fetchOrders(adminKey, filter, search, page); fetchCounts(adminKey); }}
+                  onClick={() => { fetchOrders(adminKey, filter, search, page, true); fetchCounts(adminKey); }}
                   className="ml-auto text-[12px] font-semibold px-2.5 py-1 rounded border border-red-400 hover:bg-red-100 dark:border-red-500/50 dark:hover:bg-red-500/20"
                 >
                   Reintentar
