@@ -85,6 +85,17 @@ Reglas duras:
   30 publicaciones que clasificó Valentín (`_claude/contenido/gold-set-b4-v1.json`). Nunca uses el
   gold set como ejemplo para clasificar: es la vara, y si la ves antes de clasificar deja de medir.
 
+Para medir una corrida contra el gold set:
+
+```bash
+node lib/gold-set.mjs <gold-set-b4-v1.json> <corrida.json>
+```
+
+Devuelve el acuerdo por dimensión contra su umbral (portada y categoría 85%, personas 90%,
+escenario y estilo 75%) y las confusiones concretas. Una etiqueta fuera del vocabulario **no se
+mide: se rechaza**, igual que un gold set a medio llenar. El resultado no es un permiso para
+clasificar las 229: es el insumo de esa decisión, que la toma Valentín.
+
 ## Metodología (no negociable)
 
 Está detallada en `referencias/metodologia.md`. Lo esencial:
