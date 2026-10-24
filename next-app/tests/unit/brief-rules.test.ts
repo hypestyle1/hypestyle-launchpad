@@ -18,7 +18,7 @@ const plain = (t: string) => t.replace(/ /g, ' ');
 const ctx: BriefContext = { now: NOW, floorARS: 100_000, revenue30d: 12_000_000, config: { ...DEFAULT_CONFIG, wpUrl: 'https://wp.test' } };
 
 const proc = (id: number, hoursAgo: number, total: number, stage: ProcessingOrder['stage'] = 'sin_rotulo', shippingMethod = 'Andreani (estándar)'): ProcessingOrder =>
-  ({ id, number: String(id), total, dateGmt: iso(hoursAgo), stage, shippingMethod });
+  ({ id, number: String(id), total, dateGmt: iso(hoursAgo), stage, shippingMethod, items: 1 });
 
 describe('ops.paid-without-label', () => {
   it('suma los pagados sin rótulo de más de 48 h y arma evidencia con el más viejo', () => {
