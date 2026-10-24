@@ -103,7 +103,16 @@ export type IgPostRecord = {
   aiUsage: string;
   classifiedBy: string;
   classifiedAt: string | null;
+  /** '' | 'pending' | 'approved' | 'sampled' (sampled = cayó en la revisión por muestreo). */
   reviewState: string;
+  /** Versión de la taxonomía con la que se clasificó. null = sin clasificar. */
+  taxonomyVersion: number | null;
+  /** Confianza de la clasificación asistida, 0–1. null si la puso una persona. */
+  classificationConfidence: number | null;
+  /** Identificador de la corrida que la clasificó (para poder deshacerla entera). */
+  classificationRun: string;
+  /** Por qué fue dudosa, en una línea. Lo escribe quien clasifica. */
+  classificationNote: string;
   wasBoosted: boolean;
   boostRef: string;
   contentItemId: number | null;

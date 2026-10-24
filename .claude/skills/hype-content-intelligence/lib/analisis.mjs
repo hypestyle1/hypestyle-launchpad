@@ -18,6 +18,42 @@
 
 export const MIN_SAMPLE = 8;
 
+/* ─── Taxonomía v1 (congelada, doc 19) ──────────────────────────────────── */
+
+/**
+ * Espejo de `next-app/lib/ig-insights/taxonomia.ts`. Cinco vocabularios
+ * cerrados; el vacío ('') es "sin clasificar" y no se lista.
+ *
+ * El FORMATO no está acá: es observado (`formatoDe`), no se clasifica a mano.
+ *
+ * Si acá aparece un valor que no está allá (o al revés), el test de paridad
+ * falla. Cambiar un valor obliga a subir `TAXONOMY_VERSION` y a rehacer el gold
+ * set: medir contra el v1 con un vocabulario v2 no mide nada.
+ */
+export const TAXONOMY_VERSION = 1;
+
+export const VOCABULARIO = {
+  category: ['producto', 'drop', 'editorial', 'comunidad', 'cultura', 'proceso', 'institucional', 'otro'],
+  coverType: ['producto-piso', 'producto-detalle', 'producto-estudio', 'modelo-editorial',
+    'modelo-producto', 'grafica', 'escena', 'otro'],
+  visualStyle: ['luz-natural', 'estudio', 'flash', 'nocturna', 'grafica-digital', 'archivo',
+    'ia-asistido', 'otro'],
+  scenario: ['calle', 'interior-casa', 'local', 'taller', 'estudio', 'exterior-natural', 'evento',
+    'sin-escenario', 'otro'],
+  hasModels: ['no', 'si-rostro', 'si-sin-rostro', 'grupo', 'otro'],
+};
+
+/** El vacío es válido en las cinco dimensiones: significa sin clasificar. */
+export const esValor = (campo, valor) =>
+  valor === '' || (VOCABULARIO[campo] ?? []).includes(valor);
+
+/**
+ * Única regla de coherencia entre dimensiones: si la imagen se declara hecha
+ * con IA, el uso de IA no puede ser `none`. Al revés no.
+ */
+export const coherenciaIa = (visualStyle, aiUsage) =>
+  visualStyle !== 'ia-asistido' || aiUsage === 'assisted' || aiUsage === 'generated';
+
 /* ─── Ratios ────────────────────────────────────────────────────────────── */
 
 export function ratio(num, den) {
@@ -130,6 +166,8 @@ export function filtrar(posts, opciones = {}) {
     categoria = null,
     portada = null,
     estilo = null,
+    escenario = null,
+    modelos = null,
     producto = null,
     campania = null,
     texto = null,
@@ -162,6 +200,8 @@ export function filtrar(posts, opciones = {}) {
     if (categoria && p.category !== categoria) return false;
     if (portada && p.coverType !== portada) return false;
     if (estilo && p.visualStyle !== estilo) return false;
+    if (escenario && p.scenario !== escenario) return false;
+    if (modelos && p.hasModels !== modelos) return false;
     if (campania != null && String(p.campaignId ?? '') !== String(campania)) return false;
 
     if (producto != null) {
@@ -394,6 +434,7 @@ const CLAVES_DIM = {
   estilo: (p) => p.visualStyle || null,
   formato: formatoDe,
   escenario: (p) => p.scenario || null,
+  modelos: (p) => p.hasModels || null,
   campania: (p) => (p.campaignId != null ? `campaña ${p.campaignId}` : null),
 };
 
@@ -483,15 +524,23 @@ export function contrastar(posts, { dimension = 'categoria', a, b, metrica = 'li
 }
 
 /** Distribución editorial objetivo (hipótesis de la Fase 0, NO una regla). */
+/**
+ * MEZCLA EDITORIAL OBJETIVO — aprobada el 24/10/2026.
+ *
+ * Objetivos ORIENTATIVOS, no cuotas rígidas: sirven para señalar desvíos y
+ * conversarlos. Nada de esto modifica la planificación por su cuenta.
+ *
+ * Espejo de `MEZCLA_OBJETIVO` en next-app/lib/ig-insights/taxonomia.ts; el test
+ * de paridad falla si se separan.
+ */
 export const MEZCLA_OBJETIVO = {
-  flatlay: 0.25,
-  editorial: 0.15,
-  'reel-visual': 0.15,
-  ugc: 0.1,
-  'reel-hablando': 0.1,
-  estudio: 0.1,
-  bts: 0.1,
+  producto: 0.3,
+  editorial: 0.2,
+  drop: 0.15,
+  comunidad: 0.15,
+  proceso: 0.1,
   cultura: 0.05,
+  institucional: 0.05,
 };
 
 /**

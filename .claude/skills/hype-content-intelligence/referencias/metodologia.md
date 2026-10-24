@@ -69,8 +69,8 @@ El comando `contrastar` devuelve uno de tres:
 
 Para pasar de señal a causa, el protocolo mínimo, **definido antes de publicar**:
 
-1. **Hipótesis escrita.** Ej.: "una portada flatlay genera más guardados/alcance que una
-   editorial, para el mismo tipo de producto".
+1. **Hipótesis escrita.** Ej.: "una portada `producto-piso` genera más guardados/alcance que una
+   `modelo-editorial`, para el mismo tipo de producto".
 2. **Pares equivalentes.** Mismo tipo de producto, mismo slot horario (±1 h), semanas alternas.
    Solo cambia la variable bajo estudio.
 3. **Métrica primaria única**, definida de antemano, más secundarias. Elegirla después de ver los
@@ -79,35 +79,44 @@ Para pasar de señal a causa, el protocolo mínimo, **definido antes de publicar
 5. **Lectura a 72 h y a 7 días.** Antes de las 48 h los datos de Meta pueden estar incompletos.
 6. El resultado actualiza el estado del aprendizaje. Nunca automáticamente.
 
-## Matriz de contenido (hipótesis de la Fase 0)
+## Mezcla editorial objetivo (aprobada el 24/10/2026)
 
 | Categoría | Participación objetivo |
 |---|---:|
-| Producto en piso / flatlay | 25% |
-| Editorial / campaña | 15% |
-| Reel visual / producto | 15% |
-| UGC / comunidad | 10% |
-| Reel hablando | 10% |
-| Producto / estudio | 10% |
-| Behind the scenes | 10% |
-| Creativo / cultura | 5% |
+| `producto` | 30% |
+| `editorial` | 20% |
+| `drop` | 15% |
+| `comunidad` | 15% |
+| `proceso` | 10% |
+| `cultura` | 5% |
+| `institucional` | 5% |
 
-Orientativo, además: una portada de producto en piso cada 3-5 publicaciones, un reel cada 3-4.
+**Son objetivos orientativos, no cuotas.** Sirven para detectar que algo se está repitiendo de más
+o que una categoría desapareció hace meses, y para conversarlo. **La planificación no se modifica
+sola por un desvío.** Los datos pueden justificar cambiar la mezcla; la dirección creativa
+también.
 
-**Esto es una hipótesis de trabajo, no una regla.** Sirve para detectar que algo se está
-repitiendo de más o que una categoría desapareció hace meses. Los datos pueden justificar
-cambiarla; la dirección creativa también.
+## Dimensiones de clasificación — taxonomía v1 (congelada)
 
-## Dimensiones de clasificación
+Cinco vocabularios cerrados, cada uno con una pregunta distinta, más el formato, que es observado.
+El listado completo con las definiciones está en `next-app/lib/ig-insights/taxonomia.ts` y
+replicado en `lib/analisis.mjs` (`VOCABULARIO`); los valores son los mismos del gold set.
 
-Una publicación vive en varias a la vez:
+- **Formato** (de la API, no se etiqueta): carrusel · imagen · reel · reel-prueba · video-feed ·
+  story. `reel-prueba` es el reel con `is_shared_to_feed = false`: otra audiencia, no se mezcla.
+- **`category`** — para qué existe: producto · drop · editorial · comunidad · cultura · proceso ·
+  institucional · otro.
+- **`cover_type`** — qué se ve en la portada: producto-piso · producto-detalle · producto-estudio ·
+  modelo-editorial · modelo-producto · grafica · escena · otro.
+- **`visual_style`** — cómo está hecha: luz-natural · estudio · flash · nocturna · grafica-digital ·
+  archivo · ia-asistido · otro.
+- **`scenario`** — dónde pasa: calle · interior-casa · local · taller · estudio · exterior-natural ·
+  evento · sin-escenario · otro. `sin-escenario` es la respuesta correcta para flatlays y gráficas.
+- **`has_models`** — personas: no · si-rostro · si-sin-rostro · grupo · otro.
+- **IA**: sin IA · asistido · generado, en su propio campo. Única regla de coherencia:
+  `visual_style = ia-asistido` ⇒ el uso de IA no puede ser `none`. Al revés no.
 
-- **Formato** (de la API, no se etiqueta): carrusel · reel · imagen · story.
-- **Categoría**: las ocho de la matriz.
-- **Tipo de portada**: producto en piso · modelo editorial · modelo + producto · estudio limpio ·
-  gráfica/lettering · frame de video · collage/split.
-- **Estilo visual**: luz natural · estudio · flash directo · IA asistido · archivo.
-- **Objetivo**: venta directa · lanzamiento/drop · marca/cultura · comunidad · restock.
-- **Escenario**: piso/cemento · estudio · exterior urbano · local/showroom · evento.
-- **Personas**: sin personas · modelo · creador/UGC · equipo.
-- **IA**: sin IA · asistido · generado (se evalúan por separado).
+El vacío (`''`) significa **sin clasificar** en las cinco dimensiones y nunca forma un segmento.
+
+Cambiar un valor obliga a subir la versión de taxonomía y a rehacer el gold set: medir contra un
+gold set v1 con un vocabulario v2 no mide nada.
