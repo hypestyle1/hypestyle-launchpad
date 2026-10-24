@@ -6,6 +6,7 @@ import PendienteEstampar from '@/components/admin/PendienteEstampar';
 import GiftCardsPanel from '@/components/admin/GiftCardsPanel';
 import { HoldToConfirm } from '@/components/ui/hold-to-confirm';
 import OrderQuickView, { type OrderDetail } from '@/components/admin/OrderQuickView';
+import { WC_ORDER_STATUSES, WC_STATUS_LABELS } from '@/lib/wc-order-status';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -23,25 +24,22 @@ type Order = {
   isMayorista: boolean;
 };
 
-type Counts = { porEmpaquetar: number; empaquetados: number; enviadosSinMarcar: number; pendientes: number; despachados: number };
-
-const STATUS_LABELS: Record<string, string> = {
-  pending:    'Pendiente',
-  processing: 'Procesando',
-  'on-hold':  'En espera',
-  enviado:    'Enviado',
-  completed:  'Completado',
-  cancelled:  'Cancelado',
-  refunded:   'Reembolsado',
-  failed:     'Fallido',
+/** Anomalía de datos que no reclama ninguna cola operativa (total negativo, pedido sin productos). */
+type Anomalia = { id: number; number: string; tipo: string; detalle: string };
+/** Un conteo en `null` es "no se pudo consultar", que no es lo mismo que cero. */
+type Counts = {
+  porEmpaquetar: number | null; empaquetados: number | null; enviadosSinMarcar: number | null;
+  pendientes: number | null; enEspera: number | null; fallidos: number | null; completados: number | null;
+  anomalias: Anomalia[]; parcial: boolean; errores: string[]; ok: boolean;
 };
+
+const STATUS_LABELS: Record<string, string> = WC_STATUS_LABELS;
 
 // Pills de estado: par claro + oscuro (el dark del panel es diseño propio, no inversión).
 const STATUS_COLORS: Record<string, string> = {
   pending:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300',
   processing: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300',
   'on-hold':  'bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300',
-  enviado:    'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
   completed:  'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
   cancelled:  'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
   refunded:   'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300',
@@ -61,15 +59,15 @@ const TIPO_FILTERS = [
   { f: 'canje',      label: 'Canje / Regalo' },
   { f: 'gift-cards', label: 'Gift cards' },
 ];
+// Todos los estados que WC acepta de verdad tienen hogar acá. Antes faltaban
+// on-hold (mayoristas esperando coordinar el pago), failed (88 pedidos: plata
+// recuperable) y refunded, y sobraba 'enviado', que no existe.
 const ESTADO_OPTIONS = [
-  { f: 'any',       label: 'Todos' },
-  { f: 'pending',   label: 'Pendiente' },
-  { f: 'enviado',   label: 'Enviado' },
-  { f: 'completed', label: 'Completado' },
-  { f: 'cancelled', label: 'Cancelado' },
+  { f: 'any', label: 'Todos' },
+  ...WC_ORDER_STATUSES.map(f => ({ f, label: WC_STATUS_LABELS[f] })),
 ];
 const ESTADO_SET = new Set(ESTADO_OPTIONS.map(o => o.f));
-const STATUS_OPTIONS = ['pending','processing','on-hold','enviado','completed','cancelled'];
+const STATUS_OPTIONS = WC_ORDER_STATUSES;
 
 // Los tabs 'por-empaquetar'/'empaquetado'/'enviado-sin-marcar' consultan 'processing' en
 // la API y se afinan en el cliente según tengan rótulo de Andreani y/o guía real.
@@ -77,11 +75,13 @@ const PROCESSING_SPLIT_FILTERS = ['por-empaquetar', 'empaquetado', 'enviado-sin-
 // 'mayorista' se afina en el cliente por meta _es_mayorista (no por status: el pedido
 // puede pasar de on-hold a processing/completed una vez coordinado el pago).
 // 'canje' lo resuelve el server (pedidos $0 en cualquier estado), llega ya filtrado.
-const CLIENT_REFINED_FILTERS = [...PROCESSING_SPLIT_FILTERS, 'mayorista'];
+const CLIENT_REFINED_FILTERS = PROCESSING_SPLIT_FILTERS;
 // 'gift-cards' no lista pedidos: muestra las tarjetas emitidas y dónde se usaron.
 const GIFT_CARDS_FILTER = 'gift-cards';
+// 'mayorista' lo resuelve el server sobre todas las páginas (antes el cliente
+// filtraba una sola página de 'any' y un mayorista viejo no aparecía).
 const apiStatusFor = (f: string) =>
-  PROCESSING_SPLIT_FILTERS.includes(f) ? 'processing' : f === 'mayorista' ? 'any' : f;
+  PROCESSING_SPLIT_FILTERS.includes(f) ? 'processing' : f;
 
 function fmt(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
@@ -113,6 +113,12 @@ export default function PedidosPage() {
   const [loading, setLoading]         = useState(false);
   const [filter, setFilter]           = useState('por-empaquetar');
   const [counts, setCounts]           = useState<Counts | null>(null);
+  // Estados de carga explícitos. Un error de WooCommerce y una bandeja limpia
+  // tienen que verse distinto: así se perdieron semanas con #3103.
+  const [loadError, setLoadError]     = useState<string | null>(null);
+  const [parcial, setParcial]         = useState(false);
+  const [countsError, setCountsError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch]           = useState('');
   const [total, setTotal]             = useState(0);
   const [page, setPage]               = useState(1);
@@ -147,14 +153,31 @@ export default function PedidosPage() {
       const params = new URLSearchParams({ status: apiStatusFor(f), page: String(p), ...(q && { search: q }) });
       const res = await fetch(`/api/admin/orders?${params}`, { headers: { 'x-admin-key': key } });
       if (res.status === 403) { setAuthed(false); sessionStorage.removeItem(WP_SECRET_KEY); return; }
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
       if (seq !== fetchSeq.current) return; // ya hay un fetch más nuevo en vuelo o resuelto
-      setOrders(data.orders || []);
+
+      // Antes acá sólo se miraba el 403: un 502 de WC dejaba data.orders en
+      // undefined → setOrders([]) → "No hay pedidos". Un corte de WP se veía
+      // igual que una bandeja vacía. La lista anterior se conserva: es vieja,
+      // pero es mejor que una pantalla en blanco que miente.
+      if (!res.ok || !Array.isArray(data?.orders)) {
+        setLoadError(data?.error ? `${data.error}` : `No se pudieron cargar los pedidos (HTTP ${res.status})`);
+        setParcial(false);
+        return;
+      }
+
+      setLoadError(null);
+      setParcial(!!data.parcial);
+      setOrders(data.orders);
       setTotal(data.total || 0);
       setTotalPages(data.totalPages || 1);
       const smap: Record<number, string> = {};
-      (data.orders || []).forEach((o: Order) => { smap[o.id] = o.status; });
+      data.orders.forEach((o: Order) => { smap[o.id] = o.status; });
       setStatusMap(smap);
+    } catch (e) {
+      if (seq === fetchSeq.current) {
+        setLoadError(`No se pudieron cargar los pedidos: ${e instanceof Error ? e.message : 'error de red'}`);
+      }
     } finally {
       if (seq === fetchSeq.current) setLoading(false);
     }
@@ -163,8 +186,15 @@ export default function PedidosPage() {
   const fetchCounts = useCallback(async (key: string) => {
     try {
       const res = await fetch('/api/admin/orders/counts', { headers: { 'x-admin-key': key } });
-      if (res.ok) setCounts(await res.json());
-    } catch { /* noop */ }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) { setCountsError(`No se pudieron cargar los contadores (HTTP ${res.status})`); return; }
+      setCounts(data);
+      // La ruta ya distingue "cero" de "no se pudo consultar": los conteos que
+      // fallaron vienen en null y el detalle en `errores`.
+      setCountsError(data.ok ? null : `Contadores incompletos — ${(data.errores || []).join(' · ') || 'faltan pedidos de la consulta'}`);
+    } catch (e) {
+      setCountsError(`No se pudieron cargar los contadores: ${e instanceof Error ? e.message : 'error de red'}`);
+    }
   }, []);
 
   useEffect(() => {
@@ -216,17 +246,41 @@ export default function PedidosPage() {
     }
   }
 
-  async function postStatus(orderId: number, status: string) {
+  /**
+   * Cambia el estado y CONFIRMA que WooCommerce lo aceptó. Antes se actualizaba
+   * la vista sin mirar la respuesta: marcar un pedido como "Enviado" (un estado
+   * que no existe en WC) devolvía 400, el panel pintaba el cambio igual y el
+   * pedido se quedaba en processing. Así se juntaron 464 "enviado sin marcar".
+   *
+   * Devuelve true si el cambio quedó realmente guardado.
+   */
+  async function postStatus(orderId: number, status: string): Promise<boolean> {
+    const previo = statusMap[orderId] ?? orders.find(o => o.id === orderId)?.status ?? '';
     setStatusMap(s => ({ ...s, [orderId]: status }));
-    await fetch('/api/admin/set-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
-      body: JSON.stringify({ orderId, status }),
-    });
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    try {
+      const res = await fetch('/api/admin/set-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ orderId, status }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.status !== status) {
+        // Volver atrás en la vista: lo que se ve tiene que ser lo que hay en Woo.
+        setStatusMap(s => ({ ...s, [orderId]: previo }));
+        setActionError(`No se pudo cambiar el estado del pedido #${orderId}: ${data?.error || `HTTP ${res.status}`}`);
+        return false;
+      }
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+      return true;
+    } catch (e) {
+      setStatusMap(s => ({ ...s, [orderId]: previo }));
+      setActionError(`No se pudo cambiar el estado del pedido #${orderId}: ${e instanceof Error ? e.message : 'error de red'}`);
+      return false;
+    }
   }
 
   async function changeStatus(orderId: number, status: string) {
+    setActionError(null);
     await postStatus(orderId, status);
     fetchCounts(adminKey);
   }
@@ -283,10 +337,17 @@ export default function PedidosPage() {
     // Cancelar ya no pasa por window.confirm: el botón de la barra es un
     // HoldToConfirm, y sostenerlo es la confirmación.
     setBulkLoading(true);
+    setActionError(null);
     if (bulkStatus === 'cancelled') {
       await bulkCancel(ids);
     } else {
-      await Promise.all(ids.map(id => postStatus(id, bulkStatus)));
+      // Se informa cuántos quedaron sin aplicar: un lote a medias que se
+      // presenta como exitoso es la forma más rápida de perder pedidos.
+      const oks = await Promise.all(ids.map(id => postStatus(id, bulkStatus)));
+      const fallaron = ids.filter((_, i) => !oks[i]);
+      if (fallaron.length) {
+        setActionError(`${oks.filter(Boolean).length} de ${ids.length} cambiados. Sin aplicar: ${fallaron.map(id => `#${id}`).join(', ')}.`);
+      }
     }
     fetchCounts(adminKey);
     setBulkLoading(false);
@@ -305,12 +366,11 @@ export default function PedidosPage() {
       ? orders.filter(o => o.packaged && !o.shipped)
       : filter === 'enviado-sin-marcar'
         ? orders.filter(o => o.shipped)
-        : filter === 'mayorista'
-          ? orders.filter(o => o.isMayorista)
-          : orders;
+        : orders;
   const revenue = visibleOrders.reduce((s, o) => s + o.total, 0);
   const enGiftCards = filter === GIFT_CARDS_FILTER;
   const headerCount = enGiftCards ? 0 : CLIENT_REFINED_FILTERS.includes(filter) ? visibleOrders.length : total;
+  const anomalias = counts?.anomalias || [];
 
   if (!authed) {
     return (
@@ -346,8 +406,8 @@ export default function PedidosPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Stats globales reales */}
-          {counts && counts.porEmpaquetar > 0 && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300">{counts.porEmpaquetar} por empaquetar</span>}
-          {counts && counts.empaquetados > 0 && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300">{counts.empaquetados} empaquetados</span>}
+          {!!counts?.porEmpaquetar && <span className="hidden sm:inline text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300">{counts.porEmpaquetar} por empaquetar</span>}
+          {!!counts?.empaquetados && <span className="hidden sm:inline text-[11px] font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-300">{counts.empaquetados} empaquetados</span>}
           {!enGiftCards && <span className="hidden md:inline text-[11px] text-muted-foreground font-medium">{fmt(revenue)}</span>}
           <Link
             href="/admin/pedidos/nuevo"
@@ -365,22 +425,69 @@ export default function PedidosPage() {
       </div>
 
       <div className="max-w-[1280px] mx-auto px-4 py-5">
-        {/* KPIs — conteos reales globales */}
+        {/* Avisos de confiabilidad: lo que el panel NO sabe, dicho en voz alta. */}
+        {(loadError || countsError || parcial || counts?.parcial || actionError || anomalias.length > 0) && (
+          <div className="space-y-2 mb-4">
+            {loadError && (
+              <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-[13px] text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
+                <span className="font-semibold">No se pudieron cargar los pedidos.</span>
+                <span className="text-[12px] opacity-80">{loadError}</span>
+                <button
+                  onClick={() => { fetchOrders(adminKey, filter, search, page); fetchCounts(adminKey); }}
+                  className="ml-auto text-[12px] font-semibold px-2.5 py-1 rounded border border-red-400 hover:bg-red-100 dark:border-red-500/50 dark:hover:bg-red-500/20"
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+            {(parcial || counts?.parcial) && (
+              <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-[13px] text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                <span className="font-semibold">Lista incompleta.</span>{' '}
+                <span className="text-[12px] opacity-90">Faltan pedidos de esta consulta: lo que ves abajo no es todo. No tomes decisiones de despacho con esta vista.</span>
+              </div>
+            )}
+            {countsError && (
+              <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-[13px] text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                <span className="font-semibold">Contadores no confiables.</span>{' '}
+                <span className="text-[12px] opacity-90">{countsError}</span>
+              </div>
+            )}
+            {actionError && (
+              <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-[13px] text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
+                <span>{actionError}</span>
+                <button onClick={() => setActionError(null)} className="ml-auto flex-none text-[11px] opacity-70 hover:opacity-100">Cerrar</button>
+              </div>
+            )}
+            {anomalias.map(a => (
+              <div key={`${a.id}-${a.tipo}`} className="flex flex-wrap items-center gap-x-2 rounded-lg border border-purple-300 bg-purple-50 px-3 py-2 text-[12px] text-purple-900 dark:border-purple-500/40 dark:bg-purple-500/10 dark:text-purple-200">
+                <span className="font-semibold">Revisar:</span>
+                <Link href={`/admin/pedidos/${a.id}`} className="font-bold underline">#{a.number}</Link>
+                <span className="opacity-90">{a.tipo === 'total_negativo' ? `total negativo (${a.detalle})` : a.detalle}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* KPIs — conteos reales globales. `null` = no se pudo consultar, se muestra "—". */}
         {counts && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
             {([
-              { f: 'por-empaquetar',     n: counts.porEmpaquetar,     label: 'Por empaquetar',       num: 'text-red-600 dark:text-red-400',       active: 'border-red-400 ring-red-200 dark:border-red-500/60 dark:ring-red-500/25' },
-              { f: 'empaquetado',        n: counts.empaquetados,      label: 'Empaquetado',          num: 'text-orange-600 dark:text-orange-400', active: 'border-orange-400 ring-orange-200 dark:border-orange-500/60 dark:ring-orange-500/25' },
-              { f: 'enviado-sin-marcar', n: counts.enviadosSinMarcar, label: 'Enviado (con guía)',   num: 'text-blue-600 dark:text-blue-400',     active: 'border-blue-400 ring-blue-200 dark:border-blue-500/60 dark:ring-blue-500/25' },
-              { f: 'pending',            n: counts.pendientes,        label: 'Sin pagar',            num: 'text-yellow-600 dark:text-yellow-400', active: 'border-yellow-400 ring-yellow-200 dark:border-yellow-500/60 dark:ring-yellow-500/25' },
-              { f: 'enviado',            n: counts.despachados,       label: 'Marcados enviados',    num: 'text-green-600 dark:text-green-400',   active: 'border-green-400 ring-green-200 dark:border-green-500/60 dark:ring-green-500/25' },
+              { f: 'por-empaquetar',     n: counts.porEmpaquetar,     label: 'Por empaquetar',     num: 'text-red-600 dark:text-red-400',       active: 'border-red-400 ring-red-200 dark:border-red-500/60 dark:ring-red-500/25' },
+              { f: 'empaquetado',        n: counts.empaquetados,      label: 'Empaquetado',        num: 'text-orange-600 dark:text-orange-400', active: 'border-orange-400 ring-orange-200 dark:border-orange-500/60 dark:ring-orange-500/25' },
+              { f: 'enviado-sin-marcar', n: counts.enviadosSinMarcar, label: 'Enviado (con guía)', num: 'text-blue-600 dark:text-blue-400',     active: 'border-blue-400 ring-blue-200 dark:border-blue-500/60 dark:ring-blue-500/25' },
+              { f: 'pending',            n: counts.pendientes,        label: 'Sin pagar',          num: 'text-yellow-600 dark:text-yellow-400', active: 'border-yellow-400 ring-yellow-200 dark:border-yellow-500/60 dark:ring-yellow-500/25' },
+              { f: 'on-hold',            n: counts.enEspera,          label: 'En espera',          num: 'text-orange-600 dark:text-orange-400', active: 'border-orange-400 ring-orange-200 dark:border-orange-500/60 dark:ring-orange-500/25' },
+              { f: 'failed',             n: counts.fallidos,          label: 'Falló el pago',      num: 'text-rose-600 dark:text-rose-400',     active: 'border-rose-400 ring-rose-200 dark:border-rose-500/60 dark:ring-rose-500/25' },
             ]).map(k => (
               <button
                 key={k.f}
                 onClick={() => setFilter(k.f)}
+                aria-pressed={filter === k.f}
                 className={`text-left bg-card rounded-lg border p-3 transition-colors ${filter === k.f ? `${k.active} ring-1` : 'border-border hover:border-border-mid'}`}
               >
-                <div className={`text-[22px] font-bold leading-none ${k.num}`}>{k.n}</div>
+                <div className={`text-[22px] font-bold leading-none ${k.n === null ? 'text-muted-foreground/60' : k.num}`}>
+                  {k.n === null ? '—' : k.n}
+                </div>
                 <div className="text-[11px] text-muted-foreground mt-1 font-medium">{k.label}</div>
               </button>
             ))}
@@ -504,7 +611,13 @@ export default function PedidosPage() {
         ) : loading ? (
           <div className="text-center py-20 text-[13px] text-muted-foreground/70">Cargando pedidos...</div>
         ) : visibleOrders.length === 0 ? (
-          <div className="text-center py-20 text-[13px] text-muted-foreground/70">No hay pedidos</div>
+          // "No hay pedidos" sólo cuando de verdad no hay. Si la consulta falló,
+          // el vacío es desconocimiento, no una bandeja limpia.
+          <div className="text-center py-20 text-[13px] text-muted-foreground/70">
+            {loadError
+              ? <span className="text-red-700 dark:text-red-300">No sabemos qué pedidos hay: la consulta a WooCommerce falló. Reintentá arriba.</span>
+              : 'No hay pedidos'}
+          </div>
         ) : (
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             {/* Table header */}
@@ -512,6 +625,7 @@ export default function PedidosPage() {
               <div className="flex items-center">
                 <input
                   type="checkbox"
+                  aria-label="Seleccionar todos los pedidos de la lista"
                   checked={selected.size === visibleOrders.length && visibleOrders.length > 0}
                   onChange={() => toggleAll(visibleOrders)}
                   className="rounded border-border-mid cursor-pointer"
@@ -541,6 +655,7 @@ export default function PedidosPage() {
                 <div className="flex items-center col-start-1 row-start-1 lg:col-start-auto lg:row-start-auto" onClick={e => e.stopPropagation()}>
                   <input
                     type="checkbox"
+                    aria-label={`Seleccionar pedido #${order.number}`}
                     checked={selected.has(order.id)}
                     onChange={() => toggleSelect(order.id)}
                     className="rounded border-border-mid cursor-pointer"
@@ -660,6 +775,7 @@ export default function PedidosPage() {
                 {/* Status */}
                 <div className="col-start-2 row-start-3 lg:col-start-auto lg:row-start-auto">
                   <select
+                    aria-label={`Estado del pedido #${order.number}`}
                     value={statusMap[order.id] || order.status}
                     onChange={e => onStatusSelect(order, e.target.value)}
                     onClick={e => e.stopPropagation()}

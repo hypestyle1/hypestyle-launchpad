@@ -77,12 +77,16 @@ export function StatusBadge({ tone = 'neutral', children }: { tone?: BadgeTone; 
   );
 }
 
-/** Mapa canónico de estados de pedido Woo → label + tono. Antes redefinido en 5 archivos. */
+/**
+ * Mapa canónico de estados de pedido Woo → label + tono. Antes redefinido en 5
+ * archivos. Los slugs y los textos salen de lib/wc-order-status (la lista que
+ * WC acepta de verdad); acá sólo se le agrega el tono visual. Ya no está
+ * 'enviado': nunca fue un estado registrado en este sitio.
+ */
 export const ORDER_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
   'pending':    { label: 'Sin pagar',   tone: 'warning' },
   'on-hold':    { label: 'En espera',   tone: 'warning' },
   'processing': { label: 'Pagado',      tone: 'info' },
-  'enviado':    { label: 'Enviado',     tone: 'success' },
   'completed':  { label: 'Completado',  tone: 'success' },
   'cancelled':  { label: 'Cancelado',   tone: 'neutral' },
   'refunded':   { label: 'Reembolsado', tone: 'neutral' },
