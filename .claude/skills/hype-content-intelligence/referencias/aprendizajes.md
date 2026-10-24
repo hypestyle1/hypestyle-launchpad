@@ -27,7 +27,7 @@ que haga falta una decisión humana para convertir una observación en criterio.
 ## [estado] Título corto y concreto
 - **Afirmación:** qué se sostiene, en una línea.
 - **Métrica:** cuál y con qué denominador (ej. guardados/alcance).
-- **Segmento:** a qué se aplica (ej. gorras, portada flatlay, orgánico).
+- **Segmento:** a qué se aplica (ej. gorras, portada producto-piso, orgánico).
 - **Evidencia:** n por segmento, medianas, ventana temporal, 2-3 permalinks concretos.
 - **Confianza:** alta/media/baja + por qué.
 - **Límites:** confusores no controlados, qué no cubre.

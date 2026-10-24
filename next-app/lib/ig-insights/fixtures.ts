@@ -13,6 +13,7 @@
  * hipótesis creativa.
  */
 
+import { TAXONOMY_VERSION } from './taxonomia';
 import type { IgPostRecord, IgSnapshotMetrics, IgSnapshotRecord } from './types';
 
 /** PRNG determinista (mulberry32): mismo seed → mismo dataset. */
@@ -32,6 +33,7 @@ type Perfil = {
   coverType: string;
   visualStyle: string;
   scenario: string;
+  hasModels: string;
   productType: 'FEED' | 'REELS';
   mediaType: 'CAROUSEL_ALBUM' | 'IMAGE' | 'VIDEO';
   /** Multiplicadores de reach / tasa de like / tasa de guardado. */
@@ -41,18 +43,20 @@ type Perfil = {
   caption: string;
 };
 
-// Mezcla verosímil de los formatos reales del feed de Hype. Los multiplicadores
-// generan VARIEDAD entre categorías (para que las tablas digan algo), no un
-// resultado prearmado a favor de ninguna hipótesis.
+// Mezcla verosímil de los formatos reales del feed de Hype, con la taxonomía v1
+// (doc 19). Los multiplicadores generan VARIEDAD entre categorías (para que las
+// tablas digan algo), no un resultado prearmado a favor de ninguna hipótesis: el
+// perfil de portada en piso rinde más en guardados y el editorial más en
+// alcance porque así se ve la pantalla, no porque sea la conclusión.
 const PERFILES: Perfil[] = [
-  { category: 'flatlay',       coverType: 'producto-piso',   visualStyle: 'luz-natural', scenario: 'piso-cemento',   productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 0.7, mLike: 1.5, mSave: 1.7, caption: 'Camo Cap Grey disponible en la web.\n\nHype® STYLE&CULTURE' },
-  { category: 'editorial',     coverType: 'modelo-editorial',visualStyle: 'estudio',     scenario: 'exterior-urbano',productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 1.6, mLike: 0.8, mSave: 0.8, caption: 'SS27 Campaign — Athletic Dept.\n\nHype® STYLE&CULTURE' },
-  { category: 'estudio',       coverType: 'estudio-limpio',  visualStyle: 'estudio',     scenario: 'estudio',        productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 0.9, mLike: 1.1, mSave: 1.3, caption: 'Regular Tee — nueva paleta SS27.' },
-  { category: 'ugc',           coverType: 'modelo-producto', visualStyle: 'luz-natural', scenario: 'exterior-urbano',productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 0.8, mLike: 1.2, mSave: 0.9, caption: '@cliente con el Zip Hoodie Camo.' },
-  { category: 'reel-visual',   coverType: 'frame-video',     visualStyle: 'luz-natural', scenario: 'estudio',        productType: 'REELS', mediaType: 'VIDEO',          mReach: 1.9, mLike: 0.7, mSave: 1.0, caption: 'Longsleeve Pink/Blue — fit check.' },
-  { category: 'reel-hablando', coverType: 'frame-video',     visualStyle: 'luz-natural', scenario: 'local-showroom', productType: 'REELS', mediaType: 'VIDEO',          mReach: 1.3, mLike: 0.9, mSave: 0.7, caption: 'Por qué hacemos tiradas cortas.' },
-  { category: 'bts',           coverType: 'frame-video',     visualStyle: 'archivo',     scenario: 'local-showroom', productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 0.6, mLike: 1.0, mSave: 0.8, caption: 'Detrás de escena — estampado Running Horses.' },
-  { category: 'cultura',       coverType: 'grafica',         visualStyle: 'archivo',     scenario: 'estudio',        productType: 'FEED',  mediaType: 'IMAGE',          mReach: 0.8, mLike: 0.9, mSave: 1.1, caption: 'STYLE&CULTURE — archivo 2019.' },
+  { category: 'producto',      coverType: 'producto-piso',    visualStyle: 'luz-natural',     scenario: 'sin-escenario', hasModels: 'no',            productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 0.7, mLike: 1.5, mSave: 1.7, caption: 'Camo Cap Grey disponible en la web.\n\nHype® STYLE&CULTURE' },
+  { category: 'editorial',     coverType: 'modelo-editorial', visualStyle: 'estudio',         scenario: 'calle',         hasModels: 'si-rostro',     productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 1.6, mLike: 0.8, mSave: 0.8, caption: 'SS27 Campaign — Athletic Dept.\n\nHype® STYLE&CULTURE' },
+  { category: 'producto',      coverType: 'producto-estudio', visualStyle: 'estudio',         scenario: 'sin-escenario', hasModels: 'no',            productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 0.9, mLike: 1.1, mSave: 1.3, caption: 'Regular Tee — nueva paleta SS27.' },
+  { category: 'comunidad',     coverType: 'modelo-producto',  visualStyle: 'luz-natural',     scenario: 'calle',         hasModels: 'si-sin-rostro', productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 0.8, mLike: 1.2, mSave: 0.9, caption: '@cliente con el Zip Hoodie Camo.' },
+  { category: 'drop',          coverType: 'modelo-producto',  visualStyle: 'estudio',         scenario: 'estudio',       hasModels: 'si-rostro',     productType: 'REELS', mediaType: 'VIDEO',          mReach: 1.9, mLike: 0.7, mSave: 1.0, caption: 'Longsleeve Pink/Blue — preventa abierta.' },
+  { category: 'proceso',       coverType: 'modelo-editorial', visualStyle: 'luz-natural',     scenario: 'local',         hasModels: 'si-rostro',     productType: 'REELS', mediaType: 'VIDEO',          mReach: 1.3, mLike: 0.9, mSave: 0.7, caption: 'Por qué hacemos tiradas cortas.' },
+  { category: 'institucional', coverType: 'escena',           visualStyle: 'archivo',         scenario: 'taller',        hasModels: 'si-sin-rostro', productType: 'FEED',  mediaType: 'CAROUSEL_ALBUM', mReach: 0.6, mLike: 1.0, mSave: 0.8, caption: 'Pedidos antes de las 14 h salen el mismo día.' },
+  { category: 'cultura',       coverType: 'grafica',          visualStyle: 'grafica-digital', scenario: 'sin-escenario', hasModels: 'no',            productType: 'FEED',  mediaType: 'IMAGE',          mReach: 0.8, mLike: 0.9, mSave: 1.1, caption: 'STYLE&CULTURE — archivo 2019.' },
 ];
 
 const CANT_POSTS = 72;
@@ -129,11 +133,15 @@ export function fixturePosts(ahora: Date = new Date()): IgPostRecord[] {
       visualStyle: sinClasificar ? '' : perfil.visualStyle,
       objective: '',
       scenario: sinClasificar ? '' : perfil.scenario,
-      hasModels: perfil.coverType.startsWith('modelo') ? 'modelo' : 'sin-personas',
+      hasModels: sinClasificar ? '' : perfil.hasModels,
       aiUsage: 'none',
       classifiedBy: sinClasificar ? '' : 'claude',
       classifiedAt: sinClasificar ? null : iso(ahora),
       reviewState: sinClasificar ? '' : i % 4 === 0 ? 'approved' : 'pending',
+      taxonomyVersion: sinClasificar ? null : TAXONOMY_VERSION,
+      classificationConfidence: sinClasificar ? null : Math.round((0.6 + (i % 5) * 0.08) * 100) / 100,
+      classificationRun: sinClasificar ? '' : 'demo-v1',
+      classificationNote: '',
       wasBoosted: boosted,
       boostRef: boosted ? 'DEMO' : '',
       contentItemId: i % 12 === 1 ? 9000 + i : null,

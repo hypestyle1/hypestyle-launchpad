@@ -38,7 +38,7 @@ cd .claude/skills/hype-content-intelligence
 node lib/consultar.mjs resumen     --dias 90
 node lib/consultar.mjs top         --metrica savedReach --dias 90 --limite 10
 node lib/consultar.mjs segmentos   --dimension portada  --metrica likesReach
-node lib/consultar.mjs contrastar  --a flatlay --b editorial --dimension categoria
+node lib/consultar.mjs contrastar  --a producto --b editorial --dimension categoria
 node lib/consultar.mjs producto    --producto "camo cap" --metrica savedReach
 node lib/consultar.mjs mezcla      --dias 180
 ```
@@ -54,7 +54,36 @@ node lib/consultar.mjs mezcla      --dias 180
 
 Métricas: `likesReach` (principal de reacción) · `erReach` · `savedReach` · `sharesReach` ·
 `commentsReach` · `followsReach` · `likesViews` (secundaria).
-Dimensiones: `categoria` · `portada` · `estilo` · `formato` · `escenario` · `campania`.
+Dimensiones: `categoria` · `portada` · `estilo` · `escenario` · `modelos` · `formato` · `campania`.
+Las cinco primeras son la taxonomía v1 (congelada); `formato` es observado.
+
+## Taxonomía v1 — congelada
+
+Cinco vocabularios **cerrados**. El listado completo con las definiciones está en
+`referencias/metodologia.md`, y en código en `lib/analisis.mjs` (`VOCABULARIO`) y
+`next-app/lib/ig-insights/taxonomia.ts` (la misma lista, con test de paridad).
+
+| Dimensión | Pregunta | Valores |
+|---|---|---|
+| `category` | para qué existe | producto · drop · editorial · comunidad · cultura · proceso · institucional · otro |
+| `cover_type` | qué se ve en la portada | producto-piso · producto-detalle · producto-estudio · modelo-editorial · modelo-producto · grafica · escena · otro |
+| `visual_style` | cómo está hecha | luz-natural · estudio · flash · nocturna · grafica-digital · archivo · ia-asistido · otro |
+| `scenario` | dónde pasa | calle · interior-casa · local · taller · estudio · exterior-natural · evento · sin-escenario · otro |
+| `has_models` | personas | no · si-rostro · si-sin-rostro · grupo · otro |
+
+Reglas duras:
+
+- **No inventes valores.** Si una publicación no entra en ninguno, es `otro` + una nota diciendo
+  por qué. Un valor nuevo no se agrega sobre la marcha: se propone, y si se acepta sube la versión
+  de taxonomía y se rehace el gold set.
+- **El formato no se clasifica**: sale de la API (`carrusel · imagen · reel · reel-prueba ·
+  video-feed · story`).
+- **El vacío es "sin clasificar"**, no una categoría: nunca forma un segmento ni entra en una
+  comparación.
+- `visual_style = ia-asistido` ⇒ el uso de IA no puede ser `none`.
+- **La clasificación asistida siempre pasa por revisión humana**, y se mide contra el gold set de
+  30 publicaciones que clasificó Valentín (`_claude/contenido/gold-set-b4-v1.json`). Nunca uses el
+  gold set como ejemplo para clasificar: es la vara, y si la ves antes de clasificar deja de medir.
 
 ## Metodología (no negociable)
 

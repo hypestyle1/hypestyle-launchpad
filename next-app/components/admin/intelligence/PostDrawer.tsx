@@ -23,9 +23,11 @@ import type { IgPostRecord, IgSnapshotRecord } from '@/lib/ig-insights/types';
 import {
   CATEGORIA_LABELS,
   CoverThumb,
+  ESCENARIO_LABELS,
   ESTILO_LABELS,
   EstadoBadges,
   formatoDe,
+  MODELOS_LABELS,
   NotaMetodologica,
   PORTADA_LABELS,
 } from './bits';
@@ -302,12 +304,33 @@ function Cuerpo({
               <Campo k="Categoría" v={CATEGORIA_LABELS[post.category] ?? post.category} />
               <Campo k="Tipo de portada" v={PORTADA_LABELS[post.coverType] ?? post.coverType} />
               <Campo k="Estilo visual" v={ESTILO_LABELS[post.visualStyle] ?? post.visualStyle} />
-              <Campo k="Escenario" v={post.scenario} />
-              <Campo k="Personas" v={post.hasModels} />
+              <Campo k="Escenario" v={ESCENARIO_LABELS[post.scenario] ?? post.scenario} />
+              <Campo k="Personas" v={MODELOS_LABELS[post.hasModels] ?? post.hasModels} />
               <Campo
                 k="Clasificado por"
                 v={post.classifiedBy === 'claude' ? 'Claude (a revisar)' : post.classifiedBy}
               />
+              {/* Trazabilidad de la clasificación: con qué vocabulario se
+                  decidió, con cuánta confianza y en qué corrida. Sin esto no se
+                  puede deshacer una corrida ni contrastarla contra el gold set. */}
+              <Campo
+                k="Taxonomía"
+                v={post.taxonomyVersion != null ? `v${post.taxonomyVersion}` : '—'}
+              />
+              <Campo
+                k="Confianza"
+                v={
+                  post.classificationConfidence != null
+                    ? `${Math.round(post.classificationConfidence * 100)}%`
+                    : '—'
+                }
+              />
+              <Campo k="Corrida" v={post.classificationRun || '—'} />
+              {post.classificationNote ? (
+                <div className="col-span-2">
+                  <Campo k="Nota" v={post.classificationNote} />
+                </div>
+              ) : null}
             </dl>
           )}
 

@@ -22,7 +22,21 @@ import {
   UMBRAL_LIKES_REACH as UMBRAL_LIKES_REACH_TS,
   UMBRAL_VIEWS_REACH as UMBRAL_VIEWS_REACH_TS,
 } from '@/lib/ig-insights/calidad';
+import { fixturePosts } from '@/lib/ig-insights/fixtures';
 import { engagementOverReach as erTs, likesOverReach as likesTs, savedOverReach as savedTs } from '@/lib/ig-insights/ratios';
+import {
+  CATEGORIA_LABELS,
+  coherenciaIa,
+  type DimensionKey,
+  ESCENARIO_LABELS,
+  esValor,
+  ESTILO_LABELS,
+  MEZCLA_OBJETIVO,
+  MODELOS_LABELS,
+  PORTADA_LABELS,
+  TAXONOMY_VERSION,
+  VOCABULARIO,
+} from '@/lib/ig-insights/taxonomia';
 import type { IgPostRecord, IgSnapshotRecord } from '@/lib/ig-insights/types';
 
 // El motor del skill es JS plano fuera del tsconfig: TS infiere sus firmas de
@@ -58,7 +72,7 @@ function post(p: Partial<IgPostRecord> & { igMediaId: string }): IgPostRecord {
     children: null,
     likeCount: null,
     commentsCount: null,
-    category: 'flatlay',
+    category: 'producto',
     coverType: 'producto-piso',
     visualStyle: 'luz-natural',
     objective: '',
@@ -68,6 +82,10 @@ function post(p: Partial<IgPostRecord> & { igMediaId: string }): IgPostRecord {
     classifiedBy: 'human',
     classifiedAt: null,
     reviewState: '',
+    taxonomyVersion: null,
+    classificationConfidence: null,
+    classificationRun: '',
+    classificationNote: '',
     wasBoosted: false,
     boostRef: '',
     contentItemId: null,
@@ -226,23 +244,23 @@ describe('compararSegmentos', () => {
     );
 
   it('sin dos segmentos de n suficiente, declara que no alcanza', () => {
-    const r = skill.compararSegmentos([...hacer('flatlay', 3, 0.08), ...hacer('editorial', 4, 0.03)], {});
+    const r = skill.compararSegmentos([...hacer('producto', 3, 0.08), ...hacer('editorial', 4, 0.03)], {});
     expect(r.evidenciaSuficiente).toBe(false);
     expect(r.segmentos.every((s: { smallSample: boolean }) => s.smallSample)).toBe(true);
   });
 
   it('con dos segmentos de n≥8 habilita la comparación', () => {
-    const r = skill.compararSegmentos([...hacer('flatlay', 10, 0.08), ...hacer('editorial', 9, 0.03)], {});
+    const r = skill.compararSegmentos([...hacer('producto', 10, 0.08), ...hacer('editorial', 9, 0.03)], {});
     expect(r.evidenciaSuficiente).toBe(true);
-    expect(r.segmentos[0].key).toBe('flatlay');
+    expect(r.segmentos[0].key).toBe('producto');
   });
 
   it('las publicaciones sin clasificar no forman un segmento fantasma', () => {
     const r = skill.compararSegmentos(
-      [...hacer('flatlay', 2, 0.08), post({ igMediaId: 'x', category: '', latest: metrics({ reach: 1000, likes: 500 }) })],
+      [...hacer('producto', 2, 0.08), post({ igMediaId: 'x', category: '', latest: metrics({ reach: 1000, likes: 500 }) })],
       {},
     );
-    expect(r.segmentos.map((s: { key: string }) => s.key)).toEqual(['flatlay']);
+    expect(r.segmentos.map((s: { key: string }) => s.key)).toEqual(['producto']);
   });
 
   it('una dimensión inexistente falla con las opciones a la vista', () => {
@@ -257,8 +275,8 @@ describe('contrastar', () => {
     );
 
   it('con muestras chicas el veredicto es insuficiente, por grande que sea la diferencia', () => {
-    const r = skill.contrastar([...hacer('flatlay', [0.09, 0.08, 0.1]), ...hacer('editorial', [0.02, 0.03])], {
-      a: 'flatlay',
+    const r = skill.contrastar([...hacer('producto', [0.09, 0.08, 0.1]), ...hacer('editorial', [0.02, 0.03])], {
+      a: 'producto',
       b: 'editorial',
     });
     expect(r.factor).toBeGreaterThan(3);
@@ -269,10 +287,10 @@ describe('contrastar', () => {
   it('con n suficiente y rangos separados, el veredicto es señal', () => {
     const r = skill.contrastar(
       [
-        ...hacer('flatlay', [0.08, 0.085, 0.09, 0.082, 0.088, 0.091, 0.079, 0.086]),
+        ...hacer('producto', [0.08, 0.085, 0.09, 0.082, 0.088, 0.091, 0.079, 0.086]),
         ...hacer('editorial', [0.02, 0.021, 0.019, 0.022, 0.018, 0.023, 0.02, 0.021]),
       ],
-      { a: 'flatlay', b: 'editorial' },
+      { a: 'producto', b: 'editorial' },
     );
     expect(r.veredicto).toBe('señal');
     expect(r.solapan).toBe(false);
@@ -281,22 +299,22 @@ describe('contrastar', () => {
   it('con n suficiente pero rangos solapados, baja a indicio', () => {
     const r = skill.contrastar(
       [
-        ...hacer('flatlay', [0.05, 0.06, 0.04, 0.07, 0.03, 0.08, 0.05, 0.06]),
+        ...hacer('producto', [0.05, 0.06, 0.04, 0.07, 0.03, 0.08, 0.05, 0.06]),
         ...hacer('editorial', [0.045, 0.055, 0.035, 0.065, 0.025, 0.075, 0.045, 0.055]),
       ],
-      { a: 'flatlay', b: 'editorial' },
+      { a: 'producto', b: 'editorial' },
     );
     expect(r.solapan).toBe(true);
     expect(r.veredicto).toBe('indicio');
   });
 
   it('siempre recuerda que no es causalidad', () => {
-    const r = skill.contrastar(hacer('flatlay', [0.05]), { a: 'flatlay', b: 'editorial' });
+    const r = skill.contrastar(hacer('producto', [0.05]), { a: 'producto', b: 'editorial' });
     expect(r.limitaciones.join(' ')).toContain('no una causa');
   });
 
   it('un segmento inexistente no rompe: queda en n=0', () => {
-    const r = skill.contrastar(hacer('flatlay', [0.05]), { a: 'flatlay', b: 'no-existe' });
+    const r = skill.contrastar(hacer('producto', [0.05]), { a: 'producto', b: 'no-existe' });
     expect(r.b.n).toBe(0);
     expect(r.veredicto).toBe('insuficiente');
   });
@@ -307,36 +325,36 @@ describe('contrastar', () => {
 describe('detectarRepeticion', () => {
   it('marca sobre y sub representación contra la mezcla objetivo', () => {
     const posts = [
-      ...Array.from({ length: 8 }, (_, i) => post({ igMediaId: `f${i}`, category: 'flatlay' })),
+      ...Array.from({ length: 8 }, (_, i) => post({ igMediaId: `f${i}`, category: 'producto' })),
       ...Array.from({ length: 2 }, (_, i) => post({ igMediaId: `e${i}`, category: 'editorial' })),
     ];
     const r = skill.detectarRepeticion(posts, { ahora: AHORA });
     expect(r.total).toBe(10);
-    expect(r.sobrerrepresentadas[0].categoria).toBe('flatlay'); // 80% vs 25% objetivo
-    expect(r.subrepresentadas.map((f: { categoria: string }) => f.categoria)).toContain('reel-visual');
+    expect(r.sobrerrepresentadas[0].categoria).toBe('producto'); // 80% vs 30% objetivo
+    expect(r.subrepresentadas.map((f: { categoria: string }) => f.categoria)).toContain('drop');
   });
 
   it('detecta la racha de la misma categoría seguida', () => {
     const posts = ['a', 'b', 'c', 'd'].map((id, i) =>
-      post({ igMediaId: id, category: 'flatlay', publishedAt: `2026-10-0${i + 1} 12:00:00` }),
+      post({ igMediaId: id, category: 'producto', publishedAt: `2026-10-0${i + 1} 12:00:00` }),
     );
     expect(skill.detectarRepeticion(posts, { ahora: AHORA }).rachaMaxima).toEqual({
-      categoria: 'flatlay',
+      categoria: 'producto',
       largo: 4,
     });
   });
 
   it('informa los días desde la última de cada categoría', () => {
     const r = skill.detectarRepeticion(
-      [post({ igMediaId: 'x', category: 'ugc', publishedAt: '2026-09-17 18:00:00' })],
+      [post({ igMediaId: 'x', category: 'comunidad', publishedAt: '2026-09-17 18:00:00' })],
       { ahora: AHORA },
     );
-    expect(r.filas.find((f: { categoria: string }) => f.categoria === 'ugc').diasDesdeLaUltima).toBe(30);
-    expect(r.filas.find((f: { categoria: string }) => f.categoria === 'bts').diasDesdeLaUltima).toBeNull();
+    expect(r.filas.find((f: { categoria: string }) => f.categoria === 'comunidad').diasDesdeLaUltima).toBe(30);
+    expect(r.filas.find((f: { categoria: string }) => f.categoria === 'proceso').diasDesdeLaUltima).toBeNull();
   });
 
   it('con pocas publicaciones clasificadas aclara que la mezcla no dice mucho', () => {
-    const r = skill.detectarRepeticion([post({ igMediaId: 'x', category: 'flatlay' })], { ahora: AHORA });
+    const r = skill.detectarRepeticion([post({ igMediaId: 'x', category: 'producto' })], { ahora: AHORA });
     expect(r.nota).toContain('todavía no dice mucho');
   });
 });
@@ -401,13 +419,13 @@ describe('distribución sin verificar', () => {
   it('contrastar avisa que la diferencia puede ser plata y no contenido', () => {
     const rows = [
       ...Array.from({ length: 10 }, (_, i) =>
-        conMetricas(`a${i}`, 100 + i, { category: 'flatlay' }),
+        conMetricas(`a${i}`, 100 + i, { category: 'producto' }),
       ),
       ...Array.from({ length: 10 }, (_, i) =>
         conMetricas(`b${i}`, 20 + i, { category: 'editorial' }),
       ),
     ];
-    const r = skill.contrastar(rows, { dimension: 'categoria', a: 'flatlay', b: 'editorial' });
+    const r = skill.contrastar(rows, { dimension: 'categoria', a: 'producto', b: 'editorial' });
     expect(r.sinVerificar).toBe(20);
     expect(r.limitaciones.join(' ')).toContain('SIN VERIFICAR');
     // Y sigue sin afirmar causalidad, con señal o sin ella.
@@ -656,5 +674,101 @@ describe('fixtures del skill', () => {
     expect(r.n).toBe(0);
     expect(r.muestraChica).toBe(true);
     expect(r.ranking.items).toHaveLength(0);
+  });
+
+  // demo.json es un artefacto: sale de fixtures.ts con ahora fijo. Si alguien
+  // toca uno de los dos y no el otro, el skill y el panel analizan datos
+  // distintos y las comparaciones entre ambos dejan de valer.
+  it('son exactamente el dataset de fixtures.ts (mismo seed, misma hora)', () => {
+    const esperado = fixturePosts(new Date('2026-10-17T18:00:00Z'));
+    expect(demo.rows).toEqual(esperado);
+  });
+});
+
+/* ─── Taxonomía v1 ──────────────────────────────────────────────────────── */
+
+describe('paridad de la taxonomía con lib/ig-insights/taxonomia.ts', () => {
+  const DIMENSIONES_TAXONOMIA: DimensionKey[] = [
+    'category', 'coverType', 'visualStyle', 'scenario', 'hasModels',
+  ];
+
+  it('la versión congelada es la misma de los dos lados', () => {
+    expect(skill.TAXONOMY_VERSION).toBe(TAXONOMY_VERSION);
+    expect(TAXONOMY_VERSION).toBe(1);
+  });
+
+  it('los cinco vocabularios son idénticos, valor por valor y en orden', () => {
+    for (const dim of DIMENSIONES_TAXONOMIA) {
+      expect(skill.VOCABULARIO[dim]).toEqual(VOCABULARIO[dim]);
+    }
+    expect(Object.keys(skill.VOCABULARIO).sort()).toEqual([...DIMENSIONES_TAXONOMIA].sort());
+  });
+
+  it('la mezcla objetivo es la misma y suma 1', () => {
+    expect(skill.MEZCLA_OBJETIVO).toEqual(MEZCLA_OBJETIVO);
+    const suma = Object.values(MEZCLA_OBJETIVO).reduce((a, b) => a + b, 0);
+    expect(suma).toBeCloseTo(1, 10);
+  });
+
+  it('toda categoría de la mezcla existe en el vocabulario', () => {
+    for (const cat of Object.keys(MEZCLA_OBJETIVO)) {
+      expect(VOCABULARIO.category).toContain(cat);
+    }
+  });
+
+  it('el vacío vale en las cinco dimensiones y un valor inventado no, de los dos lados', () => {
+    for (const dim of DIMENSIONES_TAXONOMIA) {
+      expect(esValor(dim, '')).toBe(true);
+      expect(skill.esValor(dim, '')).toBe(true);
+      expect(esValor(dim, 'flatlay')).toBe(false);
+      expect(skill.esValor(dim, 'flatlay')).toBe(false);
+    }
+  });
+
+  it('las etiquetas de pantalla cubren todos los valores', () => {
+    const mapas: Array<[DimensionKey, Record<string, string>]> = [
+      ['category', CATEGORIA_LABELS],
+      ['coverType', PORTADA_LABELS],
+      ['visualStyle', ESTILO_LABELS],
+      ['scenario', ESCENARIO_LABELS],
+      ['hasModels', MODELOS_LABELS],
+    ];
+    for (const [dim, mapa] of mapas) {
+      expect(Object.keys(mapa)).toEqual(VOCABULARIO[dim]);
+      expect(Object.values(mapa).every((l) => l.length > 0)).toBe(true);
+    }
+  });
+
+  it('la regla de coherencia de IA es la misma de los dos lados', () => {
+    for (const [estilo, uso, ok] of [
+      ['ia-asistido', 'none', false],
+      ['ia-asistido', 'assisted', true],
+      ['ia-asistido', 'generated', true],
+      ['luz-natural', 'none', true],
+      ['luz-natural', 'generated', true],
+    ] as Array<[string, string, boolean]>) {
+      expect(coherenciaIa(estilo, uso)).toBe(ok);
+      expect(skill.coherenciaIa(estilo, uso)).toBe(ok);
+    }
+  });
+
+  it('el dataset demo sólo usa valores del vocabulario congelado', () => {
+    for (const p of demo.rows) {
+      for (const dim of DIMENSIONES_TAXONOMIA) {
+        expect(esValor(dim, String(p[dim] ?? ''))).toBe(true);
+      }
+      expect(coherenciaIa(p.visualStyle, p.aiUsage)).toBe(true);
+      // Clasificada ⇒ queda registrado con qué vocabulario se clasificó.
+      if (p.category !== '') expect(p.taxonomyVersion).toBe(TAXONOMY_VERSION);
+      else expect(p.taxonomyVersion).toBeNull();
+    }
+  });
+
+  it('las cinco dimensiones se pueden segmentar desde el skill', () => {
+    const universo = skill.filtrar(demo.rows, { dias: null, ahora: AHORA });
+    for (const dim of ['categoria', 'portada', 'estilo', 'escenario', 'modelos']) {
+      const r = skill.compararSegmentos(universo, { dimension: dim });
+      expect(r.segmentos.length).toBeGreaterThan(0);
+    }
   });
 });

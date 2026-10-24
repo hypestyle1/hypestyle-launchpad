@@ -17,7 +17,7 @@
  *
  * Comandos:
  *   top           ranking por una métrica
- *   segmentos     medianas por dimensión (categoria|portada|estilo|formato|escenario|campania)
+ *   segmentos     medianas por dimensión (categoria|portada|estilo|escenario|modelos|formato|campania)
  *   contrastar    dos segmentos enfrentados (--a X --b Y)
  *   producto      qué funcionó para un producto (--producto "camo cap" | --producto 881)
  *   mezcla        repetición de formatos contra la mezcla objetivo
@@ -30,7 +30,8 @@
  *   --reels grilla|prueba|todos         (default grilla: los trial reels no se mezclan)
  *   --dimension categoria
  *   --formato REELS|FEED|CARRUSEL
- *   --categoria flatlay   --portada producto-piso   --estilo luz-natural
+ *   --categoria producto  --portada producto-piso   --estilo luz-natural
+ *   --escenario calle     --modelos si-rostro
  *   --limite 10          --json
  *   --demo               fuerza el dataset sintético
  *   --base http://localhost:3000   --key <clave admin>
@@ -294,6 +295,8 @@ export async function main(argv = process.argv.slice(2)) {
     categoria: args.categoria || null,
     portada: args.portada || null,
     estilo: args.estilo || null,
+    escenario: args.escenario || null,
+    modelos: args.modelos || null,
     campania: args.campania ?? null,
     texto: args.texto || null,
     ahora: datos.sintetico ? '2026-10-17T18:00:00Z' : undefined,

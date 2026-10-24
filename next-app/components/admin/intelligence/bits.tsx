@@ -5,41 +5,23 @@ import { Clapperboard, FlaskConical, Image as ImageIcon, Images, TriangleAlert }
 
 import { StatusBadge } from '@/components/admin/ui';
 import { avisoDeCalidad, evaluarCalidad, type ResumenCalidad } from '@/lib/ig-insights/calidad';
+import { CATEGORIA_LABELS } from '@/lib/ig-insights/taxonomia';
 import type { IgPostRecord } from '@/lib/ig-insights/types';
 
 // Piezas compartidas de Content Intelligence (Library + Overview). Todo en
 // tokens del admin; nada acá escribe: son vistas de lectura.
 
-/* ── Etiquetas de la taxonomía (doc 03 de la propuesta) ── */
+/* ── Etiquetas de la taxonomía v1 (doc 19, congelada) ──
+   Los valores y las etiquetas salen de lib/ig-insights/taxonomia.ts, que es la
+   fuente única: acá sólo se re-exportan para las pantallas que ya los usaban. */
 
-export const CATEGORIA_LABELS: Record<string, string> = {
-  'flatlay': 'Producto en piso',
-  'editorial': 'Editorial',
-  'ugc': 'UGC / comunidad',
-  'reel-hablando': 'Reel hablando',
-  'reel-visual': 'Reel visual',
-  'estudio': 'Producto estudio',
-  'bts': 'Behind the scenes',
-  'cultura': 'Creativo / cultura',
-};
-
-export const PORTADA_LABELS: Record<string, string> = {
-  'producto-piso': 'Producto en piso',
-  'modelo-editorial': 'Modelo editorial',
-  'modelo-producto': 'Modelo + producto',
-  'estudio-limpio': 'Estudio limpio',
-  'grafica': 'Gráfica / lettering',
-  'frame-video': 'Frame de video',
-  'collage': 'Collage / split',
-};
-
-export const ESTILO_LABELS: Record<string, string> = {
-  'luz-natural': 'Luz natural',
-  'estudio': 'Estudio',
-  'flash': 'Flash directo',
-  'ia-asistido': 'IA asistido',
-  'archivo': 'Archivo',
-};
+export {
+  CATEGORIA_LABELS,
+  ESCENARIO_LABELS,
+  ESTILO_LABELS,
+  MODELOS_LABELS,
+  PORTADA_LABELS,
+} from '@/lib/ig-insights/taxonomia';
 
 export const FORMATO_LABELS: Record<string, string> = {
   FEED: 'Feed',
@@ -155,14 +137,14 @@ export function AvisoDistribucion({ n, verificadas = 0 }: { n: number; verificad
 // Tinte por categoría para los placeholders (la portada real llega con B2,
 // cuando el backfill en modo write las descargue a la biblioteca de WP).
 const TINTES: Record<string, string> = {
-  'flatlay': 'from-stone-500/30',
+  'producto': 'from-stone-500/30',
+  'drop': 'from-sky-500/25',
   'editorial': 'from-rose-500/25',
-  'ugc': 'from-amber-500/25',
-  'reel-hablando': 'from-sky-500/25',
-  'reel-visual': 'from-violet-500/25',
-  'estudio': 'from-zinc-500/30',
-  'bts': 'from-emerald-500/25',
+  'comunidad': 'from-amber-500/25',
   'cultura': 'from-orange-500/25',
+  'proceso': 'from-emerald-500/25',
+  'institucional': 'from-zinc-500/30',
+  'otro': 'from-violet-500/25',
   '': 'from-muted',
 };
 
@@ -211,6 +193,8 @@ export function EstadoBadges({ post }: { post: IgPostRecord }) {
       {post.category !== '' && post.reviewState === 'pending' && (
         <StatusBadge tone="neutral">Clasif. a revisar</StatusBadge>
       )}
+      {/* `sampled`: cayó en la revisión por muestreo de B4 y todavía no se miró. */}
+      {post.reviewState === 'sampled' && <StatusBadge tone="info">En muestreo</StatusBadge>}
       {post.contentItemId == null && <StatusBadge tone="neutral">Sin vincular</StatusBadge>}
     </>
   );

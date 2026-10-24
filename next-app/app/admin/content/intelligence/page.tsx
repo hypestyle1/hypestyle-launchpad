@@ -10,10 +10,12 @@ import {
   AvisoCobertura,
   AvisoDistribucion,
   CATEGORIA_LABELS,
+  ESCENARIO_LABELS,
   esReelDePrueba,
   ESTILO_LABELS,
   FixtureBanner,
   formatoDe,
+  MODELOS_LABELS,
   MuestraChica,
   NotaMetodologica,
   PORTADA_LABELS,
@@ -63,12 +65,16 @@ const PERIODOS = [
   { key: '365', label: 'Último año' },
 ];
 
-type Dim = 'category' | 'coverType' | 'visualStyle' | 'formato';
+// Las cinco dimensiones de la taxonomía v1 (doc 19) más el formato, que es
+// observado y no se clasifica a mano.
+type Dim = 'category' | 'coverType' | 'visualStyle' | 'scenario' | 'hasModels' | 'formato';
 
 const DIMENSIONES: Array<{ key: Dim; label: string }> = [
   { key: 'category', label: 'Categoría' },
   { key: 'coverType', label: 'Tipo de portada' },
   { key: 'visualStyle', label: 'Estilo visual' },
+  { key: 'scenario', label: 'Escenario' },
+  { key: 'hasModels', label: 'Personas' },
   { key: 'formato', label: 'Formato' },
 ];
 
@@ -76,6 +82,8 @@ const LABELS: Record<Dim, Record<string, string>> = {
   category: CATEGORIA_LABELS,
   coverType: PORTADA_LABELS,
   visualStyle: ESTILO_LABELS,
+  scenario: ESCENARIO_LABELS,
+  hasModels: MODELOS_LABELS,
   formato: {},
 };
 

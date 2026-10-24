@@ -56,7 +56,7 @@ cd hypestyle-launchpad/.claude/skills/hype-content-intelligence
 node lib/consultar.mjs resumen    --dias 90
 node lib/consultar.mjs top        --metrica savedReach --dias 90
 node lib/consultar.mjs segmentos  --dimension portada
-node lib/consultar.mjs contrastar --a flatlay --b editorial
+node lib/consultar.mjs contrastar --a producto-piso --b modelo-editorial --dimension portada
 node lib/consultar.mjs producto   --producto "camo cap"
 node lib/consultar.mjs mezcla     --dias 180
 
