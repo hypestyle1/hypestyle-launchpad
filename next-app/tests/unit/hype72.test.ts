@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   HYPE72_DROPS,
-  HYPE72_EARLY_ACCESS,
   HYPE72_END,
   HYPE72_GIFTS,
   HYPE72_PRECIOS_APROBADOS,
+  HYPE72_PREVIEW_AT,
   HYPE72_PUBLIC_AT,
   HYPE72_START,
   dropState,
@@ -104,18 +104,25 @@ describe('hype72 · cartelera por fecha', () => {
     expect(board.every((b) => b.state === 'revelado')).toBe(true);
   });
 
-  it('a las 23:00 del 1/11 (acceso anticipado) abre el drop 01 y nada más', () => {
-    // La ventana publicada es 2/11 → 4/11, pero el 4 PACK abre una hora antes
-    // porque a esa hora sale el aviso a Private Access y Mejores Amigos.
-    const board = hype72Board(at(HYPE72_EARLY_ACCESS));
-    expect(board.map((b) => b.state)).toEqual([
-      'abierto', 'revelado', 'revelado', 'revelado', 'revelado', 'revelado',
-    ]);
+  it('en la hora de la previa a los miembros no abre NADA', () => {
+    // 1/11 23:00 → 2/11 00:00: la landing deja de devolver 404 y los miembros
+    // ven la cartelera, pero no hay ni un precio habilitado. Decisión de
+    // Valentín del 25/10: todo lo comercial arranca el 2/11 a las 00:00.
+    for (const t of [HYPE72_PREVIEW_AT, '2026-11-01T23:30:00-03:00', '2026-11-01T23:59:59-03:00']) {
+      const board = hype72Board(at(t));
+      expect(board.every((b) => b.state === 'revelado')).toBe(true);
+      expect(isHype72Live(at(t))).toBe(false);
+    }
   });
 
-  it('un ms antes del acceso anticipado el drop 01 todavía no abrió', () => {
-    const justBefore = new Date(at(HYPE72_EARLY_ACCESS).getTime() - 1);
+  it('un ms antes del arranque el drop 01 todavía no abrió', () => {
+    const justBefore = new Date(at(HYPE72_START).getTime() - 1);
     expect(dropState(drop('01'), justBefore)).toBe('revelado');
+  });
+
+  it('el drop 01 abre en el instante exacto del arranque', () => {
+    expect(drop('01').opensAt).toBe(HYPE72_START);
+    expect(dropState(drop('01'), at(HYPE72_START))).toBe('abierto');
   });
 
   it('el 2/11 a las 12:00 solo abrió el drop 01', () => {
@@ -141,17 +148,33 @@ describe('hype72 · cartelera por fecha', () => {
   it('cada drop se revela antes de abrir y abre dentro del evento', () => {
     for (const d of HYPE72_DROPS) {
       expect(at(d.revealAt).getTime()).toBeLessThan(at(d.opensAt).getTime());
-      // El piso es el acceso anticipado, no el arranque de la ventana
-      // publicada: el drop 01 abre una hora antes del 2/11.
-      expect(at(d.opensAt).getTime()).toBeGreaterThanOrEqual(at(HYPE72_EARLY_ACCESS).getTime());
+      expect(at(d.opensAt).getTime()).toBeGreaterThanOrEqual(at(HYPE72_START).getTime());
       expect(at(d.opensAt).getTime()).toBeLessThan(at(HYPE72_END).getTime());
     }
   });
 
-  it('el acceso anticipado es exactamente una hora antes de la ventana publicada', () => {
-    expect(at(HYPE72_START).getTime() - at(HYPE72_EARLY_ACCESS).getTime()).toBe(3600_000);
-    // Y es el drop 01 el que abre ahí: es el que se le avisa a Private Access.
-    expect(drop('01').opensAt).toBe(HYPE72_EARLY_ACCESS);
+  it('NINGÚN drop abre antes del 2/11 00:00: no hay precios anticipados', () => {
+    // El guardián de la decisión del 25/10. Si alguien vuelve a colgarle un
+    // `opensAt` a la hora de la previa, este test lo frena.
+    const arranque = at(HYPE72_START).getTime();
+    for (const d of HYPE72_DROPS) {
+      expect(at(d.opensAt).getTime()).toBeGreaterThanOrEqual(arranque);
+    }
+    expect(HYPE72_START).toBe('2026-11-02T00:00:00-03:00');
+  });
+
+  it('la previa a los miembros es una hora antes del arranque, y no abre nada', () => {
+    expect(at(HYPE72_START).getTime() - at(HYPE72_PREVIEW_AT).getTime()).toBe(3600_000);
+    // Ni un drop usa esa hora como apertura.
+    expect(HYPE72_DROPS.some((d) => d.opensAt === HYPE72_PREVIEW_AT)).toBe(false);
+  });
+
+  it('el arranque y el cierre son los mismos que el 4 PACK (#614) y la home (#617)', () => {
+    // Verificado el 25/10 contra PACK_REGULAR_X4_DESDE/HASTA (lib/promo-pack-regular.ts)
+    // y HYPE72_HOME_DESDE/HASTA (lib/hype72-home.ts). Si se separan, la landing
+    // diría "en curso" con el carrito cobrando el precio viejo.
+    expect(Date.parse(HYPE72_START)).toBe(Date.parse('2026-11-02T00:00:00-03:00'));
+    expect(Date.parse(HYPE72_END)).toBe(Date.parse('2026-11-05T00:00:00-03:00'));
   });
 });
 
@@ -308,9 +331,11 @@ describe('hype72 · precios sin aprobar no se publican', () => {
 describe('hype72 · gate de acceso', () => {
   const ANTES = at('2026-10-29T12:00:00-03:00');
 
-  it('la landing abre junto con el primer drop, no con la ventana publicada', () => {
-    expect(HYPE72_PUBLIC_AT).toBe(HYPE72_EARLY_ACCESS);
-    expect(HYPE72_PUBLIC_AT).toBe(drop('01').opensAt);
+  it('la landing se abre una hora antes del evento, y eso es lo único que pasa', () => {
+    expect(HYPE72_PUBLIC_AT).toBe(HYPE72_PREVIEW_AT);
+    // No coincide con la apertura del primer drop: a esa hora se mira, no se compra.
+    expect(HYPE72_PUBLIC_AT).not.toBe(drop('01').opensAt);
+    expect(at(HYPE72_PUBLIC_AT).getTime()).toBeLessThan(at(drop('01').opensAt).getTime());
   });
 
   it('antes de la apertura, sin la cookie no se ve', () => {

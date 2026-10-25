@@ -51,18 +51,37 @@ export const HYPE72_PRECIOS_APROBADOS = false;
 const REVEAL_HOUR = '11:00:00';
 
 /**
- * Acceso anticipado: el drop 01 (4 PACK) abre UNA HORA ANTES de la ventana
- * publicada, porque a esa hora se le avisa a Private Access y a Mejores Amigos
- * y el precio tiene que estar vivo cuando llega el aviso. Es también el momento
- * en que la landing deja de estar con llave (ver HYPE72_PUBLIC_AT).
+ * MIRAR, NO COMPRAR: la hora en que la landing deja de devolver 404 y los
+ * miembros de Private Access y Mejores Amigos pueden ver la cartelera.
+ *
+ * **Acá NO se habilita ningún precio ni ninguna promoción.** A las 23:00 del
+ * 1/11 se les puede avisar y mostrar qué viene; el evento, los drops y los
+ * precios arrancan una hora después, con HYPE72_START. Antes esta constante era
+ * el `opensAt` del drop 01 y se llamaba HYPE72_EARLY_ACCESS: decisión de
+ * Valentín del 25/10 — "todo lo comercial comienza el 2/11 a las 00:00 ART:
+ * home, landing pública, 4 PACK y promociones. El 1/11 a las 23:00 podemos
+ * avisar a Mejores Amigos y Private Access y mostrarles la cartelera, pero sin
+ * habilitar precios anticipados". El nombre cambió a propósito: "early access"
+ * invitaba justamente a colgarle un precio.
+ *
+ * Lo único que depende de esta hora es el gate (ver HYPE72_PUBLIC_AT).
  */
-export const HYPE72_EARLY_ACCESS = '2026-11-01T23:00:00-03:00';
+export const HYPE72_PREVIEW_AT = '2026-11-01T23:00:00-03:00';
 
 /**
- * Arranque de la ventana publicada del evento ("2 · 3 · 4 noviembre").
- * Ojo: no es el primer drop que abre — ese es HYPE72_EARLY_ACCESS, una hora
- * antes. Esta constante es la que define cuándo la página dice "en curso".
- */
+ * Arranque del evento y de TODO lo comercial: los 6 drops, los precios y las
+ * promociones. Ningún drop puede abrir antes de acá (hay un test que lo guarda).
+ *
+ * ── TIENE QUE COINCIDIR CON LAS OTRAS DOS RAMAS ──────────────────────────────
+ * El mismo instante vive en tres lugares, uno por superficie:
+ *   - landing  → HYPE72_START (este archivo)
+ *   - 4 PACK   → PACK_REGULAR_X4_DESDE (lib/promo-pack-regular.ts, PR #614)
+ *   - home     → HYPE72_HOME_DESDE     (lib/hype72-home.ts, PR #617)
+ * Los tres verificados en 2026-11-02T00:00:00-03:00 el 25/10, y los tres
+ * terminan en 2026-11-05T00:00:00-03:00 (= HYPE72_END).
+ * Si se separan, la landing diría "en curso" mientras el carrito todavía cobra
+ * el precio viejo. Al mover uno, mover los tres.
+ * ──────────────────────────────────────────────────────────────────────────── */
 export const HYPE72_START = '2026-11-02T00:00:00-03:00';
 
 /**
@@ -134,10 +153,10 @@ export const HYPE72_DROPS: Hype72Drop[] = [
     id: '01',
     revealAt: `2026-10-27T${REVEAL_HOUR}-03:00`,
     revealLabel: 'mar 27/10',
-    // Una hora antes de la ventana publicada: acá se le avisa a Private Access
-    // y a Mejores Amigos (ver HYPE72_EARLY_ACCESS).
-    opensAt: HYPE72_EARLY_ACCESS,
-    slot: 'dom 1/11 · 23:00',
+    // Arranca con el evento, no antes: nada comercial se habilita en la hora de
+    // la previa a los miembros (ver HYPE72_PREVIEW_AT).
+    opensAt: HYPE72_START,
+    slot: 'lun 2/11 · 00:00',
     title: '4 PACK Regular Tees',
     claim: 'Pagás 3, llevás 4',
     priceNote: 'Al precio del 3 PACK',
@@ -287,10 +306,11 @@ export function isHype72Over(now: Date): boolean {
 }
 
 /**
- * ¿Estamos dentro de la ventana publicada del evento?
- * Ojo: en la hora de acceso anticipado (HYPE72_EARLY_ACCESS → HYPE72_START) el
- * drop 01 ya está 'abierto' y esto todavía da false, que es correcto: la
- * cartelera dice "abierto" y el hero todavía no dice "en curso".
+ * ¿Estamos dentro del evento? Es también la respuesta a "¿hay algo comercial
+ * habilitado?": en la hora de la previa a los miembros (HYPE72_PREVIEW_AT →
+ * HYPE72_START) esto da false y los 6 drops están en 'revelado', así que la
+ * página no dice "en curso" ni "abierto" en ninguna parte. Se mira la
+ * cartelera y nada más.
  */
 export function isHype72Live(now: Date): boolean {
   const t = now.getTime();
@@ -305,17 +325,17 @@ export function isHype72Live(now: Date): boolean {
  * la que entrega /api/acceso contra EARLY_ACCESS_PASSWORD). Desde ese instante
  * se abre sola, sin deploy y sin que nadie tenga que apretar nada.
  *
- * Se abre junto con el primer drop: no tiene sentido que la página esté con
- * llave cuando el 4 PACK ya se puede comprar y el aviso a Private Access y
- * Mejores Amigos ya salió.
+ * Se abre en HYPE72_PREVIEW_AT, una hora ANTES del evento: es lo único que pasa
+ * a esa hora. La página se puede mirar; no hay ningún precio ni ninguna
+ * promoción habilitada hasta HYPE72_START.
  * ──────────────────────────────────────────────────────────────────────────── */
 
 /**
  * Cuándo la landing queda abierta al público, sola.
  *
  * ── DECISIÓN A TOMAR (una línea) ─────────────────────────────────────────────
- * Hoy está en HYPE72_EARLY_ACCESS (1/11 23:00): nada es público hasta que abre
- * el primer drop. Es la opción segura — no se compromete ningún precio ni
+ * Hoy está en HYPE72_PREVIEW_AT (1/11 23:00): nada es público hasta una hora
+ * antes del evento. Es la opción segura — no se compromete ningún precio ni
  * ninguna condición antes de tenerlos aprobados.
  *
  * El costo es real y hay que decidirlo a conciencia: **con esto, la revelación
@@ -329,9 +349,9 @@ export function isHype72Live(now: Date): boolean {
  * que la página muestra — que hoy, sin montos, son nombre y mecánica de los
  * drops que ya se revelaron. Eso sí se puede publicar.
  * ──────────────────────────────────────────────────────────────────────────── */
-export const HYPE72_PUBLIC_AT = HYPE72_EARLY_ACCESS;
+export const HYPE72_PUBLIC_AT = HYPE72_PREVIEW_AT;
 
-/** Cookie del gate de acceso anticipado que ya usa el proyecto (/api/acceso). */
+/** Cookie del gate que ya existe en el proyecto (la que entrega /api/acceso). */
 export const HYPE72_GATE_COOKIE = 'hype_early_access';
 
 /** ¿La landing ya es pública? */

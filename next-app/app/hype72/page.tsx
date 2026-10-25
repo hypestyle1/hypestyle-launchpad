@@ -31,11 +31,15 @@ import {
  * El único client component es la cuenta regresiva, que recibe el hito ya
  * elegido por el servidor y solo dibuja el tiempo que falta.
  *
- * ACCESO: hasta HYPE72_PUBLIC_AT (1/11 23:00 ART, cuando abre el primer drop)
- * la página devuelve un 404 real salvo que el visitante traiga la cookie del
- * gate que ya existe en el proyecto. `noindex` NO es un mecanismo de acceso:
+ * ACCESO: hasta HYPE72_PUBLIC_AT (1/11 23:00 ART, una hora antes del evento) la
+ * página devuelve un 404 real salvo que el visitante traiga la cookie del gate
+ * que ya existe en el proyecto. `noindex` NO es un mecanismo de acceso:
  * cualquiera con la URL ve la página. Para revisarla antes, ver el bloque de
  * acceso en lib/hype72.ts.
+ *
+ * Esa hora es SOLO para mirar la cartelera (es cuando se le avisa a Private
+ * Access y a Mejores Amigos). Nada comercial se habilita hasta HYPE72_START
+ * (2/11 00:00): ningún drop está abierto y la página no dice "en curso".
  *
  * La página tampoco se linkea desde el menú, la home ni el sitemap.
  *
