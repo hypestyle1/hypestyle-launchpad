@@ -94,7 +94,10 @@ export function lineasFisicas(lineas: LineaPrecio[]): LineaPrecio[] {
  *
  * `unidadesPackRegular` es el tamaño del pack (3 el de siempre, 4 durante la
  * ventana del evento HYPE 72). Lo resuelve quien llama con la hora del
- * servidor — ver lib/pedido-servidor.
+ * servidor — ver lib/pedido-servidor. `precioPackRegular` es siempre el precio
+ * del 3-PACK en el catálogo: el pack de 4 se cobra al precio congelado del
+ * evento, que vive en lib/promo-pack-regular (PACK_REGULAR_X4_PRECIO), y el
+ * cálculo se queda con el más conveniente para el cliente.
  */
 export function descuentos(
   lineas: LineaPrecio[],

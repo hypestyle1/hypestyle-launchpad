@@ -2,6 +2,7 @@ import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
   PACK_REGULAR_X4_DESDE,
   PACK_REGULAR_X4_HASTA,
+  PACK_REGULAR_X4_PRECIO,
   computePackRegularDiscount,
   packRegularCostoSiguiente,
   packRegularEtiqueta,
@@ -18,16 +19,27 @@ import {
  * 3-PACK. El riesgo es descontar de más (contar packs o productos que no son
  * Regular) o quedar más caro que el pack fijo.
  *
- * Durante la ventana del evento HYPE 72 (2/11 00:00 → 8/11 23:59 ART) la regla
- * pasa a 4 por el precio del pack. Lo que se cubre acá: que la ventana abra y
- * cierre en el instante exacto, que un resto de 3 nunca pague más que un pack,
- * y que fuera de la ventana el comportamiento de siempre quede igual.
+ * Durante la ventana del evento HYPE 72 (2/11 00:00 → 4/11 23:59 ART) la regla
+ * pasa a 4 por el precio congelado del evento ($66.300). Lo que se cubre acá:
+ * que la ventana abra y cierre en el instante exacto, que el pack de 4 use el
+ * precio congelado y el de 3 el del catálogo, que un resto de 3 nunca pague más
+ * que un pack, que nadie pague más que con la regla de siempre ni aunque el
+ * catálogo baje, y que fuera de la ventana todo quede igual.
  */
-const PACK = 59160;
+/** Precio del 3-PACK en el catálogo de Woo (el real desde el 20/10). */
+const PACK = 66300;
+/** Precio congelado del pack de 4 del evento: hoy coincide con el del catálogo. */
+const PACK_X4 = PACK_REGULAR_X4_PRECIO;
+/**
+ * Escenario de riesgo: Woo baja el 3-PACK por debajo del precio del evento y el
+ * pack de 4 queda peor que el de 3.
+ */
+const PACK_BAJO = 50000;
 const UNIDAD = 23400;
 // Lo que ahorra un grupo que se cobra al precio del pack.
-const AHORRO_3 = UNIDAD * 3 - PACK; // 11040
-const AHORRO_4 = UNIDAD * 4 - PACK; // 34440
+const AHORRO_3 = UNIDAD * 3 - PACK; // 3900
+const AHORRO_4 = UNIDAD * 4 - PACK_X4; // 27300
+const AHORRO_3_BAJO = UNIDAD * 3 - PACK_BAJO; // 20200
 
 const black = (q: number) => ({ id: 'regular-tee-black', price: UNIDAD, quantity: q });
 const white = (q: number) => ({ id: 'regular-tee-white', price: UNIDAD, quantity: q });
@@ -54,23 +66,33 @@ describe('ventana del evento (hora de servidor)', () => {
     expect(packRegularX4Vigente()).toBe(true);
   });
 
-  it('el último minuto (8/11/2026 23:59 ART) entra completo y el 9/11 00:00 ya no', () => {
-    reloj('2026-11-08T23:59:00-03:00');
+  it('el último minuto (4/11/2026 23:59 ART) entra completo y el 5/11 00:00 ya no', () => {
+    reloj('2026-11-04T23:59:00-03:00');
     expect(packRegularUnidades()).toBe(4);
 
-    reloj('2026-11-08T23:59:59.999-03:00');
+    reloj('2026-11-04T23:59:59.999-03:00');
     expect(packRegularUnidades()).toBe(4);
+    expect(packRegularX4Vigente()).toBe(true);
 
-    reloj('2026-11-09T00:00:00-03:00');
+    reloj('2026-11-05T00:00:00-03:00');
     expect(packRegularUnidades()).toBe(3);
     expect(packRegularX4Vigente()).toBe(false);
+  });
+
+  it('el evento es 2–4/11, sin el encore: el 5/11 y el 8/11 ya son pack de 3', () => {
+    // Extender al 5–8/11 requiere autorización explícita y se hace moviendo
+    // PACK_REGULAR_X4_HASTA. Si alguien la mueve, este test lo cuenta.
+    reloj('2026-11-05T12:00:00-03:00');
+    expect(packRegularUnidades()).toBe(3);
+    reloj('2026-11-08T23:00:00-03:00');
+    expect(packRegularUnidades()).toBe(3);
   });
 
   it('las fechas se leen con offset -03:00, no con la hora local del proceso', () => {
     // Vercel corre en UTC: 2/11 00:00 ART son las 03:00 UTC del 2/11. Sin el
     // offset escrito a mano el evento arrancaría a las 21:00 del 1/11 ART.
     expect(new Date(PACK_REGULAR_X4_DESDE).toISOString()).toBe('2026-11-02T03:00:00.000Z');
-    expect(new Date(PACK_REGULAR_X4_HASTA).toISOString()).toBe('2026-11-09T03:00:00.000Z');
+    expect(new Date(PACK_REGULAR_X4_HASTA).toISOString()).toBe('2026-11-05T03:00:00.000Z');
   });
 
   it('bien lejos de la ventana (hoy, y en 2027) es el pack de siempre', () => {
@@ -130,16 +152,39 @@ describe('computePackRegularDiscount — fuera de la ventana (grupos de 3)', () 
 });
 
 describe('computePackRegularDiscount — dentro de la ventana (pagás 3, llevás 4)', () => {
-  it('4 individuales se cobran al precio del pack', () => {
+  it('4 individuales se cobran al precio congelado del evento, no al del catálogo', () => {
+    expect(PACK_REGULAR_X4_PRECIO).toBe(66300);
     expect(computePackRegularDiscount([black(4)], PACK, 4)).toBe(AHORRO_4);
+    // Si en Woo sube el 3-PACK, el pack de 4 del evento no se mueve: sigue
+    // cobrando $66.300 por las 4 (el catálogo no entra en la cuenta del grupo).
+    expect(computePackRegularDiscount([black(4)], 80000, 4)).toBe(UNIDAD * 4 - PACK_X4);
   });
 
-  it('con exactamente 3 se aplica la regla de 3: nadie paga más por llevar menos', () => {
+  it('con exactamente 3 se aplica la regla de 3, al precio del catálogo', () => {
     expect(computePackRegularDiscount([black(3)], PACK, 4)).toBe(AHORRO_3);
-    // Y nunca descuenta menos que la regla de siempre, en ninguna cantidad.
-    for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12]) {
-      expect(computePackRegularDiscount([black(n)], PACK, 4))
-        .toBeGreaterThanOrEqual(computePackRegularDiscount([black(n)], PACK, 3));
+    expect(computePackRegularDiscount([black(3)], PACK_BAJO, 4)).toBe(AHORRO_3_BAJO);
+  });
+
+  it('si el catálogo cae por debajo del precio congelado, gana el pack de 3', () => {
+    // Woo baja el 3-PACK a $50.000: 6 individuales conviene cobrarlas como dos
+    // packs de 3 ($40.400 de descuento) y no como un grupo de 4 ($27.300).
+    expect(computePackRegularDiscount([black(6)], PACK_BAJO, 4)).toBe(AHORRO_3_BAJO * 2);
+    // Donde el grupo de 4 sigue siendo el mejor negocio, gana el grupo de 4.
+    expect(computePackRegularDiscount([black(4)], PACK_BAJO, 4)).toBe(AHORRO_4);
+    expect(computePackRegularDiscount([black(7)], PACK_BAJO, 4)).toBe(AHORRO_4 + AHORRO_3_BAJO);
+  });
+
+  it('INVARIANTE: en ninguna cantidad se paga más que con la regla de 3', () => {
+    // Vale con el precio de catálogo de hoy, con uno más alto y con uno por
+    // debajo del precio congelado del evento.
+    for (const catalogo of [PACK, PACK_BAJO, 80000]) {
+      for (let n = 1; n <= 12; n++) {
+        const lineas = [black(n)];
+        const pagaEnVentana = UNIDAD * n - computePackRegularDiscount(lineas, catalogo, 4);
+        const pagaConLaDe3 = UNIDAD * n - computePackRegularDiscount(lineas, catalogo, 3);
+        expect(pagaEnVentana, `${n} unidades con 3-PACK a ${catalogo}`)
+          .toBeLessThanOrEqual(pagaConLaDe3);
+      }
     }
   });
 
@@ -168,7 +213,7 @@ describe('computePackRegularDiscount — dentro de la ventana (pagás 3, llevás
     // se cobra entera. Agrupar al revés descontaría menos.
     expect(computePackRegularDiscount([black(4), navy(1, 15000)], PACK, 4)).toBe(AHORRO_4);
     // 3 a $23.400 + 1 a $15.000: las 4 entran al grupo igual.
-    expect(computePackRegularDiscount([black(3), navy(1, 15000)], PACK, 4)).toBe(UNIDAD * 3 + 15000 - PACK);
+    expect(computePackRegularDiscount([black(3), navy(1, 15000)], PACK, 4)).toBe(UNIDAD * 3 + 15000 - PACK_X4);
   });
 
   it('el 3-PACK del catálogo y los productos que no son Regular siguen afuera', () => {
@@ -235,6 +280,9 @@ describe('packRegularCostoSiguiente / packRegularSiguienteGratis', () => {
     expect(packRegularSiguienteGratis([black(3)], null, 4)).toBe(false);
     // Individuales más baratas que el pack: no hay descuento, no hay regalo.
     expect(packRegularSiguienteGratis([navy(3, 15000)], PACK, 4)).toBe(false);
+    // Si el 3-PACK del catálogo baja del precio congelado, la cuarta deja de
+    // ser gratis y el carrito deja de ofrecerla: se calcula, no se promete.
+    expect(packRegularSiguienteGratis([black(3)], PACK_BAJO, 4)).toBe(false);
   });
 
   it('sin Regular en el carrito no hay precio de unidad que mirar', () => {

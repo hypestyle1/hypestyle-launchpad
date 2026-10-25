@@ -89,43 +89,56 @@ describe('descuentos', () => {
 
   // ─── Ventana del evento HYPE 72: pagás 3, llevás 4 ──────────────────────────
   // El tamaño del pack lo decide lib/pedido-servidor con la hora del servidor
-  // (packRegularUnidades) y entra acá por `unidadesPackRegular`.
+  // (packRegularUnidades) y entra acá por `unidadesPackRegular`. El precio del
+  // pack de 4 NO viaja: está congelado en $66.300 (PACK_REGULAR_X4_PRECIO);
+  // `precioPackRegular` es siempre el 3-PACK del catálogo.
   describe('pack de 4 (ventana del evento)', () => {
     const cuatro = [
       { id: 'regular-tee-black', price: 23400, quantity: 2 },
       { id: 'regular-tee-white', price: 23400, quantity: 2 },
     ];
 
-    it('4 individuales al precio del pack, y el fee se llama x4 para distinguirlo en Woo', () => {
-      const d = descuentos(cuatro, { ...base, precioPackRegular: 59160, unidadesPackRegular: 4 });
+    it('4 individuales a $66.300, y el fee se llama x4 para distinguirlo en Woo', () => {
+      const d = descuentos(cuatro, { ...base, precioPackRegular: 66300, unidadesPackRegular: 4 });
       // toMatchObject y no toEqual: el PR del regalo por compra (#615) agrega el
       // campo `transferencia` al retorno, y así estas aserciones valen con los
       // dos PRs mergeados en cualquier orden.
-      expect(d).toMatchObject({ monto: 93600 - 59160, etiqueta: 'Pack Regular x4' });
+      expect(d).toMatchObject({ monto: 93600 - 66300, etiqueta: 'Pack Regular x4' });
+    });
+
+    it('el precio del pack de 4 está congelado: no lo mueve el catálogo', () => {
+      // El 3-PACK sube en Woo y el pack de 4 del evento sigue cobrando $66.300.
+      const d = descuentos(cuatro, { ...base, precioPackRegular: 80000, unidadesPackRegular: 4 });
+      expect(d).toMatchObject({ monto: 93600 - 66300, etiqueta: 'Pack Regular x4' });
+      // El 3-PACK baja por debajo del precio del evento: nadie paga más que con
+      // la regla de 3. Seis individuales se cobran como dos packs de 3.
+      const seis = [{ id: 'regular-tee-black', price: 23400, quantity: 6 }];
+      const bajo = descuentos(seis, { ...base, precioPackRegular: 50000, unidadesPackRegular: 4 });
+      expect(bajo).toMatchObject({ monto: (70200 - 50000) * 2, etiqueta: 'Pack Regular x4' });
     });
 
     it('el 10% de transferencia sigue yendo DESPUÉS del pack', () => {
-      const d = descuentos(cuatro, { ...base, metodo: 'transferencia', precioPackRegular: 59160, unidadesPackRegular: 4 });
-      // 34440 de pack; 10% sobre lo que queda (59160) = 5916. Igual que el 3-PACK por transferencia.
-      expect(d).toMatchObject({ monto: 34440 + 5916, etiqueta: 'Pack Regular x4 + Transferencia (10%)' });
+      const d = descuentos(cuatro, { ...base, metodo: 'transferencia', precioPackRegular: 66300, unidadesPackRegular: 4 });
+      // 27300 de pack; 10% sobre lo que queda (66300) = 6630. Igual que el 3-PACK por transferencia.
+      expect(d).toMatchObject({ monto: 27300 + 6630, etiqueta: 'Pack Regular x4 + Transferencia (10%)' });
     });
 
-    it('3 sueltas dentro de la ventana pagan el pack igual, con el fee x4', () => {
+    it('3 sueltas dentro de la ventana pagan el pack del catálogo, con el fee x4', () => {
       const tres = [{ id: 'regular-tee-black', price: 23400, quantity: 3 }];
-      const d = descuentos(tres, { ...base, precioPackRegular: 59160, unidadesPackRegular: 4 });
-      expect(d).toMatchObject({ monto: 70200 - 59160, etiqueta: 'Pack Regular x4' });
+      const d = descuentos(tres, { ...base, precioPackRegular: 66300, unidadesPackRegular: 4 });
+      expect(d).toMatchObject({ monto: 70200 - 66300, etiqueta: 'Pack Regular x4' });
     });
 
     it('las exclusiones no cambian: 3x2, CAMPEON50 e internacional siguen ganando', () => {
-      const conPack = { ...base, precioPackRegular: 59160, unidadesPackRegular: 4 as const };
+      const conPack = { ...base, precioPackRegular: 66300, unidadesPackRegular: 4 as const };
       expect(descuentos(cuatro, { ...conPack, tresPorDosActivo: true }).etiqueta).toBe('3x2');
       expect(descuentos(cuatro, { ...conPack, campeonActivo: true, tresPorDosActivo: true }).etiqueta).toBe('CAMPEON50');
       expect(descuentos(cuatro, { ...conPack, metodo: 'transferencia', internacional: true }).monto).toBe(0);
     });
 
-    it('sin el flag, el comportamiento es el de siempre (grupos de 3)', () => {
-      const d = descuentos(cuatro, { ...base, precioPackRegular: 59160 });
-      expect(d).toMatchObject({ monto: 70200 - 59160, etiqueta: 'Pack Regular x3' });
+    it('sin el flag, el comportamiento es el de siempre (grupos de 3 del catálogo)', () => {
+      const d = descuentos(cuatro, { ...base, precioPackRegular: 66300 });
+      expect(d).toMatchObject({ monto: 70200 - 66300, etiqueta: 'Pack Regular x3' });
     });
   });
 

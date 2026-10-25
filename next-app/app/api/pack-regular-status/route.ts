@@ -14,7 +14,7 @@ import {
  * Date.now() del servidor y el navegador solo lee el resultado.
  *
  * No toca WordPress ni la base: es una comparación de fechas. Sin caché (la
- * respuesta cambia a la medianoche del 2/11 y a la del 9/11, y un `max-age` del
+ * respuesta cambia a la medianoche del 2/11 y a la del 5/11, y un `max-age` del
  * CDN dejaría la ventana abierta o cerrada de más).
  */
 export const dynamic = 'force-dynamic';

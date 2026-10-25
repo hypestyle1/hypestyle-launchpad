@@ -25,7 +25,7 @@ export interface PackRegularStatus {
  * — se cobra de menos, no de más.
  *
  * Mismo patrón que usePromo3x2Status. Se refresca cada 5 minutos para que un
- * carrito abierto cruzando la medianoche del 2/11 (o la del 9/11) se entere.
+ * carrito abierto cruzando la medianoche del 2/11 (o la del 5/11) se entere.
  */
 export function usePackRegularUnidades(): PackRegularUnidades {
   const { data } = useQuery<PackRegularStatus>({

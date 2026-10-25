@@ -4,13 +4,14 @@
  * fijos (mono o una de cada color) y quien quería, por ejemplo, 2 negras y 1
  * blanca pagaba 3 individuales o escribía por WhatsApp.
  *
- * El precio del pack no se hardcodea: sale del catálogo (el 3-PACK Black), así
- * que si se cambia en Woo, el pack libre lo sigue solo. Si el catálogo no lo
+ * El precio del pack de 3 no se hardcodea: sale del catálogo (el 3-PACK Black),
+ * así que si se cambia en Woo, el pack libre lo sigue solo. Si el catálogo no lo
  * trae, no hay descuento.
  *
  * Durante la ventana del evento HYPE 72 el pack pasa a "pagás 3, llevás 4":
- * cada 4 individuales se cobran al mismo precio del 3-PACK (ver
- * PACK_REGULAR_X4_DESDE / PACK_REGULAR_X4_HASTA y packRegularUnidades).
+ * cada 4 individuales se cobran a PACK_REGULAR_X4_PRECIO, el precio promocional
+ * del evento, congelado (ver PACK_REGULAR_X4_DESDE / PACK_REGULAR_X4_HASTA y
+ * packRegularUnidades).
  *
  * Lo usan el carrito, el checkout y el servidor (lib/precio-servidor), con la
  * misma cuenta: lo que se muestra es lo que se cobra.
@@ -32,22 +33,27 @@ export const PACK_REGULAR_UNIDADES_X4 = 4;
 /** Cuántas individuales entran por cada precio de pack. */
 export type PackRegularUnidades = typeof PACK_REGULAR_UNIDADES | typeof PACK_REGULAR_UNIDADES_X4;
 
-// ─── Ventana del evento HYPE 72 ──────────────────────────────────────────────
+// ─── Ventana y precio del evento HYPE 72 ─────────────────────────────────────
 //
-// ÚNICO lugar donde viven las fechas del evento. Para mover la ventana antes de
-// mergear, cambiar estas dos constantes y nada más.
+// ÚNICO lugar donde viven las fechas y el precio del evento. Para mover la
+// ventana, cambiar estas constantes y nada más.
 //
-// Del 2/11/2026 00:00 al 8/11/2026 23:59 inclusive, hora argentina (UTC-3). El
-// offset va escrito a mano (`-03:00`) y no como hora local del proceso: Vercel
-// corre en UTC, así que un `new Date('2026-11-02T00:00')` sin offset daría las
-// 21:00 del 1/11 en Argentina y el evento arrancaría tres horas antes.
+// Del 2/11/2026 00:00 al 4/11/2026 23:59 inclusive, hora argentina (UTC-3): el
+// evento, sin el encore. El offset va escrito a mano (`-03:00`) y no como hora
+// local del proceso: Vercel corre en UTC, así que un
+// `new Date('2026-11-02T00:00')` sin offset daría las 21:00 del 1/11 en
+// Argentina y el evento arrancaría tres horas antes.
 //
 // Se compara siempre contra la hora del SERVIDOR, nunca la del navegador (un
 // reloj adelantado a mano no tiene que poder abrir la promo): el servidor la
 // resuelve en lib/pedido-servidor al crear el pedido, y el navegador la pide a
 // /api/pack-regular-status (hooks/usePackRegularUnidades).
 //
-// Rollback: no hace falta ninguno. Pasado el 8/11 23:59 la regla vuelve sola a
+// Una extensión al 5–8/11 (el encore) requiere autorización explícita de
+// Valentín y se hace cambiando PACK_REGULAR_X4_HASTA a
+// '2026-11-09T00:00:00-03:00'. Nada más: no hay fechas repetidas en otro lado.
+//
+// Rollback: no hace falta ninguno. Pasado el 4/11 23:59 la regla vuelve sola a
 // grupos de 3 sin deploy; después del evento se pueden borrar estas constantes
 // y el parámetro `unidades`.
 
@@ -55,11 +61,29 @@ export type PackRegularUnidades = typeof PACK_REGULAR_UNIDADES | typeof PACK_REG
 export const PACK_REGULAR_X4_DESDE = Date.parse('2026-11-02T00:00:00-03:00');
 
 /**
- * Cierre de la ventana, exclusivo: 9/11/2026 00:00 ART. Escrito como el
- * arranque del día siguiente para que el último minuto (8/11 23:59) entre
+ * Cierre de la ventana, exclusivo: 5/11/2026 00:00 ART. Escrito como el
+ * arranque del día siguiente para que el último minuto (4/11 23:59) entre
  * completo, con sus segundos.
  */
-export const PACK_REGULAR_X4_HASTA = Date.parse('2026-11-09T00:00:00-03:00');
+export const PACK_REGULAR_X4_HASTA = Date.parse('2026-11-05T00:00:00-03:00');
+
+/**
+ * Precio promocional del pack de 4 dentro de la ventana: $66.300, CONGELADO acá
+ * a propósito.
+ *
+ * El pack de 3 sigue leyendo el catálogo de Woo (precioPackRegular): si mañana
+ * el 3-PACK cambia de precio, el pack de 3 lo sigue solo y el de 4 no se mueve.
+ * Hoy el 3-PACK vale exactamente esto, así que durante la ventana la promesa es
+ * literal: pagás lo mismo que el pack de 3 y llevás 4.
+ *
+ * $66.300 es el precio de HYPE 72: hay que revisar esta constante si cambia la
+ * estructura de precios de las Regular Tees (una sale, un ajuste de lista, otro
+ * precio de 3-PACK). Si en Woo el 3-PACK quedara POR DEBAJO de este número, el
+ * pack de 4 sería peor que el de 3: computePackRegularDiscount se queda siempre
+ * con el más conveniente para el cliente, no con el del evento por ser el del
+ * evento.
+ */
+export const PACK_REGULAR_X4_PRECIO = 66300;
 
 /** ¿Corre el "pagás 3, llevás 4" en este instante? */
 export function packRegularX4Vigente(ahora: number = Date.now()): boolean {
@@ -118,19 +142,32 @@ function ahorroDelGrupo(units: number[], desde: number, tamanio: number, precioP
   return Math.max(0, suma - precioPack);
 }
 
+/** Lo que ahorran todos los grupos de `tamanio` que entren, a `precioPack`. */
+function ahorroPorGrupos(units: number[], tamanio: number, precioPack: number): number {
+  let total = 0;
+  for (let i = 0; i + tamanio <= units.length; i += tamanio) {
+    total += ahorroDelGrupo(units, i, tamanio, precioPack);
+  }
+  return total;
+}
+
 /**
  * Por cada grupo de Regular individuales, la diferencia entre lo que suman y el
  * precio del pack. Nunca negativo: si las individuales están más baratas que el
  * pack (una oferta puntual), se cobran como individuales.
  *
- * `unidades` es el tamaño del grupo (3 el de siempre, 4 en la ventana del
- * evento). Las unidades se agrupan de más caras a más baratas, así las que
- * quedan afuera del múltiplo son las más baratas y el descuento es el mayor
- * posible.
+ * `precioPack` es el precio del 3-PACK en el catálogo de Woo. `unidades` es el
+ * tamaño del grupo (3 el de siempre, 4 en la ventana del evento). Las unidades
+ * se agrupan de más caras a más baratas, así las que quedan afuera del múltiplo
+ * son las más baratas y el descuento es el mayor posible.
  *
- * Con grupos de 4, un resto de exactamente 3 se cobra igual al precio del pack:
- * nadie paga más por llevar menos del múltiplo. Entonces 3 pagan pack, 4 pagan
- * el mismo pack, y 7 pagan dos packs (4 + 3).
+ * Dentro de la ventana los grupos de 4 se cobran a PACK_REGULAR_X4_PRECIO (el
+ * precio congelado del evento, NO el del catálogo) y un resto de exactamente 3
+ * se cobra al precio del catálogo: nadie paga más por llevar menos del
+ * múltiplo. Entonces 3 pagan el pack de 3, 4 pagan el del evento, y 7 pagan 4 + 3.
+ *
+ * Sin precio de catálogo no hay descuento, ni siquiera en la ventana: si el
+ * catálogo no cargó, mejor no inventar promos.
  */
 export function computePackRegularDiscount(
   lines: PackRegularLine[],
@@ -139,16 +176,26 @@ export function computePackRegularDiscount(
 ): number {
   if (!precioPack || precioPack <= 0) return 0;
   const units = unidadesRegular(lines);
-  let total = 0;
+  // La regla de siempre: grupos de 3 al precio del catálogo.
+  const conReglaDe3 = ahorroPorGrupos(units, PACK_REGULAR_UNIDADES, precioPack);
+  if (unidades !== PACK_REGULAR_UNIDADES_X4) return Math.round(conReglaDe3);
+
+  // La regla de la ventana: grupos de 4 al precio congelado del evento y, si
+  // sobran exactamente 3, ese resto paga el pack de 3 del catálogo.
+  let conReglaDe4 = 0;
   let i = 0;
-  for (; i + unidades <= units.length; i += unidades) {
-    total += ahorroDelGrupo(units, i, unidades, precioPack);
+  for (; i + PACK_REGULAR_UNIDADES_X4 <= units.length; i += PACK_REGULAR_UNIDADES_X4) {
+    conReglaDe4 += ahorroDelGrupo(units, i, PACK_REGULAR_UNIDADES_X4, PACK_REGULAR_X4_PRECIO);
   }
-  // Resto de 3 con grupos de 4 (fuera de la ventana el resto siempre es < 3).
   if (units.length - i === PACK_REGULAR_UNIDADES) {
-    total += ahorroDelGrupo(units, i, PACK_REGULAR_UNIDADES, precioPack);
+    conReglaDe4 += ahorroDelGrupo(units, i, PACK_REGULAR_UNIDADES, precioPack);
   }
-  return Math.round(total);
+
+  // INVARIANTE: dentro de la ventana, en ninguna cantidad se paga más que con
+  // la regla de 3. El precio del evento está congelado y el del catálogo no: si
+  // el 3-PACK bajara de PACK_REGULAR_X4_PRECIO, el pack de 4 sería el peor
+  // negocio para el cliente y gana la regla de siempre.
+  return Math.round(Math.max(conReglaDe4, conReglaDe3));
 }
 
 /**
@@ -181,9 +228,10 @@ export function packRegularMasBarata(lines: PackRegularLine[]): number | null {
 /**
  * Cuánto sale sumar una Regular más de precio `precioUnidad`: su precio menos
  * lo que crece el descuento. Dentro de la ventana, con 3 ya en el carrito, da 0
- * — la cuarta es gratis. Fuera de la ventana, con 2 en el carrito, da lo que
- * cuesta la tercera con el pack aplicado. null si no se puede saber (sin precio
- * de unidad).
+ * — la cuarta es gratis mientras el 3-PACK del catálogo valga lo mismo que
+ * PACK_REGULAR_X4_PRECIO (hoy sí). Fuera de la ventana, con 2 en el carrito, da
+ * lo que cuesta la tercera con el pack aplicado. null si no se puede saber (sin
+ * precio de unidad).
  */
 export function packRegularCostoSiguiente(
   lines: PackRegularLine[],
@@ -204,6 +252,10 @@ export function packRegularCostoSiguiente(
  * evento, con el pack de 3 ya descontado: es el "llevás 4" de "pagás 3, llevás
  * 4" y hay que decirlo, porque `packRegularFaltan` da 0 (el descuento ya está
  * aplicado) y sin este aviso la cuarta gratis queda invisible.
+ *
+ * Se calcula, no se promete: si el 3-PACK del catálogo bajara de
+ * PACK_REGULAR_X4_PRECIO, la cuarta dejaría de ser gratis y el carrito dejaría
+ * de ofrecerla sola, sin tocar nada.
  */
 export function packRegularSiguienteGratis(
   lines: PackRegularLine[],
