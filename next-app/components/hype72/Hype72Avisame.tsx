@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { subscribeNewsletter } from '@/lib/newsletter-subscribe';
+import { subscribeHype72 } from '@/lib/newsletter-subscribe';
 
 /**
  * "Avisame": captura de email de la landing de HYPE 72.
  *
- * No tiene lista ni endpoint propio — usa el alta de newsletter que ya existe
- * (lib/newsletter-subscribe.ts → /api/newsletter-subscribe), la misma que el
- * popup del sitio. Eso significa que el que deja el mail acá entra a la lista
- * y recibe el mail de bienvenida con el cupón, igual que desde el popup.
+ * Comparte el endpoint con el popup del sitio
+ * (lib/newsletter-subscribe.ts → /api/newsletter-subscribe), pero va con
+ * `origen: 'hype72'`: entra a la lista propia del evento, queda etiquetado
+ * HYPE72 para poder segmentar el envío, y NO dispara la bienvenida ni el cupón
+ * HYPE10 (ese 10% se acumula con los packs del evento — ver
+ * _claude/auditorias/2026-10-25-cupones-vs-packs.md).
  */
 export default function Hype72Avisame() {
   const [email, setEmail] = useState('');
@@ -20,7 +22,7 @@ export default function Hype72Avisame() {
     e.preventDefault();
     if (!email || loading) return;
     setLoading(true);
-    try { await subscribeNewsletter(email); } catch {}
+    try { await subscribeHype72(email); } catch {}
     setLoading(false);
     setDone(true);
   };

@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureWelcomeAttributes } from '@/lib/brevo-attributes';
+import { ensureHype72Attributes, ensureWelcomeAttributes } from '@/lib/brevo-attributes';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const NEWSLETTER_LIST_ID = 3;
 const SITE_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 
 const PREFERENCIAS = new Set(['hombre', 'mujer', 'todo']);
+
+/**
+ * Lista de Brevo del "Avisame" de /hype72. Se lee en cada request (no en el
+ * módulo) para que no quede congelada en el build y para poder cambiarla desde
+ * Vercel sin tocar código. Si no está cargada, el alta NO se pierde: cae en la
+ * lista de newsletter, pero igual sin SIGNUP_DATE y sin bienvenida (ver abajo).
+ */
+function hype72ListId(): number | null {
+  const n = parseInt(String(process.env.BREVO_HYPE72_LIST_ID || '').trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
 
 // El popup ya no pide nombre (solo email): el saludo va sin nombre. El nombre
 // real llega con la primera compra (send-confirmation lo carga en NOMBRE).
@@ -75,21 +86,39 @@ function buildWelcomeHtml(name = '') {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, name, preferencia } = await req.json();
+    const { email, name, preferencia, origen } = await req.json();
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
     }
     // `name` queda por compatibilidad con formularios viejos; el popup ya no lo manda.
     const firstName = name ? String(name).trim() : '';
     const pref = PREFERENCIAS.has(String(preferencia)) ? String(preferencia) : '';
+    // El "Avisame" de /hype72 captura el mail igual, pero NO entra a la secuencia
+    // de bienvenida: ese mail regala HYPE10 (10% off) y durante el evento ese 10%
+    // se suma a los packs y al 10% de transferencia (ver
+    // _claude/auditorias/2026-10-25-cupones-vs-packs.md). Cualquier otro valor de
+    // `origen` —y que no venga— es el alta normal del sitio, que sigue igual.
+    const esHype72 = String(origen ?? '').trim().toLowerCase() === 'hype72';
+    const listId = esHype72 ? (hype72ListId() ?? NEWSLETTER_LIST_ID) : NEWSLETTER_LIST_ID;
 
-    await ensureWelcomeAttributes(BREVO_API_KEY);
+    await (esHype72 ? ensureHype72Attributes(BREVO_API_KEY) : ensureWelcomeAttributes(BREVO_API_KEY));
 
     // Alta en la lista. NOMBRE es el atributo de nombre de la cuenta (FIRSTNAME no
     // existe: Brevo lo descartaba en silencio y la lista quedó sin nombres).
     // PREFERENCIA (hombre/mujer/todo) es lo que eligió en el popup, para mandar
     // los drops de mujer solo a quien los pidió. SIGNUP_DATE/WELCOME_STEP son
     // para que welcome-sweep sepa cuándo mandar los siguientes pasos.
+    //
+    // HYPE 72 va con HYPE72='yes' + HYPE72_DATE y SIN SIGNUP_DATE/WELCOME_STEP, a
+    // propósito: welcome-sweep (app/api/admin/welcome-sweep) recorre SOLO la lista
+    // de newsletter y dentro de ella saltea a todo contacto sin SIGNUP_DATE. Con
+    // eso el alta del evento queda excluida por dos lados independientes, sin
+    // tocar el cron que ya corre en producción.
+    //
+    // Si el mail ya existía como suscriptor de la newsletter, updateEnabled lo
+    // suma a la lista del evento y le pone la etiqueta sin pisarle SIGNUP_DATE ni
+    // WELCOME_STEP: su secuencia sigue como estaba (y encima deja de recibir la
+    // bienvenida por segunda vez, que es lo que pasaba antes).
     const contactRes = await fetch('https://api.brevo.com/v3/contacts', {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
@@ -98,10 +127,11 @@ export async function POST(req: NextRequest) {
         attributes: {
           ...(firstName ? { NOMBRE: firstName } : {}),
           ...(pref ? { PREFERENCIA: pref } : {}),
-          SIGNUP_DATE: new Date().toISOString(),
-          WELCOME_STEP: 1,
+          ...(esHype72
+            ? { HYPE72: 'yes', HYPE72_DATE: new Date().toISOString() }
+            : { SIGNUP_DATE: new Date().toISOString(), WELCOME_STEP: 1 }),
         },
-        listIds: [NEWSLETTER_LIST_ID],
+        listIds: [listId],
         updateEnabled: true,
       }),
     });
@@ -113,21 +143,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send welcome email with coupon
-    await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sender:      { name: 'Hypestyle', email: 'info@hypestyle.com.ar' },
-        replyTo:     { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
-        to:          [{ email }],
-        subject:     '¡Tu 10% off te espera — Hypestyle!',
-        htmlContent: buildWelcomeHtml(firstName),
-        tags:        ['welcome-step-1'],
-      }),
-    });
+    // Send welcome email with coupon — solo el alta normal del sitio.
+    if (!esHype72) {
+      await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender:      { name: 'Hypestyle', email: 'info@hypestyle.com.ar' },
+          replyTo:     { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
+          to:          [{ email }],
+          subject:     '¡Tu 10% off te espera — Hypestyle!',
+          htmlContent: buildWelcomeHtml(firstName),
+          tags:        ['welcome-step-1'],
+        }),
+      });
+    }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, listId, bienvenida: !esHype72 });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });
   }
