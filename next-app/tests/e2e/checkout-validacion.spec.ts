@@ -49,8 +49,10 @@ async function completarPaso1(page: Page) {
   await page.getByPlaceholder('Apellido').fill(COMPRADOR.apellido);
   await page.getByPlaceholder('DNI').fill(COMPRADOR.dni);
   await page.getByPlaceholder('Teléfono (con código de área)').fill(COMPRADOR.telefono);
-  // La cotización llega con debounce; la sucursal queda preseleccionada.
+  // La cotización llega con debounce y la sucursal queda preseleccionada, pero
+  // hay que elegir cuál: sin eso el paso 1 no avanza (ver branchReady).
   await expect(page.getByText(ANDREANI_RATES[1].label)).toBeVisible({ timeout: 20_000 });
+  await page.getByText('Sucursal Palermo').click();
   await page.getByRole('button', { name: 'Continuar con el pago' }).click();
   await expect(page.getByRole('heading', { name: /medio de pago/i })).toBeVisible({ timeout: 20_000 });
 }
@@ -62,7 +64,12 @@ async function completarPaso1(page: Page) {
 async function interceptarCreacion(page: Page, responder: (n: number) => { status: number; body: unknown }) {
   const intentos: unknown[] = [];
   await page.route('**/api/create-order-gocuotas', async (route) => {
-    intentos.push(await route.request().postDataJSON().catch(() => null));
+    // `postDataJSON()` es sincrónico: si se le encadena un `.catch` tira un
+    // TypeError acá adentro, la ruta nunca se responde y el checkout se queda
+    // esperando para siempre.
+    let cuerpo: unknown = null;
+    try { cuerpo = route.request().postDataJSON(); } catch { cuerpo = null; }
+    intentos.push(cuerpo);
     const r = responder(intentos.length);
     await route.fulfill({ status: r.status, contentType: 'application/json', body: JSON.stringify(r.body) });
   });
@@ -99,7 +106,9 @@ test('un 422 del servidor vuelve al paso 1 y marca el campo, sin perder nada', a
   // El mensaje está asociado al input para un lector de pantalla.
   const describedBy = await telefono.getAttribute('aria-describedby');
   expect(describedBy).toBeTruthy();
-  await expect(page.locator(`#${describedBy}`)).toContainText('faltan números');
+  // Selector por atributo: el id que genera React (`:r14:-msg`) lleva dos
+  // puntos y como `#id` no es un selector CSS válido.
+  await expect(page.locator(`[id="${describedBy}"]`)).toContainText('faltan números');
 
   // (c) El carrito no se tocó.
   expect(await page.evaluate(() => window.localStorage.getItem('hy_cart'))).toBe(carritoAntes);
@@ -108,7 +117,8 @@ test('un 422 del servidor vuelve al paso 1 y marca el campo, sin perder nada', a
   await expect(page.getByPlaceholder('Nombre', { exact: true })).toHaveValue(COMPRADOR.nombre);
   await expect(page.getByPlaceholder('DNI')).toHaveValue(COMPRADOR.dni);
   // (e) La sucursal elegida y el total siguen como estaban: volver al paso 1 no
-  // redispara la cotización ni pierde la tarifa.
+  // redispara la cotización ni pierde la tarifa ni la sucursal.
+  await expect(page.getByText('Sucursal Palermo')).toBeVisible();
   await expect(page.locator('body')).toContainText('108.000');
 
   // (f) El medio de pago elegido sigue elegido al volver al paso 2.
