@@ -98,19 +98,22 @@ describe('descuentos', () => {
 
     it('4 individuales al precio del pack, y el fee se llama x4 para distinguirlo en Woo', () => {
       const d = descuentos(cuatro, { ...base, precioPackRegular: 59160, unidadesPackRegular: 4 });
-      expect(d).toEqual({ monto: 93600 - 59160, etiqueta: 'Pack Regular x4' });
+      // toMatchObject y no toEqual: el PR del regalo por compra (#615) agrega el
+      // campo `transferencia` al retorno, y así estas aserciones valen con los
+      // dos PRs mergeados en cualquier orden.
+      expect(d).toMatchObject({ monto: 93600 - 59160, etiqueta: 'Pack Regular x4' });
     });
 
     it('el 10% de transferencia sigue yendo DESPUÉS del pack', () => {
       const d = descuentos(cuatro, { ...base, metodo: 'transferencia', precioPackRegular: 59160, unidadesPackRegular: 4 });
       // 34440 de pack; 10% sobre lo que queda (59160) = 5916. Igual que el 3-PACK por transferencia.
-      expect(d).toEqual({ monto: 34440 + 5916, etiqueta: 'Pack Regular x4 + Transferencia (10%)' });
+      expect(d).toMatchObject({ monto: 34440 + 5916, etiqueta: 'Pack Regular x4 + Transferencia (10%)' });
     });
 
     it('3 sueltas dentro de la ventana pagan el pack igual, con el fee x4', () => {
       const tres = [{ id: 'regular-tee-black', price: 23400, quantity: 3 }];
       const d = descuentos(tres, { ...base, precioPackRegular: 59160, unidadesPackRegular: 4 });
-      expect(d).toEqual({ monto: 70200 - 59160, etiqueta: 'Pack Regular x4' });
+      expect(d).toMatchObject({ monto: 70200 - 59160, etiqueta: 'Pack Regular x4' });
     });
 
     it('las exclusiones no cambian: 3x2, CAMPEON50 e internacional siguen ganando', () => {
@@ -122,7 +125,7 @@ describe('descuentos', () => {
 
     it('sin el flag, el comportamiento es el de siempre (grupos de 3)', () => {
       const d = descuentos(cuatro, { ...base, precioPackRegular: 59160 });
-      expect(d).toEqual({ monto: 70200 - 59160, etiqueta: 'Pack Regular x3' });
+      expect(d).toMatchObject({ monto: 70200 - 59160, etiqueta: 'Pack Regular x3' });
     });
   });
 
