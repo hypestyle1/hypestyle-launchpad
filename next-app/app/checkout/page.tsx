@@ -14,7 +14,7 @@ import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
 import { useLocale } from '@/context/LocaleContext';
 import { localeForCountry } from '@/lib/geo';
 import { chargeCurrency } from '@/lib/currency';
-import { createOrderAndPreference } from '@/lib/wc-client';
+import { createOrderAndPreference, CreateOrderError } from '@/lib/wc-client';
 import { saveCartSnapshot, readCartSnapshot } from '@/lib/cart-recovery';
 import { getFbCookies } from '@/lib/fbtracking';
 import { getClarityCookies, tagClarityOrder } from '@/lib/clarity-tracking';
@@ -189,6 +189,9 @@ export default function Checkout() {
   // Campos por los que ya pasó la persona: el error se muestra recién al salir
   // del campo (o al intentar continuar), no mientras escribe por primera vez.
   const [tocados, setTocados] = useState<Partial<Record<CampoInfo, boolean>>>({});
+  /** Rechazos por campo que vinieron del servidor (422), con el valor que los causó. */
+  const [erroresServidor, setErroresServidor] = useState<Partial<Record<CampoInfo, string>>>({});
+  const valoresRechazados = useRef<Partial<Record<CampoInfo, string>>>({});
   const [precargado, setPrecargado] = useState(false);
   const [cuponAbierto, setCuponAbierto] = useState(false);
   // Lo que hay escrito en Close Friends aunque no hayan tocado "Sumarme".
@@ -277,7 +280,14 @@ export default function Checkout() {
   const sugerenciaEmail = sugerirEmail(info.email);
   /** Props de error para cada FloatingInput del primer paso. */
   const campo = (c: CampoInfo) => ({
-    error: tocados[c] ? errores[c] ?? null : null,
+    // `errores` se deriva de `info`, así que no hay dónde poner un rechazo del
+    // servidor sobre algo que el validador del navegador considera válido. El
+    // del servidor va aparte y es el respaldo: manda el derivado. Se muestra
+    // solo mientras el campo siga teniendo el valor que fue rechazado, así se
+    // apaga en cuanto la persona lo edita, sin tocar los onChange de cada input.
+    error: tocados[c]
+      ? errores[c] ?? (erroresServidor[c] && valoresRechazados.current[c] === info[c] ? erroresServidor[c] : null)
+      : null,
     onBlur: () => setTocados(t => (t[c] ? t : { ...t, [c]: true })),
   });
 
@@ -840,6 +850,30 @@ export default function Checkout() {
         });
       } catch (wcErr) {
         console.error('[checkout] create-order error:', wcErr);
+        // El servidor rechazó un dato de contacto y no creó el pedido: se vuelve
+        // al paso 1 con el campo marcado, en vez de dejar un cartel genérico en
+        // el paso de pago. No se toca nada más — ni el carrito (snapshotAndClear
+        // vive en salirAPagar, al que no se llega), ni el envío, ni la sucursal,
+        // ni el cupón, ni el medio de pago elegido.
+        if (wcErr instanceof CreateOrderError && wcErr.status === 422 && wcErr.errores) {
+          const recibidos = wcErr.errores as Partial<Record<CampoInfo, string>>;
+          const visibles = camposVisibles(optsValidacion);
+          const soloVisibles: Partial<Record<CampoInfo, string>> = {};
+          for (const c of visibles) if (recibidos[c]) soloVisibles[c] = recibidos[c];
+          // Si el rechazo es de un campo que este formulario no muestra, no hay
+          // dónde marcarlo: se cae al cartel de abajo y no se pierde el aviso.
+          if (Object.keys(soloVisibles).length > 0) {
+            valoresRechazados.current = Object.fromEntries(visibles.map(c => [c, info[c]]));
+            setErroresServidor(soloVisibles);
+            setTocados(Object.fromEntries(visibles.map(c => [c, true])));
+            setStep('info');
+            setSubmitting(false);
+            requestAnimationFrame(() => {
+              document.querySelector<HTMLInputElement>('form [aria-invalid="true"]')?.focus();
+            });
+            return;
+          }
+        }
         const wcMsg = wcErr instanceof Error ? wcErr.message : '';
         setSubmitError(wcMsg || 'Error al crear el pedido. Revisá tu conexión e intentá de nuevo.');
         setSubmitting(false);

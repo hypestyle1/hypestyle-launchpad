@@ -5,6 +5,7 @@ import { attributionOrderMeta } from '@/lib/attribution';
 import { PrecioError } from '@/lib/precio-servidor';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 import { clientIp, clientUserAgent } from '@/lib/client-ip';
+import { validarClienteServidor, opcionesDesdePayload, modoValidacion, resumenParaLog, cuerpo422, metaValidacion } from '@/lib/validacion-cliente-servidor';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -65,7 +66,8 @@ const PAYMENT_TITLES: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
-    const rawBody = await req.json();
+    // Ver create-order-gocuotas: un body que no es objeto cae en el 422, no en un 500.
+    const rawBody = (await req.json()) ?? {};
     const {
       customer, shipping, couponCode,
       // shippingLabel del cliente ya no se usa: la etiqueta la arma el
@@ -78,6 +80,23 @@ export async function POST(req: NextRequest) {
     // woocommerce_rest_pre_insert_shop_order_object) recalcula y agrega el
     // regalo oficial sobre la orden real, del lado de WordPress.
     const items = Array.isArray(rawBody.items) ? rawBody.items.filter((it: any) => it?.isGift !== true) : [];
+
+    // Datos de contacto antes de cualquier efecto (ver create-order-gocuotas).
+    // Acá `internacional: true`: no se aplican las reglas argentinas de DNI ni
+    // de CP de 4 dígitos, y el teléfono se mide con el mínimo global de 7
+    // dígitos en vez del nacional significativo de 10.
+    const validacion = validarClienteServidor(
+      rawBody?.customer,
+      opcionesDesdePayload({ ...rawBody, items }, true),
+    );
+    const modo = modoValidacion();
+    if (validacion.reglas.length) console.warn(resumenParaLog(validacion, modo));
+    if (validacion.customerAusente) {
+      return NextResponse.json(cuerpo422({ email: 'Check the form fields' }, true), { status: 422 });
+    }
+    if (modo === 'bloquear' && validacion.reglasQueBloquean.length) {
+      return NextResponse.json(cuerpo422(validacion.errores, true), { status: 422 });
+    }
 
     const country = (customer.pais && customer.pais !== 'OTHER') ? customer.pais : 'AR';
 
@@ -180,6 +199,9 @@ export async function POST(req: NextRequest) {
     // solo setea en el checkout nativo (sesión). Sin esto acá, el plugin rechaza el
     // pedido con "no es válida para envío Andreani" al querer empaquetarlo.
     if (shippingMethodId)   meta.push({ key: '_chosen_shipping', value: shippingMethodId });
+    // Modo observación: solo códigos de regla (ver create-order-gocuotas).
+    const metaVal = metaValidacion(validacion);
+    if (metaVal)            meta.push(metaVal);
     if (meta.length)        order.meta_data = meta;
 
     const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
