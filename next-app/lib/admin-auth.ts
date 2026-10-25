@@ -28,6 +28,38 @@ export function isAdminRequest(req: NextRequest): boolean {
   return adminSecretMatches(req.headers.get('x-admin-key'));
 }
 
+/* ─── Credencial de máquina: las llamadas que vienen de WordPress ──────────
+ * El mu-plugin (PHP/hypestyle-tracking-fix.php) llama a /api/admin/send-order-emails
+ * con `x-admin-key: HYPESTYLE_SECRET`, y HYPESTYLE_SECRET es WP_SECRET. Cuando
+ * se separó la clave del panel (ADMIN_SECRET) de WP_SECRET, esa llamada empezó a
+ * recibir 401 — y hs_maybe_notify_tracking() devuelve false sin loguear nada.
+ *
+ * Resultado medido el 25/10/2026: el último mail de seguimiento salió el
+ * 25/08/2026. 250 pedidos con guía real de Andreani y ningún aviso al cliente,
+ * 181 de ellos de septiembre y octubre. Dos paquetes se perdieron por
+ * "Sin Retiro De Custodia" ($133.981) y siete están por vencer en sucursal:
+ * el cliente nunca supo que tenía un paquete esperándolo.
+ *
+ * WP_SECRET vale como credencial de máquina y nada más. La alternativa era
+ * meter ADMIN_SECRET dentro de WordPress, o sea duplicar la clave del panel en
+ * un segundo sistema: peor.
+ */
+const MACHINE_SECRET = (process.env.WP_SECRET || '').replace(/^\uFEFF/, '').trim();
+
+export function machineSecretMatches(provided: string | null | undefined): boolean {
+  if (!MACHINE_SECRET || !provided) return false;
+  const a = Buffer.from(MACHINE_SECRET);
+  const b = Buffer.from(provided);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+/** Pedido autorizado: clave del panel (persona) o clave de WordPress (máquina). */
+export function isAdminOrMachineRequest(req: NextRequest): boolean {
+  const key = req.headers.get('x-admin-key');
+  return adminSecretMatches(key) || machineSecretMatches(key);
+}
+
 // Header listo para las llamadas server-to-server entre rutas internas
 // (cancel-order → send-order-emails, abandoned-sweep → send-order-emails).
 export function adminHeaders(extra?: Record<string, string>): Record<string, string> {
