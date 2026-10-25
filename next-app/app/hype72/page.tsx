@@ -1,3 +1,6 @@
+import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -8,12 +11,15 @@ import { buildMetadata } from '@/lib/seo';
 import {
   HYPE72_DATES,
   HYPE72_END_LABEL,
-  HYPE72_GIFTS,
-  HYPE72_GIFT_FROM,
+  HYPE72_GATE_COOKIE,
   hype72Board,
+  hype72GiftFrom,
+  hype72GiftsVisibles,
   isHype72Live,
   isHype72Over,
+  isHype72Publica,
   nextMilestone,
+  puedeVerHype72,
 } from '@/lib/hype72';
 
 /**
@@ -25,8 +31,13 @@ import {
  * El único client component es la cuenta regresiva, que recibe el hito ya
  * elegido por el servidor y solo dibuja el tiempo que falta.
  *
- * En este PR la página NO se linkea desde el menú, la home ni el sitemap: se
- * comparte por URL hasta el lanzamiento.
+ * ACCESO: hasta HYPE72_PUBLIC_AT (1/11 23:00 ART, cuando abre el primer drop)
+ * la página devuelve un 404 real salvo que el visitante traiga la cookie del
+ * gate que ya existe en el proyecto. `noindex` NO es un mecanismo de acceso:
+ * cualquiera con la URL ve la página. Para revisarla antes, ver el bloque de
+ * acceso en lib/hype72.ts.
+ *
+ * La página tampoco se linkea desde el menú, la home ni el sitemap.
  *
  * NO es CyberMonday ni CACE. No va "Cyber Monday" ni el logo de CACE en ningún
  * texto ni en ninguna pieza de esta página.
@@ -34,19 +45,30 @@ import {
 
 const PATH = '/hype72';
 
-export const metadata = buildMetadata({
-  title: 'HYPE 72',
-  rawTitle: true,
-  description:
-    '72 horas, 6 drops. Del 2 al 4 de noviembre, un drop nuevo cada mañana y cada noche. Regalo desde $100.000.',
-  path: PATH,
-  // Hasta el lanzamiento la página se comparte por URL y no está linkeada:
-  // tampoco va al sitemap (ver STATIC_ROUTES en app/sitemap.ts y la lista
-  // FUERA_DEL_SITEMAP del test). `follow` para que Google sí siga los links a
-  // los productos. Al lanzar el evento: sacar el noindex y sumarla al sitemap.
-  noindex: true,
-  follow: true,
-});
+/**
+ * Metadata. Mientras la página está con llave no se publica ni el título real
+ * ni la descripción: si el 404 saliera con el `<title>`/`description` del
+ * evento, el gate filtraría por el head justo lo que esconde en el body (y
+ * cualquier previsualización de link lo mostraría).
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const abierta = isHype72Publica(new Date());
+  if (!abierta) {
+    return { title: 'Hypestyle', robots: { index: false, follow: false } };
+  }
+  return buildMetadata({
+    title: 'HYPE 72',
+    rawTitle: true,
+    // Sin cifras hasta que los montos estén aprobados (ver lib/hype72.ts).
+    description:
+      '72 horas, 6 drops. Del 2 al 4 de noviembre, un drop nuevo cada mañana y cada noche.',
+    path: PATH,
+    // Al lanzar el evento: sacar el noindex y sumar la página al sitemap.
+    // `follow` para que Google sí siga los links a los productos.
+    noindex: true,
+    follow: true,
+  });
+}
 
 /**
  * Sin caché: el estado de la cartelera cambia con la hora y una versión
@@ -58,10 +80,21 @@ export const dynamic = 'force-dynamic';
 
 export default function Hype72Page() {
   const now = new Date();
+
+  // Antes de la apertura la página no existe para quien no tiene la llave: 404
+  // de verdad, no un noindex ni un redirect. Al no estar cacheada
+  // (force-dynamic) no hay ninguna copia servida de antes.
+  const cookieGate = cookies().get(HYPE72_GATE_COOKIE)?.value;
+  if (!puedeVerHype72(now, cookieGate)) notFound();
+
   const board = hype72Board(now);
   const milestone = nextMilestone(now);
   const live = isHype72Live(now);
   const over = isHype72Over(now);
+  // Mientras los montos no estén aprobados, null: el copy habla del regalo sin
+  // decir desde cuánto y la escalera no se muestra.
+  const giftFrom = hype72GiftFrom();
+  const gifts = hype72GiftsVisibles();
 
   return (
     <>
@@ -112,7 +145,9 @@ export default function Hype72Page() {
             <p className="mt-4 max-w-[34ch] text-[14px] leading-relaxed text-white/60 md:text-[16px]">
               {over
                 ? `Los 6 drops cerraron el ${HYPE72_END_LABEL}. Lo que sigue se cuenta por acá.`
-                : `Un drop nuevo cada mañana y cada noche. Regalo desde ${HYPE72_GIFT_FROM}.`}
+                : giftFrom
+                  ? `Un drop nuevo cada mañana y cada noche. Regalo desde ${giftFrom}.`
+                  : 'Un drop nuevo cada mañana y cada noche. Con regalo por compra.'}
             </p>
           </div>
 
@@ -159,36 +194,45 @@ export default function Hype72Page() {
         </section>
 
         {/* ── Escalera de regalos ──────────────────────────────────────────── */}
+        {/* Los umbrales y los regalos están pendientes de aprobación (monto,
+            vigencia y stock — ver el bloque del encabezado de lib/hype72.ts).
+            Hasta que estén, la sección cuenta la mecánica SIN NINGUNA CIFRA: no
+            se promete un umbral que todavía no se puede sostener. Cuando se
+            aprueben, la escalera vuelve sola. */}
         <section id="regalos" className="scroll-mt-[var(--offset)] bg-bg-alt px-4 py-14 md:px-10 md:py-20">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-black/40">
             Las 72 horas
           </p>
           <h2 className="mt-2.5 text-[30px] font-bold uppercase leading-[1.04] tracking-[-0.03em] md:text-[48px]">
-            Regalo desde {HYPE72_GIFT_FROM}
+            {giftFrom ? `Regalo desde ${giftFrom}` : 'Regalo por compra'}
           </h2>
 
-          <ol className="mt-8 max-w-[560px] border-t border-black/10">
-            {HYPE72_GIFTS.map((g) => (
-              <li
-                key={g.value}
-                className="flex items-baseline justify-between gap-4 border-b border-black/10 py-5"
-              >
-                <span className="text-[26px] font-black tabular-nums leading-none tracking-[-0.03em] md:text-[32px]">
-                  {g.amount}
-                </span>
-                <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-black/65 md:text-[13px]">
-                  {g.gift}
-                </span>
-              </li>
-            ))}
-          </ol>
+          {gifts.length > 0 && (
+            <ol className="mt-8 max-w-[560px] border-t border-black/10">
+              {gifts.map((g) => (
+                <li
+                  key={g.value}
+                  className="flex items-baseline justify-between gap-4 border-b border-black/10 py-5"
+                >
+                  <span className="text-[26px] font-black tabular-nums leading-none tracking-[-0.03em] md:text-[32px]">
+                    {g.amount}
+                  </span>
+                  <span className="text-[12px] font-bold uppercase tracking-[0.16em] text-black/65 md:text-[13px]">
+                    {g.gift}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
 
           {/* Sin promesas de más: cómo se acumulan los regalos entre sí lo
               define el Purchase Gift del backend y todavía hay que verificarlo
-              (ver el bloque PENDIENTE en lib/hype72.ts). Acá se dice lo único
-              que es seguro. */}
+              (ver el bloque del encabezado de lib/hype72.ts). Acá se dice lo
+              único que es seguro. */}
           <p className="mt-5 max-w-[42ch] text-[13px] leading-relaxed text-black/55">
-            El regalo se suma a tu pedido al llegar al monto.
+            {gifts.length > 0
+              ? 'El regalo se suma a tu pedido al llegar al monto.'
+              : 'Los umbrales y los regalos se anuncian en la revelación de cada drop.'}
           </p>
         </section>
 

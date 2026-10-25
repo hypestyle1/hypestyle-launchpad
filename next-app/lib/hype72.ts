@@ -9,15 +9,27 @@
  * Para cambiar la cartelera (qué drop, cuándo se revela, cuándo abre, a dónde
  * linkea) se edita solo acá: la página no tiene ningún dato escrito a mano.
  *
- * ── PENDIENTE DE VALIDACIÓN FINAL ───────────────────────────────────────────
- * Los precios y los beneficios de HYPE72_DROPS y HYPE72_GIFTS vienen del plan
- * del evento y TODAVÍA NO están confirmados contra Woo ni contra el stock real
- * (ver _claude/, proyecto "CYBER 2–4/11"). Antes de linkear esta página desde
- * el menú, la home o un anuncio hay que verificar monto por monto: lo que se
- * publica es una condición comercial.
- * El drop 01 a propósito NO muestra precio ("al precio del 3 PACK"): el 4 PACK
- * se cobra como el 3 PACK y el número exacto lo define la ficha.
- * ────────────────────────────────────────────────────────────────────────────
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  PRECIOS: ACÁ VAN, Y HOY NO SE PUBLICAN                                  ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  `HYPE72_PRECIOS_APROBADOS = false` (abajo) es el interruptor: mientras  ║
+ * ║  esté en false, la página NO muestra NI UN MONTO.                        ║
+ * ║                                                                          ║
+ * ║  Los montos pendientes viven en el campo `precioPendiente` de cada drop  ║
+ * ║  y en `HYPE72_GIFTS`. Están escritos pero NO se renderizan: salieron de  ║
+ * ║  la estrategia del 17/10 y están esperando la matriz de rentabilidad.    ║
+ * ║  El único precio aprobado es el 4 PACK a $66.300, y ése a propósito      ║
+ * ║  tampoco se publica todavía (el drop 01 se cuenta por mecánica:          ║
+ * ║  "pagás 3, llevás 4").                                                   ║
+ * ║                                                                          ║
+ * ║  PARA PUBLICARLOS, cuando estén aprobados monto por monto:               ║
+ * ║   1. verificar cada `precioPendiente` y cada `HYPE72_GIFTS[].amount`     ║
+ * ║      contra Woo y contra el stock real;                                  ║
+ * ║   2. poner `HYPE72_PRECIOS_APROBADOS = true`;                            ║
+ * ║   3. el test "sin aprobación no sale ni un monto" va a fallar: cambiarlo ║
+ * ║      por el de la variante aprobada (está escrito al lado).              ║
+ * ║  No hace falta tocar ni la página ni la cartelera: leen de acá.          ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
  *
  * Horario: todo se escribe con el offset -03:00 (America/Argentina/Buenos_Aires).
  * Argentina no tiene horario de verano, así que -03:00 es siempre el offset
@@ -26,10 +38,31 @@
  * estas fechas; la cuenta regresiva del browser solo dibuja el tiempo que falta.
  */
 
+/**
+ * ¿Los montos del evento están aprobados y se pueden publicar?
+ *
+ * En false (hoy): la cartelera muestra nombre y mecánica de cada drop sin
+ * ninguna cifra, y la escalera de regalos no se muestra. La landing puede estar
+ * online sin comprometer un precio. Ver el bloque de arriba.
+ */
+export const HYPE72_PRECIOS_APROBADOS = false;
+
 /** Hora a la que se publica la revelación de cada día. Editable. */
 const REVEAL_HOUR = '11:00:00';
 
-/** Arranque del evento: el primer drop abre acá. */
+/**
+ * Acceso anticipado: el drop 01 (4 PACK) abre UNA HORA ANTES de la ventana
+ * publicada, porque a esa hora se le avisa a Private Access y a Mejores Amigos
+ * y el precio tiene que estar vivo cuando llega el aviso. Es también el momento
+ * en que la landing deja de estar con llave (ver HYPE72_PUBLIC_AT).
+ */
+export const HYPE72_EARLY_ACCESS = '2026-11-01T23:00:00-03:00';
+
+/**
+ * Arranque de la ventana publicada del evento ("2 · 3 · 4 noviembre").
+ * Ojo: no es el primer drop que abre — ese es HYPE72_EARLY_ACCESS, una hora
+ * antes. Esta constante es la que define cuándo la página dice "en curso".
+ */
 export const HYPE72_START = '2026-11-02T00:00:00-03:00';
 
 /**
@@ -66,63 +99,92 @@ export interface Hype72Drop {
   /** Cómo se revela el día en que se revela, no la fecha de apertura. */
   revealLabel: string;
   title: string;
-  /** La bajada: qué se lleva. */
+  /**
+   * La bajada: qué se lleva, contado por MECÁNICA. Nunca lleva una cifra ni una
+   * vigencia sin confirmar — esto se publica siempre, desde la revelación.
+   */
   claim: string;
-  /** Nota de precio cuando no se publica un número. Opcional. */
+  /**
+   * Nota de precio SIN cifra, ya aprobada. Se publica siempre.
+   * (drop 01: "al precio del 3 PACK" — el número exacto lo define la ficha.)
+   */
   priceNote?: string;
+  /**
+   * EL MONTO. Pendiente de aprobación: solo se renderiza con
+   * HYPE72_PRECIOS_APROBADOS en true. Ver el bloque del encabezado.
+   */
+  precioPendiente?: string;
   href: string;
 }
 
 /**
  * La cartelera. El orden del array es el orden en pantalla.
  * Calendario de revelación acordado: un drop por día desde el 27/10 al 1/11.
+ *
+ * Los `revealLabel` estaban todos corridos un día (decían "lun 27/10" cuando el
+ * 27/10/2026 es martes, y así los seis). Verificados uno por uno contra el
+ * calendario: 27/10 martes · 28 miércoles · 29 jueves · 30 viernes · 31 sábado ·
+ * 1/11 domingo · 2/11 lunes · 3/11 martes · 4/11 miércoles.
+ *
+ * Ninguna `claim` lleva cifra: los montos están en `precioPendiente` y hoy no se
+ * renderizan (ver el bloque del encabezado).
  */
 export const HYPE72_DROPS: Hype72Drop[] = [
   {
     id: '01',
     revealAt: `2026-10-27T${REVEAL_HOUR}-03:00`,
-    revealLabel: 'lun 27/10',
-    opensAt: '2026-11-02T00:00:00-03:00',
-    slot: 'lun 2/11 · 00:00',
+    revealLabel: 'mar 27/10',
+    // Una hora antes de la ventana publicada: acá se le avisa a Private Access
+    // y a Mejores Amigos (ver HYPE72_EARLY_ACCESS).
+    opensAt: HYPE72_EARLY_ACCESS,
+    slot: 'dom 1/11 · 23:00',
     title: '4 PACK Regular Tees',
     claim: 'Pagás 3, llevás 4',
     priceNote: 'Al precio del 3 PACK',
+    // $66.300 — el ÚNICO monto aprobado del evento, y aun así no se publica
+    // todavía: el drop se cuenta por mecánica.
+    precioPendiente: '$66.300 las 4',
     href: '/producto/regular-tees-3-pack-black-navy-white',
   },
   {
     id: '02',
     revealAt: `2026-10-28T${REVEAL_HOUR}-03:00`,
-    revealLabel: 'mar 28/10',
+    revealLabel: 'mié 28/10',
     opensAt: '2026-11-02T21:00:00-03:00',
     slot: 'lun 2/11 · 21:00',
     title: 'Hoodies SS27',
-    claim: 'Con medias de regalo por 24 horas',
+    // La ventana de "24 horas" salió del plan y no está confirmada; el regalo
+    // depende de un stock de medias que todavía se está contando. Se publica la
+    // mecánica, sin vigencia.
+    claim: 'Con medias de regalo',
     href: '/hoodies',
   },
   {
     id: '03',
     revealAt: `2026-10-29T${REVEAL_HOUR}-03:00`,
-    revealLabel: 'mié 29/10',
+    revealLabel: 'jue 29/10',
     opensAt: '2026-11-03T11:00:00-03:00',
     slot: 'mar 3/11 · 11:00',
     title: 'Archivo Hype',
-    claim: '3 por $99.000 + Hype Box',
+    claim: '3 piezas de archivo + Hype Box',
+    precioPendiente: '3 por $99.000 + Hype Box',
     href: '/productos',
   },
   {
     id: '04',
     revealAt: `2026-10-30T${REVEAL_HOUR}-03:00`,
-    revealLabel: 'jue 30/10',
+    revealLabel: 'vie 30/10',
     opensAt: '2026-11-03T21:00:00-03:00',
     slot: 'mar 3/11 · 21:00',
     title: 'Boxy dúo',
-    claim: '2 por $110.000',
+    claim: 'Dos boxy, un precio',
+    precioPendiente: '2 por $110.000',
     href: '/tees',
   },
   {
     id: '05',
     revealAt: `2026-10-31T${REVEAL_HOUR}-03:00`,
-    revealLabel: 'vie 31/10',
+    revealLabel: 'sáb 31/10',
     opensAt: '2026-11-04T11:00:00-03:00',
     slot: 'mié 4/11 · 11:00',
     title: 'Set completo',
@@ -132,7 +194,7 @@ export const HYPE72_DROPS: Hype72Drop[] = [
   {
     id: '06',
     revealAt: `2026-11-01T${REVEAL_HOUR}-03:00`,
-    revealLabel: 'sáb 1/11',
+    revealLabel: 'dom 1/11',
     opensAt: '2026-11-04T21:00:00-03:00',
     slot: 'mié 4/11 · 21:00',
     title: 'Última llamada',
@@ -140,6 +202,16 @@ export const HYPE72_DROPS: Hype72Drop[] = [
     href: '/new-in',
   },
 ];
+
+/**
+ * La línea de precio que SE MUESTRA para un drop. Sin aprobación es la nota sin
+ * cifra (o nada); con aprobación, el monto. Un solo lugar decide esto: la
+ * cartelera no mira el interruptor.
+ */
+export function hype72PriceLine(drop: Hype72Drop): string | null {
+  if (HYPE72_PRECIOS_APROBADOS) return drop.precioPendiente ?? drop.priceNote ?? null;
+  return drop.priceNote ?? null;
+}
 
 export interface Hype72Gift {
   /** El umbral como se muestra. */
@@ -150,8 +222,14 @@ export interface Hype72Gift {
 }
 
 /**
- * Escalera de regalos. PENDIENTE DE VALIDACIÓN FINAL (ver el bloque de arriba):
- * confirmar monto, vigencia y stock de cada regalo antes de publicar la página.
+ * Escalera de regalos. PENDIENTE DE APROBACIÓN, igual que los precios de los
+ * drops: hay que confirmar monto, vigencia y stock de cada regalo. Al 25/10 el
+ * stock no da para publicarla (9 cadenas contra 20 que habría que comprar, 5
+ * zippos), así que el umbral más bajo todavía no es una promesa que se pueda
+ * sostener.
+ *
+ * Con HYPE72_PRECIOS_APROBADOS en false esta lista NO se muestra: usar siempre
+ * hype72GiftsVisibles(), nunca HYPE72_GIFTS directo desde la página.
  */
 export const HYPE72_GIFTS: Hype72Gift[] = [
   { value: 100_000, amount: '$100.000', gift: 'Cadena Hype' },
@@ -159,8 +237,18 @@ export const HYPE72_GIFTS: Hype72Gift[] = [
   { value: 200_000, amount: '$200.000', gift: 'Zippo Hype' },
 ];
 
-/** El piso de la escalera, para el titular de la sección. */
-export const HYPE72_GIFT_FROM = HYPE72_GIFTS[0].amount;
+/** La escalera que se puede publicar hoy: vacía hasta que haya aprobación. */
+export function hype72GiftsVisibles(): Hype72Gift[] {
+  return HYPE72_PRECIOS_APROBADOS ? HYPE72_GIFTS : [];
+}
+
+/**
+ * El piso de la escalera para el titular, o null si todavía no se publica.
+ * Mientras sea null el copy habla del regalo sin decir desde cuánto.
+ */
+export function hype72GiftFrom(): string | null {
+  return HYPE72_PRECIOS_APROBADOS ? HYPE72_GIFTS[0].amount : null;
+}
 
 const ms = (iso: string) => new Date(iso).getTime();
 
@@ -198,10 +286,65 @@ export function isHype72Over(now: Date): boolean {
   return now.getTime() >= ms(HYPE72_END);
 }
 
-/** ¿Ya arrancó el evento (abrió el primer drop)? */
+/**
+ * ¿Estamos dentro de la ventana publicada del evento?
+ * Ojo: en la hora de acceso anticipado (HYPE72_EARLY_ACCESS → HYPE72_START) el
+ * drop 01 ya está 'abierto' y esto todavía da false, que es correcto: la
+ * cartelera dice "abierto" y el hero todavía no dice "en curso".
+ */
 export function isHype72Live(now: Date): boolean {
   const t = now.getTime();
   return t >= ms(HYPE72_START) && t < ms(HYPE72_END);
+}
+
+/* ── Acceso a la landing antes del evento ─────────────────────────────────────
+ *
+ * `noindex` no es un mecanismo de acceso: cualquiera con la URL ve la página.
+ * Hasta HYPE72_PUBLIC_AT la página devuelve un 404 real salvo que el visitante
+ * traiga la cookie del gate que ya existe en el proyecto (`hype_early_access`,
+ * la que entrega /api/acceso contra EARLY_ACCESS_PASSWORD). Desde ese instante
+ * se abre sola, sin deploy y sin que nadie tenga que apretar nada.
+ *
+ * Se abre junto con el primer drop: no tiene sentido que la página esté con
+ * llave cuando el 4 PACK ya se puede comprar y el aviso a Private Access y
+ * Mejores Amigos ya salió.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Cuándo la landing queda abierta al público, sola.
+ *
+ * ── DECISIÓN A TOMAR (una línea) ─────────────────────────────────────────────
+ * Hoy está en HYPE72_EARLY_ACCESS (1/11 23:00): nada es público hasta que abre
+ * el primer drop. Es la opción segura — no se compromete ningún precio ni
+ * ninguna condición antes de tenerlos aprobados.
+ *
+ * El costo es real y hay que decidirlo a conciencia: **con esto, la revelación
+ * progresiva del 27/10 al 1/11 no la ve nadie**, y el "Avisame" tampoco captura
+ * mails en la previa. La cartelera que se enciende un drop por día está armada
+ * justamente para esa semana.
+ *
+ * Si se quiere la previa pública, esto pasa a `HYPE72_DROPS[0].revealAt`
+ * (27/10 11:00, cuando se revela el drop 01) y la previa funciona completa. Es
+ * un cambio de una línea, pero requiere que para el 27/10 esté aprobado todo lo
+ * que la página muestra — que hoy, sin montos, son nombre y mecánica de los
+ * drops que ya se revelaron. Eso sí se puede publicar.
+ * ──────────────────────────────────────────────────────────────────────────── */
+export const HYPE72_PUBLIC_AT = HYPE72_EARLY_ACCESS;
+
+/** Cookie del gate de acceso anticipado que ya usa el proyecto (/api/acceso). */
+export const HYPE72_GATE_COOKIE = 'hype_early_access';
+
+/** ¿La landing ya es pública? */
+export function isHype72Publica(now: Date): boolean {
+  return now.getTime() >= ms(HYPE72_PUBLIC_AT);
+}
+
+/**
+ * ¿Se le puede mostrar la página a este visitante?
+ * Pública para todos desde HYPE72_PUBLIC_AT; antes, solo con la cookie del gate.
+ */
+export function puedeVerHype72(now: Date, cookieGate: string | undefined | null): boolean {
+  return isHype72Publica(now) || cookieGate === 'true';
 }
 
 export type Hype72MilestoneKind = 'reveal' | 'open' | 'end';

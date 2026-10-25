@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { Hype72BoardItem, Hype72State } from '@/lib/hype72';
+import { hype72PriceLine, type Hype72BoardItem, type Hype72State } from '@/lib/hype72';
 
 /**
  * La cartelera de los 6 drops de HYPE 72, con revelación progresiva.
@@ -28,6 +28,9 @@ function Row({ item }: { item: Hype72BoardItem }) {
   const { drop, state } = item;
   const open = state === 'abierto';
   const hidden = state === 'oculto';
+  // La línea de precio la decide lib/hype72: mientras los montos no estén
+  // aprobados devuelve la nota sin cifra, o nada. Acá no se mira el interruptor.
+  const priceLine = hype72PriceLine(drop);
 
   const body = (
     <div className="flex gap-4 px-4 py-7 md:gap-8 md:px-6 md:py-9">
@@ -62,9 +65,9 @@ function Row({ item }: { item: Hype72BoardItem }) {
         {!hidden && (
           <>
             <p className="mt-1.5 text-[14px] leading-snug text-black/65">{drop.claim}</p>
-            {drop.priceNote && (
+            {priceLine && (
               <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-black/45">
-                {drop.priceNote}
+                {priceLine}
               </p>
             )}
           </>
