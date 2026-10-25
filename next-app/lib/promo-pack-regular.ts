@@ -108,6 +108,60 @@ export function packRegularUnidades(ahora: number = Date.now()): PackRegularUnid
 }
 
 /**
+ * Gracia después del cierre, SOLO para cobrar.
+ *
+ * El navegador puede seguir mostrando el pack de 4 unos minutos después del
+ * cierre: el carrito pregunta por /api/pack-regular-status y el hook lo refresca
+ * cada 5 minutos (usePackRegularUnidades). Si el servidor cobrara el pack de 3
+ * en esa franja, el cliente terminaría pagando MÁS que el precio promocional que
+ * vio — lo único que no puede pasar.
+ *
+ * 10 minutos es el doble del refresco: cubre el refresco más el rato de
+ * completar los datos y apretar Pagar. Cuesta diez minutos de promo al cierre;
+ * cobrar de más no es una alternativa.
+ */
+export const PACK_REGULAR_X4_GRACIA_MS = 10 * 60_000;
+
+/**
+ * Tamaño del pack con el que se COBRA un pedido (lib/pedido-servidor). No es el
+ * mismo que se muestra: incluye la gracia del cierre.
+ *
+ * Al ABRIR no hay gracia y no hace falta: antes de la ventana el carrito muestra
+ * el pack de 3 (más caro) y si el servidor ya está en ventana cobra el de 4, o
+ * sea de menos. El desajuste que importa es el otro, y es el que cubre la gracia.
+ *
+ * Fuera de la gracia —reloj del servidor corrido más de 10 minutos, un deploy
+ * que cambie la ventana a mitad del evento, una pestaña que estuvo media hora
+ * abierta— el que corta es el checkout: compara el total que cobró Woo contra el
+ * que mostró (`authorizedTotal` vs `montoAPagar` en app/checkout/page.tsx) y, si
+ * no coinciden, muestra el total nuevo y no cobra nada hasta que el cliente lo
+ * acepte.
+ */
+export function packRegularUnidadesAlCobrar(ahora: number = Date.now()): PackRegularUnidades {
+  const vigenteOEnGracia = ahora >= PACK_REGULAR_X4_DESDE
+    && ahora < PACK_REGULAR_X4_HASTA + PACK_REGULAR_X4_GRACIA_MS;
+  return vigenteOEnGracia ? PACK_REGULAR_UNIDADES_X4 : PACK_REGULAR_UNIDADES;
+}
+
+/**
+ * Tamaño del pack que muestra el navegador a partir de la respuesta de
+ * /api/pack-regular-status (lo usa usePackRegularUnidades).
+ *
+ * Fail-safe hacia el pack de siempre ante CUALQUIER respuesta que no diga 4:
+ * mientras carga, si el fetch falla, si hay timeout, si el 500 vuelve con un
+ * body raro. Con el fallback el carrito muestra el descuento más chico y el
+ * servidor, que sí sabe la hora, cobra el del evento: se cobra de menos, nunca
+ * de más.
+ */
+export function unidadesPackRegularDeStatus(
+  status: { unidades?: unknown } | null | undefined,
+): PackRegularUnidades {
+  return status?.unidades === PACK_REGULAR_UNIDADES_X4
+    ? PACK_REGULAR_UNIDADES_X4
+    : PACK_REGULAR_UNIDADES;
+}
+
+/**
  * Nombre del fee negativo que viaja a Woo y que se muestra en el resumen.
  * Dentro de la ventana cambia a "x4" para poder distinguir en Woo los pedidos
  * del evento de los del pack de siempre.

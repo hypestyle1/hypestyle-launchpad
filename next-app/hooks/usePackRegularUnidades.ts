@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  PACK_REGULAR_UNIDADES,
+  unidadesPackRegularDeStatus,
   type PackRegularUnidades,
 } from '@/lib/promo-pack-regular';
 
@@ -20,12 +20,15 @@ export interface PackRegularStatus {
  * del evento HYPE 72 no se puede abrir adelantando la hora de la máquina.
  *
  * Fail-safe hacia el comportamiento de siempre (grupos de 3) mientras carga o
- * si el fetch falla. Nunca al revés: con el fallback el carrito muestra el
- * descuento más chico y el servidor, que sí sabe la hora, cobra el del evento
- * — se cobra de menos, no de más.
+ * si el fetch falla — la decisión vive en unidadesPackRegularDeStatus, que está
+ * testeada. Nunca al revés: con el fallback el carrito muestra el descuento más
+ * chico y el servidor, que sí sabe la hora, cobra el del evento — se cobra de
+ * menos, no de más.
  *
  * Mismo patrón que usePromo3x2Status. Se refresca cada 5 minutos para que un
- * carrito abierto cruzando la medianoche del 2/11 (o la del 5/11) se entere.
+ * carrito abierto cruzando la medianoche del 2/11 (o la del 5/11) se entere; por
+ * esos 5 minutos de desfasaje existe la gracia al cobrar
+ * (PACK_REGULAR_X4_GRACIA_MS).
  */
 export function usePackRegularUnidades(): PackRegularUnidades {
   const { data } = useQuery<PackRegularStatus>({
@@ -40,5 +43,5 @@ export function usePackRegularUnidades(): PackRegularUnidades {
     retry: 2,
   });
 
-  return data?.unidades === 4 ? 4 : PACK_REGULAR_UNIDADES;
+  return unidadesPackRegularDeStatus(data);
 }

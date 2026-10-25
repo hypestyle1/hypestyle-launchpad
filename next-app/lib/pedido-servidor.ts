@@ -11,7 +11,7 @@ import { GOAL_DISCOUNT_SLUG } from '@/hooks/useGoalDiscount';
 import { cotizarAndreani } from '@/lib/andreani-cotizador';
 import { cuponConEnvioGratis } from '@/lib/cupon-envio-gratis';
 import { incluyeEnvioGratis } from '@/lib/envio';
-import { packRegularUnidades, precioPackRegular } from '@/lib/promo-pack-regular';
+import { packRegularUnidadesAlCobrar, precioPackRegular } from '@/lib/promo-pack-regular';
 import {
   descuentos, envioNacional, lineasFisicas, preciosDeLineas, subtotal,
   type ItemPedido, type LineaPrecio, type ResultadoEnvio,
@@ -91,7 +91,12 @@ export async function calcularPedido(args: {
     // Ventana del evento HYPE 72 ("pagás 3, llevás 4"): la hora que manda es la
     // de ESTE proceso, no la del navegador. Es la única fuente de verdad del
     // tamaño del pack al cobrar — el carrito solo muestra.
-    unidadesPackRegular: packRegularUnidades(),
+    //
+    // `AlCobrar` y no `packRegularUnidades`: al cerrar la ventana el pack de 4
+    // se sigue cobrando unos minutos (PACK_REGULAR_X4_GRACIA_MS) porque el
+    // carrito puede estar mostrándolo todavía, y nadie puede pagar más que el
+    // precio promocional que vio.
+    unidadesPackRegular: packRegularUnidadesAlCobrar(),
   });
   const dCliente = Math.round(Number(args.descuentoCliente) || 0);
   if (dCliente !== descuento.monto) diferencias.push(`descuento: navegador ${dCliente}, servidor ${descuento.monto}`);
