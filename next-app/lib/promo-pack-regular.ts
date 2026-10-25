@@ -57,8 +57,20 @@ export type PackRegularUnidades = typeof PACK_REGULAR_UNIDADES | typeof PACK_REG
 // grupos de 3 sin deploy; después del evento se pueden borrar estas constantes
 // y el parámetro `unidades`.
 
-/** Arranque de la ventana, inclusive: 2/11/2026 00:00 ART. */
-export const PACK_REGULAR_X4_DESDE = Date.parse('2026-11-02T00:00:00-03:00');
+/**
+ * Arranque de la ventana, inclusive: **1/11/2026 23:00 ART**, una hora antes de
+ * la apertura pública del 2/11 00:00.
+ *
+ * Esa hora es el acceso anticipado de Private Access y Mejores Amigos. No está
+ * gateado por membresía: el precio queda activo para cualquiera que entre, y lo
+ * anticipado es el AVISO (a las 23:00 se les escribe a los miembros, el anuncio
+ * público sale a las 00:00). Si se filtra, se filtra una hora.
+ *
+ * Arrancar a las 00:00 dejaba una hora en la que un miembro entraba por el aviso
+ * y veía el 4 PACK al precio viejo: la oferta prometida todavía no existía. El
+ * precio tiene que estar vivo cuando se manda el aviso, no después.
+ */
+export const PACK_REGULAR_X4_DESDE = Date.parse('2026-11-01T23:00:00-03:00');
 
 /**
  * Cierre de la ventana, exclusivo: 5/11/2026 00:00 ART. Escrito como el
