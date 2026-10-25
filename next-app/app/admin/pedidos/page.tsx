@@ -28,7 +28,13 @@ type Order = {
 type Anomalia = { id: number; number: string; tipo: string; detalle: string };
 /** Un conteo en `null` es "no se pudo consultar", que no es lo mismo que cero. */
 /** Respuesta de /api/admin/orders. */
-type ApiPedidos = { orders: Order[]; total: number; totalPages: number; page: number; parcial?: boolean };
+type ApiPedidos = {
+  orders: Order[]; total: number; totalPages: number; page: number; parcial?: boolean;
+  /** Cuántos pedidos matcheó WooCommerce con el término (incluye dirección, teléfono, DNI). */
+  coincidenciasWc?: number;
+  /** Cuántos de esos se revisaron acá. Menos que coincidenciasWc = búsqueda recortada. */
+  revisados?: number;
+};
 /**
  * Mientras la respuesta guardada tenga menos de FRESCO_MS se usa tal cual, sin
  * pegarle a WooCommerce: recorrer los tabs de flujo sale gratis. Entre FRESCO_MS
@@ -153,6 +159,8 @@ export default function PedidosPage() {
   const [dataAt, setDataAt]           = useState<number | null>(null);
   const [countsError, setCountsError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** Búsqueda con más coincidencias en WC de las que se revisaron. */
+  const [busquedaRecortada, setBusquedaRecortada] = useState<{ coincidencias: number; revisados: number } | null>(null);
   const [search, setSearch]           = useState('');
   const [total, setTotal]             = useState(0);
   const [page, setPage]               = useState(1);
@@ -189,6 +197,11 @@ export default function PedidosPage() {
   const aplicar = useCallback((data: ApiPedidos, at: number) => {
     setLoadError(null);
     setParcial(!!data.parcial);
+    // Sólo las respuestas de búsqueda traen coincidenciasWc: una lista recortada
+    // por el tope de páginas es otra cosa y se avisa distinto.
+    setBusquedaRecortada(data.parcial && data.coincidenciasWc !== undefined
+      ? { coincidencias: data.coincidenciasWc, revisados: data.revisados ?? 0 }
+      : null);
     setOrders(data.orders);
     setTotal(data.total || 0);
     setTotalPages(data.totalPages || 1);
@@ -211,7 +224,12 @@ export default function PedidosPage() {
    * hay un botón para forzar la relectura; cualquier escritura tira el caché.
    */
   const fetchOrders = useCallback(async (key: string, f: string, q: string, p: number, forzar = false) => {
-    const params = new URLSearchParams({ status: apiStatusFor(f), page: String(p), ...(q && { search: q }) });
+    // Buscando, el tab no limita: el route consulta todos los estados y todas
+    // las fechas. Mandar siempre status=any hace que la misma búsqueda comparta
+    // caché entre tabs en vez de repetir la consulta en cada uno.
+    const params = new URLSearchParams(q
+      ? { status: 'any', page: '1', search: q }
+      : { status: apiStatusFor(f), page: String(p) });
     const cacheKey = params.toString();
     const seq = ++fetchSeq.current;
     const cached = cacheRef.current.get(cacheKey);
@@ -514,7 +532,7 @@ export default function PedidosPage() {
   // Vista afinada por rótulo/guía para los tabs de empaquetado y envío; el resto muestra lo cargado.
   // "Por empaquetar" va del más viejo al más nuevo: lo más atrasado arriba, imposible de pasar por alto.
   // Buscar un # de pedido lo muestra siempre, sin importar en qué tab se esté parado.
-  const visibleOrders = /^#?\d+$/.test(search.trim())
+  const visibleOrders = search.trim()
     ? orders
     : filter === 'por-empaquetar'
     ? orders.filter(o => !o.packaged && !o.digital).sort((a, b) => +new Date(a.date) - +new Date(b.date))
@@ -611,8 +629,12 @@ export default function PedidosPage() {
             )}
             {(parcial || counts?.parcial) && (
               <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-[13px] text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
-                <span className="font-semibold">Lista incompleta.</span>{' '}
-                <span className="text-[12px] opacity-90">Faltan pedidos de esta consulta: lo que ves abajo no es todo. No tomes decisiones de despacho con esta vista.</span>
+                <span className="font-semibold">{busquedaRecortada ? 'Búsqueda recortada.' : 'Lista incompleta.'}</span>{' '}
+                <span className="text-[12px] opacity-90">
+                  {busquedaRecortada
+                    ? `WooCommerce encontró ${busquedaRecortada.coincidencias} pedidos con "${search.trim()}"; se revisaron los ${busquedaRecortada.revisados} más recientes. Afiná la búsqueda o buscá por número de pedido.`
+                    : 'Faltan pedidos de esta consulta: lo que ves abajo no es todo. No tomes decisiones de despacho con esta vista.'}
+                </span>
               </div>
             )}
             {countsError && (
