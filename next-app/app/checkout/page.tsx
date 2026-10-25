@@ -8,7 +8,8 @@ import { isFlashSaleActive } from '@/lib/flash-sale';
 import { compute3x2Discount, unitsToNext3x2 } from '@/lib/promo-3x2';
 import { usePromo3x2Status } from '@/hooks/usePromo3x2Status';
 import { computeChampionDiscount } from '@/lib/promo-champion';
-import { computePackRegularDiscount, packRegularFaltan, precioPackRegular } from '@/lib/promo-pack-regular';
+import { computePackRegularDiscount, packRegularEtiqueta, packRegularFaltan, packRegularSiguienteGratis, precioPackRegular } from '@/lib/promo-pack-regular';
+import { usePackRegularUnidades } from '@/hooks/usePackRegularUnidades';
 import { usePromoChampionStatus } from '@/hooks/usePromoChampionStatus';
 import { useLocale } from '@/context/LocaleContext';
 import { localeForCountry } from '@/lib/geo';
@@ -214,6 +215,9 @@ export default function Checkout() {
   const [flashActive, setFlashActive] = useState(false);
   const { promoActive: promo3x2Won } = usePromo3x2Status();
   const { promoActive: championWon } = usePromoChampionStatus();
+  // Tamaño del pack libre según la hora del servidor (3 de siempre, 4 en la
+  // ventana del evento HYPE 72). Nunca se mira el reloj del navegador.
+  const unidadesPack = usePackRegularUnidades();
 
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null);
@@ -411,10 +415,16 @@ export default function Checkout() {
   const promo3x2Descuento = promo3x2Active ? compute3x2Discount(fisicos) : 0;
   const promo3x2UnidadesFaltan = promo3x2Active ? unitsToNext3x2(fisicos) : 0;
   // Pack libre de Regular Tees: 3 individuales de cualquier color = precio del
-  // 3-PACK. No se suma a las promos de arriba (misma regla que el servidor).
+  // 3-PACK (4 durante la ventana del evento). No se suma a las promos de arriba
+  // (misma regla que el servidor).
   const packRegularActive = !isInternational && !championActive && !promo3x2Active;
-  const packRegularDescuento = packRegularActive ? computePackRegularDiscount(fisicos, precioPackRegular(catalog)) : 0;
-  const packRegularFaltanN = packRegularActive ? packRegularFaltan(fisicos) : 0;
+  const packRegularDescuento = packRegularActive ? computePackRegularDiscount(fisicos, precioPackRegular(catalog), unidadesPack) : 0;
+  const packRegularFaltanN = packRegularActive ? packRegularFaltan(fisicos, unidadesPack) : 0;
+  // En la ventana, con el pack de 3 ya descontado, la cuarta entra gratis. No es
+  // lo mismo que `faltan`: ahí no falta nada para el descuento, lo que hay es
+  // una unidad más sin costo.
+  const packRegularCuartaGratis = packRegularActive
+    && packRegularSiguienteGratis(fisicos, precioPackRegular(catalog), unidadesPack);
   const descuento = cuponDescuento + promo3x2Descuento + championDescuento + packRegularDescuento;
   // El envío entra al total apenas hay tarifa — desde el paso 1, donde la
   // cotiza el CP (sucursal preseleccionada). El costo sorpresa al final es la
@@ -808,7 +818,7 @@ export default function Checkout() {
           customer: { email: info.email, nombre: info.nombre, apellido: info.apellido, dni: info.dni, direccion: info.direccion, depto: info.depto, cp: cpEnvio, ciudad: info.ciudad, provincia: info.provincia, pais: info.pais, telefono: info.telefono, instagram },
           shipping: envioCosto,
           discountAmount: (isLocalTransfer ? Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.10) : 0) + promo3x2Descuento + championDescuento + packRegularDescuento,
-          discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', packRegularDescuento > 0 ? 'Pack Regular x3' : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
+          discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', packRegularDescuento > 0 ? packRegularEtiqueta(unidadesPack) : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
           couponCode: couponData?.code,
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
@@ -1137,10 +1147,15 @@ export default function Checkout() {
               <div className="flex justify-between text-[13px]"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div>
               {championDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Campeones del mundo · 50%</span><span>−{formatPrice(championDescuento)}</span></div>}
               {promo3x2Descuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>3x2</span><span>−{formatPrice(promo3x2Descuento)}</span></div>}
-              {packRegularDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Pack Regular x3</span><span>−{formatPrice(packRegularDescuento)}</span></div>}
+              {packRegularDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>{packRegularEtiqueta(unidadesPack)}</span><span>−{formatPrice(packRegularDescuento)}</span></div>}
               {packRegularFaltanN > 0 && (
                 <p className="text-[11px] text-foreground/70">
                   Sumá {packRegularFaltanN} Regular Tee{packRegularFaltanN > 1 ? 's' : ''} más y pagás precio de pack
+                </p>
+              )}
+              {packRegularCuartaGratis && (
+                <p className="text-[11px] text-foreground/70">
+                  Sumá 1 Regular Tee más y te sale $0: pagás 3, llevás 4
                 </p>
               )}
               {cuponDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>Descuento {couponData?.type === 'percent' ? `(${couponData.amount}%)` : ''}</span><span>−{formatPrice(cuponDescuento)}</span></div>}
