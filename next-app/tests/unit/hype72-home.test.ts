@@ -38,7 +38,7 @@ describe('HYPE 72 — ventana y estado', () => {
     // Si alguien escribe las fechas sin offset, Vercel (UTC) las corre tres
     // horas. Estos tres asserts son el seguro contra eso.
     expect(new Date(HYPE72_HOME_PREVIA_DESDE).toISOString()).toBe('2026-10-27T14:00:00.000Z');
-    expect(new Date(HYPE72_HOME_DESDE).toISOString()).toBe('2026-11-02T02:00:00.000Z');
+    expect(new Date(HYPE72_HOME_DESDE).toISOString()).toBe('2026-11-02T03:00:00.000Z');
     expect(new Date(HYPE72_HOME_HASTA).toISOString()).toBe('2026-11-05T03:00:00.000Z');
   });
 
@@ -53,12 +53,12 @@ describe('HYPE 72 — ventana y estado', () => {
   });
 
   // ── BORDES EXACTOS ──
-  it('un milisegundo antes del 1/11 23:00 ART todavía es previa', () => {
+  it('un milisegundo antes del 2/11 00:00 ART todavía es previa', () => {
     expect(hype72HomeState(HYPE72_HOME_DESDE - ms)).toBe('previa');
-    expect(hype72HomeState(ART('2026-11-01T22:59:59-03:00'))).toBe('previa');
+    expect(hype72HomeState(ART('2026-11-01T23:59:59-03:00'))).toBe('previa');
   });
 
-  it('en el 1/11 23:00 ART exacto arranca el evento', () => {
+  it('en el 2/11 00:00 ART exacto arranca el evento', () => {
     expect(hype72HomeState(HYPE72_HOME_DESDE)).toBe('evento');
     expect(hype72HomeEnCurso(HYPE72_HOME_DESDE)).toBe(true);
   });
@@ -86,9 +86,11 @@ describe('HYPE 72 — ventana y estado', () => {
     }
   });
 
-  it('la hora de acceso anticipado (1/11 23:00 a 2/11 00:00) ya es evento', () => {
-    expect(hype72HomeState(ART('2026-11-01T23:00:00-03:00'))).toBe('evento');
-    expect(hype72HomeState(ART('2026-11-01T23:59:59-03:00'))).toBe('evento');
+  it('la hora del aviso a Mejores Amigos (1/11 23:00 a 23:59) sigue en previa', () => {
+    // Se les avisa y se les muestra la cartelera, pero sin precios anticipados:
+    // la home todavía no ofrece nada. Decisión del 25/10.
+    expect(hype72HomeState(ART('2026-11-01T23:00:00-03:00'))).toBe('previa');
+    expect(hype72HomeState(ART('2026-11-01T23:59:59-03:00'))).toBe('previa');
   });
 });
 

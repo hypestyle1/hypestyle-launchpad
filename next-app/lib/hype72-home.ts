@@ -93,20 +93,21 @@ export const HYPE72_PRECIOS_APROBADOS = false;
 export const HYPE72_HOME_PREVIA_DESDE = Date.parse('2026-10-27T11:00:00-03:00');
 
 /**
- * Arranque del EVENTO, inclusive: **1/11/2026 23:00 ART**.
+ * Arranque del EVENTO, inclusive: **2/11/2026 00:00 ART**, la apertura pública.
  *
- * Una hora antes de la apertura pública del 2/11 00:00, igual que
- * `PACK_REGULAR_X4_DESDE`: a esa hora se le avisa a Private Access y a Mejores
- * Amigos y la oferta tiene que estar viva cuando llega el aviso. No está
- * gateado por membresía — lo anticipado es el aviso, no el precio.
+ * El 1/11 a las 23:00 se les avisa a Private Access y Mejores Amigos y se les
+ * muestra la cartelera, pero sin precios anticipados: a esa hora la home sigue
+ * en estado `previa`. El precio no se puede restringir por membresía (el sitio
+ * no tiene cuentas), así que adelantar la oferta la dejaba pública sin anuncio.
+ * Decisión de Valentín del 25/10.
  *
- * Tiene que coincidir con `PACK_REGULAR_X4_DESDE` de
- * `lib/promo-pack-regular.ts`: si el home dijera que el evento arrancó y el
- * carrito todavía cobrara el pack de 3, la home estaría prometiendo algo que el
- * checkout no cumple. Hay un test que compara los dos instantes cuando esa
- * rama está mergeada.
+ * **Tiene que coincidir con `PACK_REGULAR_X4_DESDE`** de
+ * `lib/promo-pack-regular.ts`: si la home dijera que el evento arrancó y el
+ * carrito todavía cobrara el pack de 3, estaría prometiendo algo que el checkout
+ * no cumple. Hay un test que compara los dos instantes cuando esa rama está
+ * mergeada.
  */
-export const HYPE72_HOME_DESDE = Date.parse('2026-11-01T23:00:00-03:00');
+export const HYPE72_HOME_DESDE = Date.parse('2026-11-02T00:00:00-03:00');
 
 /**
  * Cierre del evento, EXCLUSIVO: 5/11/2026 00:00 ART.
