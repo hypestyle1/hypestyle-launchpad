@@ -6,6 +6,7 @@ import type { GatewaySyncStatus } from '@/lib/finance/types';
 import { mpActivityUrl } from '@/lib/finance/mp-links';
 import { parseRefundsMeta, parseRefundLock } from '@/lib/finance/mp-refund';
 import { envioDeOrden } from '@/lib/mayorista-envio';
+import { entregaDeOrden } from '@/lib/orders-entrega';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -187,6 +188,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // Sucursal de Andreani que eligió el cliente, en texto. El código que usa
     // el plugin (`_shipping_branch_code`) no se puede leer en un rótulo.
     shippingBranch: getMeta('_shipping_branch'),
+    // El código es con el que despacha el plugin de Andreani
+    // (Andreani_Order_Mapper::get_branch_code_for_order). Sin él no se puede
+    // confirmar a qué sucursal va el pedido.
+    shippingBranchCode: getMeta('_shipping_branch_code'),
+    // Domicilio / sucursal / internacional / sin envío, resuelto en un solo
+    // lugar y declarando lo que falta. Ver lib/orders-entrega (caso #4054).
+    entrega: entregaDeOrden(o.shipping_lines, getMeta),
     // Método de envío mayorista (Via Cargo / Andreani / expreso). Las órdenes
     // viejas con solo la sucursal de Via Cargo salen como Via Cargo.
     envio: envioDeOrden(getMeta),

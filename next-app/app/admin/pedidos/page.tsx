@@ -22,6 +22,12 @@ type Order = {
   notified: string; order_key: string;
   customer_note: string;
   isMayorista: boolean;
+  /** domicilio | sucursal | sucursal_tercero | expreso | internacional | sin_envio */
+  tipoEntrega?: string;
+  /** true cuando no se puede afirmar a dónde va el pedido. */
+  entregaIncompleta?: boolean;
+  /** Nombre de la sucursal elegida, o destino del mayorista. */
+  sucursal?: string;
 };
 
 /** Anomalía de datos que no reclama ninguna cola operativa (total negativo, pedido sin productos). */
@@ -907,6 +913,26 @@ export default function PedidosPage() {
                   {order.customer_note && (
                     <div className="text-[11px] text-muted-foreground italic border-l-2 border-warning/60 pl-1.5 mt-1 truncate max-w-full lg:max-w-[260px]" title={order.customer_note}>
                       {order.customer_note}
+                    </div>
+                  )}
+                  {/* A dónde va, cuando no es a la dirección del cliente. Antes la fila
+                      no distinguía domicilio de sucursal y el detalle tampoco: así se le
+                      contestó a un cliente que su pedido iba a su casa cuando iba a una
+                      sucursal (#4054). */}
+                  {(order.tipoEntrega === 'sucursal' || order.tipoEntrega === 'sucursal_tercero' || order.tipoEntrega === 'sin_envio') && (
+                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                      <span className={`text-[9px] font-bold uppercase tracking-wide rounded px-1 flex-none ${
+                        order.entregaIncompleta
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300'}`}>
+                        {order.tipoEntrega === 'sin_envio' ? 'Sin envío' : 'Sucursal'}
+                      </span>
+                      {order.sucursal && (
+                        <span className="text-[11px] text-muted-foreground/70 truncate" title={order.sucursal}>{order.sucursal}</span>
+                      )}
+                      {order.entregaIncompleta && !order.sucursal && (
+                        <span className="text-[11px] text-amber-700 dark:text-amber-300">falta verificar</span>
+                      )}
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-0.5">
