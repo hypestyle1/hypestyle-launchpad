@@ -1064,7 +1064,12 @@ export default function Checkout() {
                 </div>
               ))}
             </ScrollFadeList>
-            <GiftProgressBar email={info.email} couponCode={couponData?.code} className="pb-4 mb-4 border-b border-border" />
+            <GiftProgressBar
+              email={info.email}
+              couponCode={couponData?.code}
+              promoDiscount={promo3x2Descuento + championDescuento + packRegularDescuento}
+              className="pb-4 mb-4 border-b border-border"
+            />
             {/* Colapsado: un input de cupón a la vista manda a buscar códigos
                 afuera y muchos no vuelven. Se abre con el link. */}
             {cuponAbierto || couponData || coupon ? (

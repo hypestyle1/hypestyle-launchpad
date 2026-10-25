@@ -85,6 +85,12 @@ export function lineasFisicas(lineas: LineaPrecio[]): LineaPrecio[] {
  *
  * El 10% de transferencia va sobre lo físico DESPUÉS del pack libre: si no, 3
  * individuales por transferencia saldrían más baratas que el 3-PACK.
+ *
+ * Los cuatro viajan en UNA sola fee line, con la etiqueta concatenada y la
+ * suma como total, así que del pedido no se puede separar cuánto es de cada
+ * uno. Por eso se devuelve además `transferencia` aparte: el regalo por compra
+ * mira el umbral ANTES del 10% (bug D12) y necesita saber la porción, que la
+ * ruta que crea el pedido guarda en el meta `_hs_transfer_discount`.
  */
 export function descuentos(
   lineas: LineaPrecio[],
@@ -95,7 +101,7 @@ export function descuentos(
     tresPorDosActivo: boolean;
     precioPackRegular?: number | null;
   },
-): { monto: number; etiqueta: string | undefined } {
+): { monto: number; etiqueta: string | undefined; transferencia: number } {
   const fisicas = lineasFisicas(lineas);
   let campeon = 0;
   let tresPorDos = 0;
@@ -114,7 +120,7 @@ export function descuentos(
     packRegular > 0 ? 'Pack Regular x3' : '',
     transferencia > 0 ? 'Transferencia (10%)' : '',
   ].filter(Boolean).join(' + ') || undefined;
-  return { monto: campeon + tresPorDos + packRegular + transferencia, etiqueta };
+  return { monto: campeon + tresPorDos + packRegular + transferencia, etiqueta, transferencia };
 }
 
 export type ResultadoEnvio =
