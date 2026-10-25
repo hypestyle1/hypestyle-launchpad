@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   validarClienteServidor,
   normalizarTelefono,
@@ -6,6 +6,7 @@ import {
   metaValidacion,
   resumenParaLog,
   modoValidacion,
+  BLOQUEO_HABILITADO,
 } from '@/lib/validacion-cliente-servidor';
 import { validarInfo, sugerirEmail, type DatosInfo } from '@/lib/checkout-validacion';
 
@@ -357,29 +358,81 @@ describe('observabilidad sin datos personales', () => {
 });
 
 describe('modo de operación', () => {
-  const previo = process.env.CHECKOUT_VALIDACION;
-  afterEach(() => {
-    if (previo === undefined) delete process.env.CHECKOUT_VALIDACION;
-    else process.env.CHECKOUT_VALIDACION = previo;
-  });
+  afterEach(() => { vi.unstubAllEnvs(); });
 
   it('sin la variable arranca en observar', () => {
-    delete process.env.CHECKOUT_VALIDACION;
+    vi.stubEnv('CHECKOUT_VALIDACION', '');
     expect(modoValidacion()).toBe('observar');
   });
 
   it('cualquier valor que no sea "bloquear" es observar', () => {
     for (const v of ['', 'observar', 'off', 'true', 'BLOQUEAR_NO']) {
-      process.env.CHECKOUT_VALIDACION = v;
+      vi.stubEnv('CHECKOUT_VALIDACION', v);
       expect(modoValidacion()).toBe('observar');
     }
   });
 
-  it('"bloquear", en cualquier caja y con espacios, activa el bloqueo', () => {
+  it('en los tests, "bloquear" ejercita el camino del 422', () => {
+    // Es lo que permite que los tests de ruta midan "cero llamadas externas"
+    // cuando una regla bloqueante se activa.
     for (const v of ['bloquear', 'BLOQUEAR', ' Bloquear ']) {
-      process.env.CHECKOUT_VALIDACION = v;
+      vi.stubEnv('CHECKOUT_VALIDACION', v);
       expect(modoValidacion()).toBe('bloquear');
     }
+  });
+});
+
+describe('candado: en producción no se puede bloquear por configuración', () => {
+  afterEach(() => { vi.unstubAllEnvs(); });
+
+  it('el interruptor de código arranca apagado', () => {
+    expect(BLOQUEO_HABILITADO).toBe(false);
+  });
+
+  it('con NODE_ENV=production, CHECKOUT_VALIDACION=bloquear por sí solo NO bloquea', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    for (const v of ['bloquear', 'BLOQUEAR', ' Bloquear ']) {
+      vi.stubEnv('CHECKOUT_VALIDACION', v);
+      expect(modoValidacion()).toBe('observar');
+    }
+  });
+
+  it('tampoco en preview ni en development', () => {
+    for (const env of ['development', 'preview', '']) {
+      vi.stubEnv('NODE_ENV', env);
+      vi.stubEnv('CHECKOUT_VALIDACION', 'bloquear');
+      expect(modoValidacion()).toBe('observar');
+    }
+  });
+
+  it('cuando se ignora la variable, lo avisa en el log', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('CHECKOUT_VALIDACION', 'bloquear');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    modoValidacion();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('BLOQUEO_HABILITADO'));
+    warn.mockRestore();
+  });
+
+  /**
+   * El candado de verdad. Hoy no hace nada porque la constante está en `false`;
+   * el día que alguien la cambie a `true`, este test corre de verdad y falla si
+   * el formulario no tiene la misma regla de "nombre sin letras".
+   *
+   * Es la unica de las cuatro reglas bloqueantes mas estricta que el validador
+   * del navegador: sin ella en el formulario, la persona se enteraria del
+   * problema en el paso de pago y no en el paso 1.
+   */
+  it('habilitar el bloqueo exige que el formulario rechace un nombre sin letras', () => {
+    if (!BLOQUEO_HABILITADO) {
+      expect(BLOQUEO_HABILITADO).toBe(false);
+      return;
+    }
+    const info = { ...BASE, nombre: '12345', pais: 'AR', depto: '' } as unknown as DatosInfo;
+    const delNavegador = validarInfo(info, {
+      soloGift: false, internacional: false, provinciaObligatoria: false, retiraEnSucursal: false,
+    });
+    expect(delNavegador).toHaveProperty('nombre');
   });
 });
 

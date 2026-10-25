@@ -36,16 +36,48 @@ import type { CampoInfo } from '@/lib/checkout-validacion';
 export type ModoValidacion = 'observar' | 'bloquear';
 
 /**
+ * Interruptor de código. **Mientras sea `false`, ninguna configuración de
+ * entorno puede hacer que el validador rechace un pedido en producción.**
+ *
+ * Por qué no alcanza con la variable `CHECKOUT_VALIDACION`: una variable de
+ * entorno la puede poner cualquiera desde el dashboard de Vercel, se copia sin
+ * pensar entre entornos (preview → producción) y no deja rastro en el repo.
+ * Activar el bloqueo tiene que ser un cambio de código revisable, no un campo
+ * de texto en un panel.
+ *
+ * Para activarlo hay que cambiar esta constante a `true` **en un PR**, y ese PR
+ * tiene que traer también la regla de "nombre sin letras" en
+ * `lib/checkout-validacion.ts`: es la única de las cuatro reglas más estricta
+ * que el formulario, así que sin eso el aviso le aparecería a la persona en el
+ * paso de pago en vez del paso 1. Hay un test que falla si se cambia esta
+ * constante sin agregar esa regla, así que el candado no depende de que alguien
+ * se acuerde.
+ *
+ * Y no se activa entre el 2 y el 4 de noviembre: la campaña es ventana cerrada.
+ */
+export const BLOQUEO_HABILITADO = false;
+
+/**
  * `observar` (default): valida, registra el código del campo y crea el pedido
  * igual. `bloquear`: 422 y no se crea nada.
  *
  * Se lee en cada request, no al cargar el módulo, para que el valor no quede
  * congelado en una instancia tibia de la lambda.
+ *
+ * Hacen falta **dos** condiciones para bloquear, y una es código:
+ * `CHECKOUT_VALIDACION=bloquear` más `BLOQUEO_HABILITADO` en `true`. En los
+ * tests basta la variable, para que el camino del 422 se pueda ejercitar y los
+ * tests de "cero llamadas externas" sigan midiendo lo que tienen que medir.
  */
 export function modoValidacion(): ModoValidacion {
-  return (process.env.CHECKOUT_VALIDACION || '').trim().toLowerCase() === 'bloquear'
-    ? 'bloquear'
-    : 'observar';
+  const pedido = (process.env.CHECKOUT_VALIDACION || '').trim().toLowerCase() === 'bloquear';
+  if (!pedido) return 'observar';
+  if (BLOQUEO_HABILITADO) return 'bloquear';
+  if (process.env.NODE_ENV === 'test') return 'bloquear';
+  // Que no quede en silencio: si alguien puso la variable esperando que
+  // bloquee, tiene que poder enterarse de por qué no pasó nada.
+  console.warn('[validacion] CHECKOUT_VALIDACION=bloquear ignorado: BLOQUEO_HABILITADO es false en lib/validacion-cliente-servidor.ts');
+  return 'observar';
 }
 
 export type Hallazgo = {

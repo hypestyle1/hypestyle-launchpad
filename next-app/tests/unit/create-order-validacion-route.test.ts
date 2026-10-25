@@ -30,7 +30,10 @@ let llamadas: string[] = [];
 beforeEach(() => {
   pedidoEnviado = null;
   llamadas = [];
-  process.env.CHECKOUT_VALIDACION = 'bloquear';
+  // Se declara el entorno que este archivo necesita en vez de heredarlo:
+  // process.env es del worker y otro archivo de test puede haberlo cambiado.
+  vi.stubEnv('NODE_ENV', 'test');
+  vi.stubEnv('CHECKOUT_VALIDACION', 'bloquear');
   vi.stubGlobal('fetch', vi.fn(async (url: any, init?: any) => {
     const u = String(url);
     const method = init?.method || 'GET';
@@ -51,7 +54,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  delete process.env.CHECKOUT_VALIDACION;
+  vi.unstubAllEnvs();
 });
 
 const CUSTOMER_OK = {
@@ -159,7 +162,7 @@ describe('POST /api/create-order-gocuotas — payloads deformes nunca dan 500', 
   }
 
   it('un customer ausente devuelve 422 también en modo observar, en vez del 500 de hoy', async () => {
-    process.env.CHECKOUT_VALIDACION = 'observar';
+    vi.stubEnv('CHECKOUT_VALIDACION', 'observar');
     const { POST } = await import('@/app/api/create-order-gocuotas/route');
     const res = await POST(reqNac({ items: ITEMS, customer: null, paymentMethod: 'tarjeta' }));
     expect(res.status).toBe(422);
@@ -168,7 +171,7 @@ describe('POST /api/create-order-gocuotas — payloads deformes nunca dan 500', 
 });
 
 describe('POST /api/create-order-gocuotas — modo observar, el default del despliegue', () => {
-  beforeEach(() => { process.env.CHECKOUT_VALIDACION = 'observar'; });
+  beforeEach(() => { vi.stubEnv('CHECKOUT_VALIDACION', 'observar'); });
 
   it('un payload inválido crea el pedido igual y deja la marca de qué se habría rechazado', async () => {
     const { POST } = await import('@/app/api/create-order-gocuotas/route');
@@ -182,7 +185,7 @@ describe('POST /api/create-order-gocuotas — modo observar, el default del desp
   });
 
   it('sin la variable de entorno también observa: no bloquea por default', async () => {
-    delete process.env.CHECKOUT_VALIDACION;
+    vi.stubEnv('CHECKOUT_VALIDACION', '');
     const { POST } = await import('@/app/api/create-order-gocuotas/route');
     const res = await POST(reqNac(cuerpoNac({ customer: { ...CUSTOMER_OK, email: 'asdf' } })));
     expect(res.status).toBe(200);
