@@ -68,6 +68,12 @@
     --sale: 4 71% 44%;
     --sale-foreground: 0 0% 100%;
 
+    /* HYPE 72 — acento del evento propio (naranja). Token NUEVO a propósito:
+       --sale es el rojo de liquidación de todo el catálogo y es justamente el
+       aspecto que el evento tiene que evitar. No reusar ni modificar --sale.
+       Se borra con el takeover cuando termine el evento. */
+    --hype72-acento: #FF4A00;
+
     --announce-h: 42px;
     --nav-h: 48px;
     --offset: 90px;
