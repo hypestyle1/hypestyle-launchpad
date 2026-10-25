@@ -50,7 +50,7 @@ const json = (data: unknown, status = 200) => ({
  * Los avisos del panel. Next siempre deja un `role="alert"` propio
  * (`__next-route-announcer__`), así que se filtra por el texto de los nuestros.
  */
-const AVISOS = /No se pudieron cargar|Lista incompleta|Contadores no confiables|No se pudo cambiar/;
+const AVISOS = /No se pudieron cargar|Lista incompleta|Contadores no confiables|No se pudo cambiar|no pudimos confirmar|Sin confirmar|No se pudo cancelar/;
 const avisos = (page: Page) => page.getByRole('alert').filter({ hasText: AVISOS });
 
 test.describe('confiabilidad de la lista', () => {
@@ -172,7 +172,7 @@ test.describe('escrituras de estado', () => {
     })));
     await page.route('**/api/admin/set-status', async r => {
       const body = JSON.parse(r.request().postData() || '{}');
-      await r.fulfill(json({ ok: true, status: body.status }));
+      await r.fulfill(json({ ok: true, confirmado: true, status: body.status }));
     });
     await entrar(page);
 
@@ -194,6 +194,48 @@ test.describe('escrituras de estado', () => {
     const valores = await select.evaluate(el => [...(el as HTMLSelectElement).options].map(o => o.value));
     expect(valores).not.toContain('enviado');
     expect(valores).toEqual(['pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed']);
+  });
+
+  // La relectura posterior al PUT es la única prueba de que el cambio quedó. Si
+  // WooCommerce guardó otra cosa, la fila tiene que mostrar ESA otra cosa: dejar
+  // el valor previo también sería mentir, sólo que de otra forma.
+  test('si WooCommerce guardó otro estado, la fila muestra el estado real', async ({ page }) => {
+    await page.route('**/api/admin/orders/counts*', r => r.fulfill(json(COUNTS_OK)));
+    await page.route('**/api/admin/orders?*', r => r.fulfill(json({
+      orders: [order()], total: 1, totalPages: 1, page: 1, parcial: false,
+    })));
+    await page.route('**/api/admin/set-status', r => r.fulfill(json({
+      error: 'WooCommerce no guardó "Completado": el pedido #4044 quedó en "Sin pagar".',
+      status: 'pending', confirmado: false,
+    }, 409)));
+    await entrar(page);
+
+    const select = page.getByRole('combobox', { name: 'Estado del pedido #4044' });
+    await select.selectOption('completed');
+
+    await expect(page.getByRole('alert').filter({ hasText: 'No se pudo cambiar el estado' })).toBeVisible();
+    await expect(select).toHaveValue('pending');
+  });
+
+  test('si el cambio entró pero no se pudo confirmar, se avisa y se relee la lista', async ({ page }) => {
+    let pedidos = 0;
+    await page.route('**/api/admin/orders/counts*', r => r.fulfill(json(COUNTS_OK)));
+    await page.route('**/api/admin/orders?*', r => { pedidos++; return r.fulfill(json({
+      orders: [order()], total: 1, totalPages: 1, page: 1, parcial: false,
+    })); });
+    await page.route('**/api/admin/set-status', r => r.fulfill(json({
+      ok: true, confirmado: false, status: 'completed',
+      aviso: 'WooCommerce aceptó el cambio pero no pudimos confirmarlo. Volvé a cargar la lista antes de seguir.',
+    })));
+    await entrar(page);
+    await expect(page.getByText('#4044')).toBeVisible();
+    const antes = pedidos;
+
+    await page.getByRole('combobox', { name: 'Estado del pedido #4044' }).selectOption('completed');
+
+    await expect(page.getByRole('alert').filter({ hasText: 'no pudimos confirmar' })).toBeVisible();
+    // Sin confirmación la pantalla no se queda con el resultado optimista.
+    await expect.poll(() => pedidos).toBeGreaterThan(antes);
   });
 });
 
@@ -285,7 +327,7 @@ test.describe('caché compartido entre los tabs de flujo', () => {
     const pedidos = await conContador(page, procesando);
     await page.route('**/api/admin/set-status', async r => {
       const body = JSON.parse(r.request().postData() || '{}');
-      await r.fulfill(json({ ok: true, status: body.status }));
+      await r.fulfill(json({ ok: true, confirmado: true, status: body.status }));
     });
     await expect(page.getByRole('link', { name: '#1' }).first()).toBeVisible();
 

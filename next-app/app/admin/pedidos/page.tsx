@@ -348,14 +348,21 @@ export default function PedidosPage() {
   }
 
   /**
-   * Cambia el estado y CONFIRMA que WooCommerce lo aceptó. Antes se actualizaba
-   * la vista sin mirar la respuesta: marcar un pedido como "Enviado" (un estado
-   * que no existe en WC) devolvía 400, el panel pintaba el cambio igual y el
-   * pedido se quedaba en processing. Así se juntaron 464 "enviado sin marcar".
+   * Cambia el estado y CONFIRMA que quedó guardado en WooCommerce.
    *
-   * Devuelve true si el cambio quedó realmente guardado.
+   * Antes se actualizaba la vista sin mirar la respuesta: marcar un pedido como
+   * "Enviado" (un estado que no existe en WC) devolvía 400, el panel pintaba el
+   * cambio igual y el pedido se quedaba en processing. Así se juntaron 464
+   * "enviado sin marcar".
+   *
+   * Ahora el server relee el pedido después del PUT, así que hay tres
+   * resultados distintos y ninguno se disfraza de otro:
+   *   'ok'            — releído y confirmado en Woo.
+   *   'error'         — no se guardó; la fila pasa a mostrar el estado REAL.
+   *   'sin-confirmar' — el PUT entró pero no se pudo releer. No se afirma nada:
+   *                     se avisa y se vuelve a pedir la lista.
    */
-  async function postStatus(orderId: number, status: string): Promise<boolean> {
+  async function postStatus(orderId: number, status: string): Promise<'ok' | 'error' | 'sin-confirmar'> {
     const previo = statusMap[orderId] ?? orders.find(o => o.id === orderId)?.status ?? '';
     setStatusMap(s => ({ ...s, [orderId]: status }));
     try {
@@ -365,25 +372,40 @@ export default function PedidosPage() {
         body: JSON.stringify({ orderId, status }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || data?.status !== status) {
-        // Volver atrás en la vista: lo que se ve tiene que ser lo que hay en Woo.
-        setStatusMap(s => ({ ...s, [orderId]: previo }));
+
+      if (!res.ok || !data?.ok) {
+        // El estado real que devolvió la relectura manda sobre lo que se pintó:
+        // si WC guardó otra cosa, la fila tiene que mostrar esa otra cosa, no el
+        // valor previo (que también podría estar viejo).
+        const real = typeof data?.status === 'string' ? data.status : previo;
+        setStatusMap(s => ({ ...s, [orderId]: real }));
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: real } : o));
+        invalidar();
         setActionError(`No se pudo cambiar el estado del pedido #${orderId}: ${data?.error || `HTTP ${res.status}`}`);
-        return false;
+        return 'error';
       }
+
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
       invalidar();
-      return true;
+
+      if (data.confirmado === false) {
+        setActionError(data.aviso || `El cambio del pedido #${orderId} se envió pero no pudimos confirmarlo. Volvé a cargar la lista.`);
+        return 'sin-confirmar';
+      }
+      return 'ok';
     } catch (e) {
       setStatusMap(s => ({ ...s, [orderId]: previo }));
       setActionError(`No se pudo cambiar el estado del pedido #${orderId}: ${e instanceof Error ? e.message : 'error de red'}`);
-      return false;
+      return 'error';
     }
   }
 
   async function changeStatus(orderId: number, status: string) {
     setActionError(null);
-    await postStatus(orderId, status);
+    const r = await postStatus(orderId, status);
+    // Sin confirmación no alcanza con el estado optimista: se vuelve a pedir la
+    // lista salteando el caché para que lo que se ve salga de Woo.
+    if (r === 'sin-confirmar') fetchOrders(adminKey, filter, search, page, true);
     fetchCounts(adminKey);
   }
 
@@ -407,7 +429,14 @@ export default function PedidosPage() {
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ orderId: cancelTarget.id, restock: cancelRestock, notify: cancelNotify }),
       });
-      if (!res.ok) { alert('No se pudo cancelar el pedido'); return; }
+      const data = await res.json().catch(() => null);
+      // No alcanza con el 200: el route confirma la cancelación releyendo el
+      // pedido y devuelve ok:false si WC guardó otra cosa.
+      if (!res.ok || !data?.ok) {
+        setActionError(`No se pudo cancelar el pedido #${cancelTarget.number}: ${data?.error || `HTTP ${res.status}`}`);
+        return;
+      }
+      if (data.confirmado === false) setActionError(data.aviso || `Cancelamos el pedido #${cancelTarget.number} pero no pudimos confirmarlo.`);
       setStatusMap(s => ({ ...s, [cancelTarget.id]: 'cancelled' }));
       setOrders(prev => prev.map(o => o.id === cancelTarget.id ? { ...o, status: 'cancelled' } : o));
       invalidar();
@@ -421,18 +450,28 @@ export default function PedidosPage() {
   // Cancelar en bloque tiene que pasar por /api/admin/cancel-order (restaura stock),
   // no por postStatus/set-status (solo cambia el estado) — si no, queda stock fantasma
   // reservado como pasó con el pedido #2244.
-  async function bulkCancel(ids: number[]) {
-    await Promise.all(ids.map(id =>
-      fetch('/api/admin/cancel-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
-        body: JSON.stringify({ orderId: id, restock: true, notify: false }),
-      }).then(() => {
+  /** Devuelve los ids que NO quedaron cancelados. */
+  async function bulkCancel(ids: number[]): Promise<number[]> {
+    const fallaron: number[] = [];
+    await Promise.all(ids.map(async id => {
+      try {
+        const res = await fetch('/api/admin/cancel-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+          body: JSON.stringify({ orderId: id, restock: true, notify: false }),
+        });
+        const data = await res.json().catch(() => null);
+        // El .then() de antes corría pase lo que pase: un 502 de WP dejaba la
+        // fila pintada como cancelada, el pedido vivo y el stock sin volver.
+        if (!res.ok || !data?.ok) { fallaron.push(id); return; }
         setStatusMap(s => ({ ...s, [id]: 'cancelled' }));
         setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'cancelled' } : o));
         invalidar();
-      })
-    ));
+      } catch {
+        fallaron.push(id);
+      }
+    }));
+    return fallaron;
   }
 
   async function applyBulk() {
@@ -442,17 +481,30 @@ export default function PedidosPage() {
     // HoldToConfirm, y sostenerlo es la confirmación.
     setBulkLoading(true);
     setActionError(null);
+    // Se informa cuántos quedaron sin aplicar y cuáles: un lote a medias que se
+    // presenta como exitoso es la forma más rápida de perder pedidos.
+    let hayDudas = false;
     if (bulkStatus === 'cancelled') {
-      await bulkCancel(ids);
-    } else {
-      // Se informa cuántos quedaron sin aplicar: un lote a medias que se
-      // presenta como exitoso es la forma más rápida de perder pedidos.
-      const oks = await Promise.all(ids.map(id => postStatus(id, bulkStatus)));
-      const fallaron = ids.filter((_, i) => !oks[i]);
+      const fallaron = await bulkCancel(ids);
       if (fallaron.length) {
-        setActionError(`${oks.filter(Boolean).length} de ${ids.length} cambiados. Sin aplicar: ${fallaron.map(id => `#${id}`).join(', ')}.`);
+        hayDudas = true;
+        setActionError(`${ids.length - fallaron.length} de ${ids.length} cancelados. Sin cancelar: ${fallaron.map(id => `#${id}`).join(', ')}.`);
+      }
+    } else {
+      const rs = await Promise.all(ids.map(id => postStatus(id, bulkStatus)));
+      const fallaron     = ids.filter((_, i) => rs[i] === 'error');
+      const sinConfirmar = ids.filter((_, i) => rs[i] === 'sin-confirmar');
+      if (fallaron.length || sinConfirmar.length) {
+        hayDudas = true;
+        const partes = [`${rs.filter(r => r === 'ok').length} de ${ids.length} cambiados.`];
+        if (fallaron.length)     partes.push(`Sin aplicar: ${fallaron.map(id => `#${id}`).join(', ')}.`);
+        if (sinConfirmar.length) partes.push(`Sin confirmar: ${sinConfirmar.map(id => `#${id}`).join(', ')}.`);
+        setActionError(partes.join(' '));
       }
     }
+    // Un lote con dudas se relee de Woo: la pantalla no se queda con el
+    // resultado optimista de un cambio que no sabemos si entró.
+    if (hayDudas) fetchOrders(adminKey, filter, search, page, true);
     fetchCounts(adminKey);
     setBulkLoading(false);
     setSelected(new Set());
