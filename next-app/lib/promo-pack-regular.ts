@@ -58,19 +58,20 @@ export type PackRegularUnidades = typeof PACK_REGULAR_UNIDADES | typeof PACK_REG
 // y el parámetro `unidades`.
 
 /**
- * Arranque de la ventana, inclusive: **1/11/2026 23:00 ART**, una hora antes de
- * la apertura pública del 2/11 00:00.
+ * Arranque de la ventana, inclusive: **2/11/2026 00:00 ART**, la apertura
+ * pública del evento.
  *
- * Esa hora es el acceso anticipado de Private Access y Mejores Amigos. No está
- * gateado por membresía: el precio queda activo para cualquiera que entre, y lo
- * anticipado es el AVISO (a las 23:00 se les escribe a los miembros, el anuncio
- * público sale a las 00:00). Si se filtra, se filtra una hora.
+ * El 1/11 a las 23:00 se les avisa a Private Access y Mejores Amigos y se les
+ * muestra la cartelera, pero **sin precios anticipados**: a esa hora el pack
+ * todavía es de 3. La razón es que el precio no se puede restringir por
+ * membresía — el sitio no tiene cuentas y Private Access es una lista de
+ * handles en WP — así que adelantarlo una hora lo dejaba público para
+ * cualquiera que entrara, sin anuncio. Decisión de Valentín del 25/10.
  *
- * Arrancar a las 00:00 dejaba una hora en la que un miembro entraba por el aviso
- * y veía el 4 PACK al precio viejo: la oferta prometida todavía no existía. El
- * precio tiene que estar vivo cuando se manda el aviso, no después.
+ * Por eso el aviso de las 23:00 no puede prometer un precio: anuncia que el
+ * evento abre a las 00:00 y muestra qué va a haber.
  */
-export const PACK_REGULAR_X4_DESDE = Date.parse('2026-11-01T23:00:00-03:00');
+export const PACK_REGULAR_X4_DESDE = Date.parse('2026-11-02T00:00:00-03:00');
 
 /**
  * Cierre de la ventana, exclusivo: 5/11/2026 00:00 ART. Escrito como el
