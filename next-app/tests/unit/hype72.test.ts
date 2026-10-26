@@ -329,13 +329,20 @@ describe('hype72 · precios sin aprobar no se publican', () => {
  * gate; desde HYPE72_PUBLIC_AT se abre sola, sin deploy.
  */
 describe('hype72 · gate de acceso', () => {
-  const ANTES = at('2026-10-29T12:00:00-03:00');
+  // Antes de que la landing se abra sola: el 26/10, un día antes de la primera
+  // revelación. (El 29/10 ya es pública, porque la previa arranca el 27/10.)
+  const ANTES = at('2026-10-26T12:00:00-03:00');
 
-  it('la landing se abre una hora antes del evento, y eso es lo único que pasa', () => {
-    expect(HYPE72_PUBLIC_AT).toBe(HYPE72_PREVIEW_AT);
-    // No coincide con la apertura del primer drop: a esa hora se mira, no se compra.
-    expect(HYPE72_PUBLIC_AT).not.toBe(drop('01').opensAt);
+  it('la landing se abre con la primera revelación, para que la previa tenga dónde linkear', () => {
+    // El mail 1 de Brevo sale el 30/10 y linkea acá, igual que las seis
+    // revelaciones diarias: con la página cerrada hasta el 1/11 ese mail
+    // apuntaba a un 404. Abrirla no compromete nada porque no muestra montos.
+    expect(HYPE72_PUBLIC_AT).toBe(drop('01').revealAt);
+    expect(HYPE72_PUBLIC_AT).not.toBe(HYPE72_PREVIEW_AT);
+    // Pública mucho antes de que abra el primer drop: a esa altura se mira, no se compra.
     expect(at(HYPE72_PUBLIC_AT).getTime()).toBeLessThan(at(drop('01').opensAt).getTime());
+    // Y antes de la hora de la previa a los miembros, que sigue existiendo.
+    expect(at(HYPE72_PUBLIC_AT).getTime()).toBeLessThan(at(HYPE72_PREVIEW_AT).getTime());
   });
 
   it('antes de la apertura, sin la cookie no se ve', () => {

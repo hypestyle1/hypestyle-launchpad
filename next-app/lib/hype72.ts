@@ -331,25 +331,24 @@ export function isHype72Live(now: Date): boolean {
  * ──────────────────────────────────────────────────────────────────────────── */
 
 /**
- * Cuándo la landing queda abierta al público, sola.
+ * Cuándo la landing queda abierta al público, sola: **27/10 11:00 ART**, el
+ * instante en que se revela el drop 01.
  *
- * ── DECISIÓN A TOMAR (una línea) ─────────────────────────────────────────────
- * Hoy está en HYPE72_PREVIEW_AT (1/11 23:00): nada es público hasta una hora
- * antes del evento. Es la opción segura — no se compromete ningún precio ni
- * ninguna condición antes de tenerlos aprobados.
+ * Lo decidió la previa, no el gusto: el mail 1 de Brevo sale el **viernes 30/10
+ * y linkea acá**, igual que las seis revelaciones diarias. Con la página cerrada
+ * hasta el 1/11 ese mail mandaba tráfico a un 404 — y la regla es que ningún
+ * link de campaña puede apuntar a una página que no existe.
  *
- * El costo es real y hay que decidirlo a conciencia: **con esto, la revelación
- * progresiva del 27/10 al 1/11 no la ve nadie**, y el "Avisame" tampoco captura
- * mails en la previa. La cartelera que se enciende un drop por día está armada
- * justamente para esa semana.
+ * Abrirla no compromete nada **porque no hay un solo monto en la página**:
+ * `HYPE72_PRECIOS_APROBADOS` está en false, así que lo único visible es el
+ * nombre y la mecánica de los drops ya revelados. Los precios aparecen recién
+ * cuando Valentín los apruebe uno por uno.
  *
- * Si se quiere la previa pública, esto pasa a `HYPE72_DROPS[0].revealAt`
- * (27/10 11:00, cuando se revela el drop 01) y la previa funciona completa. Es
- * un cambio de una línea, pero requiere que para el 27/10 esté aprobado todo lo
- * que la página muestra — que hoy, sin montos, son nombre y mecánica de los
- * drops que ya se revelaron. Eso sí se puede publicar.
+ * Para volver atrás, esto vuelve a `HYPE72_PREVIEW_AT` y la página queda con
+ * llave hasta la hora de la previa — pero entonces hay que cambiarle el destino
+ * al mail 1 y a las revelaciones.
  * ──────────────────────────────────────────────────────────────────────────── */
-export const HYPE72_PUBLIC_AT = HYPE72_PREVIEW_AT;
+export const HYPE72_PUBLIC_AT = HYPE72_DROPS[0].revealAt;
 
 /** Cookie del gate que ya existe en el proyecto (la que entrega /api/acceso). */
 export const HYPE72_GATE_COOKIE = 'hype_early_access';
