@@ -5,6 +5,10 @@ import type { CarouselImage } from '@/components/ui/3d-carousel';
 // general, las Regular Tees y tres detalles de estampa). Origen:
 // Redes & Pauta/CONTENT SS27/ESTUDIO/_SELECCION.
 //
+// 25/10/2026: se suman los cuatro raglans nuevos (34–37), uno por producto,
+// repartidos cada nueve caras para no agrupar la tanda nueva. Origen:
+// Redes & Pauta/RAGLAN SS27/CARRUSEL. El HS CREST olive ya estaba (02).
+//
 // Procesadas a WebP 900×1200 (3:4) con sharp, ~70 KB cada una; next/image las
 // sirve todavía más chicas al tamaño real de cada cara del cilindro.
 //
@@ -18,6 +22,7 @@ const FILES = [
   '02-raglan-crest-olive',
   '03-018-varsity-navy',
   '04-eagle-18-hoodie',
+  '34-raglan-eagle-pink',
   '31-flatlay-h-hype-white',
   '05-athletic-ls-pink',
   '06-athletic-boxy-navy',
@@ -27,6 +32,7 @@ const FILES = [
   '29-flatlay-general',
   '10-varsity-crest-white',
   '07-hearts-boxy-white',
+  '35-raglan-eagle-green',
   '12-athletic-ls-blue',
   '13-h-hype-boxy-navy',
   '27-duo-athletic-boxy',
@@ -36,6 +42,7 @@ const FILES = [
   '17-style-culture-waffle',
   '28-regular-tee-navy',
   '19-dept-cross-waffle',
+  '36-raglan-goods-pink',
   '30-flatlay-regular-tees',
   '18-athletic-polo-grey',
   '21-dept-waffle-black',
@@ -44,6 +51,7 @@ const FILES = [
   '23-varsity-crest-black',
   '25-regular-tee-black',
   '24-h-hype-boxy-white',
+  '37-raglan-goods-green',
   '33-flatlay-athletic-boxy-navy',
   '22-regular-tee-white',
 ];
