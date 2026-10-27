@@ -204,21 +204,28 @@ export default function OrderDetailPage() {
     setStatusError(null);
     setStatus(newStatus);
     try {
-      // Se confirma que WC lo aceptó antes de dejar el cambio en pantalla: si no,
-      // lo que se ve deja de ser lo que hay en Woo (así se perdían las marcas de
-      // "enviado", un estado que WC rechaza con 400).
+      // El route hace PUT y después relee el pedido: lo que se deja en pantalla
+      // es lo que quedó guardado en Woo, no lo que se pidió. Sin esto se perdían
+      // las marcas de "enviado" (un estado que WC rechaza con 400) y cualquier
+      // cambio que un plugin revirtiera después del PUT.
       const res = await fetch('/api/admin/set-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ orderId: order.id, status: newStatus }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || data?.status !== newStatus) {
-        setStatus(previo);
+      if (!res.ok || !data?.ok) {
+        // Si la relectura dice en qué quedó el pedido, se muestra eso: el valor
+        // previo de la pantalla también puede estar viejo.
+        setStatus(typeof data?.status === 'string' ? data.status : previo);
         setStatusError(data?.error || `No se pudo guardar el estado (HTTP ${res.status})`);
         return;
       }
       setOrder(prev => prev ? { ...prev, status: newStatus } : prev);
+      if (data.confirmado === false) {
+        setStatusError(data.aviso || 'El cambio se envió pero no pudimos confirmarlo.');
+        await reloadOrder();
+      }
     } catch (e) {
       setStatus(previo);
       setStatusError(e instanceof Error ? e.message : 'error de red');

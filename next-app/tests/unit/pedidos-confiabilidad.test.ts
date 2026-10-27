@@ -15,6 +15,7 @@ import { NextRequest } from 'next/server';
 
 vi.mock('@/lib/admin-auth', () => ({
   adminSecretMatches: (k: string | null) => k === 'clave-ok',
+  isAdminRequest: (r: { headers: { get: (k: string) => string | null } }) => r.headers.get('x-admin-key') === 'clave-ok',
   ADMIN_SECRET: 'clave-ok',
   adminHeaders: () => ({ 'x-admin-key': 'clave-ok' }),
 }));
@@ -22,6 +23,7 @@ vi.mock('@/lib/admin-auth', () => ({
 import { GET as getOrders } from '@/app/api/admin/orders/route';
 import { GET as getCounts } from '@/app/api/admin/orders/counts/route';
 import { POST as setStatus } from '@/app/api/admin/set-status/route';
+import { POST as cancelOrder } from '@/app/api/admin/cancel-order/route';
 import {
   normalizeProcessingOrder, splitProcessing, anomaliasDe,
   fulfillmentStage, andreaniRefs, metaValue, MAX_PAGES,
@@ -372,5 +374,142 @@ describe('pedidos sin método de envío (canje, retiro, carga manual)', () => {
     const o = normalizeProcessingOrder({ id: 4034, number: '4034', total: '0', shipping_lines: [], line_items: [{ product_id: 1 }, { product_id: 2 }] });
     expect(o.shippingMethod).toBe('');
     expect(o.items).toBe(2);
+  });
+});
+
+/* ─────────────── 9. ninguna escritura se da por buena sin releerla ─────────────── */
+
+/**
+ * El PUT de WooCommerce contestando 200 no prueba que el estado quedó guardado:
+ *   - WC_Abstract_Order::set_status() degrada en silencio un estado no registrado;
+ *   - cualquier plugin colgado de woocommerce_order_status_* puede volver a moverlo
+ *     después del PUT (el de Andreani y los de pago lo hacen);
+ *   - LiteSpeed cachea los GET autenticados, así que la relectura necesita _cb.
+ * Estos tests fijan los tres resultados posibles —guardado, no guardado, no se pudo
+ * confirmar— y que ninguno se disfrace de otro.
+ */
+describe('set-status confirma con una lectura posterior', () => {
+  const req = (body: unknown) => new NextRequest('http://localhost/api/admin/set-status', {
+    method: 'POST', headers: { 'x-admin-key': 'clave-ok', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  it('PUT ok + relectura que coincide → ok y confirmado', async () => {
+    responder = () => wcRes({ id: 4044, status: 'completed' });
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ ok: true, confirmado: true, status: 'completed' });
+    expect(llamadas.map(l => l.method)).toEqual(['PUT', 'GET']);
+  });
+
+  it('la relectura lleva _cb: sin eso LiteSpeed puede devolver la copia previa al PUT', async () => {
+    responder = () => wcRes({ id: 4044, status: 'completed' });
+    await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const get = llamadas.find(l => l.method === 'GET')!;
+    expect(get.url).toMatch(/_cb=\d+/);
+    expect(get.url).toContain('_fields=id,status');
+  });
+
+  it('PUT ok pero WC guardó otra cosa → 409 con el estado REAL, no un falso éxito', async () => {
+    responder = (_url, init) => init?.method === 'PUT'
+      ? wcRes({ id: 4044, status: 'completed' })   // el PUT dice que sí
+      : wcRes({ id: 4044, status: 'pending' });    // la relectura dice la verdad
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(409);
+    expect(body.ok).toBeUndefined();
+    expect(body.status).toBe('pending');
+    expect(body.error).toMatch(/no guardó/);
+  });
+
+  it('PUT ok y relectura caída → confirmado:false con aviso, nunca un error inventado', async () => {
+    responder = (_url, init) => init?.method === 'PUT'
+      ? wcRes({ id: 4044, status: 'completed' })
+      : wcRes({}, { ok: false, status: 500 });
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.confirmado).toBe(false);
+    expect(body.aviso).toMatch(/no pudimos releer/i);
+  });
+
+  it('la conexión se corta en el PUT pero el cambio entró → se relee y se informa ok', async () => {
+    responder = (_url, init) => {
+      if (init?.method === 'PUT') throw new TypeError('terminated');
+      return wcRes({ id: 4044, status: 'completed' });
+    };
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ ok: true, confirmado: true, status: 'completed' });
+  });
+
+  it('la conexión se corta y el pedido quedó como estaba → 502 diciendo en qué quedó', async () => {
+    responder = (_url, init) => {
+      if (init?.method === 'PUT') throw new TypeError('terminated');
+      return wcRes({ id: 4044, status: 'processing' });
+    };
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(502);
+    expect(body.confirmado).toBe(false);
+    expect(body.status).toBe('processing');
+    expect(body.error).toMatch(/Pagado|processing/);
+  });
+});
+
+describe('cancel-order confirma la cancelación y mira el HTTP', () => {
+  const req = (body: unknown) => new NextRequest('http://localhost/api/admin/cancel-order', {
+    method: 'POST', headers: { 'x-admin-key': 'clave-ok', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const pedido = { id: 4044, number: '4044', status: 'processing', line_items: [], billing: {}, meta_data: [] };
+
+  it('cancelación confirmada → ok y confirmado', async () => {
+    responder = (_url, init) => init?.method === 'PUT'
+      ? wcRes({ id: 4044, status: 'cancelled' })
+      : wcRes({ ...pedido, status: 'cancelled' });
+    const body = await (await cancelOrder(req({ orderId: 4044 }))).json();
+    expect(body).toMatchObject({ ok: true, status: 'cancelled', confirmado: true });
+  });
+
+  it('un 500 de WP en el PUT ya no pasa por éxito', async () => {
+    responder = (_url, init) => init?.method === 'PUT'
+      ? wcRes({}, { ok: false, status: 500 })
+      : wcRes(pedido);
+    const res  = await cancelOrder(req({ orderId: 4044 }));
+    const body = await res.json();
+    expect(res.status).toBe(502);
+    expect(body.ok).toBeUndefined();
+    expect(body.error).toMatch(/No se pudo cancelar/);
+  });
+
+  it('PUT ok pero el pedido sigue vivo → 409, no "cancelado"', async () => {
+    let puesto = false;
+    responder = (_url, init) => {
+      if (init?.method === 'PUT') { puesto = true; return wcRes({ id: 4044, status: 'cancelled' }); }
+      return wcRes(puesto ? { ...pedido, status: 'processing' } : pedido);
+    };
+    const res  = await cancelOrder(req({ orderId: 4044 }));
+    const body = await res.json();
+    expect(res.status).toBe(409);
+    expect(body.confirmado).toBe(false);
+    expect(body.status).toBe('processing');
+  });
+
+  it('si el stock no se pudo devolver, lo dice en vez de inventar el total nuevo', async () => {
+    const conItems = { ...pedido, line_items: [{ product_id: 2950, variation_id: 0, quantity: 2, name: 'Regular Tee', meta_data: [] }] };
+    responder = (url, init) => {
+      if (init?.method === 'PUT' && url.includes('/products/')) return wcRes({}, { ok: false, status: 500 });
+      if (init?.method === 'PUT') return wcRes({ id: 4044, status: 'cancelled' });
+      if (url.includes('/products/')) return wcRes({ id: 2950, name: 'Regular Tee', manage_stock: true, stock_quantity: 5 });
+      return wcRes({ ...conItems, status: 'cancelled' });
+    };
+    const body = await (await cancelOrder(req({ orderId: 4044, restock: true }))).json();
+    expect(body.ok).toBe(true);
+    expect(body.restock[0].error).toMatch(/no se pudo devolver al stock/);
+    expect(body.restock[0].to).toBeUndefined();
   });
 });
