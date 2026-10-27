@@ -513,3 +513,89 @@ describe('cancel-order confirma la cancelación y mira el HTTP', () => {
     expect(body.restock[0].to).toBeUndefined();
   });
 });
+
+/* ─────────── 10. buscar encuentra, desde cualquier tab y sin corte de fecha ─────────── */
+
+/**
+ * Medido en producción el 25/10/2026: el parámetro `search` de WC tarda 1,0-1,9 s
+ * y su X-WP-Total es la cuenta real de coincidencias ("gmail.com" devuelve 971).
+ * Antes la búsqueda por texto se hacía DENTRO del estado del tab y con el corte de
+ * fecha puesto, y el recorte a una página no se declaraba: una búsqueda con 971
+ * coincidencias mostraba 100 filas como si fueran todas.
+ */
+describe('la búsqueda por texto es global y declara lo que no miró', () => {
+  it('no manda status ni after: busca en todos los estados y todas las fechas', async () => {
+    responder = () => wcRes([wcOrder()], { total: 1 });
+    await getOrders(reqOrders('status=processing&page=1&search=Camila'));
+    expect(llamadas).toHaveLength(1);
+    const url = llamadas[0].url;
+    expect(url).toContain('search=Camila');
+    expect(url).not.toContain('status=');
+    expect(url).not.toContain('after=');
+    expect(url).toContain('per_page=100');
+  });
+
+  it('encuentra el pedido aunque el tab sea "Por empaquetar" y el pedido esté empaquetado', async () => {
+    const empaquetado = wcOrder({ meta_data: meta({ _tracking_number: '36000312345' }) });
+    responder = () => wcRes([empaquetado], { total: 1 });
+    const body = await (await getOrders(reqOrders('status=processing&page=1&search=Camila'))).json();
+    expect(body.orders).toHaveLength(1);
+    expect(body.orders[0].shipped).toBe(true);
+  });
+
+  it('filtra por nombre y email, no por dirección ni teléfono', async () => {
+    responder = () => wcRes([
+      wcOrder({ id: 1, number: '1', billing: { first_name: 'Camila', last_name: 'Torres', email: 'camila@test.com', phone: '1' } }),
+      wcOrder({ id: 2, number: '2', billing: { first_name: 'Otro', last_name: 'Cliente', email: 'otro@test.com', phone: '1155camila' } }),
+    ], { total: 2 });
+    const body = await (await getOrders(reqOrders('status=any&page=1&search=camila'))).json();
+    expect(body.orders.map((o: any) => o.number)).toEqual(['1']);
+    expect(body.total).toBe(1);
+  });
+
+  it('sin tildes y sin mayúsculas: "jose" encuentra a "José"', async () => {
+    responder = () => wcRes([wcOrder({ billing: { first_name: 'José', last_name: 'García', email: 'j@test.com', phone: '' } })], { total: 1 });
+    const body = await (await getOrders(reqOrders('status=any&page=1&search=jose garcia'))).json();
+    expect(body.orders).toHaveLength(1);
+  });
+
+  it('más coincidencias en WC que las revisadas → parcial con las dos cuentas', async () => {
+    const cien = Array.from({ length: 100 }, (_, i) => wcOrder({ id: i + 1, number: String(i + 1) }));
+    responder = () => wcRes(cien, { total: 971, pages: 10 });
+    const body = await (await getOrders(reqOrders('status=any&page=1&search=gmail.com'))).json();
+    expect(body.parcial).toBe(true);
+    expect(body.coincidenciasWc).toBe(971);
+    expect(body.revisados).toBe(100);
+  });
+
+  it('todas las coincidencias en una página → no es parcial', async () => {
+    responder = () => wcRes([wcOrder()], { total: 1 });
+    const body = await (await getOrders(reqOrders('status=any&page=1&search=Camila'))).json();
+    expect(body.parcial).toBe(false);
+    expect(body.coincidenciasWc).toBe(1);
+  });
+
+  it('un 502 buscando sigue siendo un error, no una búsqueda sin resultados', async () => {
+    responder = () => wcRes({ message: 'boom' }, { ok: false, status: 502 });
+    const res = await getOrders(reqOrders('status=any&page=1&search=Camila'));
+    expect(res.status).toBe(502);
+    expect((await res.json()).orders).toBeUndefined();
+  });
+
+  it('una búsqueda que no matchea nada devuelve lista vacía, no error', async () => {
+    responder = () => wcRes([], { total: 0 });
+    const res = await getOrders(reqOrders('status=any&page=1&search=nadie'));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.orders).toEqual([]);
+    expect(body.parcial).toBe(false);
+  });
+
+  it('un # de pedido sigue yendo directo por id, sin el search de WC', async () => {
+    responder = () => wcRes(wcOrder({ id: 3352, number: '3352' }));
+    const body = await (await getOrders(reqOrders('status=processing&page=1&search=%233352'))).json();
+    expect(llamadas[0].url).toContain('/orders/3352');
+    expect(llamadas[0].url).not.toContain('search=');
+    expect(body.orders[0].number).toBe('3352');
+  });
+});

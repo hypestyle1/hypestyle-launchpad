@@ -50,7 +50,7 @@ const json = (data: unknown, status = 200) => ({
  * Los avisos del panel. Next siempre deja un `role="alert"` propio
  * (`__next-route-announcer__`), así que se filtra por el texto de los nuestros.
  */
-const AVISOS = /No se pudieron cargar|Lista incompleta|Contadores no confiables|No se pudo cambiar|no pudimos confirmar|Sin confirmar|No se pudo cancelar/;
+const AVISOS = /No se pudieron cargar|Lista incompleta|B\u00fasqueda recortada|Contadores no confiables|No se pudo cambiar|no pudimos confirmar|Sin confirmar|No se pudo cancelar/;
 const avisos = (page: Page) => page.getByRole('alert').filter({ hasText: AVISOS });
 
 test.describe('confiabilidad de la lista', () => {
@@ -267,6 +267,47 @@ test.describe('búsqueda', () => {
 
     await page.getByPlaceholder(/Buscar por nombre/).fill('1277');
     await expect(page.getByRole('link', { name: '#1277' }).first()).toBeVisible();
+  });
+
+  // Parado en "Por empaquetar", el tab esconde los pedidos que ya tienen rótulo.
+  // Buscando por nombre eso no puede pasar: el pedido que se busca tiene que
+  // aparecer sin importar en qué pantalla estaba el equipo.
+  test('buscar por nombre muestra un pedido que el tab escondería', async ({ page }) => {
+    await page.route('**/api/admin/orders/counts*', r => r.fulfill(json(COUNTS_OK)));
+    await page.route('**/api/admin/orders?*', r => {
+      const sp = new URL(r.request().url()).searchParams;
+      if (!sp.get('search')) {
+        return r.fulfill(json({ orders: [order()], total: 1, totalPages: 1, page: 1, parcial: false }));
+      }
+      // Buscando, el panel consulta todos los estados, no el del tab.
+      expect(sp.get('status')).toBe('any');
+      return r.fulfill(json({
+        orders: [order({ id: 3991, number: '3991', packaged: true, shipped: true, stage: 'con_guia' })],
+        total: 1, totalPages: 1, page: 1, parcial: false, coincidenciasWc: 1, revisados: 1,
+      }));
+    });
+    await entrar(page);
+
+    await page.getByRole('button', { name: 'Por empaquetar', exact: true }).click();
+    await page.getByPlaceholder(/Buscar por nombre/).fill('Anali Castro');
+    await expect(page.getByRole('link', { name: '#3991' }).first()).toBeVisible();
+  });
+
+  test('una búsqueda con más coincidencias de las revisadas lo dice', async ({ page }) => {
+    await page.route('**/api/admin/orders/counts*', r => r.fulfill(json(COUNTS_OK)));
+    await page.route('**/api/admin/orders?*', r => {
+      const sp = new URL(r.request().url()).searchParams;
+      return r.fulfill(json(sp.get('search')
+        ? { orders: [order()], total: 1, totalPages: 1, page: 1, parcial: true, coincidenciasWc: 971, revisados: 100 }
+        : { orders: [order()], total: 1, totalPages: 1, page: 1, parcial: false }));
+    });
+    await entrar(page);
+
+    await page.getByPlaceholder(/Buscar por nombre/).fill('gmail.com');
+    const aviso = page.getByRole('alert').filter({ hasText: 'Búsqueda recortada' });
+    await expect(aviso).toBeVisible();
+    await expect(aviso).toContainText('971');
+    await expect(aviso).toContainText('100');
   });
 });
 

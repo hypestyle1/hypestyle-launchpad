@@ -116,6 +116,43 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ orders: [mapOrder(await res.json())], total: 1, totalPages: 1, page: 1, parcial: false });
   }
 
+  // Una búsqueda por texto también es global: no la limita el tab ni el corte de
+  // fecha. Antes se buscaba dentro del estado del tab y con `after` puesto, así
+  // que buscar a un cliente parado en "Por empaquetar" no encontraba su pedido ya
+  // empaquetado, y en "Todos" no encontraba nada anterior al 10/05.
+  //
+  // Una sola consulta a WC con su parámetro `search` (medido en producción:
+  // 1,0-1,9 s) en vez de bajar cientos de pedidos para filtrarlos acá.
+  if (q) {
+    const params = new URLSearchParams({
+      per_page: '100', page: '1', orderby: 'date', order: 'desc',
+      search: q, _cb: String(Date.now()),
+    });
+    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
+      headers: { Authorization: wcAuth() },
+      next:    { revalidate: 0 },
+    });
+    if (!res.ok) return NextResponse.json({ error: `WC ${res.status}` }, { status: 502 });
+
+    const raw = await res.json() as any[];
+    const coincidenciasWc = parseInt(res.headers.get('X-WP-Total') || '0', 10);
+    const nq = norm(q);
+    // El search de WC matchea también dirección, teléfono, DNI e ítems; acá la
+    // lista se limita a nombre y email del cliente.
+    const orders = raw
+      .filter((o) => norm(`${o.billing?.first_name || ''} ${o.billing?.last_name || ''} ${o.billing?.email || ''}`).includes(nq))
+      .map(mapOrder);
+
+    return NextResponse.json({
+      orders, total: orders.length, totalPages: 1, page: 1,
+      // Con más de 100 coincidencias en WC quedaron pedidos que no se miraron:
+      // una lista recortada no puede verse igual que una lista completa.
+      parcial: coincidenciasWc > raw.length,
+      coincidenciasWc,
+      revisados: raw.length,
+    });
+  }
+
   // 'canje' y 'mayorista' no son estados de Woo: son cortes transversales que se
   // resuelven acá sobre todos los estados y llegan al cliente ya filtrados.
   // 'canje' = pedidos de $0 (regalos, canjes de creadores, cargas manuales).
@@ -134,7 +171,6 @@ export async function GET(req: NextRequest) {
       _cb:     String(Date.now()), // evita el caché de LiteSpeed en el server de WP (devuelve meta_data vieja)
       ...(after && { after }),
       ...(!FILTROS_PROPIOS.has(status) && { status }),
-      ...(search && { search }),
     });
     return fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
       headers: { Authorization: wcAuth() },
@@ -192,22 +228,13 @@ export async function GET(req: NextRequest) {
   if (esCanje)     raw = raw.filter((o) => !(parseFloat(o.total) > 0));
   if (esMayorista) raw = raw.filter((o) => (o.meta_data || []).some((m: any) => m.key === '_es_mayorista' && m.value === 'true'));
 
-  // El search de WC matchea también dirección, teléfono, DNI e ítems; acá la
-  // búsqueda por texto se limita a nombre y email del cliente.
-  if (q) {
-    const nq = norm(q);
-    raw = raw.filter((o) =>
-      norm(`${o.billing?.first_name || ''} ${o.billing?.last_name || ''} ${o.billing?.email || ''}`).includes(nq)
-    );
-  }
-
   const orders = raw.map(mapOrder);
 
   return NextResponse.json({
     orders,
-    // Con un corte transversal o búsqueda por texto el total de WC incluye lo
-    // descartado; si entró todo en una página, el conteo real es lo que queda.
-    total: (transversal || q) && totalPages === 1 ? orders.length : total,
+    // Con un corte transversal el total de WC incluye lo descartado; si entró
+    // todo en una página, el conteo real es lo que queda.
+    total: transversal && totalPages === 1 ? orders.length : total,
     totalPages,
     page: paginado ? parseInt(page) : 1,
     parcial,
