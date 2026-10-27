@@ -225,7 +225,10 @@ export default function CartDrawer() {
         {/* Barra regalo por compra */}
         {items.length > 0 && (
           <div className="hs-drawer-in" style={stagger(2)}>
-            <GiftProgressBar className="px-6 pt-2 pb-2 border-b border-black/10" />
+            <GiftProgressBar
+              promoDiscount={promo3x2Discount + packRegularDiscount}
+              className="px-6 pt-2 pb-2 border-b border-black/10"
+            />
           </div>
         )}
 

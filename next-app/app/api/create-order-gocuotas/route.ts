@@ -219,6 +219,15 @@ export async function POST(req: NextRequest) {
     const ua = clientUserAgent(req);
     if (ip)             meta.push({ key: '_hs_client_ip',    value: ip });
     if (ua)             meta.push({ key: '_hs_client_ua',    value: ua });
+    // Porción del descuento que corresponde al 10% por transferencia. Los
+    // descuentos viajan en UNA sola fee line con la etiqueta concatenada
+    // ("Pack Regular x3 + Transferencia (10%)") y la suma como total, así que
+    // del pedido no se puede separar. El plugin de regalos lee este meta para
+    // mirar el umbral ANTES del 10% (bug D12: el regalo se prometía en el
+    // carrito y el pedido salía sin él). Ver HPG_Eligibility::calculate_from_order.
+    if (calculo.descuento.transferencia > 0) {
+      meta.push({ key: '_hs_transfer_discount', value: String(calculo.descuento.transferencia) });
+    }
     // IDs anónimos de la sesión de Clarity: con esto la grabación del pedido se
     // encuentra en el dashboard (ver lib/clarity-tracking.ts). Solo IDs, sin PII.
     if (clarityUser)    meta.push({ key: '_clarity_user',    value: String(clarityUser).slice(0, 64) });
