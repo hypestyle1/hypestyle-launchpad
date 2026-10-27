@@ -57,7 +57,7 @@ describe('splitProcessing', () => {
 describe('normalizeProcessingOrder', () => {
   it('parsea total, fecha GMT y etapa', () => {
     const o = normalizeProcessingOrder({ id: 3170, number: '3170', total: '120000.00', date_created_gmt: '2026-09-11T11:00:00', meta_data: meta({}), shipping_lines: [{ method_title: 'Andreani (estándar)' }] });
-    expect(o).toEqual({ id: 3170, number: '3170', total: 120000, dateGmt: '2026-09-11T11:00:00.000Z', stage: 'sin_rotulo', shippingMethod: 'Andreani (estándar)' });
+    expect(o).toEqual({ id: 3170, number: '3170', total: 120000, dateGmt: '2026-09-11T11:00:00.000Z', stage: 'sin_rotulo', shippingMethod: 'Andreani (estándar)', items: 0 });
     expect(normalizeProcessingOrder({ id: 2, total: '0' }).shippingMethod).toBe('');
   });
   it('fecha inválida queda vacía en vez de romper', () => {
