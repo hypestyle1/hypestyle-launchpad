@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { esSoloDigital, fulfillmentStage, andreaniRefs, MAX_PAGES, CONCURRENCIA, mapLimit } from '@/lib/orders-fulfillment';
 import { esEstadoWcValido, esEstadoAccionable } from '@/lib/wc-order-status';
+import { entregaDeOrden } from '@/lib/orders-entrega';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -32,6 +33,7 @@ function mapOrder(o: any) {
   // una cosa y la lista otra.
   const stage = fulfillmentStage(o.meta_data, o.line_items);
   const { tracking, rotulo, pedidoId } = andreaniRefs(o.meta_data);
+  const entrega = entregaDeOrden(o.shipping_lines, mv);
   return {
     id:            o.id,
     number:        o.number,
@@ -62,6 +64,12 @@ function mapOrder(o: any) {
     payment_method_title: o.payment_method_title,
     /** Título del método de envío, o '' si el pedido no tiene envío (canje, retiro, carga manual). */
     shippingMethod:       String((o.shipping_lines || [])[0]?.method_title || '').trim(),
+    // Cómo lo recibe el cliente, de la misma función que usa el detalle. En la
+    // fila alcanza con el tipo, si falta algo, y el nombre de la sucursal: un
+    // pedido a sucursal no se puede ver igual que uno a domicilio.
+    tipoEntrega:          entrega.tipo,
+    entregaIncompleta:    entrega.incompleto,
+    sucursal:             entrega.sucursal?.nombre || entrega.destino || '',
     tracking,
     andreani:      rotulo || pedidoId,
     // Empaquetado = rótulo generado en Andreani, pero todavía sin guía real (para

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { MpRefundBlock } from '@/components/admin/MpRefund';
 import { WC_ORDER_STATUSES, WC_STATUS_LABELS } from '@/lib/wc-order-status';
+import type { Entrega } from '@/lib/orders-entrega';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 const SITE_URL = 'https://hypestyle.com.ar';
@@ -44,6 +45,9 @@ type Order = {
   adminNote: string;
   viaCargoSucursal: string;
   envio?: { metodo: string | null; destino: string; resumen: string };
+  shippingBranch?: string;
+  shippingBranchCode?: string;
+  entrega?: Entrega;
   tracking: string; notified: string; andreani: string; pedido_id: string;
   hsDispatchedAt: string; hsDispatchedSource: string;
   notes: Note[];
@@ -746,7 +750,7 @@ export default function OrderDetailPage() {
                 </div>
                 {order.shipping_total > 0 && (
                   <div className="flex justify-between text-[12px] text-muted-foreground">
-                    <span>Envío — {order.shipping_lines[0]?.method_title || 'Andreani'}</span>
+                    <span>Envío — {order.shipping_lines?.[0]?.method_title || 'Andreani'}</span>
                     <span>{fmt(order.shipping_total)}</span>
                   </div>
                 )}
@@ -756,7 +760,7 @@ export default function OrderDetailPage() {
                     <span>-{fmt(order.discount_total)}</span>
                   </div>
                 )}
-                {order.feeLines.map(f => (
+                {(order.feeLines || []).map(f => (
                   <div key={f.id} className={`flex justify-between text-[12px] ${f.total < 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
                     <span>{f.name}</span>
                     <span>{f.total < 0 ? '-' : ''}{fmt(Math.abs(f.total))}</span>
@@ -882,7 +886,7 @@ export default function OrderDetailPage() {
               <div className="bg-card rounded-lg border border-border px-5 py-4">
                 <h2 className="text-[13px] font-semibold text-foreground mb-3">Notas internas</h2>
                 <div className="space-y-2">
-                  {order.notes.map(n => (
+                  {(order.notes || []).map(n => (
                     <div key={n.id} className="text-[12px] text-muted-foreground bg-yellow-50 border border-yellow-100 rounded-lg px-3 py-2">
                       <span dangerouslySetInnerHTML={{ __html: n.note }} />
                       <span className="block text-[10px] text-muted-foreground/70 mt-1">{fmtDate(n.date)}</span>
@@ -989,13 +993,64 @@ export default function OrderDetailPage() {
             {/* Shipping address */}
             <div className="bg-card rounded-lg border border-border px-5 py-4">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-[13px] font-semibold text-foreground">Dirección de envío</h2>
+                <h2 className="text-[13px] font-semibold text-foreground">Envío</h2>
                 {!editingShipping && (
                   <button onClick={startEditingShipping} className="text-[11px] text-blue-600 hover:underline">
                     Editar
                   </button>
                 )}
               </div>
+
+              {/* Cómo lo recibe el cliente, antes que cualquier dirección. Un pedido a
+                  sucursal mostraba sólo "arenales 2141, Florida" —la dirección de
+                  facturación copiada— y así se le contestó mal a un cliente que
+                  preguntaba por su sucursal (#4054, 23/10). */}
+              {order.entrega && !editingShipping && (
+                <div className="mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                      order.entrega.tipo === 'sucursal' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300'
+                      : order.entrega.tipo === 'sin_envio' ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300'
+                      : 'bg-muted text-muted-foreground'}`}>
+                      {order.entrega.etiqueta}
+                    </span>
+                    {order.entrega.metodo && (
+                      <span className="text-[11px] text-muted-foreground/70">{order.entrega.metodo}</span>
+                    )}
+                  </div>
+
+                  {order.entrega.sucursal && (
+                    <div className="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+                      <div className="text-[12px] font-semibold text-foreground">{order.entrega.sucursal.nombre}</div>
+                      {order.entrega.sucursal.direccion && (
+                        <div className="text-[12px] text-muted-foreground">{order.entrega.sucursal.direccion}</div>
+                      )}
+                      {order.entrega.sucursal.codigo && (
+                        <div className="text-[11px] text-muted-foreground/70 mt-0.5">
+                          Código Andreani <span className="font-mono text-foreground">{order.entrega.sucursal.codigo}</span>
+                        </div>
+                      )}
+                      {order.tracking && (
+                        <a
+                          href={`https://www.andreani.com/#!/informacionEnvio/${order.tracking}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-1.5 text-[11px] text-blue-600 hover:underline"
+                        >
+                          Ver el destino real de la guía en Andreani →
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Falta un dato: se dice, no se rellena con la dirección. */}
+                  {order.entrega.incompleto && (
+                    <p role="alert" className="mt-2 text-[12px] text-amber-700 dark:text-amber-300">
+                      <span className="font-semibold">Falta verificar:</span> {order.entrega.faltante}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {editingShipping ? (
                 <div className="space-y-2">
@@ -1038,6 +1093,14 @@ export default function OrderDetailPage() {
                 </div>
               ) : (
                 <>
+                  {/* A sucursal el paquete NO va a esta dirección: es la del cliente,
+                      copiada de la facturación. Se rotula distinto para que nadie la
+                      lea como el destino. */}
+                  {order.entrega?.tipo === 'sucursal' && (
+                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground/70 font-semibold mb-1">
+                      Dirección del cliente (no es el destino)
+                    </div>
+                  )}
                   <div className="text-[12px] text-muted-foreground space-y-0.5">
                     <div>{order.shipping.first_name} {order.shipping.last_name}</div>
                     <div>{order.shipping.address_1}{order.shipping.address_2 ? `, ${order.shipping.address_2}` : ''}</div>
