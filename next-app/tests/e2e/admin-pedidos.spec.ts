@@ -227,3 +227,73 @@ test.describe('búsqueda', () => {
     await expect(page.getByRole('link', { name: '#1277' }).first()).toBeVisible();
   });
 });
+
+test.describe('caché compartido entre los tabs de flujo', () => {
+  /** Monta la página contando cuántas veces se pide la lista. */
+  async function conContador(page: Page, orders: any[]) {
+    const pedidos: string[] = [];
+    await page.route('**/api/admin/orders/counts*', r => r.fulfill(json({
+      ...COUNTS_OK, porEmpaquetar: 2, empaquetados: 1, enviadosSinMarcar: 1,
+    })));
+    await page.route('**/api/admin/orders?*', r => {
+      pedidos.push(new URL(r.request().url()).search);
+      return r.fulfill(json({ orders, total: orders.length, totalPages: 1, page: 1, parcial: false }));
+    });
+    await entrar(page);
+    return pedidos;
+  }
+
+  const procesando = [
+    order({ id: 1, number: '1' }),
+    order({ id: 2, number: '2' }),
+    order({ id: 3, number: '3', packaged: true, stage: 'con_rotulo' }),
+    order({ id: 4, number: '4', packaged: true, shipped: true, stage: 'con_guia' }),
+  ];
+
+  test('recorrer los 3 tabs de flujo no cuesta ni una consulta más', async ({ page }) => {
+    const pedidos = await conContador(page, procesando);
+    await expect(page.getByRole('link', { name: '#1' }).first()).toBeVisible();
+    const tras1 = pedidos.length;
+
+    // Los 3 tabs piden la misma consulta (status=processing) y filtran distinto
+    // en el cliente: con el dato recién traído, cambiar de tab no pega a WP.
+    await page.getByRole('button', { name: /Empaquetado/ }).first().click();
+    await expect(page.getByRole('link', { name: '#3' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: '#1' })).toHaveCount(0);
+
+    await page.getByRole('button', { name: /Enviado s\/ marcar/ }).first().click();
+    await expect(page.getByRole('link', { name: '#4' }).first()).toBeVisible();
+
+    await page.getByRole('button', { name: /Por empaquetar/ }).first().click();
+    await expect(page.getByRole('link', { name: '#1' }).first()).toBeVisible();
+
+    expect(pedidos.length).toBe(tras1);
+  });
+
+  test('el indicador dice de cuándo son los datos y el botón fuerza la relectura', async ({ page }) => {
+    const pedidos = await conContador(page, procesando);
+    await expect(page.getByRole('link', { name: '#1' }).first()).toBeVisible();
+    const refrescar = page.getByTitle('Volver a leer los pedidos desde WooCommerce');
+    await expect(refrescar).toBeVisible();
+
+    const antes = pedidos.length;
+    await refrescar.click();
+    await expect.poll(() => pedidos.length).toBeGreaterThan(antes);
+  });
+
+  test('una escritura tira el caché: el tab siguiente relee', async ({ page }) => {
+    const pedidos = await conContador(page, procesando);
+    await page.route('**/api/admin/set-status', async r => {
+      const body = JSON.parse(r.request().postData() || '{}');
+      await r.fulfill(json({ ok: true, status: body.status }));
+    });
+    await expect(page.getByRole('link', { name: '#1' }).first()).toBeVisible();
+
+    await page.getByRole('combobox', { name: 'Estado del pedido #1' }).selectOption('completed');
+    await expect(page.getByRole('combobox', { name: 'Estado del pedido #1' })).toHaveValue('completed');
+
+    const antes = pedidos.length;
+    await page.getByRole('button', { name: /Enviado s\/ marcar/ }).first().click();
+    await expect.poll(() => pedidos.length).toBeGreaterThan(antes);
+  });
+});
