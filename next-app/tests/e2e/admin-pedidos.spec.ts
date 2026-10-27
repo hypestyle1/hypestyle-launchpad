@@ -297,3 +297,34 @@ test.describe('caché compartido entre los tabs de flujo', () => {
     await expect.poll(() => pedidos.length).toBeGreaterThan(antes);
   });
 });
+
+test.describe('mobile (390×844): la lista se ve sin scrollear', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('la cola de estampado arranca colapsada y resume en el encabezado', async ({ page }) => {
+    await page.route('**/api/admin/orders/counts*', r => r.fulfill(json(COUNTS_OK)));
+    await page.route('**/api/admin/orders?*', r => r.fulfill(json({
+      orders: [order()], total: 1, totalPages: 1, page: 1, parcial: false,
+    })));
+    await page.addInitScript((k) => sessionStorage.setItem('hype_admin_key', k), CLAVE);
+    await page.route('**/api/admin/pod-pendientes*', r => r.fulfill(json({
+      revisados: 13, porEmpaquetar: 8, total: 7, sinTalle: 0,
+      lineas: [{ design: 'Lettering', talle: 'M', cantidad: 3, blank: 'tee-black', pedidos: [{ number: 4044 }] }],
+      blanks: [{ blank: 'tee-black', label: 'Tee negra', total: 7, porTalle: { M: 3, L: 4 } }],
+    })));
+    await page.goto('/admin/pedidos');
+
+    const toggle = page.getByRole('button', { name: /Pendiente a estampar/ });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    // Cerrada, pero el encabezado dice lo que hay: no se pierde información.
+    const cabecera = toggle.locator('..');
+    await expect(cabecera).toContainText('7 prendas');
+    await expect(cabecera).toContainText('1 blank');
+
+    // Y la primera fila de pedidos entra en la primera pantalla.
+    const fila = page.getByRole('link', { name: '#4044' }).first();
+    await expect(fila).toBeVisible();
+    const caja = await fila.boundingBox();
+    expect(caja!.y).toBeLessThan(844);
+  });
+});

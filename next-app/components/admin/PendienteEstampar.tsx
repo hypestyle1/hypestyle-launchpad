@@ -43,7 +43,11 @@ export default function PendienteEstampar({ adminKey }: { adminKey: string }) {
   const [data, setData]         = useState<PodPendiente | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError]       = useState('');
-  const [abierto, setAbierto]   = useState(true);
+  // Colapsado por defecto: abierto empujaba la lista de pedidos ~2 pantallas
+  // abajo en mobile (390×844), y la primera fila con pedidos es lo que el
+  // equipo viene a ver. El encabezado ya resume la cola (prendas, blanks, sin
+  // talle), así que cerrado no se pierde información.
+  const [abierto, setAbierto]   = useState(false);
   const [copiado, setCopiado]   = useState(false);
 
   const load = useCallback(async () => {
@@ -92,6 +96,7 @@ export default function PendienteEstampar({ adminKey }: { adminKey: string }) {
       <div className="flex flex-wrap items-center gap-2 px-4 py-3">
         <button
           onClick={() => setAbierto(a => !a)}
+          aria-expanded={abierto}
           className="flex items-center gap-2 text-[13px] font-semibold text-foreground"
         >
           <ChevronDown size={14} className={`transition-transform ${abierto ? '' : '-rotate-90'}`} />
@@ -100,6 +105,13 @@ export default function PendienteEstampar({ adminKey }: { adminKey: string }) {
         {data && (
           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${data.total > 0 ? 'bg-purple-100 text-purple-700' : 'bg-muted text-muted-foreground'}`}>
             {data.total} {data.total === 1 ? 'prenda' : 'prendas'}
+          </span>
+        )}
+        {/* Los blanks son la cuenta que importa para el pedido semanal: va en el
+            encabezado para no tener que abrir la cola sólo para verla. */}
+        {data && data.blanks.length > 0 && (
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            {data.blanks.length} {data.blanks.length === 1 ? 'blank' : 'blanks'}
           </span>
         )}
         {data && data.sinTalle > 0 && (

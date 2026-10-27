@@ -102,10 +102,16 @@ function fmt(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
 }
 
+/**
+ * Fecha compacta, en una línea: "22/10 · 14:08". Antes salía con año y con hora
+ * en formato 12 h ("02:08 p. m."), que en la columna angosta se partía en tres
+ * renglones. El año casi nunca importa en la lista y la hora exacta tampoco:
+ * las dos están completas en el pedido.
+ */
 function fmtDate(s: string) {
   const d = new Date(s);
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
-       + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
+       + ' · ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function daysSince(s: string) {
@@ -581,7 +587,9 @@ export default function PedidosPage() {
 
         {/* KPIs — conteos reales globales. `null` = no se pudo consultar, se muestra "—". */}
         {counts && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+          // 3 por fila en mobile: a 2 por fila las seis tarjetas ocupaban tres
+          // renglones y empujaban la lista fuera de la primera pantalla.
+          <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
             {([
               { f: 'por-empaquetar',     n: counts.porEmpaquetar,     label: 'Por empaquetar',     num: 'text-red-600 dark:text-red-400',       active: 'border-red-400 ring-red-200 dark:border-red-500/60 dark:ring-red-500/25' },
               { f: 'empaquetado',        n: counts.empaquetados,      label: 'Empaquetado',        num: 'text-orange-600 dark:text-orange-400', active: 'border-orange-400 ring-orange-200 dark:border-orange-500/60 dark:ring-orange-500/25' },
@@ -900,7 +908,7 @@ export default function PedidosPage() {
 
                 {/* Date + antigüedad */}
                 <div className="text-right col-start-3 row-start-3 lg:col-start-auto lg:row-start-auto">
-                  <Link href={`/admin/pedidos/${order.id}`} onClick={e => e.stopPropagation()} className="text-[11px] text-muted-foreground/70 hover:text-foreground block">
+                  <Link href={`/admin/pedidos/${order.id}`} onClick={e => e.stopPropagation()} className="text-[11px] text-muted-foreground/70 hover:text-foreground block whitespace-nowrap">
                     {fmtDate(order.date)}
                   </Link>
                   {order.status === 'processing' && !order.shipped && !order.digital && (
