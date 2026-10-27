@@ -12,6 +12,10 @@ import sitemap from '@/app/sitemap';
 const FUERA_DEL_SITEMAP = new Set([
   'acceso', 'admin', 'checkout', 'confirmacion', 'pendiente-de-pago', 'seguimiento',
   'subir-foto-final', 'resena', 'private-access', 'mayoristas',
+  // /hype72 todavía no se linkea desde ningún lado: se comparte por URL hasta
+  // el lanzamiento del evento y lleva noindex. Al lanzarlo hay que sacarla de
+  // acá, sumarla a STATIC_ROUTES y quitarle el noindex de su metadata.
+  'hype72',
 ]);
 
 const APP = join(__dirname, '..', '..', 'app');

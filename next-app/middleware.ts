@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { COUNTRY_COOKIE } from '@/lib/geo';
 import { ORDER_KEY_RE, REPAGO_COOKIE_MAX_AGE, repagoCookie } from '@/lib/repago-link';
+import { HYPE72_GATE_COOKIE } from '@/lib/hype72';
 
 // Hora de early access (close friends) y apertura pública
 const EARLY_START = new Date('2026-06-24T19:00:00-03:00').getTime();
@@ -71,11 +72,46 @@ function pagarKeyExchange(request: NextRequest): NextResponse | null {
   return response;
 }
 
+/**
+ * /hype72?key=<EARLY_ACCESS_PASSWORD>: mismo canje que /pagar — la clave pasa a
+ * la cookie del gate y se redirige a la URL limpia, así no queda en una URL que
+ * vean el pixel, GA4 o Clarity. Es la forma de revisar la landing antes de la
+ * apertura con un solo link, sin inventar otra pantalla de contraseña.
+ *
+ * No valida nada contra una lista de usuarios: la clave es la que ya existe
+ * (`EARLY_ACCESS_PASSWORD`, la misma de /api/acceso) y la comparación se hace
+ * acá para no mandar al visitante a una pantalla más. Fail closed: sin la
+ * variable cargada no se entrega la cookie. Quien no tenga la clave ve el 404
+ * que devuelve la propia página (app/hype72/page.tsx).
+ */
+function hype72KeyExchange(request: NextRequest): NextResponse | null {
+  if (!isUnder(request.nextUrl.pathname, '/hype72')) return null;
+  if (!request.nextUrl.searchParams.has('key')) return null;
+  const key = (request.nextUrl.searchParams.get('key') || '').trim();
+  const correct = (process.env.EARLY_ACCESS_PASSWORD ?? '').trim();
+  const url = request.nextUrl.clone();
+  url.searchParams.delete('key');
+  const response = NextResponse.redirect(url, 307);
+  if (correct && key.toUpperCase() === correct.toUpperCase()) {
+    response.cookies.set(HYPE72_GATE_COOKIE, 'true', {
+      path: '/',
+      httpOnly: true,
+      secure: request.nextUrl.protocol === 'https:',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 24 h, igual que /api/acceso
+    });
+  }
+  return response;
+}
+
 async function handle(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const pagar = pagarKeyExchange(request);
   if (pagar) return pagar;
+
+  const hype72 = hype72KeyExchange(request);
+  if (hype72) return hype72;
 
   // Área mayorista: gate propio, independiente del early-access del sitio público.
   if (isUnder(pathname, '/mayoristas') || isUnder(pathname, '/api/mayorista')) {
