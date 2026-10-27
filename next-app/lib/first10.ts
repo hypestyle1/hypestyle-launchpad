@@ -43,9 +43,16 @@ export function razonCupon(mensajeWoo: string | undefined | null): string {
   if (/usage limit/i.test(m)) return 'se agotaron los cupos';
   if (/expired/i.test(m)) return 'venció';
   if (/minimum spend/i.test(m)) return 'no se alcanzó la compra mínima';
+  if (/maximum spend/i.test(m)) return 'se pasó del máximo de compra';
   if (/valid email/i.test(m)) return 'no está habilitado para este mail';
+  // "already been applied and cannot be used in conjunction with other coupons"
+  // es el choque de individual_use, no un cupón gastado: va antes que /already/.
+  if (/conjunction/i.test(m)) return 'no se puede combinar con otro código';
   if (/already/i.test(m)) return 'ya fue usado';
-  return m || 'ya no estaba disponible';
+  if (/not applicable to selected products/i.test(m)) return 'no aplica a estos productos';
+  // Nunca devolver el mensaje crudo de Woo: viene en inglés y se le muestra al
+  // cliente. Mejor una frase honesta en castellano que "Sorry, this coupon…".
+  return 'ya no estaba disponible';
 }
 
 interface WcLineItem { name?: string; quantity?: number; total?: string; meta_data?: { key?: string; value?: unknown }[] }
