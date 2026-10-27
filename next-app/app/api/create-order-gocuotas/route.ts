@@ -8,6 +8,7 @@ import { privateAccessForOrder, privateAccessMeta } from '@/lib/private-access/o
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 import { errorEsDeCupon, razonCupon, regaloFirst10DeLineas } from '@/lib/first10';
 import { clientIp, clientUserAgent } from '@/lib/client-ip';
+import { validarClienteServidor, opcionesDesdePayload, modoValidacion, resumenParaLog, cuerpo422, metaValidacion } from '@/lib/validacion-cliente-servidor';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -72,7 +73,10 @@ async function resolveItem(slug: string, size: string, itemName: string): Promis
 
 export async function POST(req: NextRequest) {
   try {
-    const rawPayload = await req.json();
+    // El `?? {}` es para que un body que no es un objeto (`null`, un número,
+    // una cadena) termine en el 422 de abajo y no en un TypeError al leer
+    // `.items`, que sería un 500.
+    const rawPayload = (await req.json()) ?? {};
     // Nunca confiar en el navegador: cualquier línea marcada como regalo (o
     // manipulada para simularlo) se descarta acá. El Gift Engine (enganchado a
     // woocommerce_rest_pre_insert_shop_order_object) recalcula y agrega el
@@ -83,6 +87,26 @@ export async function POST(req: NextRequest) {
       paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
       fbp, fbc, attribution, clarityUser, claritySession,
     } = { ...rawPayload, items: cleanItems };
+
+    // Datos de contacto: se comprueban acá, antes de cualquier efecto. El
+    // validador es puro y no hace ninguna llamada de red, así que un payload
+    // inválido no gasta nada y un reintento con el mismo payload devuelve lo
+    // mismo. En `observar` (el default) solo se registra y el pedido se crea
+    // igual; en `bloquear` devuelve 422 y no se crea nada.
+    const validacion = validarClienteServidor(
+      rawPayload?.customer,
+      opcionesDesdePayload({ ...rawPayload, items: cleanItems }, false),
+    );
+    const modo = modoValidacion();
+    if (validacion.reglas.length) console.warn(resumenParaLog(validacion, modo));
+    // Sin objeto `customer` no hay pedido posible: hoy esto termina en un 500 al
+    // leer `customer.nombre`. Se responde 422 en cualquier modo.
+    if (validacion.customerAusente) {
+      return NextResponse.json(cuerpo422({ email: 'Revisá los datos del formulario' }, false), { status: 422 });
+    }
+    if (modo === 'bloquear' && validacion.reglasQueBloquean.length) {
+      return NextResponse.json(cuerpo422(validacion.errores, false), { status: 422 });
+    }
 
     // Precio, descuento y envío salen del servidor (auditoría 28/09, C1). Del
     // body solo se toma qué se compra; lo que mandó el navegador como precio
@@ -210,6 +234,12 @@ export async function POST(req: NextRequest) {
     // de alguien que además tiene sesión de Mejores Amigos).
     const paMeta = privateAccessMeta(pa);
     if (paMeta && (items as any[]).some((it) => pa!.precios.has(String(it?.id)))) meta.push(paMeta);
+    // Modo observación: qué habría rechazado la validación, para poder contarlo
+    // en Woo antes de bloquear a nadie. Solo códigos de regla; ni el valor del
+    // campo, ni el email, ni el teléfono. Un pedido sin hallazgos no lleva meta,
+    // así que el pedido de un comprador legítimo sale igual que hoy.
+    const metaVal = metaValidacion(validacion);
+    if (metaVal)            meta.push(metaVal);
     if (meta.length)        order.meta_data = meta;
 
     const crear = () => fetch(`${WP_URL}/wp-json/wc/v3/orders`, {
