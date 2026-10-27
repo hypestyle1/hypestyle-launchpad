@@ -108,10 +108,17 @@ export const SS27_LOOPS: Ss27Media[] = [
 ];
 
 // ── Próximamente ────────────────────────────────────────────────────────────
-/** Fotos de la celda "Próximamente" (al final de la grilla), en orden. */
+/**
+ * Fotos de la celda "Próximamente" (al final de la grilla), en orden: una por
+ * cada uno de los cuatro raglans que quedaron con el tag, alternando chico y
+ * chica y rosa y verde. Mismo material que la ficha de cada producto,
+ * recortado 4:5 con `Redes & Pauta/RAGLAN SS27/prep-proximamente.js`.
+ */
 export const SS27_PROXIMAMENTE: { src: string; alt: string }[] = [
   { src: '/ss27/home/proximamente-creative-goods.webp', alt: 'Hype Creative Goods Raglan Longsleeve rosa' },
+  { src: '/ss27/home/proximamente-doc-eagle-green.webp', alt: 'Department of Culture Eagle Raglan Longsleeve verde' },
   { src: '/ss27/home/proximamente-doc-eagle.webp', alt: 'Department of Culture Eagle Raglan Longsleeve rosa' },
+  { src: '/ss27/home/proximamente-creative-goods-green.webp', alt: 'Hype Creative Goods Raglan Longsleeve verde' },
 ];
 
 /**

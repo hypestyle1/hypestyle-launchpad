@@ -18,7 +18,12 @@ import { GIFT_CARD_SLUG, isValidGiftAmount } from '@/lib/gift-card';
 import { GOAL_DISCOUNT_SLUG } from '@/hooks/useGoalDiscount';
 import { compute3x2Discount } from '@/lib/promo-3x2';
 import { computeChampionDiscount } from '@/lib/promo-champion';
-import { computePackRegularDiscount } from '@/lib/promo-pack-regular';
+import {
+  PACK_REGULAR_UNIDADES,
+  computePackRegularDiscount,
+  packRegularEtiqueta,
+  type PackRegularUnidades,
+} from '@/lib/promo-pack-regular';
 import { costoEnvio, tarifaPorDefecto, type TarifaEnvio } from '@/lib/envio';
 
 export const DESCUENTO_TRANSFERENCIA = 0.10;
@@ -84,7 +89,15 @@ export function lineasFisicas(lineas: LineaPrecio[]): LineaPrecio[] {
  * Los cupones no van acá: se mandan como coupon_lines y los calcula Woo.
  *
  * El 10% de transferencia va sobre lo físico DESPUÉS del pack libre: si no, 3
- * individuales por transferencia saldrían más baratas que el 3-PACK.
+ * individuales por transferencia saldrían más baratas que el 3-PACK. Eso no
+ * cambia en la ventana del evento: el 10% va después del pack, sea de 3 o de 4.
+ *
+ * `unidadesPackRegular` es el tamaño del pack (3 el de siempre, 4 durante la
+ * ventana del evento HYPE 72). Lo resuelve quien llama con la hora del
+ * servidor — ver lib/pedido-servidor. `precioPackRegular` es siempre el precio
+ * del 3-PACK en el catálogo: el pack de 4 se cobra al precio congelado del
+ * evento, que vive en lib/promo-pack-regular (PACK_REGULAR_X4_PRECIO), y el
+ * cálculo se queda con el más conveniente para el cliente.
  *
  * Los cuatro viajan en UNA sola fee line, con la etiqueta concatenada y la
  * suma como total, así que del pedido no se puede separar cuánto es de cada
@@ -100,16 +113,18 @@ export function descuentos(
     campeonActivo: boolean;
     tresPorDosActivo: boolean;
     precioPackRegular?: number | null;
+    unidadesPackRegular?: PackRegularUnidades;
   },
 ): { monto: number; etiqueta: string | undefined; transferencia: number } {
   const fisicas = lineasFisicas(lineas);
+  const unidadesPack = opts.unidadesPackRegular ?? PACK_REGULAR_UNIDADES;
   let campeon = 0;
   let tresPorDos = 0;
   let packRegular = 0;
   if (!opts.internacional) {
     if (opts.campeonActivo) campeon = computeChampionDiscount(fisicas);
     else if (opts.tresPorDosActivo) tresPorDos = compute3x2Discount(fisicas);
-    else packRegular = computePackRegularDiscount(fisicas, opts.precioPackRegular);
+    else packRegular = computePackRegularDiscount(fisicas, opts.precioPackRegular, unidadesPack);
   }
   const transferencia = opts.metodo === 'transferencia' && !opts.internacional
     ? Math.round((subtotal(fisicas) - packRegular) * DESCUENTO_TRANSFERENCIA)
@@ -117,7 +132,7 @@ export function descuentos(
   const etiqueta = [
     campeon > 0 ? 'CAMPEON50' : '',
     tresPorDos > 0 ? '3x2' : '',
-    packRegular > 0 ? 'Pack Regular x3' : '',
+    packRegular > 0 ? packRegularEtiqueta(unidadesPack) : '',
     transferencia > 0 ? 'Transferencia (10%)' : '',
   ].filter(Boolean).join(' + ') || undefined;
   return { monto: campeon + tresPorDos + packRegular + transferencia, etiqueta, transferencia };

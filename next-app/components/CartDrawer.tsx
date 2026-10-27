@@ -8,7 +8,8 @@ import { useRouter } from "next/navigation";
 import { useProducts } from "@/hooks/useProducts";
 import { compute3x2Discount, unitsToNext3x2 } from "@/lib/promo-3x2";
 import { usePromo3x2Status } from "@/hooks/usePromo3x2Status";
-import { PACK_REGULAR_SLUGS, computePackRegularDiscount, packRegularFaltan, precioPackRegular } from "@/lib/promo-pack-regular";
+import { computePackRegularDiscount, packRegularCostoSiguiente, packRegularEtiqueta, packRegularFaltan, packRegularMasBarata, packRegularSiguienteGratis, precioPackRegular } from "@/lib/promo-pack-regular";
+import { usePackRegularUnidades } from "@/hooks/usePackRegularUnidades";
 import GiftProgressBar from "@/components/GiftProgressBar";
 import PriceChangeNotice from "@/components/PriceChangeNotice";
 import { FREE_SHIPPING_THRESHOLD, incluyeEnvioGratis } from "@/lib/envio";
@@ -65,6 +66,9 @@ export default function CartDrawer() {
   const [suggestedSizes, setSuggestedSizes] = useState<Record<string, string>>({});
 
   const { promoActive: promo3x2Active } = usePromo3x2Status();
+  // Tamaño del pack libre según la hora del servidor (3 de siempre, 4 en la
+  // ventana del evento HYPE 72). Nunca se mira el reloj del navegador.
+  const unidadesPack = usePackRegularUnidades();
 
   // La animación (globals.css, "Drawer del carrito") necesita dos cosas que un
   // `return null` no da: que el panel exista un cuadro antes de abrirse, para
@@ -136,20 +140,18 @@ export default function CartDrawer() {
   const promo3x2Faltan = promo3x2Active ? unitsToNext3x2(purchasableItems) : 0;
 
   // Pack libre de Regular Tees (lib/promo-pack-regular): misma regla que el
-  // checkout y el servidor. Si falta una sola, se avisa cuánto sale la tercera.
+  // checkout y el servidor, con el mismo tamaño de pack. Si falta una sola, se
+  // avisa cuánto sale la que falta; en la ventana del evento, con 3 ya
+  // descontadas, la siguiente sale $0 y eso también se avisa.
   const packRegularActive = !desdeAfuera && !promo3x2Active;
   const precioPack = precioPackRegular(allProducts);
-  const packRegularDiscount = packRegularActive ? computePackRegularDiscount(purchasableItems, precioPack) : 0;
-  const packRegularFaltanN = packRegularActive && precioPack ? packRegularFaltan(purchasableItems) : 0;
-  const regularMasBarata = Math.min(
-    ...purchasableItems.filter(i => PACK_REGULAR_SLUGS.has(i.id)).map(i => i.price),
-  );
-  const terceraCuesta = packRegularFaltanN === 1
-    ? regularMasBarata - (computePackRegularDiscount(
-        [...purchasableItems, { id: 'regular-tee-black', price: regularMasBarata, quantity: 1 }],
-        precioPack,
-      ) - packRegularDiscount)
-    : 0;
+  const packRegularDiscount = packRegularActive ? computePackRegularDiscount(purchasableItems, precioPack, unidadesPack) : 0;
+  const packRegularFaltanN = packRegularActive && precioPack ? packRegularFaltan(purchasableItems, unidadesPack) : 0;
+  const siguienteCuesta = packRegularFaltanN === 1
+    ? packRegularCostoSiguiente(purchasableItems, precioPack, packRegularMasBarata(purchasableItems), unidadesPack)
+    : null;
+  const packRegularCuartaGratis = packRegularActive
+    && packRegularSiguienteGratis(purchasableItems, precioPack, unidadesPack);
 
   // Formas de pago, con las mismas cuentas que el checkout: el 10% de
   // transferencia va sobre lo físico (la gift card se paga entera) y después
@@ -249,10 +251,15 @@ export default function CartDrawer() {
         {/* Barra pack libre de Regular Tees */}
         {(packRegularDiscount > 0 || packRegularFaltanN > 0) && (
           <div className="hs-drawer-in px-6 pt-2 pb-2 border-b border-black/10" style={stagger(2)}>
-            {packRegularFaltanN === 1 && terceraCuesta > 0 ? (
+            {packRegularCuartaGratis ? (
               <p className="text-[11px] text-center text-muted-foreground">
                 Sumá <span className="font-bold text-foreground">1 Regular Tee</span> más de cualquier color:{' '}
-                la tercera te sale <span className="font-bold text-foreground">{formatPrice(terceraCuesta)}</span>
+                la cuarta te sale <span className="font-bold text-foreground">$0</span> — pagás 3, llevás 4
+              </p>
+            ) : packRegularFaltanN === 1 && siguienteCuesta !== null && siguienteCuesta > 0 ? (
+              <p className="text-[11px] text-center text-muted-foreground">
+                Sumá <span className="font-bold text-foreground">1 Regular Tee</span> más de cualquier color:{' '}
+                la tercera te sale <span className="font-bold text-foreground">{formatPrice(siguienteCuesta)}</span>
               </p>
             ) : packRegularFaltanN > 0 ? (
               <p className="text-[11px] text-center text-muted-foreground">
@@ -424,7 +431,7 @@ export default function CartDrawer() {
             )}
             {packRegularDiscount > 0 && (
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-green-700">Pack Regular x3</span>
+                <span className="text-[13px] text-green-700">{packRegularEtiqueta(unidadesPack)}</span>
                 <span className="text-[14px] font-semibold text-green-700">−{formatPrice(packRegularDiscount)}</span>
               </div>
             )}
