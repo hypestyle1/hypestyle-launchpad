@@ -17,7 +17,6 @@ import {
   isExcludedPage,
   planPopup,
 } from '@/lib/newsletter-popup';
-import { subscribeNewsletter } from '@/lib/newsletter-subscribe';
 
 /**
  * Popup de newsletter en dos piezas (rediseño 29/09/2026, ref. Scuffers):
@@ -55,9 +54,13 @@ function readSource(): TrafficSource {
 
 const LEGAL = 'Al suscribirte aceptás recibir novedades de Hype por email. Podés darte de baja cuando quieras.';
 
-// El alta vive en lib/newsletter-subscribe.ts: la comparte el "Avisame" de
-// /hype72, así los dos formularios mandan exactamente el mismo payload.
-const subscribe = subscribeNewsletter;
+async function subscribe(email: string, preferencia: Preferencia | null) {
+  await fetch('/api/newsletter-subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, preferencia }),
+  });
+}
 
 export default function NewsletterPopup() {
   const pathname = usePathname() || '/';
