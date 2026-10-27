@@ -54,9 +54,17 @@ export default function PendienteEstampar({ adminKey }: { adminKey: string }) {
         headers: { 'x-admin-key': adminKey },
         cache: 'no-store',
       });
-      const json = await res.json();
-      if (res.ok) { setData(json); setError(''); }
-      else setError(json.error || 'No se pudo leer la cola de estampado.');
+      const json = await res.json().catch(() => null);
+      if (!res.ok) { setError(json?.error || `No se pudo leer la cola de estampado (HTTP ${res.status}).`); return; }
+      // Se valida la forma antes de guardarla: con un cuerpo inesperado,
+      // `data.lineas.map` tiraba un TypeError que se llevaba puesta TODA la
+      // página de pedidos ("Application error"). Un error de la cola de
+      // estampado no puede dejar al equipo sin la lista de pedidos.
+      if (!json || !Array.isArray(json.lineas) || !Array.isArray(json.blanks)) {
+        setError('La cola de estampado respondió algo inesperado.');
+        return;
+      }
+      setData(json); setError('');
     } catch {
       setError('Error al conectar.');
     } finally {
