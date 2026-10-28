@@ -7,7 +7,6 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { imgSrc } from '@/lib/img';
 import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
 import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
-import { splitConsignacion } from '@/lib/mayorista-consignacion';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import { sizeLevel, stockKey, canOrder, isPurchasable, isUnconfirmed, type MayoristaProduct } from '@/lib/mayorista-products';
 import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
@@ -17,10 +16,10 @@ import MayoristaAddedNotice from './MayoristaAddedNotice';
 export default function MayoristaProductCard({ product }: { product: MayoristaProduct }) {
   const { add } = useMayoristaCart();
   const { fmt } = useMayoristaDivisa();
-  // Cuenta en consignación: no compra, exhibe. El precio que manda es el de
-  // lista (lo que va a cobrar en su local), con su comisión al lado.
+  // Cuenta en consignación: no compra, exhibe. Ve el precio de lista solo,
+  // igual que en la tienda — el precio mayorista ahí no existe y el reparto
+  // con su comisión es cuenta de ellos, no un cartel en cada producto.
   const { consignacion } = useMayoristaPerfil();
-  const split = consignacion ? splitConsignacion(product.regularPrice, consignacion.pct) : null;
   const [added, setAdded] = useState<string | null>(null);
   const [imgIndex, setImgIndex] = useState(0);
   const isNew = isNewProduct(product);
@@ -138,14 +137,8 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
         {product.shortDescription && (
           <p className="text-[11px] text-text-light leading-tight mt-0.5">{product.shortDescription}</p>
         )}
-        {consignacion && split ? (
-          <>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-[13px] font-semibold">{fmt(split.lista)}</span>
-              <span className="text-[9px] uppercase tracking-wide text-text-light">precio de lista</span>
-            </div>
-            <p className="text-[11px] text-text-light mt-0.5">Tu {consignacion.pct}%: {fmt(split.comision)} · liquidás {fmt(split.aLiquidar)}</p>
-          </>
+        {consignacion ? (
+          <p className="text-[13px] font-semibold mt-1">{fmt(product.regularPrice)}</p>
         ) : product.promo ? (
           <>
             <div className="flex items-baseline gap-2 mt-1">

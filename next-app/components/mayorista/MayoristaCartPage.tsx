@@ -8,7 +8,6 @@ import { imgSrc } from '@/lib/img';
 import { Button } from '@/components/ui/button';
 import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
 import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
-import { splitConsignacion } from '@/lib/mayorista-consignacion';
 import MayoristaDivisaNota from './MayoristaDivisaNota';
 import { useMayoristaCart, lineKey, MayoristaCartItem } from '@/context/MayoristaCartContext';
 import { METODOS_ENVIO, METODO_DEFAULT, metodoDef, validarEnvio, type MetodoEnvio } from '@/lib/mayorista-envio';
@@ -162,8 +161,9 @@ const EMPTY_SHIPPING: ShippingForm = {
 export default function MayoristaCartPage({ catalog = [], campaignName = null }: { catalog?: MayoristaProduct[]; campaignName?: string | null }) {
   const { items, add, remove, setQty, clear, replace, total, hydrated } = useMayoristaCart();
   const { fmt, nota } = useMayoristaDivisa();
-  // Consignación: el total no es lo que paga, es el valor de la mercadería
-  // que se lleva a precio de lista (lib/mayorista-consignacion.ts).
+  // Consignación: el total no es lo que paga, es el valor de la mercadería que
+  // se lleva a precio de lista. El reparto con su comisión no se muestra acá:
+  // va en el aviso que nos llega a nosotros (lib/mayorista-consignacion.ts).
   const { consignacion } = useMayoristaPerfil();
   const [lineInfo, setLineInfo] = useState<Record<string, LineInfo>>({});
   const [step, setStep] = useState<'cart' | 'shipping'>('cart');
@@ -603,11 +603,6 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
             <span className="text-[13px] font-semibold uppercase tracking-wide">{consignacion ? 'Mercadería a precio de lista' : confirmed.creditUsed > 0 ? 'Total a pagar' : 'Total'}</span>
             <span className="text-[15px] font-bold">{fmt(confirmed.total - confirmed.creditUsed)}</span>
           </div>
-          {consignacion && (
-            <p className="mt-2 text-[12px] text-muted-foreground">
-              Si se vende todo: te quedan {fmt(splitConsignacion(confirmed.total, consignacion.pct).comision)} y nos liquidás {fmt(splitConsignacion(confirmed.total, consignacion.pct).aLiquidar)}.
-            </p>
-          )}
           <MayoristaDivisaNota className="mt-2" />
         </div>
 
@@ -876,17 +871,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
               <span className={creditUsed > 0 && !consignacion ? 'text-[15px] font-semibold' : 'text-xl font-bold'}>{fmt(total)}</span>
             </div>
             {consignacion && (
-              <div className="rounded-[12px] border border-border p-3 text-[13px] space-y-1">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-muted-foreground">Si se vende todo, tu {consignacion.pct}%</span>
-                  <span className="font-semibold tabular-nums">{fmt(splitConsignacion(total, consignacion.pct).comision)}</span>
-                </div>
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-muted-foreground">Nos liquidás</span>
-                  <span className="tabular-nums">{fmt(splitConsignacion(total, consignacion.pct).aLiquidar)}</span>
-                </div>
-                <p className="text-[12px] text-muted-foreground pt-1">No pagás nada ahora. Liquidás a medida que vendés y lo que no se venda vuelve.</p>
-              </div>
+              <p className="text-[12px] text-muted-foreground">No pagás nada ahora. Liquidás a medida que vendés y lo que no se venda vuelve.</p>
             )}
             {campaignDiscount > 0 && <p className="text-[12px] text-sale">Ahorrás {fmt(campaignDiscount)} con {name}.</p>}
             <MayoristaDivisaNota className="pt-1" />

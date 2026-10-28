@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { imgSrc } from '@/lib/img';
 import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
 import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
-import { splitConsignacion } from '@/lib/mayorista-consignacion';
 import MayoristaDivisaNota from './MayoristaDivisaNota';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import { stockKey, canOrder, isPurchasable, type MayoristaProduct } from '@/lib/mayorista-products';
@@ -20,10 +19,9 @@ const MAX_QTY = 99;
 export default function MayoristaProductDetail({ product }: { product: MayoristaProduct }) {
   const { add } = useMayoristaCart();
   const { fmt } = useMayoristaDivisa();
-  // Consignación: el precio que manda es el de lista, con el reparto al lado.
-  // El 50% mayorista no aplica, así que ni se nombra (lib/mayorista-consignacion.ts).
+  // Consignación: el precio de lista solo, como en la tienda. El 50% mayorista
+  // no aplica y ni se nombra (lib/mayorista-consignacion.ts).
   const { consignacion } = useMayoristaPerfil();
-  const split = consignacion ? splitConsignacion(product.regularPrice, consignacion.pct) : null;
   const [size, setSize] = useState<string | null>(product.sizes.length === 1 ? product.sizes[0] : null);
   // Un solo color cargado (ej. "Negra") no es una elección: va directo al pedido.
   const [color, setColor] = useState<string | null>(product.colors.length === 1 ? product.colors[0] : null);
@@ -122,21 +120,10 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
             <p className="text-[13px] text-text-light mt-1">{product.shortDescription}</p>
           )}
 
-          {consignacion && split ? (
+          {consignacion ? (
             <div className="mt-4">
-              <p className="text-[24px] font-semibold">{fmt(split.lista)}</p>
+              <p className="text-[24px] font-semibold">{fmt(product.regularPrice)}</p>
               <p className="text-[13px] text-text-light">Precio de lista: lo que cobrás en tu local.</p>
-              <div className="mt-3 rounded-[12px] border border-border p-3 text-[13px]">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-text-light">Tu comisión ({consignacion.pct}%)</span>
-                  <span className="font-semibold tabular-nums">{fmt(split.comision)}</span>
-                </div>
-                <div className="flex items-baseline justify-between gap-3 mt-1">
-                  <span className="text-text-light">Nos liquidás</span>
-                  <span className="tabular-nums">{fmt(split.aLiquidar)}</span>
-                </div>
-              </div>
-              <p className="text-[12px] text-text-light mt-2">Por unidad vendida. No pagás nada por adelantado: lo que no se venda vuelve.</p>
             </div>
           ) : product.promo ? (
             <div className="mt-4">
