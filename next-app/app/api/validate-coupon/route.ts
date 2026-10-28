@@ -6,7 +6,10 @@ const WP_SECRET = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, total } = await req.json();
+    // El mail va porque hay cupones personales (email_restrictions) y con tope
+    // por persona (usage_limit_per_user): sin él, el PHP no los puede validar y
+    // el checkout aprueba códigos que Woo rechaza al crear el pedido.
+    const { code, total, email } = await req.json();
     const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/validate-coupon`, {
       method: 'POST',
       headers: {
@@ -14,7 +17,7 @@ export async function POST(req: NextRequest) {
         'X-Hypestyle-Secret': WP_SECRET,
         'Authorization': `Bearer ${WP_SECRET}`,
       },
-      body: JSON.stringify({ code, total }),
+      body: JSON.stringify({ code, total, email }),
     });
 
     if (!res.ok) {

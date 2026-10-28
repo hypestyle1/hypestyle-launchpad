@@ -181,6 +181,10 @@ export default function Checkout() {
   // cambió entre armar el carrito y confirmar): la orden queda en espera y no
   // se cobra nada hasta que acepte el monto nuevo.
   const [totalAjustado, setTotalAjustado] = useState<number | null>(null);
+  // Cuando el total sube porque Woo tiró el cupón, hay que decir ESO y no
+  // "cambió un precio": es lo que pasó con el pedido #4092 (26/10/2026) y la
+  // clienta se enteró del total real recién en el mail de transferencia.
+  const [cuponCaido, setCuponCaido] = useState<{ code: string; reason: string } | null>(null);
   const ordenPendiente = useRef<OrdenCreada | null>(null);
   // País y provincia casi nunca se cambian: viven colapsados como texto con
   // "Cambiar" y el select aparece recién si hace falta. Menos pantalla ocupada.
@@ -411,6 +415,44 @@ export default function Checkout() {
     setCouponData(null);
     setCouponError(`FIRST10 necesita $${couponData.first10.min.toLocaleString('es-AR')} en productos. Sumá algo y volvé a aplicarlo.`);
   }, [subtotal, couponData]);
+  // Validar un código contra Woo (vía el PHP). El mail viaja porque hay cupones
+  // personales (email_restrictions) y con tope por persona: sin él se aprueban
+  // códigos que Woo rechaza al crear el pedido, y el total del resumen termina
+  // no siendo el del pedido.
+  const validarCupon = async (codigo: string, email: string) => {
+    const res = await fetch('/api/validate-coupon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: codigo, total: subtotal, email }),
+    });
+    return await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; first10?: First10Info; error?: string };
+  };
+
+  // Un cupón personal se valida contra el mail, así que si lo cambian DESPUÉS de
+  // aplicarlo hay que volver a preguntar (Woo lo valida contra el mail de
+  // facturación al crear el pedido). Con debounce para no pegarle por tecla.
+  const cuponValidadoPara = useRef('');
+  useEffect(() => {
+    const code = couponData?.code;
+    if (!code) { cuponValidadoPara.current = ''; return; }
+    const clave = code + '|' + info.email.trim().toLowerCase();
+    if (cuponValidadoPara.current === clave) return;
+    let vigente = true;
+    const t = setTimeout(async () => {
+      try {
+        const data = await validarCupon(code, info.email);
+        if (!vigente) return;
+        cuponValidadoPara.current = clave;
+        if (!data?.valid) {
+          setCouponData(null);
+          setCouponError(data?.error || 'El código ya no es válido');
+        }
+      } catch { /* si falla la red, lo valida Woo al confirmar */ }
+    }, 700);
+    return () => { vigente = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couponData?.code, info.email]);
+
   const cuponDescuento = couponData ? (
     couponData.type === 'percent'
       ? Math.round(subtotal * (couponData.amount / 100))
@@ -779,6 +821,7 @@ export default function Checkout() {
     // Si quedó un total ajustado esperando confirmación, cambiar de medio lo
     // descarta: la orden pendiente ya no refleja la elección.
     setTotalAjustado(null);
+    setCuponCaido(null);
     ordenPendiente.current = null;
     if (addPaymentInfoSent.current) return;
     addPaymentInfoSent.current = true;
@@ -801,6 +844,7 @@ export default function Checkout() {
     setSubmitting(true);
     setSubmitError(null);
     setTotalAjustado(null);
+    setCuponCaido(null);
     ordenPendiente.current = null;
     await continuarAlPago(orden);
   };
@@ -888,6 +932,14 @@ export default function Checkout() {
       // cuando lo acepta (ver el panel de total ajustado en el paso de pago).
       if (Math.abs(authorizedTotal - montoAPagar) > 1) {
         ordenPendiente.current = orderRes;
+        // Si Woo tiró el cupón, el resumen no puede seguir mostrando un
+        // descuento que el pedido no tiene: se saca y se dice por qué.
+        if (orderRes.couponDropped) {
+          setCuponCaido(orderRes.couponDropped);
+          setCouponData(null);
+          setCoupon('');
+          setCouponError('El código ' + orderRes.couponDropped.code + ' no se pudo aplicar: ' + orderRes.couponDropped.reason + '.');
+        }
         setTotalAjustado(authorizedTotal);
         setSubmitting(false);
         return;
@@ -1128,15 +1180,11 @@ export default function Checkout() {
                     setCouponValidating(true);
                     setCouponError(null);
                     try {
-                      const res = await fetch('/api/validate-coupon', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code: coupon, total: subtotal }),
-                      });
-                      const data = await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; first10?: First10Info; error?: string };
+                      const data = await validarCupon(coupon, info.email);
                       if (data.valid && data.gift_card && giftItems.length > 0) {
                         setCouponError('Una gift card no sirve para comprar otra gift card');
                       } else if (data.valid && data.code && data.type && data.amount !== undefined) {
+                        cuponValidadoPara.current = data.code + '|' + info.email.trim().toLowerCase();
                         setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping, first10: data.first10 });
                       }
                       else { setCouponError(data.error || 'Código inválido'); }
@@ -1821,12 +1869,18 @@ export default function Checkout() {
               {totalAjustado !== null && (
                 <div className="border border-amber-300 bg-amber-50 px-4 py-3.5 rounded-[10px] space-y-2.5" aria-live="polite">
                   <p className="text-[13px] font-semibold text-amber-900">
-                    {isInternational ? 'The total was updated' : 'El total se actualizó'}
+                    {cuponCaido
+                      ? (isInternational ? 'The code could not be applied' : 'El código no se pudo aplicar')
+                      : (isInternational ? 'The total was updated' : 'El total se actualizó')}
                   </p>
                   <p className="text-[12px] text-amber-900/80 leading-relaxed">
-                    {isInternational
-                      ? <>A price changed while you were shopping. The final total is <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Nothing was charged yet.</>
-                      : <>Algún precio cambió mientras comprabas. El total final es <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Todavía no se cobró nada.</>}
+                    {cuponCaido
+                      ? (isInternational
+                        ? <>The code <strong>{cuponCaido.code}</strong> is not valid for this order ({cuponCaido.reason}). The final total is <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Nothing was charged yet.</>
+                        : <>El código <strong>{cuponCaido.code}</strong> no vale para este pedido ({cuponCaido.reason}). El total final es <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Todavía no se cobró nada.</>)
+                      : (isInternational
+                        ? <>A price changed while you were shopping. The final total is <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Nothing was charged yet.</>
+                        : <>Algún precio cambió mientras comprabas. El total final es <strong>{formatPriceIn(totalAjustado, cobro)}</strong>. Todavía no se cobró nada.</>)}
                   </p>
                   <button type="button" onClick={confirmarTotalAjustado} disabled={submitting}
                     className="inline-flex items-center gap-2 rounded-[8px] bg-amber-900 px-4 py-2 text-[12px] font-bold uppercase tracking-[0.08em] text-white hover:bg-amber-800 disabled:opacity-60">

@@ -21,7 +21,19 @@ describe('first10', () => {
     expect(razonCupon('This coupon has expired.')).toBe('venció');
     expect(razonCupon('The minimum spend for this coupon is $100.000.')).toBe('no se alcanzó la compra mínima');
     expect(razonCupon('Please enter a valid email at checkout to use coupon code &quot;gracias-52acfe&quot;.')).toBe('no está habilitado para este mail');
+    expect(razonCupon('The maximum spend for this coupon is $500.000.')).toBe('se pasó del máximo de compra');
+    expect(razonCupon('Sorry, this coupon is not applicable to selected products.')).toBe('no aplica a estos productos');
+    expect(razonCupon('Sorry, coupon &quot;hype10&quot; has already been applied and cannot be used in conjunction with other coupons.')).toBe('no se puede combinar con otro código');
     expect(razonCupon('')).toBe('ya no estaba disponible');
+  });
+
+  // El motivo se le muestra al cliente en el cartel del checkout y en
+  // /pendiente-de-pago: si Woo manda un mensaje que no está mapeado, antes se
+  // publicaba su inglés crudo ("Sorry, this coupon…").
+  it('nunca devuelve el mensaje crudo de Woo', () => {
+    expect(razonCupon('Some brand new WooCommerce message.')).toBe('ya no estaba disponible');
+    expect(razonCupon(null)).toBe('ya no estaba disponible');
+    expect(razonCupon(undefined)).toBe('ya no estaba disponible');
   });
 
   it('encuentra la línea de regalo por su meta y la deja a $0', () => {
