@@ -13,7 +13,7 @@ const PREFERENCIAS = new Set(['hombre', 'mujer', 'todo']);
  * el texto de la landing cambia, se sube esta constante: queda registrado en el
  * contacto de Brevo qué se le dijo exactamente cuando aceptó.
  */
-const CYBER_CONSENT_VERSION = 'landing-cyber-v1';
+const CYBER_CONSENT_VERSION = 'landing-cyber-v2';
 
 /**
  * Lista de Brevo del "Avisame" de CYBER HYPE (hoy la 6, "CYBER HYPE").
@@ -133,32 +133,73 @@ function buildWelcomeHtml(name = '') {
 }
 
 /**
- * ¿El contacto ya existe y está dado de baja?
+ * ¿El contacto ya existe, está dado de baja, y en qué listas está?
  *
  * Brevo NO le entrega nada a un contacto blacklisteado, ni siquiera agregándolo
  * a una lista. Antes esto se usaba para decirle "ese mail está dado de baja" —
  * y esa respuesta distinta era, de hecho, una forma de averiguar desde afuera
- * quién se había dado de baja de los mails de Hype.
+ * quién se había dado de baja de los mails de Hype. Ahora el dato se consulta
+ * solo para uso interno y la respuesta al usuario es siempre la misma.
  *
- * Ahora se resuelve sin contar nada: quien completa el formulario está dando el
- * consentimiento de nuevo, con el texto a la vista, así que se lo vuelve a
- * suscribir (re-opt-in) y queda marcado con HYPE72_REOPTIN para poder tratarlo
- * aparte —por ejemplo, mandarle solo los mails del evento y no la newsletter
- * general—. La respuesta es idéntica a la de cualquier alta: desde afuera no se
- * distingue un alta nueva de una repetida ni de un re-opt-in.
+ * Las listas importan tanto como la baja: ver `limitarAlEvento`.
  *
- * El dato sigue sirviendo internamente, que es para lo que se consulta.
+ * Ante un error de red o una respuesta rara se asume "no está de baja", que es
+ * el lado seguro: el alta sigue, pero sin levantar ninguna baja.
  */
-async function estaDadoDeBaja(email: string): Promise<boolean> {
+interface EstadoContacto {
+  deBaja: boolean;
+  listas: number[];
+}
+
+async function leerContacto(email: string): Promise<EstadoContacto> {
   try {
     const res = await fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`, {
       headers: { 'api-key': BREVO_API_KEY, accept: 'application/json' },
     });
-    if (!res.ok) return false; // 404 = no existe → es un alta nueva
+    if (!res.ok) return { deBaja: false, listas: [] }; // 404 = no existe → alta nueva
     const c = await res.json().catch(() => null);
-    return Boolean(c?.emailBlacklisted);
+    const listas = Array.isArray(c?.listIds)
+      ? c.listIds.filter((n: unknown): n is number => typeof n === 'number' && Number.isFinite(n))
+      : [];
+    return { deBaja: Boolean(c?.emailBlacklisted), listas };
   } catch {
-    return false; // ante la duda, el alta sigue: perder un contacto es peor
+    return { deBaja: false, listas: [] };
+  }
+}
+
+/**
+ * Deja el re-opt-in limitado al evento: saca al contacto de todas las listas
+ * menos la del evento, ANTES de levantarle la baja.
+ *
+ * Por qué hace falta. En Brevo darse de baja no saca de las listas: pone el
+ * contacto en una blacklist global y la membresía queda intacta. Verificado
+ * contra la cuenta el 28/10: la lista Newsletter (3) tiene 2.914 suscriptores
+ * y **99 contactos dados de baja que siguen siendo miembros**. Si el re-opt-in
+ * solo quitara la blacklist, el próximo envío general a esa lista volvería a
+ * alcanzarlos — exactamente la suscripción que esa persona había cancelado, y
+ * que nadie le preguntó si quería de vuelta.
+ *
+ * Por qué no le quita nada a nadie: un contacto en blacklist no recibe ningún
+ * envío, así que su membresía en esas listas hoy vale cero. Sacarlo no le
+ * cancela nada que esté recibiendo; solo evita que el alta del evento le
+ * devuelva de prepo lo que había dado de baja.
+ *
+ * Devuelve false si Brevo rechazó el pedido. En ese caso el POST **no levanta
+ * la baja**: re-suscribir sin haber podido limitar el alcance es justo lo que
+ * este paso existe para impedir.
+ */
+async function limitarAlEvento(email: string, listas: number[], listaEvento: number): Promise<boolean> {
+  const sacar = listas.filter((id) => id !== listaEvento);
+  if (sacar.length === 0) return true;
+  try {
+    const res = await fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`, {
+      method: 'PUT',
+      headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ unlinkListIds: sacar }),
+    });
+    return res.ok; // Brevo contesta 204 cuando sale bien
+  } catch {
+    return false;
   }
 }
 
@@ -217,9 +258,22 @@ export async function POST(req: NextRequest) {
       }
       listId = propia;
 
-      // 4. Si venía dado de baja, el formulario es un consentimiento nuevo:
-      //    se lo vuelve a suscribir y queda marcado para poder tratarlo aparte.
-      reoptin = await estaDadoDeBaja(email);
+      // 4. Si venía dado de baja, el formulario es un consentimiento nuevo —
+      //    pero acotado a lo que el texto dice: los mails del evento. Antes de
+      //    levantarle la baja se lo saca de las listas generales, así el alta
+      //    no le devuelve la newsletter que había cancelado. Si ese paso falla,
+      //    la baja se respeta y el alta se rechaza (el formulario ofrece
+      //    reintentar): es preferible perder un registro a devolverle los
+      //    mails a alguien que se dio de baja.
+      const estado = await leerContacto(email);
+      if (estado.deBaja) {
+        const limitado = await limitarAlEvento(email, estado.listas, propia);
+        if (!limitado) {
+          console.error('[cyber] no se pudo limitar el re-opt-in a la lista del evento: la baja se respeta y el alta se rechaza');
+          return NextResponse.json({ ok: false, error: 'reoptin' }, { status: 503 });
+        }
+        reoptin = true;
+      }
     } else {
       // Alta normal del popup: cada una manda el mail de bienvenida y ese mail
       // consume un crédito de Brevo, el mismo cupo con el que se mandan las
@@ -273,9 +327,11 @@ export async function POST(req: NextRequest) {
         },
         listIds: [listId],
         updateEnabled: true,
-        // Re-opt-in explícito: solo cuando el contacto estaba dado de baja y
-        // acaba de pedir el aviso con el texto de consentimiento a la vista.
-        // En cualquier otro caso no se toca el estado de suscripción.
+        // Re-opt-in explícito: solo cuando el contacto estaba dado de baja,
+        // acaba de pedir el aviso con el texto de consentimiento a la vista, y
+        // `limitarAlEvento` ya lo sacó de las listas generales — así lo único
+        // que esta línea le devuelve son los mails del evento. En cualquier
+        // otro caso no se toca el estado de suscripción.
         ...(reoptin ? { emailBlacklisted: false } : {}),
       }),
     });

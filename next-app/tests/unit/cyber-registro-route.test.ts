@@ -21,11 +21,14 @@ type Llamada = { url: string; method: string; body: any };
 let llamadas: Llamada[] = [];
 let contactoExistente: any = null;
 let respuestaAlta: { ok: boolean; body?: any } = { ok: true };
+/** Simula que Brevo rechaza el PUT que saca al contacto de las listas generales. */
+let desvinculacionFalla = false;
 
 beforeEach(() => {
   llamadas = [];
   contactoExistente = null;
   respuestaAlta = { ok: true };
+  desvinculacionFalla = false;
   process.env.BREVO_API_KEY = 'test-key';
   process.env.BREVO_CYBER_LIST_ID = '6';
   delete process.env.BREVO_HYPE72_LIST_ID;
@@ -38,6 +41,13 @@ beforeEach(() => {
 
     // Alta/actualización de atributos custom: siempre OK.
     if (u.includes('/contacts/attributes/')) return { ok: true, json: async () => ({}) };
+
+    // Desvinculación de las listas generales antes de levantar una baja.
+    if (method === 'PUT' && u.startsWith(BREVO_CONTACTS + '/')) {
+      return desvinculacionFalla
+        ? { ok: false, status: 400, json: async () => ({ code: 'invalid_parameter' }) }
+        : { ok: true, status: 204, json: async () => ({}) };
+    }
 
     // Lectura de un contacto puntual (el chequeo de baja).
     if (method === 'GET' && u.startsWith(BREVO_CONTACTS + '/')) {
@@ -77,6 +87,7 @@ async function post(body: any) {
 
 const alta = () => llamadas.find((l) => l.url === BREVO_CONTACTS && l.method === 'POST');
 const bienvenida = () => llamadas.find((l) => l.url === BREVO_SMTP);
+const desvinculacion = () => llamadas.find((l) => l.method === 'PUT' && l.url.startsWith(BREVO_CONTACTS + '/'));
 
 describe('alta de CYBER HYPE', () => {
   it('no manda el mail de bienvenida ni el cupón HYPE10', async () => {
@@ -120,7 +131,10 @@ describe('alta de CYBER HYPE', () => {
     await post({ email: 'alguien@gmail.com', origen: 'cyber' });
     const attrs = alta()!.body.attributes;
     expect(attrs.HYPE72).toBe('yes');
-    expect(attrs.HYPE72_CONSENT).toBe('landing-cyber-v1');
+    // v2: el texto ahora dice que el alta es solo para el evento. Si el copy del
+    // formulario cambia, esta constante sube y queda registrado en el contacto
+    // qué se le dijo exactamente cuando aceptó.
+    expect(attrs.HYPE72_CONSENT).toBe('landing-cyber-v2');
     expect(Date.parse(attrs.HYPE72_DATE)).not.toBeNaN();
   });
 
@@ -166,6 +180,51 @@ describe('alta de CYBER HYPE', () => {
     expect(r.json).toEqual({ ok: true, estado: 'alta' });
     expect(alta()!.body.emailBlacklisted).toBe(false);
     expect(alta()!.body.attributes.HYPE72_REOPTIN).toBe('yes');
+  });
+
+  // ── Alcance del re-opt-in ────────────────────────────────────────────────
+  // En Brevo darse de baja no saca de las listas: blacklistea el contacto y la
+  // membresía queda. Verificado en la cuenta el 28/10: la lista Newsletter (3)
+  // tiene 99 contactos dados de baja que siguen siendo miembros. Levantarles la
+  // baja sin más les devolvería la newsletter que habían cancelado.
+  it('el re-opt-in saca al contacto de las listas generales antes de levantar la baja', async () => {
+    contactoExistente = { email: 'baja@gmail.com', emailBlacklisted: true, listIds: [3, 5] };
+    await post({ email: 'baja@gmail.com', origen: 'cyber' });
+    expect(desvinculacion()!.body).toEqual({ unlinkListIds: [3, 5] });
+    // Y el orden importa: primero se limita el alcance, después se levanta la baja.
+    const iPut = llamadas.findIndex((l) => l === desvinculacion());
+    const iAlta = llamadas.findIndex((l) => l === alta());
+    expect(iPut).toBeLessThan(iAlta);
+    expect(alta()!.body.emailBlacklisted).toBe(false);
+  });
+
+  it('la lista del evento no se desvincula (es la que la persona acaba de pedir)', async () => {
+    contactoExistente = { email: 'baja@gmail.com', emailBlacklisted: true, listIds: [3, 6] };
+    await post({ email: 'baja@gmail.com', origen: 'cyber' });
+    expect(desvinculacion()!.body).toEqual({ unlinkListIds: [3] });
+  });
+
+  it('un contacto de baja que no está en ninguna lista no necesita desvincularse', async () => {
+    contactoExistente = { email: 'baja@gmail.com', emailBlacklisted: true, listIds: [] };
+    const r = await post({ email: 'baja@gmail.com', origen: 'cyber' });
+    expect(desvinculacion()).toBeUndefined();
+    expect(r.json).toEqual({ ok: true, estado: 'alta' });
+    expect(alta()!.body.emailBlacklisted).toBe(false);
+  });
+
+  it('si no se puede limitar el alcance, la baja se respeta y el alta se rechaza', async () => {
+    desvinculacionFalla = true;
+    contactoExistente = { email: 'baja@gmail.com', emailBlacklisted: true, listIds: [3] };
+    const r = await post({ email: 'baja@gmail.com', origen: 'cyber' });
+    expect(r.status).toBe(503);
+    // Lo que no puede pasar: que el contacto quede re-suscripto a la general.
+    expect(alta()).toBeUndefined();
+  });
+
+  it('a quien está suscripto no se lo saca de ninguna lista', async () => {
+    contactoExistente = { email: 'alguien@gmail.com', emailBlacklisted: false, listIds: [3] };
+    await post({ email: 'alguien@gmail.com', origen: 'cyber' });
+    expect(desvinculacion()).toBeUndefined();
   });
 
   it('a quien está suscripto no le toca el estado de suscripción', async () => {

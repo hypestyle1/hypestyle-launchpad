@@ -133,11 +133,18 @@ export default function CyberAvisame() {
         </p>
       )}
 
-      {/* Texto de consentimiento v1 — si cambia, subir CYBER_CONSENT_VERSION en
+      {/* Texto de consentimiento v2 — si cambia, subir CYBER_CONSENT_VERSION en
           app/api/newsletter-subscribe/route.ts para que quede registrado qué
-          aceptó cada contacto. */}
+          aceptó cada contacto.
+
+          La segunda frase está ahí por los contactos que alguna vez se dieron
+          de baja (hoy 99 en la lista Newsletter). Completar este formulario los
+          vuelve a anotar, y tienen que poder leer eso antes de dejar el mail, no
+          enterarse cuando les llega. El endpoint lo cumple de verdad: los saca
+          de las listas generales antes de levantar la baja. */}
       <p id="cyber-consentimiento" className="text-[12px] leading-relaxed text-muted-foreground">
-        Al dejar tu mail aceptás recibir el aviso de apertura y novedades de Hype por correo. Te
+        Al dejar tu mail aceptás recibir por correo los avisos de CYBER HYPE: los anticipos y la
+        apertura del 2/11. Si alguna vez te diste de baja, esto te anota solo para el evento. Te
         podés dar de baja desde cualquier mail que te mandemos.{' '}
         <Link href="/politica-de-privacidad" className="underline underline-offset-2 hover:text-foreground">
           Política de privacidad
