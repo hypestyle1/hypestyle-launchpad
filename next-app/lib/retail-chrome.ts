@@ -14,6 +14,11 @@ export const RETAIL_CHROME_HIDDEN_PREFIXES = [
   '/pagar',
   // Canal mayorista: otro público, otra navegación, sus propios contactos.
   '/mayoristas',
+  // Landing de CYBER HYPE: una pantalla con un solo campo. El WhatsApp
+  // flotante, la intro de marca y las barras de promo se superponen justo
+  // encima del formulario en mobile y mandan a otro lado a quien vino a dejar
+  // el mail. La página tiene un trabajo y nada tiene que competir con él.
+  '/hype72',
 ] as const;
 
 export function isRetailChromeHidden(pathname: string | null | undefined): boolean {

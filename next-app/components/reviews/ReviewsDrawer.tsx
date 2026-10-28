@@ -12,7 +12,10 @@ import StarRating from './StarRating';
 import ReviewCard from './ReviewCard';
 import ReviewsDistribution from './ReviewsDistribution';
 
-const HIDDEN_PREFIXES = ['/checkout', '/admin', '/mayoristas', '/review/', '/reviews'];
+// /hype72: en la landing del evento la píldora asoma justo encima del campo de
+// email y lo tapa en mobile (visto a 390x844). Ahí la página tiene un solo
+// trabajo, que es el registro.
+const HIDDEN_PREFIXES = ['/checkout', '/admin', '/mayoristas', '/review/', '/reviews', '/hype72'];
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 

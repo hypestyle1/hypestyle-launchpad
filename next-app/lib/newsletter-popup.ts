@@ -86,7 +86,10 @@ export function isProductPage(pathname: string): boolean {
 /** Páginas donde no va ni el modal ni la barra: están comprando, pagando o administrando. */
 export function isExcludedPage(pathname: string): boolean {
   // private-access: el popup tapaba el formulario de acceso de la preventa.
-  return /^\/(admin|checkout|confirmacion|pendiente-de-pago|pagar|mayoristas|acceso|private-access|api)(\/|$)/.test(pathname);
+  // hype72 (landing de CYBER HYPE): el popup ofrece HYPE10 y ahí se está
+  // captando el mail para el evento, donde ese 10% se suma a los packs. Dos
+  // formularios peleando por el mismo mail, y uno de los dos regalando margen.
+  return /^\/(admin|checkout|confirmacion|pendiente-de-pago|pagar|mayoristas|acceso|private-access|hype72|api)(\/|$)/.test(pathname);
 }
 
 /** Lo llama la confirmación de compra: a un cliente no se le pide el email de nuevo. Solo en el browser. */
