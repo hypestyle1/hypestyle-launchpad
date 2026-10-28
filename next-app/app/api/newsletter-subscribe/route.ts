@@ -122,7 +122,7 @@ function buildWelcomeHtml(name = '') {
           <td style="padding:32px 40px 24px;background:#fff;">
             <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111;">¡Ya sos parte de Hypestyle!</h1>
             <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.6;">
-              ${hola}Te regalamos un <strong>10% off</strong> en tu próxima compra. Usá el código al finalizar tu pedido — aplica sobre cualquier medio de pago.
+              ${hola}Te regalamos un <strong>10% off</strong> en tu primera compra. Usá el código al finalizar tu pedido.
             </p>
           </td>
         </tr>
@@ -133,7 +133,7 @@ function buildWelcomeHtml(name = '') {
             <div style="background:#f8f8f8;border:1px dashed #ccc;border-radius:6px;padding:20px 24px;text-align:center;">
               <p style="margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:#999;">Tu código de descuento</p>
               <p style="margin:0 0 12px;font-size:28px;font-weight:800;color:#111;letter-spacing:0.06em;">HYPE10</p>
-              <p style="margin:0;font-size:12px;color:#888;">10% off · Válido para tu primera compra</p>
+              <p style="margin:0;font-size:12px;color:#888;">10% off · Válido para tu primera compra · No aplica a packs ni precios de evento</p>
             </div>
           </td>
         </tr>
