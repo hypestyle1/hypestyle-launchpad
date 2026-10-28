@@ -1,11 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureWelcomeAttributes } from '@/lib/brevo-attributes';
+import { ensureCyberAttributes, ensureWelcomeAttributes } from '@/lib/brevo-attributes';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const NEWSLETTER_LIST_ID = 3;
 const SITE_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 
 const PREFERENCIAS = new Set(['hombre', 'mujer', 'todo']);
+
+/**
+ * Versión del texto de consentimiento que el usuario vio al dejar el mail. Si
+ * el texto de la landing cambia, se sube esta constante: queda registrado en el
+ * contacto de Brevo qué se le dijo exactamente cuando aceptó.
+ */
+const CYBER_CONSENT_VERSION = 'landing-cyber-v1';
+
+/**
+ * Lista de Brevo del "Avisame" de CYBER HYPE. Se lee en cada request (no en el
+ * módulo) para que no quede congelada en el build y para poder cambiarla desde
+ * Vercel sin tocar código.
+ *
+ * Si no está cargada, el alta NO se pierde: cae en la lista de newsletter, pero
+ * igual sin SIGNUP_DATE y sin bienvenida, así que tampoco recibe el cupón (ver
+ * el bloque de abajo). Lo único que se pierde es poder segmentar el envío.
+ */
+function cyberListId(): number | null {
+  const n = parseInt(String(process.env.BREVO_CYBER_LIST_ID || process.env.BREVO_HYPE72_LIST_ID || '').trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Validación de email. `includes('@')` dejaba pasar "a@" y "hola@gmail" — y cada
+ * dirección inválida es un bounce que castiga la reputación del dominio (el
+ * envío del 14/10 tuvo 65 soft + 2 hard bounces sobre 2.853).
+ */
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+
+function normalizarEmail(raw: unknown): string | null {
+  const email = String(raw ?? '').trim().toLowerCase();
+  if (!email || email.length > 254 || !EMAIL_RE.test(email)) return null;
+  return email;
+}
 
 // El popup ya no pide nombre (solo email): el saludo va sin nombre. El nombre
 // real llega con la primera compra (send-confirmation lo carga en NOMBRE).
@@ -73,23 +107,81 @@ function buildWelcomeHtml(name = '') {
 </html>`;
 }
 
+/**
+ * ¿El contacto ya existe y está dado de baja?
+ *
+ * Importa para no mentirle: Brevo NO vuelve a suscribir a un contacto
+ * blacklisteado cuando se lo agrega a una lista (y está bien que no lo haga —
+ * la baja es suya). Sin este chequeo el formulario diría "listo, te avisamos" y
+ * el aviso nunca le iba a llegar.
+ *
+ * Contrapartida conocida: la respuesta distingue "dado de baja" de "alta", así
+ * que alguien que pruebe direcciones podría deducir que una dirección se dio de
+ * baja de los mails de Hype. Se eligió la honestidad del formulario por sobre
+ * eso; el dato que se filtra es de baja sensibilidad y no se distingue entre
+ * "alta nueva" y "ya estaba" (eso sí sería enumerar la lista).
+ */
+async function estaDadoDeBaja(email: string): Promise<boolean> {
+  try {
+    const res = await fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`, {
+      headers: { 'api-key': BREVO_API_KEY, accept: 'application/json' },
+    });
+    if (!res.ok) return false; // 404 = no existe → es un alta nueva
+    const c = await res.json().catch(() => null);
+    return Boolean(c?.emailBlacklisted);
+  } catch {
+    return false; // ante la duda, el alta sigue: perder un contacto es peor
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { email, name, preferencia } = await req.json();
-    if (!email || !email.includes('@')) {
+    const { email: emailRaw, name, preferencia, origen } = await req.json();
+    const email = normalizarEmail(emailRaw);
+    if (!email) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
     }
     // `name` queda por compatibilidad con formularios viejos; el popup ya no lo manda.
     const firstName = name ? String(name).trim() : '';
     const pref = PREFERENCIAS.has(String(preferencia)) ? String(preferencia) : '';
+    // El "Avisame" de CYBER HYPE captura el mail igual, pero NO entra a la
+    // secuencia de bienvenida: ese mail regala HYPE10 (10% off) y durante el
+    // evento ese 10% se suma a los packs y al 10% de transferencia (ver
+    // _claude/auditorias/2026-10-25-cupones-vs-packs.md). Cualquier otro valor
+    // de `origen` —y que no venga— es el alta normal del sitio, que sigue igual.
+    // Se aceptan los dos nombres: 'cyber' es el público, 'hype72' el interno con
+    // el que quedó escrito el PR original.
+    const origenNorm = String(origen ?? '').trim().toLowerCase();
+    const esCyber = origenNorm === 'cyber' || origenNorm === 'hype72';
+    const listId = esCyber ? (cyberListId() ?? NEWSLETTER_LIST_ID) : NEWSLETTER_LIST_ID;
 
-    await ensureWelcomeAttributes(BREVO_API_KEY);
+    // Un contacto dado de baja no recibe nada, ni siquiera agregándolo a la
+    // lista: se lo dice el formulario en vez de prometerle un aviso.
+    if (esCyber && (await estaDadoDeBaja(email))) {
+      return NextResponse.json({ ok: true, estado: 'dado-de-baja', listId, bienvenida: false });
+    }
+
+    await (esCyber ? ensureCyberAttributes(BREVO_API_KEY) : ensureWelcomeAttributes(BREVO_API_KEY));
 
     // Alta en la lista. NOMBRE es el atributo de nombre de la cuenta (FIRSTNAME no
     // existe: Brevo lo descartaba en silencio y la lista quedó sin nombres).
     // PREFERENCIA (hombre/mujer/todo) es lo que eligió en el popup, para mandar
     // los drops de mujer solo a quien los pidió. SIGNUP_DATE/WELCOME_STEP son
     // para que welcome-sweep sepa cuándo mandar los siguientes pasos.
+    //
+    // CYBER HYPE va con HYPE72='yes' + HYPE72_DATE (cuándo dio el consentimiento)
+    // + HYPE72_CONSENT (qué texto aceptó) y SIN SIGNUP_DATE/WELCOME_STEP, a
+    // propósito: welcome-sweep (app/api/admin/welcome-sweep) recorre SOLO la
+    // lista de newsletter y dentro de ella saltea a todo contacto sin
+    // SIGNUP_DATE. Con eso el alta del evento queda excluida del cupón por dos
+    // lados independientes, sin tocar el cron que ya corre en producción.
+    //
+    // Si el mail ya existía como suscriptor de la newsletter, updateEnabled lo
+    // suma a la lista del evento y le pone la etiqueta sin pisarle SIGNUP_DATE ni
+    // WELCOME_STEP: su secuencia sigue como estaba (y encima deja de recibir la
+    // bienvenida por segunda vez, que es lo que pasaba antes). Ese mismo
+    // updateEnabled es el que hace idempotente el alta repetida: el que manda su
+    // mail dos veces no se duplica ni recibe nada dos veces.
     const contactRes = await fetch('https://api.brevo.com/v3/contacts', {
       method: 'POST',
       headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
@@ -98,10 +190,11 @@ export async function POST(req: NextRequest) {
         attributes: {
           ...(firstName ? { NOMBRE: firstName } : {}),
           ...(pref ? { PREFERENCIA: pref } : {}),
-          SIGNUP_DATE: new Date().toISOString(),
-          WELCOME_STEP: 1,
+          ...(esCyber
+            ? { HYPE72: 'yes', HYPE72_DATE: new Date().toISOString(), HYPE72_CONSENT: CYBER_CONSENT_VERSION }
+            : { SIGNUP_DATE: new Date().toISOString(), WELCOME_STEP: 1 }),
         },
-        listIds: [NEWSLETTER_LIST_ID],
+        listIds: [listId],
         updateEnabled: true,
       }),
     });
@@ -113,21 +206,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send welcome email with coupon
-    await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sender:      { name: 'Hypestyle', email: 'info@hypestyle.com.ar' },
-        replyTo:     { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
-        to:          [{ email }],
-        subject:     '¡Tu 10% off te espera — Hypestyle!',
-        htmlContent: buildWelcomeHtml(firstName),
-        tags:        ['welcome-step-1'],
-      }),
-    });
+    // Send welcome email with coupon — solo el alta normal del sitio.
+    if (!esCyber) {
+      await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender:      { name: 'Hypestyle', email: 'info@hypestyle.com.ar' },
+          replyTo:     { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
+          to:          [{ email }],
+          subject:     '¡Tu 10% off te espera — Hypestyle!',
+          htmlContent: buildWelcomeHtml(firstName),
+          tags:        ['welcome-step-1'],
+        }),
+      });
+    }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, estado: 'alta', listId, bienvenida: !esCyber });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });
   }

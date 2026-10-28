@@ -1,0 +1,103 @@
+/* CYBER HYPE — estilos de campaña. Solo CSS, sin dependencias.
+   El glitch cromático RGB original se retiró (27/10): el efecto aprobado es
+   el reveal de FRANJAS monocromas (cyber-fx-slices, más abajo), adaptación
+   verificada del footer de rotten-future.com. */
+
+/* Pulso del punto "EN VIVO" (variante evento). */
+@keyframes cyber-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.cyber-live-dot {
+  animation: cyber-live-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cyber-live-dot { animation: none; }
+}
+
+/* ============ Efectos de reveal del lettering (CyberLettering) ============ */
+
+/* B — Distortion reveal: entra desenfocado, estirado y sesgado, asienta limpio.
+   Solo filter/transform/opacity: no toca layout. */
+.cyber-fx-distort {
+  animation: cyber-distort var(--cyber-dur, 1000ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, filter, opacity;
+}
+@keyframes cyber-distort {
+  0%   { opacity: 0;    transform: scaleX(1.35) skewX(-14deg); filter: blur(18px); }
+  35%  { opacity: 0.75; transform: scaleX(1.08) skewX(-5deg);  filter: blur(7px); }
+  62%  { opacity: 1;    transform: scaleX(0.985) skewX(1.5deg); filter: blur(1.5px); }
+  80%  { transform: scaleX(1.004) skewX(-0.4deg); filter: blur(0.4px); }
+  100% { opacity: 1;    transform: none; filter: none; }
+}
+
+/* C — Slice reveal monocromo (adaptación Rotten Future): dos copias del texto
+   en pseudo-elementos, recortadas en franjas horizontales con clip-path y
+   corridas en X; las franjas saltan y convergen a cero. Un solo color. */
+.cyber-fx-slices { position: relative; }
+.cyber-fx-slices__base {
+  animation: cyber-slices-base var(--cyber-dur, 1000ms) steps(1, end) both;
+}
+.cyber-fx-slices::before,
+.cyber-fx-slices::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: inherit;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, clip-path, opacity;
+}
+.cyber-fx-slices::before {
+  animation: cyber-slices-a var(--cyber-dur, 1000ms) steps(1, end) both;
+}
+.cyber-fx-slices::after {
+  animation: cyber-slices-b var(--cyber-dur, 1000ms) steps(1, end) both;
+}
+/* La base pierde las franjas que las copias muestran corridas (sensación de
+   fragmento movido, no de doble exposición). */
+@keyframes cyber-slices-base {
+  0%   { clip-path: inset(0 0 0 0); opacity: 0.9; }
+  12%  { clip-path: inset(0 0 62% 0); }
+  26%  { clip-path: inset(28% 0 0 0); }
+  40%  { clip-path: inset(0 0 34% 0); }
+  54%  { clip-path: inset(44% 0 12% 0); }
+  68%  { clip-path: inset(0 0 55% 0); }
+  82%  { clip-path: inset(18% 0 0 0); opacity: 1; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+@keyframes cyber-slices-a {
+  0%   { clip-path: inset(38% 0 0 0);   transform: translateX(-0.06em); opacity: 1; }
+  12%  { clip-path: inset(62% 0 8% 0);  transform: translateX(0.045em); }
+  26%  { clip-path: inset(0 0 72% 0);   transform: translateX(-0.05em); }
+  40%  { clip-path: inset(66% 0 0 0);   transform: translateX(0.035em); }
+  54%  { clip-path: inset(0 0 56% 0);   transform: translateX(-0.03em); }
+  68%  { clip-path: inset(55% 0 20% 0); transform: translateX(0.02em); }
+  82%  { clip-path: inset(0 0 82% 0);   transform: translateX(-0.012em); }
+  94%  { clip-path: inset(30% 0 40% 0); transform: translateX(0.006em); }
+  100% { clip-path: inset(0 0 100% 0);  transform: none; opacity: 0; }
+}
+@keyframes cyber-slices-b {
+  0%   { clip-path: inset(0 0 62% 0);   transform: translateX(0.05em); opacity: 1; }
+  12%  { clip-path: inset(8% 0 30% 0);  transform: translateX(-0.04em); }
+  26%  { clip-path: inset(72% 0 0 0);   transform: translateX(0.045em); }
+  40%  { clip-path: inset(10% 0 66% 0); transform: translateX(-0.035em); }
+  54%  { clip-path: inset(56% 0 14% 0); transform: translateX(0.028em); }
+  68%  { clip-path: inset(10% 0 70% 0); transform: translateX(-0.018em); }
+  82%  { clip-path: inset(62% 0 10% 0); transform: translateX(0.01em); }
+  94%  { clip-path: inset(45% 0 35% 0); transform: translateX(-0.005em); }
+  100% { clip-path: inset(100% 0 0 0);  transform: none; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyber-fx-distort,
+  .cyber-fx-slices__base,
+  .cyber-fx-slices::before,
+  .cyber-fx-slices::after {
+    animation: none;
+  }
+  .cyber-fx-slices::before,
+  .cyber-fx-slices::after {
+    content: none;
+  }
+}
