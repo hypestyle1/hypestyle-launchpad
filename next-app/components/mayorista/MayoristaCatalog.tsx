@@ -87,7 +87,7 @@ export default function MayoristaCatalog({ products, banner, preview, drop }: { 
         <MayoristaHowItWorks />
       ) : (
         <button type="button" onClick={() => setPillarsOpen(true)} className="mb-6 text-[11px] uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
-          Cómo funciona Hype Mayoristas
+          {consignacion ? 'Cómo funciona la consignación' : 'Cómo funciona Hype Mayoristas'}
         </button>
       )}
 
