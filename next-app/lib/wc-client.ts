@@ -39,6 +39,9 @@ export interface CreateOrderPayload {
   discountAmount: number;
   discountLabel?: string;
   couponCode?: string;
+  /** Descuento del cupón que el checkout mostró. Solo para medir la paridad
+   *  contra lo que Woo descuenta de verdad — el server no lo usa para cobrar. */
+  couponDiscount?: number;
   paymentMethod: string;
   shippingMethodId?: string;
   shippingLabel?: string;
