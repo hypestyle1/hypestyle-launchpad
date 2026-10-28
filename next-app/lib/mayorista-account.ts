@@ -5,6 +5,8 @@
 // forma de volver atrás, ni por WC REST ni por base. Todo lo de acá parte de
 // esa premisa: se pisa por una nueva y se la comunica una sola vez.
 
+import { paisMayorista } from '@/lib/mayorista-paises';
+
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
 const WC_SEC = process.env.WC_CONSUMER_SECRET || '';
@@ -294,6 +296,8 @@ export async function verifyApprovalToken(token: string): Promise<number | null>
 export interface SolicitudData {
   razonSocial: string;
   cuit: string;
+  /** ISO-2 del país del comercio (lib/mayorista-paises.ts). */
+  pais?: string;
   instagram: string;
   localFisico: boolean;
   modalidad: string;
@@ -322,7 +326,8 @@ export async function sendSolicitudAdminEmail(
       <p style="font-size:14px;line-height:1.6"><strong>${data.razonSocial || account.label}</strong> solicitó acceso para entrar al catálogo de Hype.</p>
       <table style="font-size:13px;border-collapse:collapse;width:100%;margin:16px 0">
         ${row('Razón social', data.razonSocial)}
-        ${row('CUIT', data.cuit)}
+        ${row(paisMayorista(data.pais).taxLabel, data.cuit)}
+        ${row('País', paisMayorista(data.pais).nombre)}
         ${row('Contacto', data.contacto)}
         ${row('Mail', account.email)}
         ${row('Teléfono', data.telefono)}

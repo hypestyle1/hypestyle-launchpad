@@ -1,6 +1,6 @@
 'use client';
 
-import { formatArs } from '@/lib/mayorista-format';
+import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
 
 // Barra del pedido mínimo. Compacta en el header (desktop), como franja bajo
 // el header (mobile) y completa en el carrito. Mide el total del carrito
@@ -8,6 +8,7 @@ import { formatArs } from '@/lib/mayorista-format';
 // "Mínimo alcanzado".
 
 export default function MayoristaMinBar({ total, minOrder, compact, strip }: { total: number; minOrder: number | null; compact?: boolean; strip?: boolean }) {
+  const { fmt } = useMayoristaDivisa();
   if (minOrder == null || minOrder <= 0) return null;
   const ratio = Math.min(1, total / minOrder);
   const missing = Math.max(0, minOrder - total);
@@ -15,12 +16,12 @@ export default function MayoristaMinBar({ total, minOrder, compact, strip }: { t
 
   if (compact) {
     return (
-      <div className="hidden md:flex items-center gap-2" title={reached ? 'Mínimo alcanzado' : `Te faltan ${formatArs(missing)} para el mínimo`}>
+      <div className="hidden md:flex items-center gap-2" title={reached ? 'Mínimo alcanzado' : `Te faltan ${fmt(missing)} para el mínimo`}>
         <div className="w-28 h-[3px] bg-border rounded-full overflow-hidden">
           <div className={`h-full ${reached ? 'bg-foreground' : 'bg-foreground/60'} transition-all`} style={{ width: `${ratio * 100}%` }} />
         </div>
         <span className="text-[10px] tracking-wide text-foreground/60 tabular-nums normal-case">
-          {reached ? 'Mínimo alcanzado' : `${formatArs(total)} / ${formatArs(minOrder)}`}
+          {reached ? 'Mínimo alcanzado' : `${fmt(total)} / ${fmt(minOrder)}`}
         </span>
       </div>
     );
@@ -35,7 +36,7 @@ export default function MayoristaMinBar({ total, minOrder, compact, strip }: { t
           <div className={`h-full ${reached ? 'bg-foreground' : 'bg-foreground/60'} transition-all`} style={{ width: `${ratio * 100}%` }} />
         </div>
         <span className="text-[10px] tracking-wide text-foreground/70 tabular-nums whitespace-nowrap">
-          {reached ? 'Mínimo alcanzado' : `Faltan ${formatArs(missing)} · mínimo ${formatArs(minOrder)}`}
+          {reached ? 'Mínimo alcanzado' : `Faltan ${fmt(missing)} · mínimo ${fmt(minOrder)}`}
         </span>
       </div>
     );
@@ -44,9 +45,9 @@ export default function MayoristaMinBar({ total, minOrder, compact, strip }: { t
   return (
     <div className="rounded-[12px] border border-border p-3">
       <div className="flex items-baseline justify-between gap-3 text-[12px]">
-        <span className="uppercase tracking-wide text-muted-foreground">Pedido mínimo {formatArs(minOrder)}</span>
+        <span className="uppercase tracking-wide text-muted-foreground">Pedido mínimo {fmt(minOrder)}</span>
         <span className={`tabular-nums ${reached ? 'text-foreground font-semibold' : 'text-foreground/80'}`}>
-          {reached ? 'Mínimo alcanzado' : `te faltan ${formatArs(missing)}`}
+          {reached ? 'Mínimo alcanzado' : `te faltan ${fmt(missing)}`}
         </span>
       </div>
       <div className="mt-2 h-[4px] bg-border rounded-full overflow-hidden">

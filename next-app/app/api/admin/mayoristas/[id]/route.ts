@@ -3,6 +3,7 @@ import { getMayoristaById, sendNewPasswordEmail, sendAprobacionEmail, sendCredit
 import { parseCredit, addMovement, creditMetaEntry } from '@/lib/mayorista-credit';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { META_EXCLUSIVIDAD, META_BLOQUEO, parseAliasInput } from '@/lib/mayorista-exclusividad';
+import { consignacionMetaEntry, validarPct, type Consignacion } from '@/lib/mayorista-consignacion';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -18,8 +19,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
-  const { active, minOrder, password, approve, credito, exclusividad, bloqueoExclusividad } = body as {
+  const { active, minOrder, password, approve, credito, exclusividad, bloqueoExclusividad, consignacion } = body as {
     active?: boolean; minOrder?: number | null; password?: string; approve?: boolean;
+    // Consignación por cuenta (lib/mayorista-consignacion.ts). null la quita y
+    // la cuenta vuelve a comprar al 50% como cualquier otra.
+    consignacion?: { pct: number; desde?: string; nota?: string } | null;
     credito?: { monto: number; motivo: string; orden?: string };
     // Exclusividad por zona (lib/mayorista-exclusividad.ts). null la quita.
     // `zona` la define el admin al concederla: nombre + alias de localidades.
@@ -61,6 +65,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (account) emailSent = await sendCreditEmail(account, monto, next.saldo, motivo);
     }
     return NextResponse.json({ ok: true, credit: next.saldo, emailSent });
+  }
+
+  // Consignación: cambia qué precios ve esa cuenta y cómo se arma su pedido.
+  // Va antes del bloque genérico porque se guarda como JSON en un meta propio.
+  if (consignacion !== undefined) {
+    if (consignacion) {
+      const error = validarPct(Number(consignacion.pct));
+      if (error) return NextResponse.json({ message: error }, { status: 400 });
+    }
+    const valor: Consignacion | null = consignacion
+      ? {
+          pct: Number(consignacion.pct),
+          desde: String(consignacion.desde || new Date().toISOString().slice(0, 10)),
+          ...(consignacion.nota ? { nota: String(consignacion.nota).slice(0, 300) } : {}),
+        }
+      : null;
+    const put = await fetch(`${WP_URL}/wp-json/wc/v3/customers/${params.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+      body: JSON.stringify({ meta_data: [consignacionMetaEntry(valor)] }),
+    });
+    if (!put.ok) return NextResponse.json({ message: `Error de WooCommerce (${put.status})` }, { status: 502 });
+    return NextResponse.json({ ok: true, consignacion: valor });
   }
 
   if (exclusividad !== undefined || bloqueoExclusividad !== undefined) {

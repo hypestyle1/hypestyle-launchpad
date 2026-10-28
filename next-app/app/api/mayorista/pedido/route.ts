@@ -3,7 +3,8 @@ import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { formatArs } from '@/lib/mayorista-format';
 import { resolveMinOrder, customerMinOrderOverride, MIN_ORDER_UNAVAILABLE_MESSAGE } from '@/lib/mayorista-settings';
 import { wcAuth, wcGet, resolveProducts, findVariation, findUnavailable } from '@/lib/mayorista-stock';
-import { priceLines } from '@/lib/mayorista-pricing';
+import { priceLines, LISTA_FACTOR, WHOLESALE_FACTOR } from '@/lib/mayorista-pricing';
+import { parseConsignacion, splitConsignacion } from '@/lib/mayorista-consignacion';
 import { applyCampaign, appliedCampaignMinOrder, type WholesaleCampaign } from '@/lib/wholesale-campaigns';
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 import { mayoristaDropTag } from '@/lib/mayorista-drop-server';
@@ -121,7 +122,7 @@ async function saveCustomerProfile(customerId: number, billing: Record<string, u
 
 type CampaignSummary = { id: string; name: string; discountTotal: number } | null;
 
-async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, credit: number, orderNumber: string, campaign: CampaignSummary) {
+async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, credit: number, orderNumber: string, campaign: CampaignSummary, consignacion: { pct: number } | null) {
   if (!BREVO_API_KEY) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${esc(it.name)}</td>
@@ -132,6 +133,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Pedido mayorista — Hype.</h2>
+    ${consignacion ? `<p style="font-size:13px;background:#111;color:#fff;display:inline-block;padding:4px 10px">CONSIGNACIÓN — comisión del local ${consignacion.pct}% · los importes son precio de lista</p>` : ''}
     <p style="font-size:13px">Cliente: <b>${esc(label)}</b> — DNI ${esc(shipping.dni)}</p>
     <p style="font-size:12px;color:#444">${esc(shipping.address_1)}, ${esc(shipping.city)} ${esc(shipping.state ?? '')} — ${esc(shipping.phone)}</p>
     <p style="font-size:12px;color:#444">Envío: <b>${esc(envioResumen(envioDe(shipping).metodo, envioDe(shipping).destino))}</b></p>
@@ -163,7 +165,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 // Copia del resumen para el cliente — así queda guardado en su propio mail
 // (el carrito no persiste después de confirmar, y no hay checkout/pago para
 // que quede un comprobante de esa instancia).
-async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string, envio: string, campaign: CampaignSummary) {
+async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: number, credit: number, orderNumber: string, envio: string, campaign: CampaignSummary, consignacion: { pct: number } | null) {
   if (!BREVO_API_KEY || !toEmail) return;
   const rows = items.map(it => `<tr>
     <td style="padding:6px 8px;border:1px solid #eee">${esc(it.name)}</td>
@@ -174,7 +176,9 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Hype. — Resumen de tu pedido</h2>
-    <p style="font-size:13px">Recibimos tu pedido <b>#${esc(orderNumber)}</b>. Abajo tenés cómo pagarlo; una vez acreditado lo preparamos y te avisamos con el seguimiento.</p>
+    ${consignacion
+      ? `<p style="font-size:13px">Recibimos tu pedido <b>#${esc(orderNumber)}</b>. Va <b>en consignación</b>: lo preparamos y te lo enviamos sin que pagues nada por adelantado. Los importes de abajo son precio de lista — te quedás con el ${consignacion.pct}% de cada venta y nos liquidás el resto.</p>`
+      : `<p style="font-size:13px">Recibimos tu pedido <b>#${esc(orderNumber)}</b>. Abajo tenés cómo pagarlo; una vez acreditado lo preparamos y te avisamos con el seguimiento.</p>`}
     <p style="font-size:12px;color:#444">Envío: <b>${esc(envio)}</b></p>
     <table style="font-size:12px;border-collapse:collapse;width:100%;margin-top:8px">
       <thead><tr style="background:#f2f2f2">
@@ -185,8 +189,10 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    ${totalsHtml(total, credit, campaign)}
-    ${pagoHtml(pagoInfoFromEnv(), orderNumber)}
+    ${consignacion
+      ? `<p style="font-size:13px;margin-top:10px">Mercadería entregada, a precio de lista: <b>${formatArs(total)}</b></p>
+         <p style="font-size:13px;margin:2px 0">Si se vende todo: te quedan ${formatArs(splitConsignacion(total, consignacion.pct).comision)} y nos liquidás ${formatArs(splitConsignacion(total, consignacion.pct).aLiquidar)}.</p>`
+      : totalsHtml(total, credit, campaign) + pagoHtml(pagoInfoFromEnv(), orderNumber)}
   </div>`;
 
   await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -242,6 +248,10 @@ export async function POST(req: NextRequest) {
     // de esta cuenta, no se toman pedidos (lib/mayorista-exclusividad.ts). Va
     // antes de tocar productos y stock.
     const customer = await wcGet(`customers/${customerId}?_fields=meta_data,email`);
+    // Cuenta en consignación (lib/mayorista-consignacion.ts): las líneas van
+    // a precio de lista, sin campañas ni mínimo, porque no está comprando.
+    // Lo decide el servidor leyendo la cuenta: el navegador no elige esto.
+    const consignacion = parseConsignacion(customer.meta_data);
     const bloqueo = parseBloqueo(customer.meta_data);
     if (bloqueo) {
       return NextResponse.json({ code: 'EXCLUSIVITY_BLOCKED', message: mensajeBloqueo(bloqueo), ciudad: bloqueo.ciudad }, { status: 403 });
@@ -282,7 +292,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const basePricing = priceLines(items, resolvedBySlug);
+    const basePricing = priceLines(items, resolvedBySlug, consignacion ? LISTA_FACTOR : WHOLESALE_FACTOR);
     if (basePricing.unpriced.length) {
       // Sin regular_price en Woo no hay precio mayorista: no se inventa uno.
       return NextResponse.json(
@@ -302,7 +312,7 @@ export async function POST(req: NextRequest) {
       console.error('[mayorista/pedido] no se pudieron leer las campañas:', err);
       return NextResponse.json({ message: 'No pudimos verificar las promociones vigentes. Esperá unos segundos e intentá de nuevo.' }, { status: 502 });
     }
-    const pricing = applyCampaign(basePricing, campaigns);
+    const pricing = applyCampaign(basePricing, consignacion ? [] : campaigns);
 
     // El carrito traía otro precio (borrador viejo, cambio de PVP, campaña que
     // arrancó o venció, o alguien tocó el request): se devuelve el total
@@ -372,7 +382,7 @@ export async function POST(req: NextRequest) {
     // campaña aplicada; si no, el general (lib/mayorista-settings.ts). Si el
     // general hace falta y WordPress no responde, no se asume ninguno: se pide
     // reintento, como con las campañas.
-    const minOrder = await resolveMinOrder({
+    const minOrder = consignacion ? 0 : await resolveMinOrder({
       override: customerMinOrderOverride(customer.meta_data),
       campaignMin: appliedCampaignMinOrder(pricing, campaigns),
     });
@@ -464,6 +474,12 @@ export async function POST(req: NextRequest) {
           { key: '_wholesale_campaign_discount_total', value: String(campaignSummary.discountTotal) },
         ] : []),
         { key: '_es_mayorista', value: 'true' },
+        // Consignación: la orden no es una venta cobrada, es mercadería
+        // entregada a precio de lista que se liquida cuando se vende.
+        ...(consignacion ? [
+          { key: '_mayorista_consignacion', value: 'yes' },
+          { key: '_mayorista_consignacion_pct', value: String(consignacion.pct) },
+        ] : []),
         { key: '_billing_dni', value: shipping.dni },
         ...(idempotencyKey ? [{ key: IDEMPOTENCY_META, value: idempotencyKey }] : []),
         ...envioOrderMeta(envio.metodo, envio.destino),
@@ -547,8 +563,8 @@ export async function POST(req: NextRequest) {
     }
 
     await Promise.all([
-      sendAdminEmail(label, shipping, pricedItems, total, creditUsed, String(wcOrder.number), campaignSummary),
-      sendCustomerEmail(customer.email, pricedItems, total, creditUsed, String(wcOrder.number), envioResumen(envio.metodo, envio.destino), campaignSummary),
+      sendAdminEmail(label, shipping, pricedItems, total, creditUsed, String(wcOrder.number), campaignSummary, consignacion),
+      sendCustomerEmail(customer.email, pricedItems, total, creditUsed, String(wcOrder.number), envioResumen(envio.metodo, envio.destino), campaignSummary, consignacion),
       saveCustomerProfile(customerId, billing, shipping.dni, envio),
     ]);
 

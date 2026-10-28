@@ -5,7 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { imgSrc } from '@/lib/img';
-import { formatArs } from '@/lib/mayorista-format';
+import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
+import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
+import { splitConsignacion } from '@/lib/mayorista-consignacion';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import { sizeLevel, stockKey, canOrder, isPurchasable, isUnconfirmed, type MayoristaProduct } from '@/lib/mayorista-products';
 import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
@@ -14,6 +16,11 @@ import MayoristaAddedNotice from './MayoristaAddedNotice';
 
 export default function MayoristaProductCard({ product }: { product: MayoristaProduct }) {
   const { add } = useMayoristaCart();
+  const { fmt } = useMayoristaDivisa();
+  // Cuenta en consignación: no compra, exhibe. El precio que manda es el de
+  // lista (lo que va a cobrar en su local), con su comisión al lado.
+  const { consignacion } = useMayoristaPerfil();
+  const split = consignacion ? splitConsignacion(product.regularPrice, consignacion.pct) : null;
   const [added, setAdded] = useState<string | null>(null);
   const [imgIndex, setImgIndex] = useState(0);
   const isNew = isNewProduct(product);
@@ -40,7 +47,7 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
     if (hasColors || !canOrder(product, product.stock[stockKey(product, size, singleColor)])) return;
     // El precio del carrito es orientativo (promo si hay campaña): el
     // servidor lo recalcula al confirmar.
-    add({ slug: product.slug, name: product.name, price: product.promo?.price ?? product.wholesalePrice, image: product.image, size, ...(singleColor ? { color: singleColor } : {}), quantity: 1 });
+    add({ slug: product.slug, name: product.name, price: consignacion ? product.regularPrice : (product.promo?.price ?? product.wholesalePrice), image: product.image, size, ...(singleColor ? { color: singleColor } : {}), quantity: 1 });
     setAdded(size);
     setTimeout(() => setAdded(null), 4000);
   }
@@ -131,23 +138,33 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
         {product.shortDescription && (
           <p className="text-[11px] text-text-light leading-tight mt-0.5">{product.shortDescription}</p>
         )}
-        {product.promo ? (
+        {consignacion && split ? (
+          <>
+            <div className="flex items-baseline gap-1.5 mt-1">
+              <span className="text-[13px] font-semibold">{fmt(split.lista)}</span>
+              <span className="text-[9px] uppercase tracking-wide text-text-light">precio de lista</span>
+            </div>
+            <p className="text-[11px] text-text-light mt-0.5">Tu {consignacion.pct}%: {fmt(split.comision)} · liquidás {fmt(split.aLiquidar)}</p>
+          </>
+        ) : product.promo ? (
           <>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-[14px] font-semibold">{formatArs(product.promo.price)}</span>
-              <span className="text-[12px] text-text-light line-through">{formatArs(product.wholesalePrice)}</span>
+              <span className="text-[14px] font-semibold">{fmt(product.promo.price)}</span>
+              <span className="text-[12px] text-text-light line-through">{fmt(product.wholesalePrice)}</span>
               <span className="text-[10px] uppercase tracking-wide text-sale">{product.promo.label}</span>
             </div>
-            <p className="text-[11px] text-text-light mt-0.5">Lista {formatArs(product.regularPrice)} · {PROMO_TAG_LABEL[product.promo.tag]}</p>
+            <p className="text-[11px] text-text-light mt-0.5">Lista {fmt(product.regularPrice)} · {PROMO_TAG_LABEL[product.promo.tag]}</p>
           </>
         ) : (
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[13px] font-semibold">{formatArs(product.wholesalePrice)}</span>
-            <span className="text-[12px] text-text-light"><span className="uppercase tracking-wide text-[9px] mr-1">Lista</span>{formatArs(product.regularPrice)}</span>
+            <span className="text-[13px] font-semibold">{fmt(product.wholesalePrice)}</span>
+            <span className="text-[12px] text-text-light"><span className="uppercase tracking-wide text-[9px] mr-1">Lista</span>{fmt(product.regularPrice)}</span>
           </div>
         )}
-        {product.retailPrice != null && (
-          <p className="text-[11px] text-text-light mt-0.5">En la tienda hoy {formatArs(product.retailPrice)} (oferta)</p>
+        {/* En consignación el precio que vale es el de lista: una oferta del
+            retail ahí solo confunde el reparto. */}
+        {!consignacion && product.retailPrice != null && (
+          <p className="text-[11px] text-text-light mt-0.5">En la tienda hoy {fmt(product.retailPrice)} (oferta)</p>
         )}
 
         {!purchasable ? (
