@@ -23,9 +23,11 @@ describe('descuentoCupon — paridad con lo que Woo descuenta al crear el pedido
   });
 
   it('pedido #4048: la única línea está excluida → el cupón no descuenta nada', () => {
-    // 28/10/2026: Woo le descontó $6.630 igual (18/18 líneas excluidas cobraron
-    // el 10%). Con el blindaje del backend v1.42.1 el pedido sale sin descuento,
-    // y el checkout tiene que mostrar ESE número, no el de antes.
+    // 23/10/2026: el pedido salió con $6.630 de descuento porque el cupón
+    // todavía tenía la lista de exclusiones VACÍA (se cargó el 25/10 21:17).
+    // Con la lista cargada, Woo no descuenta nada de esta línea —y si es la
+    // única del carrito ni acepta el código—, así que el checkout tiene que
+    // mostrar ESE número y no el viejo.
     const lineas: LineaCupon[] = [{ id: 'regular-tee-black', price: 66300, quantity: 1 }];
     expect(descuentoCupon(lineas, hype10([EXCL_436]))).toBe(0);
   });
