@@ -39,5 +39,12 @@ export async function ensureCyberAttributes(apiKey: string) {
       body: JSON.stringify({ type }),
     }).catch(() => {});
 
-  await Promise.all([create('HYPE72', 'text'), create('HYPE72_DATE', 'text'), create('HYPE72_CONSENT', 'text')]);
+  await Promise.all([
+    create('HYPE72', 'text'),
+    create('HYPE72_DATE', 'text'),
+    create('HYPE72_CONSENT', 'text'),
+    // Marca a quien estaba dado de baja y volvio a pedir el aviso: sirve para
+    // mandarle solo los mails del evento y no la newsletter general.
+    create('HYPE72_REOPTIN', 'text'),
+  ]);
 }

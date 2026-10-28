@@ -229,3 +229,41 @@ export function fbCompleteRegistration(user?: FbUserData): void {
   fbTrack('CompleteRegistration', customData, eventId);
   sendCapi('CompleteRegistration', eventId, customData, user);
 }
+
+/**
+ * Registro en la lista de CYBER HYPE (el "Avisame" de /hype72).
+ *
+ * Sale como `Lead` por el pixel y por CAPI con el mismo `event_id`, igual que
+ * el resto del embudo. Para qué: el conjunto de previa optimiza hoy a vistas de
+ * landing —cuenta al que abre la página y se va— y con este evento se puede
+ * optimizar al registro de verdad y saber el costo por registro si alguna vez
+ * se decide pautarlo.
+ *
+ * Tres reglas que lo diferencian del resto:
+ *  - **solo cuando el alta fue efectiva.** Lo dispara el formulario cuando el
+ *    servidor confirma, nunca al apretar el botón: un error de Brevo no puede
+ *    contar como registro.
+ *  - **una sola vez por visita.** El componente lo guarda con una ref; mandar
+ *    el mismo mail dos veces no cuenta dos Leads.
+ *  - **sin mail a Meta, a propósito.** El consentimiento que dio la persona es
+ *    para recibir nuestros correos, no para que su dirección (ni siquiera
+ *    hasheada) viaje a Meta como advanced matching. El evento va solo con las
+ *    cookies de Meta que el navegador ya tiene, que es lo mismo que mira
+ *    cualquier otro evento del sitio. `trackingAllowed()` sigue cortando a
+ *    quien eligió "Solo necesarias".
+ *
+ * `value: 0`: dejar el mail no es una venta, y ponerle un ticket estimado
+ * ensuciaría el ROAS de la cuenta con plata que no entró.
+ */
+export function fbLeadCyber(): void {
+  if (!trackingAllowed()) return;
+  const customData = {
+    content_name: 'cyber-hype',
+    content_category: 'registro',
+    value: 0,
+    currency: CURRENCY,
+  };
+  const eventId = newEventId();
+  fbTrack('Lead', customData, eventId);
+  sendCapi('Lead', eventId, customData);
+}

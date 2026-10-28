@@ -10,22 +10,36 @@
  * A diferencia del popup, acá el resultado SÍ le importa al formulario: si el
  * alta falla, el usuario tiene que poder reintentar en vez de ver un "listo"
  * que no pasó. Por eso devuelve un resultado en lugar de tragarse el error.
+ *
+ * Junto al mail viajan dos datos de la trampa de bots (ver la ruta):
+ *  - `empresa`: el honeypot, que el formulario siempre manda vacío;
+ *  - `ms`: milisegundos desde que se montó el formulario hasta el submit.
+ * Ninguno de los dos le pide nada a la persona ni se ve en pantalla.
  */
-export type ResultadoRegistro = 'alta' | 'dado-de-baja' | 'email-invalido' | 'error';
+export type ResultadoRegistro = 'alta' | 'email-invalido' | 'demasiados-intentos' | 'error';
 
-export async function registrarCyber(email: string): Promise<ResultadoRegistro> {
+export interface DatosRegistro {
+  email: string;
+  /** Honeypot: vacío siempre, salvo que lo complete un script. */
+  empresa?: string;
+  /** Milisegundos desde que se montó el formulario. */
+  ms?: number;
+}
+
+export async function registrarCyber({ email, empresa = '', ms }: DatosRegistro): Promise<ResultadoRegistro> {
   try {
     const res = await fetch('/api/newsletter-subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, preferencia: null, origen: 'cyber' }),
+      body: JSON.stringify({ email, preferencia: null, origen: 'cyber', empresa, ms }),
     });
 
     if (res.status === 400) return 'email-invalido';
-    if (!res.ok) return 'error';
+    if (res.status === 429) return 'demasiados-intentos';
+    if (!res.ok) return 'error'; // incluye el 503 de "falta la lista configurada"
 
     const data = await res.json().catch(() => null);
-    return data?.estado === 'dado-de-baja' ? 'dado-de-baja' : 'alta';
+    return data?.ok ? 'alta' : 'error';
   } catch {
     // Sin red: el formulario ofrece reintentar.
     return 'error';

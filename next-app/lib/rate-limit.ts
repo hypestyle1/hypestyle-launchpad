@@ -67,4 +67,18 @@ export const RATE_LIMITS = {
   forgot: { name: 'mayorista-forgot', limit: 5, windowMs: 15 * 60_000 },
   solicitud: { name: 'mayorista-solicitud', limit: 5, windowMs: 60 * 60_000 },
   pedido: { name: 'mayorista-pedido', limit: 20, windowMs: 10 * 60_000 },
+  // Registro de CYBER HYPE: el endpoint es público y no pide nada más que un
+  // mail, así que es el candidato obvio para inflar la lista con direcciones
+  // basura. Tres cortes a la vez: por IP en minutos (un script), por IP en el
+  // día (un script paciente) y por dirección (hostigar un mail ajeno). Los
+  // números son holgados para una persona real: nadie se anota cinco veces en
+  // diez minutos.
+  registroIp: { name: 'cyber-registro-ip', limit: 5, windowMs: 10 * 60_000 },
+  registroIpDia: { name: 'cyber-registro-ip-dia', limit: 20, windowMs: 24 * 60 * 60_000 },
+  registroMail: { name: 'cyber-registro-mail', limit: 3, windowMs: 60 * 60_000 },
+  // Alta normal del popup: cada una manda el mail de bienvenida, y ese mail
+  // sale del mismo cupo de Brevo que las campañas del evento (19.796 hasta el
+  // 21/11). Sin tope, un script podía quemar los créditos de las campañas.
+  // Más holgado que el del evento porque acá sí hay tráfico real del sitio.
+  altaPopupIp: { name: 'newsletter-alta-ip', limit: 10, windowMs: 60 * 60_000 },
 } as const satisfies Record<string, RateLimitRule>;

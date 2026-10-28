@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { registrarCyber, type ResultadoRegistro } from '@/lib/cyber-registro-cliente';
+import { fbLeadCyber } from '@/lib/fbpixel';
 
 /**
  * "AVISAME CUANDO ABRA" — la captación de la landing de CYBER HYPE.
  *
- * Tres cosas que el formulario anterior no hacía:
+ * Lo que este formulario hace distinto del que había:
  *  1. **No miente.** Antes el submit era `try { await … } catch {}` y después
  *     mostraba "listo" igual: si Brevo fallaba, la persona se iba creyendo que
  *     estaba anotada. Ahora cada resultado tiene su estado y el error ofrece
@@ -17,21 +18,44 @@ import { registrarCyber, type ResultadoRegistro } from '@/lib/cyber-registro-cli
  *     el contacto (HYPE72_CONSENT) desde el endpoint.
  *  3. **Dice qué va a pasar y cuándo**: el mail llega el 2/11 a las 00:00. No
  *     promete acceso anticipado, ni precios, ni descuentos: no hay ninguno.
+ *  4. **Trampa de bots sin CAPTCHA**: un campo honeypot que ninguna persona ve
+ *     ni puede tabular, y el tiempo que pasó desde que se montó el formulario.
+ *     Nada de esto le agrega un paso a nadie.
  *
  * Mobile primero: una sola columna, campo y botón de 52 px de alto (el pulgar
  * no falla), teclado de email, y el estado final reemplaza al formulario para
- * que no quede un campo vacío invitando a mandarlo de nuevo.
+ * que no quede un campo vacío invitando a mandarlo de nuevo. Probado a 375,
+ * 390 y 430 px.
+ *
+ * El `Lead` de Meta sale una sola vez por visita y solo cuando el servidor
+ * confirmó el alta (ver lib/fbpixel → fbLeadCyber).
  */
 export default function CyberAvisame() {
   const [email, setEmail] = useState('');
+  const [empresa, setEmpresa] = useState(''); // honeypot: queda vacío siempre
   const [estado, setEstado] = useState<'idle' | 'enviando' | ResultadoRegistro>('idle');
+  const montadoEn = useRef<number>(Date.now());
+  const leadEnviado = useRef(false);
   const enviado = email.trim().toLowerCase();
+
+  // El reloj arranca cuando el componente se monta en el cliente, no cuando se
+  // renderizó en el servidor: así una página cacheada no regala el tiempo.
+  useEffect(() => { montadoEn.current = Date.now(); }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (estado === 'enviando' || !email.trim()) return;
     setEstado('enviando');
-    setEstado(await registrarCyber(email.trim()));
+    const r = await registrarCyber({
+      email: email.trim(),
+      empresa,
+      ms: Date.now() - montadoEn.current,
+    });
+    setEstado(r);
+    if (r === 'alta' && !leadEnviado.current) {
+      leadEnviado.current = true;
+      fbLeadCyber();
+    }
   };
 
   if (estado === 'alta') {
@@ -44,27 +68,6 @@ export default function CyberAvisame() {
         </p>
         <p className="mt-3 text-[12px] text-muted-foreground">
           Si no lo ves en la bandeja principal, mirá en Promociones o en spam.
-        </p>
-      </div>
-    );
-  }
-
-  if (estado === 'dado-de-baja') {
-    return (
-      <div aria-live="polite" className="border border-foreground/15 bg-bg-alt px-5 py-6 rounded-[8px]">
-        <p className="text-[17px] md:text-[19px] font-semibold tracking-[-0.02em]">Ese mail está dado de baja.</p>
-        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-          En algún momento pediste no recibir más correos nuestros y lo respetamos: no te vamos a
-          escribir. Si querés el aviso igual, escribinos por{' '}
-          <a
-            href="https://instagram.com/hypestylearg"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-foreground underline underline-offset-2"
-          >
-            @hypestylearg
-          </a>{' '}
-          y lo arreglamos por ahí.
         </p>
       </div>
     );
@@ -89,6 +92,23 @@ export default function CyberAvisame() {
         className="h-[52px] w-full min-w-0 rounded-[8px] border border-border-mid bg-white px-4 text-[16px] text-foreground placeholder:text-text-light focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/15"
       />
 
+      {/* Honeypot. Fuera de la vista y fuera del alcance del teclado y del
+          lector de pantalla: una persona no puede completarlo ni sin querer.
+          Va posicionado fuera de pantalla en vez de `display:none` porque hay
+          bots que saltean los campos ocultos por CSS. */}
+      <div aria-hidden="true" className="absolute left-[-9999px] top-0 h-0 w-0 overflow-hidden">
+        <label htmlFor="cyber-empresa">Empresa</label>
+        <input
+          id="cyber-empresa"
+          name="empresa"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={empresa}
+          onChange={(e) => setEmpresa(e.target.value)}
+        />
+      </div>
+
       <button
         type="submit"
         disabled={estado === 'enviando'}
@@ -100,6 +120,11 @@ export default function CyberAvisame() {
       {estado === 'email-invalido' && (
         <p role="alert" className="text-[13px] font-medium text-destructive">
           Revisá el mail: parece que falta algo.
+        </p>
+      )}
+      {estado === 'demasiados-intentos' && (
+        <p role="alert" className="text-[13px] font-medium text-destructive">
+          Ya lo intentaste varias veces. Esperá unos minutos y probá de nuevo.
         </p>
       )}
       {estado === 'error' && (

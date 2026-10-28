@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureCyberAttributes, ensureWelcomeAttributes } from '@/lib/brevo-attributes';
+import { rateLimitCheck, clientIp, RATE_LIMITS } from '@/lib/rate-limit';
 
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const NEWSLETTER_LIST_ID = 3;
@@ -15,17 +16,41 @@ const PREFERENCIAS = new Set(['hombre', 'mujer', 'todo']);
 const CYBER_CONSENT_VERSION = 'landing-cyber-v1';
 
 /**
- * Lista de Brevo del "Avisame" de CYBER HYPE. Se lee en cada request (no en el
- * módulo) para que no quede congelada en el build y para poder cambiarla desde
- * Vercel sin tocar código.
+ * Lista de Brevo del "Avisame" de CYBER HYPE (hoy la 6, "CYBER HYPE").
  *
- * Si no está cargada, el alta NO se pierde: cae en la lista de newsletter, pero
- * igual sin SIGNUP_DATE y sin bienvenida, así que tampoco recibe el cupón (ver
- * el bloque de abajo). Lo único que se pierde es poder segmentar el envío.
+ * Variable **solo del servidor**: sin prefijo `NEXT_PUBLIC_`, así que no viaja
+ * al navegador ni queda en el bundle. Se lee en cada request —no en el módulo—
+ * para poder cambiarla desde Vercel sin rebuild.
+ *
+ * **Si falta, el alta falla a la vista en vez de caer en otra lista.** Antes
+ * había un fallback silencioso a la lista de newsletter: el formulario decía
+ * "listo", el contacto quedaba mezclado con la base general y nadie se enteraba
+ * hasta el día del envío. Un error visible se arregla en dos minutos; un alta
+ * silenciosa en la lista equivocada se descubre tarde.
  */
 function cyberListId(): number | null {
   const n = parseInt(String(process.env.BREVO_CYBER_LIST_ID || process.env.BREVO_HYPE72_LIST_ID || '').trim(), 10);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Trampa para registros automatizados, sin CAPTCHA.
+ *
+ * Dos señales que a una persona real no le cuestan nada:
+ *  - **honeypot**: un campo que el formulario deja vacío y esconde de la vista
+ *    y del lector de pantalla. Si viene con algo, lo llenó un script.
+ *  - **tiempo**: milisegundos entre que la página se montó y el submit. Un
+ *    humano, aun con autocompletado, tarda más de 1,2 s en leer y apretar.
+ *
+ * Al bot se le responde 200 como si hubiera funcionado: si se le devuelve un
+ * error, prueba de nuevo hasta encontrar la forma de pasar.
+ */
+const MS_MINIMOS_HUMANOS = 1200;
+
+function pareceAutomatizado(body: { empresa?: unknown; ms?: unknown }): boolean {
+  if (String(body.empresa ?? '').trim() !== '') return true;
+  const ms = Number(body.ms);
+  return Number.isFinite(ms) && ms >= 0 && ms < MS_MINIMOS_HUMANOS;
 }
 
 /**
@@ -110,16 +135,19 @@ function buildWelcomeHtml(name = '') {
 /**
  * ¿El contacto ya existe y está dado de baja?
  *
- * Importa para no mentirle: Brevo NO vuelve a suscribir a un contacto
- * blacklisteado cuando se lo agrega a una lista (y está bien que no lo haga —
- * la baja es suya). Sin este chequeo el formulario diría "listo, te avisamos" y
- * el aviso nunca le iba a llegar.
+ * Brevo NO le entrega nada a un contacto blacklisteado, ni siquiera agregándolo
+ * a una lista. Antes esto se usaba para decirle "ese mail está dado de baja" —
+ * y esa respuesta distinta era, de hecho, una forma de averiguar desde afuera
+ * quién se había dado de baja de los mails de Hype.
  *
- * Contrapartida conocida: la respuesta distingue "dado de baja" de "alta", así
- * que alguien que pruebe direcciones podría deducir que una dirección se dio de
- * baja de los mails de Hype. Se eligió la honestidad del formulario por sobre
- * eso; el dato que se filtra es de baja sensibilidad y no se distingue entre
- * "alta nueva" y "ya estaba" (eso sí sería enumerar la lista).
+ * Ahora se resuelve sin contar nada: quien completa el formulario está dando el
+ * consentimiento de nuevo, con el texto a la vista, así que se lo vuelve a
+ * suscribir (re-opt-in) y queda marcado con HYPE72_REOPTIN para poder tratarlo
+ * aparte —por ejemplo, mandarle solo los mails del evento y no la newsletter
+ * general—. La respuesta es idéntica a la de cualquier alta: desde afuera no se
+ * distingue un alta nueva de una repetida ni de un re-opt-in.
+ *
+ * El dato sigue sirviendo internamente, que es para lo que se consulta.
  */
 async function estaDadoDeBaja(email: string): Promise<boolean> {
   try {
@@ -136,7 +164,8 @@ async function estaDadoDeBaja(email: string): Promise<boolean> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email: emailRaw, name, preferencia, origen } = await req.json();
+    const body = await req.json();
+    const { email: emailRaw, name, preferencia, origen } = body;
     const email = normalizarEmail(emailRaw);
     if (!email) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
@@ -153,12 +182,55 @@ export async function POST(req: NextRequest) {
     // el que quedó escrito el PR original.
     const origenNorm = String(origen ?? '').trim().toLowerCase();
     const esCyber = origenNorm === 'cyber' || origenNorm === 'hype72';
-    const listId = esCyber ? (cyberListId() ?? NEWSLETTER_LIST_ID) : NEWSLETTER_LIST_ID;
 
-    // Un contacto dado de baja no recibe nada, ni siquiera agregándolo a la
-    // lista: se lo dice el formulario en vez de prometerle un aviso.
-    if (esCyber && (await estaDadoDeBaja(email))) {
-      return NextResponse.json({ ok: true, estado: 'dado-de-baja', listId, bienvenida: false });
+    let listId = NEWSLETTER_LIST_ID;
+    let reoptin = false;
+
+    if (esCyber) {
+      // 1. Bots: se les contesta que sí y no se escribe nada.
+      if (pareceAutomatizado(body)) {
+        return NextResponse.json({ ok: true, estado: 'alta' });
+      }
+
+      // 2. Tope de intentos. Por IP (un script) y por dirección (hostigar un
+      //    mail ajeno). En memoria y por instancia, como el resto del sitio:
+      //    frena un script, no es un tope global exacto (ver lib/rate-limit).
+      const ip = clientIp(req);
+      const topes = [
+        rateLimitCheck(RATE_LIMITS.registroIp, ip),
+        rateLimitCheck(RATE_LIMITS.registroIpDia, ip),
+        rateLimitCheck(RATE_LIMITS.registroMail, email),
+      ];
+      const pasado = topes.find((t) => !t.ok);
+      if (pasado) {
+        return NextResponse.json(
+          { ok: false, error: 'rate_limited', retryAfter: pasado.retryAfterSec },
+          { status: 429, headers: { 'Retry-After': String(pasado.retryAfterSec) } },
+        );
+      }
+
+      // 3. Sin lista configurada no se da de alta en ningún lado: error visible.
+      const propia = cyberListId();
+      if (!propia) {
+        console.error('[cyber] falta BREVO_CYBER_LIST_ID: el alta se rechaza en vez de caer en la lista general');
+        return NextResponse.json({ ok: false, error: 'config' }, { status: 503 });
+      }
+      listId = propia;
+
+      // 4. Si venía dado de baja, el formulario es un consentimiento nuevo:
+      //    se lo vuelve a suscribir y queda marcado para poder tratarlo aparte.
+      reoptin = await estaDadoDeBaja(email);
+    } else {
+      // Alta normal del popup: cada una manda el mail de bienvenida y ese mail
+      // consume un crédito de Brevo, el mismo cupo con el que se mandan las
+      // campañas del evento. Tope por IP para que un script no lo vacíe.
+      const popup = rateLimitCheck(RATE_LIMITS.altaPopupIp, clientIp(req));
+      if (!popup.ok) {
+        return NextResponse.json(
+          { ok: false, error: 'rate_limited', retryAfter: popup.retryAfterSec },
+          { status: 429, headers: { 'Retry-After': String(popup.retryAfterSec) } },
+        );
+      }
     }
 
     await (esCyber ? ensureCyberAttributes(BREVO_API_KEY) : ensureWelcomeAttributes(BREVO_API_KEY));
@@ -191,11 +263,20 @@ export async function POST(req: NextRequest) {
           ...(firstName ? { NOMBRE: firstName } : {}),
           ...(pref ? { PREFERENCIA: pref } : {}),
           ...(esCyber
-            ? { HYPE72: 'yes', HYPE72_DATE: new Date().toISOString(), HYPE72_CONSENT: CYBER_CONSENT_VERSION }
+            ? {
+                HYPE72: 'yes',
+                HYPE72_DATE: new Date().toISOString(),
+                HYPE72_CONSENT: CYBER_CONSENT_VERSION,
+                ...(reoptin ? { HYPE72_REOPTIN: 'yes' } : {}),
+              }
             : { SIGNUP_DATE: new Date().toISOString(), WELCOME_STEP: 1 }),
         },
         listIds: [listId],
         updateEnabled: true,
+        // Re-opt-in explícito: solo cuando el contacto estaba dado de baja y
+        // acaba de pedir el aviso con el texto de consentimiento a la vista.
+        // En cualquier otro caso no se toca el estado de suscripción.
+        ...(reoptin ? { emailBlacklisted: false } : {}),
       }),
     });
 
@@ -222,7 +303,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ ok: true, estado: 'alta', listId, bienvenida: !esCyber });
+    // Respuesta uniforme para el alta del evento: no dice a qué lista entró, si
+    // el contacto ya existía ni si estaba dado de baja. Desde afuera, todas las
+    // altas se ven iguales.
+    if (esCyber) return NextResponse.json({ ok: true, estado: 'alta' });
+
+    return NextResponse.json({ ok: true, estado: 'alta', listId, bienvenida: true });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });
   }

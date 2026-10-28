@@ -27,7 +27,7 @@ beforeEach(() => {
   contactoExistente = null;
   respuestaAlta = { ok: true };
   process.env.BREVO_API_KEY = 'test-key';
-  delete process.env.BREVO_CYBER_LIST_ID;
+  process.env.BREVO_CYBER_LIST_ID = '6';
   delete process.env.BREVO_HYPE72_LIST_ID;
 
   vi.stubGlobal('fetch', vi.fn(async (url: any, init?: any) => {
@@ -60,7 +60,10 @@ afterEach(() => {
   vi.resetModules();
 });
 
-async function post(body: unknown) {
+async function post(body: any) {
+  // Por defecto el cuerpo simula a una persona: honeypot vacío y tiempo
+  // humano. Los tests de bots lo pisan a propósito.
+  if (body && typeof body === 'object' && body.ms === undefined) body = { ms: 9000, ...body };
   // Import dinámico: la ruta lee BREVO_API_KEY al cargar el módulo.
   const { POST } = await import('@/app/api/newsletter-subscribe/route');
   const req = new NextRequest('http://localhost/api/newsletter-subscribe', {
@@ -79,27 +82,35 @@ describe('alta de CYBER HYPE', () => {
   it('no manda el mail de bienvenida ni el cupón HYPE10', async () => {
     const r = await post({ email: 'alguien@gmail.com', preferencia: null, origen: 'cyber' });
     expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({ ok: true, estado: 'alta', bienvenida: false });
+    expect(r.json).toEqual({ ok: true, estado: 'alta' });
     expect(bienvenida()).toBeUndefined();
   });
 
-  it('entra a la lista propia cuando la variable está cargada', async () => {
+  it('entra a la lista propia del evento', async () => {
     process.env.BREVO_CYBER_LIST_ID = '7';
-    const r = await post({ email: 'alguien@gmail.com', origen: 'cyber' });
+    await post({ email: 'alguien@gmail.com', origen: 'cyber' });
     expect(alta()!.body.listIds).toEqual([7]);
-    expect(r.json.listId).toBe(7);
   });
 
   it('acepta el nombre interno del PR original (hype72)', async () => {
+    delete process.env.BREVO_CYBER_LIST_ID;
     process.env.BREVO_HYPE72_LIST_ID = '7';
     await post({ email: 'alguien@gmail.com', origen: 'hype72' });
     expect(alta()!.body.listIds).toEqual([7]);
     expect(bienvenida()).toBeUndefined();
   });
 
-  it('sin la variable el alta no se pierde: cae en la lista 3 pero sin bienvenida ni SIGNUP_DATE', async () => {
+  it('sin la variable NO da de alta en otra lista: falla a la vista', async () => {
+    delete process.env.BREVO_CYBER_LIST_ID;
+    delete process.env.BREVO_HYPE72_LIST_ID;
     const r = await post({ email: 'alguien@gmail.com', origen: 'cyber' });
-    expect(r.json.listId).toBe(3);
+    expect(r.status).toBe(503);
+    expect(r.json).toMatchObject({ ok: false, error: 'config' });
+    expect(alta()).toBeUndefined();
+  });
+
+  it('nunca escribe SIGNUP_DATE ni WELCOME_STEP (son los que disparan la bienvenida)', async () => {
+    await post({ email: 'alguien@gmail.com', origen: 'cyber' });
     expect(alta()!.body.attributes.SIGNUP_DATE).toBeUndefined();
     expect(alta()!.body.attributes.WELCOME_STEP).toBeUndefined();
     expect(bienvenida()).toBeUndefined();
@@ -149,11 +160,35 @@ describe('alta de CYBER HYPE', () => {
     }
   });
 
-  it('a un contacto dado de baja se lo dice, y no lo agrega a la lista', async () => {
+  it('a un contacto dado de baja lo vuelve a suscribir y lo deja marcado', async () => {
     contactoExistente = { email: 'baja@gmail.com', emailBlacklisted: true };
     const r = await post({ email: 'baja@gmail.com', origen: 'cyber' });
-    expect(r.json).toMatchObject({ ok: true, estado: 'dado-de-baja' });
-    expect(alta()).toBeUndefined();
+    expect(r.json).toEqual({ ok: true, estado: 'alta' });
+    expect(alta()!.body.emailBlacklisted).toBe(false);
+    expect(alta()!.body.attributes.HYPE72_REOPTIN).toBe('yes');
+  });
+
+  it('a quien está suscripto no le toca el estado de suscripción', async () => {
+    contactoExistente = { email: 'alguien@gmail.com', emailBlacklisted: false };
+    await post({ email: 'alguien@gmail.com', origen: 'cyber' });
+    expect('emailBlacklisted' in alta()!.body).toBe(false);
+    expect(alta()!.body.attributes.HYPE72_REOPTIN).toBeUndefined();
+  });
+
+  it('la respuesta es idéntica para un alta nueva, una repetida y un re-opt-in', async () => {
+    const nueva = await post({ email: 'nueva@gmail.com', origen: 'cyber' });
+    contactoExistente = { email: 'repetida@gmail.com', emailBlacklisted: false };
+    const repetida = await post({ email: 'repetida@gmail.com', origen: 'cyber' });
+    contactoExistente = { email: 'baja@gmail.com', emailBlacklisted: true };
+    const reoptin = await post({ email: 'baja@gmail.com', origen: 'cyber' });
+    // Ni la lista, ni si existía, ni si estaba dado de baja: desde afuera no se
+    // puede averiguar nada del estado de un mail ajeno.
+    expect(nueva.json).toEqual({ ok: true, estado: 'alta' });
+    expect(repetida.json).toEqual(nueva.json);
+    expect(reoptin.json).toEqual(nueva.json);
+    expect(nueva.status).toBe(200);
+    expect(repetida.status).toBe(200);
+    expect(reoptin.status).toBe(200);
   });
 
   it('un contacto que existe y está suscripto se da de alta normal', async () => {
@@ -161,6 +196,74 @@ describe('alta de CYBER HYPE', () => {
     const r = await post({ email: 'alguien@gmail.com', origen: 'cyber' });
     expect(r.json.estado).toBe('alta');
     expect(alta()).toBeDefined();
+  });
+});
+
+
+describe('defensas del endpoint público', () => {
+  it('el honeypot completo se descarta en silencio: no escribe en Brevo y contesta 200', async () => {
+    const r = await post({ email: 'bot@gmail.com', origen: 'cyber', empresa: 'Acme SA' });
+    expect(r.status).toBe(200);
+    expect(r.json).toEqual({ ok: true, estado: 'alta' });
+    expect(alta()).toBeUndefined();
+  });
+
+  it('un submit instantáneo (menos de 1,2 s) se trata como bot', async () => {
+    const r = await post({ email: 'bot@gmail.com', origen: 'cyber', ms: 300 });
+    expect(r.status).toBe(200);
+    expect(alta()).toBeUndefined();
+  });
+
+  it('un submit humano entra, aunque sea rápido con autocompletado', async () => {
+    await post({ email: 'persona@gmail.com', origen: 'cyber', ms: 1500 });
+    expect(alta()).toBeDefined();
+  });
+
+  it('sin el campo ms (formulario viejo o cliente propio) el alta entra igual', async () => {
+    await post({ email: 'persona@gmail.com', origen: 'cyber', ms: undefined });
+    expect(alta()).toBeDefined();
+  });
+
+  it('corta a la sexta alta seguida desde la misma IP', async () => {
+    for (let i = 0; i < 5; i++) {
+      const r = await post({ email: `persona${i}@gmail.com`, origen: 'cyber' });
+      expect(r.status, `intento ${i + 1}`).toBe(200);
+    }
+    const sexta = await post({ email: 'persona6@gmail.com', origen: 'cyber' });
+    expect(sexta.status).toBe(429);
+    expect(sexta.json).toMatchObject({ ok: false, error: 'rate_limited' });
+    expect(sexta.json.retryAfter).toBeGreaterThan(0);
+  });
+
+  it('corta al cuarto intento con el mismo mail', async () => {
+    for (let i = 0; i < 3; i++) {
+      const r = await post({ email: 'mismo@gmail.com', origen: 'cyber' });
+      expect(r.status, `intento ${i + 1}`).toBe(200);
+    }
+    expect((await post({ email: 'mismo@gmail.com', origen: 'cyber' })).status).toBe(429);
+  });
+
+  it('el alta normal tiene su propio tope, más holgado: protege los créditos de Brevo', async () => {
+    // Cada alta del popup manda el mail de bienvenida, y ese mail sale del
+    // mismo cupo que las campañas del evento.
+    for (let i = 0; i < 10; i++) {
+      const r = await post({ email: `popup${i}@gmail.com` });
+      expect(r.status, `alta ${i + 1}`).toBe(200);
+    }
+    const onceava = await post({ email: 'popup11@gmail.com' });
+    expect(onceava.status).toBe(429);
+    expect(bienvenida.length).toBeLessThanOrEqual(10);
+  });
+
+  it('el tope del evento y el del popup son contadores distintos', async () => {
+    for (let i = 0; i < 5; i++) await post({ email: `cy${i}@gmail.com`, origen: 'cyber' });
+    expect((await post({ email: 'cy6@gmail.com', origen: 'cyber' })).status).toBe(429);
+    expect((await post({ email: 'popup@gmail.com' })).status).toBe(200);
+  });
+
+  it('un mail inválido no consume el tope de intentos', async () => {
+    for (let i = 0; i < 8; i++) expect((await post({ email: 'roto@', origen: 'cyber' })).status).toBe(400);
+    expect((await post({ email: 'persona@gmail.com', origen: 'cyber' })).status).toBe(200);
   });
 });
 
