@@ -133,7 +133,8 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
 
   const html = `<div style="font-family:Arial,sans-serif;color:#111;max-width:600px">
     <h2 style="font-size:16px;text-transform:uppercase;border-bottom:2px solid #111;padding-bottom:6px">Pedido mayorista — Hype.</h2>
-    ${consignacion ? `<p style="font-size:13px;background:#111;color:#fff;display:inline-block;padding:4px 10px">CONSIGNACIÓN — comisión del local ${consignacion.pct}% · los importes son precio de lista</p>` : ''}
+    ${consignacion ? `<p style="font-size:13px;background:#111;color:#fff;display:inline-block;padding:4px 10px">CONSIGNACIÓN — comisión del local ${consignacion.pct}% · los importes son precio de lista</p>
+    <p style="font-size:13px">Si se vende todo: le quedan ${formatArs(splitConsignacion(total, consignacion.pct).comision)} y nos liquida ${formatArs(splitConsignacion(total, consignacion.pct).aLiquidar)}.</p>` : ''}
     <p style="font-size:13px">Cliente: <b>${esc(label)}</b> — DNI ${esc(shipping.dni)}</p>
     <p style="font-size:12px;color:#444">${esc(shipping.address_1)}, ${esc(shipping.city)} ${esc(shipping.state ?? '')} — ${esc(shipping.phone)}</p>
     <p style="font-size:12px;color:#444">Envío: <b>${esc(envioResumen(envioDe(shipping).metodo, envioDe(shipping).destino))}</b></p>
@@ -190,8 +191,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
       <tbody>${rows}</tbody>
     </table>
     ${consignacion
-      ? `<p style="font-size:13px;margin-top:10px">Mercadería entregada, a precio de lista: <b>${formatArs(total)}</b></p>
-         <p style="font-size:13px;margin:2px 0">Si se vende todo: te quedan ${formatArs(splitConsignacion(total, consignacion.pct).comision)} y nos liquidás ${formatArs(splitConsignacion(total, consignacion.pct).aLiquidar)}.</p>`
+      ? `<p style="font-size:13px;margin-top:10px">Mercadería entregada, a precio de lista: <b>${formatArs(total)}</b></p>`
       : totalsHtml(total, credit, campaign) + pagoHtml(pagoInfoFromEnv(), orderNumber)}
   </div>`;
 
