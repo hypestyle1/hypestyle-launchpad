@@ -46,5 +46,12 @@ export async function ensureCyberAttributes(apiKey: string) {
     // Marca a quien estaba dado de baja y volvio a pedir el aviso: sirve para
     // mandarle solo los mails del evento y no la newsletter general.
     create('HYPE72_REOPTIN', 'text'),
+    // Origen del alta. Con pauta apuntando a la landing es la unica forma de
+    // saber cuanto costo cada registro: sin esto, un alta de un anuncio y una
+    // de una historia son el mismo renglon.
+    create('UTM_SOURCE', 'text'),
+    create('UTM_MEDIUM', 'text'),
+    create('UTM_CAMPAIGN', 'text'),
+    create('UTM_CONTENT', 'text'),
   ]);
 }

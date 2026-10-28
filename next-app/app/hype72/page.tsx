@@ -55,10 +55,12 @@ export default function Page({ searchParams }: { searchParams?: { fondo?: string
   const conTextura = searchParams?.fondo !== 'liso';
 
   const hayWhatsApp = whatsappDisponible();
-  // El demo solo existe mientras no haya invitación real: en cuanto se carga
-  // la variable, la página muestra el botón de verdad y el demo deja de poder
-  // activarse. Así no queda forma de mostrar un botón falso en producción.
-  const demoWhatsApp = !hayWhatsApp && searchParams?.wa === 'demo';
+  // El demo es solo para mirar la composición en local. Dos candados: no
+  // existe si ya hay invitación cargada, y no existe en producción. Así no hay
+  // forma de que el sitio publicado muestre un botón que no lleva a ningún
+  // lado, ni con la query puesta a mano.
+  const demoWhatsApp =
+    !hayWhatsApp && searchParams?.wa === 'demo' && process.env.NODE_ENV !== 'production';
   const mostrarWhatsApp = captura && (hayWhatsApp || demoWhatsApp);
 
   return (

@@ -54,6 +54,38 @@ function pareceAutomatizado(body: { empresa?: unknown; ms?: unknown }): boolean 
 }
 
 /**
+ * Origen del alta (UTM). Sirve para saber cuánto cuesta un registro cuando la
+ * landing recibe pauta: sin esto, un alta desde un anuncio y una desde una
+ * historia son el mismo renglón en Brevo.
+ *
+ * **Es un dato del usuario, no una credencial.** Viene de la query de la
+ * landing, así que cualquiera puede escribir lo que quiera. Por eso:
+ *  - se guarda como atributo y NO decide nada —ni la lista, ni el estado de
+ *    suscripción, ni el tope de intentos—;
+ *  - se recorta a 64 caracteres y se le saca todo lo que no sea texto plano de
+ *    UTM, así no entra HTML, comillas ni saltos de línea a un atributo que
+ *    después se ve en el panel de Brevo;
+ *  - no se le manda a Meta. El `Lead` va sin datos personales y la atribución
+ *    de la campaña la hace Meta con su propio click id.
+ */
+const UTM_CAMPOS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'] as const;
+
+function limpiarUtm(valor: unknown): string | null {
+  if (typeof valor !== 'string') return null;
+  const v = valor.trim().slice(0, 64).replace(/[^\w\s.\-|/+]/g, '');
+  return v || null;
+}
+
+function atributosUtm(body: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const campo of UTM_CAMPOS) {
+    const v = limpiarUtm(body[campo]);
+    if (v) out[campo.toUpperCase()] = v;
+  }
+  return out;
+}
+
+/**
  * Validación de email. `includes('@')` dejaba pasar "a@" y "hola@gmail" — y cada
  * dirección inválida es un bounce que castiga la reputación del dominio (el
  * envío del 14/10 tuvo 65 soft + 2 hard bounces sobre 2.853).
@@ -322,6 +354,7 @@ export async function POST(req: NextRequest) {
                 HYPE72_DATE: new Date().toISOString(),
                 HYPE72_CONSENT: CYBER_CONSENT_VERSION,
                 ...(reoptin ? { HYPE72_REOPTIN: 'yes' } : {}),
+                ...atributosUtm(body),
               }
             : { SIGNUP_DATE: new Date().toISOString(), WELCOME_STEP: 1 }),
         },

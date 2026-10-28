@@ -16,6 +16,8 @@
  *  - `ms`: milisegundos desde que se montó el formulario hasta el submit.
  * Ninguno de los dos le pide nada a la persona ni se ve en pantalla.
  */
+import type { OrigenUtm } from '@/lib/cyber-utm';
+
 export type ResultadoRegistro = 'alta' | 'email-invalido' | 'demasiados-intentos' | 'error';
 
 export interface DatosRegistro {
@@ -24,14 +26,16 @@ export interface DatosRegistro {
   empresa?: string;
   /** Milisegundos desde que se montó el formulario. */
   ms?: number;
+  /** De dónde vino (ver lib/cyber-utm). Dato del usuario: se guarda, no decide nada. */
+  utm?: OrigenUtm;
 }
 
-export async function registrarCyber({ email, empresa = '', ms }: DatosRegistro): Promise<ResultadoRegistro> {
+export async function registrarCyber({ email, empresa = '', ms, utm }: DatosRegistro): Promise<ResultadoRegistro> {
   try {
     const res = await fetch('/api/newsletter-subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, preferencia: null, origen: 'cyber', empresa, ms }),
+      body: JSON.stringify({ email, preferencia: null, origen: 'cyber', empresa, ms, ...utm }),
     });
 
     if (res.status === 400) return 'email-invalido';

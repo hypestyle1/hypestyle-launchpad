@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { registrarCyber, type ResultadoRegistro } from '@/lib/cyber-registro-cliente';
+import { leerOrigen, type OrigenUtm } from '@/lib/cyber-utm';
 import { fbLeadCyber } from '@/lib/fbpixel';
 
 /**
@@ -33,9 +34,15 @@ export default function CyberAvisame() {
   const leadEnviado = useRef(false);
   const enviado = email.trim().toLowerCase();
 
+  const utm = useRef<OrigenUtm>({});
+
   // El reloj arranca cuando el componente se monta en el cliente, no cuando se
   // renderizó en el servidor: así una página cacheada no regala el tiempo.
-  useEffect(() => { montadoEn.current = Date.now(); }, []);
+  // En el mismo efecto se lee el origen: `location` solo existe en el browser.
+  useEffect(() => {
+    montadoEn.current = Date.now();
+    utm.current = leerOrigen();
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +52,7 @@ export default function CyberAvisame() {
       email: email.trim(),
       empresa,
       ms: Date.now() - montadoEn.current,
+      utm: utm.current,
     });
     setEstado(r);
     if (r === 'alta' && !leadEnviado.current) {

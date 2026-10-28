@@ -70,11 +70,30 @@ export const RATE_LIMITS = {
   // Registro de CYBER HYPE: el endpoint es público y no pide nada más que un
   // mail, así que es el candidato obvio para inflar la lista con direcciones
   // basura. Tres cortes a la vez: por IP en minutos (un script), por IP en el
-  // día (un script paciente) y por dirección (hostigar un mail ajeno). Los
-  // números son holgados para una persona real: nadie se anota cinco veces en
-  // diez minutos.
-  registroIp: { name: 'cyber-registro-ip', limit: 5, windowMs: 10 * 60_000 },
-  registroIpDia: { name: 'cyber-registro-ip-dia', limit: 20, windowMs: 24 * 60 * 60_000 },
+  // día (un script paciente) y por dirección (hostigar un mail ajeno).
+  //
+  // **El tope diario por IP subió de 20 a 200 el 28/10**, antes de mandarle
+  // pauta a la landing. En Argentina el tráfico mobile sale detrás del CGNAT
+  // del operador: miles de personas comparten una IP de salida. Con 20 por día,
+  // la vigesimoprimera persona real de ese operador se comía un 429 y se iba
+  // creyendo que el formulario no anda — y justo en la campaña donde cada
+  // registro se está pagando.
+  //
+  // 200 sigue siendo un techo real: el corte de 5 cada 10 minutos ya limita a
+  // esa misma IP a 720 por día como máximo teórico, así que el diario recorta
+  // de verdad sin pisar a nadie. Y no es la única defensa — el honeypot, el
+  // tiempo mínimo, la validación de la dirección y el tope POR MAIL (que no
+  // depende de la IP y es el que frena hostigar una dirección ajena) siguen
+  // intactos. La basura masiva necesita direcciones distintas, y contra eso el
+  // que sirve es el tope por mail, no el de IP.
+  // El de ráfaga subió de 5 a 20 por el mismo motivo: con un pico de pauta o
+  // una historia, varias personas del mismo operador llegan en el mismo
+  // minuto. 20 en diez minutos no lo alcanza una persona y sí frena en seco a
+  // un script, que pide cientos.
+  registroIp: { name: 'cyber-registro-ip', limit: 20, windowMs: 10 * 60_000 },
+  registroIpDia: { name: 'cyber-registro-ip-dia', limit: 200, windowMs: 24 * 60 * 60_000 },
+  // Este NO depende de la IP y por eso no lo toca el CGNAT: es el que impide
+  // hostigar una dirección ajena, y queda igual.
   registroMail: { name: 'cyber-registro-mail', limit: 3, windowMs: 60 * 60_000 },
   // Alta normal del popup: cada una manda el mail de bienvenida, y ese mail
   // sale del mismo cupo de Brevo que las campañas del evento (19.796 hasta el

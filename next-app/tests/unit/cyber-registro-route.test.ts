@@ -227,6 +227,52 @@ describe('alta de CYBER HYPE', () => {
     expect(desvinculacion()).toBeUndefined();
   });
 
+  // ── Origen del alta (UTM) ────────────────────────────────────────────────
+  it('guarda el origen del alta para poder medir la pauta', async () => {
+    await post({
+      email: 'desde-pauta@gmail.com', origen: 'cyber',
+      utm_source: 'ig', utm_medium: 'paid', utm_campaign: 'cyber-hype', utm_content: 'story-01',
+    });
+    expect(alta()!.body.attributes).toMatchObject({
+      UTM_SOURCE: 'ig', UTM_MEDIUM: 'paid', UTM_CAMPAIGN: 'cyber-hype', UTM_CONTENT: 'story-01',
+    });
+  });
+
+  it('el origen es dato del usuario: se limpia y se recorta', async () => {
+    await post({
+      email: 'sucio@gmail.com', origen: 'cyber',
+      utm_source: '<script>alert(1)</script>',
+      utm_campaign: 'x'.repeat(200),
+      utm_medium: '   ',
+    });
+    const attrs = alta()!.body.attributes;
+    // La barra sobrevive a propósito: es válida en un utm_content real.
+    expect(attrs.UTM_SOURCE).toBe('scriptalert1/script');
+    expect(attrs.UTM_CAMPAIGN).toHaveLength(64);
+    // Un valor vacío no crea el atributo.
+    expect(attrs.UTM_MEDIUM).toBeUndefined();
+  });
+
+  it('el origen no cambia a qué lista entra ni el estado de suscripción', async () => {
+    // Lo que no puede pasar: que un parámetro de la URL decida algo.
+    await post({ email: 'x@gmail.com', origen: 'cyber', utm_source: 'admin', utm_campaign: 'newsletter' });
+    expect(alta()!.body.listIds).toEqual([6]);
+    expect('emailBlacklisted' in alta()!.body).toBe(false);
+  });
+
+  it('sin UTM el alta no inventa atributos', async () => {
+    await post({ email: 'directo@gmail.com', origen: 'cyber' });
+    const attrs = alta()!.body.attributes;
+    for (const k of ['UTM_SOURCE', 'UTM_MEDIUM', 'UTM_CAMPAIGN', 'UTM_CONTENT']) {
+      expect(attrs[k]).toBeUndefined();
+    }
+  });
+
+  it('el alta normal del popup no guarda UTM (es otra cosa, no la landing)', async () => {
+    await post({ email: 'popup@gmail.com', utm_source: 'ig' });
+    expect(alta()!.body.attributes.UTM_SOURCE).toBeUndefined();
+  });
+
   it('a quien está suscripto no le toca el estado de suscripción', async () => {
     contactoExistente = { email: 'alguien@gmail.com', emailBlacklisted: false };
     await post({ email: 'alguien@gmail.com', origen: 'cyber' });
@@ -283,15 +329,19 @@ describe('defensas del endpoint público', () => {
     expect(alta()).toBeDefined();
   });
 
-  it('corta a la sexta alta seguida desde la misma IP', async () => {
-    for (let i = 0; i < 5; i++) {
+  // El tope por IP subió a 20 cada 10 minutos antes de mandarle pauta a la
+  // landing: en Argentina el tráfico mobile sale detrás del CGNAT del
+  // operador, así que muchas personas distintas comparten IP y un tope chico
+  // les devolvía 429 a usuarios reales.
+  it('deja pasar 20 altas seguidas desde la misma IP y corta en la 21', async () => {
+    for (let i = 0; i < 20; i++) {
       const r = await post({ email: `persona${i}@gmail.com`, origen: 'cyber' });
       expect(r.status, `intento ${i + 1}`).toBe(200);
     }
-    const sexta = await post({ email: 'persona6@gmail.com', origen: 'cyber' });
-    expect(sexta.status).toBe(429);
-    expect(sexta.json).toMatchObject({ ok: false, error: 'rate_limited' });
-    expect(sexta.json.retryAfter).toBeGreaterThan(0);
+    const extra = await post({ email: 'persona21@gmail.com', origen: 'cyber' });
+    expect(extra.status).toBe(429);
+    expect(extra.json).toMatchObject({ ok: false, error: 'rate_limited' });
+    expect(extra.json.retryAfter).toBeGreaterThan(0);
   });
 
   it('corta al cuarto intento con el mismo mail', async () => {
@@ -315,8 +365,8 @@ describe('defensas del endpoint público', () => {
   });
 
   it('el tope del evento y el del popup son contadores distintos', async () => {
-    for (let i = 0; i < 5; i++) await post({ email: `cy${i}@gmail.com`, origen: 'cyber' });
-    expect((await post({ email: 'cy6@gmail.com', origen: 'cyber' })).status).toBe(429);
+    for (let i = 0; i < 20; i++) await post({ email: `cy${i}@gmail.com`, origen: 'cyber' });
+    expect((await post({ email: 'cy21@gmail.com', origen: 'cyber' })).status).toBe(429);
     expect((await post({ email: 'popup@gmail.com' })).status).toBe(200);
   });
 
