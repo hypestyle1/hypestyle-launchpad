@@ -58,7 +58,7 @@ export type PackRegularUnidades = typeof PACK_REGULAR_UNIDADES | typeof PACK_REG
 // y el parámetro `unidades`.
 
 /**
- * Arranque de la ventana, inclusive: **2/11/2026 00:00 ART**, la apertura
+ * Arranque de la ventana, inclusive: **1/11/2026 20:00 ART**, la apertura
  * pública del evento.
  *
  * El 1/11 a las 23:00 se les avisa a Private Access y Mejores Amigos y se les
@@ -71,7 +71,7 @@ export type PackRegularUnidades = typeof PACK_REGULAR_UNIDADES | typeof PACK_REG
  * Por eso el aviso de las 23:00 no puede prometer un precio: anuncia que el
  * evento abre a las 00:00 y muestra qué va a haber.
  */
-export const PACK_REGULAR_X4_DESDE = Date.parse('2026-11-02T00:00:00-03:00');
+export const PACK_REGULAR_X4_DESDE = Date.parse('2026-11-01T20:00:00-03:00');
 
 /**
  * Cierre de la ventana, exclusivo: 5/11/2026 00:00 ART. Escrito como el

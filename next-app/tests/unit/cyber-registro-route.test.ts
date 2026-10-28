@@ -134,7 +134,7 @@ describe('alta de CYBER HYPE', () => {
     // v2: el texto ahora dice que el alta es solo para el evento. Si el copy del
     // formulario cambia, esta constante sube y queda registrado en el contacto
     // qué se le dijo exactamente cuando aceptó.
-    expect(attrs.HYPE72_CONSENT).toBe('landing-cyber-v2');
+    expect(attrs.HYPE72_CONSENT).toBe('landing-cyber-v3');
     expect(Date.parse(attrs.HYPE72_DATE)).not.toBeNaN();
   });
 

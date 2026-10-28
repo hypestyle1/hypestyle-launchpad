@@ -106,9 +106,9 @@ describe('bordes del cambio de ventana', () => {
   /** Lo que cobra el servidor al crear el pedido en un instante. */
   const cobra = (iso: string) => packRegularUnidadesAlCobrar(Date.parse(iso));
 
-  it('carrito armado 23:59 del 1/11 y pagado 00:01 del 2/11: se cobra menos de lo mostrado', () => {
-    const vio = muestra('2026-11-01T23:59:00-03:00');
-    const cobrado = cobra('2026-11-02T00:01:00-03:00');
+  it('carrito armado 19:59 del 1/11 y pagado 20:01: se cobra menos de lo mostrado', () => {
+    const vio = muestra('2026-11-01T19:59:00-03:00');
+    const cobrado = cobra('2026-11-01T20:01:00-03:00');
     expect(vio).toBe(3);
     expect(cobrado).toBe(4);
     expect(pagaPorCuatro(cobrado)).toBeLessThan(pagaPorCuatro(vio));

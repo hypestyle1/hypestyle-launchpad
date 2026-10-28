@@ -27,8 +27,10 @@ describe('CYBER HYPE — fechas', () => {
     expect(Date.parse(CYBER_END)).toBe(PACK_REGULAR_X4_HASTA);
   });
 
-  it('abre el 2/11 a las 00:00 ART y cierra el 4/11 a las 23:59', () => {
-    expect(new Date(CYBER_START).toISOString()).toBe('2026-11-02T03:00:00.000Z');
+  it('abre el domingo 1/11 a las 20:00 ART y cierra el 4/11 a las 23:59', () => {
+    // Movida del lunes 2/11 00:00 al domingo 20:00 el 28/10, decisión de
+    // Valentín: prime time contra medianoche. 20:00 -03 = 23:00 UTC.
+    expect(new Date(CYBER_START).toISOString()).toBe('2026-11-01T23:00:00.000Z');
     expect(new Date(CYBER_END).toISOString()).toBe('2026-11-05T03:00:00.000Z');
   });
 
@@ -42,11 +44,11 @@ describe('CYBER HYPE — estado por fecha', () => {
 
   it('antes de la apertura es previa', () => {
     expect(cyberEstado(t('2026-10-28T12:00:00-03:00'))).toBe('previa');
-    expect(cyberEstado(t('2026-11-01T23:59:59-03:00'))).toBe('previa');
+    expect(cyberEstado(t('2026-11-01T19:59:59-03:00'))).toBe('previa');
   });
 
   it('el primer segundo de la apertura ya es evento', () => {
-    expect(cyberEstado(t('2026-11-02T00:00:00-03:00'))).toBe('evento');
+    expect(cyberEstado(t('2026-11-01T20:00:00-03:00'))).toBe('evento');
     expect(cyberEstado(t('2026-11-04T23:59:59-03:00'))).toBe('evento');
   });
 
@@ -54,17 +56,17 @@ describe('CYBER HYPE — estado por fecha', () => {
     expect(cyberEstado(t('2026-11-05T00:00:00-03:00'))).toBe('cerrado');
   });
 
-  it('no hay acceso anticipado: a las 23:00 del 1/11 todavía es previa', () => {
-    // El estado "preview" del PR original (1/11 23:00) se eliminó a propósito:
-    // la landing no habilita nada antes de la hora pública.
-    expect(cyberEstado(t('2026-11-01T23:00:00-03:00'))).toBe('previa');
+  it('no hay acceso anticipado: una hora antes de abrir todavía es previa', () => {
+    // El estado "preview" del PR original se eliminó a propósito: la landing
+    // no habilita nada antes de la hora pública, que ahora es 1/11 20:00.
+    expect(cyberEstado(t('2026-11-01T19:00:00-03:00'))).toBe('previa');
   });
 });
 
 describe('CYBER HYPE — captación', () => {
   it('solo está abierta en la previa', () => {
     expect(cyberCapturaAbierta(new Date('2026-10-29T10:00:00-03:00'))).toBe(true);
-    expect(cyberCapturaAbierta(new Date('2026-11-02T01:00:00-03:00'))).toBe(false);
+    expect(cyberCapturaAbierta(new Date('2026-11-01T21:00:00-03:00'))).toBe(false);
     expect(cyberCapturaAbierta(new Date('2026-11-06T01:00:00-03:00'))).toBe(false);
   });
 

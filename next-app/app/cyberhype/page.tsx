@@ -134,7 +134,7 @@ export default function Page({ searchParams }: { searchParams?: { fondo?: string
                   <CyberAvisame />
 
                   <p className="mt-4 border-t border-foreground/10 pt-3.5 text-[11.5px] leading-[1.5] text-text-light">
-                    Abre el lunes 2/11 a las {CYBER_HORA_APERTURA}. Igual para todos: el aviso sale a
+                    Abre el domingo 1/11 a las {CYBER_HORA_APERTURA}. Igual para todos: el aviso sale a
                     la misma hora para toda la lista.
                   </p>
                 </>

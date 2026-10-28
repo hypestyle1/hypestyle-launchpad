@@ -15,7 +15,7 @@
  *     `sale_price` permanente sin fecha de fin, así que un porcentaje contra el
  *     "precio de lista" sería un precio de referencia que nunca se transó.
  *   - **ninguna promesa de acceso anticipado.** Todo lo comercial arranca el
- *     2/11 a las 00:00 ART, igual para todos.
+ *     domingo 1/11 a las 20:00 ART, igual para todos (movida del lunes 00:00 el 28/10: prime time contra medianoche).
  *
  * Horario: todo se escribe con el offset -03:00 (America/Argentina/Buenos_Aires).
  * Argentina no tiene horario de verano, así que -03:00 es siempre el offset
@@ -33,12 +33,13 @@
  *   - 4 PACK   → PACK_REGULAR_X4_DESDE (lib/promo-pack-regular.ts, ya en main)
  *   - home     → el banner de la previa (components/cyber/CyberHomeBanner.tsx),
  *                que lee CYBER_START de acá: no duplica la fecha
- * Verificado contra producción el 27/10: `GET /api/pack-regular-status` devuelve
- * `desde: 2026-11-02T03:00:00.000Z` = 2026-11-02T00:00:00-03:00. Si se separan,
+ * La apertura original (2/11 00:00) se verificó contra producción el 27/10 vía
+ * `GET /api/pack-regular-status`; al moverla al 1/11 20:00 las dos constantes
+ * cambiaron en el mismo commit, y el test de arriba lo exige. Si se separan,
  * la landing diría "abrió" mientras el carrito todavía cobra el precio viejo.
  * Al mover uno, mover los tres.
  * ──────────────────────────────────────────────────────────────────────────── */
-export const CYBER_START = '2026-11-02T00:00:00-03:00';
+export const CYBER_START = '2026-11-01T20:00:00-03:00';
 
 /**
  * Cierre. Instante exclusivo: a las 00:00 del 5/11 ya terminó, que es lo mismo
@@ -55,7 +56,7 @@ export const CYBER_END = '2026-11-05T00:00:00-03:00';
 export const CYBER_FECHAS = '2, 3 y 4 de noviembre';
 
 /** Hora de apertura, en texto, para el copy. */
-export const CYBER_HORA_APERTURA = '00:00';
+export const CYBER_HORA_APERTURA = '20:00';
 
 export type CyberEstado = 'previa' | 'evento' | 'cerrado';
 

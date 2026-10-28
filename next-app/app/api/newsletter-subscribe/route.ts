@@ -13,7 +13,7 @@ const PREFERENCIAS = new Set(['hombre', 'mujer', 'todo']);
  * el texto de la landing cambia, se sube esta constante: queda registrado en el
  * contacto de Brevo qué se le dijo exactamente cuando aceptó.
  */
-const CYBER_CONSENT_VERSION = 'landing-cyber-v2';
+const CYBER_CONSENT_VERSION = 'landing-cyber-v3';
 
 /**
  * Lista de Brevo del "Avisame" de CYBER HYPE (hoy la 6, "CYBER HYPE").
