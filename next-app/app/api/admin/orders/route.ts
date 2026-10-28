@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminSecretMatches } from '@/lib/admin-auth';
-import { esSoloDigital } from '@/lib/orders-fulfillment';
+import { esSoloDigital, fulfillmentStage, andreaniRefs, MAX_PAGES, CONCURRENCIA, mapLimit } from '@/lib/orders-fulfillment';
+import { esEstadoWcValido, esEstadoAccionable } from '@/lib/wc-order-status';
+import { entregaDeOrden } from '@/lib/orders-entrega';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
 const WC_SEC       = process.env.WC_CONSUMER_SECRET || '';
+
+/** Corte histórico para estados terminales y vistas transversales (performance). */
+const CORTE_DEFAULT = '2026-05-10T00:00:00';
+
+/** Filtros que no son estados de Woo: los resuelve este route. */
+const FILTROS_PROPIOS = new Set(['any', 'canje', 'mayorista']);
 
 function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
@@ -18,15 +26,14 @@ function norm(s: string) {
 function mapOrder(o: any) {
   const meta = (o.meta_data as any[]) || [];
   const mv = (k: string) => meta.find((m: any) => m.key === k)?.value || '';
-  const tracking = String(mv('_tracking_number')).trim();
-  const andreani = String(mv('_order_andreani_numero_interno') || mv('_andreani_tracking_number')).trim();
-  const pedidoId = String(mv('_order_andreani_pedido_id')).trim();
-  // Empaquetado = se generó el rótulo en Andreani (pedidoId/numero interno), pero
-  // Andreani todavía no le asignó guía real — para eso hace falta pagar el envío en
-  // su portal. Enviado = ya tiene guía (_tracking_number), prueba real de que entró
-  // al circuito de despacho. Antes se los trataba como lo mismo ("dispatched").
-  const packaged = !!(pedidoId || andreani);
-  const shipped  = !!tracking;
+  // La clasificación rótulo/guía/digital sale de lib/orders-fulfillment, la misma
+  // que usan los contadores, la cola POD y el Founder Brief. Antes este archivo
+  // tenía su propia copia de las claves de Andreani: coincidían de casualidad y
+  // el día que alguien agregara una clave en un solo lado el badge iba a decir
+  // una cosa y la lista otra.
+  const stage = fulfillmentStage(o.meta_data, o.line_items);
+  const { tracking, rotulo, pedidoId } = andreaniRefs(o.meta_data);
+  const entrega = entregaDeOrden(o.shipping_lines, mv);
   return {
     id:            o.id,
     number:        o.number,
@@ -55,12 +62,25 @@ function mapOrder(o: any) {
     total:                parseFloat(o.total),
     shipping_total:       parseFloat(o.shipping_total),
     payment_method_title: o.payment_method_title,
+    /** Título del método de envío, o '' si el pedido no tiene envío (canje, retiro, carga manual). */
+    shippingMethod:       String((o.shipping_lines || [])[0]?.method_title || '').trim(),
+    // Cómo lo recibe el cliente, de la misma función que usa el detalle. En la
+    // fila alcanza con el tipo, si falta algo, y el nombre de la sucursal: un
+    // pedido a sucursal no se puede ver igual que uno a domicilio.
+    tipoEntrega:          entrega.tipo,
+    entregaIncompleta:    entrega.incompleto,
+    sucursal:             entrega.sucursal?.nombre || entrega.destino || '',
     tracking,
-    andreani,
-    packaged,
-    shipped,
+    andreani:      rotulo || pedidoId,
+    // Empaquetado = rótulo generado en Andreani, pero todavía sin guía real (para
+    // eso hace falta pagar el envío en su portal). Enviado = ya tiene guía, prueba
+    // de que entró al circuito. Tener guía NO prueba entrega: eso sólo lo sabe la
+    // API de tracking de Andreani.
+    packaged:      stage === 'con_rotulo' || stage === 'con_guia',
+    shipped:       stage === 'con_guia',
     // Sólo gift cards: el código sale por mail, no hay nada que empaquetar.
     digital:       esSoloDigital(o.line_items),
+    stage,
     notified:      String(mv('_tracking_notified')).trim(),
     order_key:     o.order_key,
     customer_note: o.customer_note || '',
@@ -76,7 +96,18 @@ export async function GET(req: NextRequest) {
   const page   = sp.get('page')   || '1';
   const status = sp.get('status') || 'any';
   const search = sp.get('search') || '';
-  const after  = sp.get('after')  || '2026-05-10T00:00:00';
+
+  // Un estado que WC no conoce vuelve 400 y antes salía como un 502 opaco que el
+  // panel dibujaba como "No hay pedidos" (le pasaba al filtro "Enviado", un
+  // estado que nunca estuvo registrado). Se corta acá con un mensaje claro.
+  if (!FILTROS_PROPIOS.has(status) && !esEstadoWcValido(status)) {
+    return NextResponse.json({ error: `El estado "${status}" no existe en WooCommerce` }, { status: 400 });
+  }
+
+  // El corte de fecha sólo vale para histórico. Un estado accionable es cola de
+  // trabajo: si un pedido viejo revive (cambio, reclamo, repago) tiene que seguir
+  // apareciendo, y nadie va a acordarse de mover la constante.
+  const after = sp.get('after') ?? (esEstadoAccionable(status) ? '' : CORTE_DEFAULT);
 
   // Un término numérico es un # de pedido (acá number = post_id): se trae directo
   // por id, al instante y sin el search de WC, que es lento y matchea cualquier
@@ -88,15 +119,56 @@ export async function GET(req: NextRequest) {
       headers: { Authorization: wcAuth() },
       next:    { revalidate: 0 },
     });
-    if (res.status === 404) return NextResponse.json({ orders: [], total: 0, totalPages: 1, page: 1 });
+    if (res.status === 404) return NextResponse.json({ orders: [], total: 0, totalPages: 1, page: 1, parcial: false });
     if (!res.ok) return NextResponse.json({ error: `WC ${res.status}` }, { status: 502 });
-    return NextResponse.json({ orders: [mapOrder(await res.json())], total: 1, totalPages: 1, page: 1 });
+    return NextResponse.json({ orders: [mapOrder(await res.json())], total: 1, totalPages: 1, page: 1, parcial: false });
   }
 
-  // 'canje' no es un estado de Woo: son los pedidos de $0 (regalos, canjes de
-  // creadores, cargas manuales sin cobro) en cualquier estado. Se consultan
-  // todos los estados, se filtra acá por total 0 y llega al cliente ya resuelto.
-  const esCanje = status === 'canje';
+  // Una búsqueda por texto también es global: no la limita el tab ni el corte de
+  // fecha. Antes se buscaba dentro del estado del tab y con `after` puesto, así
+  // que buscar a un cliente parado en "Por empaquetar" no encontraba su pedido ya
+  // empaquetado, y en "Todos" no encontraba nada anterior al 10/05.
+  //
+  // Una sola consulta a WC con su parámetro `search` (medido en producción:
+  // 1,0-1,9 s) en vez de bajar cientos de pedidos para filtrarlos acá.
+  if (q) {
+    const params = new URLSearchParams({
+      per_page: '100', page: '1', orderby: 'date', order: 'desc',
+      search: q, _cb: String(Date.now()),
+    });
+    const res = await fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
+      headers: { Authorization: wcAuth() },
+      next:    { revalidate: 0 },
+    });
+    if (!res.ok) return NextResponse.json({ error: `WC ${res.status}` }, { status: 502 });
+
+    const raw = await res.json() as any[];
+    const coincidenciasWc = parseInt(res.headers.get('X-WP-Total') || '0', 10);
+    const nq = norm(q);
+    // El search de WC matchea también dirección, teléfono, DNI e ítems; acá la
+    // lista se limita a nombre y email del cliente.
+    const orders = raw
+      .filter((o) => norm(`${o.billing?.first_name || ''} ${o.billing?.last_name || ''} ${o.billing?.email || ''}`).includes(nq))
+      .map(mapOrder);
+
+    return NextResponse.json({
+      orders, total: orders.length, totalPages: 1, page: 1,
+      // Con más de 100 coincidencias en WC quedaron pedidos que no se miraron:
+      // una lista recortada no puede verse igual que una lista completa.
+      parcial: coincidenciasWc > raw.length,
+      coincidenciasWc,
+      revisados: raw.length,
+    });
+  }
+
+  // 'canje' y 'mayorista' no son estados de Woo: son cortes transversales que se
+  // resuelven acá sobre todos los estados y llegan al cliente ya filtrados.
+  // 'canje' = pedidos de $0 (regalos, canjes de creadores, cargas manuales).
+  // 'mayorista' = meta _es_mayorista; antes se filtraba en el cliente sobre UNA
+  // página de 'any', así que un mayorista viejo simplemente no aparecía.
+  const esCanje     = status === 'canje';
+  const esMayorista = status === 'mayorista';
+  const transversal = esCanje || esMayorista;
 
   const fetchPage = (p: string) => {
     const params = new URLSearchParams({
@@ -104,10 +176,9 @@ export async function GET(req: NextRequest) {
       page:     p,
       orderby: 'date',
       order:   'desc',
-      after,
       _cb:     String(Date.now()), // evita el caché de LiteSpeed en el server de WP (devuelve meta_data vieja)
-      ...(status !== 'any' && !esCanje && { status }),
-      ...(search && { search }),
+      ...(after && { after }),
+      ...(!FILTROS_PROPIOS.has(status) && { status }),
     });
     return fetch(`${WP_URL}/wp-json/wc/v3/orders?${params}`, {
       headers: { Authorization: wcAuth() },
@@ -119,58 +190,61 @@ export async function GET(req: NextRequest) {
   // y recién filtran por rótulo/guía en el cliente. Si acá se pagina, los pedidos
   // sin empaquetar quedan dispersos entre páginas y los más viejos enterrados al
   // fondo (así se traspapelaron #3103, #3127 y #3261 durante semanas). Para
-  // 'processing' (y para 'canje', que filtra sobre todos los estados) se traen
-  // TODAS las páginas y se devuelve una lista única.
-  const paginado = status !== 'processing' && !esCanje;
+  // 'processing' y para los cortes transversales se traen TODAS las páginas.
+  const paginado = status !== 'processing' && !transversal;
 
   const res = await fetchPage(paginado ? page : '1');
 
   if (!res.ok) {
-    const txt = await res.text();
     return NextResponse.json({ error: `WC ${res.status}` }, { status: 502 });
   }
 
   let raw          = await res.json() as any[];
   const total      = parseInt(res.headers.get('X-WP-Total')      || '0');
   let   totalPages = parseInt(res.headers.get('X-WP-TotalPages') || '1');
+  // parcial = la lista que devolvemos no es todo lo que hay. Se declara: una
+  // lista recortada y una lista completa no pueden verse igual.
+  let parcial = false;
 
   if (!paginado && totalPages > 1) {
-    const MAX_PAGES = 15; // tope de seguridad: 1500 pedidos processing
+    const aTraer = Math.min(totalPages, MAX_PAGES);
+    parcial = totalPages > MAX_PAGES;
     try {
-      const resto = await Promise.all(
-        Array.from({ length: Math.min(totalPages, MAX_PAGES) - 1 }, (_, i) =>
-          fetchPage(String(i + 2)).then(r => {
-            if (!r.ok) throw new Error(`WC ${r.status}`);
-            return r.json() as Promise<any[]>;
-          })
-        )
+      // De a CONCURRENCIA páginas: pedirle las 12 páginas de 'any' de una sola
+      // vez hacía que WP cerrara la conexión (502 intermitente en el tab Canje).
+      const resto = await mapLimit(
+        Array.from({ length: aTraer - 1 }, (_, i) => String(i + 2)),
+        CONCURRENCIA,
+        (p) => fetchPage(p).then(r => {
+          if (!r.ok) throw new Error(`WC ${r.status}`);
+          return r.json() as Promise<any[]>;
+        }),
       );
       raw = raw.concat(...resto);
+      // Dedupe por id: si un pedido cambia de estado mientras paginamos, el
+      // offset se corre y puede repetirse una fila.
+      const porId = new Map<number, any>();
+      for (const o of raw) porId.set(Number(o.id), o);
+      raw = [...porId.values()];
+      if (!parcial && raw.length < total) parcial = true;
       totalPages = 1;
     } catch {
-      return NextResponse.json({ error: 'WC error al traer todas las páginas de processing' }, { status: 502 });
+      return NextResponse.json({ error: 'WC error al traer todas las páginas' }, { status: 502 });
     }
   }
 
-  if (esCanje) raw = raw.filter((o) => !(parseFloat(o.total) > 0));
-
-  // El search de WC matchea también dirección, teléfono, DNI e ítems; acá la
-  // búsqueda por texto se limita a nombre y email del cliente.
-  if (q) {
-    const nq = norm(q);
-    raw = raw.filter((o) =>
-      norm(`${o.billing?.first_name || ''} ${o.billing?.last_name || ''} ${o.billing?.email || ''}`).includes(nq)
-    );
-  }
+  if (esCanje)     raw = raw.filter((o) => !(parseFloat(o.total) > 0));
+  if (esMayorista) raw = raw.filter((o) => (o.meta_data || []).some((m: any) => m.key === '_es_mayorista' && m.value === 'true'));
 
   const orders = raw.map(mapOrder);
 
   return NextResponse.json({
     orders,
-    // Con canje o búsqueda por texto el total de WC incluye lo descartado; si
-    // entró todo en una página, el conteo real es lo que queda tras filtrar.
-    total: (esCanje || q) && totalPages === 1 ? orders.length : total,
+    // Con un corte transversal el total de WC incluye lo descartado; si entró
+    // todo en una página, el conteo real es lo que queda.
+    total: transversal && totalPages === 1 ? orders.length : total,
     totalPages,
     page: paginado ? parseInt(page) : 1,
+    parcial,
   });
 }

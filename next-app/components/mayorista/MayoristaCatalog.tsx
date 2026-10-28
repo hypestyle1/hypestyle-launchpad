@@ -9,6 +9,8 @@ import MayoristaDropPopup from './MayoristaDropPopup';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
 import { filterByPromo, sortPromoFirst, type CampaignBanner, type PromoFilter } from '@/lib/mayorista-campaign-view';
 import { sortCatalog, isNewProduct, CATALOG_SORT_LABELS, type CatalogSort } from '@/lib/mayorista-catalog-sort';
+import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
+import MayoristaDivisaNota from './MayoristaDivisaNota';
 
 const chip = (active: boolean) =>
   `min-h-[36px] px-3 py-1.5 text-[11px] uppercase tracking-wide rounded-full border transition-colors ${
@@ -20,6 +22,8 @@ const chip = (active: boolean) =>
 const PILLARS_SEEN_KEY = 'hy_mayorista_pilares_vistos';
 
 export default function MayoristaCatalog({ products, banner, preview, drop }: { products: MayoristaProduct[]; banner: CampaignBanner | null; preview?: boolean; drop?: MayoristaDropProps | null }) {
+  // Consignación: la bajada no puede decir "50% del PVP" (lib/mayorista-consignacion.ts).
+  const { consignacion } = useMayoristaPerfil();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todos');
   const [promo, setPromo] = useState<PromoFilter>('all');
@@ -83,7 +87,7 @@ export default function MayoristaCatalog({ products, banner, preview, drop }: { 
         <MayoristaHowItWorks />
       ) : (
         <button type="button" onClick={() => setPillarsOpen(true)} className="mb-6 text-[11px] uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
-          Cómo funciona Hype Mayoristas
+          {consignacion ? 'Cómo funciona la consignación' : 'Cómo funciona Hype Mayoristas'}
         </button>
       )}
 
@@ -91,9 +95,10 @@ export default function MayoristaCatalog({ products, banner, preview, drop }: { 
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
           <h2 className="text-lg font-bold tracking-tight">{onlyDrop && drop ? `${drop.name}${drop.subtitle ? ` ${drop.subtitle}` : ''}` : promoActive && banner ? banner.name : onlyNew ? 'Novedades' : 'Catálogo'}</h2>
           <p className="text-[12px] text-muted-foreground">
-            {onlyDrop && drop ? `${filtered.length} modelos nuevos · ${drop.beforePublic ? `antes que el público (sale el ${drop.publicOpenLabel})` : 'recién salidos'}` : promoActive && banner ? `${filtered.length} productos en ${banner.badge.toLowerCase()} · precio mayorista con el extra ya aplicado` : '50% del PVP. Pedís hoy, lo preparamos esta semana.'}
+            {onlyDrop && drop ? `${filtered.length} modelos nuevos · ${drop.beforePublic ? `antes que el público (sale el ${drop.publicOpenLabel})` : 'recién salidos'}` : promoActive && banner ? `${filtered.length} productos en ${banner.badge.toLowerCase()} · precio mayorista con el extra ya aplicado` : consignacion ? `Precios de lista. De cada venta te quedás con el ${consignacion.pct}% y nos liquidás el resto.` : '50% del PVP. Pedís hoy, lo preparamos esta semana.'}
           </p>
         </div>
+        <MayoristaDivisaNota className="mb-3" />
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
           <input

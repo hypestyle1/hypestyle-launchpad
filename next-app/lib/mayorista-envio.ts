@@ -7,7 +7,7 @@
 // sigue escribiendo `_via_cargo_sucursal`, y las órdenes viejas que solo tienen
 // esa meta se leen como Via Cargo.
 
-export type MetodoEnvio = 'via_cargo' | 'andreani_domicilio' | 'andreani_sucursal' | 'expreso';
+export type MetodoEnvio = 'via_cargo' | 'andreani_domicilio' | 'andreani_sucursal' | 'expreso' | 'internacional';
 
 export interface MetodoEnvioDef {
   id: MetodoEnvio;
@@ -23,6 +23,10 @@ export const METODOS_ENVIO: MetodoEnvioDef[] = [
   { id: 'andreani_domicilio', label: 'Andreani — a domicilio', destinoLabel: null, destinoRequerido: false },
   { id: 'andreani_sucursal', label: 'Andreani — a sucursal', destinoLabel: 'Sucursal de Andreani', destinoPlaceholder: 'Ej: Andreani Olavarría centro', destinoRequerido: true },
   { id: 'expreso', label: 'Expreso a coordinar', destinoLabel: 'Expreso que usás', destinoPlaceholder: 'Ej: TAS (si no sabés, lo coordinamos)', destinoRequerido: false },
+  // Afuera de Argentina el courier lo pone el comprador: nosotros preparamos y
+  // entregamos donde nos diga. Sin esta opción había que elegir un expreso
+  // argentino que no lleva la mercadería a destino.
+  { id: 'internacional', label: 'Envío internacional — lo coordina el comprador', destinoLabel: 'Courier o dirección de retiro', destinoPlaceholder: 'Ej: DHL con cuenta propia, o quién lo retira en Buenos Aires', destinoRequerido: false },
 ];
 
 export const METODO_DEFAULT: MetodoEnvio = 'via_cargo';

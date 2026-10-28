@@ -4,6 +4,7 @@ import { resolveMinOrder, customerMinOrderOverride, MIN_ORDER_UNAVAILABLE_MESSAG
 import { parseCredit } from '@/lib/mayorista-credit';
 import { parseBloqueo, mensajeBloqueo, parseExclusividad } from '@/lib/mayorista-exclusividad';
 import { pagoInfoFromEnv } from '@/lib/mayorista-pago';
+import { parseConsignacion } from '@/lib/mayorista-consignacion';
 
 const WP_URL = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY = process.env.WC_CONSUMER_KEY || '';
@@ -27,8 +28,11 @@ export async function GET(req: NextRequest) {
   // Mínimo base de la cuenta (override o general). El de campaña lo agrega
   // /api/mayorista/disponibilidad, que conoce las líneas del carrito. Si el
   // general no se pudo leer viene null y el carrito no deja continuar.
-  const minOrder = await resolveMinOrder({ override: customerMinOrderOverride(customer.meta_data) });
   const meta = (customer.meta_data ?? []) as { key: string; value: string }[];
+  // Consignación: el portal muestra precios de lista con la comisión del
+  // local, y no corre el pedido mínimo porque esta cuenta no compra.
+  const consignacion = parseConsignacion(meta);
+  const minOrder = consignacion ? 0 : await resolveMinOrder({ override: customerMinOrderOverride(customer.meta_data) });
   const metaVal = (key: string) => meta.find((m) => m.key === key)?.value ?? '';
 
   return NextResponse.json({
@@ -37,6 +41,8 @@ export async function GET(req: NextRequest) {
     shipping: customer.shipping,
     minOrder,
     ...(minOrder == null ? { minOrderError: MIN_ORDER_UNAVAILABLE_MESSAGE } : {}),
+    // null = cuenta de compra normal (el 50% de siempre).
+    consignacion,
     dni: metaVal('dni'),
     viaCargoSucursal: metaVal('via_cargo_sucursal'),
     // Último método de envío elegido. Las cuentas viejas no lo tienen: el

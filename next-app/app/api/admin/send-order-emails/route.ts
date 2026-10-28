@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminRequest } from '@/lib/admin-auth';
+import { isAdminOrMachineRequest } from '@/lib/admin-auth';
 
 const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY    = (process.env.WC_CONSUMER_KEY    || '').trim();
@@ -379,7 +379,10 @@ export async function GET(req: NextRequest) {
   // en el bundle del cliente —, así que cualquiera podía pedir el reenvío de la
   // confirmación de CUALQUIER pedido a su propio mail (&to=) y quedarse con los
   // datos completos del cliente: nombre, dirección, items y total.
-  if (!isAdminRequest(req)) {
+  // Con la clave del panel (una persona) o con la de WordPress (el mu-plugin
+  // avisando un seguimiento recién cargado). Antes sólo valía la del panel y la
+  // llamada de WP se iba en 401 sin dejar rastro: ver isAdminOrMachineRequest.
+  if (!isAdminOrMachineRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

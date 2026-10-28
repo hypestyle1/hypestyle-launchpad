@@ -1,6 +1,7 @@
 'use client';
 
-import { BRAND_HERO, NEXT_DROP_TEXT } from '@/lib/mayorista-copy';
+import { BRAND_HERO, NEXT_DROP_TEXT, consignacionHero } from '@/lib/mayorista-copy';
+import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
 import { endsLabel, type CampaignBanner } from '@/lib/mayorista-campaign-view';
 
 // Hero del portal mayorista. Con campaña vigente: ventana privada para
@@ -16,14 +17,19 @@ export default function MayoristaCampaignHero({ banner, onCta, onCatalog, previe
   onCatalog: () => void;
   preview?: boolean;
 }) {
+  // En consignación el hero de marca no puede prometer "50% del PVP": ahí el
+  // trato es otro (lib/mayorista-consignacion.ts).
+  const { consignacion } = useMayoristaPerfil();
+  const hero = consignacion ? consignacionHero(consignacion.pct) : BRAND_HERO;
+
   if (!banner) {
     return (
       <section className="rounded-[16px] border border-border bg-bg-alt/40 px-6 sm:px-10 py-8 sm:py-10 mb-8">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-foreground/50">{BRAND_HERO.eyebrow}</p>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-2">{BRAND_HERO.headline}</h1>
-        <p className="text-[13px] text-muted-foreground mt-2 max-w-xl">{BRAND_HERO.text}</p>
+        <p className="text-[10px] uppercase tracking-[0.25em] text-foreground/50">{hero.eyebrow}</p>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mt-2">{hero.headline}</h1>
+        <p className="text-[13px] text-muted-foreground mt-2 max-w-xl">{hero.text}</p>
         <div className="flex flex-wrap items-center gap-4 mt-5">
-          <button onClick={onCatalog} className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide rounded-full bg-bg-dark text-primary-foreground hover:bg-bg-dark/85 transition-colors">{BRAND_HERO.cta}</button>
+          <button onClick={onCatalog} className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide rounded-full bg-bg-dark text-primary-foreground hover:bg-bg-dark/85 transition-colors">{hero.cta}</button>
           {NEXT_DROP_TEXT && <span className={`text-[11px] uppercase tracking-[0.18em] ${RED}`}>{NEXT_DROP_TEXT}</span>}
         </div>
       </section>

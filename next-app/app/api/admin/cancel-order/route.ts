@@ -14,12 +14,23 @@ const wcGet = (path: string) => {
   return fetch(`${WP_URL}/wp-json/wc/v3/${path}${sep}_cb=${Date.now()}`, { headers: { Authorization: wcAuth() }, cache: 'no-store' }).then(r => r.json());
 };
 
-const wcPut = (path: string, body: any) =>
-  fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
+// Devuelve también el código HTTP: antes sólo se parseaba el cuerpo, así que un
+// 500 o un 401 de WP pasaban por éxito y el pedido quedaba sin cancelar (o el
+// stock sin devolver) sin que nadie se enterara.
+const wcPut = async (path: string, body: any): Promise<{ ok: boolean; status: number; body: any }> => {
+  const r = await fetch(`${WP_URL}/wp-json/wc/v3/${path}`, {
     method: 'PUT',
     headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  }).then(r => r.json());
+  });
+  return { ok: r.ok, status: r.status, body: await r.json().catch(() => null) };
+};
+
+/** Relee el estado guardado del pedido. null = no se pudo leer (distinto de "falló"). */
+async function leerEstado(orderId: number | string): Promise<string | null> {
+  const o = await wcGet(`orders/${orderId}?_fields=id,status`).catch(() => null);
+  return typeof o?.status === 'string' ? o.status : null;
+}
 
 // El combo CAMO FULL SET (938) consume físicamente 1 Zip Hoodie Camo (916) + 1 SweatPant Camo (901)
 // del mismo talle. Woo no vincula bundles, así que hypestyle-api.php lo descuenta a mano al crear
@@ -45,7 +56,10 @@ async function restoreSingle(pid: number, vid: number | null, qty: number, name:
   }
   const newQty = Number(prod.stock_quantity) + Number(qty || 0);
   const upd = await wcPut(target, { stock_quantity: newQty });
-  return { name, from: prod.stock_quantity, to: upd?.stock_quantity ?? newQty };
+  // Si el PUT no entró, se dice. Antes caía a `newQty` y el informe de la
+  // cancelación afirmaba haber devuelto unidades que seguían faltando.
+  if (!upd.ok) return { name, from: prod.stock_quantity, error: `no se pudo devolver al stock (WC ${upd.status})` };
+  return { name, from: prod.stock_quantity, to: upd.body?.stock_quantity ?? newQty };
 }
 
 // Devuelve las unidades de cada talle (variación) o producto simple al stock; si es el combo CAMO
@@ -88,10 +102,24 @@ export async function POST(req: NextRequest) {
     restored = (await Promise.all((order.line_items || []).map(restoreItem))).flat();
   }
 
-  // Cancelar
+  // Cancelar, y confirmar con una lectura posterior que quedó cancelado. El
+  // cuerpo del PUT no es prueba: WooCommerce puede devolver 200 y dejar otro
+  // estado (set_status degrada en silencio), y los plugins colgados de
+  // woocommerce_order_status_* pueden volver a moverlo.
   const cancelled = await wcPut(`orders/${orderId}`, { status: 'cancelled' });
-  if (cancelled?.code) {
-    return NextResponse.json({ error: cancelled.message || 'No se pudo cancelar' }, { status: 502 });
+  if (!cancelled.ok || cancelled.body?.code) {
+    return NextResponse.json(
+      { error: cancelled.body?.message || `No se pudo cancelar (WC ${cancelled.status})`, restock: restored },
+      { status: 502 },
+    );
+  }
+
+  const real = await leerEstado(orderId);
+  if (real !== null && real !== 'cancelled') {
+    return NextResponse.json(
+      { error: `WooCommerce no guardó la cancelación: el pedido #${order.number} quedó en "${real}".`, status: real, confirmado: false, restock: restored },
+      { status: 409 },
+    );
   }
 
   // Mail de cancelación (Brevo) vía el endpoint existente
@@ -111,6 +139,9 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     status: 'cancelled',
+    // false = el PUT entró pero no pudimos releer el pedido para confirmarlo.
+    confirmado: real === 'cancelled',
+    ...(real === null && { aviso: `No pudimos releer el pedido #${order.number} para confirmar la cancelación. Volvé a cargar la lista.` }),
     restock: restock ? (wcWillRestore ? 'restaurado por WooCommerce' : restored) : 'no',
     notify: notify ? (mail?.ok ? 'enviado' : mail) : 'no',
   });

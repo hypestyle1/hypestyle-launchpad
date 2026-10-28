@@ -38,7 +38,7 @@ async function precioGolActual(regular: number | null): Promise<number | null> {
 
 export type PedidoCalculado = {
   lineas: LineaPrecio[];
-  descuento: { monto: number; etiqueta: string | undefined };
+  descuento: ReturnType<typeof descuentos>;
   envio: ResultadoEnvio;
   /** Para el log: diferencias entre lo que mandó el navegador y lo que se cobra. */
   diferencias: string[];

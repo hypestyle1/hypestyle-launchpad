@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMayoristaCart, forgetMayoristaUser } from '@/context/MayoristaCartContext';
 import MayoristaMinBar from './MayoristaMinBar';
+import MayoristaDivisaSelector from './MayoristaDivisaSelector';
+import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
 
 const glassBar = {
   background: 'rgba(255, 255, 255, 0.82)',
@@ -17,20 +18,9 @@ const glassBar = {
 export default function MayoristaHeader() {
   const router = useRouter();
   const { count, total, hydrated, clear } = useMayoristaCart();
-  const [name, setName] = useState('');
-  const [minOrder, setMinOrder] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch('/api/mayorista/perfil')
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (typeof data?.minOrder === 'number') setMinOrder(data.minOrder);
-        const b = data?.billing;
-        if (!b) return;
-        setName(b.company || `${b.first_name} ${b.last_name}`.trim());
-      })
-      .catch(() => {});
-  }, []);
+  // Nombre del local y pedido mínimo salen del perfil que ya cargó el
+  // layout (context/MayoristaPerfilContext): una sola consulta para todo el portal.
+  const { name, minOrder, consignacion } = useMayoristaPerfil();
 
   async function logout() {
     await fetch('/api/mayorista/logout', { method: 'POST' });
@@ -51,10 +41,12 @@ export default function MayoristaHeader() {
       <div className="flex items-center justify-between px-5 sm:px-8 py-2 md:py-4">
         <Link href="/mayoristas" className="flex items-center gap-2.5 min-h-[44px]">
           <img src="/logo-hypestyle-2026.png" alt="Hypestyle" className="h-5 w-auto" />
-          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/40 hidden sm:inline">Mayoristas</span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-foreground/40 hidden sm:inline">{consignacion ? 'Consignación' : 'Mayoristas'}</span>
         </Link>
         <nav className="flex items-center gap-3 md:gap-5 text-[11px] md:text-[12px] uppercase tracking-wide">
           {hydrated && count > 0 && <MayoristaMinBar total={total} minOrder={minOrder} compact />}
+          {/* En mobile no entra en la fila de links: va en la franja de abajo. */}
+          <MayoristaDivisaSelector className="hidden md:inline-flex" />
           {name && (
             <Link href="/mayoristas/cuenta" className="text-foreground/50 normal-case tracking-normal hidden sm:inline hover:text-foreground transition-colors">
               {name}
@@ -82,6 +74,10 @@ export default function MayoristaHeader() {
         </nav>
       </div>
       {hydrated && count > 0 && <MayoristaMinBar total={total} minOrder={minOrder} strip />}
+      <div className="md:hidden flex items-center justify-end gap-2 px-5 py-1 border-t border-border/60 bg-background/80">
+        <span className="text-[10px] uppercase tracking-wide text-foreground/45">Precios en</span>
+        <MayoristaDivisaSelector />
+      </div>
     </header>
   );
 }

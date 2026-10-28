@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { X } from 'lucide-react';
 import type { MayoristaDropProps } from './MayoristaDropBanner';
 import '@/components/private-access/private-access.css';
+import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
 
 const STORAGE_PREFIX = 'hype_may_drop_popup:';
 
@@ -23,6 +24,7 @@ function markSeen(key: string) {
  * Private Access.
  */
 export default function MayoristaDropPopup({ drop, onCta }: { drop: MayoristaDropProps; onCta: () => void }) {
+  const { consignacion } = useMayoristaPerfil();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -74,7 +76,7 @@ export default function MayoristaDropPopup({ drop, onCta }: { drop: MayoristaDro
                 : 'Recién salida. Pedila ahora y llegá con la percha armada.'}
             </p>
             <p className="text-[13px] leading-relaxed text-white/50 mt-2">
-              {drop.count} modelos a tu precio de siempre: 50% del PVP. Tiradas cortas: los que piden primero se aseguran los talles.
+              {drop.count} modelos {consignacion ? `a precio de lista, con tu ${consignacion.pct}% de siempre` : 'a tu precio de siempre: 50% del PVP'}. Tiradas cortas: los que piden primero se aseguran los talles.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-2.5 mt-7">

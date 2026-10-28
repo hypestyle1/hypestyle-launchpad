@@ -98,6 +98,12 @@ export function lineasFisicas(lineas: LineaPrecio[]): LineaPrecio[] {
  * del 3-PACK en el catálogo: el pack de 4 se cobra al precio congelado del
  * evento, que vive en lib/promo-pack-regular (PACK_REGULAR_X4_PRECIO), y el
  * cálculo se queda con el más conveniente para el cliente.
+ *
+ * Los cuatro viajan en UNA sola fee line, con la etiqueta concatenada y la
+ * suma como total, así que del pedido no se puede separar cuánto es de cada
+ * uno. Por eso se devuelve además `transferencia` aparte: el regalo por compra
+ * mira el umbral ANTES del 10% (bug D12) y necesita saber la porción, que la
+ * ruta que crea el pedido guarda en el meta `_hs_transfer_discount`.
  */
 export function descuentos(
   lineas: LineaPrecio[],
@@ -109,7 +115,7 @@ export function descuentos(
     precioPackRegular?: number | null;
     unidadesPackRegular?: PackRegularUnidades;
   },
-): { monto: number; etiqueta: string | undefined } {
+): { monto: number; etiqueta: string | undefined; transferencia: number } {
   const fisicas = lineasFisicas(lineas);
   const unidadesPack = opts.unidadesPackRegular ?? PACK_REGULAR_UNIDADES;
   let campeon = 0;
@@ -129,7 +135,7 @@ export function descuentos(
     packRegular > 0 ? packRegularEtiqueta(unidadesPack) : '',
     transferencia > 0 ? 'Transferencia (10%)' : '',
   ].filter(Boolean).join(' + ') || undefined;
-  return { monto: campeon + tresPorDos + packRegular + transferencia, etiqueta };
+  return { monto: campeon + tresPorDos + packRegular + transferencia, etiqueta, transferencia };
 }
 
 export type ResultadoEnvio =

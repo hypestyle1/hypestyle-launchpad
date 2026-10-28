@@ -39,6 +39,37 @@ export const WHOLESALE_HOW_IT_WORKS = [
   { title: 'Material para tus redes', text: 'Fotos de producto y de campaña listas para publicar. Las pedís por WhatsApp.' },
 ] as const;
 
+/**
+ * Lo mismo contado para una cuenta en consignación: ahí no se compra al 50%,
+ * se exhibe a precio de lista y se liquida lo vendido menos la comisión del
+ * local. Van como textos aparte y no como una variante suelta en cada
+ * componente, para que no quede media pantalla hablando de compra y media de
+ * consignación. Ver lib/mayorista-consignacion.ts.
+ */
+export const consignacionHowItWorks = (pct: number) => [
+  { title: 'A consignación', text: 'No pagás la mercadería por adelantado. Liquidás lo que vendés y lo que no se vendió vuelve.' },
+  { title: `Te quedás con el ${pct}%`, text: `De cada venta a precio de lista te quedás con el ${pct}% y nos liquidás el resto.` },
+  { title: 'Precios de lista', text: 'Lo que ves es el precio de venta al público. Ese es el que entra al reparto.' },
+  { title: 'Stock en vivo', text: 'Lo que ves es lo que hay en depósito, por talle. Sin sorpresas al confirmar.' },
+  { title: 'Surtido libre', text: 'Talles y modelos sueltos, sin mínimo por modelo ni mínimo de pedido.' },
+  { title: 'Material para tus redes', text: 'Fotos de producto y de campaña listas para publicar. Las pedís por WhatsApp.' },
+] as const;
+
+export const consignacionHero = (pct: number) => ({
+  eyebrow: 'HYPE CONSIGNACIÓN',
+  headline: `Precios de lista. Te quedás con el ${pct}%.`,
+  text: 'Sin pagar nada por adelantado: exhibís, vendés, liquidás lo vendido y lo que no se vendió vuelve.',
+  cta: 'Ver catálogo',
+});
+
+export const consignacionFooterConditions = (pct: number) => [
+  'Mercadería en consignación, sin pago por adelantado',
+  `Comisión del local: ${pct}% del precio de lista`,
+  'Surtido libre, sin mínimo de pedido',
+  'Liquidación de lo vendido a coordinar',
+  'Preparación en la semana',
+];
+
 export const BRAND_HERO = {
   eyebrow: 'HYPE MAYORISTAS',
   headline: 'Tu precio: 50% del PVP.',

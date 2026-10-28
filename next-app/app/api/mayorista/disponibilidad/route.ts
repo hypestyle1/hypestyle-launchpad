@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { wcGet, resolveProducts, findUnavailable, findVariation, type StockLine, type ResolvedProduct } from '@/lib/mayorista-stock';
-import { priceLines } from '@/lib/mayorista-pricing';
+import { priceLines, LISTA_FACTOR, WHOLESALE_FACTOR } from '@/lib/mayorista-pricing';
+import { parseConsignacion } from '@/lib/mayorista-consignacion';
 import { applyCampaign, appliedCampaignMinOrder } from '@/lib/wholesale-campaigns';
 import { readCampaigns } from '@/lib/wholesale-campaigns-store';
 import { mayoristaDropTag } from '@/lib/mayorista-drop-server';
@@ -62,13 +63,18 @@ export async function POST(req: NextRequest) {
     // Acá una falla leyendo campañas no frena nada: es un aviso previo. El
     // pedido sí exige leerlas.
     const campaigns = await readCampaigns().catch((e) => { console.error('[mayorista/disponibilidad] campañas:', e); return []; });
-    const priced = applyCampaign(priceLines(lines, resolved), campaigns);
     // Si el cliente no se pudo leer, el override queda en null y rige el
     // general: el pedido vuelve a leer el override igual.
     const customer = await wcGet(`customers/${customerId}?_fields=meta_data`).catch((e) => { console.error('[mayorista/disponibilidad] cliente:', e); return null; });
-    const minOrder = await resolveMinOrder({
+    // Cuenta en consignación: precio de lista, sin campañas (el descuento
+    // extra se da sobre el mayorista, que acá no existe) y sin mínimo de
+    // pedido, porque no está comprando. Ver lib/mayorista-consignacion.ts.
+    const consignacion = parseConsignacion(customer?.meta_data);
+    const vigentes = consignacion ? [] : campaigns;
+    const priced = applyCampaign(priceLines(lines, resolved, consignacion ? LISTA_FACTOR : WHOLESALE_FACTOR), vigentes);
+    const minOrder = consignacion ? 0 : await resolveMinOrder({
       override: customerMinOrderOverride(customer?.meta_data),
-      campaignMin: appliedCampaignMinOrder(priced, campaigns),
+      campaignMin: appliedCampaignMinOrder(priced, vigentes),
     });
     return NextResponse.json({
       minOrder,

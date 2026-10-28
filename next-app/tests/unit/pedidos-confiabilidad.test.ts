@@ -1,0 +1,601 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { NextRequest } from 'next/server';
+
+/**
+ * Candados de confiabilidad de /admin/pedidos (auditoría 22/10 + verificación
+ * 24/10). Lo que estos tests impiden que vuelva:
+ *
+ *  - un error de WooCommerce presentado como "no hay pedidos";
+ *  - contadores en cero que en realidad son "no se pudo consultar";
+ *  - un estado inventado ('enviado') aceptado por el panel y rechazado por WC;
+ *  - la clasificación rótulo/guía duplicada en dos lugares y divergiendo;
+ *  - el corte de fecha escondiendo un pedido accionable viejo;
+ *  - una lista recortada por el tope de páginas haciéndose pasar por completa.
+ */
+
+vi.mock('@/lib/admin-auth', () => ({
+  adminSecretMatches: (k: string | null) => k === 'clave-ok',
+  isAdminRequest: (r: { headers: { get: (k: string) => string | null } }) => r.headers.get('x-admin-key') === 'clave-ok',
+  ADMIN_SECRET: 'clave-ok',
+  adminHeaders: () => ({ 'x-admin-key': 'clave-ok' }),
+}));
+
+import { GET as getOrders } from '@/app/api/admin/orders/route';
+import { GET as getCounts } from '@/app/api/admin/orders/counts/route';
+import { POST as setStatus } from '@/app/api/admin/set-status/route';
+import { POST as cancelOrder } from '@/app/api/admin/cancel-order/route';
+import {
+  normalizeProcessingOrder, splitProcessing, anomaliasDe,
+  fulfillmentStage, andreaniRefs, metaValue, MAX_PAGES,
+} from '@/lib/orders-fulfillment';
+
+const meta = (obj: Record<string, unknown>) => Object.entries(obj).map(([key, value]) => ({ key, value }));
+
+/** Pedido crudo de WC con lo mínimo que mira el panel. */
+function wcOrder(over: Partial<Record<string, any>> = {}) {
+  return {
+    id: 4044, number: '4044', date_created: '2026-10-22T14:08:00', date_created_gmt: '2026-10-22T17:08:00',
+    status: 'processing', total: '112757.00', shipping_total: '0',
+    billing: { first_name: 'Camila', last_name: 'Torres', email: 'camila@test.com', phone: '1155550000' },
+    line_items: [{ name: 'Regular Tee', quantity: 1, product_id: 2950, meta_data: [] }],
+    shipping_lines: [{ method_title: 'Andreani (estándar)' }],
+    payment_method_title: 'MercadoPago', meta_data: [], order_key: 'wc_x', customer_note: '',
+    ...over,
+  };
+}
+
+type Llamada = { url: string; method: string; body?: any };
+let llamadas: Llamada[] = [];
+/** Cola de respuestas por patrón de URL. */
+let responder: (url: string, init?: any) => any;
+
+function wcRes(data: any, { ok = true, status = 200, total = Array.isArray(data) ? data.length : 1, pages = 1 } = {}) {
+  return {
+    ok, status,
+    headers: new Headers({ 'X-WP-Total': String(total), 'X-WP-TotalPages': String(pages) }),
+    json: async () => data,
+    text: async () => JSON.stringify(data),
+  };
+}
+
+beforeEach(() => {
+  llamadas = [];
+  vi.stubGlobal('fetch', vi.fn(async (url: any, init?: any) => {
+    llamadas.push({ url: String(url), method: init?.method || 'GET', body: init?.body ? JSON.parse(init.body) : undefined });
+    return responder(String(url), init);
+  }));
+});
+afterEach(() => { vi.unstubAllGlobals(); });
+
+const reqOrders = (qs: string, key = 'clave-ok') =>
+  new NextRequest(`http://localhost/api/admin/orders?${qs}`, { headers: { 'x-admin-key': key } });
+const reqCounts = (key = 'clave-ok') =>
+  new NextRequest('http://localhost/api/admin/orders/counts', { headers: { 'x-admin-key': key } });
+
+/* ─────────────── 1. un error nunca es una lista vacía ─────────────── */
+
+describe('un fallo de WooCommerce no se puede ver como "no hay pedidos"', () => {
+  it('502 de WC → la ruta devuelve error, no orders: []', async () => {
+    responder = () => wcRes({ message: 'boom' }, { ok: false, status: 502 });
+    const res = await getOrders(reqOrders('status=processing&page=1'));
+    const body = await res.json();
+    expect(res.status).toBe(502);
+    expect(body.error).toBeTruthy();
+    expect(body.orders).toBeUndefined(); // nada que el cliente pueda confundir con "vacío"
+  });
+
+  it('una página intermedia que falla aborta: no devuelve media lista como completa', async () => {
+    responder = (url) => url.includes('page=3')
+      ? wcRes({}, { ok: false, status: 500 })
+      : wcRes([wcOrder()], { total: 250, pages: 3 });
+    const res = await getOrders(reqOrders('status=processing&page=1'));
+    expect(res.status).toBe(502);
+    expect((await res.json()).orders).toBeUndefined();
+  });
+
+  it('un estado que WC no conoce se rechaza con 400 y mensaje, sin pegarle a WC', async () => {
+    responder = () => wcRes([]);
+    const res = await getOrders(reqOrders('status=enviado&page=1'));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/no existe/i);
+    expect(llamadas).toHaveLength(0);
+  });
+
+  it('403 sin clave', async () => {
+    responder = () => wcRes([]);
+    expect((await getOrders(reqOrders('status=processing', 'mala'))).status).toBe(403);
+  });
+});
+
+describe('contadores: cero y "no se pudo consultar" son distintos', () => {
+  it('si WC falla, los contadores vienen en null y con el error, no en cero', async () => {
+    responder = () => wcRes({}, { ok: false, status: 502 });
+    const body = await (await getCounts(reqCounts())).json();
+    expect(body.ok).toBe(false);
+    expect(body.errores.length).toBeGreaterThan(0);
+    expect(body.porEmpaquetar).toBeNull();
+    expect(body.pendientes).toBeNull();
+    expect(body.completados).toBeNull();
+  });
+
+  it('un estado que vuelve mal no arrastra a los demás (allSettled)', async () => {
+    responder = (url) => url.includes('status=pending')
+      ? wcRes({}, { ok: false, status: 500 })
+      : wcRes([], { total: 7 });
+    const body = await (await getCounts(reqCounts())).json();
+    expect(body.pendientes).toBeNull();
+    expect(body.errores.join(' ')).toMatch(/pendientes/);
+    expect(body.fallidos).toBe(7); // los que sí respondieron conservan su número
+    expect(body.ok).toBe(false);
+  });
+
+  it('cero de verdad es cero, con ok: true', async () => {
+    responder = () => wcRes([], { total: 0 });
+    const body = await (await getCounts(reqCounts())).json();
+    expect(body.ok).toBe(true);
+    expect(body.errores).toEqual([]);
+    expect(body.porEmpaquetar).toBe(0);
+    expect(body.pendientes).toBe(0);
+  });
+
+  it('X-WP-Total ausente es un error, no un cero', async () => {
+    responder = (url) => url.includes('status=processing')
+      ? wcRes([])
+      : { ok: true, status: 200, headers: new Headers(), json: async () => [], text: async () => '[]' };
+    const body = await (await getCounts(reqCounts())).json();
+    expect(body.ok).toBe(false);
+    expect(body.errores.join(' ')).toMatch(/X-WP-Total/);
+  });
+
+  it('on-hold y failed tienen contador propio (antes no existían en ningún lado)', async () => {
+    responder = () => wcRes([], { total: 3 });
+    const body = await (await getCounts(reqCounts())).json();
+    expect(body.enEspera).toBe(3);
+    expect(body.fallidos).toBe(3);
+    expect(body).not.toHaveProperty('despachados'); // contaba un estado inexistente: siempre 0
+  });
+});
+
+/* ─────────────── 2. el estado 'enviado' no se puede escribir ─────────────── */
+
+describe("set-status rechaza 'enviado' antes de llegar a WooCommerce", () => {
+  const req = (body: unknown) => new NextRequest('http://localhost/api/admin/set-status', {
+    method: 'POST', headers: { 'x-admin-key': 'clave-ok', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  it('400 con mensaje claro y ni un PUT a WC', async () => {
+    responder = () => wcRes({});
+    const res = await setStatus(req({ orderId: 4044, status: 'enviado' }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/no existe en WooCommerce/);
+    expect(llamadas).toHaveLength(0);
+  });
+
+  it('un estado real sí llega a WC', async () => {
+    responder = () => wcRes({ status: 'completed' });
+    const res = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    expect(res.status).toBe(200);
+    expect(llamadas[0].method).toBe('PUT');
+    expect(llamadas[0].body).toEqual({ status: 'completed' });
+  });
+});
+
+/* ─────────────── 3. una sola clasificación ─────────────── */
+
+describe('paridad contadores ↔ lista (la clasificación vive en un solo lugar)', () => {
+  const fixture = [
+    wcOrder({ id: 1, number: '1', meta_data: [] }),                                                  // sin rótulo
+    wcOrder({ id: 2, number: '2', meta_data: [] }),                                                  // sin rótulo
+    wcOrder({ id: 3, number: '3', meta_data: meta({ _order_andreani_pedido_id: 'abc' }) }),           // rótulo
+    wcOrder({ id: 4, number: '4', meta_data: meta({ _tracking_number: '36000312345' }) }),           // guía
+    wcOrder({ id: 5, number: '5', meta_data: meta({ _order_andreani_numero_interno: '#5-x', _tracking_number: '36000399' }) }), // guía gana
+    wcOrder({ id: 6, number: '6', line_items: [{ name: 'Gift Card', quantity: 1, product_id: 3012, meta_data: [] }] }),         // digital
+  ];
+
+  it('los dos caminos cuentan exactamente lo mismo', async () => {
+    responder = () => wcRes(fixture, { total: fixture.length });
+    const lista = (await (await getOrders(reqOrders('status=processing&page=1'))).json()).orders;
+
+    const porLista = {
+      sinEmpaquetar: lista.filter((o: any) => !o.packaged && !o.digital).length,
+      empaquetados:  lista.filter((o: any) => o.packaged && !o.shipped).length,
+      enviados:      lista.filter((o: any) => o.shipped).length,
+    };
+    const porContador = splitProcessing(fixture.map(normalizeProcessingOrder));
+
+    expect(porLista).toEqual(porContador);
+    expect(porLista).toEqual({ sinEmpaquetar: 2, empaquetados: 1, enviados: 2 });
+  });
+
+  it('la lista expone el mismo `stage` que usan los contadores', async () => {
+    responder = () => wcRes(fixture, { total: fixture.length });
+    const lista = (await (await getOrders(reqOrders('status=processing&page=1'))).json()).orders;
+    for (const o of lista) {
+      expect(o.stage).toBe(fulfillmentStage(fixture.find(f => f.id === o.id)!.meta_data, fixture.find(f => f.id === o.id)!.line_items));
+    }
+  });
+
+  it('metaValue/andreaniRefs ignoran valores en blanco', () => {
+    expect(metaValue(meta({ _tracking_number: '   ' }), ['_tracking_number'])).toBe('');
+    expect(andreaniRefs(meta({ _order_andreani_pedido_id: 'p1', _order_andreani_numero_interno: '#4-a' })))
+      .toEqual({ tracking: '', rotulo: '#4-a', pedidoId: 'p1' });
+  });
+});
+
+/* ─────────────── 4. corte de fecha ─────────────── */
+
+describe('el corte de fecha no toca los estados accionables', () => {
+  it('processing / pending / on-hold / failed se piden sin `after`', async () => {
+    for (const status of ['processing', 'pending', 'on-hold', 'failed']) {
+      llamadas = [];
+      responder = () => wcRes([], { total: 0 });
+      await getOrders(reqOrders(`status=${status}&page=1`));
+      expect(llamadas[0].url, status).not.toMatch(/after=/);
+    }
+  });
+
+  it('los terminales y "Todos" conservan el corte (son histórico, no cola)', async () => {
+    for (const status of ['completed', 'cancelled', 'refunded', 'any']) {
+      llamadas = [];
+      responder = () => wcRes([], { total: 0 });
+      await getOrders(reqOrders(`status=${status}&page=1`));
+      expect(llamadas[0].url, status).toMatch(/after=2026-05-10/);
+    }
+  });
+
+  it('un `after` explícito sigue respetándose', async () => {
+    responder = () => wcRes([], { total: 0 });
+    await getOrders(reqOrders('status=processing&page=1&after=2026-01-01T00:00:00'));
+    expect(llamadas[0].url).toMatch(/after=2026-01-01/);
+  });
+
+  it('los contadores de accionables también van sin corte', async () => {
+    responder = () => wcRes([], { total: 0 });
+    await getCounts(reqCounts());
+    const accionables = llamadas.filter(l => /status=(processing|pending|on-hold|failed)/.test(l.url));
+    expect(accionables.length).toBeGreaterThanOrEqual(4);
+    for (const l of accionables) expect(l.url).not.toMatch(/after=/);
+  });
+});
+
+/* ─────────────── 5. carga incompleta declarada ─────────────── */
+
+describe('una lista recortada nunca se presenta como completa', () => {
+  it('pasar el tope de páginas marca parcial', async () => {
+    responder = () => wcRes([wcOrder()], { total: (MAX_PAGES + 5) * 100, pages: MAX_PAGES + 5 });
+    const body = await (await getOrders(reqOrders('status=processing&page=1'))).json();
+    expect(body.parcial).toBe(true);
+  });
+
+  it('si WC dice que hay más de lo que juntamos, marca parcial', async () => {
+    responder = () => wcRes([wcOrder()], { total: 500, pages: 2 });
+    const body = await (await getOrders(reqOrders('status=processing&page=1'))).json();
+    expect(body.parcial).toBe(true);
+  });
+
+  it('lista completa → parcial false', async () => {
+    responder = () => wcRes([wcOrder()], { total: 1, pages: 1 });
+    const body = await (await getOrders(reqOrders('status=processing&page=1'))).json();
+    expect(body.parcial).toBe(false);
+    expect(body.orders).toHaveLength(1);
+  });
+
+  it('un pedido repetido entre páginas no se duplica en la lista', async () => {
+    responder = () => wcRes([wcOrder({ id: 77, number: '77' })], { total: 2, pages: 2 });
+    const body = await (await getOrders(reqOrders('status=processing&page=1'))).json();
+    expect(body.orders).toHaveLength(1);
+  });
+});
+
+/* ─────────────── 6. búsqueda y cortes transversales ─────────────── */
+
+describe('búsqueda y filtros transversales', () => {
+  it('buscar un # encuentra el pedido en cualquier estado y desde cualquier tab', async () => {
+    responder = (url) => url.includes('/orders/1277')
+      ? wcRes(wcOrder({ id: 1277, number: '1277', status: 'completed' }))
+      : wcRes([], { total: 0 });
+    for (const tab of ['processing', 'pending', 'any', 'canje', 'mayorista']) {
+      const body = await (await getOrders(reqOrders(`status=${tab}&page=1&search=1277`))).json();
+      expect(body.orders, tab).toHaveLength(1);
+      expect(body.orders[0].number, tab).toBe('1277');
+    }
+  });
+
+  it('un # que no existe es una lista vacía legítima, no un error', async () => {
+    responder = () => wcRes({ code: 'woocommerce_rest_shop_order_invalid_id' }, { ok: false, status: 404 });
+    const res = await getOrders(reqOrders('status=processing&page=1&search=999999'));
+    expect(res.status).toBe(200);
+    expect((await res.json()).orders).toEqual([]);
+  });
+
+  it('mayorista se resuelve en el server sobre todas las páginas, no en una sola', async () => {
+    const mayo = wcOrder({ id: 3812, number: '3812', meta_data: meta({ _es_mayorista: 'true' }) });
+    responder = (url) => url.includes('page=2')
+      ? wcRes([mayo], { total: 2, pages: 2 })
+      : wcRes([wcOrder({ id: 1, number: '1' })], { total: 2, pages: 2 });
+    const body = await (await getOrders(reqOrders('status=mayorista&page=1'))).json();
+    expect(llamadas.some(l => l.url.includes('page=2'))).toBe(true); // trajo todas las páginas
+    expect(body.orders.map((o: any) => o.number)).toEqual(['3812']); // y filtró por meta
+  });
+
+  it('canje son los de $0 en cualquier estado', async () => {
+    responder = () => wcRes([
+      wcOrder({ id: 1, number: '1', total: '0.00' }),
+      wcOrder({ id: 2, number: '2', total: '25705.00' }),
+    ], { total: 2 });
+    const body = await (await getOrders(reqOrders('status=canje&page=1'))).json();
+    expect(body.orders.map((o: any) => o.number)).toEqual(['1']);
+    expect(body.total).toBe(1);
+  });
+});
+
+/* ─────────────── 7. anomalías ─────────────── */
+
+describe('anomalías: lo que no reclama ninguna cola', () => {
+  it('detecta el total negativo (#2491 lleva así desde el 05/08/2026)', () => {
+    const o = normalizeProcessingOrder({ id: 2491, number: '2491', total: '-3800.00', line_items: [{ product_id: 2950 }] });
+    expect(anomaliasDe([o])).toEqual([{ id: 2491, number: '2491', tipo: 'total_negativo', detalle: 'total -3800' }]);
+  });
+
+  it('detecta pedidos sin productos', () => {
+    const o = normalizeProcessingOrder({ id: 10, number: '10', total: '5000', line_items: [] });
+    expect(anomaliasDe([o])).toEqual([{ id: 10, number: '10', tipo: 'sin_items', detalle: 'el pedido no tiene productos' }]);
+  });
+
+  it('un pedido normal no genera ruido', () => {
+    const o = normalizeProcessingOrder({ id: 1, number: '1', total: '25705', line_items: [{ product_id: 2950 }] });
+    expect(anomaliasDe([o])).toEqual([]);
+  });
+
+  it('los contadores publican las anomalías de la carga', async () => {
+    responder = (url) => url.includes('status=processing')
+      ? wcRes([wcOrder({ id: 2491, number: '2491', total: '-3800.00' })], { total: 1 })
+      : wcRes([], { total: 0 });
+    const body = await (await getCounts(reqCounts())).json();
+    expect(body.anomalias).toEqual([{ id: 2491, number: '2491', tipo: 'total_negativo', detalle: 'total -3800' }]);
+  });
+});
+
+/* ─────────────── 8. sin envío: existe y se puede ver ─────────────── */
+
+describe('pedidos sin método de envío (canje, retiro, carga manual)', () => {
+  it('la lista expone shippingMethod vacío: nunca van a tener rótulo', async () => {
+    responder = () => wcRes([
+      wcOrder({ id: 4034, number: '4034', shipping_lines: [] }),
+      wcOrder({ id: 4044, number: '4044' }),
+    ], { total: 2 });
+    const orders = (await (await getOrders(reqOrders('status=processing&page=1'))).json()).orders;
+    expect(orders.find((o: any) => o.number === '4034').shippingMethod).toBe('');
+    expect(orders.find((o: any) => o.number === '4044').shippingMethod).toBe('Andreani (estándar)');
+  });
+
+  it('normalizeProcessingOrder cuenta los ítems y el método de envío', () => {
+    const o = normalizeProcessingOrder({ id: 4034, number: '4034', total: '0', shipping_lines: [], line_items: [{ product_id: 1 }, { product_id: 2 }] });
+    expect(o.shippingMethod).toBe('');
+    expect(o.items).toBe(2);
+  });
+});
+
+/* ─────────────── 9. ninguna escritura se da por buena sin releerla ─────────────── */
+
+/**
+ * El PUT de WooCommerce contestando 200 no prueba que el estado quedó guardado:
+ *   - WC_Abstract_Order::set_status() degrada en silencio un estado no registrado;
+ *   - cualquier plugin colgado de woocommerce_order_status_* puede volver a moverlo
+ *     después del PUT (el de Andreani y los de pago lo hacen);
+ *   - LiteSpeed cachea los GET autenticados, así que la relectura necesita _cb.
+ * Estos tests fijan los tres resultados posibles —guardado, no guardado, no se pudo
+ * confirmar— y que ninguno se disfrace de otro.
+ */
+describe('set-status confirma con una lectura posterior', () => {
+  const req = (body: unknown) => new NextRequest('http://localhost/api/admin/set-status', {
+    method: 'POST', headers: { 'x-admin-key': 'clave-ok', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  it('PUT ok + relectura que coincide → ok y confirmado', async () => {
+    responder = () => wcRes({ id: 4044, status: 'completed' });
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ ok: true, confirmado: true, status: 'completed' });
+    expect(llamadas.map(l => l.method)).toEqual(['PUT', 'GET']);
+  });
+
+  it('la relectura lleva _cb: sin eso LiteSpeed puede devolver la copia previa al PUT', async () => {
+    responder = () => wcRes({ id: 4044, status: 'completed' });
+    await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const get = llamadas.find(l => l.method === 'GET')!;
+    expect(get.url).toMatch(/_cb=\d+/);
+    expect(get.url).toContain('_fields=id,status');
+  });
+
+  it('PUT ok pero WC guardó otra cosa → 409 con el estado REAL, no un falso éxito', async () => {
+    responder = (_url, init) => init?.method === 'PUT'
+      ? wcRes({ id: 4044, status: 'completed' })   // el PUT dice que sí
+      : wcRes({ id: 4044, status: 'pending' });    // la relectura dice la verdad
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(409);
+    expect(body.ok).toBeUndefined();
+    expect(body.status).toBe('pending');
+    expect(body.error).toMatch(/no guardó/);
+  });
+
+  it('PUT ok y relectura caída → confirmado:false con aviso, nunca un error inventado', async () => {
+    responder = (_url, init) => init?.method === 'PUT'
+      ? wcRes({ id: 4044, status: 'completed' })
+      : wcRes({}, { ok: false, status: 500 });
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.confirmado).toBe(false);
+    expect(body.aviso).toMatch(/no pudimos releer/i);
+  });
+
+  it('la conexión se corta en el PUT pero el cambio entró → se relee y se informa ok', async () => {
+    responder = (_url, init) => {
+      if (init?.method === 'PUT') throw new TypeError('terminated');
+      return wcRes({ id: 4044, status: 'completed' });
+    };
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ ok: true, confirmado: true, status: 'completed' });
+  });
+
+  it('la conexión se corta y el pedido quedó como estaba → 502 diciendo en qué quedó', async () => {
+    responder = (_url, init) => {
+      if (init?.method === 'PUT') throw new TypeError('terminated');
+      return wcRes({ id: 4044, status: 'processing' });
+    };
+    const res  = await setStatus(req({ orderId: 4044, status: 'completed' }));
+    const body = await res.json();
+    expect(res.status).toBe(502);
+    expect(body.confirmado).toBe(false);
+    expect(body.status).toBe('processing');
+    expect(body.error).toMatch(/Pagado|processing/);
+  });
+});
+
+describe('cancel-order confirma la cancelación y mira el HTTP', () => {
+  const req = (body: unknown) => new NextRequest('http://localhost/api/admin/cancel-order', {
+    method: 'POST', headers: { 'x-admin-key': 'clave-ok', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const pedido = { id: 4044, number: '4044', status: 'processing', line_items: [], billing: {}, meta_data: [] };
+
+  it('cancelación confirmada → ok y confirmado', async () => {
+    responder = (_url, init) => init?.method === 'PUT'
+      ? wcRes({ id: 4044, status: 'cancelled' })
+      : wcRes({ ...pedido, status: 'cancelled' });
+    const body = await (await cancelOrder(req({ orderId: 4044 }))).json();
+    expect(body).toMatchObject({ ok: true, status: 'cancelled', confirmado: true });
+  });
+
+  it('un 500 de WP en el PUT ya no pasa por éxito', async () => {
+    responder = (_url, init) => init?.method === 'PUT'
+      ? wcRes({}, { ok: false, status: 500 })
+      : wcRes(pedido);
+    const res  = await cancelOrder(req({ orderId: 4044 }));
+    const body = await res.json();
+    expect(res.status).toBe(502);
+    expect(body.ok).toBeUndefined();
+    expect(body.error).toMatch(/No se pudo cancelar/);
+  });
+
+  it('PUT ok pero el pedido sigue vivo → 409, no "cancelado"', async () => {
+    let puesto = false;
+    responder = (_url, init) => {
+      if (init?.method === 'PUT') { puesto = true; return wcRes({ id: 4044, status: 'cancelled' }); }
+      return wcRes(puesto ? { ...pedido, status: 'processing' } : pedido);
+    };
+    const res  = await cancelOrder(req({ orderId: 4044 }));
+    const body = await res.json();
+    expect(res.status).toBe(409);
+    expect(body.confirmado).toBe(false);
+    expect(body.status).toBe('processing');
+  });
+
+  it('si el stock no se pudo devolver, lo dice en vez de inventar el total nuevo', async () => {
+    const conItems = { ...pedido, line_items: [{ product_id: 2950, variation_id: 0, quantity: 2, name: 'Regular Tee', meta_data: [] }] };
+    responder = (url, init) => {
+      if (init?.method === 'PUT' && url.includes('/products/')) return wcRes({}, { ok: false, status: 500 });
+      if (init?.method === 'PUT') return wcRes({ id: 4044, status: 'cancelled' });
+      if (url.includes('/products/')) return wcRes({ id: 2950, name: 'Regular Tee', manage_stock: true, stock_quantity: 5 });
+      return wcRes({ ...conItems, status: 'cancelled' });
+    };
+    const body = await (await cancelOrder(req({ orderId: 4044, restock: true }))).json();
+    expect(body.ok).toBe(true);
+    expect(body.restock[0].error).toMatch(/no se pudo devolver al stock/);
+    expect(body.restock[0].to).toBeUndefined();
+  });
+});
+
+/* ─────────── 10. buscar encuentra, desde cualquier tab y sin corte de fecha ─────────── */
+
+/**
+ * Medido en producción el 25/10/2026: el parámetro `search` de WC tarda 1,0-1,9 s
+ * y su X-WP-Total es la cuenta real de coincidencias ("gmail.com" devuelve 971).
+ * Antes la búsqueda por texto se hacía DENTRO del estado del tab y con el corte de
+ * fecha puesto, y el recorte a una página no se declaraba: una búsqueda con 971
+ * coincidencias mostraba 100 filas como si fueran todas.
+ */
+describe('la búsqueda por texto es global y declara lo que no miró', () => {
+  it('no manda status ni after: busca en todos los estados y todas las fechas', async () => {
+    responder = () => wcRes([wcOrder()], { total: 1 });
+    await getOrders(reqOrders('status=processing&page=1&search=Camila'));
+    expect(llamadas).toHaveLength(1);
+    const url = llamadas[0].url;
+    expect(url).toContain('search=Camila');
+    expect(url).not.toContain('status=');
+    expect(url).not.toContain('after=');
+    expect(url).toContain('per_page=100');
+  });
+
+  it('encuentra el pedido aunque el tab sea "Por empaquetar" y el pedido esté empaquetado', async () => {
+    const empaquetado = wcOrder({ meta_data: meta({ _tracking_number: '36000312345' }) });
+    responder = () => wcRes([empaquetado], { total: 1 });
+    const body = await (await getOrders(reqOrders('status=processing&page=1&search=Camila'))).json();
+    expect(body.orders).toHaveLength(1);
+    expect(body.orders[0].shipped).toBe(true);
+  });
+
+  it('filtra por nombre y email, no por dirección ni teléfono', async () => {
+    responder = () => wcRes([
+      wcOrder({ id: 1, number: '1', billing: { first_name: 'Camila', last_name: 'Torres', email: 'camila@test.com', phone: '1' } }),
+      wcOrder({ id: 2, number: '2', billing: { first_name: 'Otro', last_name: 'Cliente', email: 'otro@test.com', phone: '1155camila' } }),
+    ], { total: 2 });
+    const body = await (await getOrders(reqOrders('status=any&page=1&search=camila'))).json();
+    expect(body.orders.map((o: any) => o.number)).toEqual(['1']);
+    expect(body.total).toBe(1);
+  });
+
+  it('sin tildes y sin mayúsculas: "jose" encuentra a "José"', async () => {
+    responder = () => wcRes([wcOrder({ billing: { first_name: 'José', last_name: 'García', email: 'j@test.com', phone: '' } })], { total: 1 });
+    const body = await (await getOrders(reqOrders('status=any&page=1&search=jose garcia'))).json();
+    expect(body.orders).toHaveLength(1);
+  });
+
+  it('más coincidencias en WC que las revisadas → parcial con las dos cuentas', async () => {
+    const cien = Array.from({ length: 100 }, (_, i) => wcOrder({ id: i + 1, number: String(i + 1) }));
+    responder = () => wcRes(cien, { total: 971, pages: 10 });
+    const body = await (await getOrders(reqOrders('status=any&page=1&search=gmail.com'))).json();
+    expect(body.parcial).toBe(true);
+    expect(body.coincidenciasWc).toBe(971);
+    expect(body.revisados).toBe(100);
+  });
+
+  it('todas las coincidencias en una página → no es parcial', async () => {
+    responder = () => wcRes([wcOrder()], { total: 1 });
+    const body = await (await getOrders(reqOrders('status=any&page=1&search=Camila'))).json();
+    expect(body.parcial).toBe(false);
+    expect(body.coincidenciasWc).toBe(1);
+  });
+
+  it('un 502 buscando sigue siendo un error, no una búsqueda sin resultados', async () => {
+    responder = () => wcRes({ message: 'boom' }, { ok: false, status: 502 });
+    const res = await getOrders(reqOrders('status=any&page=1&search=Camila'));
+    expect(res.status).toBe(502);
+    expect((await res.json()).orders).toBeUndefined();
+  });
+
+  it('una búsqueda que no matchea nada devuelve lista vacía, no error', async () => {
+    responder = () => wcRes([], { total: 0 });
+    const res = await getOrders(reqOrders('status=any&page=1&search=nadie'));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.orders).toEqual([]);
+    expect(body.parcial).toBe(false);
+  });
+
+  it('un # de pedido sigue yendo directo por id, sin el search de WC', async () => {
+    responder = () => wcRes(wcOrder({ id: 3352, number: '3352' }));
+    const body = await (await getOrders(reqOrders('status=processing&page=1&search=%233352'))).json();
+    expect(llamadas[0].url).toContain('/orders/3352');
+    expect(llamadas[0].url).not.toContain('search=');
+    expect(body.orders[0].number).toBe('3352');
+  });
+});

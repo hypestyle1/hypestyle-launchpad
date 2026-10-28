@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import MayoristaHeader from '@/components/mayorista/MayoristaHeader';
-import { formatArs } from '@/lib/mayorista-format';
+import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
 import { envioResumen } from '@/lib/mayorista-envio';
 import { FOOTER_CONDITIONS, WHATSAPP_URL } from '@/lib/mayorista-copy';
 
@@ -37,6 +37,7 @@ function fmtDate(s: string) {
 
 export default function MayoristaCuentaPage() {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const { fmt } = useMayoristaDivisa();
   const [perfilError, setPerfilError] = useState(false);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -114,11 +115,11 @@ export default function MayoristaCuentaPage() {
               <dl className="mt-3 space-y-2 text-[13px]">
                 <div>
                   <dt className="text-muted-foreground text-[11px] uppercase tracking-wide">Pedido mínimo</dt>
-                  <dd className="font-semibold text-[15px]">{perfil.minOrder != null ? formatArs(perfil.minOrder) : 'No disponible ahora'}</dd>
+                  <dd className="font-semibold text-[15px]">{perfil.minOrder != null ? fmt(perfil.minOrder) : 'No disponible ahora'}</dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground text-[11px] uppercase tracking-wide">Saldo a favor</dt>
-                  <dd className="font-semibold text-[15px]">{perfil.credit > 0 ? <>{formatArs(perfil.credit)} <span className="text-[11px] font-normal text-muted-foreground">se descuenta solo en tu próximo pedido</span></> : <span className="font-normal text-muted-foreground">Sin saldo</span>}</dd>
+                  <dd className="font-semibold text-[15px]">{perfil.credit > 0 ? <>{fmt(perfil.credit)} <span className="text-[11px] font-normal text-muted-foreground">se descuenta solo en tu próximo pedido</span></> : <span className="font-normal text-muted-foreground">Sin saldo</span>}</dd>
                 </div>
                 {perfil.exclusividad && (
                   <div>

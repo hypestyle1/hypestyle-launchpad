@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { enZona, zonaDe, parseAliasInput, ESTADO_EXCLUSIVIDAD_LABEL, type Exclusividad, type BloqueoExclusividad, type EvaluacionExclusividad } from '@/lib/mayorista-exclusividad';
 import MayoristaRecargoOfertas from '@/components/admin/MayoristaRecargoOfertas';
+import { validarPct, type Consignacion } from '@/lib/mayorista-consignacion';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -24,6 +25,8 @@ type Mayorista = {
   exclusividad?: Exclusividad | null;
   bloqueoExclusividad?: BloqueoExclusividad | null;
   exclusividadEvaluacion?: EvaluacionExclusividad | null;
+  /** null = cuenta de compra normal (50% del PVP). */
+  consignacion?: Consignacion | null;
 };
 
 const ESTADO_STYLE: Record<string, string> = {
@@ -149,6 +152,7 @@ export default function MayoristasAdminPage() {
   const [creditingId, setCreditingId] = useState<number | null>(null);
   const [exclId, setExclId] = useState<number | null>(null);
   const [minInputs, setMinInputs]     = useState<Record<number, string>>({});
+  const [consignId, setConsignId]     = useState<number | null>(null);
   const [savingMinId, setSavingMinId] = useState<number | null>(null);
   const [resettingId, setResettingId] = useState<number | null>(null);
   // La clave nueva se muestra una sola vez, acá. No se guarda en ningún lado:
@@ -342,6 +346,49 @@ Monto a favor en pesos (negativo para corregir):`);
       alert(`Saldo a favor: ${fmt(data.credit)}${monto > 0 ? (data.emailSent ? ` — mail enviado a ${m.email}` : ' — el mail NO salió, avisale a mano') : ''}`);
     } finally {
       setCreditingId(null);
+    }
+  }
+
+  /* Consignación (lib/mayorista-consignacion.ts): se prende por cuenta y solo
+     cambia lo que ve esa cuenta — precios de lista con su comisión en vez del
+     50% mayorista, y sin pedido mínimo. Es un acuerdo comercial, así que lo
+     decide el admin a mano; nada lo activa solo. */
+  async function editarConsignacion(m: Mayorista) {
+    const label = m.company || m.name || m.email;
+    if (m.consignacion) {
+      if (!confirm(`Sacar a ${label} de consignación?
+
+Vuelve a ver el catálogo a precio mayorista (50% del PVP) y con pedido mínimo.`)) return;
+      await patchConsignacion(m, null);
+      return;
+    }
+    const raw = prompt(`Pasar a ${label} a consignación
+
+Qué porcentaje del precio de lista se queda el local (solo el número):`, '25');
+    if (raw === null) return;
+    const pct = Number(String(raw).replace(',', '.').replace(/[^0-9.]/g, ''));
+    const error = validarPct(pct);
+    if (error) { alert(error); return; }
+    const nota = prompt('Nota del acuerdo (interna, opcional):', '') ?? '';
+    if (!confirm(`${label} pasa a consignación con ${pct}% de comisión.
+
+Desde ahora ve precios de lista en vez del 50% mayorista, sin pedido mínimo y sin datos de pago en la confirmación.`)) return;
+    await patchConsignacion(m, { pct, desde: new Date().toISOString().slice(0, 10), ...(nota.trim() ? { nota: nota.trim() } : {}) });
+  }
+
+  async function patchConsignacion(m: Mayorista, consignacion: Consignacion | null) {
+    setConsignId(m.id);
+    try {
+      const res = await fetch(`/api/admin/mayoristas/${m.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+        body: JSON.stringify({ consignacion }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(data.message || 'No se pudo guardar'); return; }
+      setMayoristas(prev => prev.map(x => x.id === m.id ? { ...x, consignacion: data.consignacion ?? null } : x));
+    } finally {
+      setConsignId(null);
     }
   }
 
@@ -783,6 +830,11 @@ Zona:`, titular?.exclusividad ? zonaDe(titular.exclusividad).nombre : m.city || 
                             Bloqueada por exclusividad
                           </span>
                         )}
+                        {m.consignacion && (
+                          <span title={`Ve precios de lista y se queda el ${m.consignacion.pct}% · desde ${m.consignacion.desde}${m.consignacion.nota ? ` · ${m.consignacion.nota}` : ''}`} className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">
+                            Consignación · {m.consignacion.pct}%
+                          </span>
+                        )}
                       </td>
                       <td data-label="Contacto" className="px-1 py-1.5 lg:px-4 lg:py-3 block lg:table-cell before:content-[attr(data-label)] before:block before:text-[10px] before:uppercase before:tracking-wider before:text-muted-foreground/70 before:mb-0.5 lg:before:hidden">
                         <a href={`mailto:${m.email}`} className="block text-[12px] text-muted-foreground hover:text-foreground truncate max-w-[180px]">{m.email}</a>
@@ -859,6 +911,14 @@ Zona:`, titular?.exclusividad ? zonaDe(titular.exclusividad).nombre : m.city || 
                             className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-border-mid text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
                           >
                             {exclId === m.id ? '...' : m.bloqueoExclusividad ? 'Desbloquear' : 'Bloquear'}
+                          </button>
+                          <button
+                            onClick={() => editarConsignacion(m)}
+                            disabled={consignId === m.id}
+                            title="Consignación: esta cuenta ve precios de lista con su comisión en vez del 50% mayorista, no tiene pedido mínimo y no paga por adelantado. Solo afecta a esta cuenta."
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-border-mid text-muted-foreground hover:bg-muted/50 hover:text-foreground disabled:opacity-40"
+                          >
+                            {consignId === m.id ? '...' : m.consignacion ? 'Sacar consig.' : 'Consignación'}
                           </button>
                           <button
                             onClick={() => cargarCredito(m)}

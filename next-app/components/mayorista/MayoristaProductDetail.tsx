@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { imgSrc } from '@/lib/img';
-import { formatArs } from '@/lib/mayorista-format';
+import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
+import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
+import MayoristaDivisaNota from './MayoristaDivisaNota';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import { stockKey, canOrder, isPurchasable, type MayoristaProduct } from '@/lib/mayorista-products';
 import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
@@ -16,6 +18,10 @@ const MAX_QTY = 99;
 
 export default function MayoristaProductDetail({ product }: { product: MayoristaProduct }) {
   const { add } = useMayoristaCart();
+  const { fmt } = useMayoristaDivisa();
+  // Consignación: el precio de lista solo, como en la tienda. El 50% mayorista
+  // no aplica y ni se nombra (lib/mayorista-consignacion.ts).
+  const { consignacion } = useMayoristaPerfil();
   const [size, setSize] = useState<string | null>(product.sizes.length === 1 ? product.sizes[0] : null);
   // Un solo color cargado (ej. "Negra") no es una elección: va directo al pedido.
   const [color, setColor] = useState<string | null>(product.colors.length === 1 ? product.colors[0] : null);
@@ -37,7 +43,7 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
   const canAdd = !!size && !needsColor && canOrder(product, selectedStock ?? undefined);
   // Tope de cantidad: lo que hay del talle elegido (si Woo lo gestiona).
   const maxQty = typeof selectedQty === 'number' && selectedQty > 0 ? selectedQty : MAX_QTY;
-  const unitPrice = product.promo?.price ?? product.wholesalePrice;
+  const unitPrice = consignacion ? product.regularPrice : (product.promo?.price ?? product.wholesalePrice);
 
   useEffect(() => { setQty(q => Math.min(q, maxQty)); }, [maxQty]);
   useEffect(() => {
@@ -61,7 +67,7 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
     : !size ? 'Elegí un talle'
     : selectedStock === 'out' ? 'Sin stock'
     : selectedStock === 'unconfirmed' ? 'Stock sin confirmar'
-    : `Agregar ${qty > 1 ? `${qty} ` : ''}al pedido — ${formatArs(unitPrice * qty)}`;
+    : `Agregar ${qty > 1 ? `${qty} ` : ''}al pedido — ${fmt(unitPrice * qty)}`;
 
   return (
     <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6">
@@ -114,29 +120,36 @@ export default function MayoristaProductDetail({ product }: { product: Mayorista
             <p className="text-[13px] text-text-light mt-1">{product.shortDescription}</p>
           )}
 
-          {product.promo ? (
+          {consignacion ? (
+            <div className="mt-4">
+              <p className="text-[24px] font-semibold">{fmt(product.regularPrice)}</p>
+              <p className="text-[13px] text-text-light">Precio de lista: lo que cobrás en tu local.</p>
+            </div>
+          ) : product.promo ? (
             <div className="mt-4">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] rounded-[6px] bg-sale text-sale-foreground">{product.promo.badge} · {product.promo.label}</span>
                 <span className="text-[11px] uppercase tracking-wide text-text-light">{PROMO_TAG_LABEL[product.promo.tag]}</span>
               </div>
               <div className="flex items-baseline gap-3">
-                <p className="text-[26px] font-semibold">{formatArs(product.promo.price)}</p>
-                <p className="text-[14px] text-text-light line-through">{formatArs(product.wholesalePrice)}</p>
+                <p className="text-[26px] font-semibold">{fmt(product.promo.price)}</p>
+                <p className="text-[14px] text-text-light line-through">{fmt(product.wholesalePrice)}</p>
               </div>
-              <p className="text-[12px] mt-1 text-sale">Ahorrás {formatArs(product.promo.saving)} por unidad sobre tu precio mayorista.</p>
-              <p className="text-[12px] text-text-light mt-0.5">Precio de lista {formatArs(product.regularPrice)} · a lista, recargás {Math.round((product.regularPrice / product.promo.price - 1) * 100)}% sobre tu costo ({Math.round((1 - product.promo.price / product.regularPrice) * 100)}% de margen bruto)</p>
+              <p className="text-[12px] mt-1 text-sale">Ahorrás {fmt(product.promo.saving)} por unidad sobre tu precio mayorista.</p>
+              <p className="text-[12px] text-text-light mt-0.5">Precio de lista {fmt(product.regularPrice)} · a lista, recargás {Math.round((product.regularPrice / product.promo.price - 1) * 100)}% sobre tu costo ({Math.round((1 - product.promo.price / product.regularPrice) * 100)}% de margen bruto)</p>
             </div>
           ) : (
             <div className="mt-4">
-              <p className="text-[24px] font-semibold">{formatArs(product.wholesalePrice)}</p>
-              <p className="text-[13px] text-text-light">Precio de lista {formatArs(product.regularPrice)}</p>
+              <p className="text-[24px] font-semibold">{fmt(product.wholesalePrice)}</p>
+              <p className="text-[13px] text-text-light">Precio de lista {fmt(product.regularPrice)}</p>
               <p className="text-[12px] text-text-light mt-0.5">A precio de lista, recargás 100% sobre tu costo (50% de margen bruto).</p>
             </div>
           )}
-          {product.retailPrice != null && (
+          <MayoristaDivisaNota className="mt-2" />
+
+          {!consignacion && product.retailPrice != null && (
             <p className="mt-2 inline-block text-[12px] rounded-[6px] border border-border px-2.5 py-1.5">
-              En la tienda hoy <b>{formatArs(product.retailPrice)}</b> (oferta): vendiendo a ese precio tu recargo es {Math.round((product.retailPrice / unitPrice - 1) * 100)}%.
+              En la tienda hoy <b>{fmt(product.retailPrice)}</b> (oferta): vendiendo a ese precio tu recargo es {Math.round((product.retailPrice / unitPrice - 1) * 100)}%.
             </p>
           )}
 
