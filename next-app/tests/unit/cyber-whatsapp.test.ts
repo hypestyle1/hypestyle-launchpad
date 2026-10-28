@@ -66,10 +66,34 @@ describe('enlace del canal de WhatsApp', () => {
     expect(m.esGrupo(m.whatsappUrl())).toBe(true);
   });
 
-  it('sin variable no hay botón', async () => {
+  // El enlace del canal viaja en el código, no en una variable: la landing y las
+  // historias salen el mismo día y un botón que depende de que alguien cargue
+  // algo en un panel es un botón que el día del lanzamiento no está.
+  it('sin variable sale el canal oficial, no un vacío', async () => {
     const m = await cargar(undefined);
-    expect(m.whatsappUrl()).toBe('');
-    expect(m.whatsappDisponible()).toBe(false);
+    expect(m.whatsappUrl()).toBe('https://whatsapp.com/channel/0029Vb8xziY89injZvFrch2l');
+    expect(m.whatsappDisponible()).toBe(true);
+    expect(m.esGrupo(m.whatsappUrl())).toBe(false);
+  });
+
+  it('el enlace que viaja en el código es un canal válido para el propio validador', async () => {
+    const m = await cargar(undefined);
+    const delCodigo = m.whatsappUrl();
+    const otra = await cargar(delCodigo);
+    expect(otra.whatsappUrl()).toBe(delCodigo);
+  });
+
+  // Nivel 3 del rollback: apagar el botón sin revertir el PR. Dejar la variable
+  // vacía NO apaga — vuelve al enlace del código — para que un borrado
+  // accidental no deje la página a medias.
+  it('se apaga a mano con `off`, y vaciarla no apaga', async () => {
+    for (const apaga of ['off', 'OFF', 'none', 'no', '0', 'false']) {
+      const m = await cargar(apaga);
+      expect(m.whatsappUrl(), apaga).toBe('');
+      expect(m.whatsappDisponible(), apaga).toBe(false);
+    }
+    const vacia = await cargar('   ');
+    expect(vacia.whatsappDisponible()).toBe(true);
   });
 
   // La variable de servidor existe para poder encender el canal sin recompilar:

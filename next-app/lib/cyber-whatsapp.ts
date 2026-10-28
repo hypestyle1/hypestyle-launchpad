@@ -1,31 +1,48 @@
 /**
  * Alta por WhatsApp para CYBER HYPE.
  *
- * **Hoy no hay enlace.** Hasta que exista un canal creado y probado, la landing
- * no muestra ningún botón de unión: uno que lleva a una invitación rota, en la
- * página de captación del evento, es peor que no tenerlo.
+ * El canal existe desde el 28/10/2026 y el enlace viaja **en el código**, no en
+ * una variable de entorno. La razón es operativa: la landing y las historias de
+ * Instagram salen el mismo día, y un botón que depende de que alguien se acuerde
+ * de cargar una variable en un panel es un botón que el día del lanzamiento no
+ * está. El enlace de un canal es público por definición — se reparte por
+ * historias y por bio — así que no hay nada que esconder acá.
  *
- * ── Dos variables, y la diferencia importa ──────────────────────────────────
+ * ── Cómo se cambia o se apaga ───────────────────────────────────────────────
  *
- * `CYBER_WHATSAPP_URL` (sin prefijo, **la recomendada**)
- *   Se lee en cada request. La landing es `force-dynamic` y server-rendered, y
- *   el enlace baja al componente como prop, así que el navegador nunca necesita
- *   la variable. Para cambiar el enlace alcanza con **redesplegar**: Vercel
- *   toma el valor nuevo sin tener que recompilar.
+ * `CYBER_WHATSAPP_URL` (sin prefijo, **la que conviene operar**)
+ *   Pisa el enlace del código. Se lee en cada request: la landing es
+ *   `force-dynamic` y server-rendered, y el enlace baja al componente como prop,
+ *   así que el navegador nunca necesita la variable. Para cambiarlo alcanza con
+ *   **redesplegar**, sin recompilar.
  *
  * `NEXT_PUBLIC_CYBER_WHATSAPP_URL` (compatibilidad)
- *   Next **incrusta** las variables `NEXT_PUBLIC_` en el bundle durante el
- *   build, también del lado del servidor. Cargarla en el panel de Vercel no
- *   alcanza: el valor viejo queda escrito en el JavaScript ya compilado, así
- *   que hace falta un **build nuevo**, no solo un redeploy.
+ *   Next **incrusta** las `NEXT_PUBLIC_` en el bundle durante el build, también
+ *   del lado del servidor. Cargarla en el panel no alcanza: el valor viejo queda
+ *   escrito en el JavaScript ya compilado y hace falta un **build nuevo**.
  *
- * Si están las dos, gana la de servidor. Se acepta la pública porque es la que
- * quedó escrita en el plan, pero la de servidor es la que conviene operar: el
- * canal se crea sobre la fecha y es preferible poder encenderlo sin recompilar.
+ * Si están las dos, gana la de servidor.
+ *
+ * **Para apagar el botón** sin revertir nada: cargar `CYBER_WHATSAPP_URL=off` y
+ * redesplegar. Es el nivel 3 del rollback. Dejarla vacía NO apaga nada — vuelve
+ * al enlace del código —, justamente para que un borrado accidental no deje la
+ * página a medias.
  *
  * Se lee DENTRO de la función a propósito: a nivel de módulo, el valor quedaría
  * congelado en el primer import y perdería la ventaja de leerse por request.
  */
+
+/**
+ * El canal oficial: **HYPE® STYLE&CULTURE**, creado el 28/10/2026.
+ *
+ * Verificado ese día: responde 200 sin sesión y el `og:title` de la página es
+ * exactamente el nombre del canal. Es un canal, no un grupo, así que el número
+ * de nadie queda a la vista.
+ */
+const CANAL_OFICIAL = 'https://whatsapp.com/channel/0029Vb8xziY89injZvFrch2l';
+
+/** Valores que apagan el botón a propósito. */
+const APAGADO = new Set(['off', 'none', 'no', '0', 'false']);
 
 /**
  * Solo se acepta la forma real de una invitación de WhatsApp. Así un
@@ -50,8 +67,9 @@ const FORMA_VALIDA =
 let avisado = '';
 
 /**
- * El enlace si está cargado y es válido; `''` si no. Nunca devuelve algo a
- * medio validar: lo que sale de acá va directo a un `href`.
+ * El enlace del canal: el de la variable si está cargada, el del código si no,
+ * `''` si se apagó a mano o si lo cargado no tiene forma de invitación. Nunca
+ * devuelve algo a medio validar: lo que sale de acá va directo a un `href`.
  */
 export function whatsappUrl(): string {
   const crudo = (
@@ -60,11 +78,13 @@ export function whatsappUrl(): string {
     ''
   ).trim();
 
-  if (crudo === '') return '';
-  if (FORMA_VALIDA.test(crudo)) return crudo;
+  if (APAGADO.has(crudo.toLowerCase())) return '';
 
-  if (avisado !== crudo) {
-    avisado = crudo;
+  const valor = crudo === '' ? CANAL_OFICIAL : crudo;
+  if (FORMA_VALIDA.test(valor)) return valor;
+
+  if (avisado !== valor) {
+    avisado = valor;
     console.warn(
       '[cyber] el enlace de WhatsApp no tiene forma de invitación ' +
       '(esperado https://whatsapp.com/channel/<ID>). El botón no se muestra.',
