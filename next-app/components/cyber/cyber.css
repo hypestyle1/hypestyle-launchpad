@@ -50,8 +50,9 @@
    un escalón sobre el #0a0a0a del fondo. */
 .cyber-fondo::before {
   /* En mobile la trama va más tenue: la tarjeta ocupa media pantalla y el
-     contraste contra el blanco hace que cualquier textura se note el doble. */
-  opacity: 0.022;
+     contraste contra el blanco hace que cualquier textura se note el doble.
+     Bajada a 1,2% el 28/10 con el diseño ya aprobado. */
+  opacity: 0.012;
   -webkit-mask-size: 90px auto;
   mask-size: 90px auto;
   -webkit-mask-position: center;
@@ -69,7 +70,7 @@
 
 @media (min-width: 1024px) {
   .cyber-fondo::before {
-    opacity: 0.03;
+    opacity: 0.02;
     -webkit-mask-size: 130px auto;
     mask-size: 130px auto;
   }

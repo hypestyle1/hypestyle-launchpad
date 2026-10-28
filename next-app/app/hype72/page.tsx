@@ -6,7 +6,7 @@ import CyberAvisame from '@/components/cyber/CyberAvisame';
 import CyberWhatsApp from '@/components/cyber/CyberWhatsApp';
 import '@/components/cyber/cyber.css';
 import { buildMetadata } from '@/lib/seo';
-import { CYBER_WHATSAPP_URL, whatsappDisponible } from '@/lib/cyber-whatsapp';
+import { whatsappUrl } from '@/lib/cyber-whatsapp';
 import {
   CYBER_FECHAS,
   CYBER_HORA_APERTURA,
@@ -54,7 +54,8 @@ export default function Page({ searchParams }: { searchParams?: { fondo?: string
   const captura = cyberCapturaAbierta();
   const conTextura = searchParams?.fondo !== 'liso';
 
-  const hayWhatsApp = whatsappDisponible();
+  const urlWhatsApp = whatsappUrl();
+  const hayWhatsApp = urlWhatsApp !== '';
   // El demo es solo para mirar la composición en local. Dos candados: no
   // existe si ya hay invitación cargada, y no existe en producción. Así no hay
   // forma de que el sitio publicado muestre un botón que no lleva a ningún
@@ -115,7 +116,7 @@ export default function Page({ searchParams }: { searchParams?: { fondo?: string
                 <>
                   {mostrarWhatsApp && (
                     <>
-                      <CyberWhatsApp url={CYBER_WHATSAPP_URL || undefined} demo={demoWhatsApp} />
+                      <CyberWhatsApp url={urlWhatsApp || undefined} demo={demoWhatsApp} />
 
                       {/* Separador: las dos vías son alternativas, no pasos. */}
                       <div className="my-5 flex items-center gap-3" aria-hidden="true">

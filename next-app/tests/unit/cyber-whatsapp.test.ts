@@ -17,6 +17,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 
 async function cargar(valor: string | undefined) {
   vi.resetModules();
+  delete process.env.CYBER_WHATSAPP_URL;
   if (valor === undefined) delete process.env.NEXT_PUBLIC_CYBER_WHATSAPP_URL;
   else process.env.NEXT_PUBLIC_CYBER_WHATSAPP_URL = valor;
   return import('@/lib/cyber-whatsapp');
@@ -24,6 +25,7 @@ async function cargar(valor: string | undefined) {
 
 afterEach(() => {
   delete process.env.NEXT_PUBLIC_CYBER_WHATSAPP_URL;
+  delete process.env.CYBER_WHATSAPP_URL;
   vi.restoreAllMocks();
 });
 
@@ -32,9 +34,9 @@ describe('enlace del canal de WhatsApp', () => {
     // ID de canal real: alfanumérico de ~22 caracteres.
     const url = 'https://whatsapp.com/channel/0029VbALxHmL2ATrx7hqkh1I';
     const m = await cargar(url);
-    expect(m.CYBER_WHATSAPP_URL).toBe(url);
+    expect(m.whatsappUrl()).toBe(url);
     expect(m.whatsappDisponible()).toBe(true);
-    expect(m.esGrupo()).toBe(false);
+    expect(m.esGrupo(m.whatsappUrl())).toBe(false);
   });
 
   it('acepta el canal copiado desde el escritorio, con www.', async () => {
@@ -61,13 +63,29 @@ describe('enlace del canal de WhatsApp', () => {
   it('un grupo se reconoce como grupo (ahí el número queda a la vista)', async () => {
     const m = await cargar('https://chat.whatsapp.com/HxAbCdEfGhIjKlMnOpQrSt');
     expect(m.whatsappDisponible()).toBe(true);
-    expect(m.esGrupo()).toBe(true);
+    expect(m.esGrupo(m.whatsappUrl())).toBe(true);
   });
 
   it('sin variable no hay botón', async () => {
     const m = await cargar(undefined);
-    expect(m.CYBER_WHATSAPP_URL).toBe('');
+    expect(m.whatsappUrl()).toBe('');
     expect(m.whatsappDisponible()).toBe(false);
+  });
+
+  // La variable de servidor existe para poder encender el canal sin recompilar:
+  // las NEXT_PUBLIC_ quedan incrustadas en el bundle durante el build.
+  it('la variable de servidor gana sobre la pública y se lee en cada llamada', async () => {
+    const publica = 'https://whatsapp.com/channel/0029PublicaPublicaPub';
+    const servidor = 'https://whatsapp.com/channel/0029ServidorServidorS';
+    const m = await cargar(publica);
+    expect(m.whatsappUrl()).toBe(publica);
+
+    // Sin volver a importar el módulo: el valor no quedó congelado.
+    process.env.CYBER_WHATSAPP_URL = servidor;
+    expect(m.whatsappUrl()).toBe(servidor);
+
+    delete process.env.CYBER_WHATSAPP_URL;
+    expect(m.whatsappUrl()).toBe(publica);
   });
 
   it('nada de placeholders, http, otro dominio ni texto pegado de más', async () => {

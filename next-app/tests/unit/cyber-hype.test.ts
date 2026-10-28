@@ -92,7 +92,13 @@ describe('popup de newsletter', () => {
  * lista no salga nunca al navegador, y que la landing no muestre nada
  * comercial antes de la fecha autorizada.
  */
-describe('la lista de Brevo es solo del servidor', () => {
+// Estos tres recorren todo el árbol de `app`, `lib` y `components` leyendo cada
+// archivo de forma síncrona. En una máquina descargada tardan menos de un
+// segundo, pero con el server de desarrollo corriendo al lado pasaron de los
+// 5 s por defecto de vitest y aparecían en rojo por timeout — rojo que no
+// significaba nada y enseñaba a ignorar los checks. 20 s les sobra y sigue
+// siendo un tope: si alguna vez tardan eso, algo se rompió de verdad.
+describe('la lista de Brevo es solo del servidor', { timeout: 20_000 }, () => {
   const fuentes = (dir: string): string[] => {
     const out: string[] = [];
     for (const d of readdirSync(join(RAIZ, dir), { withFileTypes: true })) {
