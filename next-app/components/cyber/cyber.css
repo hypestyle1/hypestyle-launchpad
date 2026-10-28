@@ -31,8 +31,7 @@
 .cyber-fondo { position: relative; isolation: isolate; }
 .cyber-fondo > * { position: relative; z-index: 1; }
 
-.cyber-fondo::before,
-.cyber-fondo::after {
+.cyber-fondo::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -59,14 +58,9 @@
   mask-position: center;
 }
 
-/* Wordmark grande, cortado por el borde inferior izquierdo. Solo desktop, y
-   del lado contrario a la tarjeta para no pasar nunca por debajo del
-   formulario. */
-.cyber-fondo::after {
-  opacity: 0;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
+/* El wordmark gigante sangrado abajo a la izquierda (el ::after al 4%) se
+   SACÓ el 28/10 a pedido de Valentín: cortado por el borde se leía raro, como
+   un logo pegado a medias y no como textura. Queda solo la trama pareja. */
 
 @media (min-width: 1024px) {
   .cyber-fondo::before {
@@ -74,20 +68,12 @@
     -webkit-mask-size: 130px auto;
     mask-size: 130px auto;
   }
-  .cyber-fondo::after {
-    opacity: 0.04;
-    -webkit-mask-size: 760px auto;
-    mask-size: 760px auto;
-    -webkit-mask-position: left -150px bottom -60px;
-    mask-position: left -150px bottom -60px;
-  }
 }
 
 /* Sin máscaras (navegadores viejos) queda el negro liso, que es la otra
    variante válida: nunca un rectángulo blanco encima del contenido. */
 @supports not ((-webkit-mask-image: url('#')) or (mask-image: url('#'))) {
-  .cyber-fondo::before,
-  .cyber-fondo::after { display: none; }
+  .cyber-fondo::before { display: none; }
 }
 
 /* ============ Glitch continuo del lockup CYBER HYPE ============
