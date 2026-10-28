@@ -48,7 +48,7 @@ const evento = (event_name: string) => ({
   event_id: 'abc-123',
   // El gate por host: solo el dominio real. Un preview de Vercel o los e2e no
   // le mandan nada al pixel de producción (audit del 17/09/2026).
-  event_source_url: 'https://hypestyle.com.ar/hype72',
+  event_source_url: 'https://hypestyle.com.ar/cyberhype',
   custom_data: { content_name: 'cyber-hype', value: 0, currency: 'ARS' },
 });
 
@@ -81,7 +81,7 @@ describe('allowlist de /api/capi', () => {
   });
 
   it('el Lead de un preview o de localhost no llega al pixel de producción', async () => {
-    for (const url of ['https://next-app-git-abc.vercel.app/hype72', 'http://127.0.0.1:3100/hype72']) {
+    for (const url of ['https://next-app-git-abc.vercel.app/cyberhype', 'http://127.0.0.1:3100/cyberhype']) {
       llamadas = [];
       const res = await post({ ...evento('Lead'), event_source_url: url });
       expect(res.status, url).toBe(204);

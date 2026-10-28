@@ -44,7 +44,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = buildMetadata({
   title: 'CYBER HYPE',
   description: `Tres días, del ${CYBER_FECHAS}. Dejá tu mail y te avisamos cuando abre.`,
-  path: '/hype72',
+  path: '/cyberhype',
   noindex: true,
 });
 

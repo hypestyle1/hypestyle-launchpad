@@ -70,6 +70,16 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // La campaña se llamaba HYPE 72 y pasó a llamarse CYBER HYPE (28/10/2026).
+      // La landing vive en /cyberhype. /hype72 nunca llegó a producción — el PR
+      // #616 se mergeó y se revirtió —, pero la URL circuló en previews, en
+      // documentos internos y en capturas, así que redirige en vez de dar 404.
+      // 301 explícito y no `permanent: true`, que en Next emite 308.
+      //
+      // No hace falta una regla para `/hype72/`: Next normaliza la barra final
+      // antes de mirar los redirects, así que esa URL hace 308 a `/hype72` y
+      // ahí cae en esta regla. Verificado: termina en /cyberhype en dos saltos.
+      { source: '/hype72', destination: '/cyberhype', statusCode: 301 },
       // /novedades mostraba los 8 productos más nuevos: un recorte de /new-in con
       // otra URL y sin enlaces internos (auditoría SEO 2.0, 13/10). Una sola página.
       { source: '/novedades',           destination: '/new-in',                         permanent: true },

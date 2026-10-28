@@ -77,8 +77,8 @@ describe('CYBER HYPE — captación', () => {
 
 describe('popup de newsletter', () => {
   it('no aparece en la landing del evento (ofrece HYPE10, que se suma a los packs)', () => {
-    expect(isExcludedPage('/hype72')).toBe(true);
-    expect(isExcludedPage('/hype72/')).toBe(true);
+    expect(isExcludedPage('/cyberhype')).toBe(true);
+    expect(isExcludedPage('/cyberhype/')).toBe(true);
   });
 
   it('sigue apareciendo donde aparecía', () => {
@@ -137,7 +137,7 @@ describe('la landing no adelanta nada comercial', () => {
   const sinComentarios = (src: string) =>
     src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '');
 
-  const textos = ['app/hype72/page.tsx', 'components/cyber/CyberAvisame.tsx', 'lib/cyber-hype.ts']
+  const textos = ['app/cyberhype/page.tsx', 'components/cyber/CyberAvisame.tsx', 'lib/cyber-hype.ts']
     .map((f) => sinComentarios(readFileSync(join(RAIZ, f.replace(/\//g, sep)), 'utf8')))
     .join('\n');
 

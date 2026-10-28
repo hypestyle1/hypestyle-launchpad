@@ -29,7 +29,7 @@ let capiLlamadas: any[] = [];
 function prepararVentana(hostname: string) {
   const store: Record<string, string> = {};
   vi.stubGlobal('window', {
-    location: { hostname, href: `https://${hostname}/hype72` },
+    location: { hostname, href: `https://${hostname}/cyberhype` },
     fbq: (...args: any[]) => { fbqLlamadas.push(args); },
     localStorage: {
       getItem: (k: string) => store[k] ?? null,

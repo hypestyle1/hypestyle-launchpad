@@ -231,7 +231,7 @@ export function fbCompleteRegistration(user?: FbUserData): void {
 }
 
 /**
- * Registro en la lista de CYBER HYPE (el "Avisame" de /hype72).
+ * Registro en la lista de CYBER HYPE (el "Avisame" de /cyberhype).
  *
  * Sale como `Lead` por el pixel y por CAPI con el mismo `event_id`, igual que
  * el resto del embudo. Para qué: el conjunto de previa optimiza hoy a vistas de

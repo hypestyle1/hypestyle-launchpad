@@ -18,7 +18,7 @@ export const RETAIL_CHROME_HIDDEN_PREFIXES = [
   // flotante, la intro de marca y las barras de promo se superponen justo
   // encima del formulario en mobile y mandan a otro lado a quien vino a dejar
   // el mail. La página tiene un trabajo y nada tiene que competir con él.
-  '/hype72',
+  '/cyberhype',
 ] as const;
 
 export function isRetailChromeHidden(pathname: string | null | undefined): boolean {

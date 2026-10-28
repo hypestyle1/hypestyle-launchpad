@@ -9,12 +9,12 @@ import sitemap from '@/app/sitemap';
 // Rutas con page.tsx que NO van al sitemap, cada una por un motivo:
 // transaccionales y privadas llevan noindex en su propio HTML; el resto
 // no es una página de destino.
-// hype72: la landing de previa de CYBER HYPE va con noindex mientras es una
+// cyberhype: la landing de previa de CYBER HYPE va con noindex mientras es una
 // previa (y el link se reparte a mano, no desde el sitio), así que tampoco va
-// al sitemap. Ver app/hype72/page.tsx.
+// al sitemap. Ver app/cyberhype/page.tsx.
 const FUERA_DEL_SITEMAP = new Set([
   'acceso', 'admin', 'checkout', 'confirmacion', 'pendiente-de-pago', 'seguimiento',
-  'subir-foto-final', 'resena', 'private-access', 'mayoristas', 'hype72',
+  'subir-foto-final', 'resena', 'private-access', 'mayoristas', 'cyberhype',
 ]);
 
 const APP = join(__dirname, '..', '..', 'app');
