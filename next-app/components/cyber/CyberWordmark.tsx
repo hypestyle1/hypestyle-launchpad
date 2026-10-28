@@ -43,7 +43,13 @@ export default function CyberWordmark({
   // original o las franjas se ven desalineadas.
   const fila = (
     <span className="cyber-lockup__row">
-      <span className={`${archivoBlack.className} uppercase tracking-[-0.01em] leading-none`}>
+      {/* Tracking negativo fuerte (pedido del 28/10): CYBER tiene que leerse
+          como un bloque compacto, no como cinco letras sueltas. -0,055em es el
+          punto donde las astas se acercan sin que la Y y la B se toquen —
+          Archivo Black ya trae las contraformas muy cerradas, así que pasado
+          ese valor la palabra empieza a empastarse en tamaños chicos. La letra
+          no se deforma: solo cambia el espacio entre caracteres. */}
+      <span className={`${archivoBlack.className} uppercase tracking-[-0.055em] leading-none`}>
         CYBER
       </span>
       {/* eslint-disable-next-line @next/next/no-img-element -- el SVG oficial se
@@ -64,7 +70,7 @@ export default function CyberWordmark({
       className={[
         'cyber-lockup',
         animate ? 'cyber-lockup--animate' : '',
-        tone === 'dark' ? 'cyber-lockup--dark' : '',
+        tone === 'dark' ? 'cyber-lockup--dark' : 'cyber-lockup--light',
         className,
       ].filter(Boolean).join(' ')}
     >

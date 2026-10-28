@@ -31,8 +31,7 @@
 .cyber-fondo { position: relative; isolation: isolate; }
 .cyber-fondo > * { position: relative; z-index: 1; }
 
-.cyber-fondo::before,
-.cyber-fondo::after {
+.cyber-fondo::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -59,14 +58,9 @@
   mask-position: center;
 }
 
-/* Wordmark grande, cortado por el borde inferior izquierdo. Solo desktop, y
-   del lado contrario a la tarjeta para no pasar nunca por debajo del
-   formulario. */
-.cyber-fondo::after {
-  opacity: 0;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
+/* El wordmark gigante sangrado abajo a la izquierda (el ::after al 4%) se
+   SACÓ el 28/10 a pedido de Valentín: cortado por el borde se leía raro, como
+   un logo pegado a medias y no como textura. Queda solo la trama pareja. */
 
 @media (min-width: 1024px) {
   .cyber-fondo::before {
@@ -74,20 +68,12 @@
     -webkit-mask-size: 130px auto;
     mask-size: 130px auto;
   }
-  .cyber-fondo::after {
-    opacity: 0.04;
-    -webkit-mask-size: 760px auto;
-    mask-size: 760px auto;
-    -webkit-mask-position: left -150px bottom -60px;
-    mask-position: left -150px bottom -60px;
-  }
 }
 
 /* Sin máscaras (navegadores viejos) queda el negro liso, que es la otra
    variante válida: nunca un rectángulo blanco encima del contenido. */
 @supports not ((-webkit-mask-image: url('#')) or (mask-image: url('#'))) {
-  .cyber-fondo::before,
-  .cyber-fondo::after { display: none; }
+  .cyber-fondo::before { display: none; }
 }
 
 /* ============ Glitch continuo del lockup CYBER HYPE ============
@@ -126,7 +112,11 @@
 .cyber-lockup__row {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.24em;
+  /* 0,28em y no 0,24em: al cerrar el tracking de CYBER a -0,055em, la R se
+     lleva ese espacio también del lado derecho y el wordmark oficial quedaba
+     pegado. Esto devuelve el aire de la separación aprobada el 27/10 sin tocar
+     el logo. */
+  gap: 0.28em;
   white-space: nowrap;
 }
 .cyber-lockup__slice {
@@ -149,28 +139,58 @@
 
 /* steps(1, end): los cortes saltan de un estado al siguiente. Interpolando,
    clip-path haría un barrido suave — que es una cortina, no un glitch. */
+/* Recalibrado el 28/10 (pedido de Valentín: "el glitch actual es demasiado
+   imperceptible"). Qué cambió contra la versión anterior, medido:
+
+   - Tiempo visible: antes las franjas sumaban ~440 ms por ciclo combinado de
+     14,6 s (~3% del tiempo). Ahora cada capa tira DOS ráfagas por ciclo y el
+     total visible ronda el 13% de cada ciclo: hay actividad más o menos cada
+     segundo, con silencios reales en el medio.
+   - Corrimiento: de ±0.045em a ±0.12em. En el lockup de 58 px de la home son
+     ~7 px de desplazamiento; en el de 92 px de la landing, ~11. Se ve.
+   - Grosor: bandas de hasta el 24% del alto (antes 9-16%).
+   - `skewX` de 2-2.5° en el pico de cada ráfaga: el sesgo es lo que hace que
+     la banda lea como tearing digital y no como un texto corrido.
+
+   La legibilidad no se negocia: la copia base queda siempre en el flujo, sin
+   moverse, y las franjas nunca tapan la palabra entera. `steps(1, end)` corta
+   seco entre posiciones — sin interpolar, que es lo que lo hace glitch. */
 @keyframes cyber-loop-a {
-  0%,  71.9% { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
-  72%        { clip-path: inset(16% 0 72% 0); transform: translateX(-0.045em); }
-  74%        { clip-path: inset(47% 0 44% 0); transform: translateX(0.038em); }
-  76%        { clip-path: inset(68% 0 21% 0); transform: translateX(-0.03em); }
-  77.5%      { clip-path: inset(31% 0 60% 0); transform: translateX(0.022em); }
-  79%, 100%  { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+  0%,  17.9% { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+  18%        { clip-path: inset(10% 0 74% 0); transform: translateX(-0.09em); }
+  20%        { clip-path: inset(52% 0 34% 0); transform: translateX(0.07em) skewX(-2deg); }
+  22%        { clip-path: inset(28% 0 58% 0); transform: translateX(-0.055em); }
+  24%, 57.9% { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+  58%        { clip-path: inset(62% 0 20% 0); transform: translateX(0.11em); }
+  60.5%      { clip-path: inset(6% 0 80% 0);  transform: translateX(-0.085em) skewX(2deg); }
+  63%        { clip-path: inset(38% 0 46% 0); transform: translateX(0.06em); }
+  65%, 100%  { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
 }
 @keyframes cyber-loop-b {
-  0%,  40.9% { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
-  41%        { clip-path: inset(57% 0 33% 0); transform: translateX(0.05em); }
-  42.6%      { clip-path: inset(24% 0 66% 0); transform: translateX(-0.04em); }
-  44%        { clip-path: inset(78% 0 12% 0); transform: translateX(0.03em); }
-  45.4%, 88.9% { clip-path: inset(100% 0 0 0); transform: translateX(0); }
-  89%        { clip-path: inset(38% 0 52% 0); transform: translateX(-0.055em); }
-  90.5%      { clip-path: inset(8% 0 80% 0);  transform: translateX(0.042em); }
-  92%, 100%  { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+  0%,  30.9%   { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+  31%          { clip-path: inset(68% 0 12% 0); transform: translateX(-0.11em); }
+  33%          { clip-path: inset(20% 0 62% 0); transform: translateX(0.09em) skewX(-2.5deg); }
+  35.5%        { clip-path: inset(46% 0 38% 0); transform: translateX(-0.06em); }
+  37.5%, 77.9% { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+  78%          { clip-path: inset(4% 0 72% 0);  transform: translateX(0.12em); }
+  80%          { clip-path: inset(56% 0 28% 0); transform: translateX(-0.09em) skewX(2deg); }
+  82.5%        { clip-path: inset(32% 0 50% 0); transform: translateX(0.055em); }
+  84.5%, 100%  { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
 }
 
 /* El wordmark oficial es un SVG negro. En fondo oscuro se invierte a blanco:
    nunca se re-tipografía ni se usa otro archivo. */
 .cyber-lockup--dark .cyber-lockup__mark { filter: invert(1); }
+
+/* El color de CYBER tiene que salir del propio lockup, no heredarse.
+   Hasta el 28/10 no estaba declarado y funcionaba de casualidad: en la landing
+   el `<main>` lleva `text-white`, así que la palabra heredaba blanco. Al reusar
+   el componente en la home —donde el texto alrededor es negro— CYBER se dibujó
+   en #0a0a0a sobre fondo oscuro y desaparecía, mientras el wordmark oficial
+   seguía blanco porque se invierte con un filtro. El lockup es una pieza de
+   marca: tiene que verse igual en cualquier lado donde se lo pegue. */
+.cyber-lockup--dark { color: #fff; }
+.cyber-lockup--light { color: #0a0a0a; }
 
 @media (prefers-reduced-motion: reduce) {
   .cyber-lockup__slice { display: none; }

@@ -4,7 +4,7 @@
  * NO es Cyber Monday ni CACE: ni esos nombres ni esos logos aparecen en la
  * página. Es un evento de la marca.
  *
- * ESTE ARCHIVO ES LA FUENTE DE VERDAD DE LA LANDING /hype72 (el nombre de la
+ * ESTE ARCHIVO ES LA FUENTE DE VERDAD DE LA LANDING /cyberhype (el nombre de la
  * ruta sigue siendo interno; el nombre público es CYBER HYPE).
  *
  * Qué NO hay acá, a propósito:
@@ -31,7 +31,8 @@
  * El mismo instante vive en tres lugares, uno por superficie:
  *   - landing  → CYBER_START (este archivo)
  *   - 4 PACK   → PACK_REGULAR_X4_DESDE (lib/promo-pack-regular.ts, ya en main)
- *   - home     → HYPE72_HOME_DESDE     (lib/hype72-home.ts, PR #617)
+ *   - home     → el banner de la previa (components/cyber/CyberHomeBanner.tsx),
+ *                que lee CYBER_START de acá: no duplica la fecha
  * Verificado contra producción el 27/10: `GET /api/pack-regular-status` devuelve
  * `desde: 2026-11-02T03:00:00.000Z` = 2026-11-02T00:00:00-03:00. Si se separan,
  * la landing diría "abrió" mientras el carrito todavía cobra el precio viejo.

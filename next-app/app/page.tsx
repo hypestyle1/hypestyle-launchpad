@@ -12,6 +12,7 @@ import ReviewsHomeSection from '@/components/reviews/ReviewsHomeSection';
 import InstagramFeed from '@/components/InstagramFeed';
 import Footer from '@/components/Footer';
 import HeroSs27 from '@/components/ss27-home/HeroSs27';
+import CyberHomeBanner from '@/components/cyber/CyberHomeBanner';
 import Ss27Feed from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
@@ -83,6 +84,11 @@ export default async function Home() {
           HYPESTYLE — Streetwear argentino. Drops limitados, envíos a todo el mundo.
         </h1>
         <HeroSs27 />
+        {/* Previa de CYBER HYPE: la franja negra horizontal, debajo del hero y
+            antes del feed. Devuelve null fuera de la ventana de captación, así
+            que después del 2/11 la home vuelve sola a ser la de siempre.
+            Ver components/cyber/CyberHomeBanner. */}
+        <CyberHomeBanner />
         {/* Orden: el drop nuevo arriba (SS27 + sus looks), después FW26, best
             sellers, básicos, editorial y la prueba social al final. Promo y
             Flash Sale devuelven null sin campaña. */}

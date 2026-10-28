@@ -22,13 +22,13 @@ export default function SpotifyPlayer() {
 
   // Sin player en checkout/admin, y tampoco en el canal mayorista: es otro
   // contexto de compra y la experiencia "musica de local" es del minorista.
-  // En /hype72 tampoco: queda sobre el texto de consentimiento del formulario
+  // En /cyberhype tampoco: queda sobre el texto de consentimiento del formulario
   // en mobile, y esa página existe solo para que dejen el mail.
   if (
     pathname?.startsWith('/checkout') ||
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/mayoristas') ||
-    pathname?.startsWith('/hype72')
+    pathname?.startsWith('/cyberhype')
   ) return null;
 
   function toggle() {
