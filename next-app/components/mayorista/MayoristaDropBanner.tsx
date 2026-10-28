@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { PRIVATE_BANNER_IMAGES } from '@/lib/private-access/banner-images';
 import type { MayoristaDropInfo } from '@/lib/mayorista-drop';
 import '@/components/private-access/private-access.css';
+import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
 
 export type MayoristaDropProps = MayoristaDropInfo & { count: number };
 
@@ -24,6 +25,8 @@ export default function MayoristaDropBanner({ drop, onCta, onCatalog }: {
   onCta: () => void;
   onCatalog: () => void;
 }) {
+  // En consignación no hay "50% del PVP" que prometer (lib/mayorista-consignacion.ts).
+  const { consignacion } = useMayoristaPerfil();
   const images = PRIVATE_BANNER_IMAGES;
   return (
     <section aria-label={`${drop.name} · acceso anticipado`} className="pa-glass-charcoal relative overflow-hidden [overflow:clip] rounded-[16px] sm:rounded-[22px] text-white mb-8">
@@ -47,7 +50,7 @@ export default function MayoristaDropBanner({ drop, onCta, onCatalog }: {
         <div className="md:w-[380px] md:shrink-0">
           <p className="text-[13px] sm:text-[14px] leading-relaxed text-white/70">{dropText(drop)}</p>
           <p className="text-[11px] uppercase tracking-[0.18em] text-white/45 mt-3">
-            {drop.count} {drop.count === 1 ? 'modelo' : 'modelos'} · tu precio: 50% del PVP
+            {drop.count} {drop.count === 1 ? 'modelo' : 'modelos'}{consignacion ? ' · a precio de lista, te quedás con el ' + consignacion.pct + '%' : ' · tu precio: 50% del PVP'}
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-5">
             <button onClick={onCta} className="px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide rounded-full bg-white text-[#0a0a0a] hover:bg-white/90 transition-colors">

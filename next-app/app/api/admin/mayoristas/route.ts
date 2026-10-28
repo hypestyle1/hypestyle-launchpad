@@ -3,6 +3,7 @@ import { statusFromMeta } from '@/lib/mayorista-account';
 import { adminSecretMatches } from '@/lib/admin-auth';
 import { parseCredit } from '@/lib/mayorista-credit';
 import { parseExclusividad, parseBloqueo, evaluarExclusividad } from '@/lib/mayorista-exclusividad';
+import { parseConsignacion } from '@/lib/mayorista-consignacion';
 
 const WP_URL       = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY       = process.env.WC_CONSUMER_KEY    || '';
@@ -107,9 +108,12 @@ export async function GET(req: NextRequest) {
       active: metaVal(meta, 'es_mayorista') === 'yes',
       status: statusFromMeta(metaVal(meta, 'es_mayorista')),
       cuit: metaVal(meta, 'mayorista_cuit'),
+      pais: metaVal(meta, 'mayorista_pais') || c.billing?.country || 'AR',
       instagram: metaVal(meta, 'mayorista_instagram'),
       exclusividad: parseExclusividad(meta),
       bloqueoExclusividad: parseBloqueo(meta),
+      // null = cuenta de compra normal (el 50% de siempre).
+      consignacion: parseConsignacion(meta),
       // Elegibilidad / cumplimiento con los pedidos pagados (solo informa; el
       // admin decide): lib/mayorista-exclusividad.ts.
       exclusividadEvaluacion: evaluarExclusividad(

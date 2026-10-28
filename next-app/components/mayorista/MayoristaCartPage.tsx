@@ -6,7 +6,10 @@ import Image from 'next/image';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { imgSrc } from '@/lib/img';
 import { Button } from '@/components/ui/button';
-import { formatArs } from '@/lib/mayorista-format';
+import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
+import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
+import { splitConsignacion } from '@/lib/mayorista-consignacion';
+import MayoristaDivisaNota from './MayoristaDivisaNota';
 import { useMayoristaCart, lineKey, MayoristaCartItem } from '@/context/MayoristaCartContext';
 import { METODOS_ENVIO, METODO_DEFAULT, metodoDef, validarEnvio, type MetodoEnvio } from '@/lib/mayorista-envio';
 import MayoristaMinBar from './MayoristaMinBar';
@@ -34,7 +37,9 @@ function csvEscape(value: string | number): string {
 }
 
 function downloadOrderCsv(orderNumber: string, items: MayoristaCartItem[], total: number) {
-  const lines = [['Producto', 'Color', 'Talle', 'Cantidad', 'Precio unitario', 'Subtotal'].join(',')];
+  // Los importes van en pesos y sin formato: el CSV es el dato crudo del
+  // pedido, para abrirlo en una planilla. La divisa elegida es de vitrina.
+  const lines = [['Producto', 'Color', 'Talle', 'Cantidad', 'Precio unitario (ARS)', 'Subtotal (ARS)'].join(',')];
   for (const item of items) {
     lines.push([item.name, item.color ?? '', item.size, item.quantity, item.price, item.price * item.quantity].map(csvEscape).join(','));
   }
@@ -48,7 +53,10 @@ function downloadOrderCsv(orderNumber: string, items: MayoristaCartItem[], total
   URL.revokeObjectURL(url);
 }
 
-async function downloadOrderPdf(orderNumber: string, clientName: string, email: string, items: MayoristaCartItem[], total: number) {
+// `money` es la divisa en la que el mayorista está mirando el catálogo: el PDF
+// que se lleva tiene que decir los mismos números que la pantalla, con la
+// cotización usada al pie.
+async function downloadOrderPdf(orderNumber: string, clientName: string, email: string, items: MayoristaCartItem[], total: number, money: { fmt: (n: number) => string; nota: string | null }) {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -89,7 +97,7 @@ async function downloadOrderPdf(orderNumber: string, clientName: string, email: 
     page.drawText(item.name.slice(0, 40), { x: marginX, y, size: 9, font });
     page.drawText(item.size, { x: colTalle, y, size: 9, font });
     page.drawText(String(item.quantity), { x: colCant, y, size: 9, font });
-    page.drawText(formatArs(item.price * item.quantity), { x: colSubtotal, y, size: 9, font });
+    page.drawText(money.fmt(item.price * item.quantity), { x: colSubtotal, y, size: 9, font });
     if (item.color) {
       y -= 11;
       page.drawText(`Color: ${item.color}`, { x: marginX, y, size: 8, font, color: gray });
@@ -101,7 +109,14 @@ async function downloadOrderPdf(orderNumber: string, clientName: string, email: 
   page.drawLine({ start: { x: marginX, y }, end: { x: 555, y }, thickness: 0.8, color: rgb(0, 0, 0) });
   y -= 20;
   page.drawText('TOTAL', { x: colCant, y, size: 12, font: bold });
-  page.drawText(formatArs(total), { x: colSubtotal, y, size: 12, font: bold });
+  page.drawText(money.fmt(total), { x: colSubtotal, y, size: 12, font: bold });
+
+  // Sin esto, un PDF en dólares parecería un precio cerrado: queda escrito
+  // con qué cotización se armó y que la factura sale en pesos.
+  if (money.nota) {
+    y -= 26;
+    page.drawText(money.nota, { x: marginX, y, size: 7.5, font, color: gray });
+  }
 
   const bytes = await doc.save();
   const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
@@ -146,6 +161,10 @@ const EMPTY_SHIPPING: ShippingForm = {
 
 export default function MayoristaCartPage({ catalog = [], campaignName = null }: { catalog?: MayoristaProduct[]; campaignName?: string | null }) {
   const { items, add, remove, setQty, clear, replace, total, hydrated } = useMayoristaCart();
+  const { fmt, nota } = useMayoristaDivisa();
+  // Consignación: el total no es lo que paga, es el valor de la mercadería
+  // que se lleva a precio de lista (lib/mayorista-consignacion.ts).
+  const { consignacion } = useMayoristaPerfil();
   const [lineInfo, setLineInfo] = useState<Record<string, LineInfo>>({});
   const [step, setStep] = useState<'cart' | 'shipping'>('cart');
   const [shipping, setShipping] = useState<ShippingForm>(EMPTY_SHIPPING);
@@ -493,7 +512,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
                   {d.items.length} producto{d.items.length !== 1 ? 's' : ''} · guardado el {fmtDraftDate(d.updatedAt)}
                 </p>
               </div>
-              <span className="text-[14px] font-bold whitespace-nowrap">{formatArs(draftTotal(d))}</span>
+              <span className="text-[14px] font-bold whitespace-nowrap">{fmt(draftTotal(d))}</span>
             </div>
             <div className="flex items-center mt-3 pt-3 border-t border-border">
               <button
@@ -520,15 +539,18 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
     return (
       <div className="max-w-lg mx-auto px-5 py-16">
         <div className="text-center mb-8">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Pedido enviado</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{consignacion ? 'Consignación enviada' : 'Pedido enviado'}</p>
           <h1 className="text-2xl font-bold tracking-tight mt-2">Pedido #{confirmed.orderNumber}</h1>
           <p className="text-[13px] text-muted-foreground mt-3">
-            Ya lo recibimos. Abajo tenés cómo pagarlo; una vez acreditado lo preparamos y te avisamos con el seguimiento.
+            {consignacion
+              ? 'Ya lo recibimos. No pagás nada ahora: lo preparamos, te lo enviamos y liquidás lo que vendas.'
+              : 'Ya lo recibimos. Abajo tenés cómo pagarlo; una vez acreditado lo preparamos y te avisamos con el seguimiento.'}
             {email && <> Te mandamos este resumen a <span className="text-foreground">{email}</span>.</>}
           </p>
         </div>
 
-        {(() => {
+        {/* En consignación no hay nada que pagar ahora: el bloque de pago no va. */}
+        {!consignacion && (() => {
           // Sin datos cargados en el entorno el bloque manda a WhatsApp: no se inventan alias ni CBU.
           const info: PagoInfo = pago ?? { alias: null, cbu: null, titular: null, cuit: null, banco: null, plazoReservaDias: null };
           const details = pagoDetailLines(info);
@@ -561,31 +583,37 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
             {confirmed.items.map((item) => (
               <div key={lineKey(item)} className="flex items-center justify-between text-[13px]">
                 <span className="text-foreground/80">{item.name} <span className="text-text-light">{item.color ? `· ${item.color} ` : ''}· Talle {item.size} · x{item.quantity}</span></span>
-                <span className="font-medium">{formatArs(item.price * item.quantity)}</span>
+                <span className="font-medium">{fmt(item.price * item.quantity)}</span>
               </div>
             ))}
           </div>
           {confirmed.campaign && confirmed.campaign.discountTotal > 0 && (
             <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[13px]">
               <span className="text-foreground/80">Ahorraste con {confirmed.campaign.name}</span>
-              <span className="font-medium">−{formatArs(confirmed.campaign.discountTotal)}</span>
+              <span className="font-medium">−{fmt(confirmed.campaign.discountTotal)}</span>
             </div>
           )}
           {confirmed.creditUsed > 0 && (
             <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[13px]">
               <span className="text-foreground/80">Saldo a favor aplicado</span>
-              <span className="font-medium">−{formatArs(confirmed.creditUsed)}</span>
+              <span className="font-medium">−{fmt(confirmed.creditUsed)}</span>
             </div>
           )}
           <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-            <span className="text-[13px] font-semibold uppercase tracking-wide">{confirmed.creditUsed > 0 ? 'Total a pagar' : 'Total'}</span>
-            <span className="text-[15px] font-bold">{formatArs(confirmed.total - confirmed.creditUsed)}</span>
+            <span className="text-[13px] font-semibold uppercase tracking-wide">{consignacion ? 'Mercadería a precio de lista' : confirmed.creditUsed > 0 ? 'Total a pagar' : 'Total'}</span>
+            <span className="text-[15px] font-bold">{fmt(confirmed.total - confirmed.creditUsed)}</span>
           </div>
+          {consignacion && (
+            <p className="mt-2 text-[12px] text-muted-foreground">
+              Si se vende todo: te quedan {fmt(splitConsignacion(confirmed.total, consignacion.pct).comision)} y nos liquidás {fmt(splitConsignacion(confirmed.total, consignacion.pct).aLiquidar)}.
+            </p>
+          )}
+          <MayoristaDivisaNota className="mt-2" />
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <button
-            onClick={() => downloadOrderPdf(confirmed.orderNumber, `${shipping.first_name} ${shipping.last_name}`.trim(), email, confirmed.items, confirmed.total)}
+            onClick={() => downloadOrderPdf(confirmed.orderNumber, `${shipping.first_name} ${shipping.last_name}`.trim(), email, confirmed.items, confirmed.total, { fmt, nota })}
             className="text-[12px] font-semibold uppercase tracking-wide py-2.5 rounded-full border border-border hover:border-foreground transition-colors"
           >
             Descargar PDF
@@ -713,11 +741,11 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
               {priceChange.changes.map((c) => (
                 <li key={lineKey(c)}>
                   {c.name} · {c.color ? `${c.size} · ${c.color}` : c.size} × {c.quantity}:{' '}
-                  {c.before != null ? <><s>{formatArs(c.before)}</s> → </> : null}<span className="text-foreground font-medium">{formatArs(c.after)}</span>
+                  {c.before != null ? <><s>{fmt(c.before)}</s> → </> : null}<span className="text-foreground font-medium">{fmt(c.after)}</span>
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-[13px]">Total actualizado: <b>{formatArs(priceChange.total)}</b></p>
+            <p className="mt-3 text-[13px]">Total actualizado: <b>{fmt(priceChange.total)}</b></p>
             <Button type="button" variant="hype" size="ctaFull" disabled={sending} onClick={() => submitOrder(true)} className="mt-4 py-3 rounded-full">
               {sending ? 'Enviando…' : 'Confirmar con los precios actualizados'}
             </Button>
@@ -728,7 +756,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
           <div className="mt-6 rounded-[12px] border border-foreground p-4">
             <p className="text-[13px] font-semibold">Ya recibimos tu pedido #{recentOrder.order.number}</p>
             <p className="mt-2 text-[12px] text-muted-foreground">
-              Entró {agoLabel(recentOrder.order.ageSeconds)}: {recentOrder.order.units} {recentOrder.order.units === 1 ? 'unidad' : 'unidades'} por <span className="text-foreground font-medium">{formatArs(recentOrder.order.total)}</span>. Si viste un error al enviarlo, quedó registrado igual y no hace falta mandarlo de nuevo.
+              Entró {agoLabel(recentOrder.order.ageSeconds)}: {recentOrder.order.units} {recentOrder.order.units === 1 ? 'unidad' : 'unidades'} por <span className="text-foreground font-medium">{fmt(recentOrder.order.total)}</span>. Si viste un error al enviarlo, quedó registrado igual y no hace falta mandarlo de nuevo.
             </p>
             <Button asChild variant="hype" size="ctaFull" className="mt-4 py-3 rounded-full">
               <Link href="/mayoristas/pedidos">Ver mis pedidos</Link>
@@ -747,7 +775,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         {verifying && <p className="mt-4 text-[12px] text-muted-foreground">El envío está tardando. Estamos verificando si tu pedido entró: dejá esta página abierta.</p>}
 
         <Button type="submit" variant="hype" size="ctaFull" disabled={sending || !!priceChange || !!recentOrder || !!bloqueo || minUnknown} className="mt-8 py-3 rounded-full">
-          {verifying ? 'Verificando…' : sending ? 'Enviando…' : `Confirmar pedido — ${formatArs(toPay)}`}
+          {verifying ? 'Verificando…' : sending ? 'Enviando…' : consignacion ? `Confirmar la consignación — ${fmt(total)}` : `Confirmar pedido — ${fmt(toPay)}`}
         </Button>
       </form>
     );
@@ -762,7 +790,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         <div className="mb-4 rounded-[12px] border border-foreground p-4 text-[12px]">
           <p className="text-[13px] font-semibold">Ya recibimos tu pedido #{recentNotice.number}</p>
           <p className="mt-1 text-muted-foreground">
-            Entró {agoLabel(recentNotice.ageSeconds)}: {recentNotice.units} {recentNotice.units === 1 ? 'unidad' : 'unidades'} por {formatArs(recentNotice.total)}. Lo que ves acá abajo quedó cargado en el carrito; si es el mismo pedido, no hace falta enviarlo de nuevo.
+            Entró {agoLabel(recentNotice.ageSeconds)}: {recentNotice.units} {recentNotice.units === 1 ? 'unidad' : 'unidades'} por {fmt(recentNotice.total)}. Lo que ves acá abajo quedó cargado en el carrito; si es el mismo pedido, no hace falta enviarlo de nuevo.
           </p>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[11px] uppercase tracking-wide">
             <Link href="/mayoristas/pedidos" className="underline">Ver mis pedidos</Link>
@@ -796,11 +824,11 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
                 const promo = info?.campaign && info.wsRegular > item.price;
                 return promo ? (
                   <p className="text-[13px] mt-0.5 flex items-baseline gap-2">
-                    <span className="font-semibold">{formatArs(item.price)}</span>
-                    <span className="text-[11px] text-text-light line-through">{formatArs(info.wsRegular)}</span>
+                    <span className="font-semibold">{fmt(item.price)}</span>
+                    <span className="text-[11px] text-text-light line-through">{fmt(info.wsRegular)}</span>
                     <span className="text-[10px] uppercase tracking-wide text-sale">{info.campaign!.badge} −{Math.round(info.campaign!.discount * 100)}%</span>
                   </p>
-                ) : <p className="text-[13px] font-semibold mt-0.5">{formatArs(item.price)}</p>;
+                ) : <p className="text-[13px] font-semibold mt-0.5">{fmt(item.price)}</p>;
               })()}
             </div>
             {(() => {
@@ -835,28 +863,42 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
               <>
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-muted-foreground">Subtotal a precio mayorista</span>
-                  <span className="tabular-nums">{formatArs(subtotalNormal)}</span>
+                  <span className="tabular-nums">{fmt(subtotalNormal)}</span>
                 </div>
                 <div className="flex items-center justify-between text-[13px] text-sale">
                   <span>{name}</span>
-                  <span className="font-medium tabular-nums">−{formatArs(campaignDiscount)}</span>
+                  <span className="font-medium tabular-nums">−{fmt(campaignDiscount)}</span>
                 </div>
               </>
             )}
             <div className="flex items-center justify-between">
-              <span className="text-[13px] uppercase tracking-wide text-muted-foreground">{creditUsed > 0 ? 'Subtotal' : 'Total'}</span>
-              <span className={creditUsed > 0 ? 'text-[15px] font-semibold' : 'text-xl font-bold'}>{formatArs(total)}</span>
+              <span className="text-[13px] uppercase tracking-wide text-muted-foreground">{consignacion ? 'Mercadería a precio de lista' : creditUsed > 0 ? 'Subtotal' : 'Total'}</span>
+              <span className={creditUsed > 0 && !consignacion ? 'text-[15px] font-semibold' : 'text-xl font-bold'}>{fmt(total)}</span>
             </div>
-            {campaignDiscount > 0 && <p className="text-[12px] text-sale">Ahorrás {formatArs(campaignDiscount)} con {name}.</p>}
+            {consignacion && (
+              <div className="rounded-[12px] border border-border p-3 text-[13px] space-y-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-muted-foreground">Si se vende todo, tu {consignacion.pct}%</span>
+                  <span className="font-semibold tabular-nums">{fmt(splitConsignacion(total, consignacion.pct).comision)}</span>
+                </div>
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-muted-foreground">Nos liquidás</span>
+                  <span className="tabular-nums">{fmt(splitConsignacion(total, consignacion.pct).aLiquidar)}</span>
+                </div>
+                <p className="text-[12px] text-muted-foreground pt-1">No pagás nada ahora. Liquidás a medida que vendés y lo que no se venda vuelve.</p>
+              </div>
+            )}
+            {campaignDiscount > 0 && <p className="text-[12px] text-sale">Ahorrás {fmt(campaignDiscount)} con {name}.</p>}
+            <MayoristaDivisaNota className="pt-1" />
             {creditUsed > 0 && (
               <>
                 <div className="flex items-center justify-between text-[13px]">
                   <span className="text-foreground/80">Saldo a favor</span>
-                  <span className="font-medium">−{formatArs(creditUsed)}</span>
+                  <span className="font-medium">−{fmt(creditUsed)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[13px] uppercase tracking-wide text-muted-foreground">Total a pagar</span>
-                  <span className="text-xl font-bold">{formatArs(toPay)}</span>
+                  <span className="text-xl font-bold">{fmt(toPay)}</span>
                 </div>
               </>
             )}
@@ -887,7 +929,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
         return (
           <div className="mt-4 rounded-[12px] border border-border p-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Completá el mínimo</p>
-            <p className="text-[12px] text-foreground/70 mt-0.5">Te faltan {formatArs(missing)}. Estos suman rápido:</p>
+            <p className="text-[12px] text-foreground/70 mt-0.5">Te faltan {fmt(missing)}. Estos suman rápido:</p>
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
               {suggestions.map(s => (
                 <button
@@ -902,7 +944,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
                     <div className="min-w-0">
                       <p className="text-[12px] font-medium truncate">{s.name}</p>
                       <p className="text-[11px] text-text-light">Talle {s.size}{s.color ? ` · ${s.color}` : ''}</p>
-                      <p className="text-[12px] font-semibold tabular-nums">{formatArs(s.unitPrice)}{s.promo && <span className="ml-1 text-[10px] font-normal uppercase tracking-wide text-sale">liquidación</span>}</p>
+                      <p className="text-[12px] font-semibold tabular-nums">{fmt(s.unitPrice)}{s.promo && <span className="ml-1 text-[10px] font-normal uppercase tracking-wide text-sale">liquidación</span>}</p>
                     </div>
                   </div>
                   <span className="mt-1.5 block text-[10px] uppercase tracking-wide text-foreground/60">+ Agregar</span>
