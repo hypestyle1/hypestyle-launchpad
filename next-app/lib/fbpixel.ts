@@ -255,6 +255,25 @@ export function fbCompleteRegistration(user?: FbUserData): void {
  * `value: 0`: dejar el mail no es una venta, y ponerle un ticket estimado
  * ensuciaría el ROAS de la cuenta con plata que no entró.
  */
+/**
+ * Clic en la invitación al WhatsApp de CYBER HYPE.
+ *
+ * Evento propio, **separado del `Lead`** y a propósito: un clic en la
+ * invitación no es un registro. No sabemos si la persona terminó entrando al
+ * canal —eso lo sabe WhatsApp, no el sitio—, así que contarlo como alta haría
+ * que la campaña optimice a un resultado que puede no haber ocurrido. El `Lead`
+ * sigue siendo solo el alta de mail que el servidor confirmó.
+ *
+ * Solo por pixel: es un clic saliente del navegador, no hay nada que el
+ * servidor sepa y que el browser no. Por eso tampoco toca la allowlist de
+ * /api/capi. Respeta `trackingAllowed()` como el resto.
+ */
+export function fbClickWhatsAppCyber(): void {
+  if (!trackingAllowed()) return;
+  if (typeof window === 'undefined' || typeof window.fbq !== 'function') return;
+  window.fbq('trackCustom', 'ClickWhatsAppCyber', { content_name: 'cyber-hype', content_category: 'whatsapp' });
+}
+
 export function fbLeadCyber(): void {
   if (!trackingAllowed()) return;
   const customData = {

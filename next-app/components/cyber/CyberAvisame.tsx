@@ -6,29 +6,24 @@ import { registrarCyber, type ResultadoRegistro } from '@/lib/cyber-registro-cli
 import { fbLeadCyber } from '@/lib/fbpixel';
 
 /**
- * "AVISAME CUANDO ABRA" — la captación de la landing de CYBER HYPE.
+ * "AVISAME CUANDO ABRA" — la única acción de la landing de CYBER HYPE.
  *
- * Lo que este formulario hace distinto del que había:
- *  1. **No miente.** Antes el submit era `try { await … } catch {}` y después
- *     mostraba "listo" igual: si Brevo fallaba, la persona se iba creyendo que
- *     estaba anotada. Ahora cada resultado tiene su estado y el error ofrece
- *     reintentar.
- *  2. **Consentimiento a la vista**, pegado al botón y no escondido abajo, con
- *     el link a la política de privacidad. La versión del texto se registra en
- *     el contacto (HYPE72_CONSENT) desde el endpoint.
- *  3. **Dice qué va a pasar y cuándo**: el mail llega el 2/11 a las 00:00. No
- *     promete acceso anticipado, ni precios, ni descuentos: no hay ninguno.
- *  4. **Trampa de bots sin CAPTCHA**: un campo honeypot que ninguna persona ve
- *     ni puede tabular, y el tiempo que pasó desde que se montó el formulario.
- *     Nada de esto le agrega un paso a nadie.
+ * La lógica es la del PR #624 y no cambió: honeypot, tiempo mínimo, resultado
+ * real del servidor (nada de "listo" cuando falló), y el `Lead` de Meta una
+ * sola vez por visita y solo con el alta confirmada.
  *
- * Mobile primero: una sola columna, campo y botón de 52 px de alto (el pulgar
- * no falla), teclado de email, y el estado final reemplaza al formulario para
- * que no quede un campo vacío invitando a mandarlo de nuevo. Probado a 375,
- * 390 y 430 px.
+ * Lo que cambió el 28/10 es la presentación. El formulario dejó de ser una
+ * sección más abajo y pasó a ser el centro de la composición, así que:
+ *  - campo y botón de 54 px, pegados, con el botón en negro pleno;
+ *  - mientras manda, el botón NO se apaga —un botón al 60% parece deshabilitado
+ *    y en mobile se lee como "no andás"—: cambia el texto y sigue en negro;
+ *  - los tres errores tienen el mismo lugar y la misma forma, debajo del campo,
+ *    sin mover nada de lo que está arriba;
+ *  - el éxito reemplaza al formulario en el mismo bloque, con el mismo alto
+ *    aproximado, para que la página no pegue un salto.
  *
- * El `Lead` de Meta sale una sola vez por visita y solo cuando el servidor
- * confirmó el alta (ver lib/fbpixel → fbLeadCyber).
+ * Siempre se dibuja sobre superficie clara (la landing clara, o la tarjeta
+ * blanca de la variante oscura), así que los tokens son los del sitio.
  */
 export default function CyberAvisame() {
   const [email, setEmail] = useState('');
@@ -60,37 +55,60 @@ export default function CyberAvisame() {
 
   if (estado === 'alta') {
     return (
-      <div aria-live="polite" className="border border-foreground/15 bg-bg-alt px-5 py-6 rounded-[8px]">
-        <p className="text-[19px] md:text-[22px] font-semibold tracking-[-0.02em]">Listo, quedaste anotado.</p>
-        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-          Te escribimos a <span className="font-medium text-foreground break-all">{enviado}</span> el lunes
-          2 de noviembre a las 00:00, cuando abra. Antes te mandamos los anticipos.
+      <div aria-live="polite" className="rounded-[12px] border border-foreground/12 bg-bg-alt px-5 py-6">
+        <p className="text-[20px] font-semibold tracking-[-0.025em] text-foreground">
+          Listo, quedaste anotado.
         </p>
-        <p className="mt-3 text-[12px] text-muted-foreground">
-          Si no lo ves en la bandeja principal, mirá en Promociones o en spam.
+        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+          Te escribimos a <span className="font-medium text-foreground break-all">{enviado}</span> el
+          lunes 2 de noviembre a las 00:00, cuando abra.
+        </p>
+        <p className="mt-3 text-[12px] text-text-light">
+          Si no lo ves en la bandeja principal, mirá en Promociones.
         </p>
       </div>
     );
   }
 
+  const error =
+    estado === 'email-invalido' ? 'Revisá el mail: parece que falta algo.' :
+    estado === 'demasiados-intentos' ? 'Ya lo intentaste varias veces. Esperá unos minutos.' :
+    estado === 'error' ? 'No pudimos anotarte ahora. Probá de nuevo en un rato.' :
+    null;
+
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-3">
+    <form onSubmit={submit} noValidate className="w-full">
       <label htmlFor="cyber-email" className="sr-only">Tu email</label>
-      <input
-        id="cyber-email"
-        name="email"
-        type="email"
-        inputMode="email"
-        autoComplete="email"
-        autoCapitalize="off"
-        spellCheck={false}
-        value={email}
-        onChange={(e) => { setEmail(e.target.value); if (estado !== 'idle') setEstado('idle'); }}
-        placeholder="tu@email.com"
-        aria-invalid={estado === 'email-invalido'}
-        aria-describedby="cyber-consentimiento"
-        className="h-[52px] w-full min-w-0 rounded-[8px] border border-border-mid bg-white px-4 text-[16px] text-foreground placeholder:text-text-light focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/15"
-      />
+
+      {/* Campo + botón como una sola pieza: en mobile apilados a ancho completo,
+          en desktop el botón al lado para que la acción entre en una línea. */}
+      <div className="flex flex-col gap-2.5 sm:flex-row">
+        <input
+          id="cyber-email"
+          name="email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="off"
+          spellCheck={false}
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); if (estado !== 'idle' && estado !== 'enviando') setEstado('idle'); }}
+          placeholder="tu@email.com"
+          aria-invalid={estado === 'email-invalido'}
+          aria-describedby="cyber-consentimiento"
+          /* `flex-1` solo desde sm: en columna, `flex-basis:0` le gana a la
+             altura y el campo se aplasta a la altura del texto (medido: 22 px
+             en mobile). En fila sí hace falta para que ocupe el resto. */
+          className="h-[54px] w-full min-w-0 shrink-0 rounded-[10px] border border-foreground/20 bg-white px-4 text-[16px] text-foreground placeholder:text-text-light focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/15 sm:flex-1"
+        />
+        <button
+          type="submit"
+          disabled={estado === 'enviando'}
+          className="h-[54px] shrink-0 rounded-[10px] bg-foreground px-7 text-[12px] font-bold uppercase tracking-[0.14em] text-primary-foreground transition-opacity hover:opacity-85 disabled:cursor-wait"
+        >
+          {estado === 'enviando' ? 'Anotando…' : 'Avisame cuando abra'}
+        </button>
+      </div>
 
       {/* Honeypot. Fuera de la vista y fuera del alcance del teclado y del
           lector de pantalla: una persona no puede completarlo ni sin querer.
@@ -109,27 +127,11 @@ export default function CyberAvisame() {
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={estado === 'enviando'}
-        className="h-[52px] w-full rounded-[8px] bg-foreground text-[12px] font-bold uppercase tracking-[0.16em] text-primary-foreground transition-opacity hover:opacity-85 disabled:opacity-60"
-      >
-        {estado === 'enviando' ? 'Anotando…' : 'Avisame cuando abra'}
-      </button>
-
-      {estado === 'email-invalido' && (
-        <p role="alert" className="text-[13px] font-medium text-destructive">
-          Revisá el mail: parece que falta algo.
-        </p>
-      )}
-      {estado === 'demasiados-intentos' && (
-        <p role="alert" className="text-[13px] font-medium text-destructive">
-          Ya lo intentaste varias veces. Esperá unos minutos y probá de nuevo.
-        </p>
-      )}
-      {estado === 'error' && (
-        <p role="alert" className="text-[13px] font-medium text-destructive">
-          No pudimos anotarte ahora. Probá de nuevo en un rato.
+      {/* Un solo lugar para los tres errores: aparece debajo del campo y no
+          empuja nada de lo que está arriba. */}
+      {error && (
+        <p role="alert" className="mt-2.5 text-[13px] font-medium text-destructive">
+          {error}
         </p>
       )}
 
@@ -142,7 +144,7 @@ export default function CyberAvisame() {
           vuelve a anotar, y tienen que poder leer eso antes de dejar el mail, no
           enterarse cuando les llega. El endpoint lo cumple de verdad: los saca
           de las listas generales antes de levantar la baja. */}
-      <p id="cyber-consentimiento" className="text-[12px] leading-relaxed text-muted-foreground">
+      <p id="cyber-consentimiento" className="mt-3.5 text-[11.5px] leading-[1.55] text-muted-foreground">
         Al dejar tu mail aceptás recibir por correo los avisos de CYBER HYPE: los anticipos y la
         apertura del 2/11. Si alguna vez te diste de baja, esto te anota solo para el evento. Te
         podés dar de baja desde cualquier mail que te mandemos.{' '}

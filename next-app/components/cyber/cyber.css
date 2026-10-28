@@ -15,6 +15,166 @@
   .cyber-live-dot { animation: none; }
 }
 
+/* ============ Fondo editorial de la landing ============
+   Negro sobre negro: el wordmark oficial repetido como textura, al 4,5% sobre
+   #0a0a0a. No es una imagen de fondo con `filter`, que es lo que la carpeta de
+   Logos prohíbe: el SVG se usa de MÁSCARA y lo que se pinta a través de ella es
+   blanco puro. El logo nunca se re-colorea ni se re-tipografía.
+
+   Dos capas: la grilla repetida y un wordmark enorme cortado por el borde
+   inferior derecho, que es lo que le da escala a la composición. En mobile la
+   grilla crece y el wordmark grande desaparece: a 390 px esa capa se cruzaba
+   con la tarjeta y ensuciaba la lectura.
+
+   `pointer-events: none` en las dos: es decoración, nunca intercepta un tap. */
+
+.cyber-fondo { position: relative; isolation: isolate; }
+.cyber-fondo > * { position: relative; z-index: 1; }
+
+.cyber-fondo::before,
+.cyber-fondo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #ffffff;
+  -webkit-mask-image: url('/hype-wordmark.svg');
+  mask-image: url('/hype-wordmark.svg');
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+}
+
+/* Grilla. Chica y al 3%: a 90 px el wordmark se lee como trama, no como un
+   logo puesto atrás. Medido a ojo contra el negro: queda en torno a #161616,
+   un escalón sobre el #0a0a0a del fondo. */
+.cyber-fondo::before {
+  /* En mobile la trama va más tenue: la tarjeta ocupa media pantalla y el
+     contraste contra el blanco hace que cualquier textura se note el doble. */
+  opacity: 0.022;
+  -webkit-mask-size: 90px auto;
+  mask-size: 90px auto;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* Wordmark grande, cortado por el borde inferior izquierdo. Solo desktop, y
+   del lado contrario a la tarjeta para no pasar nunca por debajo del
+   formulario. */
+.cyber-fondo::after {
+  opacity: 0;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@media (min-width: 1024px) {
+  .cyber-fondo::before {
+    opacity: 0.03;
+    -webkit-mask-size: 130px auto;
+    mask-size: 130px auto;
+  }
+  .cyber-fondo::after {
+    opacity: 0.04;
+    -webkit-mask-size: 760px auto;
+    mask-size: 760px auto;
+    -webkit-mask-position: left -150px bottom -60px;
+    mask-position: left -150px bottom -60px;
+  }
+}
+
+/* Sin máscaras (navegadores viejos) queda el negro liso, que es la otra
+   variante válida: nunca un rectángulo blanco encima del contenido. */
+@supports not ((-webkit-mask-image: url('#')) or (mask-image: url('#'))) {
+  .cyber-fondo::before,
+  .cyber-fondo::after { display: none; }
+}
+
+/* ============ Glitch continuo del lockup CYBER HYPE ============
+   Qué cambia respecto del reveal de abajo: aquel corría UNA vez al montar y
+   después el logo quedaba quieto, y además solo alcanzaba a la palabra CYBER.
+   Este corre en loop mientras la página esté abierta y toma el lockup entero
+   — CYBER + el wordmark oficial —, que es lo que se ve en el footer de
+   rotten-future.com.
+
+   La técnica es la misma que se verificó ahí en vivo: copias del contenido
+   recortadas en franjas horizontales con clip-path, corridas en X, de UN solo
+   color, con duraciones distintas por capa. Dos diferencias deliberadas:
+
+   1. Acá las copias SÍ llevan fondo opaco (`--cyber-glitch-bg`, el fondo real
+      de la sección). Así la franja reemplaza al original en vez de duplicarlo:
+      se lee como un fragmento desplazado y no como doble exposición. En el PR
+      anterior el fondo se había sacado para que el efecto anduviera sobre
+      fotografía; esta landing tiene fondo plano, así que se puede usar.
+   2. El original debajo NUNCA se recorta ni se mueve: las franjas son breves
+      (~0,2 s sobre ciclos de 3,1 s y 4,7 s) y el resto del tiempo el lockup
+      está entero. El logo se lee siempre, que es la condición de la marca.
+
+   Las dos capas tienen ciclos de distinta duración, así que entran y salen de
+   fase: el patrón combinado tarda ~14,6 s en repetirse y no se percibe como un
+   bucle. Los desplazamientos van en `em` para que el efecto escale igual a
+   cualquier tamaño, de 28 px en mobile a 96 px en desktop.
+
+   Cero layout shift: el original ocupa el flujo y las copias son `absolute`.
+   Solo clip-path y transform, las dos propiedades que el compositor resuelve
+   sin recalcular layout. Sin JS y sin dependencias. */
+
+.cyber-lockup {
+  position: relative;
+  display: inline-block;
+}
+.cyber-lockup__row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.24em;
+  white-space: nowrap;
+}
+.cyber-lockup__slice {
+  position: absolute;
+  inset: 0;
+  background: var(--cyber-glitch-bg, #0a0a0a);
+  pointer-events: none;
+  user-select: none;
+  /* Estado de reposo: fuera de vista. Si las animaciones no corren —reduced
+     motion, un navegador viejo— el lockup se ve limpio y nada más. */
+  clip-path: inset(100% 0 0 0);
+  will-change: clip-path, transform;
+}
+.cyber-lockup--animate .cyber-lockup__slice--a {
+  animation: cyber-loop-a var(--cyber-loop-a, 3.1s) steps(1, end) infinite;
+}
+.cyber-lockup--animate .cyber-lockup__slice--b {
+  animation: cyber-loop-b var(--cyber-loop-b, 4.7s) steps(1, end) infinite;
+}
+
+/* steps(1, end): los cortes saltan de un estado al siguiente. Interpolando,
+   clip-path haría un barrido suave — que es una cortina, no un glitch. */
+@keyframes cyber-loop-a {
+  0%,  71.9% { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+  72%        { clip-path: inset(16% 0 72% 0); transform: translateX(-0.045em); }
+  74%        { clip-path: inset(47% 0 44% 0); transform: translateX(0.038em); }
+  76%        { clip-path: inset(68% 0 21% 0); transform: translateX(-0.03em); }
+  77.5%      { clip-path: inset(31% 0 60% 0); transform: translateX(0.022em); }
+  79%, 100%  { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+}
+@keyframes cyber-loop-b {
+  0%,  40.9% { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+  41%        { clip-path: inset(57% 0 33% 0); transform: translateX(0.05em); }
+  42.6%      { clip-path: inset(24% 0 66% 0); transform: translateX(-0.04em); }
+  44%        { clip-path: inset(78% 0 12% 0); transform: translateX(0.03em); }
+  45.4%, 88.9% { clip-path: inset(100% 0 0 0); transform: translateX(0); }
+  89%        { clip-path: inset(38% 0 52% 0); transform: translateX(-0.055em); }
+  90.5%      { clip-path: inset(8% 0 80% 0);  transform: translateX(0.042em); }
+  92%, 100%  { clip-path: inset(100% 0 0 0);  transform: translateX(0); }
+}
+
+/* El wordmark oficial es un SVG negro. En fondo oscuro se invierte a blanco:
+   nunca se re-tipografía ni se usa otro archivo. */
+.cyber-lockup--dark .cyber-lockup__mark { filter: invert(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cyber-lockup__slice { display: none; }
+}
+
 /* ============ Efectos de reveal del lettering (CyberLettering) ============ */
 
 /* B — Distortion reveal: entra desenfocado, estirado y sesgado, asienta limpio.

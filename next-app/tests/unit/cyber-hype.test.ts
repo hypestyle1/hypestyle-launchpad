@@ -146,8 +146,14 @@ describe('la landing no adelanta nada comercial', () => {
   });
 
   it('no promete acceso anticipado', () => {
-    expect(textos).toMatch(/No hay acceso anticipado/i);
+    // La landing tiene que DECIR que abre igual para todos, no solo evitar
+    // prometer lo contrario. El rediseño del 28/10 se llevó las tarjetas de
+    // "Qué es" donde estaba la frase "No hay acceso anticipado"; la condición
+    // ahora se cumple con "Igual para todos", que dice lo mismo en una línea.
+    expect(textos).toMatch(/Igual para todos|No hay acceso anticipado/i);
     expect(textos).not.toMatch(/acceso anticipado para/i);
     expect(textos).not.toMatch(/antes que (nadie|el resto|todos)/i);
+    // Lo que sí no puede aparecer nunca: que dejar el mail compre antes.
+    expect(textos).not.toMatch(/compr\w+ (antes|primero)/i);
   });
 });

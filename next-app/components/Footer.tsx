@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useReveal } from "@/hooks/useReveal";
 import { useLocale, LANGUAGES } from "@/context/LocaleContext";
@@ -78,13 +77,6 @@ export default function Footer() {
   const [submitted, setSubmitted] = useState(false);
   const { language, setLanguage, currency, setCurrency, t } = useLocale();
   const ref = useReveal();
-  const pathname = usePathname() ?? '';
-
-  // En la landing de CYBER HYPE el footer no ofrece el 10%: esa página capta
-  // el mail para el evento, donde ese cupón se suma a los packs. Dos
-  // formularios en la misma página pidiendo lo mismo, y uno prometiendo un
-  // descuento que el otro evita a propósito. El resto del footer queda igual.
-  const sinNewsletter = pathname.startsWith('/hype72');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +92,7 @@ export default function Footer() {
         {/* Newsletter + Brand */}
         <div className="flex flex-col justify-between gap-10">
           {/* Newsletter */}
-          <div className={sinNewsletter ? 'hidden' : undefined}>
+          <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-primary-foreground/40 mb-3">Newsletter</p>
             <h3 className="text-[18px] md:text-[22px] font-bold uppercase leading-snug mb-1">
               {t('Suscribite y obtené un 10% de descuento')}
