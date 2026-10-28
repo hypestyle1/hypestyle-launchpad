@@ -5,7 +5,7 @@
  * revende al precio que quiera (lib/mayorista-pricing.ts). En consignación no
  * compra nada: recibe la mercadería, la exhibe, y cuando la vende se queda con
  * un porcentaje fijo del precio de lista y liquida el resto. Así se trabaja
- * con Bizarre (Chile) desde el 28/10/2026: ellos manejan 25% neto.
+ * con RESERVED (Santiago de Chile) desde el 28/10/2026.
  *
  * Por eso una cuenta en consignación ve OTROS números: el precio de lista como
  * precio principal —es el que va a cobrar en su local— con su comisión y lo

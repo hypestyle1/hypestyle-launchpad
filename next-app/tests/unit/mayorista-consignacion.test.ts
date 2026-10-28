@@ -5,8 +5,8 @@ const meta = (value: unknown) => [{ key: META_CONSIGNACION, value }] as { key: s
 
 describe('parseConsignacion', () => {
   it('lee el acuerdo guardado', () => {
-    expect(parseConsignacion(meta(JSON.stringify({ pct: 25, desde: '2026-10-28', nota: 'Bizarre' }))))
-      .toEqual({ pct: 25, desde: '2026-10-28', nota: 'Bizarre' });
+    expect(parseConsignacion(meta(JSON.stringify({ pct: 25, desde: '2026-10-28', nota: 'RESERVED' }))))
+      .toEqual({ pct: 25, desde: '2026-10-28', nota: 'RESERVED' });
   });
   it('sin meta, la cuenta es de compra normal', () => {
     expect(parseConsignacion([])).toBeNull();
