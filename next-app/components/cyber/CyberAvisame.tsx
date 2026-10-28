@@ -69,7 +69,7 @@ export default function CyberAvisame() {
         </p>
         <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
           Te escribimos a <span className="font-medium text-foreground break-all">{enviado}</span> el
-          lunes 2 de noviembre a las 00:00, cuando abra.
+          domingo 1 de noviembre a las 20:00, cuando abra.
         </p>
         <p className="mt-3 text-[12px] text-text-light">
           Si no lo ves en la bandeja principal, mirá en Promociones.
@@ -143,9 +143,10 @@ export default function CyberAvisame() {
         </p>
       )}
 
-      {/* Texto de consentimiento v2 — si cambia, subir CYBER_CONSENT_VERSION en
+      {/* Texto de consentimiento v3 — si cambia, subir CYBER_CONSENT_VERSION en
           app/api/newsletter-subscribe/route.ts para que quede registrado qué
-          aceptó cada contacto.
+          aceptó cada contacto. v3 (28/10): la apertura pasó del lunes 2/11
+          00:00 al domingo 1/11 20:00 y el texto dice la fecha.
 
           La segunda frase está ahí por los contactos que alguna vez se dieron
           de baja (hoy 99 en la lista Newsletter). Completar este formulario los
@@ -154,8 +155,8 @@ export default function CyberAvisame() {
           de las listas generales antes de levantar la baja. */}
       <p id="cyber-consentimiento" className="mt-3.5 text-[11.5px] leading-[1.55] text-muted-foreground">
         Al dejar tu mail aceptás recibir por correo los avisos de CYBER HYPE: los anticipos y la
-        apertura del 2/11. Si alguna vez te diste de baja, esto te anota solo para el evento. Te
-        podés dar de baja desde cualquier mail que te mandemos.{' '}
+        apertura del domingo 1/11 a las 20:00. Si alguna vez te diste de baja, esto te anota solo
+        para el evento. Te podés dar de baja desde cualquier mail que te mandemos.{' '}
         <Link href="/politica-de-privacidad" className="underline underline-offset-2 hover:text-foreground">
           Política de privacidad
         </Link>
