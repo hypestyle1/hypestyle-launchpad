@@ -111,7 +111,8 @@ function buildWelcomeStep2Html(name: string) {
         <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111;">Lo más pedido de Hypestyle</h1>
         <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.6;">
           ${hola}por si todavía no diste una vuelta por la tienda: te dejamos lo que más se está llevando la gente.
-          Tu <strong>10% off</strong> con el código <strong>HYPE10</strong> sigue activo para tu primera compra.
+          Tu <strong>10% off</strong> con el código <strong>HYPE10</strong> sigue activo para tu primera compra
+          (no aplica a packs ni precios de evento).
         </p>
       </td>
     </tr>
@@ -130,9 +131,10 @@ function buildWelcomeStep3Html(name: string) {
   return emailShell(`
     <tr>
       <td style="padding:32px 40px 24px;background:#fff;">
-        <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111;">Tu 10% off vence pronto</h1>
+        <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111;">Tu 10% off sigue esperándote</h1>
         <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.6;">
-          ${hola}este es el último recordatorio: todavía tenés tu código de bienvenida sin usar.
+          ${hola}este es el último recordatorio que te mandamos: tu código de bienvenida no vence,
+          pero los drops sí se agotan.
         </p>
       </td>
     </tr>
@@ -141,7 +143,7 @@ function buildWelcomeStep3Html(name: string) {
         <div style="background:#f8f8f8;border:1px dashed #ccc;border-radius:6px;padding:20px 24px;text-align:center;">
           <p style="margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:0.14em;color:#999;">Tu código de descuento</p>
           <p style="margin:0 0 12px;font-size:28px;font-weight:800;color:#111;letter-spacing:0.06em;">HYPE10</p>
-          <p style="margin:0;font-size:12px;color:#888;">10% off · Válido para tu primera compra</p>
+          <p style="margin:0;font-size:12px;color:#888;">10% off · Válido para tu primera compra · No aplica a packs ni precios de evento</p>
         </div>
       </td>
     </tr>
@@ -205,7 +207,7 @@ export async function GET(req: NextRequest) {
 
     const name = String(attrs.NOMBRE || '').trim();
     const html = step === 2 ? buildWelcomeStep2Html(name) : buildWelcomeStep3Html(name);
-    const subject = step === 2 ? 'Mirá lo más pedido — Hypestyle' : 'Tu 10% off vence pronto — Hypestyle';
+    const subject = step === 2 ? 'Mirá lo más pedido — Hypestyle' : 'Último recordatorio: tu 10% off — Hypestyle';
     const sendTo = overrideTo || c.email;
 
     try {
