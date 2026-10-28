@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { textoFirst10, type First10Info } from '@/lib/first10';
+import { descuentoCupon, lineasExcluidasDelCupon, faltaElegibilidad, type ElegibilidadLinea } from '@/lib/cupon-lineas';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { isFlashSaleActive } from '@/lib/flash-sale';
@@ -160,6 +161,10 @@ export default function Checkout() {
   const fisicos = purchasableItems.filter(item => !isGiftCardItem(item));
   const soloGift = purchasableItems.length > 0 && fisicos.length === 0;
   const subtotalGift = giftItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  // Las líneas sobre las que puede caer un cupón. El id es el SLUG (lo único
+  // que conoce el carrito); /validate-coupon lo resuelve a id de Woo y contesta
+  // qué línea es elegible — ver lib/cupon-lineas.
+  const lineasCupon = purchasableItems.map((i) => ({ id: i.id, price: i.price, quantity: i.quantity }));
   const router = useRouter();
   const { formatPrice, formatPriceIn, currency, setCurrency, currencyChosen, country } = useLocale();
   const [step, setStep] = useState<Step>('info');
@@ -201,7 +206,10 @@ export default function Checkout() {
   // Lo que hay escrito en Close Friends aunque no hayan tocado "Sumarme".
   const igBorrador = useRef('');
   const [coupon, setCoupon] = useState('');
-  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean; first10?: First10Info } | null>(null);
+  // `items`: la elegibilidad por línea que devuelve /validate-coupon (el backend
+  // resuelve el slug a id de Woo y dice qué línea cobra el descuento). Sin ella
+  // —backend viejo o cupón de carrito— el cálculo cae al % sobre todo el subtotal.
+  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean; first10?: First10Info; items?: ElegibilidadLinea[] | null } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [info, setInfo] = useState<InfoForm>({
@@ -423,19 +431,25 @@ export default function Checkout() {
     const res = await fetch('/api/validate-coupon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: codigo, total: subtotal, email }),
+      // Los ítems van para que el PHP resuelva los ids y conteste qué líneas son
+      // elegibles: HYPE10 excluye 12 productos y Woo descuenta SOLO el resto.
+      body: JSON.stringify({ code: codigo, total: subtotal, email, items: lineasCupon.map((l) => ({ id: l.id, quantity: l.quantity })) }),
     });
-    return await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; first10?: First10Info; error?: string };
+    return await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; first10?: First10Info; items?: ElegibilidadLinea[] | null; error?: string };
   };
 
   // Un cupón personal se valida contra el mail, así que si lo cambian DESPUÉS de
   // aplicarlo hay que volver a preguntar (Woo lo valida contra el mail de
   // facturación al crear el pedido). Con debounce para no pegarle por tecla.
+  // Y también si cambia el carrito: la elegibilidad es por línea, así que
+  // agregar o sacar un producto cambia el descuento. La clave junta las dos
+  // cosas (mail y carrito) para no pegarle por tecla ni por render.
   const cuponValidadoPara = useRef('');
+  const firmaCarrito = lineasCupon.map((l) => l.id + 'x' + l.quantity).join(',');
   useEffect(() => {
     const code = couponData?.code;
     if (!code) { cuponValidadoPara.current = ''; return; }
-    const clave = code + '|' + info.email.trim().toLowerCase();
+    const clave = code + '|' + info.email.trim().toLowerCase() + '|' + firmaCarrito;
     if (cuponValidadoPara.current === clave) return;
     let vigente = true;
     const t = setTimeout(async () => {
@@ -446,18 +460,24 @@ export default function Checkout() {
         if (!data?.valid) {
           setCouponData(null);
           setCouponError(data?.error || 'El código ya no es válido');
+          return;
         }
+        // Elegibilidad fresca para el carrito de AHORA: sin esto el resumen
+        // seguiría descontando con el mapa del carrito anterior.
+        setCouponData((prev) => (prev && prev.code === code ? { ...prev, items: data.items ?? null } : prev));
       } catch { /* si falla la red, lo valida Woo al confirmar */ }
     }, 700);
     return () => { vigente = false; clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [couponData?.code, info.email]);
+  }, [couponData?.code, info.email, firmaCarrito]);
 
-  const cuponDescuento = couponData ? (
-    couponData.type === 'percent'
-      ? Math.round(subtotal * (couponData.amount / 100))
-      : Math.min(couponData.amount, subtotal)
-  ) : 0;
+  // El descuento del cupón sale de lib/cupon-lineas: la misma cuenta que hace
+  // Woo al crear el pedido (floor por línea, solo las elegibles). Antes era
+  // `subtotal × %` sobre todo el carrito y prometía plata que el pedido no iba
+  // a descontar — HYPE10 excluye 12 productos.
+  const cuponDescuento = descuentoCupon(lineasCupon, couponData);
+  const lineasSinCupon = lineasExcluidasDelCupon(lineasCupon, couponData);
+  const cuponRevalidando = faltaElegibilidad(lineasCupon, couponData);
   // 50% off "campeones del mundo" tiene prioridad sobre el 3x2 — no deberían solaparse
   // (si por algún motivo ambos estados dieran 'won' a la vez, no se suman).
   const championActive = championWon && !isInternational;
@@ -874,6 +894,10 @@ export default function Checkout() {
           discountAmount: (isLocalTransfer ? Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.10) : 0) + promo3x2Descuento + championDescuento + packRegularDescuento,
           discountLabel: [championDescuento > 0 ? 'CAMPEON50' : '', promo3x2Descuento > 0 ? '3x2' : '', packRegularDescuento > 0 ? packRegularEtiqueta(unidadesPack) : '', isLocalTransfer ? 'Transferencia (10%)' : ''].filter(Boolean).join(' + ') || undefined,
           couponCode: couponData?.code,
+          // Solo para medir la paridad en el server (el precio y el descuento los
+          // calcula él, nunca el navegador): si Woo descuenta otra cosa, queda en
+          // el log con el número que el cliente estuvo viendo.
+          couponDiscount: cuponDescuento,
           paymentMethod: pago.metodo,
           shippingMethodId: selectedRate?.id,
           shippingLabel: selectedRate?.label,
@@ -1185,7 +1209,7 @@ export default function Checkout() {
                         setCouponError('Una gift card no sirve para comprar otra gift card');
                       } else if (data.valid && data.code && data.type && data.amount !== undefined) {
                         cuponValidadoPara.current = data.code + '|' + info.email.trim().toLowerCase();
-                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping, first10: data.first10 });
+                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping, first10: data.first10, items: data.items ?? null });
                       }
                       else { setCouponError(data.error || 'Código inválido'); }
                     } catch { setCouponError('Error al validar el código'); }
@@ -1206,6 +1230,18 @@ export default function Checkout() {
                 <p className="text-[11px] text-green-700 font-medium">
                   Cupón {couponData.code} aplicado — {couponData.first10 ? textoFirst10(couponData.first10) : couponData.type === 'percent' ? `${couponData.amount}% off` : formatPrice(couponData.amount)}
                 </p>
+              )}
+              {/* Carrito mixto: un cupón de producto descuenta SOLO las líneas
+                  elegibles (HYPE10 excluye 12 productos). Decirlo acá y no en el
+                  mail de pago es la diferencia entre un total claro y el reclamo
+                  del #4092. */}
+              {lineasSinCupon.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  {couponData?.code} corre sobre {lineasCupon.length - lineasSinCupon.length} de los {lineasCupon.length} productos del carrito.
+                </p>
+              )}
+              {cuponRevalidando && (
+                <p className="text-[11px] text-muted-foreground">Actualizando el descuento…</p>
               )}
               {couponData?.first10 && (
                 <div className="flex items-center gap-3 rounded-[8px] border border-green-100 bg-green-50/60 p-2">

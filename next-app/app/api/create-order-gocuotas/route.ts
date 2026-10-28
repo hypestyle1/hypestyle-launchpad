@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     // regalo oficial sobre la orden real, del lado de WordPress.
     const cleanItems = Array.isArray(rawPayload.items) ? rawPayload.items.filter((it: any) => it?.isGift !== true) : [];
     const {
-      items, customer, shipping, discountAmount: descuentoCliente, couponCode,
+      items, customer, shipping, discountAmount: descuentoCliente, couponCode, couponDiscount: cuponDescuentoCliente,
       paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
       fbp, fbc, attribution, clarityUser, claritySession,
     } = { ...rawPayload, items: cleanItems };
@@ -284,7 +284,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: `WC ${res.status}: ${txt}` }, { status: 502 });
     }
 
-    const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string; line_items?: { name?: string; quantity?: number; total?: string; meta_data?: { key?: string; value?: unknown }[] }[] };
+    const wcOrder = await res.json() as { id: number; number: string; order_key: string; total: string; discount_total?: string; line_items?: { name?: string; quantity?: number; total?: string; meta_data?: { key?: string; value?: unknown }[] }[] };
+    // PARIDAD DEL CUPÓN. Las exclusiones las vuelve a aplicar Woo acá (más el
+    // blindaje del mu-plugin, backend v1.42.1): este pedido ya trae el descuento
+    // REAL. Si no coincide con el que el checkout mostró, el cliente ve el total
+    // ajustado antes de pagar (nunca se cobra un número que no vio), pero la
+    // diferencia tiene que quedar registrada: es la señal de que la elegibilidad
+    // del front y la de Woo se separaron.
+    if (couponCode) {
+      const wooDescuento  = parseFloat(wcOrder.discount_total ?? '0') || 0;
+      const vistoPorCliente = Number(cuponDescuentoCliente);
+      if (Number.isFinite(vistoPorCliente) && Math.abs(wooDescuento - vistoPorCliente) > 1) {
+        console.warn('[create-order-gocuotas] PARIDAD CUPÓN: pedido', wcOrder.number, couponCode,
+          'mostrado', vistoPorCliente, 'Woo', wooDescuento);
+      }
+    }
     // El regalo FIRST10 lo agrega WordPress sobre el pedido real; para el mail
     // de confirmación se lee de las líneas que devolvió Woo.
     const regaloFirst10 = regaloFirst10DeLineas(wcOrder.line_items);

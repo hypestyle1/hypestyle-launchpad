@@ -9,7 +9,17 @@ export async function POST(req: NextRequest) {
     // El mail va porque hay cupones personales (email_restrictions) y con tope
     // por persona (usage_limit_per_user): sin él, el PHP no los puede validar y
     // el checkout aprueba códigos que Woo rechaza al crear el pedido.
-    const { code, total, email } = await req.json();
+    // `items` = [{ id: <slug del carrito>, qty }]. El PHP resuelve el slug a id
+    // de Woo y devuelve la elegibilidad por línea: así el descuento que se
+    // muestra es el que Woo va a aplicar, y el front no mantiene una segunda
+    // lista de exclusiones (ver lib/cupon-lineas).
+    const { code, total, email, items } = await req.json();
+    const lineas = Array.isArray(items)
+      ? items.slice(0, 60).map((it: { id?: unknown; quantity?: unknown; qty?: unknown }) => ({
+          id: String(it?.id ?? ''),
+          qty: Math.max(1, Math.floor(Number(it?.quantity ?? it?.qty ?? 1)) || 1),
+        })).filter((it) => it.id !== '')
+      : [];
     const res = await fetch(`${WP_URL}/wp-json/hypestyle/v1/validate-coupon`, {
       method: 'POST',
       headers: {
@@ -17,7 +27,7 @@ export async function POST(req: NextRequest) {
         'X-Hypestyle-Secret': WP_SECRET,
         'Authorization': `Bearer ${WP_SECRET}`,
       },
-      body: JSON.stringify({ code, total, email }),
+      body: JSON.stringify(lineas.length ? { code, total, email, items: lineas } : { code, total, email }),
     });
 
     if (!res.ok) {
