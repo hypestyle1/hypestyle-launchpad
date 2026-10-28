@@ -83,6 +83,29 @@ export interface CreateOrderResponse {
   error?: string;
 }
 
+/**
+ * Error de la ruta que crea el pedido, con el estado y los errores por campo
+ * intactos. Antes se aplanaba a `new Error(message)` y el checkout no tenía
+ * forma de distinguir un 422 por datos inválidos de una caída de red: con el
+ * `status` puede volver al paso 1 y marcar el campo en vez de mostrar un cartel
+ * genérico.
+ *
+ * No es una unión discriminada a propósito: el repo compila con
+ * `strictNullChecks: false` y TypeScript no estrecha uniones por un booleano.
+ */
+export class CreateOrderError extends Error {
+  status: number;
+  codigo: string | null;
+  errores: Record<string, string> | null;
+  constructor(message: string, status: number, codigo?: string, errores?: Record<string, string>) {
+    super(message);
+    this.name = 'CreateOrderError';
+    this.status = status;
+    this.codigo = codigo ?? null;
+    this.errores = errores ?? null;
+  }
+}
+
 export async function createOrderAndPreference(
   payload: CreateOrderPayload,
 ): Promise<CreateOrderResponse> {
@@ -102,8 +125,8 @@ export async function createOrderAndPreference(
   });
 
   if (!wcRes.ok) {
-    const err = await wcRes.json().catch(() => ({})) as { message?: string };
-    throw new Error(err.message || `WC HTTP ${wcRes.status}`);
+    const err = await wcRes.json().catch(() => ({})) as { message?: string; codigo?: string; errores?: Record<string, string> };
+    throw new CreateOrderError(err.message || `WC HTTP ${wcRes.status}`, wcRes.status, err.codigo, err.errores);
   }
 
   const order = await wcRes.json() as { wcOrderId: number; wcOrderNumber: string; orderKey: string; wcTotal?: number; paypalUrl?: string | null; taloPaymentData?: TaloPaymentData | null };

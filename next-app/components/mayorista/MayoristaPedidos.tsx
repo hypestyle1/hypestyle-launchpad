@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatArs } from '@/lib/mayorista-format';
+import { useMayoristaDivisa } from '@/context/MayoristaDivisaContext';
 import { Button } from '@/components/ui/button';
 import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
@@ -35,6 +35,7 @@ function fmtDate(s: string) {
 export default function MayoristaPedidos({ catalog = [] }: { catalog?: MayoristaProduct[] }) {
   const router = useRouter();
   const { items: cartItems, add } = useMayoristaCart();
+  const { fmt } = useMayoristaDivisa();
   const [pedidos, setPedidos] = useState<PedidoView[] | null>(null);
   // Un error del servidor se muestra como error, no como "no tenés pedidos"
   // (hasta el 13/10 el 502 se veía como lista vacía).
@@ -126,14 +127,14 @@ export default function MayoristaPedidos({ catalog = [] }: { catalog?: Mayorista
                             {l.name}
                             <span className="text-text-light"> {l.color ? `· ${l.color} ` : ''}{l.size ? `· Talle ${l.size} ` : ''}· ×{l.quantity}</span>
                           </span>
-                          <span className="tabular-nums whitespace-nowrap">{formatArs(l.lineTotal)}</span>
+                          <span className="tabular-nums whitespace-nowrap">{fmt(l.lineTotal)}</span>
                         </li>
                       ))}
                     </ul>
                     <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[12px]">
                       {p.envio.resumen && <><dt className="text-muted-foreground">Envío</dt><dd>{p.envio.resumen}</dd></>}
                       {p.campaignName && <><dt className="text-muted-foreground">Campaña</dt><dd>{p.campaignName}</dd></>}
-                      {p.creditUsed > 0 && <><dt className="text-muted-foreground">Saldo a favor</dt><dd>−{formatArs(p.creditUsed)}</dd></>}
+                      {p.creditUsed > 0 && <><dt className="text-muted-foreground">Saldo a favor</dt><dd>−{fmt(p.creditUsed)}</dd></>}
                       {p.tracking && (
                         <>
                           <dt className="text-muted-foreground">Seguimiento</dt>
@@ -149,7 +150,7 @@ export default function MayoristaPedidos({ catalog = [] }: { catalog?: Mayorista
                 )}
 
                 <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-3 border-t border-border">
-                  <span className="text-[15px] font-bold">{formatArs(p.total)}</span>
+                  <span className="text-[15px] font-bold">{fmt(p.total)}</span>
                   <div className="flex flex-wrap items-center gap-4 text-[11px] uppercase tracking-wide">
                     {!isOpen && p.tracking && <span className="text-text-light normal-case tracking-normal">Guía: {p.trackingUrl ? <a href={p.trackingUrl} target="_blank" rel="noopener noreferrer" className="underline">{p.tracking}</a> : p.tracking}</span>}
                     <button type="button" onClick={() => setOpen(isOpen ? null : p.id)} aria-expanded={isOpen} className="min-h-[36px] text-muted-foreground hover:text-foreground underline underline-offset-4">

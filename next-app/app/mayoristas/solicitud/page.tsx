@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { fbCompleteRegistration } from '@/lib/fbpixel';
 import { captureAttribution, type Attribution } from '@/lib/attribution';
 import { Button } from '@/components/ui/button';
+import { PAISES_MAYORISTA, PAIS_DEFAULT, paisMayorista, validarTaxId } from '@/lib/mayorista-paises';
 
 // Alta de mayoristas hecha por el propio comercio. Mismo vestido de vidrio que
 // /mayoristas/login, en una tarjeta más ancha porque son varios campos.
@@ -33,10 +34,15 @@ const EMPTY = {
   password: '', repeat: '',
 };
 
+// El país decide cómo se llama y cómo se valida el identificador fiscal
+// (lib/mayorista-paises.ts). Hasta el 28/10/2026 el alta pedía CUIT de 11
+// dígitos y nada más, así que un local de afuera no podía ni registrarse.
+
 const MODALIDADES = ['Local a la calle', 'Showroom', 'Solo online', 'Ferias y eventos'];
 
 export default function SolicitudMayoristaPage() {
   const [form, setForm] = useState(EMPTY);
+  const [pais, setPais] = useState(PAIS_DEFAULT);
   const [localFisico, setLocalFisico] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,13 +67,16 @@ export default function SolicitudMayoristaPage() {
     setError('');
     if (form.password.length < MIN_PASSWORD) { setError(`La contraseña necesita al menos ${MIN_PASSWORD} caracteres`); return; }
     if (form.password !== form.repeat) { setError('Las dos contraseñas tienen que coincidir'); return; }
-    if (form.cuit.replace(/\D/g, '').length !== 11) { setError('El CUIT tiene que tener 11 números'); return; }
+    // Cada país escribe su identificador fiscal distinto: la regla vive en
+    // lib/mayorista-paises.ts y la repite el servidor.
+    const errorFiscal = validarTaxId(pais, form.cuit);
+    if (errorFiscal) { setError(errorFiscal); return; }
 
     setLoading(true);
     const res = await fetch('/api/mayorista/solicitud', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, localFisico, attribution }),
+      body: JSON.stringify({ ...form, pais, localFisico, attribution }),
     });
     setLoading(false);
 
@@ -83,7 +92,7 @@ export default function SolicitudMayoristaPage() {
         ln: ln.join(' '),
         ct: form.ciudad,
         st: form.provincia,
-        country: 'ar',
+        country: pais.toLowerCase(),
       });
       setDone(true);
     } else {
@@ -140,9 +149,26 @@ export default function SolicitudMayoristaPage() {
                 <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 pt-1">Tu negocio</p>
                 <input type="text" required placeholder="Razón social o nombre del local" {...field('razonSocial')} className={inputClass} style={glassInput} />
                 <div className="grid grid-cols-2 gap-2.5">
-                  <input type="text" required inputMode="numeric" placeholder="CUIT" {...field('cuit')} className={inputClass} style={glassInput} />
-                  <input type="text" placeholder="Instagram" {...field('instagram')} className={inputClass} style={glassInput} />
+                  <select
+                    aria-label="País"
+                    value={pais}
+                    onChange={(e) => setPais(e.target.value)}
+                    className={inputClass}
+                    style={glassInput}
+                  >
+                    {PAISES_MAYORISTA.map((p) => <option key={p.code} value={p.code}>{p.nombre}</option>)}
+                  </select>
+                  <input
+                    type="text"
+                    required
+                    inputMode={pais === 'AR' ? 'numeric' : 'text'}
+                    placeholder={paisMayorista(pais).taxLabel}
+                    {...field('cuit')}
+                    className={inputClass}
+                    style={glassInput}
+                  />
                 </div>
+                <input type="text" placeholder="Instagram" {...field('instagram')} className={inputClass} style={glassInput} />
 
                 <div className="flex items-center gap-4 py-1.5 px-1">
                   <span className="text-[12px] text-foreground/60">¿Tenés local físico?</span>
@@ -183,7 +209,7 @@ export default function SolicitudMayoristaPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
                   <input type="text" placeholder="Ciudad" {...field('ciudad')} className={inputClass} style={glassInput} />
-                  <input type="text" placeholder="Provincia" {...field('provincia')} className={inputClass} style={glassInput} />
+                  <input type="text" placeholder={paisMayorista(pais).regionLabel} {...field('provincia')} className={inputClass} style={glassInput} />
                 </div>
 
                 <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 pt-4">Tu contraseña</p>

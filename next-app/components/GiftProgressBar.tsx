@@ -6,6 +6,17 @@ import { useGiftProgress, type GiftMilestone, type GiftProgressResponse } from '
 interface GiftProgressBarProps {
   email?: string;
   couponCode?: string;
+  /**
+   * Descuento de promo ya aplicado al carrito que se cobra como fee negativo
+   * del pedido: pack libre de Regular Tees, 3x2, CAMPEON50. Resta del monto
+   * elegible igual que al crear el pedido — sin esto, tres Regular
+   * individuales medían contra el umbral su subtotal sin precio de pack y la
+   * barra prometía un regalo que el pedido no iba a dar.
+   *
+   * El 10% por transferencia NO va acá: no resta en ningún lado (bug D12,
+   * hypestyle-purchase-gift v1.2.0).
+   */
+  promoDiscount?: number;
   className?: string;
 }
 
@@ -19,9 +30,9 @@ interface GiftProgressBarProps {
  * en globals.css (--hpg-*) para el track/fill/ticks. El regalo mostrado acá
  * nunca es una garantía — se vuelve a calcular server-side al crear la orden.
  */
-export default function GiftProgressBar({ email, couponCode, className = 'px-6 pt-3 pb-3 border-b border-border' }: GiftProgressBarProps) {
+export default function GiftProgressBar({ email, couponCode, promoDiscount, className = 'px-6 pt-3 pb-3 border-b border-border' }: GiftProgressBarProps) {
   const { formatPrice } = useLocale();
-  const { data } = useGiftProgress({ email, couponCode });
+  const { data } = useGiftProgress({ email, couponCode, promoDiscount });
 
   if (!data || !data.active || data.excluded) return null;
   if (!data.milestones || data.milestones.length === 0) return null;

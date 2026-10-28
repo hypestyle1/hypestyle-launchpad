@@ -15,6 +15,13 @@ import { findVariation } from './mayorista-stock';
 
 export const WHOLESALE_FACTOR = 0.5;
 
+/**
+ * Cuentas en consignación: el precio de la línea es el de lista, porque ahí
+ * no hay compra — el local cobra el PVP en su mostrador y liquida el PVP
+ * menos su comisión (lib/mayorista-consignacion.ts).
+ */
+export const LISTA_FACTOR = 1;
+
 export function wholesalePrice(regularPrice: number): number {
   return Math.round(regularPrice * WHOLESALE_FACTOR);
 }
@@ -72,7 +79,11 @@ export function regularPriceFor(resolved: ResolvedProduct, variation?: { regular
   return asPrice(variation?.regularPrice) ?? asPrice(resolved.regularPrice);
 }
 
-export function priceLines(items: PricingInput[], resolvedBySlug: Map<string, ResolvedProduct | null>): PricingResult {
+/**
+ * : 0,5 para una cuenta de compra (lo normal) y 1 para una cuenta en
+ * consignación. Lo decide el servidor leyendo la cuenta, nunca el navegador.
+ */
+export function priceLines(items: PricingInput[], resolvedBySlug: Map<string, ResolvedProduct | null>, factor: number = WHOLESALE_FACTOR): PricingResult {
   const lines: PricedLine[] = [];
   const changes: PriceChange[] = [];
   const unpriced: PricingResult['unpriced'] = [];
@@ -86,7 +97,7 @@ export function priceLines(items: PricingInput[], resolvedBySlug: Map<string, Re
     if (regular == null) { unpriced.push({ slug: item.slug, name: item.name, size: item.size, ...(color ? { color } : {}) }); continue; }
 
     const quantity = Math.max(1, Math.floor(Number(item.quantity) || 1));
-    const unitPrice = wholesalePrice(regular);
+    const unitPrice = Math.round(regular * factor);
     const clientPrice = asPrice(item.price);
     const changed = clientPrice == null || Math.round(clientPrice) !== unitPrice;
     const line: PricedLine = {

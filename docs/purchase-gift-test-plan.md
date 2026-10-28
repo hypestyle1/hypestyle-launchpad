@@ -32,6 +32,9 @@ No hay framework de tests automatizados para este flujo (headless + WooCommerce 
 - [ ] Cupón inválido/inexistente — se ignora sin romper la creación de la orden.
 - [ ] Descuento fijo (fee negativo, flujo mu-plugin) — el monto elegible lo resta correctamente.
 - [ ] Descuento porcentual (cupón `percent`) — ídem.
+- [ ] **Transferencia (bug D12)** — carrito de $100.000 pagado por transferencia: la barra dice que desbloqueó la cadena y el pedido sale **con** la cadena. El 10% no resta del monto elegible (el pedido lleva el meta `_hs_transfer_discount`, y `calculate_from_order` lo descuenta de los fees antes de restar).
+- [ ] **Transferencia + pack** — 3 Regular individuales por transferencia: el fee viaja combinado (`"Pack Regular x3 + Transferencia (10%)"`) y el monto elegible es el subtotal menos el pack, no menos los dos.
+- [ ] **Pack sin transferencia (barra)** — 3 Regular individuales: la barra mide contra el umbral el precio de pack, no el subtotal de las tres (campo `promo_discount` de `/evaluate`), así que no promete un regalo que el pedido no va a dar.
 - [ ] Precio promocional (`sale_price` vigente) — el monto elegible usa el precio real, no uno viejo.
 - [ ] Producto excluido (`excluded_product_ids`) — no suma al monto elegible.
 - [ ] Categoría excluida (`excluded_category_ids`) — ídem.

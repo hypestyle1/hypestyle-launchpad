@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
       ciudad: c.billing?.city || '',
       provincia: c.billing?.state || '',
       cuit: metaVal(meta, 'mayorista_cuit'),
+      pais: metaVal(meta, 'mayorista_pais') || c.billing?.country || 'AR',
       instagram: metaVal(meta, 'mayorista_instagram'),
       localFisico: metaVal(meta, 'mayorista_local_fisico') === 'yes',
       modalidad: metaVal(meta, 'mayorista_modalidad'),

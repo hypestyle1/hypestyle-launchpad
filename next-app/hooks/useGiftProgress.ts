@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useCart, type CartItem } from '@/context/CartContext';
+import { useCart } from '@/context/CartContext';
+import { giftProgressKey, giftProgressPayload, type GiftProgressOptions } from '@/lib/gift-progress-payload';
 
 export interface GiftMilestone {
   id: string;
@@ -34,23 +35,6 @@ export interface GiftProgressResponse {
   message?: string;
 }
 
-interface UseGiftProgressOptions {
-  couponCode?: string;
-  email?: string;
-}
-
-// El servidor recalcula todo desde cero (producto real, precio real, cupón
-// real) — acá solo mandamos identificadores de línea (slug/talle/cantidad),
-// nunca precio ni monto. Ver PHP/hypestyle-purchase-gift/includes/class-hpg-rest-api.php.
-function buildPayload(items: CartItem[], opts?: UseGiftProgressOptions) {
-  return {
-    items: items.map((i) => ({ slug: i.id, size: i.size, quantity: i.quantity })),
-    coupon_codes: opts?.couponCode ? [opts.couponCode] : [],
-    customer: { email: opts?.email ?? '' },
-    currency: 'ARS',
-  };
-}
-
 /**
  * Trae el progreso/regalo que corresponde al carrito actual y sincroniza
  * automáticamente la línea de regalo dentro de CartContext — sin que el
@@ -58,16 +42,14 @@ function buildPayload(items: CartItem[], opts?: UseGiftProgressOptions) {
  * calcular server-side al crear la orden (HPG_Gift_Engine::apply_to_order);
  * esto es solo para que el carrito lo muestre en vivo.
  */
-export function useGiftProgress(options?: UseGiftProgressOptions) {
+export function useGiftProgress(options?: GiftProgressOptions) {
   const { items, setGift, clearGift } = useCart();
   const purchasable = items.filter((i) => !i.isGift);
 
   // Key de dependencia estable — evita refetch en cada render, solo cuando
-  // cambia algo que realmente afecta el cálculo.
-  const depsKey =
-    JSON.stringify(purchasable.map((i) => [i.id, i.size, i.quantity])) +
-    '|' + (options?.couponCode ?? '') +
-    '|' + (options?.email ?? '');
+  // cambia algo que realmente afecta el cálculo (incluido el descuento de
+  // promo, ver lib/gift-progress-payload).
+  const depsKey = giftProgressKey(purchasable, options);
 
   const query = useQuery<GiftProgressResponse>({
     queryKey: ['gift-progress', depsKey],
@@ -75,7 +57,7 @@ export function useGiftProgress(options?: UseGiftProgressOptions) {
       const res = await fetch('/api/gift-progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload(purchasable, options)),
+        body: JSON.stringify(giftProgressPayload(purchasable, options)),
       });
       if (!res.ok) return { active: false };
       return res.json();

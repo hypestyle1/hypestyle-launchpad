@@ -7,6 +7,7 @@ import {
   type SolicitudData,
 } from '@/lib/mayorista-account';
 import { rateLimited, RATE_LIMITS } from '@/lib/rate-limit';
+import { paisMayorista, normalizeTaxId, validarTaxId } from '@/lib/mayorista-paises';
 
 // Alta de mayoristas hecha por el propio comercio.
 //
@@ -23,12 +24,6 @@ function clean(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
 }
 
-// El CUIT se guarda solo con dígitos: los clientes lo escriben con guiones,
-// puntos o espacios y después no hay forma de cruzarlo con la facturación.
-function normalizeCuit(v: string): string {
-  return v.replace(/\D/g, '');
-}
-
 export async function POST(req: NextRequest) {
   // Cada solicitud crea un customer en Woo y manda un mail al admin: tope por IP.
   const limited = rateLimited(req, RATE_LIMITS.solicitud, undefined, 'Ya recibimos varias solicitudes desde esta conexión. Si todavía no te contestamos, escribinos por WhatsApp.');
@@ -39,7 +34,11 @@ export async function POST(req: NextRequest) {
   const email = clean(body.email).toLowerCase();
   const password = typeof body.password === 'string' ? body.password : '';
   const razonSocial = clean(body.razonSocial);
-  const cuit = normalizeCuit(clean(body.cuit));
+  // El país decide cómo se valida y se guarda el identificador fiscal, y en
+  // qué país queda la cuenta en Woo. Antes era 'AR' fijo y CUIT de 11 dígitos,
+  // así que un local de afuera no podía registrarse (lib/mayorista-paises.ts).
+  const pais = paisMayorista(body.pais);
+  const cuit = normalizeTaxId(pais.code, clean(body.cuit));
   const contacto = clean(body.contacto);
   const telefono = clean(body.telefono);
   const instagram = clean(body.instagram).replace(/^@/, '');
@@ -72,9 +71,9 @@ export async function POST(req: NextRequest) {
   if (!razonSocial || !contacto || !telefono) {
     return NextResponse.json({ ok: false, message: 'Faltan datos obligatorios' }, { status: 400 });
   }
-  // 11 dígitos: 2 de tipo, 8 de documento y 1 verificador.
-  if (cuit.length !== 11) {
-    return NextResponse.json({ ok: false, message: 'El CUIT tiene que tener 11 números' }, { status: 400 });
+  const errorFiscal = validarTaxId(pais.code, cuit);
+  if (errorFiscal) {
+    return NextResponse.json({ ok: false, message: errorFiscal }, { status: 400 });
   }
 
   // Si ya es mayorista activo, no tiene sentido una solicitud nueva — se lo
@@ -96,7 +95,7 @@ export async function POST(req: NextRequest) {
     city: ciudad,
     state: provincia,
     postcode: '',
-    country: 'AR',
+    country: pais.code === 'XX' ? '' : pais.code,
     phone: telefono,
     email,
   };
@@ -106,6 +105,7 @@ export async function POST(req: NextRequest) {
   const metaData = [
     { key: 'es_mayorista', value: 'pending' },
     { key: 'mayorista_cuit', value: cuit },
+    { key: 'mayorista_pais', value: pais.code },
     { key: 'mayorista_instagram', value: instagram },
     { key: 'mayorista_local_fisico', value: localFisico ? 'yes' : 'no' },
     { key: 'mayorista_modalidad', value: modalidad },
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
 
   const created = await res.json();
   const account = { id: created.id, email: created.email, label: razonSocial };
-  const data: SolicitudData = { razonSocial, cuit, instagram, localFisico, modalidad, contacto, telefono, ciudad, provincia };
+  const data: SolicitudData = { razonSocial, cuit, instagram, localFisico, modalidad, contacto, telefono, ciudad, provincia, pais: pais.code };
 
   const token = await createApprovalToken(created.id);
   if (token) {
