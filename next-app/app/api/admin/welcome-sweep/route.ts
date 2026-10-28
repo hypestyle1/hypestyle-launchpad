@@ -200,7 +200,13 @@ export async function GET(req: NextRequest) {
 
     const attrs = c.attributes || {};
     const signupDate = attrs.SIGNUP_DATE;
-    if (!signupDate) continue; // contacto viejo, de antes de la secuencia — no lo tocamos
+    // Sin SIGNUP_DATE no se toca: son los contactos viejos (de antes de la
+    // secuencia) y las altas que a propósito NO entran a la bienvenida — el
+    // "Avisame" de /hype72 da de alta con HYPE72/HYPE72_DATE y sin SIGNUP_DATE
+    // justamente para que esta sweep los saltee (ver
+    // app/api/newsletter-subscribe/route.ts). Esta ruta no necesita conocer el
+    // evento: el gate de SIGNUP_DATE ya alcanza.
+    if (!signupDate) continue;
 
     const step = (forceEmail && [2, 3].includes(forceStep)) ? forceStep : dueStepOf(signupDate, attrs);
     if (step === null) continue;
