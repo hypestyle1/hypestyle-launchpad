@@ -95,7 +95,9 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
   });
 
   it('las tres categorías existen, con portada real y sin ficha hasta que exista en Woo', () => {
-    expect(CYBER_MYSTERY.map((m) => m.id)).toEqual(['tees', 'tops', 'bottoms']);
+    // 29/10: Bottoms descartado (poco stock, talles quebrados). Las tres
+    // cajas son de la parte de arriba.
+    expect(CYBER_MYSTERY.map((m) => m.id)).toEqual(['tees', 'longsleeves', 'hoodies']);
     for (const m of CYBER_MYSTERY) {
       expect(m.img).toMatch(/^\/cyber\/mystery\//);
       if (!MYSTERY_PUBLICADO) expect(m.href).toBeNull();

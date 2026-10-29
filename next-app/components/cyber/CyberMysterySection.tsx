@@ -74,10 +74,12 @@ export default function CyberMysterySection({
                 </span>
               </div>
               <div className="flex flex-col gap-1 px-4 pb-4 pt-3">
-                <p className="text-[16px] font-black uppercase tracking-[0.02em] text-white">
+                <p className="text-[18px] font-black uppercase tracking-[0.02em] text-white md:text-[20px]">
                   {m.nombre}
                 </p>
-                <p className="text-[12px] leading-[1.5] text-white/55">{m.detalle}</p>
+                <p className="text-[12.5px] leading-[1.55] text-white/55 md:text-[13px]">
+                  {m.detalle}
+                </p>
                 {publicado && m.href ? (
                   <Link
                     href={m.href}

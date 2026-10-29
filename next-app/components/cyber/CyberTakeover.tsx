@@ -11,11 +11,14 @@ import CyberMysterySection from './CyberMysterySection';
 import CyberCatalogoEvento from './CyberCatalogoEvento';
 import CyberCondiciones from './CyberCondiciones';
 import CyberRegalos from './CyberRegalos';
-import CyberWhatsApp from './CyberWhatsApp';
+import CyberCanal from './CyberCanal';
+import CyberNavCategorias from './CyberNavCategorias';
+import CyberEditorial from './CyberEditorial';
 import '@/components/cyber/cyber.css';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
 import { CYBER_END, cyberUltimasHoras } from '@/lib/cyber-hype';
 import {
+  CYBER_ACCESOS,
   CYBER_DESTACADOS_SLUGS,
   CYBER_FILTROS,
   CYBER_MYSTERY,
@@ -64,6 +67,11 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
 
         <CyberTakeoverHero targetIso={CYBER_END} ultimasHoras={ultimasHoras} fondo={fondo ?? 'foto'} />
 
+        {/* Lo primero después del hero: qué hay y cómo llegar. Quien viene de
+            un anuncio elige categoría antes de leer una sola línea sobre la
+            mecánica del evento. */}
+        <CyberNavCategorias accesos={CYBER_ACCESOS} />
+
         {/* Beneficios: solo mecánicas reales y vigentes, sin montos. */}
         <section className="bg-[#0a0a0a] px-4 pt-10 text-white md:px-10 md:pt-12">
           <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-2.5 md:gap-3 lg:grid-cols-4">
@@ -108,31 +116,28 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />
         )}
 
+        {/* Pausa editorial antes del catálogo largo: corta la sucesión de
+            grillas y empuja a la categoría con más stock sano. */}
+        <CyberEditorial
+          src="/ss27/banner/15-distressed.webp"
+          alt="Hype Distressed Hoodie, washed grey"
+          kicker="Spring Summer 27"
+          titulo="Los hoodies del drop"
+          href="/hoodies"
+          cta="Ver hoodies"
+          posicion="50% 30%"
+        />
+
         <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
 
         <CyberCondiciones />
 
-        {/* Cierre: el canal, donde las revelaciones salen primero. */}
-        <section className="bg-[#0a0a0a] px-4 pb-14 pt-12 text-white md:px-10 md:pb-16">
-          <div className="mx-auto flex max-w-[1400px] flex-col gap-5 rounded-[16px] border border-white/12 bg-white/[0.04] px-5 py-8 md:flex-row md:items-center md:justify-between md:px-10 md:py-10">
-            <div>
-              <p className="text-[18px] font-black uppercase tracking-[-0.01em] md:text-[22px]">
-                Los drops salen primero por el canal
-              </p>
-              <p className="mt-1 max-w-[460px] text-[12px] leading-[1.5] text-white/55 md:text-[13px]">
-                Cada revelación del evento se avisa en el canal de WhatsApp antes que en el feed.
-              </p>
-            </div>
-            {urlWhatsApp !== '' && (
-              /* El bloque de WhatsApp es el MISMO de la landing y está pensado
-                 sobre blanco: va en su tarjeta, como allá. */
-              <div className="w-full rounded-[16px] bg-white p-4 text-foreground md:w-[340px] md:p-5">
-                <CyberWhatsApp url={urlWhatsApp} />
-              </div>
-            )}
-          </div>
-        </section>
       </main>
+
+      {/* El canal, como banda clara: corta el negro del evento y separa la
+          experiencia del footer habitual. Fuera de <main> a propósito: es el
+          cierre de la página, no una sección más del evento. */}
+      <CyberCanal url={urlWhatsApp} />
       <Footer />
     </HydrationBoundary>
   );

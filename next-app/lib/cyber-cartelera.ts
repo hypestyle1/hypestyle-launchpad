@@ -138,7 +138,7 @@ export function dropsPublicos(now: Date = new Date()): CyberDropPublico[] {
 export const MYSTERY_PUBLICADO = false;
 
 export interface CyberMysteryCategoria {
-  id: 'tees' | 'tops' | 'bottoms';
+  id: 'tees' | 'longsleeves' | 'hoodies';
   nombre: string;
   /** Qué incluye, por mecánica. Nunca una cifra. */
   detalle: string;
@@ -151,33 +151,44 @@ export interface CyberMysteryCategoria {
 }
 
 /**
- * Las tres categorías, con las portadas REALES del 28/10 (mockups de Woo,
- * ninguna prenda inventada). Los pools son los medidos en los análisis
- * (cyber-mystery-tees.md / -tops.md / auditoría): la selección final la
- * aprueba Valentín.
+ * Las tres categorías.
+ *
+ * ── CAMBIO DE CRITERIO (29/10) ──────────────────────────────────────────────
+ * **Mystery Bottoms quedó descartado**: poco stock y talles quebrados. Las
+ * tres cajas pasan a ser todas de la parte de arriba — Tees, Longsleeves y
+ * Hoodies. Antes eran Tees / Tops / Bottoms, con "Tops" mezclando mangas
+ * largas y buzos; separarlos además hace la propuesta más clara: cada caja es
+ * un tipo de prenda, no una bolsa de categorías.
+ *
+ * Los pools definitivos y las portadas nuevas (fondo claro, composición
+ * editorial) se están trabajando contra el stock real: hasta que estén, estas
+ * cifras de "modelos en el pool" son las de la medición anterior y las
+ * portadas son las de la versión previa. **Nada de esto se publica**:
+ * MYSTERY_PUBLICADO sigue en false y la sección solo se monta fuera de
+ * producción.
  */
 export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
   {
     id: 'tees',
     nombre: 'Mystery Tees',
-    detalle: 'Remeras del archivo Hype. Elegís tu talle; el modelo es sorpresa, dentro de las prendas que ves en la portada.',
-    pool: '13 modelos en el pool',
+    detalle: 'La puerta de entrada al archivo. Elegís tu talle; el modelo es sorpresa, dentro de las prendas que ves en la portada.',
+    pool: 'Pool en definición',
     img: '/cyber/mystery/mystery-tees-1x1.webp',
     href: null,
   },
   {
-    id: 'tops',
-    nombre: 'Mystery Tops',
-    detalle: 'Longsleeves, buzos y Half-Zips del archivo. Elegís tu talle; el modelo es sorpresa.',
-    pool: '18 modelos en el pool',
+    id: 'longsleeves',
+    nombre: 'Mystery Longsleeves',
+    detalle: 'Waffles, Athletic Dept y las mangas largas del archivo. Elegís tu talle; el modelo es sorpresa.',
+    pool: 'Pool en definición',
     img: '/cyber/mystery/mystery-tops-1x1.webp',
     href: null,
   },
   {
-    id: 'bottoms',
-    nombre: 'Mystery Bottoms',
-    detalle: 'Pants, jorts y bermudas del archivo. Elegís tu talle; el modelo es sorpresa.',
-    pool: '8 modelos en el pool',
+    id: 'hoodies',
+    nombre: 'Mystery Hoodies',
+    detalle: 'Hoodies del archivo con stock real. Elegís tu talle; el modelo es sorpresa.',
+    pool: 'Pool en definición',
     img: '/cyber/mystery/mystery-bottoms-1x1.webp',
     href: null,
   },
@@ -229,6 +240,14 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
   'longsleeve-waffle-horses',
   'camo-cap',
   'hype-distressed-grey-hoodie',
+  // Las cuatro que completan la grilla a 16 (4 filas limpias en desktop, 8 en
+  // mobile). Banco verificado el 29/10: existen, publish, con stock y foto.
+  // `regular-tees-3-pack-white` entra por una razón que no es su facturación:
+  // es el ÚNICO 3 PACK con talle M, y el M es lo que más se pide.
+  'ladytribal-black-longsleeve',
+  'hype-washed-black-waffle-longsleeve',
+  'honda-white-tee',
+  'regular-tees-3-pack-white',
 ];
 
 /**
@@ -244,6 +263,32 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
  * Accesorio no tenían filtro propio y por eso quedaban solo en "Todo" (que
  * corta en 24): ahí viven dos del top 10, el SweatPant Grey y la Grey Camo Cap.
  */
+/**
+ * Los accesos rápidos de abajo del hero. Cada uno lleva a **su página real**
+ * del sitio (verificadas respondiendo 200 el 29/10), salvo Mystery y Drops,
+ * que solo existen dentro del evento y llevan a su ancla.
+ *
+ * `slugFoto` es el producto que le presta la foto de portada al tile: siempre
+ * el líder de esa categoría según la curaduría medida. Nada de íconos
+ * genéricos ni fotos inventadas.
+ */
+export const CYBER_ACCESOS: {
+  id: string;
+  label: string;
+  href: string;
+  slugFoto: string | null;
+  img: string | null;
+}[] = [
+  { id: 'tees', label: 'Remeras', href: '/tees', slugFoto: 'honda-white-tee', img: null },
+  { id: 'hoodies', label: 'Hoodies', href: '/hoodies', slugFoto: 'faith-over-everything-camo-hoodie', img: null },
+  { id: 'longsleeves', label: 'Longsleeves', href: '/longsleeves', slugFoto: 'find-jesus-longsleeve-black', img: null },
+  { id: 'pants', label: 'Pantalones', href: '/pants', slugFoto: 'sweatpant-grey-hstars', img: null },
+  { id: 'packs', label: 'Packs', href: '/colecciones/regular-tees', slugFoto: 'regular-tees-3-pack-black-navy-white', img: null },
+  // Las dos que solo existen dentro del evento.
+  { id: 'mystery', label: 'Mystery Archive', href: '#mystery', slugFoto: null, img: '/cyber/mystery/mystery-tops-1x1.webp' },
+  { id: 'drops', label: 'Los 3 drops', href: '#drops', slugFoto: null, img: null },
+];
+
 export interface CyberFiltro {
   id: string;
   label: string;
