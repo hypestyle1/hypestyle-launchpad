@@ -38,8 +38,20 @@
  * Verificado ese día: responde 200 sin sesión y el `og:title` de la página es
  * exactamente el nombre del canal. Es un canal, no un grupo, así que el número
  * de nadie queda a la vista.
+ *
+ * **No es del Cyber: es de la marca y queda para siempre** (decisión de
+ * Valentín del 29/10). Por eso se exporta: el footer del sitio lo linkea de
+ * forma permanente, así que cuando el evento termine y los bloques de campaña
+ * dejen de renderizarse, el canal sigue teniendo su lugar. Una sola definición
+ * de la URL para las dos superficies.
+ *
+ * Ojo con las palancas de abajo: apagan los botones de CAMPAÑA (server-rendered,
+ * leen la variable por request). El link del footer es permanente y vive en un
+ * componente de cliente, igual que Instagram o TikTok: para sacarlo se edita el
+ * footer. Es a propósito — una variable pensada para bajar un botón de campaña
+ * no debería además borrar una red social del pie del sitio.
  */
-const CANAL_OFICIAL = 'https://whatsapp.com/channel/0029Vb8xziY89injZvFrch2l';
+export const CANAL_OFICIAL = 'https://whatsapp.com/channel/0029Vb8xziY89injZvFrch2l';
 
 /** Valores que apagan el botón a propósito. */
 const APAGADO = new Set(['off', 'none', 'no', '0', 'false']);
