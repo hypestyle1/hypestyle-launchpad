@@ -27,30 +27,47 @@ import LazyVideo from '@/components/LazyVideo';
    `autoplay muted playsInline loop` (los pone LazyVideo) es obligatorio para
    que un celular reproduzca solo; los archivos ya vienen sin pista de audio. */
 
-export type CyberFondo = 'video-mono' | 'video-color' | 'video-completo' | 'foto';
+export type CyberFondo = 'boom-mono' | 'boom-color' | 'loop-mono' | 'loop-color' | 'foto';
 
+/* Las cuatro variantes del clip COMPLETO (5,04 s, las escenas enteras, con el
+   cartel del helicóptero sin recortar ni tapar — pedido del 29/10).
+
+   `boom-*` dura 10,08 s: el clip hacia adelante y después hacia atrás. Es la
+   recomendada. El clip termina con el cartel en primer plano y empieza con el
+   skyline, así que un loop normal corta de golpe entre dos imágenes muy
+   distintas; el boomerang vuelve al cuadro inicial y el ciclo cierra sin
+   salto. Se verificó cuadro por cuadro que el tramo invertido no se vea
+   artificial: el helicóptero es una silueta lejana en una toma aérea lenta y
+   el movimiento hacia atrás no se percibe.
+
+   `loop-*` es el clip tal cual, en loop de 5,04 s, con el corte visible. Está
+   para comparar.
+
+   El recorte de mobile NO es centrado (x = 70% del rango): centrado cortaba el
+   cartel justo en "CYBER". Verificado en los dos momentos del clip. */
 const FUENTES: Record<
   Exclude<CyberFondo, 'foto'>,
   { desktop: string; mobile: string; poster: string }
 > = {
-  'video-mono': {
-    desktop: '/cyber/hero/desktop-mono.mp4',
-    mobile: '/cyber/hero/mobile-mono.mp4',
-    poster: '/cyber/hero/desktop-mono.webp',
+  'boom-mono': {
+    desktop: '/cyber/hero/boom-desktop-mono.mp4',
+    mobile: '/cyber/hero/boom-mobile-mono.mp4',
+    poster: '/cyber/hero/boom-desktop-mono.webp',
   },
-  'video-color': {
-    desktop: '/cyber/hero/desktop-color.mp4',
-    mobile: '/cyber/hero/mobile-color.mp4',
-    poster: '/cyber/hero/desktop-color.webp',
+  'boom-color': {
+    desktop: '/cyber/hero/boom-desktop-color.mp4',
+    mobile: '/cyber/hero/boom-mobile-color.mp4',
+    poster: '/cyber/hero/boom-desktop-color.webp',
   },
-  // El clip entero, con el cartel del helicóptero legible. SOLO para comparar
-  // en local: ese cartel comunica un porcentaje, y la marca no comunica
-  // porcentajes (89 de 145 productos tienen sale_price permanente, así que el
-  // "precio de lista" contra el que se calcularía nunca se transó).
-  'video-completo': {
-    desktop: '/cyber/hero/desktop-completo.mp4',
-    mobile: '/cyber/hero/desktop-completo.mp4',
-    poster: '/cyber/hero/desktop-completo.webp',
+  'loop-mono': {
+    desktop: '/cyber/hero/loop-desktop-mono.mp4',
+    mobile: '/cyber/hero/loop-mobile-mono.mp4',
+    poster: '/cyber/hero/loop-desktop-mono.webp',
+  },
+  'loop-color': {
+    desktop: '/cyber/hero/loop-desktop-color.mp4',
+    mobile: '/cyber/hero/loop-mobile-color.mp4',
+    poster: '/cyber/hero/loop-desktop-color.webp',
   },
 };
 

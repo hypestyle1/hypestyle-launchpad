@@ -18,16 +18,33 @@ import type { CyberFondo } from '@/components/cyber/CyberHeroFondo';
 import { cyberEstado } from '@/lib/cyber-hype';
 
 /**
- * Qué fondo lleva el hero del evento. Hoy la foto editorial; el video se
- * compara con `?hero=video-mono`, `?hero=video-color` o `?hero=video-completo`
- * y SOLO fuera de producción: el clip todavía no está aprobado (ver el aviso
- * en components/cyber/CyberHeroFondo). Cuando se apruebe uno, se cambia el
- * valor por defecto acá y la query deja de hacer falta.
+ * Qué fondo lleva el hero del evento.
+ *
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  EL VIDEO DICE "HASTA 70% DE DESCUENTO"                                  ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  El clip completo lleva un cartel con esa frase. Publicarlo es           ║
+ * ║  comprometer un 70% real, y para que la frase sea defendible hace falta  ║
+ * ║  al menos un producto con 70% efectivo sobre un precio de referencia     ║
+ * ║  que se haya transado (89 de 145 productos tienen `sale_price`           ║
+ * ║  permanente: su `regular_price` no sirve como referencia).               ║
+ * ║                                                                          ║
+ * ║  Por eso `HERO_FONDO` sigue en 'foto' **en producción**: el video queda  ║
+ * ║  en preview hasta que esa selección esté validada y aprobada. Cuando lo  ║
+ * ║  esté, se cambia esta constante por 'boom-mono' (la recomendada) y no    ║
+ * ║  hace falta tocar nada más.                                              ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * En local se comparan las cuatro variantes con `?hero=boom-mono`,
+ * `boom-color`, `loop-mono` o `loop-color`, y `?hero=foto` vuelve a la foto.
  */
+const HERO_FONDO: CyberFondo = 'foto';
+
+const FONDOS: CyberFondo[] = ['boom-mono', 'boom-color', 'loop-mono', 'loop-color', 'foto'];
+
 function fondoHero(q: string | undefined): CyberFondo {
-  if (process.env.NODE_ENV === 'production') return 'foto';
-  if (q === 'video-mono' || q === 'video-color' || q === 'video-completo') return q;
-  return 'foto';
+  if (process.env.NODE_ENV === 'production') return HERO_FONDO;
+  return FONDOS.includes(q as CyberFondo) ? (q as CyberFondo) : HERO_FONDO;
 }
 import Ss27Feed from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
