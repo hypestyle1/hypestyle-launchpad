@@ -172,26 +172,64 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     id: 'tees',
     nombre: 'Mystery Tees',
     detalle: 'La puerta de entrada al archivo. Elegís tu talle; el modelo es sorpresa, dentro de las prendas que ves en la portada.',
-    pool: 'Pool en definición',
-    img: '/cyber/mystery/mystery-tees-1x1.webp',
+    pool: '13 modelos en el pool',
+    img: '/cyber/mystery/tees-v5.webp',
     href: null,
   },
   {
     id: 'longsleeves',
     nombre: 'Mystery Longsleeves',
-    detalle: 'Waffles, Athletic Dept y las mangas largas del archivo. Elegís tu talle; el modelo es sorpresa.',
-    pool: 'Pool en definición',
-    img: '/cyber/mystery/mystery-tops-1x1.webp',
+    detalle: 'Athletic Dept, raglans y polos del archivo. Elegís tu talle; el modelo es sorpresa.',
+    pool: '11 modelos en el pool',
+    img: '/cyber/mystery/longsleeves-v5.webp',
     href: null,
   },
   {
     id: 'hoodies',
     nombre: 'Mystery Hoodies',
     detalle: 'Hoodies del archivo con stock real. Elegís tu talle; el modelo es sorpresa.',
-    pool: 'Pool en definición',
-    img: '/cyber/mystery/mystery-bottoms-1x1.webp',
+    pool: '9 modelos en el pool',
+    img: '/cyber/mystery/hoodies-v5.webp',
     href: null,
   },
+];
+
+/**
+ * Los productos del pool de Mystery que **también** están hoy en la vidriera
+ * del evento (destacados o filtros curados).
+ *
+ * Es un choque real, no una curiosidad: la misma remera que puede salir en una
+ * caja sorpresa está a la venta suelta a $38.000–40.500 dos secciones más
+ * abajo. Si las dos cosas conviven, la caja compite contra su propio
+ * contenido y el cliente que mira con atención se siente tomado por tonto.
+ *
+ * **Hoy no se saca ninguno**, porque Mystery no está aprobado y perderíamos
+ * dos destacados buenos por una caja que todavía no existe. Lo que hay es un
+ * candado: el test de la campaña falla si `MYSTERY_PUBLICADO` pasa a true
+ * mientras alguno de estos siga en los destacados. Así la decisión se toma en
+ * el momento en que importa, no antes y no por olvido.
+ */
+export const CYBER_MYSTERY_EN_VIDRIERA: string[] = [
+  'honda-white-tee',
+  'ladytribal-black-longsleeve',
+  'athletic-dept-pink-longsleeve',
+  'athletic-dept-blue-longsleeve',
+  'half-zip-polo-black',
+  'hs-crest-olive-raglan-longsleeve',
+  'hype-creative-goods-pink-raglan-longsleeve',
+  'dept-of-culture-eagle-pink-raglan-longsleeve',
+  'napoli-tee-azul',
+  'napoli-tee-blanca',
+  'lamb-of-god-pink-tee',
+  'style-culture-university-white-tee',
+  'style-culture-university-black-tee',
+  'style-culture-university-navy-tee',
+  'hoodie-pink',
+  'hs-co-green-hoodie',
+  'hs-co-grey-hoodie',
+  'hoodie-grey-hstars',
+  'lion-of-judah-stone-wash-hoodie',
+  'no-service-for-the-faithless-hoodie',
 ];
 
 /* ══════════════════════ CATÁLOGO DEL EVENTO (curaduría) ═════════════════ */

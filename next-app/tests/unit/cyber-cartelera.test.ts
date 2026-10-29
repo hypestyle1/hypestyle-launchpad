@@ -10,6 +10,7 @@ import {
   CYBER_FILTROS,
   CYBER_DROPS,
   CYBER_MYSTERY,
+  CYBER_MYSTERY_EN_VIDRIERA,
   CYBER_PACK_SLUGS,
   MYSTERY_PUBLICADO,
   dropsPublicos,
@@ -102,6 +103,20 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
       expect(m.img).toMatch(/^\/cyber\/mystery\//);
       if (!MYSTERY_PUBLICADO) expect(m.href).toBeNull();
     }
+  });
+
+  it('al publicar Mystery, su pool no puede seguir en la vidriera del evento', () => {
+    // El choque: la misma remera que puede salir en una caja sorpresa está a
+    // la venta suelta dos secciones más abajo, a $38.000–40.500. Mientras
+    // Mystery no esté publicado conviven sin problema (y no queremos perder
+    // destacados buenos por una caja que no existe); el día que se encienda,
+    // hay que elegir. Este test obliga a esa decisión en el momento justo.
+    if (!MYSTERY_PUBLICADO) return;
+    const choque = CYBER_DESTACADOS_SLUGS.filter((s) => CYBER_MYSTERY_EN_VIDRIERA.includes(s));
+    expect(
+      choque,
+      `estos productos están en el pool de Mystery Y en los destacados: ${choque.join(', ')}`,
+    ).toEqual([]);
   });
 
   it('ningún texto de mystery lleva cifra de dinero ni porcentaje', () => {

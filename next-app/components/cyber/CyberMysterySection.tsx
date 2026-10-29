@@ -69,13 +69,17 @@ export default function CyberMysterySection({
                   sizes="(max-width: 768px) 92vw, 460px"
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                 />
-                <span className="absolute left-3 top-3 inline-flex items-center rounded-full border border-white/25 bg-black/55 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-[16px]">
-                  {m.pool}
-                </span>
+                {/* Sin chip encima de la foto: las portadas V5 ya traen
+                    impresos el nombre y los "N modelos en el pool", así que
+                    un chip superpuesto repetía el dato y tapaba la
+                    composición. El dato sigue disponible abajo, en texto. */}
               </div>
               <div className="flex flex-col gap-1 px-4 pb-4 pt-3">
                 <p className="text-[18px] font-black uppercase tracking-[0.02em] text-white md:text-[20px]">
                   {m.nombre}
+                </p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                  {m.pool}
                 </p>
                 <p className="text-[12.5px] leading-[1.55] text-white/55 md:text-[13px]">
                   {m.detalle}
