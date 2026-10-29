@@ -91,21 +91,24 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
                sube el ticket: ya eligió, ahora le falta poco para el regalo.
             6. Condiciones, canal y footer — al final, sin fricción. */}
 
+        {/* Lo primero despues del hero: que hay y como llegar. Quien viene
+            de un anuncio elige categoria antes de leer una linea sobre la
+            mecanica del evento. */}
+        <CyberNavCategorias accesos={CYBER_ACCESOS} />
+
         <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
 
         {mostrarMystery && (
           <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />
         )}
 
-        <CyberDrops drops={drops} />
+        <CyberRegalos />
 
-        <CyberNavCategorias accesos={CYBER_ACCESOS} />
+        <CyberDrops drops={drops} />
 
         <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
         <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
-
-        <CyberRegalos />
 
         {/* La franja informativa: tres datos, una línea, sin competir con el
             producto. El regalo salió de acá — ya tiene su sección entera, y
