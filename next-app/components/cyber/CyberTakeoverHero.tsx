@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import CyberWordmark from './CyberWordmark';
+import CyberHeroFondo, { type CyberFondo } from './CyberHeroFondo';
 import './cyber.css';
 
 /* Hero del takeover de CYBER HYPE — recuperado del preview del 27/10 (rama
@@ -16,8 +17,6 @@ import './cyber.css';
    El countdown apunta SIEMPRE al cierre que decide el servidor (targetIso por
    props): acá no se calcula ninguna fecha. */
 
-const FOTO_DESKTOP = '/lookbook-fw26/hero/6428.webp';
-const FOTO_MOBILE = '/lookbook-fw26/hero/6442.webp';
 
 type Restante = { d: number; h: number; m: number; s: number };
 
@@ -45,10 +44,13 @@ function Digito({ v, label }: { v: number | undefined; label: string }) {
 export default function CyberTakeoverHero({
   targetIso,
   ultimasHoras,
+  fondo = 'foto',
 }: {
   /** El cierre del evento (lo resuelve el servidor con lib/cyber-hype). */
   targetIso: string;
   ultimasHoras: boolean;
+  /** Qué va de fondo. Hoy 'foto'; se compara con video por query en local. */
+  fondo?: CyberFondo;
 }) {
   const objetivo = new Date(targetIso).getTime();
   // Arranca sin valor: un Date.now() en el primer render rompe la hidratación.
@@ -63,21 +65,24 @@ export default function CyberTakeoverHero({
   return (
     <section className="relative h-[100dvh] w-full overflow-hidden bg-[#0a0a0a] md:px-4 md:pb-4 md:pt-[calc(var(--offset)+6px)]">
       <div className="relative h-full w-full overflow-hidden rounded-none bg-[#141414] md:rounded-[24px]">
-        <img
-          src={FOTO_DESKTOP}
-          alt="Editorial Hype — lookbook Rio"
-          className="absolute inset-0 hidden h-full w-full object-cover md:block"
-          style={{ objectPosition: '66% 30%' }}
-        />
-        <img
-          src={FOTO_MOBILE}
-          alt="Editorial Hype — lookbook Rio"
-          className="absolute inset-0 h-full w-full object-cover md:hidden"
-          style={{ objectPosition: '55% 18%' }}
-        />
+        <CyberHeroFondo fondo={fondo} />
 
-        {/* Scrims: base para el bloque de texto + franja superior para el navbar */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+        {/* Scrims. Con video el tratamiento es más firme y por una razón
+            medible: una foto es quieta y elegida, un video cambia de
+            luminancia mientras se lee el titular. En el clip del atardecer el
+            cielo queda casi blanco, y ahí el wordmark blanco —que además lleva
+            franjas de glitch con fondo propio— se empastaba contra el fondo.
+            Van tres capas: un velo parejo que baja todo el cuadro un punto, el
+            degradado de siempre desde abajo (más alto y más denso con video) y
+            la franja superior para el navbar. */}
+        {fondo !== 'foto' && (
+          <div className="pointer-events-none absolute inset-0 bg-black/25" />
+        )}
+        <div
+          className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent ${
+            fondo === 'foto' ? 'h-[62%] from-black/80 via-black/35' : 'h-[80%] from-black/92 via-black/55'
+          }`}
+        />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/45 to-transparent" />
 
         {/* Mini masthead dentro de la card */}

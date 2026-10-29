@@ -95,7 +95,9 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
                 name={p.name}
                 category={p.category}
                 price={p.price}
-                originalPrice={p.originalPrice}
+                /* Sin `originalPrice`: ver la nota de CyberCatalogoEvento. El
+                   precio anterior de estas fichas es un `sale_price`
+                   permanente, no un precio que alguien haya pagado. */
                 image={p.images[0]}
                 images={p.images}
                 sizes={p.sizes}

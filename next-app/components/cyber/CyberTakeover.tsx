@@ -4,6 +4,7 @@ import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query
 import { fetchAllProducts } from '@/lib/products-server';
 import CyberAnnouncementBar from './CyberAnnouncementBar';
 import CyberTakeoverHero from './CyberTakeoverHero';
+import type { CyberFondo } from './CyberHeroFondo';
 import CyberDrops from './CyberDrops';
 import Cyber4Pack from './Cyber4Pack';
 import CyberMysterySection from './CyberMysterySection';
@@ -14,6 +15,7 @@ import { whatsappUrl } from '@/lib/cyber-whatsapp';
 import { CYBER_END, cyberUltimasHoras } from '@/lib/cyber-hype';
 import {
   CYBER_DESTACADOS_SLUGS,
+  CYBER_FILTROS,
   CYBER_MYSTERY,
   CYBER_PACK_SLUGS,
   MYSTERY_PUBLICADO,
@@ -38,7 +40,7 @@ import {
    navegador. Mystery solo se monta en producción cuando MYSTERY_PUBLICADO
    sea true. */
 
-export default async function CyberTakeover() {
+export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = {}) {
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({ queryKey: ['products'], queryFn: fetchAllProducts });
 
@@ -57,7 +59,7 @@ export default async function CyberTakeover() {
           Regular Tees y Mystery Archive.
         </h1>
 
-        <CyberTakeoverHero targetIso={CYBER_END} ultimasHoras={ultimasHoras} />
+        <CyberTakeoverHero targetIso={CYBER_END} ultimasHoras={ultimasHoras} fondo={fondo ?? 'foto'} />
 
         {/* Beneficios: solo mecánicas reales y vigentes, sin montos. */}
         <section className="bg-[#0a0a0a] px-4 pt-10 text-white md:px-10 md:pt-12">
@@ -86,7 +88,7 @@ export default async function CyberTakeover() {
           <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />
         )}
 
-        <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} />
+        <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
 
         {/* Cierre: el canal, donde las revelaciones salen primero. */}
         <section className="bg-[#0a0a0a] px-4 pb-14 pt-12 text-white md:px-10 md:pb-16">

@@ -7,48 +7,73 @@ import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
 
 /* Catálogo del evento — el sitio entero comprable sin salir del takeover.
 
-   Productos y precios REALES de Woo (useProducts viene hidratado desde el
-   servidor, así que la grilla sale pintada en el primer render, sin salto).
-   La curaduría de Destacados llega por props desde el servidor
-   (lib/cyber-cartelera.ts); el resto se organiza por las categorías reales
-   del catálogo. Dentro de cada vista, lo que tiene stock va primero y lo
-   agotado al final (visible: es la señal de reestock, como en Best Sellers).
+   Productos, precios y stock REALES de Woo (useProducts viene hidratado desde
+   el servidor, así que la grilla sale pintada en el primer render). La
+   curaduría llega por props desde lib/cyber-cartelera, medida contra Woo el
+   29/10.
 
-   Acá no se escribe ningún monto ni ningún porcentaje. */
+   ── SIN PRECIO TACHADO, a propósito ─────────────────────────────────────────
+   Las cards del sitio muestran `originalPrice` tachado al lado del precio. En
+   el evento eso NO se pasa: 89 de los 145 productos tienen `sale_price`
+   permanente sin fecha de fin, así que ese "precio anterior" es un valor que
+   nunca se transó — el 3 PACK se leería "$102.000 $66.300" cuando los $102.000
+   son aritmética (3 × $34.000), no un precio que alguien haya pagado. La marca
+   comunica por precio final; el tachado es la misma promesa que un porcentaje,
+   escrita de otra forma.
 
-const VISTAS = ['Destacados', 'Tees', 'Hoodies', 'Longsleeves', 'Packs', 'Todo'] as const;
-type Vista = (typeof VISTAS)[number];
+   Dentro de cada filtro: primero el orden curado, después el resto de la
+   categoría (ningún producto desaparece), y lo agotado al final — visible,
+   porque es la señal de qué reponer. */
 
-const CAT_POR_VISTA: Record<Exclude<Vista, 'Destacados' | 'Todo'>, string[]> = {
-  Tees: ['Tee'],
-  Hoodies: ['Hoodie', 'Set'],
-  Longsleeves: ['Longsleeve', 'Polo'],
-  Packs: ['Pack'],
-};
+export interface FiltroVista {
+  id: string;
+  label: string;
+  cats: string[];
+  slugs: string[];
+}
 
 /** Con stock primero; dentro de cada grupo conserva el orden recibido. */
 function conStockPrimero(items: NormalizedProduct[]): NormalizedProduct[] {
-  const hayStock = (p: NormalizedProduct) =>
-    Object.values(p.stock ?? {}).some((s) => s !== 'out');
+  const hayStock = (p: NormalizedProduct) => Object.values(p.stock ?? {}).some((s) => s !== 'out');
   return [...items.filter(hayStock), ...items.filter((p) => !hayStock(p))];
 }
 
-export default function CyberCatalogoEvento({ destacadosSlugs }: { destacadosSlugs: string[] }) {
+export default function CyberCatalogoEvento({
+  destacadosSlugs,
+  filtros,
+}: {
+  destacadosSlugs: string[];
+  filtros: FiltroVista[];
+}) {
   const { data } = useProducts();
-  const [vista, setVista] = useState<Vista>('Destacados');
+  const [vista, setVista] = useState<string>('destacados');
 
   const lista = useMemo(() => {
     if (!data) return [];
-    if (vista === 'Destacados') {
-      const bySlug = new Map(data.map((p) => [p.slug, p]));
-      return destacadosSlugs
-        .map((s) => bySlug.get(s))
-        .filter(Boolean) as NormalizedProduct[];
-    }
-    if (vista === 'Todo') return conStockPrimero(data).slice(0, 24);
-    const cats = CAT_POR_VISTA[vista];
-    return conStockPrimero(data.filter((p) => cats.includes(p.category)));
-  }, [data, vista, destacadosSlugs]);
+    const bySlug = new Map(data.map((p) => [p.slug, p]));
+    const pick = (slugs: string[]) =>
+      slugs.map((s) => bySlug.get(s)).filter(Boolean) as NormalizedProduct[];
+
+    if (vista === 'destacados') return pick(destacadosSlugs);
+    if (vista === 'todo') return conStockPrimero(data).slice(0, 48);
+
+    const f = filtros.find((x) => x.id === vista);
+    if (!f) return [];
+    // Curados primero, el resto de la categoría después: así el filtro nunca
+    // esconde un producto, solo decide con qué se abre.
+    const curados = pick(f.slugs);
+    const yaEstan = new Set(curados.map((p) => p.slug));
+    const resto = conStockPrimero(
+      data.filter((p) => f.cats.includes(p.category) && !yaEstan.has(p.slug)),
+    );
+    return [...curados, ...resto];
+  }, [data, vista, destacadosSlugs, filtros]);
+
+  const pestañas = [
+    { id: 'destacados', label: 'Destacados' },
+    ...filtros.map((f) => ({ id: f.id, label: f.label })),
+    { id: 'todo', label: 'Todo' },
+  ];
 
   return (
     <section id="catalogo" className="bg-background px-4 py-12 text-foreground md:px-10 md:py-16">
@@ -65,24 +90,22 @@ export default function CyberCatalogoEvento({ destacadosSlugs }: { destacadosSlu
           <p className="text-[12px] text-text-light">Precios finales. Lo que ves es lo que pagás.</p>
         </div>
 
-        {/* Filtros */}
         <div className="-mx-4 mb-6 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
-          {VISTAS.map((v) => (
+          {pestañas.map((p) => (
             <button
-              key={v}
-              onClick={() => setVista(v)}
+              key={p.id}
+              onClick={() => setVista(p.id)}
               className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${
-                vista === v
+                vista === p.id
                   ? 'border-foreground bg-foreground text-background'
                   : 'border-border-mid text-foreground/70 hover:border-foreground/50 hover:text-foreground'
               }`}
             >
-              {v}
+              {p.label}
             </button>
           ))}
         </div>
 
-        {/* Grilla */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-7 md:grid-cols-3 md:gap-x-4 md:gap-y-9 lg:grid-cols-4">
           {lista.map((p) => (
             <ProductCard
@@ -91,7 +114,6 @@ export default function CyberCatalogoEvento({ destacadosSlugs }: { destacadosSlu
               name={p.name}
               category={p.category}
               price={p.price}
-              originalPrice={p.originalPrice}
               image={p.images[0]}
               images={p.images}
               sizes={p.sizes}

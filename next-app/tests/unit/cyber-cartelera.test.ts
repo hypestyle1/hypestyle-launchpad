@@ -7,13 +7,15 @@ const RAIZ = join(__dirname, '..', '..');
 import { CYBER_END, CYBER_START, cyberEstado, cyberUltimasHoras } from '@/lib/cyber-hype';
 import {
   CYBER_DESTACADOS_SLUGS,
+  CYBER_FILTROS,
   CYBER_DROPS,
   CYBER_MYSTERY,
   CYBER_PACK_SLUGS,
   MYSTERY_PUBLICADO,
   dropsPublicos,
 } from '@/lib/cyber-cartelera';
-import { REGULAR_TEES_SLUGS } from '@/lib/regular-tees';
+import { REGULAR_TEES_GROUPS, REGULAR_TEES_SLUGS } from '@/lib/regular-tees';
+import { PACK_REGULAR_SLUGS } from '@/lib/promo-pack-regular';
 
 const en = (iso: string) => new Date(iso);
 
@@ -112,11 +114,54 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
 /* ══════════════════════ CATÁLOGO Y 4 PACK ══════════════════════════════ */
 
 describe('curaduría — productos reales, nada inventado', () => {
-  it('el 4 PACK se arma con las 4 Regular individuales de la fuente de verdad', () => {
+  it('el 4 PACK se arma con Regular individuales de la fuente de verdad', () => {
     for (const slug of CYBER_PACK_SLUGS) {
       expect(REGULAR_TEES_SLUGS).toContain(slug);
     }
-    expect(CYBER_PACK_SLUGS).toHaveLength(4);
+  });
+
+  /**
+   * Las Regular elegibles viven hoy en TRES listas separadas:
+   *   - `INDIVIDUALES` en lib/regular-tees (catálogo y home),
+   *   - `PACK_REGULAR_SLUGS` en lib/promo-pack-regular (el motor que COBRA),
+   *   - `CYBER_PACK_SLUGS` en lib/cyber-cartelera (la sección del evento).
+   * Si divergen, pasa lo peor: la sección muestra una remera que el carrito no
+   * cuenta para el pack, o al revés. Este test las ata.
+   *
+   * Es además el candado de la **Regular Red** que se está cargando en otra
+   * sesión (29/10): el día que se agregue, hay que agregarla en las tres o
+   * esto falla. Checklist de activación en
+   * `_claude/propuestas/CYBER-EVENTO/regular-red-integracion.md`.
+   */
+  it('las tres listas de Regular elegibles dicen exactamente lo mismo', () => {
+    const motor = [...PACK_REGULAR_SLUGS].sort();
+    const evento = [...CYBER_PACK_SLUGS].sort();
+    const catalogo = [...REGULAR_TEES_GROUPS[0].slugs].sort();
+    expect(evento).toEqual(motor);
+    expect(catalogo).toEqual(motor);
+  });
+
+  it('ninguna grilla del evento pasa originalPrice: el tachado es un % disfrazado', () => {
+    // 89 de 145 productos tienen sale_price PERMANENTE sin fecha de fin, así
+    // que ese "precio anterior" nunca se transó: el 3 PACK se leería
+    // "$102.000 → $66.300" y los $102.000 son 3 × $34.000, pura aritmética.
+    // Mostrar el tachado es comunicar un descuento contra un precio de
+    // referencia inventado, que es justo lo que la marca no hace.
+    for (const f of ['components/cyber/CyberCatalogoEvento.tsx', 'components/cyber/Cyber4Pack.tsx']) {
+      const src = readFileSync(join(RAIZ, f.replace(/\//g, sep)), 'utf8');
+      const sinComentarios = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '');
+      expect(sinComentarios, f).not.toMatch(/originalPrice=/);
+    }
+  });
+
+  it('los filtros cubren las categorías que facturan, incluidas Pantalón y Accesorio', () => {
+    const cats = CYBER_FILTROS.flatMap((f) => f.cats);
+    for (const c of ['Tee', 'Hoodie', 'Longsleeve', 'Pack', 'Pantalón', 'Accesorio']) {
+      expect(cats, `falta el filtro de ${c}`).toContain(c);
+    }
+    // Sin ids repetidos: son las pestañas.
+    const ids = CYBER_FILTROS.map((f) => f.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it('los destacados son slugs, sin duplicados', () => {

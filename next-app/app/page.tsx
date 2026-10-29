@@ -14,7 +14,21 @@ import Footer from '@/components/Footer';
 import HeroSs27 from '@/components/ss27-home/HeroSs27';
 import CyberHomeBanner from '@/components/cyber/CyberHomeBanner';
 import CyberTakeover from '@/components/cyber/CyberTakeover';
+import type { CyberFondo } from '@/components/cyber/CyberHeroFondo';
 import { cyberEstado } from '@/lib/cyber-hype';
+
+/**
+ * Qué fondo lleva el hero del evento. Hoy la foto editorial; el video se
+ * compara con `?hero=video-mono`, `?hero=video-color` o `?hero=video-completo`
+ * y SOLO fuera de producción: el clip todavía no está aprobado (ver el aviso
+ * en components/cyber/CyberHeroFondo). Cuando se apruebe uno, se cambia el
+ * valor por defecto acá y la query deja de hacer falta.
+ */
+function fondoHero(q: string | undefined): CyberFondo {
+  if (process.env.NODE_ENV === 'production') return 'foto';
+  if (q === 'video-mono' || q === 'video-color' || q === 'video-completo') return q;
+  return 'foto';
+}
 import Ss27Feed from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
@@ -55,14 +69,18 @@ export const metadata = buildMetadata({
  * el mu-plugin, igual que /colecciones/ss27, y llegan por props. Antes de la
  * apertura la lista viene vacía y la sección no se muestra.
  */
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: { hero?: string };
+}) {
   /* ── CYBER HYPE TAKEOVER (solo del 1/11 20:00 al 4/11 23:59) ─────────────
      Mientras el evento está en vivo, la home ES la experiencia del evento.
      Todo lo demás de este archivo —la home SS27— queda EXACTAMENTE igual y
      vuelve solo al terminar: la restauración es que esta condición dé false,
      no un deploy ni un revert. Palancas: las fechas en lib/cyber-hype.ts y el
      kill switch CYBER_APAGADO=1 (apaga el takeover al instante). */
-  if (cyberEstado() === 'evento') return <CyberTakeover />;
+  if (cyberEstado() === 'evento') return <CyberTakeover fondo={fondoHero(searchParams?.hero)} />;
 
   const queryClient = new QueryClient();
   // Las reseñas van por separado: no pasan por React Query, la sección las

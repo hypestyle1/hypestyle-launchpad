@@ -179,36 +179,140 @@ export const CYBER_PACK_SLUGS: string[] = [
 ];
 
 /**
- * Destacados del evento — curaduría comercial del 29/10 sobre datos medidos
- * (matriz del 25/10 + auditoría del 27/10): protagonistas con stock y ventas
- * verificadas, sin tocar precios (los pone Woo).
- *  - 3 PACK: el ancla (42 packs/30d).
- *  - Hoodies SS27: la mayor contribución por unidad (38u, venden sin descuento).
- *  - Athletic Navy Mustard: 73u, curva completa de talles.
- *  - Waffles: Running Horses es el 3.º más vendido.
- *  - Grey Camo Cap: vende sola (add-on natural del carrito).
- *  - Baby Come Back (82u) y Aero (el mayor stock del catálogo): volumen real.
+ * Destacados del evento — **curaduría medida el 29/10 contra Woo en vivo**
+ * (auditoría completa en `_claude/propuestas/CYBER-EVENTO/curaduria-catalogo.md`).
+ *
+ * El orden es por facturación retail de 30 días, que es también el orden en
+ * que conviene leerlos en mobile: a 2 columnas, las dos primeras filas son el
+ * 40% del negocio. Los 12 están publish, instock, con ≥5 fotos y portada
+ * mockup verificada, y TODOS tienen venta real en 30 días.
+ *
+ * La lista anterior (escrita de memoria sobre las auditorías viejas) tenía 5
+ * productos con CERO ventas en 30 días y dejaba afuera a 5 del top 10 — entre
+ * ellos el #2 del catálogo, el camo Faith Over Everything.
+ *
+ * Dos avisos de stock que no son obvios y que condicionan qué se comunica:
+ *  - `find-jesus-longsleeve-black` y `lettering-black-longsleeve` comparten la
+ *    pila `longsleeve_negro` (56 u en total, NO 112): el stock no es aditivo.
+ *  - Los dos 3 PACK (black-navy-white y black) comparten la pila negra, y los
+ *    dos están sin talle M.
  */
 export const CYBER_DESTACADOS_SLUGS: string[] = [
   'regular-tees-3-pack-black-navy-white',
-  'hype-distressed-grey-hoodie',
+  'faith-over-everything-camo-hoodie',
   'zolotye-kupola-washed-graphite-hoodie',
-  'splatter-hoodie-washed-grey',
-  'athletic-dept-navy-mustard-print-tee',
-  'longsleeve-waffle-horses',
+  'regular-tees-3-pack-black',
+  'find-jesus-longsleeve-black',
+  'sweatpant-grey-hstars',
   'grey-camo-cap',
-  'baby-come-back-tees',
-  'aerogrey-tees',
-  'aeropink-tees',
-  'hoodie-grey-hstars',
-  'ladytribal-black-longsleeve',
+  'splatter-hoodie-washed-grey',
+  'lettering-black-longsleeve',
+  'longsleeve-waffle-horses',
+  'camo-cap',
+  'hype-distressed-grey-hoodie',
 ];
 
 /**
- * Jerarquía comercial del evento (la pidió Valentín el 29/10):
- * 1. Mystery Archive → 2. 4 PACK → 3. Drops → 4. Destacados → 5. Resto SS27.
- * En la página el orden visual es hero → drops (lo nuevo de HOY arriba) →
- * 4 PACK → Mystery → catálogo: lo urgente del día primero, lo permanente
- * después. Las categorías del catálogo salen de los productos reales.
+ * Los filtros del catálogo, curados.
+ *
+ * Antes cada filtro era `data.filter(categoría)` y el orden lo decidía la API:
+ * con 65 remeras publicadas, el primero era arbitrario — la diferencia entre
+ * abrir con HONDA o con una AERO sin foto. Estas listas fijan el orden de lo
+ * que importa; lo que no está en la lista sigue apareciendo después, por
+ * categoría, así que ningún producto desaparece del catálogo.
+ *
+ * `cats` son las categorías reales de Woo que caen en cada filtro. Pantalón y
+ * Accesorio no tenían filtro propio y por eso quedaban solo en "Todo" (que
+ * corta en 24): ahí viven dos del top 10, el SweatPant Grey y la Grey Camo Cap.
  */
-export const CYBER_CATALOGO_CATEGORIAS = ['Tee', 'Hoodie', 'Longsleeve', 'Pack'] as const;
+export interface CyberFiltro {
+  id: string;
+  label: string;
+  cats: string[];
+  /** Orden curado; el resto de la categoría va detrás. */
+  slugs: string[];
+}
+
+export const CYBER_FILTROS: CyberFiltro[] = [
+  {
+    id: 'tees',
+    label: 'Tees',
+    cats: ['Tee'],
+    slugs: [
+      'honda-white-tee',
+      'h-hype-white-tee',
+      'athletic-dept-navy-mustard-print-tee',
+      'worn-varsity-club-white-tee',
+      'athletic-dept-navy-tee',
+      'christ-reigns-tee',
+      'only-god-can-judge-me-blanca',
+      'lamb-of-god-pink-tee',
+      'style-culture-university-black-tee',
+      'style-culture-university-navy-tee',
+      'style-culture-university-white-tee',
+      'napoli-tee-azul',
+      'napoli-tee-blanca',
+      'honda-black-tee',
+    ],
+  },
+  {
+    id: 'hoodies',
+    label: 'Hoodies',
+    cats: ['Hoodie', 'Set'],
+    slugs: [
+      'faith-over-everything-camo-hoodie',
+      'zolotye-kupola-washed-graphite-hoodie',
+      'splatter-hoodie-washed-grey',
+      'hype-distressed-grey-hoodie',
+      'hs-co-green-hoodie',
+      'hoodie-grey-hstars',
+      'hs-co-grey-hoodie',
+      'lion-of-judah-stone-wash-hoodie',
+      'hoodie-pink',
+      'no-service-for-the-faithless-hoodie',
+    ],
+  },
+  {
+    id: 'longsleeves',
+    label: 'Longsleeves',
+    cats: ['Longsleeve', 'Polo'],
+    slugs: [
+      'find-jesus-longsleeve-black',
+      'lettering-black-longsleeve',
+      'longsleeve-waffle-horses',
+      'ladytribal-black-longsleeve',
+      'hype-washed-black-waffle-longsleeve',
+      'athletic-dept-pink-longsleeve',
+      'athletic-dept-blue-longsleeve',
+      'hs-crest-olive-raglan-longsleeve',
+      'hype-creative-goods-pink-raglan-longsleeve',
+      'dept-of-culture-eagle-pink-raglan-longsleeve',
+      'half-zip-polo-black',
+      'athletic-dept-washed-grey-polo',
+    ],
+  },
+  {
+    // Pantalón + Accesorio: las dos categorías que facturan y no tenían filtro.
+    id: 'bottoms',
+    label: 'Bottoms y accesorios',
+    cats: ['Pantalón', 'Jort', 'Accesorio'],
+    slugs: ['sweatpant-grey-hstars', 'grey-camo-cap', 'camo-cap'],
+  },
+  {
+    id: 'packs',
+    label: 'Packs',
+    cats: ['Pack'],
+    slugs: [
+      'regular-tees-3-pack-black-navy-white',
+      // El White sube al 2.º puesto CONTRA su facturación a propósito: es el
+      // único 3 PACK con talle M, y el M es lo que más se pide.
+      'regular-tees-3-pack-white',
+      'regular-tees-3-pack-black',
+      'regular-tees-3-pack-navy',
+      'regular-tees-3-pack-black-white-melange',
+      'regular-tees-3-pack-black-melange-navy',
+      'regular-tees-3-pack-melange-navy-white',
+      'regular-tees-3-pack-grey',
+    ],
+  },
+];
