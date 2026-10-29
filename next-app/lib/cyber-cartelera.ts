@@ -180,10 +180,11 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     id: 'longsleeves',
     nombre: 'Mystery Longsleeves',
     detalle: 'Waffles, Athletic Dept y raglans del archivo. Elegís tu talle; el modelo es sorpresa.',
-    // Pendiente de actualizar con el conteo definitivo: los Half-Zip Polo se
-    // van a HOODIES (decisión del 29/10) y entran los waffles, mostrando una
-    // sola ficha por pila compartida para no contar dos veces el mismo blank.
-    pool: '11 modelos en el pool',
+    // Los Half-Zip Polo se fueron a HOODIES y entraron los waffles, con UNA
+    // sola ficha por pila compartida: las dos washed black comen la misma
+    // pila de 6 u, así que entra solo la Dept of Culture. Entre waffles
+    // aportan 11 unidades reales, no 22 — ojo al armar las cajas.
+    pool: '10 modelos en el pool',
     img: '/cyber/mystery/longsleeves-v5.webp',
     href: null,
   },
@@ -193,7 +194,9 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     // Los Half-Zip Polo cuentan como hoodies y son los protagonistas del pool
     // ("los que más vamos a estar enviando", 29/10), así que encabezan el copy.
     detalle: 'Half-Zip Polos y hoodies del archivo. Elegís tu talle; el modelo es sorpresa.',
-    pool: '9 modelos en el pool',
+    // 56 de las 128 unidades del pool son Half-Zip Polo: la familia de stock
+    // más parejo y la de costo más bajo, o sea la que sostiene el margen.
+    pool: '12 modelos en el pool',
     img: '/cyber/mystery/hoodies-v5.webp',
     href: null,
   },
