@@ -10,6 +10,7 @@ import Cyber4Pack from './Cyber4Pack';
 import CyberMysterySection from './CyberMysterySection';
 import CyberCatalogoEvento from './CyberCatalogoEvento';
 import CyberCondiciones from './CyberCondiciones';
+import CyberRegalos from './CyberRegalos';
 import CyberWhatsApp from './CyberWhatsApp';
 import '@/components/cyber/cyber.css';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
@@ -68,7 +69,7 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-2.5 md:gap-3 lg:grid-cols-4">
             {[
               { t: 'Precios finales', d: 'Lo que ves es lo que pagás. Sin letra chica.' },
-              { t: 'Regalos por compra', d: 'Sumá regalos según tu carrito, como siempre en Hype.' },
+              { t: 'Regalo por compra', d: 'Desde $100.000 se suma solo. El detalle, acá abajo.' },
               { t: 'Transferencia conviene', d: 'El descuento por transferencia aplica también en el evento.' },
               { t: 'Envíos a todo el país', d: 'Despacho con seguimiento Andreani, por orden de compra.' },
             ].map((b) => (
@@ -81,6 +82,8 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
             ))}
           </div>
         </section>
+
+        <CyberRegalos />
 
         {/* El orden depende de si hay algo revelado, y es una decisión de
             conversión, no de gusto: mientras los tres drops estén bloqueados,

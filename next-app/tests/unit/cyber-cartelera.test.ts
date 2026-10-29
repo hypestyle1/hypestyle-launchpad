@@ -141,6 +141,27 @@ describe('curaduría — productos reales, nada inventado', () => {
     expect(catalogo).toEqual(motor);
   });
 
+  it('la escalera de regalos publica los umbrales REALES de producción', () => {
+    // Única parte de la página con cifras, y no es una excepción a la regla:
+    // no son precios ni porcentajes, son umbrales de una mecánica ya viva.
+    // Verificado el 29/10 contra POST /api/gift-progress del sitio publicado:
+    // active true, modo "highest", 100.000 Chain / 140.000 Socks / 300.000
+    // Zippo. Si alguien toca el plugin, estos números quedan desactualizados
+    // y este test es el recordatorio de actualizarlos juntos.
+    const src = readFileSync(
+      join(RAIZ, 'components/cyber/CyberRegalos.tsx'.replace(/\//g, sep)),
+      'utf8',
+    );
+    for (const monto of ['$100.000', '$140.000', '$300.000']) {
+      expect(src, `falta el umbral ${monto}`).toContain(monto);
+    }
+    // El modo es "highest": NO se acumulan. Decir lo contrario sería mentir.
+    expect(src).toMatch(/nivel más alto/i);
+    // Y no se cuela un porcentaje por la ventana.
+    const sinComentarios = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '');
+    expect(sinComentarios).not.toMatch(/\d\s?%/);
+  });
+
   it('ninguna grilla del evento pasa originalPrice: el tachado es un % disfrazado', () => {
     // 89 de 145 productos tienen sale_price PERMANENTE sin fecha de fin, así
     // que ese "precio anterior" nunca se transó: el 3 PACK se leería
