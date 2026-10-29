@@ -77,60 +77,55 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           ctaLabel={hayRevelado ? 'Ver las ofertas' : 'Explorar Cyber Hype'}
         />
 
-        {/* Lo primero después del hero: qué hay y cómo llegar. Quien viene de
-            un anuncio elige categoría antes de leer una sola línea sobre la
-            mecánica del evento. */}
-        <CyberNavCategorias accesos={CYBER_ACCESOS} />
+        {/* El recorrido (reordenado el 29/10). Antes los drops, los cuatro
+            beneficios, los regalos y Mystery caían uno detrás de otro y se
+            leían como un solo bloque amontonado. Ahora cada cosa tiene su
+            lugar y hay cambios de ritmo entre medio: negro, foto, grilla
+            clara, negro.
 
+            1. 4 PACK — el producto estrella, lo primero comprable.
+            2. MYSTERY ARCHIVE — las tres cajas, el otro protagonista.
+            3. 3 DÍAS · 3 DROPS — sección propia, con aire alrededor.
+            4. Navegación editorial + catálogo — explorar y comprar.
+            5. REGALO POR COMPRA — justo después del catálogo, que es donde
+               sube el ticket: ya eligió, ahora le falta poco para el regalo.
+            6. Condiciones, canal y footer — al final, sin fricción. */}
 
-
-        {/* El orden depende de si hay algo revelado, y es una decisión de
-            conversión, no de gusto: mientras los tres drops estén bloqueados,
-            lo primero que se ve después del hero serían tres cajas con un
-            signo de pregunta — nada para comprar. En ese caso manda el 4 PACK,
-            que sí es comprable, y los drops quedan abajo como "lo que viene".
-            Apenas se revela el primero, los drops suben: ahí son la novedad
-            del día y lo que trae de vuelta a quien ya compró. */}
-        {hayRevelado ? (
-          <>
-            <CyberDrops drops={drops} />
-            <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
-          </>
-        ) : (
-          <>
-            <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
-            <CyberDrops drops={drops} />
-          </>
-        )}
-
-        {/* Beneficios: solo mecánicas reales y vigentes, sin montos. */}
-        <section className="bg-[#0a0a0a] px-4 pt-10 text-white md:px-10 md:pt-12">
-          <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-2.5 md:gap-3 lg:grid-cols-4">
-            {[
-              { t: 'Precios finales', d: 'Lo que ves es lo que pagás. Sin letra chica.' },
-              { t: 'Regalo por compra', d: 'Desde $100.000 se suma solo. El detalle, acá abajo.' },
-              { t: 'Transferencia conviene', d: 'El descuento por transferencia aplica también en el evento.' },
-              { t: 'Envíos a todo el país', d: 'Despacho con seguimiento Andreani, por orden de compra.' },
-            ].map((b) => (
-              <div key={b.t} className="rounded-[12px] border border-white/10 bg-white/[0.04] px-4 py-4 md:px-5 md:py-5">
-                <p className="mb-1 text-[12px] font-bold uppercase tracking-[0.06em] text-white md:text-[13px]">
-                  {b.t}
-                </p>
-                <p className="text-[11px] leading-[1.5] text-white/50 md:text-[12px]">{b.d}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <CyberRegalos />
+        <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
 
         {mostrarMystery && (
           <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />
         )}
 
+        <CyberDrops drops={drops} />
+
+        <CyberNavCategorias accesos={CYBER_ACCESOS} />
+
         <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
         <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
+
+        <CyberRegalos />
+
+        {/* La franja informativa: tres datos, una línea, sin competir con el
+            producto. El regalo salió de acá — ya tiene su sección entera, y
+            repetirlo era ocupar lugar comercial para decir lo mismo. */}
+        <section className="bg-[#0a0a0a] px-4 pt-2 text-white md:px-10">
+          <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-x-8 gap-y-3 border-t border-white/10 pt-6 sm:grid-cols-3">
+            {[
+              { t: 'Precios finales', d: 'Lo que ves es lo que pagás.' },
+              { t: 'Transferencia conviene', d: 'Su descuento aplica también en el evento.' },
+              { t: 'Envíos a todo el país', d: 'Andreani, con seguimiento por mail.' },
+            ].map((b) => (
+              <div key={b.t} className="flex items-baseline gap-2.5">
+                <span className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-white">
+                  {b.t}
+                </span>
+                <span className="text-[11.5px] leading-[1.45] text-white/45">{b.d}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <CyberCondiciones />
 
