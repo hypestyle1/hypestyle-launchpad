@@ -101,6 +101,12 @@ export interface CyberDropPublico {
   dia: string;
   fecha: string;
   estado: 'bloqueado' | 'revelado';
+  /**
+   * CUÁNDO se revela, en ISO. Decir la hora no revela el contenido y da el
+   * motivo para volver: es la diferencia entre "algo viene" y "volvé el
+   * martes a las 11". Viaja también en los bloqueados, a propósito.
+   */
+  revealAt: string;
   /** Solo presente cuando estado === 'revelado'. */
   producto?: { nombre: string; claim: string; img: string; href: string };
 }
@@ -114,9 +120,10 @@ export function dropsPublicos(now: Date = new Date()): CyberDropPublico[] {
   const t = now.getTime();
   return CYBER_DROPS.map((d) => {
     const revelado = d.producto !== null && t >= new Date(d.revealAt).getTime();
+    const base = { id: d.id, dia: d.dia, fecha: d.fecha, revealAt: d.revealAt };
     return revelado
-      ? { id: d.id, dia: d.dia, fecha: d.fecha, estado: 'revelado' as const, producto: d.producto! }
-      : { id: d.id, dia: d.dia, fecha: d.fecha, estado: 'bloqueado' as const };
+      ? { ...base, estado: 'revelado' as const, producto: d.producto! }
+      : { ...base, estado: 'bloqueado' as const };
   });
 }
 

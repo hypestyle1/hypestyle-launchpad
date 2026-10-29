@@ -9,6 +9,7 @@ import CyberDrops from './CyberDrops';
 import Cyber4Pack from './Cyber4Pack';
 import CyberMysterySection from './CyberMysterySection';
 import CyberCatalogoEvento from './CyberCatalogoEvento';
+import CyberCondiciones from './CyberCondiciones';
 import CyberWhatsApp from './CyberWhatsApp';
 import '@/components/cyber/cyber.css';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
@@ -89,6 +90,8 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
         )}
 
         <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
+
+        <CyberCondiciones />
 
         {/* Cierre: el canal, donde las revelaciones salen primero. */}
         <section className="bg-[#0a0a0a] px-4 pb-14 pt-12 text-white md:px-10 md:pb-16">

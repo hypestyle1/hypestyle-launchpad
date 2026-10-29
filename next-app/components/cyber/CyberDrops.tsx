@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import CyberRevealCountdown from './CyberRevealCountdown';
 import type { CyberDropPublico } from '@/lib/cyber-cartelera';
 
 /* 3 DÍAS · 3 DROPS — la cartelera del evento (concepto confirmado el 29/10).
@@ -26,7 +27,9 @@ export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
             </h2>
           </div>
           <p className="max-w-[360px] text-[12px] leading-[1.5] text-white/50 md:text-[13px]">
-            Cada día del evento se revela un drop a las 11:00. Lo que ya salió queda disponible
+            {/* Sin hora escrita: el horario de cada revelación no está
+                confirmado y la cuenta regresiva de cada tarjeta ya lo dice. */}
+            Cada día del evento se revela un lanzamiento nuevo. Lo que ya salió queda disponible
             hasta el cierre.
           </p>
         </div>
@@ -83,8 +86,11 @@ export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
                     <p className="text-[16px] font-black uppercase tracking-[0.02em] text-white/45">
                       Por revelar
                     </p>
+                    {/* La hora es lo único que se publica de un drop sin
+                        revelar, y es lo que da el motivo para volver. El
+                        contenido no viaja al navegador hasta que pasa. */}
                     <p className="text-[12px] leading-[1.5] text-white/40">
-                      Se revela el {d.fecha} a las 11:00.
+                      Se revela en <CyberRevealCountdown targetIso={d.revealAt} />
                     </p>
                   </>
                 )}
