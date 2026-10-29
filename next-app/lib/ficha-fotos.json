@@ -708,6 +708,14 @@
     "tablas": [],
     "cuadrada": true
   },
+  "regular-tee-red": {
+    "mockups": [
+      "remera-regular-roja-frente-v2.png",
+      "remera-regular-roja-espalda-v3.png"
+    ],
+    "tablas": [],
+    "cuadrada": true
+  },
   "regular-tee-white": {
     "mockups": [
       "regular-tee-white-destacada-v2.png",
