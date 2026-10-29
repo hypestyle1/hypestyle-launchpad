@@ -53,8 +53,8 @@ const evento = (event_name: string) => ({
 });
 
 describe('allowlist de /api/capi', () => {
-  it('deja pasar los cuatro eventos del embudo, Lead incluido', async () => {
-    for (const name of ['InitiateCheckout', 'AddPaymentInfo', 'CompleteRegistration', 'Lead']) {
+  it('deja pasar los seis eventos del embudo, ViewContent y AddToCart incluidos', async () => {
+    for (const name of ['ViewContent', 'AddToCart', 'InitiateCheckout', 'AddPaymentInfo', 'CompleteRegistration', 'Lead']) {
       llamadas = [];
       const res = await post(evento(name));
       expect(res.status, name).toBe(200);

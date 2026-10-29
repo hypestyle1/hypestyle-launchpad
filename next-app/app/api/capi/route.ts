@@ -47,8 +47,21 @@ const TEST_EVENT_CODE = (process.env.META_CAPI_TEST_EVENT_CODE || '').trim();
  * silencio: el pixel del browser mandaba su copia y la del servidor —la que no
  * se puede bloquear— nunca llegaba. Igual que los otros tres: viaja con el
  * mismo `event_id` que el browser, así que Meta deduplica.
+ *
+ * `ViewContent` y `AddToCart` entraron el 29/10: eran los dos únicos eventos
+ * del embudo que viajaban SOLO por el navegador, y la auditoría del 27/10/2026
+ * midió que Meta recibía ~1/3 de los reales. Mismo par pixel + CAPI con el
+ * mismo `event_id` que el resto (lib/fbpixel.ts), sin PII: solo cookies de
+ * Meta, IP y user agent.
  */
-const ALLOWED_EVENTS = new Set(['InitiateCheckout', 'AddPaymentInfo', 'CompleteRegistration', 'Lead']);
+const ALLOWED_EVENTS = new Set([
+  'ViewContent',
+  'AddToCart',
+  'InitiateCheckout',
+  'AddPaymentInfo',
+  'CompleteRegistration',
+  'Lead',
+]);
 
 interface UserDataIn {
   em?: string; ph?: string; fn?: string; ln?: string;
