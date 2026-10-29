@@ -44,7 +44,7 @@ export default function CyberCartelera({ items }: { items: CyberCarteleraItem[] 
             {/* Qué es */}
             <span className="min-w-0">
               <span
-                className={`block truncate text-[22px] font-extrabold uppercase leading-[1.05] tracking-[-0.01em] sm:text-[34px] ${
+                className={`block text-[22px] font-extrabold uppercase leading-[1.05] tracking-[-0.01em] sm:text-[34px] ${
                   oculto ? 'text-white/30' : 'text-white'
                 }`}
               >
