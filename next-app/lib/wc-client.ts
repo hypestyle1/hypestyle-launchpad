@@ -48,6 +48,10 @@ export interface CreateOrderPayload {
   shippingBranch?: string;
   /** Código Andreani de la sucursal (ej. "RGA"). Sin esto el plugin no puede empaquetar. */
   shippingBranchCode?: string;
+  /** Calle y localidad de la sucursal: son el destino del envío cuando el
+   *  comprador retira ahí y no deja domicilio. Ver lib/sucursal-destino.ts. */
+  shippingBranchStreet?: string;
+  shippingBranchCity?: string;
   fbp?: string;
   fbc?: string;
   /** Origen de la visita (utm/fbclid/referrer/landing). Ver lib/attribution.ts. */

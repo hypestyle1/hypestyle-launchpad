@@ -3,6 +3,7 @@ import { calcularPedido } from '@/lib/pedido-servidor';
 import { attributionOrderMeta } from '@/lib/attribution';
 import { PrecioError } from '@/lib/precio-servidor';
 import { lineasDeEnvio } from '@/lib/andreani-shipping-line';
+import { destinoSucursal, esEnvioASucursal } from '@/lib/sucursal-destino';
 import { PRIVATE_ACCESS_COOKIE } from '@/lib/private-access/config';
 import { privateAccessForOrder, privateAccessMeta } from '@/lib/private-access/order';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
     const {
       items, customer, shipping, discountAmount: descuentoCliente, couponCode, couponDiscount: cuponDescuentoCliente,
       paymentMethod, shippingMethodId, shippingBranch, shippingBranchCode,
+      shippingBranchStreet, shippingBranchCity,
       fbp, fbc, attribution, clarityUser, claritySession,
     } = { ...rawPayload, items: cleanItems };
 
@@ -160,16 +162,37 @@ export async function POST(req: NextRequest) {
       }),
     );
 
+    // Sin dirección no se le pega el depto a nada: en un pedido a sucursal
+    // (que no pide domicilio) address_1 quedaba en ", 4B".
+    const direccionCliente = String(customer.direccion ?? '').trim();
     const billing = {
       first_name: customer.nombre   ?? '',
       last_name:  customer.apellido ?? '',
       email:      customer.email    ?? '',
       phone:      customer.telefono ?? '',
-      address_1:  customer.depto ? `${customer.direccion}, ${customer.depto}` : (customer.direccion ?? ''),
+      address_1:  direccionCliente && customer.depto ? `${direccionCliente}, ${customer.depto}` : direccionCliente,
       city:       customer.ciudad   ?? '',
       state:      customer.provincia ?? '',
       postcode:   customer.cp       ?? '',
       country:    'AR',
+    };
+
+    // Retiro en sucursal: el checkout no pide el domicilio del comprador (el
+    // paquete no va a su casa), pero el plugin de Andreani exige dirección y
+    // ciudad para dar de alta la guía —también en sucursal— y si no las tiene
+    // frena el pedido con andreani_destination_incomplete. El destino real es
+    // la sucursal: su calle y su localidad van en el bloque de envío.
+    // Ver lib/sucursal-destino.
+    const sucursal = esEnvioASucursal(shippingMethodId, shippingLabel)
+      ? destinoSucursal({ calle: shippingBranchStreet, localidad: shippingBranchCity, texto: shippingBranch })
+      : null;
+    const shippingPedido = {
+      ...billing,
+      email: '',
+      phone: '',
+      ...(sucursal && !billing.address_1
+        ? { address_1: sucursal.calle, city: sucursal.localidad || billing.city }
+        : {}),
     };
 
     const PAYMENT_TITLES: Record<string, string> = {
@@ -185,7 +208,7 @@ export async function POST(req: NextRequest) {
       payment_method_title: PAYMENT_TITLES[paymentMethod] ?? paymentMethod,
       set_paid:             false,
       billing,
-      shipping:             { ...billing, email: '', phone: '' },
+      shipping:             shippingPedido,
       line_items:           lineItems,
       // Con envío gratis (promo/umbral) "shipping" llega en 0, pero igual hay que
       // registrar el shipping_line: sin él, Andreani no tiene de dónde sacar el
