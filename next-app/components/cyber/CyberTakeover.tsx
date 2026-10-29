@@ -13,7 +13,7 @@ import CyberCondiciones from './CyberCondiciones';
 import CyberRegalos from './CyberRegalos';
 import CyberCanal from './CyberCanal';
 import CyberNavCategorias from './CyberNavCategorias';
-import CyberEditorial from './CyberEditorial';
+import CyberEditorial, { CYBER_CATEGORIAS_EDITORIAL } from './CyberEditorial';
 import '@/components/cyber/cyber.css';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
 import { CYBER_END, cyberUltimasHoras } from '@/lib/cyber-hype';
@@ -118,17 +118,7 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />
         )}
 
-        {/* Pausa editorial antes del catálogo largo: corta la sucesión de
-            grillas y empuja a la categoría con más stock sano. */}
-        <CyberEditorial
-          src="/ss27/banner/15-distressed.webp"
-          alt="Hype Distressed Hoodie, washed grey"
-          kicker="Spring Summer 27"
-          titulo="Los hoodies del drop"
-          href="/hoodies"
-          cta="Ver hoodies"
-          posicion="50% 30%"
-        />
+        <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
         <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
 

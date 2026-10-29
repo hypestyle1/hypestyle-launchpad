@@ -1,62 +1,116 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-/* Separador editorial entre categorías.
+/* Tres tarjetas editoriales de categoría, después de Mystery Archive.
 
-   Qué hace acá: corta la sucesión de grillas con una imagen grande de la
-   marca y, de paso, empuja a una categoría. No es un banner promocional —no
-   lleva precios, ni porcentajes, ni cuenta regresiva—: es la pausa visual que
-   hace que el catálogo no se lea como un listado infinito.
+   ── Por qué tres y no una ───────────────────────────────────────────────────
+   Antes era una sola foto enorme para una sola categoría: ocupaba media
+   pantalla para empujar a un único lado. Tres tarjetas del mismo tamaño
+   ocupan lo mismo y ofrecen tres caminos, con la misma estructura que las
+   Mystery Boxes de arriba — misma proporción, mismo radio, misma lectura.
 
-   Las fotos son del lookbook y del banco SS27 ya publicados en el sitio; el
-   `href` apunta siempre a una página real. Si alguna vez hay material propio
-   del Cyber, se reemplaza la ruta y nada más. */
+   ── Las fotos, y por qué estas ──────────────────────────────────────────────
+   Todo material real de Hype, nada de stock:
+   - HOODIES: la del banner SS27 que ya estaba aprobada.
+   - REMERAS: UGC de la sección "Así se usa" — alguien de verdad con la
+     remera puesta en la calle. Es el tipo de foto que mejor convierte porque
+     muestra la prenda usada, no exhibida.
+   - PANTALONES: del lookbook Faith, el único banco donde el jogger es
+     protagonista y se ve entero; en el resto del material los pantalones
+     quedan cortados o tapados por la prenda de arriba.
+   Las tres son de cuerpo entero o medio cuerpo con la prenda centrada, así
+   que conviven aunque vengan de sesiones distintas. El `posicion` de cada una
+   está elegido para que el recorte no corte cabezas ni la prenda.
 
-export default function CyberEditorial({
-  src,
-  alt,
-  kicker,
-  titulo,
-  href,
-  cta,
-  posicion = '50% 35%',
-}: {
+   ── Mobile ──────────────────────────────────────────────────────────────────
+   Las tres quedan en UNA línea horizontal con scroll y snap: una tarjeta
+   protagonista por vez y se asoma la siguiente, que es lo que avisa que hay
+   más. Sin autoplay, sin apilarlas y sin comprimir las tres en una pantalla.
+   En desktop, tres columnas iguales. */
+
+export interface TarjetaCategoria {
+  id: string;
   src: string;
   alt: string;
   kicker: string;
   titulo: string;
   href: string;
   cta: string;
-  /** object-position, para elegir qué parte de la foto manda en el recorte. */
-  posicion?: string;
-}) {
+  posicion: string;
+}
+
+export const CYBER_CATEGORIAS_EDITORIAL: TarjetaCategoria[] = [
+  {
+    id: 'hoodies',
+    src: '/ss27/banner/15-distressed.webp',
+    alt: 'Hype Distressed Hoodie washed grey',
+    kicker: 'Spring Summer 27',
+    titulo: 'Hoodies',
+    href: '/hoodies',
+    cta: 'Ver hoodies',
+    posicion: '50% 28%',
+  },
+  {
+    id: 'tees',
+    src: '/shop-the-look/mica-ogcjm.webp',
+    alt: 'Remera Only God Can Judge Me, en la calle',
+    kicker: 'Así se usa',
+    titulo: 'Remeras',
+    href: '/tees',
+    cta: 'Ver remeras',
+    posicion: '50% 30%',
+  },
+  {
+    id: 'pants',
+    src: '/lookbook-faith/03165.webp',
+    alt: 'Conjunto Hype gris: hoodie y sweatpant',
+    kicker: 'Lookbook Faith',
+    titulo: 'Pantalones',
+    href: '/pants',
+    cta: 'Ver pantalones',
+    posicion: '50% 45%',
+  },
+];
+
+export default function CyberEditorial({ tarjetas }: { tarjetas: TarjetaCategoria[] }) {
   return (
-    <section className="bg-[#0a0a0a] px-4 py-3 md:px-10 md:py-4">
-      <Link
-        href={href}
-        className="group relative mx-auto block aspect-[4/3] max-w-[1400px] overflow-hidden rounded-[16px] sm:aspect-[16/9] lg:aspect-[21/9]"
-      >
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          sizes="(max-width: 768px) 100vw, 1400px"
-          className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-          style={{ objectPosition: posicion }}
-        />
-        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-        <span className="absolute inset-x-5 bottom-5 md:inset-x-9 md:bottom-8">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.26em] text-white/70 md:text-[11px]">
-            {kicker}
-          </span>
-          <span className="mt-1.5 block text-[24px] font-black uppercase leading-[0.95] tracking-[-0.01em] text-white md:text-[38px]">
-            {titulo}
-          </span>
-          <span className="mt-3 inline-flex h-[44px] items-center justify-center rounded-full bg-white px-7 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0a0a0a] transition-opacity group-hover:opacity-85 md:text-[12px]">
-            {cta}
-          </span>
-        </span>
-      </Link>
+    <section className="bg-[#0a0a0a] px-4 py-10 md:px-10 md:py-12">
+      <div className="mx-auto max-w-[1400px]">
+        <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:pb-0">
+          {tarjetas.map((t) => (
+            <li
+              key={t.id}
+              className="w-[82vw] max-w-[340px] shrink-0 snap-center md:w-auto md:max-w-none"
+            >
+              <Link
+                href={t.href}
+                className="group relative block aspect-[4/5] overflow-hidden rounded-[16px] focus-visible:outline-white"
+              >
+                <Image
+                  src={t.src}
+                  alt={t.alt}
+                  fill
+                  sizes="(max-width: 768px) 82vw, 33vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                  style={{ objectPosition: t.posicion }}
+                />
+                <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+                <span className="absolute inset-x-4 bottom-4 md:inset-x-5 md:bottom-5">
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.24em] text-white/65">
+                    {t.kicker}
+                  </span>
+                  <span className="mt-1 block text-[24px] font-black uppercase leading-[0.95] tracking-[-0.01em] text-white md:text-[28px]">
+                    {t.titulo}
+                  </span>
+                  <span className="mt-3 inline-flex h-[42px] items-center justify-center rounded-full bg-white px-6 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0a0a0a] transition-opacity group-hover:opacity-85">
+                    {t.cta}
+                  </span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
