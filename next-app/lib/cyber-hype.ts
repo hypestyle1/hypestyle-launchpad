@@ -66,6 +66,13 @@ export type CyberEstado = 'previa' | 'evento' | 'cerrado';
  * se compara contra instantes absolutos, así que el resultado es el mismo.
  */
 export function cyberEstado(now: Date = new Date()): CyberEstado {
+  // Solo para revisar en local: NEXT_PUBLIC_CYBER_FASE fuerza la fase
+  // (previa|evento|cerrado) en el server y el cliente a la vez. En producción
+  // se ignora SIEMPRE: la fase la deciden las fechas y nada más.
+  if (process.env.NODE_ENV !== 'production') {
+    const forzada = process.env.NEXT_PUBLIC_CYBER_FASE;
+    if (forzada === 'previa' || forzada === 'evento' || forzada === 'cerrado') return forzada;
+  }
   const t = now.getTime();
   if (t < new Date(CYBER_START).getTime()) return 'previa';
   if (t < new Date(CYBER_END).getTime()) return 'evento';
