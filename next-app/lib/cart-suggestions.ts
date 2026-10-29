@@ -44,7 +44,7 @@ const COLOR_WORDS = new Set([
   'black', 'white', 'grey', 'gris', 'pink', 'navy', 'melange', 'green', 'blue',
   'brown', 'olive', 'sand', 'taupe', 'graphite', 'bordo', 'wheat', 'pearl',
   'earth', 'militar', 'negro', 'negra', 'blanca', 'blanco', 'azul', 'beige',
-  'silver', 'stone', 'wash', 'negrogris',
+  'silver', 'stone', 'wash', 'negrogris', 'red', 'rojo', 'roja',
 ]);
 
 // Palabras que están en medio catálogo y no distinguen un diseño de otro.
