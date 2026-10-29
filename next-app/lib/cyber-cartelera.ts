@@ -206,6 +206,7 @@ export const CYBER_PACK_SLUGS: string[] = [
   'regular-tee-white',
   'regular-tee-melange',
   'regular-tee-navy',
+  'regular-tee-red',
 ];
 
 /**
