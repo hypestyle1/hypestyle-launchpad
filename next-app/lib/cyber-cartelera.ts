@@ -54,6 +54,18 @@ export interface CyberDrop {
 }
 
 /**
+ * La hora de revelación por defecto, en ART. **NO está confirmada** (29/10):
+ * las 11:00 salieron del plan editorial, no de una decisión. Cada drop puede
+ * pisarla con su propio `revealAt`.
+ *
+ * Para cambiarla hay un solo lugar: esta constante. Dato medido que conviene
+ * tener a mano al decidir: el pico de compra del sitio es a las 22 h, y a las
+ * 8 h hubo 2 pedidos en tres meses y medio — una revelación de mañana se
+ * comunica de mañana, pero se compra de noche.
+ */
+const HORA_REVELACION = '11:00:00';
+
+/**
  * Los tres drops, uno por día. CONTENIDO SIN ASIGNAR a propósito: depende de
  * mercadería recibida y controlada (remeras/longsleeves nuevas el 3/11,
  * bermudas y camperas camo el 4/11 — tentativos del replanteo del 27/10).
@@ -64,21 +76,21 @@ export const CYBER_DROPS: CyberDrop[] = [
     id: '01',
     dia: 'Día 1',
     fecha: 'lun 2/11',
-    revealAt: '2026-11-02T11:00:00-03:00',
+    revealAt: `2026-11-02T${HORA_REVELACION}-03:00`,
     producto: null,
   },
   {
     id: '02',
     dia: 'Día 2',
     fecha: 'mar 3/11',
-    revealAt: '2026-11-03T11:00:00-03:00',
+    revealAt: `2026-11-03T${HORA_REVELACION}-03:00`,
     producto: null,
   },
   {
     id: '03',
     dia: 'Día 3',
     fecha: 'mié 4/11',
-    revealAt: '2026-11-04T11:00:00-03:00',
+    revealAt: `2026-11-04T${HORA_REVELACION}-03:00`,
     producto: null,
   },
 ];
