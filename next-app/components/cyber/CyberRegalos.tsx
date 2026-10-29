@@ -100,7 +100,12 @@ export default function CyberRegalos() {
                 {/* El regalo a la derecha, en su bloque blanco: los packshots
                     vienen recortados sobre blanco, así se funden en vez de
                     dejar un recuadro flotando sobre el negro. */}
-                <div className="relative w-[42%] shrink-0 bg-white">
+                {/* Ancho fijo, no porcentual, a propósito: el test que impide
+                    publicar porcentajes mira el archivo entero y un `42%` de
+                    CSS le resultaba indistinguible de un "42% off". Antes que
+                    aflojar ese candado —que existe por una razón— se usan
+                    píxeles. */}
+                <div className="relative w-[136px] shrink-0 bg-white md:w-[168px]">
                   {n.src && (
                     <Image
                       src={n.src}
