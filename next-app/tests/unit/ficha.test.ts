@@ -4,20 +4,28 @@ import { abreCuadrada, composicion, esMockup, ordenarFotos, resumen, ventanaEntr
 const wp = (archivo: string) => `https://wp.test/wp-content/uploads/2026/05/${archivo}`;
 
 describe('ordenarFotos', () => {
+  // Estos dos casos necesitan un slug que en lib/ficha-fotos.json tenga mockup Y tabla.
+  // Antes usaban camo-full-set-combo, pero sus dos tablas se sacaron de la galería de Woo
+  // y al regenerar el archivo quedó sin tablas. Si este test vuelve a fallar, buscar en
+  // ficha-fotos.json otro slug que tenga las dos cosas en vez de cambiar la expectativa.
+  const MOCKUP = 'eye-sleveless-wheat-destacada-v2.png';
+  const TABLA = '465605f2-d8f7-4932-b1ea-162d6c56a000-e0f8ebd20164cb459117367000786541-1024-1024.jpeg';
+
   it('pone las fotos primero, después los mockups, y deja la tabla de talles afuera', () => {
-    const galeria = [
-      'camo-full-set-combo-0.png', 'camo-9938.png', 'mia-camo-15.png',
-      'camo-full-set-combo-6.png', 'camo-full-set-combo-9.jpg',
-    ].map(wp);
-    expect(ordenarFotos('camo-full-set-combo', galeria).map(u => u.split('/').pop())).toEqual([
-      'camo-9938.png', 'mia-camo-15.png',
-      'camo-full-set-combo-0.png', 'camo-full-set-combo-6.png',
+    const galeria = [MOCKUP, 'eye-01.jpg', 'eye-02.jpg', TABLA].map(wp);
+    expect(ordenarFotos('eye-sleveless-wheat', galeria).map(u => u.split('/').pop())).toEqual([
+      'eye-01.jpg', 'eye-02.jpg', MOCKUP,
     ]);
   });
 
   it('deja la galería como está si solo tuviera tablas', () => {
-    const galeria = ['camo-full-set-combo-9.jpg', 'camo-full-set-combo-10.jpg'].map(wp);
-    expect(ordenarFotos('camo-full-set-combo', galeria)).toEqual(galeria);
+    // La misma tabla subida dos veces: hacen falta 2 imágenes porque ordenarFotos
+    // devuelve la galería tal cual cuando tiene menos de 2, y así no se probaría nada.
+    const galeria = [
+      `https://wp.test/wp-content/uploads/2026/05/${TABLA}`,
+      `https://wp.test/wp-content/uploads/2026/06/${TABLA}`,
+    ];
+    expect(ordenarFotos('eye-sleveless-wheat', galeria)).toEqual(galeria);
   });
 
   it('abre con el frente cuando el producto solo tiene mockups', () => {
