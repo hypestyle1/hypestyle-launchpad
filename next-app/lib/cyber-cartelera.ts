@@ -173,7 +173,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     nombre: 'Mystery Tees',
     detalle: 'La puerta de entrada al archivo. Elegís tu talle; el modelo es sorpresa, dentro de las prendas que ves en la portada.',
     pool: '13 modelos en el pool',
-    img: '/cyber/mystery/tees-v5.webp',
+    img: '/cyber/mystery/tees-v5b.webp',
     href: null,
   },
   {
@@ -185,7 +185,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     // pila de 6 u, así que entra solo la Dept of Culture. Entre waffles
     // aportan 11 unidades reales, no 22 — ojo al armar las cajas.
     pool: '10 modelos en el pool',
-    img: '/cyber/mystery/longsleeves-v5.webp',
+    img: '/cyber/mystery/longsleeves-v5b.webp',
     href: null,
   },
   {
@@ -197,7 +197,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     // 56 de las 128 unidades del pool son Half-Zip Polo: la familia de stock
     // más parejo y la de costo más bajo, o sea la que sostiene el margen.
     pool: '12 modelos en el pool',
-    img: '/cyber/mystery/hoodies-v5.webp',
+    img: '/cyber/mystery/hoodies-v5b.webp',
     href: null,
   },
 ];
