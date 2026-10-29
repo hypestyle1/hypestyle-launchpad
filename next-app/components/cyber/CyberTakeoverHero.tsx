@@ -1,92 +1,62 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import CyberWordmark from './CyberWordmark';
 import CyberHeroFondo, { type CyberFondo } from './CyberHeroFondo';
+import CyberHeroCountdown from './CyberHeroCountdown';
 import './cyber.css';
 
-/* Hero del takeover de CYBER HYPE — recuperado del preview del 27/10 (rama
-   identidad) y adaptado a la dirección definitiva del 29/10:
-   - MONOCROMO: negro, blanco y grises. Los resplandores cian/rosa del preview
-     se retiraron; el punto EN VIVO es blanco.
-   - Wordmark oficial con el reveal de franjas continuo (CyberWordmark).
-   - La card editorial usa la MISMA geometría del hero actual del sitio:
-     full-bleed en mobile, gutters de 16px y radius 24 en desktop, scrims para
-     legibilidad, countdown en tarjeta liquid glass.
-   - Fotos reales del lookbook FW26 (Rio), ya publicadas en el sitio.
-   El countdown apunta SIEMPRE al cierre que decide el servidor (targetIso por
-   props): acá no se calcula ninguna fecha. */
+/* Hero del takeover de CYBER HYPE.
 
+   ── La composición (ref. del 29/10) ─────────────────────────────────────────
+   Todo el contenido vive en la mitad inferior, apilado y alineado a la
+   izquierda, con el countdown como cierre de ancho completo:
+      fecha · wordmark · bajada · CTA · countdown
+   Antes el bloque de texto peleaba a la izquierda contra un contador chico
+   arrinconado a la derecha, y quedaba un hueco en el medio. Ahora la foto
+   ocupa arriba, el texto baja en orden de lectura y el reloj apoya todo el
+   ancho: la pantalla se lee de un saque.
 
-type Restante = { d: number; h: number; m: number; s: number };
+   En DESKTOP no es el mobile estirado. El texto se limita a una columna de
+   ~560 px sobre el costado izquierdo (donde la foto tiene su masa oscura) y
+   el countdown queda acotado a esa columna, no cruzando la pantalla entera:
+   un reloj de 1.400 px de ancho se lee como una barra de progreso, no como
+   una cuenta regresiva. La foto es otra toma y otro recorte, elegidos para
+   ese formato.
 
-function restanteHasta(ts: number): Restante {
-  const diff = Math.max(0, ts - Date.now());
-  return {
-    d: Math.floor(diff / 86400000),
-    h: Math.floor(diff / 3600000) % 24,
-    m: Math.floor(diff / 60000) % 60,
-    s: Math.floor(diff / 1000) % 60,
-  };
-}
+   ── El fondo ────────────────────────────────────────────────────────────────
+   Lo resuelve CyberHeroFondo: foto de Lucas García (por defecto), el video
+   del helicóptero o la editorial FW26, según lo que se elija. Cambiar de uno
+   a otro no toca este archivo.
 
-function Digito({ v, label }: { v: number | undefined; label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-0.5">
-      <span className="text-[22px] font-black leading-none tabular-nums text-white md:text-[32px]">
-        {v === undefined ? '--' : String(v).padStart(2, '0')}
-      </span>
-      <span className="text-[8px] uppercase tracking-[0.22em] text-white/55 md:text-[9px]">{label}</span>
-    </div>
-  );
-}
+   Es un componente de SERVIDOR: el único estado es el reloj, que vive en
+   CyberHeroCountdown. */
 
 export default function CyberTakeoverHero({
   targetIso,
   ultimasHoras,
   fondo = 'foto',
+  ctaHref,
+  ctaLabel,
 }: {
   /** El cierre del evento (lo resuelve el servidor con lib/cyber-hype). */
   targetIso: string;
   ultimasHoras: boolean;
-  /** Qué va de fondo. Hoy 'foto'; se compara con video por query en local. */
   fondo?: CyberFondo;
+  /** Adónde manda el botón principal y qué dice. */
+  ctaHref: string;
+  ctaLabel: string;
 }) {
-  const objetivo = new Date(targetIso).getTime();
-  // Arranca sin valor: un Date.now() en el primer render rompe la hidratación.
-  const [t, setT] = useState<Restante | null>(null);
-
-  useEffect(() => {
-    setT(restanteHasta(objetivo));
-    const id = setInterval(() => setT(restanteHasta(objetivo)), 1000);
-    return () => clearInterval(id);
-  }, [objetivo]);
-
   return (
-    <section className="relative h-[100dvh] w-full overflow-hidden bg-[#0a0a0a] md:px-4 md:pb-4 md:pt-[calc(var(--offset)+6px)]">
+    <section className="relative h-[100svh] min-h-[620px] w-full overflow-hidden bg-[#0a0a0a] md:px-4 md:pb-4 md:pt-[calc(var(--offset)+6px)]">
       <div className="relative h-full w-full overflow-hidden rounded-none bg-[#141414] md:rounded-[24px]">
         <CyberHeroFondo fondo={fondo} />
 
-        {/* Scrims. Con video el tratamiento es más firme y por una razón
-            medible: una foto es quieta y elegida, un video cambia de
-            luminancia mientras se lee el titular. En el clip del atardecer el
-            cielo queda casi blanco, y ahí el wordmark blanco —que además lleva
-            franjas de glitch con fondo propio— se empastaba contra el fondo.
-            Van tres capas: un velo parejo que baja todo el cuadro un punto, el
-            degradado de siempre desde abajo (más alto y más denso con video) y
-            la franja superior para el navbar. */}
-        {fondo !== 'foto' && (
-          <div className="pointer-events-none absolute inset-0 bg-black/25" />
-        )}
-        <div
-          className={`pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent ${
-            fondo === 'foto' ? 'h-[62%] from-black/80 via-black/35' : 'h-[80%] from-black/92 via-black/55'
-          }`}
-        />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/45 to-transparent" />
+        {/* Scrims: una base alta y densa para que todo el bloque inferior se
+            lea sobre cualquier foto, y una franja arriba para el navbar. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[78%] bg-gradient-to-t from-black/95 via-black/72 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent" />
 
-        {/* Mini masthead dentro de la card */}
-        <div className="absolute inset-x-5 top-[calc(var(--offset)+10px)] flex items-center justify-between md:inset-x-12 md:top-7">
+        {/* Masthead */}
+        <div className="absolute inset-x-5 top-[calc(var(--offset)+10px)] flex items-center justify-between md:inset-x-10 md:top-7">
           <span className="text-[9px] font-semibold uppercase tracking-[0.28em] text-white/70 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)] md:text-[10px]">
             HYPE® STYLE&CULTURE
           </span>
@@ -96,50 +66,39 @@ export default function CyberTakeoverHero({
           </span>
         </div>
 
-        {/* Bloque principal */}
-        <div className="absolute inset-x-5 bottom-6 flex flex-col gap-2.5 md:inset-x-12 md:bottom-10 md:gap-3">
-          <div className="flex flex-col gap-0.5 md:gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/85 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)] md:text-[13px]">
+        {/* Bloque inferior: fecha → wordmark → bajada → CTA → countdown */}
+        <div className="absolute inset-x-5 bottom-6 md:inset-x-10 md:bottom-9">
+          <div className="max-w-[560px]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:text-[13px]">
               {ultimasHoras ? 'Termina hoy · 23:59' : '2 · 3 · 4 de noviembre'}
-            </span>
-            <h1 className="text-[clamp(44px,13vw,56px)] leading-[0.84] [text-shadow:0_2px_24px_rgba(0,0,0,0.45)] md:text-[clamp(76px,7.6vw,118px)]">
+            </p>
+
+            <h1 className="mt-2 text-[clamp(42px,12.5vw,54px)] leading-[0.86] [text-shadow:0_2px_24px_rgba(0,0,0,0.5)] md:mt-3 md:text-[clamp(64px,6vw,86px)]">
               <CyberWordmark animate tone="dark" />
             </h1>
-            <p className="max-w-[520px] text-[14px] leading-[1.45] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)] md:text-[16px]">
+
+            <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.45] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:mt-4 md:text-[16px]">
               Tres días. Un drop nuevo cada día, el 4 PACK de Regular Tees y el archivo abierto.
             </p>
-          </div>
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            {/* CTAs */}
-            <div className="flex items-center gap-3">
-              <a
-                href="#catalogo"
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-white px-7 py-3.5 text-[13px] font-bold uppercase tracking-[0.1em] text-[#0a0a0a] transition-transform duration-300 hover:scale-[1.03] md:flex-none md:px-9 md:py-4 md:text-[14px]"
-              >
-                Comprar ahora
-              </a>
-              <a
-                href="#drops"
-                className="hidden items-center justify-center rounded-full border-[1.5px] border-white/55 bg-white/[0.10] px-7 py-[14.5px] text-[13px] font-bold uppercase tracking-[0.1em] text-white backdrop-blur-[24px] transition-colors duration-300 hover:bg-white/[0.18] md:inline-flex"
-              >
-                Los 3 drops
-              </a>
-            </div>
-
-            {/* Countdown liquid glass (el mismo vidrio del hero actual) */}
-            <div
-              className="mr-20 inline-flex items-center gap-3 self-start rounded-[14px] border-[1.5px] border-white/40 bg-white/[0.14] px-4 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.22),inset_0_1.5px_0_rgba(255,255,255,0.35)] backdrop-blur-[40px] [backdrop-filter:blur(40px)_saturate(1.4)] md:mr-0 md:gap-5 md:self-auto md:rounded-[18px] md:px-6 md:py-4"
+            <Link
+              href={ctaHref}
+              className="mt-5 inline-flex h-[56px] w-full items-center justify-center gap-2.5 rounded-full bg-white px-8 text-[12.5px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] transition-transform duration-300 hover:scale-[1.02] md:mt-6 md:h-[58px] md:w-auto md:px-10 md:text-[13px]"
             >
-              <span className="max-w-[60px] text-[9px] uppercase leading-[1.5] tracking-[0.24em] text-white/70 md:text-[10px]">
-                Termina en
-              </span>
-              <div className="flex items-start gap-3 md:gap-4">
-                <Digito v={t?.d} label="días" />
-                <Digito v={t?.h} label="hs" />
-                <Digito v={t?.m} label="min" />
-                <Digito v={t?.s} label="seg" />
-              </div>
+              {ctaLabel}
+              <svg width="15" height="10" viewBox="0 0 15 10" fill="none" aria-hidden="true">
+                <path
+                  d="M9.6.7 13.9 5 9.6 9.3M13.3 5H.8"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+
+            <div className="mt-4 md:mt-5">
+              <CyberHeroCountdown targetIso={targetIso} label="Termina en" />
             </div>
           </div>
         </div>

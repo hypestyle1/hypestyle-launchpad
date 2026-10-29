@@ -27,7 +27,15 @@ import LazyVideo from '@/components/LazyVideo';
    `autoplay muted playsInline loop` (los pone LazyVideo) es obligatorio para
    que un celular reproduzca solo; los archivos ya vienen sin pista de audio. */
 
-export type CyberFondo = 'boom-mono' | 'boom-color' | 'loop-mono' | 'loop-color' | 'foto';
+export type CyberFondo =
+  | 'boom-mono'
+  | 'boom-color'
+  | 'loop-mono'
+  | 'loop-color'
+  /** Fotografía de calle de Lucas García, en blanco y negro. El default. */
+  | 'lucas'
+  /** La editorial FW26 (Rio), el fondo anterior. */
+  | 'foto';
 
 /* Las cuatro variantes del clip COMPLETO (5,04 s, las escenas enteras, con el
    cartel del helicóptero sin recortar ni tapar — pedido del 29/10).
@@ -46,7 +54,7 @@ export type CyberFondo = 'boom-mono' | 'boom-color' | 'loop-mono' | 'loop-color'
    El recorte de mobile NO es centrado (x = 70% del rango): centrado cortaba el
    cartel justo en "CYBER". Verificado en los dos momentos del clip. */
 const FUENTES: Record<
-  Exclude<CyberFondo, 'foto'>,
+  Exclude<CyberFondo, 'foto' | 'lucas'>,
   { desktop: string; mobile: string; poster: string }
 > = {
   'boom-mono': {
@@ -71,8 +79,31 @@ const FUENTES: Record<
   },
 };
 
-const FOTO_DESKTOP = '/lookbook-fw26/hero/6428.webp';
-const FOTO_MOBILE = '/lookbook-fw26/hero/6442.webp';
+/* Las fotos fijas. Cada variante trae su propia toma y su propio recorte para
+   desktop y mobile: una foto vertical estirada a 16:9 pierde al sujeto, y una
+   horizontal recortada a 9:16 deja al modelo fuera de cuadro.
+
+   `lucas` son dos tomas distintas de la misma sesión de calle, A COLOR
+   (decisión del 29/10) con apenas un punto de contraste: la sesión ya es
+   sobria de por sí —calle, hormigón, prendas oscuras— así que no necesita el
+   blanco y negro para convivir con la identidad monocroma de la campaña.
+   La de mobile es el plano sentado (el sujeto arriba, el escalón oscuro abajo
+   donde apoya el texto); la de desktop tiene al modelo a la izquierda y la
+   puerta negra a la derecha, que es el aire donde respira el bloque. */
+const FOTOS: Record<'lucas' | 'foto', { desktop: string; mobile: string; posD: string; posM: string }> = {
+  lucas: {
+    desktop: '/cyber/hero/lucas-desktop.webp',
+    mobile: '/cyber/hero/lucas-mobile.webp',
+    posD: '50% 42%',
+    posM: '50% 10%',
+  },
+  foto: {
+    desktop: '/lookbook-fw26/hero/6428.webp',
+    mobile: '/lookbook-fw26/hero/6442.webp',
+    posD: '66% 30%',
+    posM: '55% 18%',
+  },
+};
 
 function prefiereQuieto(): boolean {
   if (typeof window === 'undefined') return true;
@@ -83,44 +114,46 @@ function prefiereQuieto(): boolean {
 }
 
 export default function CyberHeroFondo({ fondo }: { fondo: CyberFondo }) {
-  const src = fondo === 'foto' ? null : FUENTES[fondo];
+  const esVideo = fondo !== 'foto' && fondo !== 'lucas';
+  const video = esVideo ? FUENTES[fondo as Exclude<CyberFondo, 'foto' | 'lucas'>] : null;
+  const foto = FOTOS[esVideo ? 'foto' : (fondo as 'lucas' | 'foto')];
   // Arranca en false para que servidor y cliente pinten lo mismo.
   const [conVideo, setConVideo] = useState(false);
 
   useEffect(() => {
-    if (!src) return;
+    if (!video) return;
     if (prefiereQuieto()) return;
     setConVideo(true);
-  }, [src]);
+  }, [video]);
 
-  if (src && conVideo) {
+  if (video && conVideo) {
     return (
       <LazyVideo
-        src={src.desktop}
-        srcMobile={src.mobile}
-        poster={src.poster}
+        src={video.desktop}
+        srcMobile={video.mobile}
+        poster={video.poster}
         posterClassName="absolute inset-0 bg-cover bg-center"
         className="absolute inset-0 h-full w-full object-cover"
       />
     );
   }
 
-  // Sin video: la imagen. El póster del clip elegido, o la foto editorial.
+  // Sin video: la foto. El póster del clip elegido, o la fotografía fija.
   return (
     <>
       <img
-        src={src ? src.poster : FOTO_DESKTOP}
+        src={video ? video.poster : foto.desktop}
         alt="Editorial Hype"
         fetchPriority="high"
         className="absolute inset-0 hidden h-full w-full object-cover md:block"
-        style={{ objectPosition: src ? '50% 45%' : '66% 30%' }}
+        style={{ objectPosition: video ? '50% 45%' : foto.posD }}
       />
       <img
-        src={src ? src.poster : FOTO_MOBILE}
+        src={video ? video.poster : foto.mobile}
         alt="Editorial Hype"
         fetchPriority="high"
         className="absolute inset-0 h-full w-full object-cover md:hidden"
-        style={{ objectPosition: src ? '50% 45%' : '55% 18%' }}
+        style={{ objectPosition: video ? '50% 45%' : foto.posM }}
       />
     </>
   );

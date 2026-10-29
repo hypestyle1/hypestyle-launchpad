@@ -65,7 +65,17 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           Regular Tees y Mystery Archive.
         </h1>
 
-        <CyberTakeoverHero targetIso={CYBER_END} ultimasHoras={ultimasHoras} fondo={fondo ?? 'foto'} />
+        {/* El CTA manda a lo primero comprable de verdad. Mientras los drops
+            estén sin revelar eso es el 4 PACK; apenas se revela uno, los
+            drops pasan a ser la novedad y el botón los sigue. Nunca apunta a
+            la misma página sin destino: son anclas a secciones con producto. */}
+        <CyberTakeoverHero
+          targetIso={CYBER_END}
+          ultimasHoras={ultimasHoras}
+          fondo={fondo ?? 'lucas'}
+          ctaHref={hayRevelado ? '#drops' : '#pack'}
+          ctaLabel={hayRevelado ? 'Ver las ofertas' : 'Explorar Cyber Hype'}
+        />
 
         {/* Lo primero después del hero: qué hay y cómo llegar. Quien viene de
             un anuncio elige categoría antes de leer una sola línea sobre la

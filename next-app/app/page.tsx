@@ -29,18 +29,18 @@ import { cyberEstado } from '@/lib/cyber-hype';
  * ║  que se haya transado (89 de 145 productos tienen `sale_price`           ║
  * ║  permanente: su `regular_price` no sirve como referencia).               ║
  * ║                                                                          ║
- * ║  Por eso `HERO_FONDO` sigue en 'foto' **en producción**: el video queda  ║
- * ║  en preview hasta que esa selección esté validada y aprobada. Cuando lo  ║
- * ║  esté, se cambia esta constante por 'boom-mono' (la recomendada) y no    ║
- * ║  hace falta tocar nada más.                                              ║
+ * ║  Por eso el default NO es el video: es la fotografía de calle de Lucas  ║
+ * ║  García, que no promete nada. El video queda en preview hasta que esa   ║
+ * ║  selección esté validada; cuando lo esté, se cambia HERO_FONDO a        ║
+ * ║  'boom-mono' (la recomendada) y no hace falta tocar nada más.           ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  *
- * En local se comparan las cuatro variantes con `?hero=boom-mono`,
- * `boom-color`, `loop-mono` o `loop-color`, y `?hero=foto` vuelve a la foto.
+ * En local se comparan todas con `?hero=`: `lucas` (el default), `boom-mono`,
+ * `boom-color`, `loop-mono`, `loop-color` y `foto` (la editorial FW26).
  */
-const HERO_FONDO: CyberFondo = 'foto';
+const HERO_FONDO: CyberFondo = 'lucas';
 
-const FONDOS: CyberFondo[] = ['boom-mono', 'boom-color', 'loop-mono', 'loop-color', 'foto'];
+const FONDOS: CyberFondo[] = ['boom-mono', 'boom-color', 'loop-mono', 'loop-color', 'lucas', 'foto'];
 
 function fondoHero(q: string | undefined): CyberFondo {
   if (process.env.NODE_ENV === 'production') return HERO_FONDO;

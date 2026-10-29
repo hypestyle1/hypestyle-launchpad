@@ -61,14 +61,17 @@ export const CYBER_CATEGORIAS_EDITORIAL: TarjetaCategoria[] = [
     posicion: '50% 30%',
   },
   {
+    // Cambiada el 29/10: en la anterior el jogger quedaba a media pierna y
+    // tapado por el hoodie. Acá el conjunto se ve entero, de la cintura a
+    // los pies, que es lo que tiene que vender la tarjeta de Pantalones.
     id: 'pants',
-    src: '/lookbook-faith/03165.webp',
-    alt: 'Conjunto Hype gris: hoodie y sweatpant',
-    kicker: 'Lookbook Faith',
+    src: '/cyber/categorias/pants-cami.webp',
+    alt: 'Conjunto Hype: hoodie y sweatpant',
+    kicker: 'Así se usa',
     titulo: 'Pantalones',
     href: '/pants',
     cta: 'Ver pantalones',
-    posicion: '50% 45%',
+    posicion: '50% 55%',
   },
 ];
 

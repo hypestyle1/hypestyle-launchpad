@@ -28,12 +28,27 @@ const CONDICIONES: { q: string; a: string }[] = [
     a: 'Sumás cuatro Regular al carrito —los colores y talles que quieras— y se cobran al precio del 3 PACK. El ajuste es automático: no hay código que cargar.',
   },
   {
+    /* El plazo es **5 a 10 días hábiles**, no 4 a 7: es lo que dice hoy el
+       resto del sitio —fichas de producto, confirmación de compra, mail de
+       pedido y mail de despacho— y las fichas aclaran además que puede
+       estirarse a 15 según zona y demanda. Poner 4 a 7 solo acá dejaría a la
+       misma web prometiendo dos cosas distintas, y a la más corta donde menos
+       se puede cumplir: durante el evento. Se sacó la frase sobre demoras del
+       evento, que sembraba la duda sin dar un dato. */
     q: '¿Cuándo llega mi pedido?',
-    a: 'Despachamos por orden de compra, con seguimiento de Andreani por mail. En días de evento el despacho puede demorar un poco más de lo habitual.',
+    a: 'Entre 5 y 10 días hábiles desde que se acredita el pago. Lo despachamos por Andreani y te mandamos el seguimiento por mail para que sepas dónde está.',
   },
   {
-    q: '¿Puedo cambiar o devolver?',
-    a: 'Sí, como siempre. Además tenés 10 días de arrepentimiento desde que recibís el pedido, según la ley 24.240.',
+    /* ⚠️ PENDIENTE DE APROBACIÓN COMERCIAL Y LEGAL.
+       La política oficial (/politicas-de-devolucion) dice hoy que "los
+       productos adquiridos en SALE, OUTLET o con descuentos especiales no
+       tienen cambio ni devolución". Todo CYBER HYPE son precios de evento, así
+       que esta respuesta y esa cláusula no pueden convivir: o se exceptúa al
+       evento en la política, o esta FAQ no puede prometer el cambio.
+       Mientras tanto queda escrita la versión que Valentín quiere comunicar,
+       sin publicar (la rama no está mergeada). */
+    q: '¿Puedo cambiar el talle?',
+    a: 'Sí. Si no te quedó bien, pedís el cambio dentro de los 30 días corridos desde la compra: la prenda tiene que estar sin uso y con sus etiquetas. El cambio queda sujeto a disponibilidad de talle.',
   },
 ];
 
