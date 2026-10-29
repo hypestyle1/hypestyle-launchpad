@@ -1,199 +1,214 @@
 /**
- * CYBER HYPE — la cartelera de lanzamientos del EVENTO (2–4/11).
+ * CYBER HYPE — la configuración comercial del EVENTO (2–4/11).
+ * Fuente única del takeover: drops, Mystery, 4 PACK y curaduría del catálogo.
  *
- * Qué es: la fuente de verdad de lo que la página /cyberhype muestra DURANTE
- * el evento. La previa (registro) no la toca: vive en lib/cyber-hype.ts y no
- * adelanta nada de lo que hay acá.
- *
- * De dónde viene: la máquina de estados (oculto → revelado → abierto →
- * cerrado) se recuperó del PR #623 (lib/hype72.ts), que era la parte sana de
- * esa rama. Lo que NO se recuperó, a propósito:
- *   - la grilla fija de 6 drops con horarios: quedó sin efecto el 27/10 — las
- *     ofertas están disponibles desde la apertura y lo diario es novedad
- *     adicional, tentativa;
- *   - el branding HYPE 72, el gate de 404 por cookie y los cambios de
- *     newsletter/welcome-sweep (reemplazados por el PR #624 y el #627).
+ * ⚠️ ESTE MÓDULO ES SOLO DEL SERVIDOR.
+ * Los drops sin revelar son SECRETOS: si un componente 'use client' importara
+ * este archivo, el bundle del navegador llevaría los títulos y fotos antes de
+ * la revelación y cualquiera los leería en el JS. Las secciones del cliente
+ * reciben por props ÚNICAMENTE lo que devuelve `dropsPublicos()` — el test
+ * `cyber-cartelera.test.ts` falla si un archivo de cliente importa esto.
  *
  * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  PRECIOS: ACÁ VAN, Y HOY NO SE PUBLICAN                                  ║
+ * ║  QUÉ ESTÁ APROBADO Y QUÉ NO (29/10)                                      ║
  * ╠══════════════════════════════════════════════════════════════════════════╣
- * ║  `CYBER_PRECIOS_APROBADOS = false` es el interruptor: mientras esté en   ║
- * ║  false, la cartelera NO muestra NI UN MONTO — solo mecánica ("Pagás 3,   ║
- * ║  llevás 4") y notas sin cifra ("Al precio del 3 PACK"). Los montos       ║
- * ║  esperan en `precioPendiente` sin renderizarse.                          ║
- * ║                                                                          ║
- * ║  Los precios reales los muestra el CATÁLOGO (ProductCard lee Woo en      ║
- * ║  vivo): Woo es la fuente de verdad y nunca se escriben a mano acá.       ║
- * ║  89 de 145 productos tienen sale_price permanente → comunicar            ║
- * ║  PORCENTAJES está prohibido en cualquier estado del interruptor.         ║
+ * ║  APROBADO: el concepto 3 DÍAS · 3 DROPS (uno por día, 2–4/11); el motor  ║
+ * ║  del 4 PACK (ya en producción, abre solo por fecha); el evento en sí.    ║
+ * ║  SIN APROBAR: el CONTENIDO de cada drop (producto: null hasta que        ║
+ * ║  Valentín lo asigne), los precios de Mystery (productos sin existir en   ║
+ * ║  Woo → MYSTERY_PUBLICADO=false: en producción la sección no sale),       ║
+ * ║  regalos y envío gratis (ni aparecen).                                   ║
+ * ║  PORCENTAJES: prohibidos siempre (89/145 con sale_price permanente).     ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  *
- * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  CONFIRMADO vs TENTATIVO                                                 ║
- * ╠══════════════════════════════════════════════════════════════════════════╣
- * ║  Cada lanzamiento lleva `confirmado`. Solo los confirmados se publican:  ║
- * ║  un tentativo no aparece NI COMO "???" — anunciar un misterio también    ║
- * ║  es una promesa. Los drops diarios del 3 y el 4/11 y el Mystery Archive  ║
- * ║  están acá en false esperando mercadería/aprobación: para publicarlos    ║
- * ║  se confirma el contenido con Valentín y se pasa `confirmado: true`.     ║
- * ╚══════════════════════════════════════════════════════════════════════════╝
- *
- * Horario: ISO con offset -03:00 (ART, sin horario de verano). El estado lo
- * calcula el SERVIDOR en cada request (la página es force-dynamic); el browser
- * solo dibuja cuentas regresivas. Un reloj adelantado del visitante no revela
- * nada.
+ * Horario: ISO con offset -03:00 (ART). El estado lo calcula el servidor en
+ * cada request; el browser solo recibe lo ya publicable.
  */
 
-import { CYBER_START, CYBER_END } from './cyber-hype';
+import { CYBER_END, CYBER_START } from './cyber-hype';
 
-/** Ver el bloque del encabezado. En false no se renderiza ningún monto. */
-export const CYBER_PRECIOS_APROBADOS = false;
+/* ═══════════════════════════ 3 DÍAS · 3 DROPS ═══════════════════════════ */
 
-export type CyberLanzamientoEstado =
-  /** Todavía no se reveló: no se muestra (ni como misterio, salvo demo). */
-  | 'oculto'
-  /** Ya se sabe qué es, todavía no abrió: va con su horario de apertura. */
-  | 'revelado'
-  /** Abierto y comprable. ACUMULATIVO: queda abierto hasta el cierre. */
-  | 'abierto'
-  /** Terminó el evento. */
-  | 'cerrado';
-
-export interface CyberLanzamiento {
-  /** "01", "02"… El número grande de la cartelera. */
-  id: string;
+export interface CyberDrop {
+  id: '01' | '02' | '03';
+  /** El día como se lee en la cartelera. */
+  dia: string;
+  fecha: string;
   /**
-   * Solo los confirmados se publican. Tentativo = invisible, ni "???".
-   * Confirmar es una decisión comercial de Valentín, no un deploy accidental.
+   * Cuándo se publica el contenido (ISO -03:00). Hasta ese instante el drop
+   * se muestra bloqueado y el producto NO viaja al navegador. 11:00 es el
+   * horario editorial por defecto; se ajusta al aprobar cada drop.
    */
-  confirmado: boolean;
-  /** Cuándo deja de estar oculto (ISO -03:00). */
   revealAt: string;
-  /** Cuándo abre para comprar (ISO -03:00). */
-  opensAt: string;
-  /** El horario de apertura como se lee en la cartelera. */
-  slot: string;
-  title: string;
-  /** Qué se lleva, contado por MECÁNICA. Nunca una cifra. */
-  claim: string;
-  /** Nota de precio SIN cifra, aprobada. Se publica siempre. */
-  priceNote?: string;
-  /** EL MONTO. Solo se renderiza con CYBER_PRECIOS_APROBADOS en true. */
-  precioPendiente?: string;
-  href: string;
+  /**
+   * El contenido del drop. `null` = sin asignar: la tarjeta se muestra
+   * bloqueada aun pasado revealAt. Asignarlo + revealAt cumplido = revelado.
+   * La imagen tiene que ser un mockup/foto REAL ya publicado del producto.
+   */
+  producto: null | {
+    nombre: string;
+    claim: string;
+    img: string;
+    href: string;
+  };
 }
 
 /**
- * La cartelera. El orden del array es el orden en pantalla.
- *
- * Al 29/10 hay UN solo lanzamiento confirmado: la apertura con el 4 PACK (la
- * ventana vive en el backend — lib/promo-pack-regular.ts — y abre sola por
- * fecha; esto solo lo comunica). Los demás son tentativos y no se publican.
+ * Los tres drops, uno por día. CONTENIDO SIN ASIGNAR a propósito: depende de
+ * mercadería recibida y controlada (remeras/longsleeves nuevas el 3/11,
+ * bermudas y camperas camo el 4/11 — tentativos del replanteo del 27/10).
+ * Para publicar uno: asignar `producto` con el OK de Valentín.
  */
-export const CYBER_LANZAMIENTOS: CyberLanzamiento[] = [
+export const CYBER_DROPS: CyberDrop[] = [
   {
     id: '01',
-    confirmado: true,
-    // Se revela recién al abrir: la previa no adelanta nada comercial.
-    revealAt: CYBER_START,
-    opensAt: CYBER_START,
-    slot: 'dom 1/11 · 20:00',
-    title: '4 PACK Regular Tees',
-    claim: 'Pagás 3, llevás 4',
-    priceNote: 'Al precio del 3 PACK',
-    // Único monto aprobado (congelado en lib/promo-pack-regular.ts), y aun
-    // así no se publica acá: el lanzamiento se cuenta por mecánica y el
-    // precio exacto lo muestra el carrito.
-    href: '/colecciones/regular-tees',
+    dia: 'Día 1',
+    fecha: 'lun 2/11',
+    revealAt: '2026-11-02T11:00:00-03:00',
+    producto: null,
   },
   {
-    // Drop del lunes 3/11 — TENTATIVO (depende de mercadería recibida,
-    // controlada y despachable: remeras/longsleeves en Próximamente).
     id: '02',
-    confirmado: false,
+    dia: 'Día 2',
+    fecha: 'mar 3/11',
     revealAt: '2026-11-03T11:00:00-03:00',
-    opensAt: '2026-11-03T11:00:00-03:00',
-    slot: 'mar 3/11 · 11:00',
-    title: 'Por anunciar',
-    claim: 'Se define con la mercadería en mano',
-    href: '/new-in',
+    producto: null,
   },
   {
-    // Drop del miércoles 4/11 — TENTATIVO (bermudas y camperas camo + últimas
-    // horas, mismas condiciones).
     id: '03',
-    confirmado: false,
+    dia: 'Día 3',
+    fecha: 'mié 4/11',
     revealAt: '2026-11-04T11:00:00-03:00',
-    opensAt: '2026-11-04T11:00:00-03:00',
-    slot: 'mié 4/11 · 11:00',
-    title: 'Por anunciar',
-    claim: 'Se define con la mercadería en mano',
-    href: '/new-in',
+    producto: null,
   },
-  // MYSTERY ARCHIVE: no se agrega ni en tentativo hasta que Valentín apruebe
-  // pool, precio y portadas (ver _claude/propuestas/cyber-mystery-tees.md).
-  // Cuando exista como producto de Woo, entra como un lanzamiento más.
 ];
 
-const ms = (iso: string) => new Date(iso).getTime();
+/** Lo ÚNICO del drop que puede viajar al navegador. */
+export interface CyberDropPublico {
+  id: string;
+  dia: string;
+  fecha: string;
+  estado: 'bloqueado' | 'revelado';
+  /** Solo presente cuando estado === 'revelado'. */
+  producto?: { nombre: string; claim: string; img: string; href: string };
+}
 
 /**
- * Estado de un lanzamiento en un instante dado. Bordes inclusivos del lado
- * del cambio: exactamente en `revealAt` ya está revelado, exactamente en
- * `opensAt` ya está abierto, exactamente en CYBER_END ya está cerrado.
+ * La vista publicable de los drops: el producto aparece RECIÉN cuando pasó
+ * `revealAt` y está asignado. Antes, la tarjeta dice el día y nada más — ni
+ * en el HTML, ni en el JSON, ni en el bundle.
  */
-export function lanzamientoEstado(
-  l: CyberLanzamiento,
-  now: Date = new Date(),
-): CyberLanzamientoEstado {
+export function dropsPublicos(now: Date = new Date()): CyberDropPublico[] {
   const t = now.getTime();
-  if (t >= ms(CYBER_END)) return 'cerrado';
-  if (t >= ms(l.opensAt)) return 'abierto';
-  if (t >= ms(l.revealAt)) return 'revelado';
-  return 'oculto';
+  return CYBER_DROPS.map((d) => {
+    const revelado = d.producto !== null && t >= new Date(d.revealAt).getTime();
+    return revelado
+      ? { id: d.id, dia: d.dia, fecha: d.fecha, estado: 'revelado' as const, producto: d.producto! }
+      : { id: d.id, dia: d.dia, fecha: d.fecha, estado: 'bloqueado' as const };
+  });
 }
 
-export interface CyberCarteleraItem {
-  lanzamiento: CyberLanzamiento;
-  estado: CyberLanzamientoEstado;
+/* ═══════════════════════════ MYSTERY ARCHIVE ════════════════════════════ */
+
+/**
+ * ¿Las Mystery Boxes están aprobadas para publicarse? En false la sección se
+ * renderiza SOLO fuera de producción (para diseñar y revisar en local, con el
+ * sello "en validación"). Pasa a true cuando Valentín apruebe pool + precio y
+ * los productos existan en Woo — y ahí `href` pasa a la ficha real.
+ */
+export const MYSTERY_PUBLICADO = false;
+
+export interface CyberMysteryCategoria {
+  id: 'tees' | 'tops' | 'bottoms';
+  nombre: string;
+  /** Qué incluye, por mecánica. Nunca una cifra. */
+  detalle: string;
+  /** Cuántas prendas del archivo componen el pool visible de la portada. */
+  pool: string;
+  /** Portada real (collage de mockups de Woo, _claude/propuestas/MYSTERY-PORTADAS). */
+  img: string;
+  /** Ficha real cuando exista en Woo; null = sin producto todavía. */
+  href: string | null;
 }
 
 /**
- * La cartelera publicable: SOLO los confirmados, con su estado.
- * `demo` (solo para la revisión en local, nunca producción) suma los
- * tentativos para ver el diseño de los estados bloqueados.
+ * Las tres categorías, con las portadas REALES del 28/10 (mockups de Woo,
+ * ninguna prenda inventada). Los pools son los medidos en los análisis
+ * (cyber-mystery-tees.md / -tops.md / auditoría): la selección final la
+ * aprueba Valentín.
  */
-export function cyberCartelera(
-  now: Date = new Date(),
-  { demo = false }: { demo?: boolean } = {},
-): CyberCarteleraItem[] {
-  return CYBER_LANZAMIENTOS.filter((l) => l.confirmado || demo).map((l) => ({
-    lanzamiento: l,
-    estado: lanzamientoEstado(l, now),
-  }));
-}
+export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
+  {
+    id: 'tees',
+    nombre: 'Mystery Tees',
+    detalle: 'Remeras del archivo Hype. Elegís tu talle; el modelo es sorpresa, dentro de las prendas que ves en la portada.',
+    pool: '13 modelos en el pool',
+    img: '/cyber/mystery/mystery-tees-1x1.webp',
+    href: null,
+  },
+  {
+    id: 'tops',
+    nombre: 'Mystery Tops',
+    detalle: 'Longsleeves, buzos y Half-Zips del archivo. Elegís tu talle; el modelo es sorpresa.',
+    pool: '18 modelos en el pool',
+    img: '/cyber/mystery/mystery-tops-1x1.webp',
+    href: null,
+  },
+  {
+    id: 'bottoms',
+    nombre: 'Mystery Bottoms',
+    detalle: 'Pants, jorts y bermudas del archivo. Elegís tu talle; el modelo es sorpresa.',
+    pool: '8 modelos en el pool',
+    img: '/cyber/mystery/mystery-bottoms-1x1.webp',
+    href: null,
+  },
+];
+
+/* ══════════════════════ CATÁLOGO DEL EVENTO (curaduría) ═════════════════ */
 
 /**
- * La línea de precio que SE MUESTRA. Sin aprobación es la nota sin cifra (o
- * nada); con aprobación, el monto. Un solo lugar decide: la cartelera no mira
- * el interruptor.
+ * El 4 PACK se arma con las 4 Regular individuales: el motor del carrito
+ * (lib/promo-pack-regular.ts) cobra cada 4 al precio del 3 PACK, solo durante
+ * la ventana. Las cards leen precio y stock de Woo en vivo.
  */
-export function cyberPriceLine(l: CyberLanzamiento): string | null {
-  if (CYBER_PRECIOS_APROBADOS) return l.precioPendiente ?? l.priceNote ?? null;
-  return l.priceNote ?? null;
-}
-
-/**
- * Los productos que la página del evento muestra como "Disponible ahora".
- * Curaduría editable en un solo lugar; las cards leen precio y stock de Woo
- * en vivo (ProductCard), así que acá no hay ningún monto.
- *
- * Hoy: las 4 Regular individuales — son las piezas con las que se arma el
- * 4 PACK en el carrito (el motor cobra 4 individuales al precio del pack).
- */
-export const CYBER_PRODUCTOS_EVENTO: string[] = [
+export const CYBER_PACK_SLUGS: string[] = [
   'regular-tee-black',
   'regular-tee-white',
   'regular-tee-melange',
   'regular-tee-navy',
 ];
+
+/**
+ * Destacados del evento — curaduría comercial del 29/10 sobre datos medidos
+ * (matriz del 25/10 + auditoría del 27/10): protagonistas con stock y ventas
+ * verificadas, sin tocar precios (los pone Woo).
+ *  - 3 PACK: el ancla (42 packs/30d).
+ *  - Hoodies SS27: la mayor contribución por unidad (38u, venden sin descuento).
+ *  - Athletic Navy Mustard: 73u, curva completa de talles.
+ *  - Waffles: Running Horses es el 3.º más vendido.
+ *  - Grey Camo Cap: vende sola (add-on natural del carrito).
+ *  - Baby Come Back (82u) y Aero (el mayor stock del catálogo): volumen real.
+ */
+export const CYBER_DESTACADOS_SLUGS: string[] = [
+  'regular-tees-3-pack-black-navy-white',
+  'hype-distressed-grey-hoodie',
+  'zolotye-kupola-washed-graphite-hoodie',
+  'splatter-hoodie-washed-grey',
+  'athletic-dept-navy-mustard-print-tee',
+  'longsleeve-waffle-horses',
+  'grey-camo-cap',
+  'baby-come-back-tees',
+  'aerogrey-tees',
+  'aeropink-tees',
+  'hoodie-grey-hstars',
+  'ladytribal-black-longsleeve',
+];
+
+/**
+ * Jerarquía comercial del evento (la pidió Valentín el 29/10):
+ * 1. Mystery Archive → 2. 4 PACK → 3. Drops → 4. Destacados → 5. Resto SS27.
+ * En la página el orden visual es hero → drops (lo nuevo de HOY arriba) →
+ * 4 PACK → Mystery → catálogo: lo urgente del día primero, lo permanente
+ * después. Las categorías del catálogo salen de los productos reales.
+ */
+export const CYBER_CATALOGO_CATEGORIAS = ['Tee', 'Hoodie', 'Longsleeve', 'Pack'] as const;

@@ -1,23 +1,18 @@
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import CyberWordmark from '@/components/cyber/CyberWordmark';
-import CyberCountdown from '@/components/cyber/CyberCountdown';
 import CyberAvisame from '@/components/cyber/CyberAvisame';
 import CyberWhatsApp from '@/components/cyber/CyberWhatsApp';
-import CyberCartelera from '@/components/cyber/CyberCartelera';
-import CyberEventoProductos from '@/components/cyber/CyberEventoProductos';
+import CyberTakeover from '@/components/cyber/CyberTakeover';
 import '@/components/cyber/cyber.css';
 import { buildMetadata } from '@/lib/seo';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
 import {
   CYBER_FECHAS,
   CYBER_HORA_APERTURA,
-  CYBER_START,
   cyberEstado,
-  cyberProximoHito,
   cyberCapturaAbierta,
 } from '@/lib/cyber-hype';
-import { cyberCartelera } from '@/lib/cyber-cartelera';
 
 /**
  * CYBER HYPE — una sola página para las tres etapas del evento.
@@ -26,10 +21,10 @@ import { cyberCartelera } from '@/lib/cyber-cartelera';
  * ningún cambio — fondo negro, lockup con glitch continuo, una tarjeta blanca
  * con WhatsApp y email, consentimiento a la vista. No adelanta nada comercial.
  *
- * EVENTO (1/11 20:00 → 4/11 23:59): la experiencia del evento — el mismo
- * lenguaje de la previa (negro, textura de wordmarks, filetes) con el reloj al
- * cierre, la cartelera de lanzamientos (lib/cyber-cartelera.ts, recuperada del
- * PR #623 sin la grilla de 6 drops) y el catálogo real leyendo Woo en vivo.
+ * EVENTO (1/11 20:00 → 4/11 23:59): el centro de campaña es la MISMA
+ * experiencia que toma la home (components/cyber/CyberTakeover): hero EN
+ * VIVO, 3 drops, 4 PACK, Mystery Archive y el catálogo real. Un solo
+ * componente para las dos superficies — cero duplicación.
  *
  * POSTERIOR: cierre limpio — sin contadores vencidos ni promesas activas; un
  * solo camino a la tienda.
@@ -84,82 +79,15 @@ function PieMinimo() {
 export default function Page({
   searchParams,
 }: {
-  searchParams?: { fondo?: string; wa?: string; demo?: string };
+  searchParams?: { fondo?: string; wa?: string };
 }) {
   const estado = cyberEstado();
-  const hito = cyberProximoHito();
   const captura = cyberCapturaAbierta();
   const conTextura = searchParams?.fondo !== 'liso';
 
-  /* ── EVENTO ──────────────────────────────────────────────────────────── */
-  if (estado === 'evento') {
-    // Para la revisión en local con la fase forzada, la cartelera se calcula
-    // en el instante de la apertura (si no, antes del 1/11 todo daría
-    // 'oculto'). En producción la fase nunca se fuerza y esto es new Date().
-    const faseForzada =
-      process.env.NODE_ENV !== 'production' && !!process.env.NEXT_PUBLIC_CYBER_FASE;
-    const ahora = faseForzada ? new Date(CYBER_START) : new Date();
-    const demo = process.env.NODE_ENV !== 'production' && searchParams?.demo === '1';
-    const items = cyberCartelera(ahora, { demo });
+  /* ── EVENTO: el mismo takeover que la home ───────────────────────────── */
+  if (estado === 'evento') return <CyberTakeover />;
 
-    return (
-      <>
-        <Navbar />
-        <main
-          className={`flex min-h-[100svh] flex-col bg-[#0a0a0a] pt-[var(--offset)] text-white ${conTextura ? 'cyber-fondo' : ''}`}
-          style={{ ['--cyber-glitch-bg' as string]: '#0a0a0a' }}
-        >
-          {/* ── Hero: en vivo, cuánto falta para que cierre ───────────── */}
-          <section className="px-5 pb-10 pt-10 sm:px-8 md:pt-14">
-            <div className="mx-auto w-full max-w-[1120px]">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">
-                  Hype® Style&amp;Culture
-                </p>
-                <p className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-white">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-hidden="true" />
-                  En vivo
-                </p>
-              </div>
-
-              <h1 className="mt-4 leading-none">
-                <CyberWordmark
-                  animate
-                  tone="dark"
-                  className="text-[44px] min-[400px]:text-[50px] sm:text-[66px] lg:text-[76px] xl:text-[92px]"
-                />
-              </h1>
-
-              <p className="mt-5 text-[15px] font-semibold uppercase tracking-[0.14em] text-white sm:text-[17px]">
-                2 · 3 · 4 de noviembre
-              </p>
-
-              {hito && (
-                <div className="mt-7">
-                  <CyberCountdown targetIso={hito.iso} label={hito.label} />
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* ── Cartelera de lanzamientos ─────────────────────────────── */}
-          <section className="px-5 pb-12 sm:px-8 md:pb-16">
-            <div className="mx-auto w-full max-w-[1120px]">
-              <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
-                Lanzamientos
-              </h2>
-              <CyberCartelera items={items} />
-            </div>
-          </section>
-
-          {/* ── Catálogo real (banda clara, cards del sitio) ──────────── */}
-          <CyberEventoProductos />
-
-          <PieMinimo />
-        </main>
-      </>
-    );
-  }
 
   /* ── PREVIA y CIERRE (la pantalla aprobada el 28/10, sin cambios) ────── */
   const urlWhatsApp = whatsappUrl();

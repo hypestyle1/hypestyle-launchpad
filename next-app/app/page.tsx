@@ -13,6 +13,8 @@ import InstagramFeed from '@/components/InstagramFeed';
 import Footer from '@/components/Footer';
 import HeroSs27 from '@/components/ss27-home/HeroSs27';
 import CyberHomeBanner from '@/components/cyber/CyberHomeBanner';
+import CyberTakeover from '@/components/cyber/CyberTakeover';
+import { cyberEstado } from '@/lib/cyber-hype';
 import Ss27Feed from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
@@ -54,6 +56,14 @@ export const metadata = buildMetadata({
  * apertura la lista viene vacía y la sección no se muestra.
  */
 export default async function Home() {
+  /* ── CYBER HYPE TAKEOVER (solo del 1/11 20:00 al 4/11 23:59) ─────────────
+     Mientras el evento está en vivo, la home ES la experiencia del evento.
+     Todo lo demás de este archivo —la home SS27— queda EXACTAMENTE igual y
+     vuelve solo al terminar: la restauración es que esta condición dé false,
+     no un deploy ni un revert. Palancas: las fechas en lib/cyber-hype.ts y el
+     kill switch CYBER_APAGADO=1 (apaga el takeover al instante). */
+  if (cyberEstado() === 'evento') return <CyberTakeover />;
+
   const queryClient = new QueryClient();
   // Las reseñas van por separado: no pasan por React Query, la sección las
   // recibe por props. Sin esto se montaba vacía y a los 6–9s insertaba ~715px
