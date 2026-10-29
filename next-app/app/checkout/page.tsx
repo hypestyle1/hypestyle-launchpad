@@ -141,7 +141,7 @@ const COUNTRIES = [
 const STATE_REQUIRED = ['US', 'CA', 'AU'];
 
 interface ShippingRate { id: string; label: string; cost: number }
-interface AndBranch { id: string; label: string; direccion: string }
+interface AndBranch { id: string; label: string; direccion: string; calle?: string; localidad?: string }
 interface InfoForm {
   email: string; newsletter: boolean; nombre: string; apellido: string; dni: string;
   direccion: string; depto: string; cp: string; ciudad: string; provincia: string; pais: string; telefono: string;
@@ -912,6 +912,11 @@ export default function Checkout() {
           // El código (`id`) es lo único que el plugin de Andreani sabe leer para empaquetar;
           // el texto de arriba es solo para mostrar. Ver Andreani_Order_Mapper::get_branch_code_for_order.
           shippingBranchCode: selectedBranch?.id || undefined,
+          // El retiro en sucursal no pide domicilio, así que el destino del
+          // envío es la sucursal: sin esto el plugin de Andreani no puede
+          // emitir la guía (ver lib/sucursal-destino).
+          shippingBranchStreet: selectedBranch?.calle || undefined,
+          shippingBranchCity:   selectedBranch?.localidad || undefined,
           ...getFbCookies(),
           ...getClarityCookies(),
           attribution: captureAttribution(),
