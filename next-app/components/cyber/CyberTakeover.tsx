@@ -47,6 +47,7 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
 
   const ultimasHoras = cyberUltimasHoras();
   const drops = dropsPublicos();
+  const hayRevelado = drops.some((d) => d.estado === 'revelado');
   const mostrarMystery = MYSTERY_PUBLICADO || process.env.NODE_ENV !== 'production';
   const urlWhatsApp = whatsappUrl();
 
@@ -81,9 +82,24 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           </div>
         </section>
 
-        <CyberDrops drops={drops} />
-
-        <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
+        {/* El orden depende de si hay algo revelado, y es una decisión de
+            conversión, no de gusto: mientras los tres drops estén bloqueados,
+            lo primero que se ve después del hero serían tres cajas con un
+            signo de pregunta — nada para comprar. En ese caso manda el 4 PACK,
+            que sí es comprable, y los drops quedan abajo como "lo que viene".
+            Apenas se revela el primero, los drops suben: ahí son la novedad
+            del día y lo que trae de vuelta a quien ya compró. */}
+        {hayRevelado ? (
+          <>
+            <CyberDrops drops={drops} />
+            <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
+          </>
+        ) : (
+          <>
+            <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
+            <CyberDrops drops={drops} />
+          </>
+        )}
 
         {mostrarMystery && (
           <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />
