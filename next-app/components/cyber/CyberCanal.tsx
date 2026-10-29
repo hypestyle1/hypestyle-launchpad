@@ -24,12 +24,18 @@ export default function CyberCanal({ url }: { url: string }) {
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-text-light md:text-[11px]">
             Canal oficial
           </p>
+          {/* "Enterate antes que el feed" obligaba a entender la comparación
+              para captar la ventaja. Este dice la misma idea con el sujeto
+              que importa —los drops— y en tres palabras.
+              Alternativas sobre la mesa: "Primero te enterás acá" (más
+              atemporal, si el bloque algún día sale del evento) y "Los avisos
+              salen por acá" (más literal, menos promesa). */}
           <h2 className="text-[24px] font-black uppercase leading-[0.98] tracking-[-0.01em] md:text-[32px]">
-            Enterate antes que el feed
+            Los drops, primero acá
           </h2>
           <p className="mt-3 text-[14px] leading-[1.55] text-muted-foreground md:text-[15px]">
-            Cada drop del evento se avisa primero en el canal. Sin grupos, sin que nadie vea tu
-            número: solo los avisos.
+            Cada lanzamiento del evento se avisa en el canal antes que en el feed. Es un canal:
+            solo los avisos, y tu número queda a resguardo.
           </p>
         </div>
 

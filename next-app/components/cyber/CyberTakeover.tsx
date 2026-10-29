@@ -72,6 +72,27 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
             mecánica del evento. */}
         <CyberNavCategorias accesos={CYBER_ACCESOS} />
 
+
+
+        {/* El orden depende de si hay algo revelado, y es una decisión de
+            conversión, no de gusto: mientras los tres drops estén bloqueados,
+            lo primero que se ve después del hero serían tres cajas con un
+            signo de pregunta — nada para comprar. En ese caso manda el 4 PACK,
+            que sí es comprable, y los drops quedan abajo como "lo que viene".
+            Apenas se revela el primero, los drops suben: ahí son la novedad
+            del día y lo que trae de vuelta a quien ya compró. */}
+        {hayRevelado ? (
+          <>
+            <CyberDrops drops={drops} />
+            <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
+          </>
+        ) : (
+          <>
+            <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
+            <CyberDrops drops={drops} />
+          </>
+        )}
+
         {/* Beneficios: solo mecánicas reales y vigentes, sin montos. */}
         <section className="bg-[#0a0a0a] px-4 pt-10 text-white md:px-10 md:pt-12">
           <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-2.5 md:gap-3 lg:grid-cols-4">
@@ -92,25 +113,6 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
         </section>
 
         <CyberRegalos />
-
-        {/* El orden depende de si hay algo revelado, y es una decisión de
-            conversión, no de gusto: mientras los tres drops estén bloqueados,
-            lo primero que se ve después del hero serían tres cajas con un
-            signo de pregunta — nada para comprar. En ese caso manda el 4 PACK,
-            que sí es comprable, y los drops quedan abajo como "lo que viene".
-            Apenas se revela el primero, los drops suben: ahí son la novedad
-            del día y lo que trae de vuelta a quien ya compró. */}
-        {hayRevelado ? (
-          <>
-            <CyberDrops drops={drops} />
-            <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
-          </>
-        ) : (
-          <>
-            <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
-            <CyberDrops drops={drops} />
-          </>
-        )}
 
         {mostrarMystery && (
           <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />

@@ -2,95 +2,113 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 
-/* Accesos rápidos por categoría — la pieza que acorta el camino entre entrar
-   y encontrar algo para comprar.
+/* EXPLORÁ POR CATEGORÍA — navegación editorial, tipográfica.
 
-   ── Por qué así ─────────────────────────────────────────────────────────────
-   Va inmediatamente después del hero, que es donde cae quien llega de
-   Instagram o de un anuncio: antes de pedirle que entienda la mecánica del
-   evento, se le muestra qué hay y se lo deja elegir. Un clic, no tres.
+   ── Por qué cambió ──────────────────────────────────────────────────────────
+   La primera versión eran siete tiles con foto, borde y texto. Se veía
+   genérica y pesaba más que lo que resolvía: siete cajas negras repetidas
+   antes de que apareciera un solo producto comprable. Esta versión es una
+   franja: la tipografía manda, las líneas divisorias son apenas una insinuación
+   y la foto aparece solo al pasar el mouse, chica y al costado del nombre —
+   ahí sí suma, porque confirma a dónde vas sin ocupar lugar cuando no la
+   mirás.
 
-   En mobile (89,6% de las sesiones) es una tira que se desliza con el dedo,
-   no seis filas de botones: ocupa una franja y deja el producto a la vista.
-   En desktop es una grilla de tiles editoriales.
+   Cinco categorías. Mystery Archive y los 3 drops tienen su propia sección
+   más abajo: repetirlos acá era decir dos veces lo mismo.
 
-   ── Cada tile lleva a SU PÁGINA ─────────────────────────────────────────────
-   Son links a las categorías reales del sitio (`/tees`, `/hoodies`,
-   `/longsleeves`, `/pants`, `/colecciones/regular-tees`), todas verificadas
-   respondiendo 200. No son filtros de la grilla del evento: quien busca
-   hoodies quiere la página de hoodies, con su catálogo completo y sus
-   filtros, no un recorte. Las dos excepciones son las secciones que solo
-   existen dentro del evento —Mystery y los 3 drops—, que llevan a su ancla de
-   esta misma página.
+   ── Adónde va ───────────────────────────────────────────────────────────────
+   Cada una lleva a **su página de catálogo** (`/tees`, `/hoodies`,
+   `/longsleeves`, `/pants`, `/colecciones/regular-tees`), que es el sistema de
+   filtros que el sitio ya tiene: no se construye una segunda lógica, se usa la
+   que existe y que ya está probada.
 
-   ── Las fotos son REALES y salen del catálogo en vivo ───────────────────────
-   Cada tile toma la foto de portada del producto líder de su categoría (el
-   primero de la lista curada en lib/cyber-cartelera). No hay imágenes
-   inventadas ni íconos genéricos: si mañana cambia la curaduría, cambia la
-   foto. Mystery usa su portada real (el collage de mockups de Woo) y Drops no
-   lleva foto a propósito — es la incógnita. */
+   ── Mobile ──────────────────────────────────────────────────────────────────
+   Tira deslizable, con cada nombre como objetivo táctil cómodo (56 px de alto)
+   y los gutters negativos para que el scroll llegue al borde de la pantalla,
+   que es lo que avisa que hay más a la derecha. */
 
 export interface AccesoCategoria {
   id: string;
   label: string;
-  /** Adónde va: página real del sitio o ancla del evento. */
   href: string;
-  /** Slug del producto que presta su foto, o null si la imagen es fija. */
+  /** Producto que presta la miniatura del hover. */
   slugFoto: string | null;
-  /** Imagen fija (Mystery) o null para usar la del producto. */
-  img: string | null;
 }
 
 export default function CyberNavCategorias({ accesos }: { accesos: AccesoCategoria[] }) {
   const { data } = useProducts();
+  const [activo, setActivo] = useState<string | null>(null);
 
-  const tiles = useMemo(() => {
+  const fotos = useMemo(() => {
     const bySlug = new Map((data ?? []).map((p) => [p.slug, p]));
-    return accesos.map((a) => ({
-      ...a,
-      foto: a.img ?? (a.slugFoto ? bySlug.get(a.slugFoto)?.images?.[0] ?? null : null),
-    }));
+    const out: Record<string, string | undefined> = {};
+    for (const a of accesos) if (a.slugFoto) out[a.id] = bySlug.get(a.slugFoto)?.images?.[0];
+    return out;
   }, [data, accesos]);
 
   return (
     <nav
-      aria-label="Categorías del evento"
-      className="bg-[#0a0a0a] px-4 pt-8 text-white md:px-10 md:pt-10"
+      aria-label="Explorá por categoría"
+      className="border-y border-white/10 bg-[#0a0a0a] text-white"
     >
-      <div className="mx-auto max-w-[1400px]">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/45 md:text-[11px]">
-          Buscá directo
+      <div className="mx-auto max-w-[1400px] px-4 py-7 md:px-10 md:py-9">
+        <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/40 md:mb-5 md:text-[11px]">
+          Explorá por categoría
         </p>
 
-        {/* Mobile: tira deslizable. Desktop: grilla. Los gutters negativos en
-            mobile dejan que el scroll llegue al borde de la pantalla, que es
-            lo que avisa que hay más a la derecha. */}
-        <ul className="-mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-4 md:gap-3 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-7">
-          {tiles.map((t) => (
-            <li key={t.id} className="w-[132px] shrink-0 snap-start md:w-auto">
-              <Link href={t.href} className="group block focus-visible:outline-white">
-                <span className="relative block aspect-[4/5] overflow-hidden rounded-[12px] border border-white/12 bg-[#151515]">
-                  {t.foto ? (
+        <ul className="-mx-4 flex items-stretch gap-0 overflow-x-auto px-4 md:mx-0 md:px-0">
+          {accesos.map((a, i) => (
+            <li
+              key={a.id}
+              className={`shrink-0 md:flex-1 ${i > 0 ? 'border-l border-white/10 pl-5 md:pl-6' : ''} ${
+                i < accesos.length - 1 ? 'pr-5 md:pr-6' : 'pr-4 md:pr-0'
+              }`}
+            >
+              <Link
+                href={a.href}
+                onMouseEnter={() => setActivo(a.id)}
+                onMouseLeave={() => setActivo(null)}
+                className="group flex h-[56px] items-center gap-3 focus-visible:outline-white md:h-[64px]"
+              >
+                {/* Miniatura: solo en desktop y solo al pasar por encima.
+                    Ocupa un hueco reservado, así nada se mueve al aparecer. */}
+                <span className="relative hidden h-10 w-10 shrink-0 overflow-hidden rounded-[6px] md:block">
+                  {fotos[a.id] && (
                     <Image
-                      src={t.foto}
+                      src={fotos[a.id]!}
                       alt=""
                       fill
-                      sizes="(max-width: 768px) 132px, 200px"
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                      sizes="40px"
+                      className={`object-cover transition-opacity duration-300 ${
+                        activo === a.id ? 'opacity-100' : 'opacity-0'
+                      }`}
                     />
-                  ) : (
-                    <span className="flex h-full items-center justify-center text-[34px] font-black text-white/15">
-                      ?
-                    </span>
                   )}
-                  <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                  <span className="absolute inset-x-2.5 bottom-2.5 text-[11.5px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-white md:text-[12.5px]">
-                    {t.label}
-                  </span>
                 </span>
+
+                <span className="whitespace-nowrap text-[17px] font-black uppercase leading-none tracking-[-0.01em] text-white/80 transition-colors group-hover:text-white md:text-[21px]">
+                  {a.label}
+                </span>
+
+                <svg
+                  width="13"
+                  height="9"
+                  viewBox="0 0 15 10"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0 text-white/25 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-white/70"
+                >
+                  <path
+                    d="M9.6.7 13.9 5 9.6 9.3M13.3 5H.8"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </Link>
             </li>
           ))}

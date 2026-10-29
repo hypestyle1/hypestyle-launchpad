@@ -179,7 +179,10 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
   {
     id: 'longsleeves',
     nombre: 'Mystery Longsleeves',
-    detalle: 'Athletic Dept, raglans y polos del archivo. Elegís tu talle; el modelo es sorpresa.',
+    detalle: 'Waffles, Athletic Dept y raglans del archivo. Elegís tu talle; el modelo es sorpresa.',
+    // Pendiente de actualizar con el conteo definitivo: los Half-Zip Polo se
+    // van a HOODIES (decisión del 29/10) y entran los waffles, mostrando una
+    // sola ficha por pila compartida para no contar dos veces el mismo blank.
     pool: '11 modelos en el pool',
     img: '/cyber/mystery/longsleeves-v5.webp',
     href: null,
@@ -187,7 +190,9 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
   {
     id: 'hoodies',
     nombre: 'Mystery Hoodies',
-    detalle: 'Hoodies del archivo con stock real. Elegís tu talle; el modelo es sorpresa.',
+    // Los Half-Zip Polo cuentan como hoodies y son los protagonistas del pool
+    // ("los que más vamos a estar enviando", 29/10), así que encabezan el copy.
+    detalle: 'Half-Zip Polos y hoodies del archivo. Elegís tu talle; el modelo es sorpresa.',
     pool: '9 modelos en el pool',
     img: '/cyber/mystery/hoodies-v5.webp',
     href: null,
@@ -316,16 +321,14 @@ export const CYBER_ACCESOS: {
   label: string;
   href: string;
   slugFoto: string | null;
-  img: string | null;
 }[] = [
-  { id: 'tees', label: 'Remeras', href: '/tees', slugFoto: 'honda-white-tee', img: null },
-  { id: 'hoodies', label: 'Hoodies', href: '/hoodies', slugFoto: 'faith-over-everything-camo-hoodie', img: null },
-  { id: 'longsleeves', label: 'Longsleeves', href: '/longsleeves', slugFoto: 'find-jesus-longsleeve-black', img: null },
-  { id: 'pants', label: 'Pantalones', href: '/pants', slugFoto: 'sweatpant-grey-hstars', img: null },
-  { id: 'packs', label: 'Packs', href: '/colecciones/regular-tees', slugFoto: 'regular-tees-3-pack-black-navy-white', img: null },
-  // Las dos que solo existen dentro del evento.
-  { id: 'mystery', label: 'Mystery Archive', href: '#mystery', slugFoto: null, img: '/cyber/mystery/mystery-tops-1x1.webp' },
-  { id: 'drops', label: 'Los 3 drops', href: '#drops', slugFoto: null, img: null },
+  { id: 'tees', label: 'Remeras', href: '/tees', slugFoto: 'honda-white-tee' },
+  { id: 'hoodies', label: 'Hoodies', href: '/hoodies', slugFoto: 'faith-over-everything-camo-hoodie' },
+  { id: 'longsleeves', label: 'Longsleeves', href: '/longsleeves', slugFoto: 'find-jesus-longsleeve-black' },
+  { id: 'pants', label: 'Pantalones', href: '/pants', slugFoto: 'sweatpant-grey-hstars' },
+  { id: 'packs', label: 'Packs', href: '/colecciones/regular-tees', slugFoto: 'regular-tees-3-pack-black-navy-white' },
+  // Mystery Archive y los 3 drops NO van acá: tienen su propia sección más
+  // abajo y repetirlos era decir dos veces lo mismo (decisión del 29/10).
 ];
 
 export interface CyberFiltro {
