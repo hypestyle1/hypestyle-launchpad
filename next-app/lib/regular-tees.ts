@@ -11,6 +11,7 @@ const INDIVIDUALES = [
   'regular-tee-white',
   'regular-tee-melange',
   'regular-tee-navy',
+  'regular-tee-red',
 ];
 
 // Surtidos: las 4 combinaciones posibles de 3 colores distintos sobre los 4
