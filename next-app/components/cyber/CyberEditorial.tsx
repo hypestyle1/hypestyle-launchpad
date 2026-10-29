@@ -61,17 +61,18 @@ export const CYBER_CATEGORIAS_EDITORIAL: TarjetaCategoria[] = [
     posicion: '50% 30%',
   },
   {
-    // Cambiada el 29/10: en la anterior el jogger quedaba a media pierna y
-    // tapado por el hoodie. Acá el conjunto se ve entero, de la cintura a
-    // los pies, que es lo que tiene que vender la tarjeta de Pantalones.
+    // Elegida por Valentín el 29/10: el sweatpant negro con el lettering
+    // Hypestyle, encuadrado de la cintura a los pies. En las anteriores el
+    // jogger quedaba a media pierna o tapado por el hoodie; acá la prenda que
+    // da nombre a la tarjeta es, literalmente, lo que ocupa el cuadro.
     id: 'pants',
-    src: '/cyber/categorias/pants-cami.webp',
-    alt: 'Conjunto Hype: hoodie y sweatpant',
-    kicker: 'Así se usa',
+    src: '/cyber/categorias/pants-sweatpant.webp',
+    alt: 'Sweatpant Hypestyle negro con lettering',
+    kicker: 'Lookbook Faith',
     titulo: 'Pantalones',
     href: '/pants',
     cta: 'Ver pantalones',
-    posicion: '50% 55%',
+    posicion: '50% 50%',
   },
 ];
 
