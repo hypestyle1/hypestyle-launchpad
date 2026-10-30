@@ -102,13 +102,18 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />
         )}
 
-        <CyberRegalos />
-
         <CyberDrops drops={drops} />
 
         <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
         <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
+
+        {/* El regalo, justo después del catálogo: es donde aparece la
+            fricción real —"llevo $78.000, me faltan $22.000 para la cadena"—
+            y donde un regalo deja de ser información para ser un motivo de
+            sumar. Más arriba llegaba descolgado: pedía recordar tres montos
+            antes de haber visto un solo precio. */}
+        <CyberRegalos />
 
         {/* La franja informativa: tres datos, una línea, sin competir con el
             producto. El regalo salió de acá — ya tiene su sección entera, y

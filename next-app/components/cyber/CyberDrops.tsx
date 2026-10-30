@@ -15,8 +15,13 @@ import type { CyberDropPublico } from '@/lib/cyber-cartelera';
 
 export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
   return (
-    <section id="drops" className="bg-[#0a0a0a] px-4 py-12 text-white md:px-10 md:py-16">
-      <div className="mx-auto max-w-[1400px]">
+    /* Marco propio: arriba está Mystery y abajo el editorial, las dos en el
+       mismo negro, así que los drops se fundían con sus vecinas y la sección
+       no se leía como una unidad. El contenedor —fondo un punto más claro,
+       radio grande y un filete al 10%— la recorta del fondo sin cambiar de
+       color ni romper la identidad monocroma. */
+    <section id="drops" className="bg-[#0a0a0a] px-4 py-8 text-white md:px-10 md:py-10">
+      <div className="mx-auto max-w-[1400px] rounded-[20px] border border-white/10 bg-[#121212] px-4 py-10 md:px-9 md:py-12">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3 md:mb-8">
           <div>
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/45 md:text-[11px]">
