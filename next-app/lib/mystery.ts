@@ -57,7 +57,8 @@ export interface MysteryCaja {
  * 2. **Nada sin costo cargado que mueva la aguja.** El único del pool sin
  *    perfil de costo son las siete tees de archivo y el Hoodie Pink; el precio
  *    de cada caja está elegido para aguantarlas aun con un costo bastante peor
- *    que el conocido (ver el PRD, §4).
+ *    que el conocido: el costo máximo tolerable por prenda es $12.872 en TEES,
+ *    $16.680 en LONGSLEEVES y $26.473 en HOODIES (ver el PRD, §4).
  * 3. **Afuera lo que se vende solo.** Los hoodies SS27, el camo Faith Over
  *    Everything y Running Horses no entran: liquidar lo que ya rota es regalar
  *    margen sobre ventas que iban a ocurrir igual.
@@ -67,10 +68,10 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     id: 'tees',
     slug: 'mystery-tees',
     nombre: 'Mystery Tees',
-    prendas: 2,
-    precio: 49900,
+    prendas: 1,
+    precio: 27900,
     queEs: 'Remeras de manga corta del archivo Hype.',
-    garantia: '2 remeras de manga corta, las dos de diseños distintos, en el talle que elijas.',
+    garantia: '1 remera de manga corta del archivo, en el talle que elijas.',
     modelos: [
       { id: 2460, nombre: 'Napoli Azurro', precio: 38000 },
       { id: 2471, nombre: 'Napoli Bianca', precio: 38000 },
@@ -91,10 +92,10 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     id: 'longsleeves',
     slug: 'mystery-longsleeves',
     nombre: 'Mystery Longsleeves',
-    prendas: 2,
-    precio: 69900,
+    prendas: 1,
+    precio: 34900,
     queEs: 'Remeras de manga larga: waffles, Athletic Dept y raglans.',
-    garantia: '2 remeras de manga larga, las dos de diseños distintos, en el talle que elijas.',
+    garantia: '1 remera de manga larga —waffle, Athletic Dept o raglan—, en el talle que elijas.',
     modelos: [
       { id: 3472, nombre: 'Athletic Dept. Pink', precio: 48000 },
       { id: 3477, nombre: 'Athletic Dept. Blue', precio: 48000 },
@@ -112,10 +113,10 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     id: 'hoodies',
     slug: 'mystery-hoodies',
     nombre: 'Mystery Hoodies',
-    prendas: 2,
-    precio: 99900,
+    prendas: 1,
+    precio: 52900,
     queEs: 'Hoodies, buzos y Half-Zip Polos del archivo.',
-    garantia: '2 prendas de abrigo —hoodie, buzo o Half-Zip Polo—, las dos de diseños distintos, en el talle que elijas.',
+    garantia: '1 prenda de abrigo —hoodie, buzo o Half-Zip Polo—, en el talle que elijas.',
     modelos: [
       { id: 1104, nombre: 'Half-Zip Polo Navy', precio: 70000 },
       { id: 1110, nombre: 'Half-Zip Polo Black', precio: 70000 },
@@ -143,10 +144,13 @@ export function mysteryDe(slug: string): MysteryCaja | undefined {
 export const MYSTERY_SLUGS: string[] = MYSTERY_CAJAS.map(c => c.slug);
 
 /**
- * El precio más bajo al que el cliente podría comprar sueltas la misma
- * cantidad de prendas. Es contra esto que se mide el ahorro: **la alternativa
- * más barata que puede tocarle**, no el promedio ni el precio de lista más
- * alto. Si la caja costara más que esto, no sería una oferta.
+ * El precio más bajo al que el cliente podría comprar suelto el mismo
+ * contenido. Con una prenda por caja es, literalmente, **el precio de la
+ * prenda más barata del pool**. Es contra esto que se mide el ahorro: la
+ * alternativa más barata que puede tocarle, no el promedio ni el precio de
+ * lista más alto. Si la caja costara más que esto, no sería una oferta — y es
+ * exactamente lo que pasa si la misma prenda se publica suelta con descuento
+ * de Cyber (ver el PRD, §4.2: el pool no se descuenta suelto).
  */
 export function pisoSuelto(caja: MysteryCaja): number {
   return Math.min(...caja.modelos.map(m => m.precio)) * caja.prendas;

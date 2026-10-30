@@ -64,12 +64,23 @@ export function MysteryGarantia({ caja }: { caja: MysteryCaja }) {
 /**
  * Precio por prenda y la comparación.
  *
- * La comparación es contra **la combinación más barata que puede tocar**
- * (`pisoSuelto`), no contra el promedio ni contra el modelo más caro del pool:
- * así el número es verdadero para todos los compradores, también para el que
- * recibe las dos prendas más baratas del conjunto.
+ * La comparación es contra **lo más barato que puede tocar** (`pisoSuelto`),
+ * no contra el promedio ni contra el modelo más caro del pool: así el número
+ * es verdadero para todos los compradores, también para el que recibe la
+ * prenda más barata del conjunto.
+ *
+ * Con una prenda por caja el "por prenda" desaparece: sería repetir el precio.
  */
 export function MysteryAhorro({ caja }: { caja: MysteryCaja }) {
+  if (caja.prendas === 1) {
+    return (
+      <p className="text-[12px] leading-[1.45] text-muted-foreground">
+        La prenda más barata que puede tocarte sale{' '}
+        <strong className="font-medium text-foreground">{fmt(pisoSuelto(caja))}</strong> suelta.
+        Ahorrás {fmt(ahorroMinimo(caja))} como mínimo.
+      </p>
+    );
+  }
   return (
     <div className="flex flex-col gap-1">
       <p className="text-[13px] font-semibold text-foreground">
@@ -159,7 +170,11 @@ export function MysteryCondiciones({ caja }: { caja: MysteryCaja }) {
       <li><strong className="font-medium text-foreground">Cambio de modelo:</strong> no. Qué prenda toca es parte de lo que estás comprando y lo elegimos nosotros.</li>
       <li><strong className="font-medium text-foreground">Arrepentimiento:</strong> 10 días corridos desde que la recibís, con devolución a cargo nuestro (ley 24.240, art. 34).</li>
       <li><strong className="font-medium text-foreground">Prendas falladas:</strong> se cambian o se devuelve el dinero, como cualquier otra compra.</li>
-      <li>Las {caja.prendas} prendas vienen en el mismo talle y son siempre de diseños distintos entre sí.</li>
+      <li>
+        {caja.prendas === 1
+          ? 'Tu Mystery trae una sola prenda, en el talle que elegís. No es un pack ni un combo.'
+          : `Las ${caja.prendas} prendas vienen en el mismo talle y son siempre de diseños distintos entre sí.`}
+      </li>
     </ul>
   );
 }
@@ -174,7 +189,7 @@ export function MysteryQueIncluye({ caja }: { caja: MysteryCaja }) {
       <p>{caja.garantia}</p>
       <p>{caja.queEs}</p>
       <p className="text-foreground font-medium">
-        Contenido garantizado: {caja.prendas} prendas · 1 talle a tu elección · {caja.modelos.length} modelos posibles.
+        Contenido garantizado: {caja.prendas} {caja.prendas === 1 ? 'prenda' : 'prendas'} · 1 talle a tu elección · {caja.modelos.length} modelos posibles.
       </p>
       <p>
         Llega en el packaging habitual de Hype, con el resto de tu pedido.

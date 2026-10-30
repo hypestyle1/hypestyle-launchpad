@@ -14,16 +14,21 @@ import { MYSTERY_CAJAS, mockupPool, type MysteryCaja } from '@/lib/mystery';
  * verdad, Woo gana sin tocar nada —el mock solo actúa si el slug NO vino de
  * Woo— y este archivo se borra.
  *
- * Los stocks por talle son los **cajas máximas** calculados contra el stock
+ * Los stocks por talle son las **cajas máximas** calculadas contra el stock
  * real del 29/10 (pool ÷ prendas por caja), así el selector de talle del
  * preview se comporta como se va a comportar en serio.
  */
 
-/** Cajas armables por talle = stock del pool por talle ÷ prendas por caja. */
+/**
+ * Cajas armables por talle = stock del pool por talle ÷ prendas por caja.
+ * Con una prenda por caja el divisor es 1, así que esto **es** el stock del
+ * pool: 363 / 214 / 128 cajas. Es el techo absoluto, no la primera tanda
+ * (que el PRD §5.4 propone en 40 cajas).
+ */
 const CAJAS_POR_TALLE: Record<string, Record<string, number>> = {
-  'mystery-tees': { S: 49, M: 41, L: 41, XL: 49 },
-  'mystery-longsleeves': { S: 23, M: 28, L: 26, XL: 29 },
-  'mystery-hoodies': { S: 16, M: 14, L: 13, XL: 20 },
+  'mystery-tees': { S: 98, M: 83, L: 83, XL: 99 },
+  'mystery-longsleeves': { S: 46, M: 57, L: 53, XL: 58 },
+  'mystery-hoodies': { S: 33, M: 28, L: 27, XL: 40 },
 };
 
 function galeria(caja: MysteryCaja): string[] {
