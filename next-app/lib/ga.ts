@@ -99,6 +99,19 @@ export function gaIrAPagar(paymentType: string, value: number, tier: ShippingTie
 }
 
 /**
+ * Asesor de talle: `abierto` cuando alguien lo abre, `recomendacion` cuando
+ * llega al resultado. Sin esto no hay forma de saber si sirve — lo que importa
+ * medir después es si los pedidos que pasaron por el asesor se cambian menos.
+ * No se manda ninguna medida del cuerpo: solo el molde y el talle que salió.
+ */
+export function gaAsesorTalle(
+  accion: 'abierto' | 'recomendacion',
+  args: { item_id: string; molde: string; talle?: string; confianza?: string },
+): void {
+  gaEvent(`asesor_talle_${accion}`, args);
+}
+
+/**
  * Solo debe llamarse con el pago efectivamente confirmado — ver el comentario en
  * app/confirmacion/ConfirmacionClient.tsx. `transactionId` es además la clave de
  * deduplicación de GA4: si el cliente recarga la pantalla de confirmación, GA

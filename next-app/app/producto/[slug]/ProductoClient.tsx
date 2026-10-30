@@ -29,6 +29,8 @@ import { gaViewItem, gaAddToCart } from '@/lib/ga';
 import { fbViewContent, fbAddToCart } from '@/lib/fbpixel';
 import { ordenarFotos, tieneInterruptorModelo, filtrarPorModelo, modeloInicial, type Modelo } from '@/lib/ficha';
 import Ficha from './ficha/Ficha';
+import AsesorTalle from './ficha/AsesorTalle';
+import { moldeDe } from '@/lib/talle/moldes';
 import { GIFT_CARD_SLUG } from '@/lib/gift-card';
 import type { FichaPrivateAccess } from './ficha/bloques';
 
@@ -226,6 +228,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const [liveOutSizes, setLiveOutSizes]     = useState<Set<string>>(new Set());
   const [added, setAdded]                   = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen]   = useState(false);
+  const [asesorOpen, setAsesorOpen]         = useState(false);
   const [showSticky, setShowSticky]         = useState(false);
   const [zoomPos, setZoomPos]               = useState<{ x: number; y: number } | null>(null);
   const [canHover, setCanHover]             = useState(false);
@@ -385,6 +388,19 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // Imagen "de portada" (no-video) para carrito y miniaturas fijas.
   const coverImage = baseImages.find(g => !isVideo(g)) ?? galleryImages[0];
 
+  /**
+   * Asesor de talle: solo tiene sentido si la prenda tiene más de un talle y
+   * conocemos su tabla de medidas. En accesorios, gift card y productos de
+   * talle único no se ofrece — no hay nada que recomendar.
+   */
+  // Sin useMemo: esto corre después del early return de "producto no
+  // encontrado", así que un hook acá rompería el orden de hooks. Igual son dos
+  // cuentas de nada (un find sobre 13 moldes y un filter sobre 4 talles).
+  const molde = product.colorVariant || product.sizes.length < 2 || product.category === 'Accesorio'
+    ? null
+    : moldeDe({ sizeGuideImage: product.sizeGuideImage, fit: product.fit, category: product.category });
+  const tallesConStock = product.sizes.filter(s => product.stock[s] !== 'out' && !liveOutSizes.has(s));
+
   const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
@@ -440,21 +456,30 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   const transferRate  = 10;
   const transferPrice = Math.round(displayPrice * (1 - transferRate / 100));
 
-  const handleAdd = async () => {
+  /**
+   * `talleForzado` lo usa el asesor de talle: cuando recomienda un talle y la
+   * persona toca "Agregar", hay que comprar ESE talle en la misma acción. No
+   * alcanza con hacer setSelectedSize antes de llamar acá — el estado de React
+   * todavía no se actualizó y la compra saldría con el talle anterior (o sin
+   * ninguno).
+   */
+  const handleAdd = async (talleForzado?: string) => {
     // Próximamente: se ve pero no se vende (el pedido también lo rechaza el servidor).
     if (product.comingSoon) return;
-    if (!selectedSize) {
+    const size = talleForzado ?? selectedSize;
+    if (!size) {
       if (product.customizable) { router.push(`/personalizar/${product.slug}`); return; }
       setSizeError(true);
       return;
     }
+    if (talleForzado) setSelectedSize(talleForzado);
     setSizeError(false); setStockError(false); setStockChecking(true);
     const result = privateAccess
-      ? await privateAccess.checkStock(product.slug, selectedSize)
-      : await checkStock(product.id, selectedSize);
+      ? await privateAccess.checkStock(product.slug, size)
+      : await checkStock(product.id, size);
     setStockChecking(false);
-    if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, selectedSize])); setStockError(true); return; }
-    add({ id: product.id, name: product.name, price: displayPrice, image: imgUrl(coverImage), size: selectedSize, quantity: 1 });
+    if (result === 'out') { setLiveOutSizes(prev => new Set([...prev, size])); setStockError(true); return; }
+    add({ id: product.id, name: product.name, price: displayPrice, image: imgUrl(coverImage), size, quantity: 1 });
     // El AddToCart del pixel faltaba justo acá — estaba solo en ProductCard (el
     // atajo del grid), así que el camino principal de compra no se medía y Meta
     // veía menos AddToCart que InitiateCheckout, que es imposible en un embudo sano.
@@ -463,11 +488,11 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
       item_id: product.id,
       item_name: product.name,
       item_category: product.category,
-      item_variant: selectedSize,
+      item_variant: size,
       price: displayPrice,
       quantity: 1,
     });
-    privateAccess?.onAdded?.({ slug: product.slug, name: product.name, category: product.category, size: selectedSize, price: displayPrice });
+    privateAccess?.onAdded?.({ slug: product.slug, name: product.name, category: product.category, size, price: displayPrice });
     setAdded(true);
   };
 
@@ -585,6 +610,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
           stockChecking={stockChecking}
           onAdd={() => handleAdd()}
           onSizeGuide={() => setSizeGuideOpen(true)}
+          onAsesorTalle={molde ? () => setAsesorOpen(true) : undefined}
           addBtnRef={addBtnRef}
           primaryBtnClass={primaryBtnClass}
           modelo={modelo}
@@ -695,6 +721,16 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                     {t('Guía de talles')}
                   </button>
                 </div>
+                {molde && (
+                  <button onClick={() => setAsesorOpen(true)}
+                    className="w-full h-10 mb-2.5 flex items-center justify-center gap-2 border border-border hover:border-foreground rounded-[10px] text-[12px] font-semibold uppercase tracking-[0.06em] transition-colors">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden>
+                      <rect x="0.9" y="4.9" width="14.2" height="6.2" rx="1" />
+                      <path d="M4 5v2.4M6.5 5v1.5M9 5v2.4M11.5 5v1.5" />
+                    </svg>
+                    {t('Encontrá tu talle')}
+                  </button>
+                )}
                 <div className="flex gap-2 flex-wrap">
                   {product.sizes.map(s => {
                     const st = product.stock[s];
@@ -886,6 +922,18 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
 
       {/* Size guide */}
       {sizeGuideOpen && <SizeGuideModal onClose={() => setSizeGuideOpen(false)} image={product.sizeGuideImage || DEFAULT_SIZE_GUIDE} />}
+      {asesorOpen && molde && (
+        <AsesorTalle
+          product={product}
+          molde={molde}
+          precio={mounted ? formatPrice(displayPrice) : ''}
+          portada={imgUrl(coverImage)}
+          tallesConStock={tallesConStock}
+          onCerrar={() => setAsesorOpen(false)}
+          onElegir={(talle) => { setSelectedSize(talle); setSizeError(false); setStockError(false); setAsesorOpen(false); }}
+          onAgregar={(talle) => { setAsesorOpen(false); handleAdd(talle); }}
+        />
+      )}
 
       {/* Added to cart popup */}
       {added && (

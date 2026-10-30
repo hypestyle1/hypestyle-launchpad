@@ -55,6 +55,9 @@ export interface FichaProps {
   stockChecking: boolean;
   onAdd: () => void;
   onSizeGuide: () => void;
+  /** Abre el asesor de talle. Sin esto, el botón no se muestra: hay productos
+   *  (accesorios, talle único) para los que no hay nada que recomendar. */
+  onAsesorTalle?: () => void;
   addBtnRef: RefObject<HTMLButtonElement>;
   primaryBtnClass: string;
   modelo: Modelo | null;
@@ -241,6 +244,16 @@ export function SelectorTalle({ p }: { p: FichaProps }) {
           );
         })}
       </div>
+      {p.onAsesorTalle && (
+        <button onClick={p.onAsesorTalle}
+          className="w-full h-10 flex items-center justify-center gap-2 border border-border hover:border-foreground rounded-[10px] text-[12px] font-semibold uppercase tracking-[0.06em] transition-colors">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden>
+            <rect x="0.9" y="4.9" width="14.2" height="6.2" rx="1" />
+            <path d="M4 5v2.4M6.5 5v1.5M9 5v2.4M11.5 5v1.5" />
+          </svg>
+          {t('Encontrá tu talle')}
+        </button>
+      )}
       {estado === 'low' && !liveOutSizes.has(selectedSize!) && (
         <p className="text-[11px] text-amber-600 font-medium">{t('Últimas unidades disponibles')}</p>
       )}
