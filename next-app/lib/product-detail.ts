@@ -141,6 +141,7 @@ const REGULAR_TEE_COLORWAYS = [
   { label: 'White',   value: '#f5f5f5', slug: 'regular-tee-white',   image: `${WP}/2026/04/regular-2-75ea403f4d52d064fd17644453598412-1024-1024.png` },
   { label: 'Melange', value: '#b8b4ae', slug: 'regular-tee-melange', image: `${WP}/2026/04/regular-tee-melange-frente-e6dd1bc734bcf1ba8d17610877937838-1024-1024.png` },
   { label: 'Navy',    value: '#1a2744', slug: 'regular-tee-navy',    image: `${WP}/2026/07/remera-regular-navy-frente.png` },
+  { label: 'Red',     value: '#ff1d21', slug: 'regular-tee-red',     image: `${WP}/2026/10/remera-regular-roja-frente-v2.png` },
 ];
 
 // 8 packs: los 4 mono-color y las 4 combinaciones posibles de 3 colores
