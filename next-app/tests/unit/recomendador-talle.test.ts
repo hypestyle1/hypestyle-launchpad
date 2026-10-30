@@ -164,6 +164,31 @@ describe('moldeDe', () => {
     expect(moldeDe({ fit: 'Baggy', category: 'Pantalón' })?.id).toBe('pantalon');
   });
 
+  it('en manga larga sin tabla, el fit decide el molde', () => {
+    // Las Athletic Dept azul y rosa son las dos únicas longsleeve regular del
+    // catálogo y no tienen guía cargada en Woo. Antes caían en el molde
+    // oversize, que es 12 cm más ancho por talle, y se les recomendaba un
+    // talle de menos.
+    expect(moldeDe({ fit: 'REGULAR', category: 'Longsleeve' })?.id).toBe('longsleeve-regular');
+    expect(moldeDe({ fit: 'OVERSIZE', category: 'Longsleeve' })?.id).toBe('longsleeve-oversize');
+
+    const cuerpoTipo = hombre(175, 75);
+    expect(talle('longsleeve-regular', cuerpoTipo)).toBe(talle('remera-regular', cuerpoTipo));
+    expect(talle('longsleeve-regular', cuerpoTipo)).not.toBe(talle('longsleeve-oversize', cuerpoTipo));
+  });
+
+  it('la manga larga regular mide el cuerpo igual que la remera regular', () => {
+    const reg = moldePorId('remera-regular')!;
+    const ls = moldePorId('longsleeve-regular')!;
+    expect(ls.filas.map(f => [f.talle, f.largo, f.ancho]))
+      .toEqual(reg.filas.map(f => [f.talle, f.largo, f.ancho]));
+    expect(ls.holguraPecho).toBe(reg.holguraPecho);
+    expect(ls.coefLargo).toBe(reg.coefLargo);
+    // Todavía no se relevó la manga: el recomendador no debe inventar ese eje.
+    expect(ls.filas.every(f => f.manga === undefined)).toBe(true);
+    expect(recomendar(ls, hombre(175, 75))!.lecturas.some(l => l.eje === 'manga')).toBe(false);
+  });
+
   it('devuelve null cuando no hay con qué (accesorios)', () => {
     expect(moldeDe({ fit: '', category: 'Accesorio' })).toBeNull();
     expect(moldeDe({})).toBeNull();

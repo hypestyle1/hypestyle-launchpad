@@ -119,6 +119,23 @@ export const MOLDES: Molde[] = [
     filas: [T('S', 67, 58, 83), T('M', 69, 60, 84.5), T('L', 71, 62, 86), T('XL', 73, 64, 87.5)],
   },
   {
+    id: 'longsleeve-regular',
+    nombre: 'remera de manga larga',
+    tipo: 'arriba',
+    // Mismo cuerpo que la remera regular: lo único que cambia es la manga
+    // (Valentín, 29/10/2026). Por eso comparte holgura y coeficiente de largo
+    // con `remera-regular` y NO con `longsleeve-oversize`, que es 12 cm más
+    // ancha por talle.
+    holguraPecho: 2,
+    coefLargo: 0.377,
+    // Sin `manga`: la medida todavía no está relevada. El recomendador
+    // descarta solo los ejes sin datos, así que elige por pecho y largo, que
+    // es lo que define el talle en esta prenda igual.
+    guias: [],
+    nota: 'Estos dos productos no tienen guía de talles cargada en Woo. Cuando se les haga la imagen, sumar acá el nombre de archivo y las medidas de manga.',
+    filas: [T('S', 64, 46), T('M', 66, 49), T('L', 68, 52), T('XL', 70, 55)],
+  },
+  {
     id: 'buzo-boxy',
     nombre: 'buzo de silueta boxy',
     tipo: 'arriba',
@@ -242,6 +259,11 @@ const POR_FIT: { test: (fit: string, categoria: string) => boolean; molde: strin
   { test: (_f, c) => /bermuda|jort|short/i.test(c), molde: 'bermuda' },
   { test: (_f, c) => /pantal|sweatpant|jogger/i.test(c), molde: 'pantalon' },
   { test: (_f, c) => /hoodie|buzo|campera|zip|sweater/i.test(c), molde: 'buzo-boxy' },
+  // En manga larga el fit decide, y la regla va ANTES que la de categoría: las
+  // Athletic Dept azul y rosa son las dos únicas regular del catálogo y no
+  // tienen tabla cargada, así que caían en el molde oversize —12 cm más ancho
+  // por talle— y se les recomendaba un talle de menos.
+  { test: (f, c) => /longsleeve|manga larga/i.test(c) && /regular|slim/i.test(f), molde: 'longsleeve-regular' },
   { test: (_f, c) => /longsleeve|manga larga|waffle/i.test(c), molde: 'longsleeve-oversize' },
   { test: (_f, c) => /musculosa|sleeveless|tank/i.test(c), molde: 'musculosa-raglan' },
   { test: (f) => /boxy/i.test(f), molde: 'remera-boxy' },

@@ -24,20 +24,22 @@
  */
 
 import { createHash } from 'node:crypto';
-import { MOLDES } from '../lib/talle/moldes.ts';
+import { MOLDES, moldeDe } from '../lib/talle/moldes.ts';
 
 const GRAPHQL = process.env.NEXT_PUBLIC_GRAPHQL_URL
   || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
 const CON_HASH = process.argv.includes('--hash');
 
+const CAMPOS = 'productCategories { nodes { name } } attributes { nodes { name options } }';
+
 const QUERY = `query Productos($after: String) {
   products(first: 100, after: $after, where: { status: "publish" }) {
     pageInfo { hasNextPage endCursor }
     nodes {
       name slug
-      ... on VariableProduct { attributes { nodes { name options } } }
-      ... on SimpleProduct   { attributes { nodes { name options } } }
+      ... on VariableProduct { ${CAMPOS} }
+      ... on SimpleProduct   { ${CAMPOS} }
     }
   }
 }`;
@@ -66,6 +68,8 @@ const atributo = (nodo, clave) => (nodo.attributes?.nodes ?? [])
   .find(a => (a.name || '').toLowerCase() === clave)?.options?.[0]?.trim();
 
 const guiaDe = (nodo) => atributo(nodo, 'size-guide') || atributo(nodo, 'guia-talles');
+
+const categoriaDe = (nodo) => (nodo.productCategories?.nodes ?? []).map(c => c.name).join(' ');
 
 /**
  * Accesorios y talle único no llevan asesor, así que no tener tabla de medidas
@@ -105,7 +109,15 @@ let accesorios = 0;
 for (const p of productos) {
   if (sinAsesor(p)) { accesorios++; continue; }
   const g = guiaDe(p);
-  if (!g) { sinGuia.push(p.slug); continue; }
+  if (!g) {
+    // Sin tabla propia el asesor igual resuelve, por categoría y fit. No es un
+    // error, pero conviene saber a qué molde cae: un fit mal cargado manda la
+    // prenda a un molde que no es el suyo y ahí sí se recomienda corrido.
+    const fit = atributo(p, 'fit') || '';
+    const cat = categoriaDe(p);
+    sinGuia.push({ slug: p.slug, fit: fit || '—', cat: cat || '—', cae: moldeDe({ fit, category: cat })?.id ?? 'ninguno' });
+    continue;
+  }
   if (!porGuia.has(g)) porGuia.set(g, []);
   porGuia.get(g).push(p.slug);
 }
@@ -124,7 +136,10 @@ for (const [url, slugs] of porGuia) {
 log('TABLAS EN USO');
 const filas = [...usoPorMolde.entries()].sort((a, b) => b[1] - a[1]);
 for (const [molde, n] of filas) {
-  log(`  ${String(n).padStart(3)}  ${molde}${n === 0 ? '   ← ya no la usa ningún producto' : ''}`);
+  const soloRespaldo = (MOLDES.find(m => m.id === molde)?.guias.length ?? 0) === 0;
+  const marca = soloRespaldo ? '   · sin imagen propia: se usa por categoría y fit'
+    : n === 0 ? '   ← ya no la usa ningún producto' : '';
+  log(`  ${String(n).padStart(3)}  ${molde}${marca}`);
 }
 const cubiertos = filas.reduce((s, [, n]) => s + n, 0);
 log(`  ---\n  ${cubiertos} productos resuelven por su tabla publicada`);
@@ -144,12 +159,17 @@ if (desconocidas.length) {
 
 if (sinGuia.length) {
   problemas += sinGuia.length;
-  log('⚠ PRODUCTOS SIN GUÍA DE TALLES EN WOO — caen al molde por categoría y fit');
-  log(`  ${sinGuia.length}: ${sinGuia.slice(0, 12).join(', ')}${sinGuia.length > 12 ? '…' : ''}`);
-  log('  → cargarles el atributo size-guide en Woo.\n');
+  log('⚠ PRODUCTOS SIN GUÍA DE TALLES EN WOO — el asesor resuelve por categoría y fit');
+  for (const s of sinGuia) {
+    const ok = s.cae !== 'ninguno';
+    log(`  ${s.slug.padEnd(34)} fit ${s.fit.padEnd(10)} → ${ok ? s.cae : 'SIN MOLDE: el asesor no se ofrece'}`);
+  }
+  log('  → revisar que el molde al que cae sea el correcto, y cargarles el atributo size-guide en Woo.\n');
 }
 
-const huerfanos = filas.filter(([, n]) => n === 0).map(([m]) => m);
+// Un molde sin `guias` existe sólo para el camino de respaldo (categoría + fit),
+// así que no tener productos apuntándole por imagen es lo esperado.
+const huerfanos = filas.filter(([id, n]) => n === 0 && (MOLDES.find(m => m.id === id)?.guias.length ?? 0) > 0).map(([m]) => m);
 if (huerfanos.length) {
   log(`· Moldes que ya no usa nadie (no es urgente): ${huerfanos.join(', ')}\n`);
 }
