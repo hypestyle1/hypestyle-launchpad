@@ -3,7 +3,16 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLocale } from '@/context/LocaleContext';
-import { ahorroMinimo, mockupPool, pisoSuelto, precioPorPrenda, type MysteryCaja } from '@/lib/mystery';
+import {
+  ahorroMinimo,
+  ahorroPromedio,
+  descuentoPromedio,
+  mockupPool,
+  pisoSuelto,
+  precioPorPrenda,
+  promedioPool,
+  type MysteryCaja,
+} from '@/lib/mystery';
 
 /**
  * Capa visual de MYSTERY ARCHIVE sobre la ficha de producto normal.
@@ -64,10 +73,15 @@ export function MysteryGarantia({ caja }: { caja: MysteryCaja }) {
 /**
  * Precio por prenda y la comparación.
  *
- * La comparación es contra **lo más barato que puede tocar** (`pisoSuelto`),
- * no contra el promedio ni contra el modelo más caro del pool: así el número
- * es verdadero para todos los compradores, también para el que recibe la
- * prenda más barata del conjunto.
+ * **Con una prenda por caja la comparación es contra el PROMEDIO del pool**, no
+ * contra su extremo más barato. El cliente no compra un modelo: compra una
+ * prenda cualquiera del conjunto, así que lo que recibe en promedio es lo que
+ * el conjunto vale en promedio. Comparar contra el mínimo subestimaba el
+ * beneficio —en LONGSLEEVES daba $1.100 cuando el descuento real sobre el pool
+ * es del 19,8%— y describía un caso que es uno de diez, no el típico.
+ *
+ * Con dos o más prendas se mantiene la comparación contra el piso: ahí el
+ * cliente recibe varias y el peor caso es una combinación concreta y posible.
  *
  * Con una prenda por caja el "por prenda" desaparece: sería repetir el precio.
  */
@@ -75,9 +89,9 @@ export function MysteryAhorro({ caja }: { caja: MysteryCaja }) {
   if (caja.prendas === 1) {
     return (
       <p className="text-[12px] leading-[1.45] text-muted-foreground">
-        La prenda más barata que puede tocarte sale{' '}
-        <strong className="font-medium text-foreground">{fmt(pisoSuelto(caja))}</strong> suelta.
-        Ahorrás {fmt(ahorroMinimo(caja))} como mínimo.
+        Las prendas del conjunto salen{' '}
+        <strong className="font-medium text-foreground">{fmt(promedioPool(caja))} en promedio</strong>.
+        Ahorrás {fmt(ahorroPromedio(caja))} — un {Math.round(descuentoPromedio(caja) * 100)}% menos.
       </p>
     );
   }

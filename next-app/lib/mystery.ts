@@ -57,8 +57,8 @@ export interface MysteryCaja {
  * 2. **Nada sin costo cargado que mueva la aguja.** El único del pool sin
  *    perfil de costo son las siete tees de archivo y el Hoodie Pink; el precio
  *    de cada caja está elegido para aguantarlas aun con un costo bastante peor
- *    que el conocido: el costo máximo tolerable por prenda es $12.872 en TEES,
- *    $16.680 en LONGSLEEVES y $26.473 en HOODIES (ver el PRD, §4).
+ *    que el conocido: el costo máximo tolerable por prenda es $13.918 en TEES,
+ *    $17.769 en LONGSLEEVES y $26.880 en HOODIES (ver el PRD, §4).
  * 3. **Afuera lo que se vende solo.** Los hoodies SS27, el camo Faith Over
  *    Everything y Running Horses no entran: liquidar lo que ya rota es regalar
  *    margen sobre ventas que iban a ocurrir igual.
@@ -69,7 +69,7 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     slug: 'mystery-tees',
     nombre: 'Mystery Tees',
     prendas: 1,
-    precio: 27900,
+    precio: 32900,
     queEs: 'Remeras de manga corta del archivo Hype.',
     garantia: '1 remera de manga corta del archivo, en el talle que elijas.',
     modelos: [
@@ -93,7 +93,7 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     slug: 'mystery-longsleeves',
     nombre: 'Mystery Longsleeves',
     prendas: 1,
-    precio: 34900,
+    precio: 46900,
     queEs: 'Remeras de manga larga: waffles, Athletic Dept y raglans.',
     garantia: '1 remera de manga larga —waffle, Athletic Dept o raglan—, en el talle que elijas.',
     modelos: [
@@ -114,7 +114,7 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     slug: 'mystery-hoodies',
     nombre: 'Mystery Hoodies',
     prendas: 1,
-    precio: 52900,
+    precio: 63900,
     queEs: 'Hoodies, buzos y Half-Zip Polos del archivo.',
     garantia: '1 prenda de abrigo —hoodie, buzo o Half-Zip Polo—, en el talle que elijas.',
     modelos: [
@@ -154,6 +154,30 @@ export const MYSTERY_SLUGS: string[] = MYSTERY_CAJAS.map(c => c.slug);
  */
 export function pisoSuelto(caja: MysteryCaja): number {
   return Math.min(...caja.modelos.map(m => m.precio)) * caja.prendas;
+}
+
+/**
+ * El precio promedio de los modelos del pool. **Es la referencia de la ficha.**
+ *
+ * Con una prenda por caja el cliente no compra un modelo: compra una prenda
+ * cualquiera del conjunto, así que la comparación honesta es contra lo que vale
+ * el conjunto en promedio, no contra su extremo más barato. Comparar contra el
+ * mínimo subestimaba el beneficio (en LONGSLEEVES daba .100 de 'ahorro'
+ * cuando el descuento real sobre el pool es del 19,8%).
+ */
+export function promedioPool(caja: MysteryCaja): number {
+  const suma = caja.modelos.reduce((s, m) => s + m.precio, 0);
+  return Math.round(suma / caja.modelos.length);
+}
+
+/** Ahorro en pesos contra el promedio del pool. */
+export function ahorroPromedio(caja: MysteryCaja): number {
+  return promedioPool(caja) - caja.precio;
+}
+
+/** Ese ahorro como porcentaje del promedio del pool. */
+export function descuentoPromedio(caja: MysteryCaja): number {
+  return ahorroPromedio(caja) / promedioPool(caja);
 }
 
 /** Cuánto ahorra, en pesos, contra esa alternativa más barata. */
