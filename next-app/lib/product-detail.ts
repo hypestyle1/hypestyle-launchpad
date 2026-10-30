@@ -144,9 +144,10 @@ const REGULAR_TEE_COLORWAYS = [
   { label: 'Red',     value: '#ff1d21', slug: 'regular-tee-red',     image: `${WP}/2026/10/remera-regular-roja-frente-v2.png` },
 ];
 
-// 8 packs: los 4 mono-color y las 4 combinaciones posibles de 3 colores
-// distintos sobre esos mismos 4. La miniatura es la portada de cada pack,
-// así se ve la combinación antes de entrar.
+// 14 packs: los 4 mono-color, las 4 combinaciones de 3 colores distintos sobre
+// los 4 de siempre, y las 6 que suma la roja (30/10/2026) — con cinco colores
+// las combinaciones de 3 pasan de 4 a 10. La miniatura es la portada de cada
+// pack, así se ve la combinación antes de entrar.
 const REGULAR_PACK_COLORWAYS = [
   { label: 'Black',                   value: '#1a1a1a', slug: 'regular-tees-3-pack-black',               image: `${WP}/2026/04/regular-tee-mockupmesa-de-trabajo-11-d47aa4a3a364e74b8e17644382638816-1024-1024.png` },
   { label: 'White',                   value: '#f5f5f5', slug: 'regular-tees-3-pack-white',               image: `${WP}/2026/04/regular-tee-mockupmesa-de-trabajo-13-a216c9787d3c579d0b17644381427908-1024-1024.png` },
@@ -156,6 +157,12 @@ const REGULAR_PACK_COLORWAYS = [
   { label: 'Black · Navy · White',    value: '#1a1a1a', slug: 'regular-tees-3-pack-black-navy-white',    image: `${WP}/2026/08/regular-tees-3pack-black-navy-white.png` },
   { label: 'Black · Melange · Navy',  value: '#1a1a1a', slug: 'regular-tees-3-pack-black-melange-navy',  image: `${WP}/2026/08/regular-tees-3-pack-black-melange-navy.png` },
   { label: 'Melange · Navy · White',  value: '#1a2744', slug: 'regular-tees-3-pack-melange-navy-white',  image: `${WP}/2026/08/regular-tees-3-pack-melange-navy-white.png` },
+  { label: 'Red · Black · White',     value: '#ff1d21', slug: 'regular-tees-3-pack-red-black-white',     image: `${WP}/2026/10/regular-tees-3-pack-red-black-white-1.png` },
+  { label: 'Red · Black · Navy',      value: '#ff1d21', slug: 'regular-tees-3-pack-red-black-navy',      image: `${WP}/2026/10/regular-tees-3-pack-red-black-navy-1.png` },
+  { label: 'Red · Black · Melange',   value: '#ff1d21', slug: 'regular-tees-3-pack-red-black-melange',   image: `${WP}/2026/10/regular-tees-3-pack-red-black-melange-1.png` },
+  { label: 'Red · White · Navy',      value: '#ff1d21', slug: 'regular-tees-3-pack-red-white-navy',      image: `${WP}/2026/10/regular-tees-3-pack-red-white-navy-1.png` },
+  { label: 'Red · White · Melange',   value: '#ff1d21', slug: 'regular-tees-3-pack-red-white-melange',   image: `${WP}/2026/10/regular-tees-3-pack-red-white-melange-1.png` },
+  { label: 'Red · Navy · Melange',    value: '#ff1d21', slug: 'regular-tees-3-pack-red-navy-melange',    image: `${WP}/2026/10/regular-tees-3-pack-red-navy-melange-1.png` },
 ];
 
 // Grupos agregados el 15/09/2026 para los puntitos de color de las cards y el
