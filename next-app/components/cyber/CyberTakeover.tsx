@@ -115,27 +115,12 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
             antes de haber visto un solo precio. */}
         <CyberRegalos />
 
-        {/* La franja informativa: tres datos, una línea, sin competir con el
-            producto. El regalo salió de acá — ya tiene su sección entera, y
-            repetirlo era ocupar lugar comercial para decir lo mismo. */}
-        <section className="bg-[#0a0a0a] px-4 pt-2 text-white md:px-10">
-          <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-x-8 gap-y-3 border-t border-white/10 pt-6 sm:grid-cols-3">
-            {[
-              { t: 'Precios finales', d: 'Lo que ves es lo que pagás.' },
-              { t: 'Transferencia conviene', d: 'Su descuento aplica también en el evento.' },
-              { t: 'Envíos a todo el país', d: 'Andreani, con seguimiento por mail.' },
-            ].map((b) => (
-              /* Texto corrido, no dos columnas flex: en mobile el label largo
-                 ("Transferencia conviene") se partía en dos líneas y la
-                 descripción quedaba colgada a un costado, desalineada con el
-                 resto. Así envuelve como una frase y cada ítem se lee seguido. */
-              <p key={b.t} className="text-[12px] leading-[1.5]">
-                <span className="font-bold uppercase tracking-[0.06em] text-white">{b.t}</span>
-                <span className="text-white/45"> · {b.d}</span>
-              </p>
-            ))}
-          </div>
-        </section>
+        {/* La franja de 'precios finales / transferencia / envíos' ya no está
+            acá: esos tres datos ahora rotan en la announcement bar de arriba,
+            que los muestra en todas las páginas del evento y no interrumpe la
+            lectura entre el catálogo y las preguntas. Tenerlos en los dos
+            lados era decir lo mismo dos veces, y en mobile la franja se
+            cruzaba justo donde la persona viene bajando a comprar. */}
 
         <CyberCondiciones />
 
