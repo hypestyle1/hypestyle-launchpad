@@ -22,15 +22,20 @@ import './cyber.css';
      del sitio publicado (`active: true`, primer nivel $100.000).
    - **3 cuotas sin interés** y **envíos a todo el país**: vigentes, salen de
      la misma barra del sitio.
-   - **Descuento por transferencia**: vigente, sin monto — el porcentaje no se
-     publica.
+   - **10% OFF por transferencia**: verificado en el código, no de memoria:
+     `DESCUENTO_TRANSFERENCIA = 0.10` en lib/precio-servidor. Aplica sobre la
+     mercadería (después del pack, nunca sobre gift cards) y solo con
+     transferencia local. Este porcentaje SÍ se publica, y no contradice la
+     regla de la marca: no es un descuento contra un precio de referencia
+     inventado, es una condición del medio de pago.
    Lo que NO está acá: ningún porcentaje de descuento del evento (no hay nada
    aprobado) y ninguna promesa sobre los drops.
 
    ── Desktop vs mobile ───────────────────────────────────────────────────────
-   Desktop: marquee continuo, el mismo `animate-marquee-fast` del sitio.
-   Mobile: un mensaje por vez, centrado, con un fundido cada 4,5 s — un
-   marquee en 390 px corta las frases o va demasiado rápido para leerlas.
+   Desktop: marquee continuo a 90 s — el del sitio corre en 45 y los mensajes
+   del Cyber, que son más largos, pasaban antes de poder leerlos.
+   Mobile: un mensaje por vez, centrado, 6 s de permanencia y un fundido de
+   350 ms — un marquee en 390 px corta las frases o va demasiado rápido.
 
    Con `prefers-reduced-motion` no hay marquee ni rotación: queda fijo el
    primer mensaje, que es el del evento. */
@@ -48,11 +53,11 @@ const ENVIO_GRATIS: Mensaje = {
 const RESTO: Mensaje[] = [
   { texto: 'Regalo por compra desde $100.000', href: '/#regalos' },
   { texto: 'Hasta 3 cuotas sin interés', href: '/faqs' },
-  { texto: 'Descuento por transferencia', href: '/faqs' },
+  { texto: '10% OFF pagando por transferencia', href: '/faqs' },
   { texto: 'Envíos a todo el país', href: '/faqs' },
 ];
 
-const ROTACION_MS = 4500;
+const ROTACION_MS = 6000;
 
 export default function CyberAnnouncementBar({ ultimasHoras }: { ultimasHoras: boolean }) {
   const { country } = useLocale();
@@ -97,7 +102,7 @@ export default function CyberAnnouncementBar({ ultimasHoras }: { ultimasHoras: b
             href={m.href}
             aria-hidden={!quieto && n !== i}
             tabIndex={!quieto && n !== i ? -1 : 0}
-            className={`absolute inset-0 flex items-center justify-center gap-2 px-6 transition-opacity duration-500 ${
+            className={`absolute inset-0 flex items-center justify-center gap-2 px-6 transition-opacity duration-[350ms] ease-in-out ${
               quieto || n === i ? 'opacity-100' : 'pointer-events-none opacity-0'
             }`}
           >
@@ -113,7 +118,7 @@ export default function CyberAnnouncementBar({ ultimasHoras }: { ultimasHoras: b
 
       {/* ── Desktop: marquee continuo ───────────────────────────────────── */}
       <div
-        className={`hidden whitespace-nowrap md:flex ${quieto ? '' : 'animate-marquee-fast'}`}
+        className={`hidden whitespace-nowrap md:flex ${quieto ? '' : 'cyber-marquee'}`}
       >
         {repetidos.map((m, n) => (
           <span key={n} className="mx-5 flex items-center gap-5">
