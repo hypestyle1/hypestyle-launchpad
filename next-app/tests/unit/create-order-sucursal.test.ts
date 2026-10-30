@@ -142,3 +142,70 @@ describe('POST /api/create-order-gocuotas — envío a sucursal', () => {
     expect(pedido.shipping.address_1).toBe('arenales 2141');
   });
 });
+
+/**
+ * Caso #4057 (23/10/2026): desde #601 el checkout no pide domicilio cuando el
+ * envío es a sucursal, y el plugin de Andreani frena el alta de la guía si el
+ * pedido no tiene dirección y ciudad ("Datos de destino incompletos: faltan
+ * dirección"). El destino de un envío a sucursal ES la sucursal, así que es su
+ * calle lo que va en el envío del pedido.
+ */
+describe('POST /api/create-order-gocuotas — sucursal sin domicilio del comprador', () => {
+  const sinDomicilio = {
+    ...base,
+    customer: { ...customer, direccion: '', ciudad: '' },
+  };
+
+  it('el envío del pedido queda con la calle y la localidad de la sucursal', async () => {
+    const pedido = await crear({
+      ...sinDomicilio,
+      shippingBranch: 'COMODORO RIVADAVIA (CENTRO) — Sarmiento 128, Comodoro Rivadavia',
+      shippingBranchCode: 'CRD',
+      shippingBranchStreet: 'Sarmiento 128',
+      shippingBranchCity: 'Comodoro Rivadavia',
+    });
+    expect(pedido.shipping.address_1).toBe('Sarmiento 128');
+    expect(pedido.shipping.city).toBe('Comodoro Rivadavia');
+    // La facturación no se toca: el comprador nunca dio un domicilio.
+    expect(pedido.billing.address_1).toBe('');
+  });
+
+  it('sirve igual con un checkout viejo que solo manda el texto de la sucursal', async () => {
+    const pedido = await crear({
+      ...sinDomicilio,
+      shippingBranch: 'PUNTO ANDREANI HOP PERÚ 628 — Perú 628, C.a.b.a.',
+      shippingBranchCode: 'HOP9',
+    });
+    expect(pedido.shipping.address_1).toBe('Perú 628');
+    expect(pedido.shipping.city).toBe('C.a.b.a.');
+  });
+
+  it('sin sucursal elegida ("A COORDINAR") no se inventa una dirección', async () => {
+    const pedido = await crear({
+      ...sinDomicilio,
+      shippingBranch: 'A COORDINAR — no se encontraron sucursales para el CP',
+    });
+    expect(pedido.shipping.address_1).toBe('');
+  });
+
+  it('con domicilio cargado manda el del comprador, no el de la sucursal', async () => {
+    const pedido = await crear({
+      ...base,
+      shippingBranch: 'COMODORO RIVADAVIA (CENTRO) — Sarmiento 128, Comodoro Rivadavia',
+      shippingBranchCode: 'CRD',
+      shippingBranchStreet: 'Sarmiento 128',
+      shippingBranchCity: 'Comodoro Rivadavia',
+    });
+    expect(pedido.shipping.address_1).toBe('arenales 2141');
+    expect(pedido.shipping.city).toBe('Florida');
+  });
+
+  it('el depto sin dirección no deja un ", 4B" suelto', async () => {
+    const pedido = await crear({
+      ...base,
+      customer: { ...customer, direccion: '', depto: '4B' },
+      shippingBranch: 'A COORDINAR — no se encontraron sucursales para el CP',
+    });
+    expect(pedido.billing.address_1).toBe('');
+  });
+});

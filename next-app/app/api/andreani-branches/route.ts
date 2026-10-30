@@ -112,6 +112,11 @@ export async function GET(req: NextRequest) {
           id: String(b.Codigo),
           label: b.Descripcion,
           direccion: [calle, localidad].filter(Boolean).join(', '),
+          // Sueltos además del texto: en un envío a sucursal son el destino que
+          // se guarda en el pedido para que Andreani pueda emitir la guía
+          // (ver lib/sucursal-destino).
+          calle,
+          localidad,
           horario: '',
         };
       });
