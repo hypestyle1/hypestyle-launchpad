@@ -21,7 +21,10 @@ export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
        radio grande y un filete al 10%— la recorta del fondo sin cambiar de
        color ni romper la identidad monocroma. */
     <section id="drops" className="bg-[#0a0a0a] px-4 py-8 text-white md:px-10 md:py-10">
-      <div className="mx-auto max-w-[1400px] rounded-[20px] border border-white/10 bg-[#121212] px-4 py-10 md:px-9 md:py-12">
+      <div
+        className="cyber-fondo mx-auto max-w-[1400px] overflow-hidden rounded-[20px] border border-white/20 bg-[#161616] px-4 py-10 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_24px_60px_rgba(0,0,0,0.5)] md:px-9 md:py-12"
+        style={{ ['--cyber-glitch-bg' as string]: '#161616' }}
+      >
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3 md:mb-8">
           <div>
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/45 md:text-[11px]">

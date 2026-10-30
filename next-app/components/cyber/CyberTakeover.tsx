@@ -125,12 +125,14 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
               { t: 'Transferencia conviene', d: 'Su descuento aplica también en el evento.' },
               { t: 'Envíos a todo el país', d: 'Andreani, con seguimiento por mail.' },
             ].map((b) => (
-              <div key={b.t} className="flex items-baseline gap-2.5">
-                <span className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-white">
-                  {b.t}
-                </span>
-                <span className="text-[11.5px] leading-[1.45] text-white/45">{b.d}</span>
-              </div>
+              /* Texto corrido, no dos columnas flex: en mobile el label largo
+                 ("Transferencia conviene") se partía en dos líneas y la
+                 descripción quedaba colgada a un costado, desalineada con el
+                 resto. Así envuelve como una frase y cada ítem se lee seguido. */
+              <p key={b.t} className="text-[12px] leading-[1.5]">
+                <span className="font-bold uppercase tracking-[0.06em] text-white">{b.t}</span>
+                <span className="text-white/45"> · {b.d}</span>
+              </p>
             ))}
           </div>
         </section>
