@@ -9,6 +9,11 @@ import {
   LineaDespacho, LineaResenas, BotonComprar, Promesas, CuandoLlega, Desplegable, BadgePrivateAccess, NotaPreventa,
   TextoEnvios, TextoCambios, TablaMedidas, NotaCuidadoTalles, InterruptorModelo, NotaModelo, imgUrl, isVideo,
 } from './bloques';
+import { mysteryDe } from '@/lib/mystery';
+import {
+  MysteryAhorro, MysteryBadge, MysteryComoFunciona, MysteryCondiciones, MysteryGarantia,
+  MysteryMigas, MysteryPool, MysteryQueIncluye, MysteryVolver,
+} from './mystery';
 
 /**
  * Ficha de producto en tres columnas: información · foto · compra.
@@ -27,10 +32,17 @@ export default function Ficha(p: FichaProps) {
   // Sin un párrafo que sirva de resumen, "Detalles" muestra la descripción entera.
   const intro = resumen(p.descripcion);
   const tieneMedidas = !!(product.measurementsTable || product.measurements);
+  // MYSTERY ARCHIVE: misma ficha, misma compra, mismo checkout. Lo único
+  // propio es la capa de información de ./mystery — qué recibís, cómo
+  // funciona y el conjunto del que sale la prenda.
+  const mystery = mysteryDe(product.slug);
   const actual = galleryImages[selectedImage];
   // La destacada de Woo es un mockup cuadrado sobre fondo transparente: en la
   // columna vertical se muestra entero en vez de recortarlo.
-  const entera = esMockup(product.slug, actual) || actual === product.images[0];
+  // En Mystery la portada es una composición 1:1 donde cada prenda del pool
+  // tiene que verse: recortarla a los costados borra modelos de la foto que
+  // dice cuáles pueden tocar. Siempre entera, en los dos anchos.
+  const entera = !!mystery || esMockup(product.slug, actual) || actual === product.images[0];
 
   const alto = 'lg:h-[calc(100vh-var(--offset))]';
   // `my-auto` en el contenido (y no `justify-center` en la columna): si el
@@ -45,15 +57,30 @@ export default function Ficha(p: FichaProps) {
         {/* Izquierda: información */}
         <div className={`order-3 lg:order-none ${columna}`}>
           <div className="lg:my-auto flex flex-col gap-4">
-            <div className="hidden lg:block"><Migas product={product} privateAccess={p.privateAccess} /></div>
+            <div className="hidden lg:block">
+              {mystery ? <MysteryMigas /> : <Migas product={product} privateAccess={p.privateAccess} />}
+            </div>
             <div>
-              <Desplegable titulo={t('Detalles')} abierto>
-                <p className="whitespace-pre-line">{intro || p.descripcion}</p>
-                {tela && <p className="text-foreground font-medium">{t('Composición')}: {tela}.</p>}
-              </Desplegable>
-              {tieneMedidas && <Desplegable titulo={t('Medidas de la prenda')} abierto><TablaMedidas product={product} /></Desplegable>}
+              {mystery ? (
+                <>
+                  <Desplegable titulo={t('Qué incluye')} abierto><MysteryQueIncluye caja={mystery} /></Desplegable>
+                  {/* El pool va abierto: es la información que hace informada
+                      la compra, no un detalle a buscar. */}
+                  <Desplegable titulo={t('Los modelos posibles')} abierto><MysteryPool caja={mystery} /></Desplegable>
+                </>
+              ) : (
+                <>
+                  <Desplegable titulo={t('Detalles')} abierto>
+                    <p className="whitespace-pre-line">{intro || p.descripcion}</p>
+                    {tela && <p className="text-foreground font-medium">{t('Composición')}: {tela}.</p>}
+                  </Desplegable>
+                  {tieneMedidas && <Desplegable titulo={t('Medidas de la prenda')} abierto><TablaMedidas product={product} /></Desplegable>}
+                </>
+              )}
               <Desplegable titulo={t('Envíos')}><TextoEnvios p={p} /></Desplegable>
-              <Desplegable titulo={t('Cambios y devoluciones')} abierto={!tieneMedidas}><TextoCambios /></Desplegable>
+              <Desplegable titulo={t('Cambios y devoluciones')} abierto={mystery ? true : !tieneMedidas}>
+                {mystery ? <MysteryCondiciones caja={mystery} /> : <TextoCambios />}
+              </Desplegable>
               <Desplegable titulo={t('Guía de cuidado de ropa')}>
                 <ul className="flex flex-col gap-1">
                   {product.careItems.map((item, i) => <li key={item.icon + '-' + i}>{t(item.text)}</li>)}
@@ -129,11 +156,16 @@ export default function Ficha(p: FichaProps) {
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-2 min-w-0">
                 {p.privateAccess && <BadgePrivateAccess pa={p.privateAccess} />}
+                {mystery && <MysteryBadge />}
                 <h1 className="text-[20px] lg:text-[26px] font-semibold tracking-[-0.015em] leading-[1.1]">{product.name}</h1>
+                {/* En una caja sorpresa la promesa va ANTES del precio: la
+                    primera duda no es cuánto sale, es qué llega. */}
+                {mystery && <MysteryGarantia caja={mystery} />}
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <Precio p={p} />
                   <Descuento p={p} />
                 </div>
+                {mystery && <MysteryAhorro caja={mystery} />}
                 {p.privateAccess ? <NotaPreventa pa={p.privateAccess} /> : <LineaResenas />}
               </div>
               <div className="lg:hidden flex-shrink-0 pt-0.5"><InterruptorModelo p={p} /></div>
@@ -152,8 +184,10 @@ export default function Ficha(p: FichaProps) {
               <LineaDespacho />
               <BotonComprar p={p} />
             </div>
+            {mystery && <MysteryComoFunciona caja={mystery} />}
             <CuandoLlega p={p} />
             <Promesas p={p} />
+            {mystery && <MysteryVolver />}
           </div>
         </div>
       </div>

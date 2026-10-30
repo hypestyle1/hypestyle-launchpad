@@ -182,16 +182,19 @@ function ModelInfo({ html }: { html: string }) {
   );
 }
 
-export default function ProductoClient({ slug, initialProduct, initialGoalDiscount = null, privateAccess }: { slug: string; initialProduct?: Product; initialGoalDiscount?: GoalDiscount | null; privateAccess?: PrivateAccessMode }) {
+export default function ProductoClient({ slug, initialProduct, initialGoalDiscount = null, privateAccess, soloServidor }: { slug: string; initialProduct?: Product; initialGoalDiscount?: GoalDiscount | null; privateAccess?: PrivateAccessMode; soloServidor?: boolean }) {
   const router = useRouter();
   const { formatPrice, currency, language, t } = useLocale();
   // initialProduct viene del servidor (page.tsx): el primer render ya sale con
   // el producto puesto, así el <h1> y el precio están en el HTML servido.
   // En Private Access el producto llega del servidor (ruta privada) y no se
   // vuelve a pedir: el GraphQL público no lo ve y lo pisaría con undefined.
-  const productQuery = useProduct(privateAccess ? undefined : slug, privateAccess ? undefined : initialProduct);
-  const product = privateAccess ? initialProduct : productQuery.data;
-  const isLoading = privateAccess ? false : productQuery.isLoading;
+  // `soloServidor` hace lo mismo para el preview local de Mystery, que todavía
+  // no existe en Woo (lib/mystery-preview.ts, nunca en producción).
+  const sinQuery = !!privateAccess || !!soloServidor;
+  const productQuery = useProduct(sinQuery ? undefined : slug, sinQuery ? undefined : initialProduct);
+  const product = sinQuery ? initialProduct : productQuery.data;
+  const isLoading = sinQuery ? false : productQuery.isLoading;
   // Descripción y ficha del modelo en el idioma elegido: IA, cacheada en el
   // servidor. Mientras carga o si falla se ve el español de Woo.
   const traduccion = useProductTranslation(product?.slug, language);
