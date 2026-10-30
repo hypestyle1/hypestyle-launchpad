@@ -131,3 +131,31 @@ describe('enlace del canal de WhatsApp', () => {
     expect(avisos).toHaveBeenCalled();
   });
 });
+
+/**
+ * El canal es de la MARCA, no del evento: después del Cyber los bloques de
+ * campaña dejan de renderizarse y su lugar permanente es el footer del sitio
+ * (decisión de Valentín del 29/10). Estos dos tests cuidan que ese link no se
+ * pierda con la campaña y que no haya dos copias de la misma URL.
+ */
+describe('el canal queda en el footer para siempre', () => {
+  it('el footer linkea el canal oficial, y lo toma de lib/cyber-whatsapp', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join, sep } = await import('node:path');
+    const src = readFileSync(
+      join(__dirname, '..', '..', 'components'.replace(/\//g, sep), 'Footer.tsx'),
+      'utf8',
+    );
+    expect(src).toContain('CANAL_OFICIAL');
+    expect(src).toMatch(/from\s+['"]@\/lib\/cyber-whatsapp['"]/);
+    expect(src).toContain('Canal de WhatsApp');
+    // La URL no se escribe de nuevo en el footer: una sola definición.
+    expect(src).not.toMatch(/whatsapp\.com\/channel/);
+  });
+
+  it('el canal del código sigue siendo un canal (no un grupo ni una publicación)', async () => {
+    const m = await import('@/lib/cyber-whatsapp');
+    expect(m.CANAL_OFICIAL).toMatch(/^https:\/\/whatsapp\.com\/channel\/[A-Za-z0-9_-]{10,}$/);
+    expect(m.esGrupo(m.CANAL_OFICIAL)).toBe(false);
+  });
+});

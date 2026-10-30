@@ -21,6 +21,7 @@ export const PACK_REGULAR_SLUGS: ReadonlySet<string> = new Set([
   'regular-tee-white',
   'regular-tee-navy',
   'regular-tee-melange',
+  'regular-tee-red',
 ]);
 export const PACK_REGULAR_REF_SLUG = 'regular-tees-3-pack-black';
 

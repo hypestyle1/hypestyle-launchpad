@@ -13,6 +13,39 @@ import InstagramFeed from '@/components/InstagramFeed';
 import Footer from '@/components/Footer';
 import HeroSs27 from '@/components/ss27-home/HeroSs27';
 import CyberHomeBanner from '@/components/cyber/CyberHomeBanner';
+import CyberTakeover from '@/components/cyber/CyberTakeover';
+import type { CyberFondo } from '@/components/cyber/CyberHeroFondo';
+import { cyberEstado } from '@/lib/cyber-hype';
+
+/**
+ * Qué fondo lleva el hero del evento.
+ *
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║  EL VIDEO DICE "HASTA 70% DE DESCUENTO"                                  ║
+ * ╠══════════════════════════════════════════════════════════════════════════╣
+ * ║  El clip completo lleva un cartel con esa frase. Publicarlo es           ║
+ * ║  comprometer un 70% real, y para que la frase sea defendible hace falta  ║
+ * ║  al menos un producto con 70% efectivo sobre un precio de referencia     ║
+ * ║  que se haya transado (89 de 145 productos tienen `sale_price`           ║
+ * ║  permanente: su `regular_price` no sirve como referencia).               ║
+ * ║                                                                          ║
+ * ║  Por eso el default NO es el video: es la fotografía de calle de Lucas  ║
+ * ║  García, que no promete nada. El video queda en preview hasta que esa   ║
+ * ║  selección esté validada; cuando lo esté, se cambia HERO_FONDO a        ║
+ * ║  'boom-mono' (la recomendada) y no hace falta tocar nada más.           ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * En local se comparan todas con `?hero=`: `lucas` (el default), `boom-mono`,
+ * `boom-color`, `loop-mono`, `loop-color` y `foto` (la editorial FW26).
+ */
+const HERO_FONDO: CyberFondo = 'lucas';
+
+const FONDOS: CyberFondo[] = ['boom-mono', 'boom-color', 'loop-mono', 'loop-color', 'lucas', 'foto'];
+
+function fondoHero(q: string | undefined): CyberFondo {
+  if (process.env.NODE_ENV === 'production') return HERO_FONDO;
+  return FONDOS.includes(q as CyberFondo) ? (q as CyberFondo) : HERO_FONDO;
+}
 import Ss27Feed from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchAllProducts } from '@/lib/products-server';
@@ -53,7 +86,19 @@ export const metadata = buildMetadata({
  * el mu-plugin, igual que /colecciones/ss27, y llegan por props. Antes de la
  * apertura la lista viene vacía y la sección no se muestra.
  */
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: { hero?: string };
+}) {
+  /* ── CYBER HYPE TAKEOVER (solo del 1/11 20:00 al 4/11 23:59) ─────────────
+     Mientras el evento está en vivo, la home ES la experiencia del evento.
+     Todo lo demás de este archivo —la home SS27— queda EXACTAMENTE igual y
+     vuelve solo al terminar: la restauración es que esta condición dé false,
+     no un deploy ni un revert. Palancas: las fechas en lib/cyber-hype.ts y el
+     kill switch CYBER_APAGADO=1 (apaga el takeover al instante). */
+  if (cyberEstado() === 'evento') return <CyberTakeover fondo={fondoHero(searchParams?.hero)} />;
+
   const queryClient = new QueryClient();
   // Las reseñas van por separado: no pasan por React Query, la sección las
   // recibe por props. Sin esto se montaba vacía y a los 6–9s insertaba ~715px
