@@ -64,7 +64,10 @@ describe('drops — lo no revelado no existe para el navegador', () => {
   });
 });
 
-describe('drops — el módulo de la config es SOLO del servidor', () => {
+// Recorre todo components/, hooks/ y app/, así que con el dev server
+// corriendo no entra en los 5 s por defecto. Mismo caso que el test de árbol
+// de cyber-hype.test.ts, que ya lleva su propio timeout.
+describe('drops — el módulo de la config es SOLO del servidor', { timeout: 30_000 }, () => {
   // Si un componente 'use client' importara lib/cyber-cartelera, los títulos
   // y fotos de los drops sin revelar entrarían al bundle del navegador y el
   // secreto se leería en el JS. Este test recorre los componentes y lo frena.
