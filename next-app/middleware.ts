@@ -23,7 +23,7 @@ import { ORDER_KEY_RE, REPAGO_COOKIE_MAX_AGE, repagoCookie } from '@/lib/repago-
  */
 // Las tres horas y la cookie viven en lib/cyber-gate.ts, que también usa
 // /acceso: así la pantalla cuenta hacia la hora en la que de verdad abre.
-import { COOKIE_CYBER, LOCK_START, PUBLIC_OPEN } from '@/lib/cyber-gate';
+import { COOKIE_CYBER, LOCK_START, PUBLIC_OPEN, cookieValida } from '@/lib/cyber-gate';
 
 // startsWith suelto matchea de más (ej. "/api/mayorista-lead-notify" quedaba
 // atrapado por "/api/mayorista" y nunca llegaba a su propio handler) — estas
@@ -151,7 +151,10 @@ async function handle(request: NextRequest) {
   if (now < LOCK_START || now >= PUBLIC_OPEN) return NextResponse.next();
 
   // Dentro de la ventana: pasa sólo quien ya puso la contraseña del Cyber.
-  if (request.cookies.get(COOKIE_CYBER)?.value === 'true') {
+  // La cookie va FIRMADA: un `true` pelado lo escribe cualquiera desde las
+  // devtools. Si falta el secreto, fail closed — no entra nadie.
+  const clave = (process.env.EARLY_ACCESS_PASSWORD ?? '').trim();
+  if (await cookieValida(request.cookies.get(COOKIE_CYBER)?.value, clave, now)) {
     return NextResponse.next();
   }
 

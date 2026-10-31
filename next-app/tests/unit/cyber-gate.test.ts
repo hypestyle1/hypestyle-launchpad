@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { LOCK_START, EARLY_START, PUBLIC_OPEN, COOKIE_CYBER, cyberBloqueado } from '@/lib/cyber-gate';
+import { LOCK_START, EARLY_START, PUBLIC_OPEN, COOKIE_CYBER, cyberBloqueado, emitirCookie, cookieValida } from '@/lib/cyber-gate';
 
 const en = (iso: string) => new Date(iso).getTime();
 
@@ -40,7 +40,9 @@ describe('gate de CYBER HYPE — la ventana de bloqueo', () => {
     const mw = readFileSync(join(__dirname, '..', '..', 'middleware.ts'), 'utf8');
     expect(mw).not.toMatch(/cookies\.get\('hype_early_access'\)/);
     const api = readFileSync(join(__dirname, '..', '..', 'app', 'api', 'acceso', 'route.ts'), 'utf8');
-    expect(api).toMatch(/hype_cyber_access/);
+    // La ruta usa la constante, no el literal: lo que importa es que sea la
+    // del Cyber y no la de junio.
+    expect(api).toMatch(/COOKIE_CYBER/);
     expect(api).not.toMatch(/set\('hype_early_access'/);
   });
 
@@ -60,5 +62,46 @@ describe('gate de CYBER HYPE — la ventana de bloqueo', () => {
     expect(api).toMatch(/if \(!correct\) return/);
     const page = readFileSync(join(__dirname, '..', '..', 'app', 'acceso', 'page.tsx'), 'utf8');
     expect(page).not.toMatch(/EARLY_ACCESS_PASSWORD/);
+  });
+});
+
+describe('cookie firmada y clave con horario', () => {
+  const SECRETO = 'HYPEVIP26';
+
+  it('una cookie inventada no abre la puerta', async () => {
+    expect(await cookieValida('true', SECRETO)).toBe(false);
+    expect(await cookieValida('9999999999999.deadbeef', SECRETO)).toBe(false);
+    expect(await cookieValida(undefined, SECRETO)).toBe(false);
+  });
+
+  it('la cookie emitida con la clave correcta sí abre', async () => {
+    const vence = Date.now() + 86_400_000;
+    const c = await emitirCookie(vence, SECRETO);
+    expect(await cookieValida(c, SECRETO)).toBe(true);
+  });
+
+  it('firmada con otra clave, no vale: cambiar la contraseña invalida todo', async () => {
+    const c = await emitirCookie(Date.now() + 86_400_000, SECRETO);
+    expect(await cookieValida(c, 'OTRACLAVE')).toBe(false);
+    expect(await cookieValida(c, '')).toBe(false); // fail closed
+  });
+
+  it('el vencimiento va firmado: estirarlo a mano la rompe', async () => {
+    const vence = Date.now() + 1000;
+    const c = await emitirCookie(vence, SECRETO);
+    const estirada = String(vence + 86_400_000) + c.slice(c.lastIndexOf('.'));
+    expect(await cookieValida(estirada, SECRETO)).toBe(false);
+  });
+
+  it('vencida no vale', async () => {
+    const c = await emitirCookie(Date.now() - 1000, SECRETO);
+    expect(await cookieValida(c, SECRETO)).toBe(false);
+  });
+
+  it('la clave no se acepta antes de las 19:00', () => {
+    const api = readFileSync(join(__dirname, '..', '..', 'app', 'api', 'acceso', 'route.ts'), 'utf8');
+    expect(api).toMatch(/ahora < EARLY_START/);
+    // y el 403 va ANTES de comparar la contraseña
+    expect(api.indexOf('EARLY_START')).toBeLessThan(api.indexOf('password.toUpperCase()'));
   });
 });
