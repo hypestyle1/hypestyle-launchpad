@@ -66,6 +66,20 @@ export type CyberEstado = 'previa' | 'evento' | 'cerrado';
  * se compara contra instantes absolutos, así que el resultado es el mismo.
  */
 export function cyberEstado(now: Date = new Date()): CyberEstado {
+  // KILL SWITCH del takeover: con CYBER_APAGADO=1 en el entorno del servidor
+  // la campaña pasa a 'cerrado' de inmediato (la home vuelve a SS27, la
+  // landing al cierre) sin tocar fechas ni código. Es la palanca de emergencia
+  // pedida el 29/10: en Vercel se carga la variable y se redeploya el mismo
+  // build (~1 min), sin revertir nada. Va ANTES que el override de fase para
+  // que también apague una fase forzada en local.
+  if (process.env.CYBER_APAGADO === '1') return 'cerrado';
+  // Solo para revisar en local: NEXT_PUBLIC_CYBER_FASE fuerza la fase
+  // (previa|evento|cerrado) en el server y el cliente a la vez. En producción
+  // se ignora SIEMPRE: la fase la deciden las fechas y nada más.
+  if (process.env.NODE_ENV !== 'production') {
+    const forzada = process.env.NEXT_PUBLIC_CYBER_FASE;
+    if (forzada === 'previa' || forzada === 'evento' || forzada === 'cerrado') return forzada;
+  }
   const t = now.getTime();
   if (t < new Date(CYBER_START).getTime()) return 'previa';
   if (t < new Date(CYBER_END).getTime()) return 'evento';
@@ -85,6 +99,16 @@ export function cyberProximoHito(now: Date = new Date()): { iso: string; label: 
     default:
       return null;
   }
+}
+
+/**
+ * ¿Estamos en las últimas horas del evento? (el último día, desde las 00:00
+ * del 4/11). Cambia la comunicación — "termina hoy" — sin ser una fase nueva:
+ * sigue siendo 'evento' y nada comercial cambia.
+ */
+export function cyberUltimasHoras(now: Date = new Date()): boolean {
+  if (cyberEstado(now) !== 'evento') return false;
+  return now.getTime() >= new Date('2026-11-04T00:00:00-03:00').getTime();
 }
 
 /**

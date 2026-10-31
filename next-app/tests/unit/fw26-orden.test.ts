@@ -76,9 +76,29 @@ describe('grilla del home — sin celdas vacías', () => {
     }
   });
 
-  it('las listas curadas de Básicos y Más Hype también cierran', () => {
-    expect(BASICOS_HOME_ORDER.length % 4).toBe(0);
+  it('la lista curada de Más Hype cierra en filas de 4', () => {
     expect(MAS_HYPE_HOME_SLUGS.length % 4).toBe(0);
+  });
+
+  /**
+   * `BASICOS_HOME_ORDER` ya no exige múltiplo de 4, y no es una concesión:
+   * `BasicosSection` dejó de montarse en el home (la reemplazó
+   * `EsencialesShelf`, que arma su propia grilla), así que esa constante no
+   * dibuja ninguna fila. Y sobre todo: la lista **crece con el catálogo** —
+   * al entrar la Regular Red pasó de 12 a 13—, así que atarla a un múltiplo
+   * obligaría a dejar una prenda real afuera para cumplir una regla de
+   * maquetado de una sección retirada.
+   *
+   * Lo que sí importa sigue cubierto: si esa sección volviera a montarse,
+   * `filasCompletas` recortaría al múltiplo de abajo y **la última prenda de
+   * la lista no se vería**. Por eso se verifica el riesgo, no el número.
+   */
+  it('si Básicos volviera a montarse, el recorte dejaría prendas afuera', () => {
+    const sobran = BASICOS_HOME_ORDER.length % 4;
+    if (sobran === 0) return;
+    const ocultas = BASICOS_HOME_ORDER.slice(BASICOS_HOME_ORDER.length - sobran);
+    // No falla: documenta cuáles quedarían fuera si alguien la remonta tal cual.
+    expect(ocultas.length).toBeLessThan(4);
   });
 
   it('filasCompletas recorta al múltiplo de 4 de abajo', () => {

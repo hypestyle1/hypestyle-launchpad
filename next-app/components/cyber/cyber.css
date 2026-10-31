@@ -282,3 +282,16 @@
     content: none;
   }
 }
+
+/* ── Marquee de la announcement bar del evento ─────────────────────────────
+   Más lento que el del sitio (45 s): a esa velocidad los mensajes del Cyber
+   —que son más largos— pasaban antes de poder leerlos. 90 s da tiempo de
+   leer sin que la barra parezca detenida. Usa el mismo keyframe `marquee`
+   de globals.css, que corre hasta -50%: por eso el contenido se repite un
+   número par de veces y el reinicio no tiene corte. */
+.cyber-marquee {
+  animation: marquee 90s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cyber-marquee { animation: none; }
+}
