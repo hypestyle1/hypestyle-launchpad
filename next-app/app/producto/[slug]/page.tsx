@@ -7,6 +7,7 @@ import { buildMetadata, truncate } from '@/lib/seo';
 import { SLUGS_INTERNOS } from '@/lib/catalog';
 import { productJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
 import JsonLd from '@/components/JsonLd';
+import { mysteryPreview } from '@/lib/mystery-preview';
 import ProductoClient from './ProductoClient';
 
 export const revalidate = 3600;
@@ -62,13 +63,21 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function ProductoPage({ params }: { params: { slug: string } }) {
-  const [product, initialGoalDiscount] = await Promise.all([
+  const [productoWoo, initialGoalDiscount] = await Promise.all([
     getProduct(params.slug),
     // El descuento por gol es solo de la camiseta (el servidor lo cobra solo
     // ahí). Pasarlo a cualquier ficha mostraba el −% en todo el catálogo y
     // después el checkout cobraba el precio lleno. Igual que /personalizar.
     params.slug === GOAL_PRODUCT_SLUG ? getCachedDiscountStatus().catch(() => null) : Promise.resolve(null),
   ]);
+
+  // Las tres cajas Mystery todavía no existen en Woo: en local se renderizan
+  // con el mock para poder diseñar y aprobar la ficha ANTES de crearlas.
+  // Woo siempre gana —el mock solo entra si el slug no existe— y en
+  // producción `mysteryPreview` devuelve undefined. Al crear los productos
+  // este bloque y lib/mystery-preview.ts se borran.
+  const previo = productoWoo ? undefined : mysteryPreview(params.slug);
+  const product = productoWoo ?? previo;
 
   // 404 real. Antes el fetch era client-side y un slug inexistente devolvía
   // HTTP 200 con el cartel "Producto no encontrado" — un soft 404, que Google
@@ -90,6 +99,7 @@ export default async function ProductoPage({ params }: { params: { slug: string 
         slug={params.slug}
         initialProduct={product}
         initialGoalDiscount={initialGoalDiscount}
+        soloServidor={!!previo}
       />
     </>
   );
