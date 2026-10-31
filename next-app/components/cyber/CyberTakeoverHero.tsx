@@ -51,8 +51,13 @@ export default function CyberTakeoverHero({
         <CyberHeroFondo fondo={fondo} />
 
         {/* Scrims: una base alta y densa para que todo el bloque inferior se
-            lea sobre cualquier foto, y una franja arriba para el navbar. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[78%] bg-gradient-to-t from-black/95 via-black/72 to-transparent" />
+            lea sobre cualquier foto, y una franja arriba para el navbar.
+
+            En MOBILE es más alto y más denso que en desktop: la pantalla es
+            angosta, el bloque de texto ocupa casi la mitad y el carrusel pasa
+            por fotos claras (una remera blanca, una playa) donde el wordmark
+            se perdía. Con `via-black/82` el texto se lee sobre las cuatro. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[52%] bg-gradient-to-t from-black via-black/92 to-transparent md:h-[78%] md:from-black/95 md:via-black/72" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent" />
 
         {/* Masthead */}
@@ -67,23 +72,23 @@ export default function CyberTakeoverHero({
         </div>
 
         {/* Bloque inferior: fecha → wordmark → bajada → CTA → countdown */}
-        <div className="absolute inset-x-5 bottom-6 md:inset-x-10 md:bottom-9">
+        <div className="absolute inset-x-5 bottom-5 md:inset-x-10 md:bottom-9">
           <div className="max-w-[560px]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:text-[13px]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:text-[13px]">
               {ultimasHoras ? 'Termina hoy · 23:59' : '2 · 3 · 4 de noviembre'}
             </p>
 
-            <h1 className="mt-2 text-[clamp(42px,12.5vw,54px)] leading-[0.86] [text-shadow:0_2px_24px_rgba(0,0,0,0.5)] md:mt-3 md:text-[clamp(64px,6vw,86px)]">
+            <h1 className="mt-1 text-[clamp(32px,9vw,40px)] leading-[0.86] [text-shadow:0_2px_24px_rgba(0,0,0,0.5)] md:mt-3 md:text-[clamp(64px,6vw,86px)]">
               <CyberWordmark animate tone="dark" />
             </h1>
 
-            <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.45] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:mt-4 md:text-[16px]">
+            <p className="mt-2 max-w-[44ch] text-[12.5px] leading-[1.35] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:mt-4 md:text-[16px]">
               Tres días. Un drop nuevo cada día, el 4 PACK de Regular Tees y el archivo abierto.
             </p>
 
             <Link
               href={ctaHref}
-              className="mt-5 inline-flex h-[56px] w-full items-center justify-center gap-2.5 rounded-full bg-white px-8 text-[12.5px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] transition-transform duration-300 hover:scale-[1.02] md:mt-6 md:h-[58px] md:w-auto md:px-10 md:text-[13px]"
+              className="mt-3.5 inline-flex h-[48px] w-full items-center justify-center gap-2.5 rounded-full bg-white px-8 text-[12.5px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] transition-transform duration-300 hover:scale-[1.02] md:mt-6 md:h-[58px] md:w-auto md:px-10 md:text-[13px]"
             >
               {ctaLabel}
               <svg width="15" height="10" viewBox="0 0 15 10" fill="none" aria-hidden="true">
@@ -97,7 +102,7 @@ export default function CyberTakeoverHero({
               </svg>
             </Link>
 
-            <div className="mt-4 md:mt-5">
+            <div className="mt-3 md:mt-5">
               <CyberHeroCountdown targetIso={targetIso} label="Termina en" />
             </div>
           </div>

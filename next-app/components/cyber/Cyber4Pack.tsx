@@ -55,16 +55,24 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
           <div className="flex flex-col justify-between px-5 py-7 md:px-9 md:py-10">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-white/45 md:text-[11px]">
-                Solo durante el evento
+                Solo durante Cyber Hype
               </p>
               <h2 className="mt-2.5 text-[40px] font-black uppercase leading-[0.86] tracking-[-0.02em] md:text-[62px]">
-                Pagás 3,
+                Llevás 4,
                 <br />
-                llevás 4
+                pagás 3.
               </h2>
               <p className="mt-3.5 max-w-[42ch] text-[14px] leading-[1.5] text-white/65 md:text-[15px]">
-                Las Regular de siempre, ahora con precio de 3 PACK. Elegís cuatro y se descuenta
-                solo.
+                Elegí 4 Regular Tees, combiná colores y talles como quieras y pagá solamente 3.
+              </p>
+              {/* El precio cerrado del pack: el mismo que cobra
+                  `lib/promo-pack-regular.ts` dentro de la ventana. Sin precio
+                  tachado ni porcentaje, como el resto del evento. */}
+              <p className="mt-4 text-[17px] font-black uppercase tracking-[0.02em] text-white md:text-[20px]">
+                4 Regular Tees por $ 66.300
+              </p>
+              <p className="mt-1.5 text-[11.5px] leading-[1.45] text-white/45 md:text-[12.5px]">
+                Descuento automático en el carrito. Sin código.
               </p>
             </div>
 

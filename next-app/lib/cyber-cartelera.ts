@@ -26,6 +26,7 @@
  */
 
 import { CYBER_END, CYBER_START } from './cyber-hype';
+import { MYSTERY_CAJAS } from './mystery';
 
 /* ═══════════════════════════ 3 DÍAS · 3 DROPS ═══════════════════════════ */
 
@@ -51,6 +52,13 @@ export interface CyberDrop {
     img: string;
     href: string;
   };
+  /**
+   * Portada YA DESENFOCADA (archivo, no CSS) para un drop sin revelar: deja
+   * ver color y masa, nada más. Es lo único de un drop bloqueado que puede
+   * viajar al navegador, y solo porque el archivo en sí no se puede
+   * "des-velar". El nombre y el claim siguen sin salir.
+   */
+  velada?: string;
 }
 
 /**
@@ -76,8 +84,15 @@ export const CYBER_DROPS: CyberDrop[] = [
     id: '01',
     dia: 'Día 1',
     fecha: 'lun 2/11',
-    revealAt: `2026-11-02T${HORA_REVELACION}-03:00`,
-    producto: null,
+    // Las cuatro raglan ya están publicadas: se compran desde que abre el
+    // evento, no desde el lunes. Por eso el revealAt es la apertura.
+    revealAt: '2026-11-01T20:00:00-03:00',
+    producto: {
+      nombre: 'Raglan Longsleeves',
+      claim: 'Creative Goods y Eagle, en Pink y Green.',
+      img: '/cyber/drops/drop-01-longsleeves.webp',
+      href: '/longsleeves',
+    },
   },
   {
     id: '02',
@@ -85,12 +100,19 @@ export const CYBER_DROPS: CyberDrop[] = [
     fecha: 'mar 3/11',
     revealAt: `2026-11-03T${HORA_REVELACION}-03:00`,
     producto: null,
+    // La portada va VELADA, no borrosa por CSS: `drop-02-velada-v2.webp` es el
+    // archivo ya desenfocado a 48×48 px (150 bytes). Abrir la URL a mano no
+    // revela nada porque a esa resolución no queda información recuperable —
+    // un `blur()` de CSS, en cambio, serviría la foto entera. La original
+    // nunca entra a public/ hasta la revelación.
+    velada: '/cyber/drops/drop-02-velada-v2.webp',
   },
   {
     id: '03',
     dia: 'Día 3',
     fecha: 'mié 4/11',
     revealAt: `2026-11-04T${HORA_REVELACION}-03:00`,
+    // Sin mockup y sin confirmación de producción: la tarjeta no revela nada.
     producto: null,
   },
 ];
@@ -109,6 +131,8 @@ export interface CyberDropPublico {
   revealAt: string;
   /** Solo presente cuando estado === 'revelado'. */
   producto?: { nombre: string; claim: string; img: string; href: string };
+  /** Solo en 'bloqueado', y solo si hay portada velada. Nunca el nombre. */
+  velada?: string;
 }
 
 /**
@@ -121,9 +145,8 @@ export function dropsPublicos(now: Date = new Date()): CyberDropPublico[] {
   return CYBER_DROPS.map((d) => {
     const revelado = d.producto !== null && t >= new Date(d.revealAt).getTime();
     const base = { id: d.id, dia: d.dia, fecha: d.fecha, revealAt: d.revealAt };
-    return revelado
-      ? { ...base, estado: 'revelado' as const, producto: d.producto! }
-      : { ...base, estado: 'bloqueado' as const };
+    if (revelado) return { ...base, estado: 'revelado' as const, producto: d.producto! };
+    return { ...base, estado: 'bloqueado' as const, ...(d.velada ? { velada: d.velada } : {}) };
   });
 }
 
@@ -131,11 +154,30 @@ export function dropsPublicos(now: Date = new Date()): CyberDropPublico[] {
 
 /**
  * ¿Las Mystery Boxes están aprobadas para publicarse? En false la sección se
- * renderiza SOLO fuera de producción (para diseñar y revisar en local, con el
- * sello "en validación"). Pasa a true cuando Valentín apruebe pool + precio y
- * los productos existan en Woo — y ahí `href` pasa a la ficha real.
+ * renderiza SOLO fuera de producción (lo decide el ensamblador), así que en
+ * producción no hay sección, ni tarjetas, ni links. Pasa a true cuando los
+ * tres productos estén publicados en Woo (hoy son los borradores 4187 / 4192 /
+ * 4197).
+ *
+ * Lo que NO depende de este flag: el precio y el link de cada tarjeta. Los
+ * precios quedaron cerrados el 30/10 ($32.900 · $46.900 · $63.900) y las
+ * fichas se navegan en local, donde `mysteryPreview()` las sirve con el mock
+ * —los productos siguen en borrador en Woo y no se tocan—. El candado de
+ * producción es el montaje de la sección, no el href.
  */
 export const MYSTERY_PUBLICADO = false;
+
+/**
+ * Link y precio de cada tarjeta, tomados de `MYSTERY_CAJAS` (lib/mystery.ts),
+ * que es la única fuente de verdad de los tres precios y los tres slugs. Si
+ * alguna caja desaparece de ahí, esto rompe el build en vez de publicar una
+ * tarjeta sin precio o apuntando a una ficha que no existe.
+ */
+function fichaMystery(id: CyberMysteryCategoria['id']): { href: string; precio: number } {
+  const caja = MYSTERY_CAJAS.find((c) => c.id === id);
+  if (!caja) throw new Error(`cyber-cartelera: falta la caja "${id}" en lib/mystery.ts`);
+  return { href: `/producto/${caja.slug}`, precio: caja.precio };
+}
 
 export interface CyberMysteryCategoria {
   id: 'tees' | 'longsleeves' | 'hoodies';
@@ -146,8 +188,10 @@ export interface CyberMysteryCategoria {
   pool: string;
   /** Portada real (collage de mockups de Woo, _claude/propuestas/MYSTERY-PORTADAS). */
   img: string;
-  /** Ficha real cuando exista en Woo; null = sin producto todavía. */
-  href: string | null;
+  /** Ficha de la caja. En local la sirve el mock; en Woo son borradores. */
+  href: string;
+  /** Precio cerrado de la caja. Sale de `MYSTERY_CAJAS`, no se escribe acá. */
+  precio: number;
 }
 
 /**
@@ -174,7 +218,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     detalle: 'La puerta de entrada al archivo. Elegís tu talle; el modelo es sorpresa, dentro de las prendas que ves en la portada.',
     pool: '13 modelos en el pool',
     img: '/cyber/mystery/tees-v5b.webp',
-    href: null,
+    ...fichaMystery('tees'),
   },
   {
     id: 'longsleeves',
@@ -186,7 +230,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     // aportan 11 unidades reales, no 22 — ojo al armar las cajas.
     pool: '10 modelos en el pool',
     img: '/cyber/mystery/longsleeves-v5b.webp',
-    href: null,
+    ...fichaMystery('longsleeves'),
   },
   {
     id: 'hoodies',
@@ -198,7 +242,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     // más parejo y la de costo más bajo, o sea la que sostiene el margen.
     pool: '12 modelos en el pool',
     img: '/cyber/mystery/hoodies-v5b.webp',
-    href: null,
+    ...fichaMystery('hoodies'),
   },
 ];
 

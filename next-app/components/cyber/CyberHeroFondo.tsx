@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import LazyVideo from '@/components/LazyVideo';
+import CyberHeroCarrusel, { prefiereQuieto, type CyberSlide } from './CyberHeroCarrusel';
 
 /* Fondo del hero de CYBER HYPE: foto editorial o video, con la imagen siempre
    debajo.
@@ -105,13 +106,30 @@ const FOTOS: Record<'lucas' | 'foto', { desktop: string; mobile: string; posD: s
   },
 };
 
-function prefiereQuieto(): boolean {
-  if (typeof window === 'undefined') return true;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-  const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
-  if (!c) return false;
-  return c.saveData === true || ['2g', 'slow-2g', '3g'].includes(c.effectiveType ?? '');
-}
+/* Las ocho fotos del carrusel (fondo `lucas`, el default): la selección de
+   `Redes & Pauta/CYBERHYPE!/fotos hero`.
+
+   SIN RECORTE: cada una sale entera, en su 3:4 original, y un solo archivo
+   sirve a los dos anchos. La versión anterior tenía dos recortes por foto
+   —9:16 y 16:9— y para conseguirlos había que cortar al modelo a la cintura y
+   ampliarlo: la prenda se veía incompleta y la estampa caía justo donde está
+   el texto. El encaje lo resuelve `.cyber-hero-foto` en cyber.css.
+
+   Receta reproducible: `_claude/herramientas/cyber-hero-fotos.mjs`.
+   Peso: 37–109 KB por foto, 631 KB las ocho. La primera es el LCP (37 KB);
+   el resto las trae el carrusel sobre la marcha. */
+const IDS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'];
+const foto = (id: string) => `/cyber/hero/slides/${id}.webp`;
+
+/* En mobile se ve `src`. En desktop el hero es un split 50/50 y la mitad
+   derecha es `srcB`: la foto SIGUIENTE de la lista. Así cada paso del carrusel
+   cambia las dos mitades y ninguna pareja se repite dentro de la vuelta. */
+const SLIDES: CyberSlide[] = IDS.map((id, n) => ({
+  id,
+  src: foto(id),
+  srcB: foto(IDS[(n + 1) % IDS.length]),
+  alt: n === 0 ? 'Prendas de la campaña Cyber Hype' : '',
+}));
 
 export default function CyberHeroFondo({ fondo }: { fondo: CyberFondo }) {
   const esVideo = fondo !== 'foto' && fondo !== 'lucas';
@@ -125,6 +143,10 @@ export default function CyberHeroFondo({ fondo }: { fondo: CyberFondo }) {
     if (prefiereQuieto()) return;
     setConVideo(true);
   }, [video]);
+
+  // `lucas` (el default) ya no es una foto sola: es el carrusel editorial.
+  // Los otros modos (?hero=boom-*|loop-*|foto) siguen igual que antes.
+  if (fondo === 'lucas') return <CyberHeroCarrusel slides={SLIDES} />;
 
   if (video && conVideo) {
     return (

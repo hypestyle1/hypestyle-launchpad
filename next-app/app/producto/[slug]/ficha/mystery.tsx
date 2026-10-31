@@ -161,6 +161,11 @@ export function MysteryPool({ caja }: { caja: MysteryCaja }) {
               />
             </div>
             <p className="text-[10.5px] leading-[1.25] text-muted-foreground">{m.nombre}</p>
+            {/* El calce va por modelo, no por caja: el pool mezcla y decir un
+                calce único era falso para la mayoría de las prendas. */}
+            <p className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
+              {m.calce}
+            </p>
           </li>
         ))}
       </ul>

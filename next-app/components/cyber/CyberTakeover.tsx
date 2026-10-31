@@ -16,7 +16,7 @@ import CyberNavCategorias from './CyberNavCategorias';
 import CyberEditorial, { CYBER_CATEGORIAS_EDITORIAL } from './CyberEditorial';
 import '@/components/cyber/cyber.css';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
-import { CYBER_END, cyberUltimasHoras } from '@/lib/cyber-hype';
+import { CYBER_END, cyberAhora, cyberUltimasHoras } from '@/lib/cyber-hype';
 import {
   CYBER_ACCESOS,
   CYBER_DESTACADOS_SLUGS,
@@ -50,7 +50,9 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
   await queryClient.prefetchQuery({ queryKey: ['products'], queryFn: fetchAllProducts });
 
   const ultimasHoras = cyberUltimasHoras();
-  const drops = dropsPublicos();
+  // cyberAhora(): con la fase forzada en local, los drops se ven como en la
+  // apertura. En producción es el reloj real y no adelanta nada.
+  const drops = dropsPublicos(cyberAhora());
   const hayRevelado = drops.some((d) => d.estado === 'revelado');
   const mostrarMystery = MYSTERY_PUBLICADO || process.env.NODE_ENV !== 'production';
   const urlWhatsApp = whatsappUrl();
@@ -99,7 +101,7 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
         <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
 
         {mostrarMystery && (
-          <CyberMysterySection categorias={CYBER_MYSTERY} publicado={MYSTERY_PUBLICADO} />
+          <CyberMysterySection categorias={CYBER_MYSTERY} />
         )}
 
         <CyberDrops drops={drops} />

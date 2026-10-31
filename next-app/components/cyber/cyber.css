@@ -295,3 +295,81 @@
 @media (prefers-reduced-motion: reduce) {
   .cyber-marquee { animation: none; }
 }
+
+/* Recorte de cada foto del carrusel del hero. El <img> es uno solo (el
+   <picture> elige la fuente), así que el object-position viaja en variables y
+   se resuelve acá por media query: vertical en mobile, horizontal en desktop. */
+.cyber-slide {
+  object-position: var(--cyber-pos-m, 50% 20%);
+}
+@media (min-width: 768px) {
+  .cyber-slide {
+    object-position: var(--cyber-pos-d, 50% 40%);
+  }
+}
+
+/* ── Glitch de transición del carrusel del hero ─────────────────────────────
+   Mismo lenguaje que el wordmark: franjas horizontales con clip-path que
+   saltan en steps(1, end) —sin interpolar, que es lo que lo hace glitch y no
+   una cortina— y un corrimiento mínimo en X. 320 ms sobre 1.800: se nota el
+   corte, no se vuelve un efecto.
+
+   Las franjas que el clip esconde dejan ver el panel oscuro del hero, así que
+   el corte se lee como un tajo digital. Los recortes son chicos (máx. 28%) a
+   propósito: con insets grandes la foto desaparece y parece un parpadeo.
+
+   Hay dos clases idénticas, -a y -b: el carrusel alterna entre ellas para que
+   el keyframe vuelva a arrancar en cada cambio sin desmontar la <img>. */
+.cyber-slide-in-a,
+.cyber-slide-in-b {
+  animation: cyber-slide-in 320ms steps(1, end) both;
+  will-change: clip-path, transform;
+}
+.cyber-slide-in-b {
+  animation-name: cyber-slide-in-b;
+}
+@keyframes cyber-slide-in {
+  0%   { clip-path: inset(0 0 28% 0); transform: translateX(-0.8%); opacity: 0.9; }
+  20%  { clip-path: inset(18% 0 0 0); transform: translateX(0.9%);  opacity: 1; }
+  42%  { clip-path: inset(0 0 12% 0); transform: translateX(-0.5%); }
+  64%  { clip-path: inset(8% 0 0 0);  transform: translateX(0.3%); }
+  82%  { clip-path: inset(0 0 4% 0);  transform: translateX(-0.15%); }
+  100% { clip-path: inset(0 0 0 0);   transform: none; opacity: 1; }
+}
+@keyframes cyber-slide-in-b {
+  0%   { clip-path: inset(22% 0 0 0); transform: translateX(0.8%);  opacity: 0.9; }
+  20%  { clip-path: inset(0 0 24% 0); transform: translateX(-0.9%); opacity: 1; }
+  42%  { clip-path: inset(14% 0 0 0); transform: translateX(0.5%); }
+  64%  { clip-path: inset(0 0 9% 0);  transform: translateX(-0.3%); }
+  82%  { clip-path: inset(5% 0 0 0);  transform: translateX(0.15%); }
+  100% { clip-path: inset(0 0 0 0);   transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyber-slide-in-a,
+  .cyber-slide-in-b {
+    animation: none;
+  }
+}
+
+/* ── Encaje de las fotos del hero ──────────────────────────────────────────
+   Las fotos son 3:4 enteras, sin recortar.
+
+   MOBILE: `cover` llena el alto, así la prenda se ve completa de arriba abajo
+   y lo único que se pierde son los costados del fondo. `object-position` deja
+   al modelo arriba, donde el bloque de texto ya no llega.
+
+   DESKTOP: split 50/50, una vertical por lado. Cada celda queda cerca de 7:8,
+   así que una foto 3:4 entra con `cover` recortando poco y llena su mitad. Una
+   sola foto estirada a 16:9 obligaba a ampliarla 2,4x y quedarse con una
+   franja; contenida dejaba medio hero vacío. */
+.cyber-hero-foto {
+  object-fit: cover;
+  object-position: 50% 16%;
+}
+@media (min-width: 768px) {
+  .cyber-hero-foto {
+    object-fit: cover;
+    object-position: 50% 12%;
+  }
+}

@@ -10,8 +10,13 @@ import type { CyberDropPublico } from '@/lib/cyber-cartelera';
    la foto no existen en el HTML ni en ningún bundle hasta la revelación.
 
    Estados por tarjeta:
-   - bloqueado → número grande, el día, "?" y la hora de revelación. Nada más.
-   - revelado  → la foto real del producto, nombre, claim y CTA de compra. */
+   - bloqueado → fondo oscuro desenfocado, "?" y la cuenta regresiva. Nada
+                 más: ni foto, ni nombre, ni pista del producto. La portada de
+                 un drop sin revelar tampoco se sube a public/.
+   - revelado  → la foto real del producto, nombre, claim y CTA de compra.
+
+   Las portadas se exportan 1:1 (1080×1080), así que el marco de la foto es
+   cuadrado: recortarlas a 4/3 comía las prendas de arriba y abajo. */
 
 export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
   return (
@@ -49,7 +54,7 @@ export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
               className="group relative overflow-hidden rounded-[16px] border border-white/12 bg-[#121212]"
             >
               {/* Imagen o incógnita */}
-              <div className="relative aspect-[4/3] overflow-hidden">
+              <div className="relative aspect-square overflow-hidden">
                 {d.estado === 'revelado' && d.producto ? (
                   <>
                     <Image
@@ -62,8 +67,72 @@ export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
                     <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent" />
                   </>
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-[#161616]">
-                    <span className="select-none text-[72px] font-black text-white/15">?</span>
+                  /* Fondo oscuro DESENFOCADO: dos manchas suaves sobre el
+                     negro, borroneadas. No es una foto velada —no hay ninguna
+                     imagen del producto en el HTML— pero deja de ser un panel
+                     plano y se lee como algo que todavía no enfoca. */
+                  <div className="absolute inset-0 overflow-hidden bg-[#0e0e0e]">
+                    {d.velada ? (
+                      /* La portada velada: el archivo YA viene desenfocado
+                         (1080 px, blur suave, 12 KB — los cuatro productos). Se leen siluetas, colores
+                         y composición; las estampas no. Sin blur de CSS a
+                         propósito: con CSS el navegador descarga la foto entera
+                         y se ve abriendo la URL. */
+                      <img
+                        src={d.velada}
+                        alt=""
+                        aria-hidden
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        aria-hidden
+                        className="absolute inset-[-25%] blur-[42px]"
+                        style={{
+                          background:
+                            'radial-gradient(38% 46% at 32% 36%, rgba(255,255,255,0.14), transparent 70%), radial-gradient(44% 40% at 72% 68%, rgba(255,255,255,0.07), transparent 72%)',
+                        }}
+                      />
+                    )}
+                    {/* Con portada velada el velo es un degradado suave —la foto
+                        tiene que seguir siendo linda— que sólo cierra contra el
+                        pie de la tarjeta. Sin portada (drop 03) va el velo
+                        parejo de siempre. */}
+                    {/* Con portada velada el velo es solo el cierre contra el
+                        pie de la tarjeta: la foto es clara y tiene que seguir
+                        siéndolo. Sin portada (drop 03) va el velo parejo. */}
+                    <div
+                      className={
+                        d.velada
+                          ? 'absolute inset-0 bg-gradient-to-t from-[#121212] via-transparent to-transparent'
+                          : 'absolute inset-0 bg-black/35'
+                      }
+                    />
+                    {/* El "?" y el reloj, juntos y sobre la imagen. El reloj
+                        estaba de pie de tarjeta, chico y al 40%: en una pieza
+                        cuyo único trabajo es dar ganas de volver, es lo que
+                        tiene que leerse. */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                      <span
+                        className={
+                          d.velada
+                            ? 'select-none text-[86px] font-black leading-none text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.35)]'
+                            : 'select-none text-[72px] font-black leading-none text-white/30 [text-shadow:0_2px_26px_rgba(0,0,0,0.75)]'
+                        }
+                      >
+                        ?
+                      </span>
+                      <p
+                        className={
+                          d.velada
+                            ? 'text-[15px] font-bold tabular-nums tracking-[0.04em] text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.5)] md:text-[16px]'
+                            : 'text-[15px] font-bold tabular-nums tracking-[0.04em] text-white/70 [text-shadow:0_2px_20px_rgba(0,0,0,0.7)] md:text-[16px]'
+                        }
+                      >
+                        <CyberRevealCountdown targetIso={d.revealAt} />
+                      </p>
+                    </div>
                   </div>
                 )}
                 <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/55 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-[16px]">
@@ -94,12 +163,11 @@ export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
                     <p className="text-[16px] font-black uppercase tracking-[0.02em] text-white/45">
                       Por revelar
                     </p>
-                    {/* La hora es lo único que se publica de un drop sin
-                        revelar, y es lo que da el motivo para volver. El
-                        contenido no viaja al navegador hasta que pasa. */}
-                    <p className="text-[12px] leading-[1.5] text-white/40">
-                      Se revela en <CyberRevealCountdown targetIso={d.revealAt} />
-                    </p>
+                    {/* Sin segunda línea: el reloj se mudó arriba, sobre la
+                        imagen, y el día ya está en el chip de la foto. Repetir
+                        cualquiera de los dos acá era ruido. La hora sigue
+                        siendo lo único que se publica de un drop sin revelar:
+                        el contenido no viaja al navegador hasta que pasa. */}
                   </>
                 )}
               </div>

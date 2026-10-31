@@ -20,12 +20,38 @@
 
 export type MysteryId = 'tees' | 'longsleeves' | 'hoodies';
 
+/**
+ * Calce real de la prenda. **Los tres pools mezclan calces** — medido contra el
+ * atributo `fit` de Woo el 31/10/2026:
+ *
+ * | caja | mezcla |
+ * |---|---|
+ * | TEES | 11 Regular + 2 Oversize (las dos Napoli) |
+ * | LONGSLEEVES | 8 Oversize + 2 Regular (las dos Athletic Dept) |
+ * | HOODIES | 9 Boxy + 3 Oversize |
+ *
+ * Por eso la ficha NO puede anunciar un calce único: el que le toca al cliente
+ * depende del modelo que salga. Tres fichas no tienen el atributo en Woo
+ * (2107, 2114, 2027, 2023) y su calce sale de la descripción; `2107 Lamb of God`
+ * dice "corte regular" en el texto pero tiene colgada la guía de talles
+ * OVERSIZE — está cargado como Regular y conviene corregir la guía en Woo.
+ */
+export type MysteryCalce = 'Regular' | 'Oversize' | 'Boxy';
+
 export interface MysteryModelo {
   /** ID de la ficha en Woo. También es el nombre del recorte en /mystery/pool/. */
   id: number;
   nombre: string;
   /** Precio al que se vende suelto hoy. Es el que sostiene la comparación. */
   precio: number;
+  /** Calce real de ESTE modelo. No es el de la caja: la caja mezcla. */
+  calce: MysteryCalce;
+}
+
+/** Los calces distintos que puede tocar en una caja, en orden estable. */
+export function calcesDe(caja: MysteryCaja): MysteryCalce[] {
+  const orden: MysteryCalce[] = ['Regular', 'Oversize', 'Boxy'];
+  return orden.filter((c) => caja.modelos.some((m) => m.calce === c));
 }
 
 export interface MysteryCaja {
@@ -69,23 +95,23 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     slug: 'mystery-tees',
     nombre: 'Mystery Tees',
     prendas: 1,
-    precio: 32900,
+    precio: 25900,
     queEs: 'Remeras de manga corta del archivo Hype.',
     garantia: '1 remera de manga corta del archivo, en el talle que elijas.',
     modelos: [
-      { id: 2460, nombre: 'Napoli Azurro', precio: 38000 },
-      { id: 2471, nombre: 'Napoli Bianca', precio: 38000 },
-      { id: 588, nombre: 'Per Aspera Ad Astra Black', precio: 40500 },
-      { id: 601, nombre: 'Per Aspera Ad Astra White', precio: 40500 },
-      { id: 774, nombre: 'Honda White', precio: 40500 },
-      { id: 743, nombre: 'Honda Black', precio: 40500 },
-      { id: 575, nombre: 'Hypestation White', precio: 40500 },
-      { id: 564, nombre: 'Hypestation Black', precio: 40500 },
-      { id: 553, nombre: 'Skyline', precio: 40500 },
-      { id: 2107, nombre: 'Lamb of God Pink', precio: 40500 },
-      { id: 3632, nombre: 'Style & Culture University White', precio: 39000 },
-      { id: 3647, nombre: 'Style & Culture University Black', precio: 39000 },
-      { id: 3662, nombre: 'Style & Culture University Navy', precio: 39000 },
+      { id: 2460, nombre: 'Napoli Azurro', precio: 38000, calce: 'Oversize' },
+      { id: 2471, nombre: 'Napoli Bianca', precio: 38000, calce: 'Oversize' },
+      { id: 588, nombre: 'Per Aspera Ad Astra Black', precio: 40500, calce: 'Regular' },
+      { id: 601, nombre: 'Per Aspera Ad Astra White', precio: 40500, calce: 'Regular' },
+      { id: 774, nombre: 'Honda White', precio: 40500, calce: 'Regular' },
+      { id: 743, nombre: 'Honda Black', precio: 40500, calce: 'Regular' },
+      { id: 575, nombre: 'Hypestation White', precio: 40500, calce: 'Regular' },
+      { id: 564, nombre: 'Hypestation Black', precio: 40500, calce: 'Regular' },
+      { id: 553, nombre: 'Skyline', precio: 40500, calce: 'Regular' },
+      { id: 2107, nombre: 'Lamb of God Pink', precio: 40500, calce: 'Regular' },
+      { id: 3632, nombre: 'Style & Culture University White', precio: 39000, calce: 'Regular' },
+      { id: 3647, nombre: 'Style & Culture University Black', precio: 39000, calce: 'Regular' },
+      { id: 3662, nombre: 'Style & Culture University Navy', precio: 39000, calce: 'Regular' },
     ],
   },
   {
@@ -93,20 +119,20 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     slug: 'mystery-longsleeves',
     nombre: 'Mystery Longsleeves',
     prendas: 1,
-    precio: 46900,
+    precio: 39900,
     queEs: 'Remeras de manga larga: waffles, Athletic Dept y raglans.',
     garantia: '1 remera de manga larga —waffle, Athletic Dept o raglan—, en el talle que elijas.',
     modelos: [
-      { id: 3472, nombre: 'Athletic Dept. Pink', precio: 48000 },
-      { id: 3477, nombre: 'Athletic Dept. Blue', precio: 48000 },
-      { id: 3799, nombre: 'Hype Creative Goods Pink Raglan', precio: 60000 },
-      { id: 3805, nombre: 'Dept of Culture Eagle Pink Raglan', precio: 60000 },
-      { id: 3887, nombre: 'Hype Creative Goods Green Raglan', precio: 60000 },
-      { id: 3888, nombre: 'Dept of Culture Eagle Green Raglan', precio: 60000 },
-      { id: 3677, nombre: 'HS Crest Olive Raglan', precio: 60000 },
-      { id: 3691, nombre: 'Dept of Culture Waffle Washed Black', precio: 60000 },
-      { id: 3721, nombre: 'Hype Dept Cross Waffle Blanca', precio: 62000 },
-      { id: 29, nombre: 'Ladytribal Black', precio: 67000 },
+      { id: 3472, nombre: 'Athletic Dept. Pink', precio: 48000, calce: 'Regular' },
+      { id: 3477, nombre: 'Athletic Dept. Blue', precio: 48000, calce: 'Regular' },
+      { id: 3799, nombre: 'Hype Creative Goods Pink Raglan', precio: 60000, calce: 'Oversize' },
+      { id: 3805, nombre: 'Dept of Culture Eagle Pink Raglan', precio: 60000, calce: 'Oversize' },
+      { id: 3887, nombre: 'Hype Creative Goods Green Raglan', precio: 60000, calce: 'Oversize' },
+      { id: 3888, nombre: 'Dept of Culture Eagle Green Raglan', precio: 60000, calce: 'Oversize' },
+      { id: 3677, nombre: 'HS Crest Olive Raglan', precio: 60000, calce: 'Oversize' },
+      { id: 3691, nombre: 'Dept of Culture Waffle Washed Black', precio: 60000, calce: 'Oversize' },
+      { id: 3721, nombre: 'Hype Dept Cross Waffle Blanca', precio: 62000, calce: 'Oversize' },
+      { id: 29, nombre: 'Ladytribal Black', precio: 67000, calce: 'Oversize' },
     ],
   },
   {
@@ -114,22 +140,22 @@ export const MYSTERY_CAJAS: MysteryCaja[] = [
     slug: 'mystery-hoodies',
     nombre: 'Mystery Hoodies',
     prendas: 1,
-    precio: 63900,
+    precio: 54900,
     queEs: 'Hoodies, buzos y Half-Zip Polos del archivo.',
     garantia: '1 prenda de abrigo —hoodie, buzo o Half-Zip Polo—, en el talle que elijas.',
     modelos: [
-      { id: 1104, nombre: 'Half-Zip Polo Navy', precio: 70000 },
-      { id: 1110, nombre: 'Half-Zip Polo Black', precio: 70000 },
-      { id: 1107, nombre: 'Half-Zip Polo Melange', precio: 70000 },
-      { id: 1906, nombre: 'Stars For Venezuela', precio: 76500 },
-      { id: 2928, nombre: 'HS Co. Melange', precio: 79000 },
-      { id: 2114, nombre: 'HS Co. Grey', precio: 79000 },
-      { id: 841, nombre: 'No Service For The Faithless', precio: 79000 },
-      { id: 2027, nombre: 'Lion of Judah Stone Wash', precio: 79000 },
-      { id: 754, nombre: 'Stay Hustle', precio: 79200 },
-      { id: 1177, nombre: 'Hoodie Grey HStars', precio: 80100 },
-      { id: 2023, nombre: 'He Died So I Could Live', precio: 80100 },
-      { id: 645, nombre: 'Hoodie Pink', precio: 82800 },
+      { id: 1104, nombre: 'Half-Zip Polo Navy', precio: 70000, calce: 'Boxy' },
+      { id: 1110, nombre: 'Half-Zip Polo Black', precio: 70000, calce: 'Boxy' },
+      { id: 1107, nombre: 'Half-Zip Polo Melange', precio: 70000, calce: 'Boxy' },
+      { id: 1906, nombre: 'Stars For Venezuela', precio: 76500, calce: 'Boxy' },
+      { id: 2928, nombre: 'HS Co. Melange', precio: 79000, calce: 'Boxy' },
+      { id: 2114, nombre: 'HS Co. Grey', precio: 79000, calce: 'Oversize' },
+      { id: 841, nombre: 'No Service For The Faithless', precio: 79000, calce: 'Boxy' },
+      { id: 2027, nombre: 'Lion of Judah Stone Wash', precio: 79000, calce: 'Oversize' },
+      { id: 754, nombre: 'Stay Hustle', precio: 79200, calce: 'Boxy' },
+      { id: 1177, nombre: 'Hoodie Grey HStars', precio: 80100, calce: 'Boxy' },
+      { id: 2023, nombre: 'He Died So I Could Live', precio: 80100, calce: 'Oversize' },
+      { id: 645, nombre: 'Hoodie Pink', precio: 82800, calce: 'Boxy' },
     ],
   },
 ];

@@ -87,6 +87,27 @@ export function cyberEstado(now: Date = new Date()): CyberEstado {
 }
 
 /**
+ * El "ahora" que usa la cartelera del evento.
+ *
+ * Con `NEXT_PUBLIC_CYBER_FASE=evento` el takeover se renderiza, pero los drops
+ * se calculan contra el reloj real: revisando en local el 31/10 el DROP 01
+ * aparecía bloqueado aunque su revealAt sea la apertura. Esto alinea las dos
+ * cosas — si la fase está forzada y el reloj real cae fuera de la ventana, se
+ * usa la apertura, que es el estado que hay que poder revisar.
+ *
+ * **En producción devuelve siempre el reloj real**: el override ya se ignora
+ * ahí, así que esta función no puede adelantar ninguna revelación.
+ */
+export function cyberAhora(now: Date = new Date()): Date {
+  if (process.env.NODE_ENV === 'production') return now;
+  const forzada = process.env.NEXT_PUBLIC_CYBER_FASE;
+  if (forzada !== 'evento') return now;
+  const t = now.getTime();
+  const dentro = t >= new Date(CYBER_START).getTime() && t < new Date(CYBER_END).getTime();
+  return dentro ? now : new Date(CYBER_START);
+}
+
+/**
  * Hacia dónde cuenta el reloj: a la apertura en la previa, al cierre durante el
  * evento, y a ningún lado cuando terminó.
  */

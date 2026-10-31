@@ -1,5 +1,5 @@
 import { type Product } from '@/data/products';
-import { MYSTERY_CAJAS, mockupPool, type MysteryCaja } from '@/lib/mystery';
+import { MYSTERY_CAJAS, calcesDe, mockupPool, type MysteryCaja } from '@/lib/mystery';
 
 /**
  * Producto Mystery de mentira, **solo para desarrollo**.
@@ -65,7 +65,11 @@ export function mysteryPreview(slug: string): Product | undefined {
       { icon: 'iron-low', text: 'Planchar a temperatura baja, sin vapor' },
       { icon: 'no-dry', text: 'No lavar en seco' },
     ],
-    fit: 'Oversize',
+    // La caja NO tiene un calce único: los tres pools mezclan (ver
+    // `MysteryCalce` en lib/mystery.ts). Anunciar "Oversize" era falso para
+    // 11 de los 13 modelos de TEES. Hasta que se decida cómo se elige el
+    // talle, la ficha dice la verdad: los calces que pueden tocar.
+    fit: calcesDe(caja).join(' o '),
     sizes,
     stock,
     // Una sola "colorway": la caja no tiene variantes de color, pero la ficha

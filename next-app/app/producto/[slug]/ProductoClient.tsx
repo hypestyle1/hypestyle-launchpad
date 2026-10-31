@@ -1,5 +1,6 @@
 'use client';
 
+import { porcentajeDescuento } from '@/lib/descuento';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -650,6 +651,17 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
                   {displayOriginal && mounted && (
                     <span className="text-[16px] text-muted-foreground line-through">
                       {formatPrice(displayOriginal)}
+                    </span>
+                  )}
+                  {/* Píldora: el tachado solo dice "antes costaba más"; el
+                      porcentaje es lo que se lee de un vistazo. Misma cuenta
+                      que la grilla (lib/descuento.ts) para que no haya dos
+                      números distintos para el mismo producto. Va al lado del
+                      precio y no sobre la foto: acá la prenda ya se está
+                      mirando en grande. */}
+                  {mounted && porcentajeDescuento(displayPrice, displayOriginal) !== null && (
+                    <span className="rounded-[6px] bg-destructive px-2 py-1 text-[12px] font-bold tabular-nums text-white">
+                      −{porcentajeDescuento(displayPrice, displayOriginal)}%
                     </span>
                   )}
                 </div>

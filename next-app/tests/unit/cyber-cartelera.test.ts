@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
 
 const RAIZ = join(__dirname, '..', '..');
@@ -15,6 +15,7 @@ import {
   MYSTERY_PUBLICADO,
   dropsPublicos,
 } from '@/lib/cyber-cartelera';
+import { MYSTERY_CAJAS } from '@/lib/mystery';
 import { REGULAR_TEES_GROUPS, REGULAR_TEES_SLUGS } from '@/lib/regular-tees';
 import { PACK_REGULAR_SLUGS } from '@/lib/promo-pack-regular';
 
@@ -27,14 +28,43 @@ describe('drops — lo no revelado no existe para el navegador', () => {
     expect(CYBER_DROPS.map((d) => d.fecha)).toEqual(['lun 2/11', 'mar 3/11', 'mié 4/11']);
   });
 
-  it('un drop sin producto asignado queda bloqueado aunque pase su hora', () => {
+  it('un drop sin producto asignado NUNCA se revela, aunque pase su hora', () => {
     const despues = en('2026-11-04T23:00:00-03:00');
     for (const d of dropsPublicos(despues)) {
       const original = CYBER_DROPS.find((o) => o.id === d.id)!;
       if (original.producto === null) {
-        expect(d.estado).toBe('bloqueado');
+        // Puede ser 'teaser' (portada aprobada, sin productos) o 'bloqueado',
+        // pero jamás 'revelado' ni con producto encima.
+        expect(d.estado).not.toBe('revelado');
         expect(d).not.toHaveProperty('producto');
       }
+    }
+  });
+
+  it('un drop bloqueado no lleva ninguna imagen', () => {
+    for (const d of dropsPublicos(en('2026-11-02T12:00:00-03:00'))) {
+      if (d.estado !== 'bloqueado') continue;
+      expect(d).not.toHaveProperty('producto');
+    }
+  });
+
+  it('en public/ solo hay portadas de drops asignados, y las veladas son irrecuperables', () => {
+    // Un archivo servido se adivina por la URL: subir la portada del Camo sin
+    // velar sería spoilear el drop aunque no apareciera en el HTML.
+    const dir = join(RAIZ, 'public', 'cyber', 'drops');
+    const subidas = readdirSync(dir);
+    const permitidas = CYBER_DROPS.flatMap((d) =>
+      [d.producto?.img, d.velada].filter(Boolean).map((p) => p!.split('/').pop()!),
+    );
+    expect(subidas.sort()).toEqual(permitidas.sort());
+
+    // Una velada pesa una fracción del original: el desenfoque se come el detalle
+    // y el archivo se desploma. Si alguien sube la foto
+    // buena con ese nombre, este test lo frena.
+    for (const d of CYBER_DROPS) {
+      if (!d.velada) continue;
+      const bytes = statSync(join(RAIZ, 'public', ...d.velada.split('/').filter(Boolean))).size;
+      expect(bytes, `${d.velada} pesa ${bytes} bytes: ¿está realmente velada?`).toBeLessThan(20480);
     }
   });
 
@@ -49,9 +79,15 @@ describe('drops — lo no revelado no existe para el navegador', () => {
       const revelado = d.producto !== null && t >= new Date(d.revealAt).getTime();
       if (d.id !== '01') expect(revelado).toBe(false);
     }
-    // Y la función pública sobre la config real jamás inventa un producto:
-    for (const d of dropsPublicos(en('2026-11-01T20:00:00-03:00'))) {
-      expect(d.estado).toBe('bloqueado');
+    // Y la función pública sobre la config real solo revela lo que de verdad
+    // tiene producto Y ya cumplió su hora. Nada más puede traer `producto`.
+    for (const ahora of ['2026-11-01T19:59:59-03:00', '2026-11-01T20:00:00-03:00', '2026-11-03T12:00:00-03:00']) {
+      for (const d of dropsPublicos(en(ahora))) {
+        const o = CYBER_DROPS.find((x) => x.id === d.id)!;
+        const deberia = o.producto !== null && en(ahora).getTime() >= new Date(o.revealAt).getTime();
+        expect(d.estado === 'revelado').toBe(deberia);
+        if (!deberia) expect(d).not.toHaveProperty('producto');
+      }
     }
   });
 
@@ -98,14 +134,24 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     expect(MYSTERY_PUBLICADO).toBe(false);
   });
 
-  it('las tres categorías existen, con portada real y sin ficha hasta que exista en Woo', () => {
+  it('las tres categorías existen, con portada real, y su link y precio salen de MYSTERY_CAJAS', () => {
     // 29/10: Bottoms descartado (poco stock, talles quebrados). Las tres
     // cajas son de la parte de arriba.
     expect(CYBER_MYSTERY.map((m) => m.id)).toEqual(['tees', 'longsleeves', 'hoodies']);
     for (const m of CYBER_MYSTERY) {
       expect(m.img).toMatch(/^\/cyber\/mystery\//);
-      if (!MYSTERY_PUBLICADO) expect(m.href).toBeNull();
+      // Una sola fuente de verdad para precio y slug: si la tarjeta y la ficha
+      // se separan, el cliente ve un precio en la home y otro al entrar.
+      const caja = MYSTERY_CAJAS.find((c) => c.id === m.id);
+      expect(caja, `falta la caja "${m.id}" en lib/mystery.ts`).toBeDefined();
+      expect(m.href).toBe(`/producto/${caja!.slug}`);
+      expect(m.precio).toBe(caja!.precio);
     }
+  });
+
+  it('los tres precios aprobados el 31/10 son los que se muestran', () => {
+    // Si alguno cambia, cambió una decisión comercial: que falle y se mire.
+    expect(CYBER_MYSTERY.map((m) => m.precio)).toEqual([25900, 39900, 54900]);
   });
 
   it('al publicar Mystery, su pool no puede seguir en la vidriera del evento', () => {

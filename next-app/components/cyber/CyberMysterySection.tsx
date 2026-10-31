@@ -9,11 +9,11 @@ import Link from 'next/link';
    Woo, ninguna prenda inventada (_claude/propuestas/MYSTERY-PORTADAS, en
    mejora en otra sesión: se reemplazan sin tocar este layout).
 
-   Mientras MYSTERY_PUBLICADO sea false, esta sección solo se monta FUERA de
-   producción (lo decide el ensamblador) y cada tarjeta dice "Precio en
-   validación": espacio diseñado, no promesa activa. Al aprobar pool + precio
-   y existir los productos en Woo, `href` apunta a la ficha real y el CTA se
-   habilita — la ficha es donde se elige el talle. */
+   Los precios quedaron cerrados el 30/10 y cada tarjeta los muestra, con el
+   CTA que lleva a la ficha: ahí se elige el talle. Mientras
+   MYSTERY_PUBLICADO sea false la sección solo se monta FUERA de producción
+   (lo decide el ensamblador), así que en producción no hay tarjeta ni link
+   que puedan apuntar a un producto que todavía está en borrador en Woo. */
 
 export interface MysteryCategoriaVista {
   id: string;
@@ -21,15 +21,14 @@ export interface MysteryCategoriaVista {
   detalle: string;
   pool: string;
   img: string;
-  href: string | null;
+  href: string;
+  precio: number;
 }
 
 export default function CyberMysterySection({
   categorias,
-  publicado,
 }: {
   categorias: MysteryCategoriaVista[];
-  publicado: boolean;
 }) {
   return (
     <section id="mystery" className="bg-[#0a0a0a] px-4 py-12 text-white md:px-10 md:py-16">
@@ -43,11 +42,6 @@ export default function CyberMysterySection({
               Mystery Archive
             </h2>
           </div>
-          {!publicado && (
-            <span className="inline-flex items-center rounded-[6px] border border-white/25 bg-white/[0.06] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white/70">
-              Selección y precios en validación
-            </span>
-          )}
         </div>
 
         <p className="mb-7 max-w-[560px] text-[13px] leading-[1.55] text-white/60 md:text-[14px]">
@@ -84,18 +78,19 @@ export default function CyberMysterySection({
                 <p className="text-[12.5px] leading-[1.55] text-white/55 md:text-[13px]">
                   {m.detalle}
                 </p>
-                {publicado && m.href ? (
-                  <Link
-                    href={m.href}
-                    className="mt-2.5 inline-flex h-[44px] items-center justify-center rounded-full bg-white px-6 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0a0a0a] transition-opacity hover:opacity-85"
-                  >
-                    Elegí tu talle
-                  </Link>
-                ) : (
-                  <span className="mt-2.5 inline-flex h-[44px] items-center justify-center rounded-full border border-white/20 px-6 text-[11px] font-bold uppercase tracking-[0.12em] text-white/45">
-                    Precio en validación
-                  </span>
-                )}
+                {/* Mismo formato que `formatMoney` ("$ 32.900"): la tarjeta y
+                    la ficha tienen que escribir el precio igual. Va en ARS fijo
+                    como el resto del takeover (ver CyberRegalos); la ficha sí
+                    responde al selector de moneda. */}
+                <p className="mt-1 text-[19px] font-black tracking-[-0.01em] text-white md:text-[21px]">
+                  $ {m.precio.toLocaleString('es-AR')}
+                </p>
+                <Link
+                  href={m.href}
+                  className="mt-1.5 inline-flex h-[44px] items-center justify-center rounded-full bg-white px-6 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0a0a0a] transition-opacity hover:opacity-85"
+                >
+                  Elegí tu talle
+                </Link>
                 <p className="mt-1 text-[10px] leading-[1.5] text-white/35">
                   Cambio de talle sí · el contenido es sorpresa · 10 días de arrepentimiento según
                   ley.
