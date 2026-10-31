@@ -3,9 +3,27 @@ import { MAYORISTA_COOKIE, verifySessionToken } from '@/lib/mayorista-auth';
 import { COUNTRY_COOKIE } from '@/lib/geo';
 import { ORDER_KEY_RE, REPAGO_COOKIE_MAX_AGE, repagoCookie } from '@/lib/repago-link';
 
-// Hora de early access (close friends) y apertura pública
-const EARLY_START = new Date('2026-06-24T19:00:00-03:00').getTime();
-const PUBLIC_OPEN  = new Date('2026-06-24T20:00:00-03:00').getTime();
+/* CYBER HYPE — ventana de bloqueo de la tienda (hora de Argentina).
+ *
+ * Antes acá sólo había `PUBLIC_OPEN` y la regla era "bloqueá todo lo anterior
+ * a esa hora". Con una fecha pasada el gate quedaba permanentemente abierto
+ * —que es como estuvo desde junio— y con una fecha futura la tienda se cerraba
+ * en el instante del deploy. Por eso ahora hay un INICIO: sólo se bloquea
+ * dentro de la ventana, así esto se puede desplegar con horas de anticipación
+ * sin cerrar nada antes de tiempo.
+ *
+ *   00:00  LOCK_START   la tienda pública se cierra
+ *   19:00  EARLY_START  se comparte la contraseña (Mejores Amigos / WhatsApp)
+ *   20:00  PUBLIC_OPEN  apertura para todos, sin contraseña
+ *
+ * `EARLY_START` no cambia quién puede entrar —la contraseña funciona apenas
+ * empieza el bloqueo— sino qué muestra la pantalla: antes de esa hora el
+ * countdown apunta a la apertura y después aparece el campo de contraseña.
+ * Lo usa /acceso; acá se exporta para que haya una sola fuente de las tres.
+ */
+// Las tres horas y la cookie viven en lib/cyber-gate.ts, que también usa
+// /acceso: así la pantalla cuenta hacia la hora en la que de verdad abre.
+import { COOKIE_CYBER, LOCK_START, PUBLIC_OPEN, cookieValida } from '@/lib/cyber-gate';
 
 // startsWith suelto matchea de más (ej. "/api/mayorista-lead-notify" quedaba
 // atrapado por "/api/mayorista" y nunca llegaba a su propio handler) — estas
@@ -107,10 +125,18 @@ async function handle(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Nunca interceptar: /acceso, /api/acceso, archivos estáticos
+  /* Nunca interceptar.
+   *
+   * `/api` entero queda afuera a propósito: el gate es para la vidriera, no
+   * para la trastienda. Si se bloqueara, un 302 a /acceso se comería los
+   * webhooks de GOcuotas y PayPal, los callbacks de cobro (`confirm-paid`,
+   * `paypal-capture`), los avisos de envío y los crons — o sea, se caerían
+   * pedidos YA pagados, que es mucho peor que una visita de más. Las rutas de
+   * /api que necesitan permiso ya tienen el suyo (secreto, sesión o firma). */
   if (
     pathname.startsWith('/acceso') ||
-    pathname.startsWith('/api/acceso') ||
+    pathname.startsWith('/api/') ||
+    pathname === '/api' ||
     pathname.startsWith('/_next') ||
     /\.[\w]{2,5}$/.test(pathname)
   ) {
@@ -119,14 +145,16 @@ async function handle(request: NextRequest) {
 
   const now = Date.now();
 
-  // Sitio abierto al público (después de las 20hs)
-  if (now >= PUBLIC_OPEN) return NextResponse.next();
+  // Fuera de la ventana de bloqueo: antes de las 00:00 y después de las 20:00
+  // el sitio se comporta como siempre. Esto es lo que permite desplegar hoy
+  // sin cerrar la tienda hasta la medianoche.
+  if (now < LOCK_START || now >= PUBLIC_OPEN) return NextResponse.next();
 
-  // Todavía no arrancó el early access → gate igual
-  // (el /acceso page maneja el countdown a las 19hs)
-
-  // Tiene cookie de early access → dejarlo pasar
-  if (request.cookies.get('hype_early_access')?.value === 'true') {
+  // Dentro de la ventana: pasa sólo quien ya puso la contraseña del Cyber.
+  // La cookie va FIRMADA: un `true` pelado lo escribe cualquiera desde las
+  // devtools. Si falta el secreto, fail closed — no entra nadie.
+  const clave = (process.env.EARLY_ACCESS_PASSWORD ?? '').trim();
+  if (await cookieValida(request.cookies.get(COOKIE_CYBER)?.value, clave, now)) {
     return NextResponse.next();
   }
 
