@@ -71,6 +71,13 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
               <p className="mt-4 text-[17px] font-black uppercase tracking-[0.02em] text-white md:text-[20px]">
                 4 Regular Tees por $ 66.300
               </p>
+              {/* El salto contra el 3 PACK, que es el argumento del upsell.
+                  $6.400 y no $6.300: el 3 PACK bajó a $59.900 (66.300 −
+                  59.900). Si se vuelve a mover alguno de los dos, este número
+                  tiene que moverse con ellos. */}
+              <p className="mt-2 text-[13.5px] font-semibold leading-[1.4] text-white/80 md:text-[14.5px]">
+                Sumá una cuarta por solo $ 6.400 más.
+              </p>
               <p className="mt-1.5 text-[11.5px] leading-[1.45] text-white/45 md:text-[12.5px]">
                 Descuento automático en el carrito. Sin código.
               </p>

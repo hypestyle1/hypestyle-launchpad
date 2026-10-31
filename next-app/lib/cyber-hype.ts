@@ -39,7 +39,7 @@
  * la landing diría "abrió" mientras el carrito todavía cobra el precio viejo.
  * Al mover uno, mover los tres.
  * ──────────────────────────────────────────────────────────────────────────── */
-export const CYBER_START = '2026-11-01T20:00:00-03:00';
+export const CYBER_START = '2026-11-01T19:00:00-03:00';
 
 /**
  * Cierre. Instante exclusivo: a las 00:00 del 5/11 ya terminó, que es lo mismo

@@ -11,6 +11,7 @@ import CyberMysterySection from './CyberMysterySection';
 import CyberCatalogoEvento from './CyberCatalogoEvento';
 import CyberCondiciones from './CyberCondiciones';
 import CyberRegalos from './CyberRegalos';
+import ShopTheLook from '@/components/ShopTheLook';
 import CyberCanal from './CyberCanal';
 import CyberNavCategorias from './CyberNavCategorias';
 import CyberEditorial, { CYBER_CATEGORIAS_EDITORIAL } from './CyberEditorial';
@@ -109,6 +110,13 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
         <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
         <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
+
+        {/* Shop the Look: el MISMO componente de la home, sin tocar. Va acá y
+            no antes del catálogo a propósito — arriba le robaría atención a
+            las ofertas, que es lo que el evento vino a mostrar. Después de ver
+            precios, en cambio, la pregunta deja de ser "cuánto sale" y pasa a
+            ser "con qué lo combino", que es donde sube el ticket. */}
+        <ShopTheLook />
 
         {/* El regalo, justo después del catálogo: es donde aparece la
             fricción real —"llevo $78.000, me faltan $22.000 para la cadena"—
