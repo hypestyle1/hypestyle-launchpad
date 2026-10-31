@@ -7,6 +7,7 @@ import WishlistDrawer from '@/components/WishlistDrawer';
 import CookieBanner from '@/components/CookieBanner';
 import NewsletterPopup from '@/components/NewsletterPopup';
 import LocaleSuggestion from '@/components/LocaleSuggestion';
+import { cyberEstado } from '@/lib/cyber-hype';
 import LoadingScreen from '@/components/LoadingScreen';
 import MetaPixel from '@/components/MetaPixel';
 import AttributionCapture from '@/components/AttributionCapture';
@@ -99,7 +100,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <FlashSaleBar />
           <PromoChampionBar />
           <Promo3x2Bar />
-          <LoadingScreen />
+          {/* Durante el evento la intro muestra el lockup CYBER HYPE. La fase
+              la decide el servidor: en el cliente no existe CYBER_APAGADO. */}
+          <LoadingScreen cyber={cyberEstado() === 'evento'} />
           <ChampionTakeover />
           <CartDrawer />
           <WishlistDrawer />

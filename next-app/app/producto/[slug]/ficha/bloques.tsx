@@ -1,5 +1,6 @@
 'use client';
 
+import { porcentajeDescuento } from '@/lib/descuento';
 import { useEffect, useState, type ReactNode, type RefObject } from 'react';
 import Image from 'next/image';
 import { preload } from 'react-dom';
@@ -114,6 +115,15 @@ export function Precio({ p }: { p: FichaProps }) {
       </span>
       {p.displayOriginal && p.mounted && (
         <span className="text-[15px] text-muted-foreground line-through tabular-nums">{formatPrice(p.displayOriginal)}</span>
+      )}
+      {/* Píldora: el tachado solo dice "antes costaba más"; el porcentaje es
+          lo que se lee de un vistazo. Misma cuenta que la grilla
+          (lib/descuento.ts) para que el mismo producto no muestre −25% en el
+          catálogo y −26% al entrar. */}
+      {p.mounted && porcentajeDescuento(p.displayPrice, p.displayOriginal) !== null && (
+        <span className="rounded-[6px] bg-destructive px-2 py-0.5 text-[12px] font-bold tabular-nums text-white">
+          −{porcentajeDescuento(p.displayPrice, p.displayOriginal)}%
+        </span>
       )}
     </div>
   );

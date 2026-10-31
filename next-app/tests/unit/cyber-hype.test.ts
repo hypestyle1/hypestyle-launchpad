@@ -27,10 +27,10 @@ describe('CYBER HYPE — fechas', () => {
     expect(Date.parse(CYBER_END)).toBe(PACK_REGULAR_X4_HASTA);
   });
 
-  it('abre el domingo 1/11 a las 20:00 ART y cierra el 4/11 a las 23:59', () => {
+  it('abre el domingo 1/11 a las 19:00 ART y cierra el 4/11 a las 23:59', () => {
     // Movida del lunes 2/11 00:00 al domingo 20:00 el 28/10, decisión de
     // Valentín: prime time contra medianoche. 20:00 -03 = 23:00 UTC.
-    expect(new Date(CYBER_START).toISOString()).toBe('2026-11-01T23:00:00.000Z');
+    expect(new Date(CYBER_START).toISOString()).toBe('2026-11-01T22:00:00.000Z');
     expect(new Date(CYBER_END).toISOString()).toBe('2026-11-05T03:00:00.000Z');
   });
 
@@ -44,7 +44,7 @@ describe('CYBER HYPE — estado por fecha', () => {
 
   it('antes de la apertura es previa', () => {
     expect(cyberEstado(t('2026-10-28T12:00:00-03:00'))).toBe('previa');
-    expect(cyberEstado(t('2026-11-01T19:59:59-03:00'))).toBe('previa');
+    expect(cyberEstado(t('2026-11-01T18:59:59-03:00'))).toBe('previa');
   });
 
   it('el primer segundo de la apertura ya es evento', () => {
@@ -56,10 +56,13 @@ describe('CYBER HYPE — estado por fecha', () => {
     expect(cyberEstado(t('2026-11-05T00:00:00-03:00'))).toBe('cerrado');
   });
 
-  it('no hay acceso anticipado: una hora antes de abrir todavía es previa', () => {
-    // El estado "preview" del PR original se eliminó a propósito: la landing
-    // no habilita nada antes de la hora pública, que ahora es 1/11 20:00.
-    expect(cyberEstado(t('2026-11-01T19:00:00-03:00'))).toBe('previa');
+  it('a las 19:00 ya es evento: es la hora del acceso anticipado', () => {
+    // La landing abre a las 19:00, junto con el motor del 4 PACK. Lo que
+    // separa al VIP del público no es esta fecha sino el gate: el middleware
+    // mantiene la tienda cerrada con contraseña hasta las 20:00. Si esto
+    // volviera a las 20:00, el VIP entraría con la clave y vería la home
+    // vieja.
+    expect(cyberEstado(t('2026-11-01T19:00:00-03:00'))).toBe('evento');
   });
 });
 

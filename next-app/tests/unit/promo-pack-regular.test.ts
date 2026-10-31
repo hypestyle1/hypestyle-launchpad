@@ -19,7 +19,7 @@ import {
  * 3-PACK. El riesgo es descontar de más (contar packs o productos que no son
  * Regular) o quedar más caro que el pack fijo.
  *
- * Durante la ventana del evento (1/11 20:00 → 4/11 23:59 ART) la regla
+ * Durante la ventana del evento (1/11 19:00 → 4/11 23:59 ART) la regla
  * pasa a 4 por el precio congelado del evento ($66.300). Lo que se cubre acá:
  * que la ventana abra y cierre en el instante exacto, que el pack de 4 use el
  * precio congelado y el de 3 el del catálogo, que un resto de 3 nunca pague más
@@ -56,27 +56,27 @@ afterEach(() => {
 });
 
 describe('ventana del evento (hora de servidor)', () => {
-  it('abre el 1/11/2026 20:00 ART, en el instante exacto de la apertura pública', () => {
-    reloj('2026-11-01T19:59:59-03:00');
+  it('abre el 1/11/2026 19:00 ART, en el instante exacto del acceso anticipado', () => {
+    reloj('2026-11-01T18:59:59-03:00');
     expect(packRegularUnidades()).toBe(3);
     expect(packRegularX4Vigente()).toBe(false);
 
-    reloj('2026-11-01T20:00:00-03:00');
+    reloj('2026-11-01T19:00:00-03:00');
     expect(packRegularUnidades()).toBe(4);
     expect(packRegularX4Vigente()).toBe(true);
   });
 
-  it('una hora antes de abrir (1/11 19:00) el pack todavía es de 3', () => {
+  it('una hora antes de abrir (1/11 18:00) el pack todavía es de 3', () => {
     // El aviso a Mejores Amigos era "una hora antes" cuando se abría a las
     // 00:00 (decisión del 25/10: sin precios anticipados, porque el precio no
-    // se puede restringir por membresía). Con la apertura movida a las 20:00,
-    // el equivalente es 19:00 — la hora del aviso la decide Valentín en el
-    // plan de historias, esto solo fija que antes de abrir no hay precio.
-    reloj('2026-11-01T19:00:00-03:00');
+    // se puede restringir por membresía). Con la ventana movida a las 19:00
+    // —para que el acceso anticipado pueda comprar el 4 PACK— el equivalente
+    // es 18:00. Esto solo fija que antes de abrir no hay precio de 4.
+    reloj('2026-11-01T18:00:00-03:00');
     expect(packRegularUnidades()).toBe(3);
     expect(packRegularX4Vigente()).toBe(false);
 
-    reloj('2026-11-01T19:30:00-03:00');
+    reloj('2026-11-01T18:30:00-03:00');
     expect(packRegularUnidades()).toBe(3);
   });
 
@@ -103,9 +103,9 @@ describe('ventana del evento (hora de servidor)', () => {
   });
 
   it('las fechas se leen con offset -03:00, no con la hora local del proceso', () => {
-    // Vercel corre en UTC: 1/11 20:00 ART son las 23:00 UTC del 1/11. Sin el
-    // offset escrito a mano el evento arrancaría a las 17:00 del 1/11 ART.
-    expect(new Date(PACK_REGULAR_X4_DESDE).toISOString()).toBe('2026-11-01T23:00:00.000Z');
+    // Vercel corre en UTC: 1/11 19:00 ART son las 22:00 UTC del 1/11. Sin el
+    // offset escrito a mano el evento arrancaría a las 16:00 del 1/11 ART.
+    expect(new Date(PACK_REGULAR_X4_DESDE).toISOString()).toBe('2026-11-01T22:00:00.000Z');
     expect(new Date(PACK_REGULAR_X4_HASTA).toISOString()).toBe('2026-11-05T03:00:00.000Z');
   });
 

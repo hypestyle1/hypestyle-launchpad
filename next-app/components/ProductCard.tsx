@@ -1,5 +1,6 @@
 'use client';
 
+import { porcentajeDescuento } from '@/lib/descuento';
 import { useEffect, useRef, useState } from "react";
 import Image, { getImageProps } from "next/image";
 import { imgSrc } from "@/lib/img";
@@ -106,6 +107,10 @@ export default function ProductCard({
   const strikeCls = dense ? "text-[10px]" : "text-[12px]";
   const comingSoon = !!tags?.includes(COMING_SOON_TAG);
   const badge = comingSoon ? 'Próximamente' : badgeProp;
+
+  // Misma cuenta que la ficha (lib/descuento.ts): si cada una hiciera la suya,
+  // el mismo producto podría mostrar −25% en la grilla y −26% al entrar.
+  const descuentoPct = porcentajeDescuento(price, originalPrice);
   const { formatPrice, t } = useLocale();
   const { add, setDrawerOpen } = useCart();
   const { toggle, has } = useWishlist();
@@ -245,6 +250,22 @@ export default function ProductCard({
             {badge}
           </span>
         ) : null}
+
+        {/* Píldora de descuento. El % sale SIEMPRE de los dos precios reales de
+            Woo (`regular_price` y `sale_price`); no hay nada por producto en el
+            código. Va redondeada hacia ABAJO a propósito: con un precio
+            terminado en $900 el descuento real cae entre dos escalones, y es
+            preferible declarar de menos que prometer de más. Debajo de 5% no se
+            muestra: un "-3%" no es una oferta, es ruido.
+            Arriba a la DERECHA para no pisar el badge "New In"/"Próximamente",
+            y fuera del centro para no tapar la prenda. */}
+        {descuentoPct !== null && !outOfStock && !mutedPrice && (
+          <span
+            className={`absolute ${dense ? 'top-2 right-2 px-1.5 py-0.5 text-[9px]' : 'top-3 right-3 px-2 py-1 text-[11px]'} z-10 rounded-[6px] bg-destructive font-bold tabular-nums tracking-[0.02em] text-white shadow-sm`}
+          >
+            −{descuentoPct}%
+          </span>
+        )}
 
         {/* Wishlist heart */}
         {id && (

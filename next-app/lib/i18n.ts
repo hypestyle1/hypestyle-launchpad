@@ -249,6 +249,7 @@ const DICT: Dict = {
   'Nombre y apellido': { EN: 'Full name', PT: 'Nome completo', DE: 'Vor- und Nachname', FR: 'Nom et prénom', IT: 'Nome e cognome' },
   'Mail': { EN: 'Email', PT: 'E-mail', DE: 'E-Mail', FR: 'E-mail', IT: 'E-mail' },
   'WhatsApp': { EN: 'WhatsApp', PT: 'WhatsApp', DE: 'WhatsApp', FR: 'WhatsApp', IT: 'WhatsApp' },
+  'Canal de WhatsApp': { EN: 'WhatsApp Channel', PT: 'Canal do WhatsApp', DE: 'WhatsApp-Kanal', FR: 'Chaîne WhatsApp', IT: 'Canale WhatsApp' },
   'Ciudad': { EN: 'City', PT: 'Cidade', DE: 'Stadt', FR: 'Ville', IT: 'Città' },
   'Edad': { EN: 'Age', PT: 'Idade', DE: 'Alter', FR: 'Âge', IT: 'Età' },
   'Como sos menor de 18, necesitamos los datos de un adulto responsable para poder trabajar juntos.': {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useReveal } from "@/hooks/useReveal";
 import { useLocale, LANGUAGES } from "@/context/LocaleContext";
 import { CURRENCIES } from "@/lib/currency";
+import { CANAL_OFICIAL } from "@/lib/cyber-whatsapp";
 
 // Rediseño 2026: el Shop del footer habla la misma arquitectura que el mega
 // menú (prendas directas), e "Info" se parte en POLÍTICAS (lo legal/ayuda) y
@@ -49,8 +50,15 @@ const trabajaLinks = [
   { label: "Sumá Hype a tu local", href: "/mayoristas/como-funciona" },
 ];
 
+// Las dos entradas de WhatsApp son cosas distintas y por eso están separadas:
+// "Canal" es la difusión — drops y avisos, sin que nadie vea el número de
+// nadie — y "WhatsApp" es el chat de atención de siempre. El canal nació con
+// CYBER HYPE (28/10/2026) pero es de la marca: queda en el footer después del
+// evento, cuando los bloques de campaña ya no se rendericen. La URL sale de
+// lib/cyber-whatsapp para no tener dos copias del mismo enlace.
 const rrssLinks = [
   { label: "Instagram", href: "https://instagram.com/hypestylearg" },
+  { label: "Canal de WhatsApp", href: CANAL_OFICIAL },
   { label: "TikTok", href: "https://tiktok.com/@hypestyle" },
   { label: "YouTube", href: "https://www.youtube.com/@hypestylearg" },
   { label: "Facebook", href: "https://facebook.com/hypestylearg" },

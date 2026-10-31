@@ -130,9 +130,19 @@ describe('POST /api/create-order-gocuotas — ventana del pack de 4', () => {
     expect(pedido.fee_lines).toEqual([{ name: 'Pack Regular x4', total: '-27300', tax_class: '' }]);
   });
 
-  it('media hora antes de abrir (1/11 19:30) todavía es el pack de 3', async () => {
-    relojDelServidor('2026-11-01T19:30:00-03:00');
+  it('media hora antes de abrir (1/11 18:30) todavía es el pack de 3', async () => {
+    // La ventana del 4 PACK se movió a las 19:00 junto con CYBER_START, para
+    // que el acceso anticipado pueda comprarlo: antes el VIP veía la sección
+    // "llevás 4, pagás 3" una hora antes de que el motor la aplicara, y se le
+    // habrían cobrado las cuatro remeras.
+    relojDelServidor('2026-11-01T18:30:00-03:00');
     const pedido = await pedirCuatroRegular(DESCUENTO_X4);
     expect(pedido.fee_lines).toEqual([{ name: 'Pack Regular x3', total: '-3900', tax_class: '' }]);
+  });
+
+  it('a las 19:00 en punto ya cobra los cuatro al precio del 3 PACK', async () => {
+    relojDelServidor('2026-11-01T19:00:00-03:00');
+    const pedido = await pedirCuatroRegular(DESCUENTO_X4);
+    expect(pedido.fee_lines).toEqual([{ name: 'Pack Regular x4', total: String(-DESCUENTO_X4), tax_class: '' }]);
   });
 });

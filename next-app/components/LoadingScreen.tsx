@@ -35,7 +35,7 @@ type Phase = 'idle' | 'run' | 'travel' | 'fade' | 'done';
  * esa carga no puede ocurrir antes. Llegó a durar 1,5 s y no se alcanzaba a
  * leer el logo.
  */
-export default function LoadingScreen() {
+export default function LoadingScreen({ cyber = false }: { cyber?: boolean }) {
   const pathname = usePathname();
   // Sin intro en el panel, el checkout ni el portal mayorista (lib/retail-chrome.ts).
   const hidden = isRetailChromeHidden(pathname);
@@ -75,7 +75,19 @@ export default function LoadingScreen() {
 
   return (
     <>
-      <div id="hs-intro" className="hs-intro" data-phase={phase} aria-hidden="true" suppressHydrationWarning>
+      <div
+        id="hs-intro"
+        /* Durante CYBER HYPE la intro muestra el lockup de la campaña. Es una
+           clase con tres variables (imagen, ratio y alto) y nada más: la
+           mecánica —franjas, enfoque, viaje al hero— no cambia. El flag lo
+           decide el SERVIDOR y llega por prop: leer la fase acá sería mirar
+           `NEXT_PUBLIC_CYBER_FASE` sin el kill switch `CYBER_APAGADO`, que no
+           existe del lado del cliente. */
+        className={cyber ? 'hs-intro hs-intro--cyber' : 'hs-intro'}
+        data-phase={phase}
+        aria-hidden="true"
+        suppressHydrationWarning
+      >
         <div className="hs-intro-glass" />
         <div className="hs-intro-logo" ref={logoRef}>
           {Array.from({ length: STRIPS }, (_, i) => (

@@ -39,7 +39,7 @@
  * la landing diría "abrió" mientras el carrito todavía cobra el precio viejo.
  * Al mover uno, mover los tres.
  * ──────────────────────────────────────────────────────────────────────────── */
-export const CYBER_START = '2026-11-01T20:00:00-03:00';
+export const CYBER_START = '2026-11-01T19:00:00-03:00';
 
 /**
  * Cierre. Instante exclusivo: a las 00:00 del 5/11 ya terminó, que es lo mismo
@@ -66,10 +66,45 @@ export type CyberEstado = 'previa' | 'evento' | 'cerrado';
  * se compara contra instantes absolutos, así que el resultado es el mismo.
  */
 export function cyberEstado(now: Date = new Date()): CyberEstado {
+  // KILL SWITCH del takeover: con CYBER_APAGADO=1 en el entorno del servidor
+  // la campaña pasa a 'cerrado' de inmediato (la home vuelve a SS27, la
+  // landing al cierre) sin tocar fechas ni código. Es la palanca de emergencia
+  // pedida el 29/10: en Vercel se carga la variable y se redeploya el mismo
+  // build (~1 min), sin revertir nada. Va ANTES que el override de fase para
+  // que también apague una fase forzada en local.
+  if (process.env.CYBER_APAGADO === '1') return 'cerrado';
+  // Solo para revisar en local: NEXT_PUBLIC_CYBER_FASE fuerza la fase
+  // (previa|evento|cerrado) en el server y el cliente a la vez. En producción
+  // se ignora SIEMPRE: la fase la deciden las fechas y nada más.
+  if (process.env.NODE_ENV !== 'production') {
+    const forzada = process.env.NEXT_PUBLIC_CYBER_FASE;
+    if (forzada === 'previa' || forzada === 'evento' || forzada === 'cerrado') return forzada;
+  }
   const t = now.getTime();
   if (t < new Date(CYBER_START).getTime()) return 'previa';
   if (t < new Date(CYBER_END).getTime()) return 'evento';
   return 'cerrado';
+}
+
+/**
+ * El "ahora" que usa la cartelera del evento.
+ *
+ * Con `NEXT_PUBLIC_CYBER_FASE=evento` el takeover se renderiza, pero los drops
+ * se calculan contra el reloj real: revisando en local el 31/10 el DROP 01
+ * aparecía bloqueado aunque su revealAt sea la apertura. Esto alinea las dos
+ * cosas — si la fase está forzada y el reloj real cae fuera de la ventana, se
+ * usa la apertura, que es el estado que hay que poder revisar.
+ *
+ * **En producción devuelve siempre el reloj real**: el override ya se ignora
+ * ahí, así que esta función no puede adelantar ninguna revelación.
+ */
+export function cyberAhora(now: Date = new Date()): Date {
+  if (process.env.NODE_ENV === 'production') return now;
+  const forzada = process.env.NEXT_PUBLIC_CYBER_FASE;
+  if (forzada !== 'evento') return now;
+  const t = now.getTime();
+  const dentro = t >= new Date(CYBER_START).getTime() && t < new Date(CYBER_END).getTime();
+  return dentro ? now : new Date(CYBER_START);
 }
 
 /**
@@ -85,6 +120,16 @@ export function cyberProximoHito(now: Date = new Date()): { iso: string; label: 
     default:
       return null;
   }
+}
+
+/**
+ * ¿Estamos en las últimas horas del evento? (el último día, desde las 00:00
+ * del 4/11). Cambia la comunicación — "termina hoy" — sin ser una fase nueva:
+ * sigue siendo 'evento' y nada comercial cambia.
+ */
+export function cyberUltimasHoras(now: Date = new Date()): boolean {
+  if (cyberEstado(now) !== 'evento') return false;
+  return now.getTime() >= new Date('2026-11-04T00:00:00-03:00').getTime();
 }
 
 /**
