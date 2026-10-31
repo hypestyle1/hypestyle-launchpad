@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import CyberWordmark from '@/components/cyber/CyberWordmark';
-import CyberCountdown from '@/components/cyber/CyberCountdown';
 import CyberAvisame from '@/components/cyber/CyberAvisame';
 import CyberWhatsApp from '@/components/cyber/CyberWhatsApp';
+import CyberTakeover from '@/components/cyber/CyberTakeover';
 import '@/components/cyber/cyber.css';
 import { buildMetadata } from '@/lib/seo';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
@@ -11,33 +11,36 @@ import {
   CYBER_FECHAS,
   CYBER_HORA_APERTURA,
   cyberEstado,
-  cyberProximoHito,
   cyberCapturaAbierta,
 } from '@/lib/cyber-hype';
 
 /**
- * Landing de previa de CYBER HYPE — la página de registro.
+ * CYBER HYPE — una sola página para las tres etapas del evento.
  *
- * Una sola pantalla, fondo negro, el lockup con glitch continuo a la izquierda
- * y una única tarjeta blanca a la derecha con las dos formas de anotarse. Nada
- * más: la versión del 27/10 tenía tres tarjetas de "qué es", cinco preguntas
- * frecuentes y el footer completo del sitio, y en desktop el formulario caía
- * fuera del primer viewport.
+ * PREVIA (hasta el 1/11 20:00): la página de registro aprobada el 28/10, sin
+ * ningún cambio — fondo negro, lockup con glitch continuo, una tarjeta blanca
+ * con WhatsApp y email, consentimiento a la vista. No adelanta nada comercial.
  *
- * El criterio es que en cinco segundos se entienda qué se prepara, cuándo
- * empieza y dónde dejar el mail.
+ * EVENTO (1/11 20:00 → 4/11 23:59): el centro de campaña es la MISMA
+ * experiencia que toma la home (components/cyber/CyberTakeover): hero EN
+ * VIVO, 3 drops, 4 PACK, Mystery Archive y el catálogo real. Un solo
+ * componente para las dos superficies — cero duplicación.
  *
- * Dos cosas que se pueden alternar por query mientras se decide:
+ * POSTERIOR: cierre limpio — sin contadores vencidos ni promesas activas; un
+ * solo camino a la tienda.
+ *
+ * Qué se puede alternar por query mientras se decide (solo previa):
  *   `?fondo=liso` — negro plano, sin la textura de wordmarks.
- *   `?wa=demo`    — dibuja el bloque de WhatsApp sin enlace, solo para ver la
- *                   composición. Se ignora apenas haya invitación cargada.
+ *   `?wa=demo`    — dibuja el bloque de WhatsApp sin enlace (nunca en prod).
+ * Y para la revisión en local (NUNCA en producción):
+ *   `NEXT_PUBLIC_CYBER_FASE` — fuerza la fase (previa|evento|cerrado).
+ *   `?demo=1`     — la cartelera suma los lanzamientos tentativos, para ver
+ *                   los estados bloqueados. En prod un tentativo no existe.
  *
- * `noindex`: no se indexa mientras es una previa, y no está linkeada desde el
- * sitio. El link se reparte por historias, bio, mail y pauta.
+ * `noindex`: página de campaña, se reparte por historias, bio, mail y pauta.
  *
- * Renderizado dinámico: el estado (previa / evento / cerrado) se calcula por
- * fecha en cada request, así la página no queda cacheada en "previa" después
- * de la apertura.
+ * Renderizado dinámico: el estado se calcula por fecha en cada request, así la
+ * página no queda cacheada en "previa" después de la apertura.
  */
 export const dynamic = 'force-dynamic';
 
@@ -48,12 +51,45 @@ export const metadata = buildMetadata({
   noindex: true,
 });
 
-export default function Page({ searchParams }: { searchParams?: { fondo?: string; wa?: string } }) {
+/** El pie que comparten las tres etapas: lo que no puede faltar y nada más. */
+function PieMinimo() {
+  return (
+    <footer className="px-5 pb-7 pt-8 text-[11px] text-white/35">
+      <div className="mx-auto flex max-w-[1120px] flex-wrap items-center justify-center gap-x-5 gap-y-2">
+        <Link href="/politica-de-privacidad" className="underline underline-offset-2 hover:text-white/60">
+          Política de privacidad
+        </Link>
+        <Link href="/terminos-y-condiciones" className="underline underline-offset-2 hover:text-white/60">
+          Términos
+        </Link>
+        <a
+          href="https://instagram.com/hypestylearg"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-white/60"
+        >
+          @hypestylearg
+        </a>
+        <span>© {new Date().getFullYear()} Hypestyle</span>
+      </div>
+    </footer>
+  );
+}
+
+export default function Page({
+  searchParams,
+}: {
+  searchParams?: { fondo?: string; wa?: string };
+}) {
   const estado = cyberEstado();
-  const hito = cyberProximoHito();
   const captura = cyberCapturaAbierta();
   const conTextura = searchParams?.fondo !== 'liso';
 
+  /* ── EVENTO: el mismo takeover que la home ───────────────────────────── */
+  if (estado === 'evento') return <CyberTakeover />;
+
+
+  /* ── PREVIA y CIERRE (la pantalla aprobada el 28/10, sin cambios) ────── */
   const urlWhatsApp = whatsappUrl();
   const hayWhatsApp = urlWhatsApp !== '';
   // El demo es solo para mirar la composición en local. Dos candados: no
@@ -95,19 +131,8 @@ export default function Page({ searchParams }: { searchParams?: { fondo?: string
               <p className="mt-3 max-w-[40ch] text-[15px] leading-relaxed text-white/60 sm:text-[16px]">
                 {captura
                   ? 'Tres días. Anotate y te avisamos apenas abra: los adelantos salen por ahí antes que por el feed.'
-                  : estado === 'evento'
-                    ? 'Está abierto. Entrá a la tienda: lo del evento está arriba hasta el miércoles a las 23:59.'
-                    : 'CYBER HYPE terminó. Gracias a todos los que compraron estos tres días.'}
+                  : 'CYBER HYPE terminó. Gracias a todos los que compraron estos tres días.'}
               </p>
-
-              {/* El reloj solo durante el evento, donde dice algo que el texto
-                  no dice: lo que falta para que cierre. En la previa la fecha
-                  ya está arriba y repetirla en dígitos grandes era ruido. */}
-              {estado === 'evento' && hito && (
-                <div className="mt-7">
-                  <CyberCountdown targetIso={hito.iso} label={hito.label} />
-                </div>
-              )}
             </div>
 
             {/* ── Una sola tarjeta, las dos formas de anotarse ────────────── */}
@@ -143,7 +168,7 @@ export default function Page({ searchParams }: { searchParams?: { fondo?: string
                   href="/"
                   className="flex h-[54px] w-full items-center justify-center rounded-[10px] bg-foreground px-8 text-[12px] font-bold uppercase tracking-[0.14em] text-primary-foreground transition-opacity hover:opacity-85"
                 >
-                  {estado === 'evento' ? 'Ver la tienda' : 'Ver lo que quedó'}
+                  Ver lo que quedó
                 </Link>
               )}
             </div>
@@ -151,29 +176,7 @@ export default function Page({ searchParams }: { searchParams?: { fondo?: string
           </div>
         </section>
 
-        {/* ── Pie mínimo ────────────────────────────────────────────────────
-            El footer del sitio son cuatro columnas de catálogo, ayuda, redes y
-            newsletter: en una página de un solo campo pesa más que el
-            contenido. Queda lo que no puede faltar. */}
-        <footer className="px-5 pb-7 pt-8 text-[11px] text-white/35">
-          <div className="mx-auto flex max-w-[1120px] flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            <Link href="/politica-de-privacidad" className="underline underline-offset-2 hover:text-white/60">
-              Política de privacidad
-            </Link>
-            <Link href="/terminos-y-condiciones" className="underline underline-offset-2 hover:text-white/60">
-              Términos
-            </Link>
-            <a
-              href="https://instagram.com/hypestylearg"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:text-white/60"
-            >
-              @hypestylearg
-            </a>
-            <span>© {new Date().getFullYear()} Hypestyle</span>
-          </div>
-        </footer>
+        <PieMinimo />
       </main>
     </>
   );
