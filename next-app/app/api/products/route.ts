@@ -45,6 +45,8 @@ const GET_PRODUCTS = `
   }
 `;
 
+// Consultar Woo en ejecución; un timeout externo no debe impedir el build.
+export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 export async function GET() {

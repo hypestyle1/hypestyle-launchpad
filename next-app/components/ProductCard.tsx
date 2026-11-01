@@ -110,7 +110,10 @@ export default function ProductCard({
   const priceCls = dense ? "text-[11.5px]" : "text-[13px]";
   const strikeCls = dense ? "text-[10px]" : "text-[12px]";
   const comingSoon = !!tags?.includes(COMING_SOON_TAG);
-  const badge = comingSoon ? 'Próximamente' : badgeProp;
+  // El porcentaje lo dibuja exclusivamente la píldora calculada de HYPE.
+  // El catálogo también puede traer badge="−39%": no renderizarlo dos veces.
+  const badge = comingSoon ? 'Próximamente'
+    : badgeProp && /^[−-]\s*\d+(?:[.,]\d+)?\s*%/.test(badgeProp.trim()) ? undefined : badgeProp;
 
   // Misma cuenta que la ficha (lib/descuento.ts): si cada una hiciera la suya,
   // el mismo producto podría mostrar −25% en la grilla y −26% al entrar.
