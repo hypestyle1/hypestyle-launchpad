@@ -29,6 +29,8 @@ interface ProductCardProps {
   name: string;
   category: string;
   price: number;
+  /** Solo presentación: el carrito y los eventos conservan price real. */
+  pricePresentation?: { price: number; originalPrice: number };
   originalPrice?: number;
   badge?: string;
   image: string;
@@ -98,7 +100,7 @@ export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
   href = "/productos", sizes, stock, giftNote, customizable, mutedPrice,
   dense, blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin, imagePriority,
-  vistaFoto = 'mockup',
+  vistaFoto = 'mockup', pricePresentation,
 }: ProductCardProps) {
   // Escalas de la card densa vs. la normal (ver prop `dense`).
   const badgePos = dense ? "top-2 left-2 px-1.5 py-0.5 text-[8px] tracking-[0.06em]" : "top-3 left-3 px-2.5 py-1 text-[10px] tracking-wider";
@@ -110,7 +112,9 @@ export default function ProductCard({
 
   // Misma cuenta que la ficha (lib/descuento.ts): si cada una hiciera la suya,
   // el mismo producto podría mostrar −25% en la grilla y −26% al entrar.
-  const descuentoPct = porcentajeDescuento(price, originalPrice);
+  const shownPrice = pricePresentation?.price ?? price;
+  const shownOriginal = pricePresentation?.originalPrice ?? originalPrice;
+  const descuentoPct = porcentajeDescuento(shownPrice, shownOriginal);
   const { formatPrice, t } = useLocale();
   const { add, setDrawerOpen } = useCart();
   const { toggle, has } = useWishlist();
@@ -298,11 +302,11 @@ export default function ProductCard({
         <div className={`flex items-center flex-wrap ${dense ? "gap-1" : "gap-2"} mt-1`}>
           {/* Sin stock: ocultamos el precio promocional y mostramos el regular en neutro */}
           <span suppressHydrationWarning className={`${priceCls} font-semibold whitespace-nowrap ${originalPrice && !outOfStock && !mutedPrice ? "text-destructive" : ""}`}>
-            {formatPrice(outOfStock && originalPrice ? originalPrice : price)}
+            {formatPrice(outOfStock && shownOriginal ? shownOriginal : shownPrice)}
           </span>
-          {originalPrice && !outOfStock && (
+          {shownOriginal && !outOfStock && (
             <span suppressHydrationWarning className={`${strikeCls} text-text-light line-through whitespace-nowrap`}>
-              {formatPrice(originalPrice)}
+              {formatPrice(shownOriginal)}
             </span>
           )}
         </div>

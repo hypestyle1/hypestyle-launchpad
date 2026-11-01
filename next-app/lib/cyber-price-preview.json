@@ -1,0 +1,226 @@
+{
+  "regular-tee-white": {
+    "price": 25900,
+    "originalPrice": 28900
+  },
+  "lettering-melange-jort": {
+    "price": 44900,
+    "originalPrice": 62100
+  },
+  "regular-tee-melange": {
+    "price": 25900,
+    "originalPrice": 28900
+  },
+  "lettering-graphite-jort": {
+    "price": 44900,
+    "originalPrice": 62100
+  },
+  "regular-tees-3-pack-black-white-melange": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-white": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-black": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-grey": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "waffle-crest-sleeveless-pearl-grey": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "waffle-crest-sleeveless-earth-brown": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "jort-cargo-realtree-pink": {
+    "price": 59900,
+    "originalPrice": 82800
+  },
+  "jort-cargo-realtree-beige": {
+    "price": 59900,
+    "originalPrice": 82800
+  },
+  "sleeveless-ranglan-black": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "sleeveless-ranglan-grey": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "sleeveless-ranglan-militar-green": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "aeroblue-tees": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "aeropink-tees": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "hoodie-pink": {
+    "price": 73900,
+    "originalPrice": 82800
+  },
+  "sleeveless-ranglan-white": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "aerogrey-tees": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "hoodie-stay-hustle": {
+    "price": 70900,
+    "originalPrice": 79200
+  },
+  "lettering-pink-jort": {
+    "price": 44900,
+    "originalPrice": 62100
+  },
+  "no-service-for-the-faithless-hoodie": {
+    "price": 70900,
+    "originalPrice": 79000
+  },
+  "sweatpant-pink": {
+    "price": 31950,
+    "originalPrice": 63900
+  },
+  "sleeveless-ranglan": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "half-zip-polo-navy": {
+    "price": 64900,
+    "originalPrice": 70000
+  },
+  "half-zip-polo-melange": {
+    "price": 64900,
+    "originalPrice": 70000
+  },
+  "half-zip-polo-black": {
+    "price": 64900,
+    "originalPrice": 70000
+  },
+  "hoodie-grey-hstars": {
+    "price": 70900,
+    "originalPrice": 80100
+  },
+  "regular-tee-black": {
+    "price": 25900,
+    "originalPrice": 28900
+  },
+  "stars-for-venezuela-hoodie": {
+    "price": 70900,
+    "originalPrice": 76500
+  },
+  "he-die-so-i-could-live-hoodie": {
+    "price": 70900,
+    "originalPrice": 80100
+  },
+  "lion-of-judah-stone-wash-hoodie": {
+    "price": 70900,
+    "originalPrice": 79000
+  },
+  "lamb-of-god-pink-tee": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "hs-co-grey-hoodie": {
+    "price": 70900,
+    "originalPrice": 79000
+  },
+  "regular-tee-navy": {
+    "price": 25900,
+    "originalPrice": 28900
+  },
+  "regular-tees-3-pack-navy": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "napoli-tee-azul": {
+    "price": 29900,
+    "originalPrice": 38000
+  },
+  "napoli-tee-blanca": {
+    "price": 29900,
+    "originalPrice": 38000
+  },
+  "regular-tees-3-pack-black-navy-white": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-black-melange-navy": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-melange-navy-white": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "hs-co-green-hoodie": {
+    "price": 70900,
+    "originalPrice": 79000
+  },
+  "aeropink-tees-black": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "aeropink-tees-grey": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "aerogrey-tees-black": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "aerogrey-tees-grey": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "aeroblue-tees-black": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "aeroblue-tees-grey": {
+    "price": 29900,
+    "originalPrice": 40500
+  },
+  "regular-tee-red": {
+    "price": 25900,
+    "originalPrice": 28900
+  },
+  "regular-tees-3-pack-red-black-white": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-red-black-navy": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-red-black-melange": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-red-white-navy": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-red-white-melange": {
+    "price": 59900,
+    "originalPrice": 66300
+  },
+  "regular-tees-3-pack-red-navy-melange": {
+    "price": 59900,
+    "originalPrice": 66300
+  }
+}

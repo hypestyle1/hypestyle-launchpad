@@ -5,7 +5,7 @@ vi.mock('next/headers', () => ({ cookies: () => ({ get: getCookie }) }));
 
 import { emitirCookie, COOKIE_CYBER, LOCK_START, EARLY_START, PUBLIC_OPEN } from '@/lib/cyber-gate';
 import { CYBER_END } from '@/lib/cyber-hype';
-import { cyberTakeoverVisible } from '@/lib/cyber-visibility-server';
+import { cyberTakeoverVisible, cyberAuthenticated } from '@/lib/cyber-visibility-server';
 
 const SECRETO = 'test-only-Cyber';
 
@@ -19,6 +19,15 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('visibilidad del takeover separada de la activación comercial', () => {
+  it('la previsualización exige cookie válida y termina con la apertura pública', async () => {
+    getCookie.mockReturnValue(undefined);
+    expect(await cyberAuthenticated(LOCK_START + 1)).toBe(false);
+    getCookie.mockReturnValue({ value: 'cookie-falsa' });
+    expect(await cyberAuthenticated(LOCK_START + 1)).toBe(false);
+    getCookie.mockReturnValue({ value: await emitirCookie(PUBLIC_OPEN, SECRETO) });
+    expect(await cyberAuthenticated(LOCK_START + 1)).toBe(true);
+    expect(await cyberAuthenticated(PUBLIC_OPEN)).toBe(false);
+  });
   it('antes del cierre no adelanta el diseño aunque exista una cookie', async () => {
     const ahora = LOCK_START - 1;
     getCookie.mockReturnValue({ name: COOKIE_CYBER, value: await emitirCookie(PUBLIC_OPEN, SECRETO) });
