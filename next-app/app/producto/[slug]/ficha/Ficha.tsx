@@ -5,7 +5,7 @@ import { videoPoster } from '@/lib/video-posters';
 import { useLocale } from '@/context/LocaleContext';
 import { abreCuadrada, composicion, esMockup, medidasModelo, resumen } from '@/lib/ficha';
 import {
-  type FichaProps, Foto, Migas, Precio, Descuento, TablaPagos, SelectorColor, SelectorTalle,
+  type FichaProps, Foto, Migas, Precio, TablaPagos, SelectorColor, SelectorTalle,
   LineaDespacho, LineaResenas, BotonComprar, Promesas, CuandoLlega, Desplegable, BadgePrivateAccess, NotaPreventa,
   TextoEnvios, TextoCambios, TablaMedidas, NotaCuidadoTalles, InterruptorModelo, NotaModelo, imgUrl, isVideo,
 } from './bloques';
@@ -163,7 +163,6 @@ export default function Ficha(p: FichaProps) {
                 {mystery && <MysteryGarantia caja={mystery} />}
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <Precio p={p} />
-                  <Descuento p={p} />
                 </div>
                 {mystery && <MysteryAhorro caja={mystery} />}
                 {p.privateAccess ? <NotaPreventa pa={p.privateAccess} /> : <LineaResenas />}
