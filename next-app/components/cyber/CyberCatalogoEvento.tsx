@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
 import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
 import { cyberCardPrice, cyberCatalogOrder, cyberCategoryMatches, CYBER_INITIAL_COUNT, CYBER_EXPANDED_COUNT } from '@/lib/cyber-catalog-view';
+import { useCyberCatalogTransition } from '@/hooks/useCyberCatalogTransition';
 
 /* Catálogo del evento — el sitio entero comprable sin salir del takeover.
 
@@ -39,13 +40,17 @@ export default function CyberCatalogoEvento({
   filtros,
   pricePreview = {},
   preview = false,
+  serverTime,
 }: {
   destacadosSlugs: string[];
   filtros: FiltroVista[];
   pricePreview?: Record<string, { price: number; originalPrice: number }>;
   preview?: boolean;
+  serverTime: number;
 }) {
-  const { data } = useProducts();
+  const { data: cachedProducts } = useProducts();
+  const live = useCyberCatalogTransition(preview, serverTime);
+  const data = live.updating ? undefined : live.products ?? cachedProducts;
   const [vista, setVista] = useState<string>('destacados');
   const [expanded, setExpanded] = useState(false);
 
@@ -87,7 +92,7 @@ export default function CyberCatalogoEvento({
               Catálogo Cyber
             </h2>
           </div>
-          <p className="text-[12px] text-text-light">{preview ? 'Vista previa Cyber: ofertas desde las 19:00. El carrito conserva el precio vigente.' : 'Precios finales. Lo que ves es lo que pagás.'}</p>
+          <p className="text-[12px] text-text-light">{live.preview ? 'Vista previa Cyber: ofertas desde las 19:00. El carrito conserva el precio vigente.' : 'Precios finales. Lo que ves es lo que pagás.'}</p>
         </div>
 
         <div className="-mx-4 mb-6 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
@@ -106,6 +111,7 @@ export default function CyberCatalogoEvento({
           ))}
         </div>
 
+        {live.updating && <p role="status" className="py-6 text-sm text-text-light">{live.error ? 'No pudimos actualizar los precios. ' : 'Actualizando precios Cyber…'}{live.error && <button type="button" className="underline" onClick={() => void live.retry()}>Reintentar</button>}</p>}
         <div className="grid grid-cols-2 gap-x-3 gap-y-7 md:grid-cols-3 md:gap-x-4 md:gap-y-9 lg:grid-cols-4">
           {lista.slice(0, expanded ? CYBER_EXPANDED_COUNT : CYBER_INITIAL_COUNT).map((p) => (
             <ProductCard
@@ -114,7 +120,7 @@ export default function CyberCatalogoEvento({
               name={p.name}
               category={p.category}
               price={p.price}
-              pricePresentation={cyberCardPrice(p.price, pricePreview[p.slug], preview)}
+              pricePresentation={cyberCardPrice(p.price, pricePreview[p.slug], live.preview)}
               image={p.images[0]}
               images={p.images}
               sizes={p.sizes}
