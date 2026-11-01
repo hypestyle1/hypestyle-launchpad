@@ -147,8 +147,8 @@ export function NotaPreventa({ pa }: { pa: FichaPrivateAccess }) {
 /** "−33%" junto al precio cuando hay precio tachado. */
 export function Descuento({ p }: { p: FichaProps }) {
   if (!p.mounted || !p.displayOriginal || p.displayOriginal <= p.displayPrice) return null;
-  const pct = Math.round((1 - p.displayPrice / p.displayOriginal) * 100);
-  if (pct < 1) return null;
+  const pct = porcentajeDescuento(p.displayPrice, p.displayOriginal);
+  if (pct === null) return null;
   return <span className="text-[12px] font-semibold text-sale tabular-nums">−{pct}%</span>;
 }
 

@@ -120,14 +120,15 @@ export default function CyberCatalogoEvento({
               name={p.name}
               category={p.category}
               price={p.price}
-              pricePresentation={cyberCardPrice(p.price, pricePreview[p.slug], live.preview)}
+              pricePresentation={live.preview ? cyberCardPrice(p.price, pricePreview[p.slug], true) : undefined}
+              originalPrice={live.preview ? undefined : p.originalPrice}
+              showDiscountBadge={!live.preview}
               image={p.images[0]}
               images={p.images}
               sizes={p.sizes}
               stock={p.stock}
               href={`/producto/${p.slug}`}
               tags={p.tags}
-              mutedPrice
               dense
             />
           ))}

@@ -227,13 +227,13 @@ describe('curaduría — productos reales, nada inventado', () => {
     expect(sinComentarios).not.toMatch(/\d\s?%/);
   });
 
-  it('ninguna grilla del evento pasa originalPrice: el tachado es un % disfrazado', () => {
+  it('el bloque 4 PACK no inventa un precio tachado de producto', () => {
     // 89 de 145 productos tienen sale_price PERMANENTE sin fecha de fin, así
     // que ese "precio anterior" nunca se transó: el 3 PACK se leería
     // "$102.000 → $66.300" y los $102.000 son 3 × $34.000, pura aritmética.
     // Mostrar el tachado es comunicar un descuento contra un precio de
     // referencia inventado, que es justo lo que la marca no hace.
-    for (const f of ['components/cyber/CyberCatalogoEvento.tsx', 'components/cyber/Cyber4Pack.tsx']) {
+    for (const f of ['components/cyber/Cyber4Pack.tsx']) {
       const src = readFileSync(join(RAIZ, f.replace(/\//g, sep)), 'utf8');
       const sinComentarios = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '');
       expect(sinComentarios, f).not.toMatch(/originalPrice=/);

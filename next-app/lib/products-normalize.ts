@@ -62,7 +62,9 @@ export function fromWPNode(node: any): NormalizedProduct {
   const current  = parsePrice(node.price);
   const active   = explicit > 0 ? explicit : current;
   const price    = active > 0 ? active : regular;
-  const originalPrice = (price > 0 && price < regular) ? regular : undefined;
+  // La referencia solo se muestra si coincide con el precio efectivo de Woo.
+  // Un salePrice futuro sin activar no confirma una oferta vigente.
+  const originalPrice = (current > 0 && current === price && price < regular) ? regular : undefined;
 
   const images: string[] = [];
   if (node.image?.sourceUrl) images.push(node.image.sourceUrl);
