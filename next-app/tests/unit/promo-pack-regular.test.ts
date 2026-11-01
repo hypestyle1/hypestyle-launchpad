@@ -154,9 +154,9 @@ describe('computePackRegularDiscount — fuera de la ventana (grupos de 3)', () 
     expect(computePackRegularDiscount(otros, PACK)).toBe(0);
   });
 
-  it('sin precio de pack en el catálogo no hay descuento', () => {
+  it('sin referencia no inventa x3, pero conserva el precio aprobado x4', () => {
     expect(computePackRegularDiscount([black(3)], null)).toBe(0);
-    expect(computePackRegularDiscount([black(4)], null, 4)).toBe(0);
+    expect(computePackRegularDiscount([black(4)], null, 4)).toBe(AHORRO_4);
   });
 
   it('nunca negativo si las individuales están más baratas que el pack', () => {

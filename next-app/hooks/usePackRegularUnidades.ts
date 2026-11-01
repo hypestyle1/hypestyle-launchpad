@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   unidadesPackRegularDeStatus,
   type PackRegularUnidades,
@@ -25,23 +26,38 @@ export interface PackRegularStatus {
  * chico y el servidor, que sí sabe la hora, cobra el del evento — se cobra de
  * menos, no de más.
  *
- * Mismo patrón que usePromo3x2Status. Se refresca cada 5 minutos para que un
- * carrito abierto cruzando la medianoche del 2/11 (o la del 5/11) se entere; por
- * esos 5 minutos de desfasaje existe la gracia al cobrar
- * (PACK_REGULAR_X4_GRACIA_MS).
+ * Refresca cada 15 segundos y programa una consulta al llegar a cada frontera
+ * usando el intervalo informado por el servidor. También invalida el catálogo
+ * al cambiar de ventana para actualizar las individuales y la referencia x3.
  */
 export function usePackRegularUnidades(): PackRegularUnidades {
-  const { data } = useQuery<PackRegularStatus>({
+  const queryClient = useQueryClient();
+  const { data, refetch } = useQuery<PackRegularStatus>({
     queryKey: ['pack-regular-status'],
     queryFn: async () => {
-      const res = await fetch('/api/pack-regular-status');
+      const res = await fetch('/api/pack-regular-status', { cache: 'no-store' });
       if (!res.ok) throw new Error('pack-regular-status failed');
       return res.json();
     },
     staleTime: 60_000,
-    refetchInterval: 5 * 60_000,
+    refetchInterval: 15_000,
     retry: 2,
   });
+
+  useEffect(() => {
+    if (!data) return;
+    // El reloj de referencia es el del servidor; el browser solo espera el
+    // intervalo restante y vuelve a consultar, nunca activa la promo solo.
+    const serverTime = Date.parse(data.serverTime);
+    const boundary = [Date.parse(data.desde), Date.parse(data.hasta)]
+      .find(t => t > serverTime);
+    if (!Number.isFinite(serverTime) || !boundary || boundary - serverTime > 60_000) return;
+    const timer = setTimeout(() => {
+      void refetch();
+      void queryClient.invalidateQueries({ queryKey: ['products'] });
+    }, boundary - serverTime + 50);
+    return () => clearTimeout(timer);
+  }, [data, refetch, queryClient]);
 
   return unidadesPackRegularDeStatus(data);
 }

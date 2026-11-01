@@ -264,7 +264,7 @@ export default function CartDrawer() {
             ) : packRegularFaltanN > 0 ? (
               <p className="text-[11px] text-center text-muted-foreground">
                 Sumá <span className="font-bold text-foreground">{packRegularFaltanN} Regular Tee{packRegularFaltanN > 1 ? 's' : ''}</span>{' '}
-                más y pagás <span className="font-bold uppercase text-foreground">precio de pack</span>
+                más para completar el <span className="font-bold uppercase text-foreground">próximo pack</span>
               </p>
             ) : (
               <p className="text-[11px] text-center font-semibold uppercase tracking-[0.12em] text-green-700">
