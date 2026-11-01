@@ -1278,7 +1278,7 @@ export default function Checkout() {
               {packRegularDescuento > 0 && <div className="flex justify-between text-[13px] text-green-700"><span>{packRegularEtiqueta(unidadesPack)}</span><span>−{formatPrice(packRegularDescuento)}</span></div>}
               {packRegularFaltanN > 0 && (
                 <p className="text-[11px] text-foreground/70">
-                  Sumá {packRegularFaltanN} Regular Tee{packRegularFaltanN > 1 ? 's' : ''} más y pagás precio de pack
+                  Sumá {packRegularFaltanN} Regular Tee{packRegularFaltanN > 1 ? 's' : ''} más para completar el próximo pack
                 </p>
               )}
               {packRegularCuartaGratis && (

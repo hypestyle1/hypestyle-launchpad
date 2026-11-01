@@ -234,18 +234,19 @@ function ahorroPorGrupos(units: number[], tamanio: number, precioPack: number): 
  * se cobra al precio del catálogo: nadie paga más por llevar menos del
  * múltiplo. Entonces 3 pagan el pack de 3, 4 pagan el del evento, y 7 pagan 4 + 3.
  *
- * Sin precio de catálogo no hay descuento, ni siquiera en la ventana: si el
- * catálogo no cargó, mejor no inventar promos.
+ * Sin referencia de catálogo no se calcula el x3. El x4 sí se conserva durante
+ * su ventana: tiene precio aprobado propio y no depende del precio del x3.
  */
 export function computePackRegularDiscount(
   lines: PackRegularLine[],
   precioPack: number | null | undefined,
   unidades: PackRegularUnidades = PACK_REGULAR_UNIDADES,
 ): number {
-  if (!precioPack || precioPack <= 0) return 0;
+  if ((!precioPack || precioPack <= 0) && unidades !== PACK_REGULAR_UNIDADES_X4) return 0;
   const units = unidadesRegular(lines);
   // La regla de siempre: grupos de 3 al precio del catálogo.
-  const conReglaDe3 = ahorroPorGrupos(units, PACK_REGULAR_UNIDADES, precioPack);
+  const conReglaDe3 = precioPack && precioPack > 0
+    ? ahorroPorGrupos(units, PACK_REGULAR_UNIDADES, precioPack) : 0;
   if (unidades !== PACK_REGULAR_UNIDADES_X4) return Math.round(conReglaDe3);
 
   // La regla de la ventana: grupos de 4 al precio congelado del evento y, si
@@ -255,7 +256,7 @@ export function computePackRegularDiscount(
   for (; i + PACK_REGULAR_UNIDADES_X4 <= units.length; i += PACK_REGULAR_UNIDADES_X4) {
     conReglaDe4 += ahorroDelGrupo(units, i, PACK_REGULAR_UNIDADES_X4, PACK_REGULAR_X4_PRECIO);
   }
-  if (units.length - i === PACK_REGULAR_UNIDADES) {
+  if (units.length - i === PACK_REGULAR_UNIDADES && precioPack && precioPack > 0) {
     conReglaDe4 += ahorroDelGrupo(units, i, PACK_REGULAR_UNIDADES, precioPack);
   }
 
