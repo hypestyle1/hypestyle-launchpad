@@ -15,7 +15,7 @@ import HeroSs27 from '@/components/ss27-home/HeroSs27';
 import CyberHomeBanner from '@/components/cyber/CyberHomeBanner';
 import CyberTakeover from '@/components/cyber/CyberTakeover';
 import type { CyberFondo } from '@/components/cyber/CyberHeroFondo';
-import { cyberEstado } from '@/lib/cyber-hype';
+import { cyberTakeoverVisible } from '@/lib/cyber-visibility-server';
 
 /**
  * Qué fondo lleva el hero del evento.
@@ -69,6 +69,9 @@ export const metadata = buildMetadata({
   path: '/',
 });
 
+// Antes de las 19:00 la respuesta depende de la cookie firmada del gate.
+export const dynamic = 'force-dynamic';
+
 /**
  * NewInFW26, BasicosSection, BackInStock y MasHypeSection comparten la query
  * ['products'] de React Query, que pedía /api/products desde el browser: las
@@ -91,13 +94,14 @@ export default async function Home({
 }: {
   searchParams?: { hero?: string };
 }) {
-  /* ── CYBER HYPE TAKEOVER (solo del 1/11 20:00 al 4/11 23:59) ─────────────
-     Mientras el evento está en vivo, la home ES la experiencia del evento.
+  /* ── CYBER HYPE TAKEOVER ────────────────────────────────────────────────
+     Durante el cierre lo ve quien entró con la clave; desde las 19:00 la
+     fase normal toma el control. La visibilidad no adelanta precios ni drops.
      Todo lo demás de este archivo —la home SS27— queda EXACTAMENTE igual y
      vuelve solo al terminar: la restauración es que esta condición dé false,
      no un deploy ni un revert. Palancas: las fechas en lib/cyber-hype.ts y el
      kill switch CYBER_APAGADO=1 (apaga el takeover al instante). */
-  if (cyberEstado() === 'evento') return <CyberTakeover fondo={fondoHero(searchParams?.hero)} />;
+  if (await cyberTakeoverVisible()) return <CyberTakeover fondo={fondoHero(searchParams?.hero)} />;
 
   const queryClient = new QueryClient();
   // Las reseñas van por separado: no pasan por React Query, la sección las

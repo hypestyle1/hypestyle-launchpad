@@ -165,7 +165,7 @@ export function dropsPublicos(now: Date = new Date()): CyberDropPublico[] {
  * —los productos siguen en borrador en Woo y no se tocan—. El candado de
  * producción es el montaje de la sección, no el href.
  */
-export const MYSTERY_PUBLICADO = false;
+export const MYSTERY_PUBLICADO = true;
 
 /**
  * Link y precio de cada tarjeta, tomados de `MYSTERY_CAJAS` (lib/mystery.ts),

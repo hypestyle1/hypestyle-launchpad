@@ -1,5 +1,7 @@
 'use client';
 
+import { mysteryDe } from '@/lib/mystery';
+
 import { porcentajeDescuento } from '@/lib/descuento';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -374,7 +376,9 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // Galería: para productos personalizables sumamos al final muestras del dorsal.
   const baseImages = product.customizable
     ? [...product.images, 'products/argentina-jersey/preview-sample-espalda.png', 'products/argentina-jersey/preview-sample-frente.png']
-    : product.images;
+    : mysteryDe(product.slug)
+      ? [`/mystery/portadas/${mysteryDe(product.slug)!.id}-a.webp`, `/mystery/portadas/${mysteryDe(product.slug)!.id}-b.webp`]
+      : product.images;
   // Productos con video: el video va como primer slide de la galería.
   // La ficha en tres columnas es la de todos los productos. Quedan con el
   // diseño anterior los personalizables (tienen su propio flujo de dorsal), los
