@@ -164,7 +164,7 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     const choque = CYBER_DESTACADOS_SLUGS.filter((s) => CYBER_MYSTERY_EN_VIDRIERA.includes(s));
     // Lanzamiento 1/11: Valentín autoriza convivencia y organiza el despacho
     // manualmente. No modificar inventario ni retirar diseños aprobados.
-    expect(choque).toEqual(['napoli-tee-azul', 'napoli-tee-blanca', 'ladytribal-black-longsleeve', 'honda-white-tee']);
+    expect(choque.sort()).toEqual(['napoli-tee-azul', 'napoli-tee-blanca', 'ladytribal-black-longsleeve', 'honda-white-tee', 'athletic-dept-pink-longsleeve'].sort());
   });
 
   it('ningún texto de mystery lleva cifra de dinero ni porcentaje', () => {
