@@ -50,7 +50,9 @@ export default function CyberCatalogoEvento({
 }) {
   const { data: cachedProducts } = useProducts();
   const live = useCyberCatalogTransition(preview, serverTime);
-  const data = live.updating ? undefined : live.products ?? cachedProducts;
+  // Conservamos las fotos durante la actualización, sin exponer precios viejos.
+  const data = live.products ?? cachedProducts;
+  const pricePending = live.updating && !live.preview;
   const [vista, setVista] = useState<string>('destacados');
   const [expanded, setExpanded] = useState(false);
 
@@ -92,7 +94,7 @@ export default function CyberCatalogoEvento({
               Catálogo Cyber
             </h2>
           </div>
-          <p className="text-[12px] text-text-light">{live.preview ? 'Vista previa Cyber: ofertas desde las 19:00. El carrito conserva el precio vigente.' : 'Precios finales. Lo que ves es lo que pagás.'}</p>
+          <p className="text-[12px] text-text-light">{live.preview ? 'Vista previa Cyber: ofertas desde las 19:00. El carrito conserva el precio vigente.' : pricePending ? 'Verificando precios Cyber. Los importes aparecen cuando Woo los confirma.' : 'Precios finales. Lo que ves es lo que pagás.'}</p>
         </div>
 
         <div className="-mx-4 mb-6 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
@@ -111,7 +113,7 @@ export default function CyberCatalogoEvento({
           ))}
         </div>
 
-        {live.updating && <p role="status" className="py-6 text-sm text-text-light">{live.error ? 'No pudimos actualizar los precios. ' : 'Actualizando precios Cyber…'}{live.error && <button type="button" className="underline" onClick={() => void live.retry()}>Reintentar</button>}</p>}
+        {live.updating && <p role="status" className="mb-4 text-xs text-text-light">{live.error ? 'No pudimos actualizar los precios. ' : 'Consultando precios Cyber… '}{live.error && <button type="button" className="underline" onClick={() => void live.retry()}>Reintentar</button>}</p>}
         <div className="grid grid-cols-2 gap-x-3 gap-y-7 md:grid-cols-3 md:gap-x-4 md:gap-y-9 lg:grid-cols-4">
           {lista.slice(0, expanded ? CYBER_EXPANDED_COUNT : CYBER_INITIAL_COUNT).map((p) => (
             <ProductCard
@@ -122,7 +124,8 @@ export default function CyberCatalogoEvento({
               price={p.price}
               pricePresentation={live.preview ? cyberCardPrice(p.price, pricePreview[p.slug], true) : undefined}
               originalPrice={live.preview ? undefined : p.originalPrice}
-              showDiscountBadge={!live.preview}
+              showDiscountBadge={!live.preview && !pricePending}
+              pricePending={pricePending}
               image={p.images[0]}
               images={p.images}
               sizes={p.sizes}
