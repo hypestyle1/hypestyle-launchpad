@@ -167,6 +167,12 @@ export function mysteryDe(slug: string): MysteryCaja | undefined {
   return PORS_SLUG.get(slug);
 }
 
+/** Portadas oficiales existentes cuando Woo no devuelve imagen del contenedor. */
+export function mysteryPortadas(slug: string): string[] {
+  const caja = mysteryDe(slug);
+  return caja ? [`/mystery/portadas/${caja.id}-a.webp`, `/mystery/portadas/${caja.id}-b.webp`] : [];
+}
+
 export const MYSTERY_SLUGS: string[] = MYSTERY_CAJAS.map(c => c.slug);
 
 /**
