@@ -75,7 +75,7 @@ async function fetchCatalog(strict: boolean, fresh = false): Promise<NormalizedP
     // /special-prices. Un timeout suelto contra WP tiraba el deploy entero.
     const res = await fetchWithRetry(GRAPHQL_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(fresh ? { 'Cache-Control': 'no-cache' } : {}) },
       body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100, after } }),
       ...(fresh ? { cache: 'no-store' as const } : { next: { revalidate: 60 } }),
     });
