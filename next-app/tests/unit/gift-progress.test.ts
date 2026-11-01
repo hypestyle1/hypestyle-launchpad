@@ -86,6 +86,9 @@ vi.mock('@/lib/goal-discount', () => ({ getActiveDiscountStatus: async () => ({ 
 let pedidoEnviado: any = null;
 
 beforeEach(() => {
+  // Estos casos prueban el pack habitual x3, no la ventana Cyber. No depender
+  // de la hora real del runner (a las 19:00 del 1/11 cambia la etiqueta a x4).
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-31T12:00:00-03:00'));
   pedidoEnviado = null;
   vi.stubGlobal('fetch', vi.fn(async (url: any, init?: any) => {
     const u = String(url);
@@ -102,7 +105,7 @@ beforeEach(() => {
     return { ok: true, json: async () => ({}), text: async () => '' };
   }));
 });
-afterEach(() => { vi.unstubAllGlobals(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 const customer = { email: 'a@b.com', nombre: 'A', apellido: 'B', direccion: 'Calle 1', cp: '1425', ciudad: 'CABA', provincia: 'CABA', telefono: '1145678900' };
 
