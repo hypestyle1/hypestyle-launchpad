@@ -47,6 +47,9 @@ export default defineConfig({
     : {
         command: `npx next start -p ${PORT}`,
         url: baseURL,
+        // El gate falla cerrado sin secreto. Este valor existe sólo en el
+        // servidor local de Playwright y permite probar el login en CI.
+        env: { ...process.env, EARLY_ACCESS_PASSWORD: process.env.EARLY_ACCESS_PASSWORD || 'test-only-Cyber' },
         reuseExistingServer: !process.env.CI,
         timeout: 180_000,
       },
