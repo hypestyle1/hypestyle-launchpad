@@ -6,6 +6,8 @@ import { defineConfig } from 'vitest/config';
  * cubren la plata. Los flujos de la web van por Playwright (playwright.config.ts).
  */
 export default defineConfig({
+  // Next preserva JSX; los tests de /acceso necesitan ejecutarlo en Node.
+  oxc: { jsx: { runtime: 'automatic' } },
   // Resuelve el alias `@/` desde tsconfig.json, igual que Next.
   resolve: { tsconfigPaths: true },
   test: {
