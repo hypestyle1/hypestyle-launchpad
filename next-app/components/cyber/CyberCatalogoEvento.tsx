@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
 import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
+import { cyberCardPrice, cyberCatalogOrder, cyberCategoryMatches, CYBER_INITIAL_COUNT, CYBER_EXPANDED_COUNT } from '@/lib/cyber-catalog-view';
 
 /* Catálogo del evento — el sitio entero comprable sin salir del takeover.
 
@@ -46,6 +47,7 @@ export default function CyberCatalogoEvento({
 }) {
   const { data } = useProducts();
   const [vista, setVista] = useState<string>('destacados');
+  const [expanded, setExpanded] = useState(false);
 
   const lista = useMemo(() => {
     if (!data) return [];
@@ -53,19 +55,18 @@ export default function CyberCatalogoEvento({
     const pick = (slugs: string[]) =>
       slugs.map((s) => bySlug.get(s)).filter(Boolean) as NormalizedProduct[];
 
-    if (vista === 'destacados') return pick(destacadosSlugs);
-    if (vista === 'todo') return conStockPrimero(data).slice(0, 48);
+    if (vista === 'destacados' || vista === 'todo') return cyberCatalogOrder(data, destacadosSlugs);
 
     const f = filtros.find((x) => x.id === vista);
     if (!f) return [];
     // Curados primero, el resto de la categoría después: así el filtro nunca
     // esconde un producto, solo decide con qué se abre.
-    const curados = pick(f.slugs);
+    const curados = pick(f.slugs).filter(p => cyberCategoryMatches(p.category, f));
     const yaEstan = new Set(curados.map((p) => p.slug));
     const resto = conStockPrimero(
-      data.filter((p) => f.cats.includes(p.category) && !yaEstan.has(p.slug)),
+      data.filter((p) => cyberCategoryMatches(p.category, f) && !yaEstan.has(p.slug)),
     );
-    return [...curados, ...resto];
+    return cyberCatalogOrder([...curados, ...resto], f.slugs);
   }, [data, vista, destacadosSlugs, filtros]);
 
   const pestañas = [
@@ -93,7 +94,7 @@ export default function CyberCatalogoEvento({
           {pestañas.map((p) => (
             <button
               key={p.id}
-              onClick={() => setVista(p.id)}
+              onClick={() => { setVista(p.id); setExpanded(false); }}
               className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${
                 vista === p.id
                   ? 'border-foreground bg-foreground text-background'
@@ -106,16 +107,14 @@ export default function CyberCatalogoEvento({
         </div>
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-7 md:grid-cols-3 md:gap-x-4 md:gap-y-9 lg:grid-cols-4">
-          {lista.map((p) => (
+          {lista.slice(0, expanded ? CYBER_EXPANDED_COUNT : CYBER_INITIAL_COUNT).map((p) => (
             <ProductCard
               key={p.slug}
               id={p.slug}
               name={p.name}
               category={p.category}
               price={p.price}
-              pricePresentation={pricePreview[p.slug] && (preview || p.price < pricePreview[p.slug].originalPrice)
-                ? { price: preview ? pricePreview[p.slug].price : p.price, originalPrice: pricePreview[p.slug].originalPrice }
-                : undefined}
+              pricePresentation={cyberCardPrice(p.price, pricePreview[p.slug], preview)}
               image={p.images[0]}
               images={p.images}
               sizes={p.sizes}
@@ -129,12 +128,16 @@ export default function CyberCatalogoEvento({
         </div>
 
         <div className="mt-10 flex justify-center">
-          <Link
+          {!expanded && lista.length > CYBER_INITIAL_COUNT ? (
+            <button type="button" onClick={() => setExpanded(true)} className="inline-flex h-[52px] items-center justify-center rounded-full border border-foreground/25 px-10 text-[12px] font-bold uppercase tracking-[0.12em] text-foreground transition-colors hover:border-foreground">
+              Ver más
+            </button>
+          ) : <Link
             href="/productos"
             className="inline-flex h-[52px] items-center justify-center rounded-full border border-foreground/25 px-10 text-[12px] font-bold uppercase tracking-[0.12em] text-foreground transition-colors hover:border-foreground"
           >
-            Ver el catálogo completo
-          </Link>
+            Ver toda la colección
+          </Link>}
         </div>
       </div>
     </section>
