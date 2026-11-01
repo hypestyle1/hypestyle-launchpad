@@ -12,14 +12,9 @@ import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
    curaduría llega por props desde lib/cyber-cartelera, medida contra Woo el
    29/10.
 
-   ── SIN PRECIO TACHADO, a propósito ─────────────────────────────────────────
-   Las cards del sitio muestran `originalPrice` tachado al lado del precio. En
-   el evento eso NO se pasa: 89 de los 145 productos tienen `sale_price`
-   permanente sin fecha de fin, así que ese "precio anterior" es un valor que
-   nunca se transó — el 3 PACK se leería "$102.000 $66.300" cuando los $102.000
-   son aritmética (3 × $34.000), no un precio que alguien haya pagado. La marca
-   comunica por precio final; el tachado es la misma promesa que un porcentaje,
-   escrita de otra forma.
+   La previsualizacion autenticada usa las ofertas programadas del respaldo REST.
+   Solo cambia presentacion; el carrito conserva el precio efectivo. Las
+   referencias se limitan a la campana verificada, sin tachados historicos.
 
    Dentro de cada filtro: primero el orden curado, después el resto de la
    categoría (ningún producto desaparece), y lo agotado al final — visible,
@@ -41,9 +36,13 @@ function conStockPrimero(items: NormalizedProduct[]): NormalizedProduct[] {
 export default function CyberCatalogoEvento({
   destacadosSlugs,
   filtros,
+  pricePreview = {},
+  preview = false,
 }: {
   destacadosSlugs: string[];
   filtros: FiltroVista[];
+  pricePreview?: Record<string, { price: number; originalPrice: number }>;
+  preview?: boolean;
 }) {
   const { data } = useProducts();
   const [vista, setVista] = useState<string>('destacados');
@@ -87,7 +86,7 @@ export default function CyberCatalogoEvento({
               Catálogo Cyber
             </h2>
           </div>
-          <p className="text-[12px] text-text-light">Precios finales. Lo que ves es lo que pagás.</p>
+          <p className="text-[12px] text-text-light">{preview ? 'Vista previa Cyber: ofertas desde las 19:00. El carrito conserva el precio vigente.' : 'Precios finales. Lo que ves es lo que pagás.'}</p>
         </div>
 
         <div className="-mx-4 mb-6 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
@@ -114,6 +113,9 @@ export default function CyberCatalogoEvento({
               name={p.name}
               category={p.category}
               price={p.price}
+              pricePresentation={pricePreview[p.slug] && (preview || p.price < pricePreview[p.slug].originalPrice)
+                ? { price: preview ? pricePreview[p.slug].price : p.price, originalPrice: pricePreview[p.slug].originalPrice }
+                : undefined}
               image={p.images[0]}
               images={p.images}
               sizes={p.sizes}

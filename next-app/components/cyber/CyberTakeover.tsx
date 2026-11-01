@@ -17,7 +17,9 @@ import CyberNavCategorias from './CyberNavCategorias';
 import CyberEditorial, { CYBER_CATEGORIAS_EDITORIAL } from './CyberEditorial';
 import '@/components/cyber/cyber.css';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
-import { CYBER_END, cyberAhora, cyberUltimasHoras } from '@/lib/cyber-hype';
+import { CYBER_END, CYBER_START, cyberAhora, cyberUltimasHoras } from '@/lib/cyber-hype';
+import { cyberAuthenticated } from '@/lib/cyber-visibility-server';
+import cyberPrices from '@/lib/cyber-price-preview.json';
 import {
   CYBER_ACCESOS,
   CYBER_DESTACADOS_SLUGS,
@@ -26,6 +28,7 @@ import {
   CYBER_PACK_SLUGS,
   MYSTERY_PUBLICADO,
   dropsPublicos,
+  CYBER_DROPS,
 } from '@/lib/cyber-cartelera';
 
 /* CYBER HYPE TAKEOVER — la experiencia completa del EVENTO (2–4/11).
@@ -53,7 +56,13 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
   const ultimasHoras = cyberUltimasHoras();
   // cyberAhora(): con la fase forzada en local, los drops se ven como en la
   // apertura. En producción es el reloj real y no adelanta nada.
-  const drops = dropsPublicos(cyberAhora());
+  const authenticated = await cyberAuthenticated();
+  const pricePreview = authenticated && Date.now() < Date.parse(CYBER_START);
+  const drops = dropsPublicos(cyberAhora()).map(d =>
+    authenticated && d.id === '01'
+      ? { ...d, estado: 'revelado' as const, producto: CYBER_DROPS[0].producto! }
+      : d,
+  );
   const hayRevelado = drops.some((d) => d.estado === 'revelado');
   const mostrarMystery = MYSTERY_PUBLICADO || process.env.NODE_ENV !== 'production';
   const urlWhatsApp = whatsappUrl();
@@ -109,14 +118,16 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
 
         <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
-        <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} />
+        <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} pricePreview={cyberPrices} preview={pricePreview} />
 
         {/* Shop the Look: el MISMO componente de la home, sin tocar. Va acá y
             no antes del catálogo a propósito — arriba le robaría atención a
             las ofertas, que es lo que el evento vino a mostrar. Después de ver
             precios, en cambio, la pregunta deja de ser "cuánto sale" y pasa a
             ser "con qué lo combino", que es donde sube el ticket. */}
-        <ShopTheLook />
+        <div className="bg-white text-foreground">
+          <ShopTheLook />
+        </div>
 
         {/* El regalo, justo después del catálogo: es donde aparece la
             fricción real —"llevo $78.000, me faltan $22.000 para la cadena"—

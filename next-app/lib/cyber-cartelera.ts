@@ -90,7 +90,7 @@ export const CYBER_DROPS: CyberDrop[] = [
     producto: {
       nombre: 'Raglan Longsleeves',
       claim: 'Creative Goods y Eagle, en Pink y Green.',
-      img: '/cyber/drops/drop-01-longsleeves.webp',
+      img: '/cyber/drops/drop-01-definitivo.png',
       href: '/longsleeves',
     },
   },

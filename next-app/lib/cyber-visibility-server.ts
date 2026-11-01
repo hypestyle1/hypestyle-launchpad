@@ -15,6 +15,11 @@ export async function cyberTakeoverVisible(ahora: number = Date.now()): Promise<
   if (estado === 'evento') return true;
   if (estado !== 'previa' || !cyberBloqueado(ahora)) return false;
 
+  return cyberAuthenticated(ahora);
+}
+
+export async function cyberAuthenticated(ahora: number = Date.now()): Promise<boolean> {
+  if (!cyberBloqueado(ahora)) return false;
   const secreto = (process.env.EARLY_ACCESS_PASSWORD ?? '').trim();
   const token = cookies().get(COOKIE_CYBER)?.value;
   return cookieValida(token, secreto, ahora);
