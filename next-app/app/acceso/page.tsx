@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import CyberWordmark from '@/components/cyber/CyberWordmark';
-import { EARLY_START, PUBLIC_OPEN } from '@/lib/cyber-gate';
+import { PUBLIC_OPEN } from '@/lib/cyber-gate';
 
 /* Puerta de CYBER HYPE.
  *
@@ -13,11 +13,8 @@ import { EARLY_START, PUBLIC_OPEN } from '@/lib/cyber-gate';
  * la pone el wordmark y lo único que pesa es la tipografía que el sitio ya
  * carga.
  *
- * Dos momentos, una sola pantalla:
- *  - Antes de las 19:00 — cuenta hacia la apertura pública y avisa que la
- *    contraseña se comparte a las 19:00. El campo igual está: si alguien ya la
- *    tiene, no hay razón para hacerlo esperar.
- *  - Desde las 19:00 — el campo pasa al frente.
+ * Durante todo el cierre se puede entrar con la contraseña. Las 19:00 son
+ * solamente la hora de difusión; el countdown apunta a las 20:00.
  *
  * El `maxAge` de la cookie lo pone /api/acceso. Acá no se guarda nada.
  */
@@ -53,7 +50,6 @@ export default function AccesoPage() {
     if (montado && ahora >= PUBLIC_OPEN) router.replace('/');
   }, [montado, ahora, router]);
 
-  const yaEsHoraDeClave = montado && ahora >= EARLY_START;
   const h = Math.floor(restante / 3_600_000);
   const m = Math.floor((restante % 3_600_000) / 60_000);
   const s = Math.floor((restante % 60_000) / 1_000);
@@ -69,9 +65,15 @@ export default function AccesoPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pw }),
       });
-      if (r.ok) { router.replace('/'); return; }
-      setError('Esa clave no es.');
-      inputRef.current?.select();
+      if (r.ok) { window.location.replace('/'); return; }
+      if (r.status === 401) {
+        setError('Esa clave no es.');
+        inputRef.current?.select();
+      } else if (r.status === 503) {
+        setError('El acceso no está configurado. Contactanos para que lo revisemos.');
+      } else {
+        setError('No se pudo verificar. Probá de nuevo.');
+      }
     } catch {
       setError('No se pudo verificar. Probá de nuevo.');
     } finally {
@@ -91,9 +93,7 @@ export default function AccesoPage() {
         </h1>
 
         <p className="mt-4 text-[13.5px] leading-[1.5] text-white/60">
-          {yaEsHoraDeClave
-            ? 'Acceso anticipado abierto. Poné la clave que te pasamos.'
-            : 'Estamos preparando el evento. La clave se comparte a las 19:00 por Close Friends y WhatsApp.'}
+          La clave se comparte a las 19:00 por Close Friends y WhatsApp. Si ya la tenés, podés entrar.
         </p>
 
         {/* Countdown: la hora es lo único que se publica mientras está cerrado,

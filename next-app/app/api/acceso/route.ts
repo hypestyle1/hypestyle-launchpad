@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { COOKIE_CYBER, EARLY_START, PUBLIC_OPEN, emitirCookie } from '@/lib/cyber-gate';
+import { COOKIE_CYBER, PUBLIC_OPEN, emitirCookie } from '@/lib/cyber-gate';
 
 export async function POST(request: NextRequest) {
-  const { password } = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body.password !== 'string') {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+  const { password } = body;
 
   // Fail closed: sin EARLY_ACCESS_PASSWORD configurada no se abre la puerta. El
   // fallback literal anterior vivía en la fuente pública del repo, así que la
   // clave del gate estaba a la vista de cualquiera.
   const correct = (process.env.EARLY_ACCESS_PASSWORD ?? '').trim();
-  if (!correct) return NextResponse.json({ ok: false }, { status: 401 });
+  if (!correct) return NextResponse.json({ ok: false }, { status: 503 });
 
-  // La clave no vale ANTES de las 19:00. Se comparte por Close Friends y
-  // WhatsApp a esa hora, y entre las 00:00 y las 19:00 la tienda tiene que
-  // estar cerrada para todos: si alguien la consigue antes —se filtra, la
-  // reenvían— no debería poder entrar igual. Después de la apertura pública
-  // tampoco hace falta: a esa altura el gate ya dejó de bloquear.
-  const ahora = Date.now();
-  if (ahora < EARLY_START) {
-    return NextResponse.json({ ok: false, motivo: 'todavia-no' }, { status: 403 });
-  }
-
+  // Las 19:00 son la difusión de la clave, no una restricción de acceso.
   if (typeof password === 'string' && password.toUpperCase() === correct.toUpperCase()) {
     const res = NextResponse.json({ ok: true });
     // Vence con el evento: no tiene sentido una cookie que sobreviva al Cyber.

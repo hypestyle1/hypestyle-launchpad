@@ -98,10 +98,8 @@ describe('cookie firmada y clave con horario', () => {
     expect(await cookieValida(c, SECRETO)).toBe(false);
   });
 
-  it('la clave no se acepta antes de las 19:00', () => {
+  it('las 19:00 no condicionan la autenticacion', () => {
     const api = readFileSync(join(__dirname, '..', '..', 'app', 'api', 'acceso', 'route.ts'), 'utf8');
-    expect(api).toMatch(/ahora < EARLY_START/);
-    // y el 403 va ANTES de comparar la contraseña
-    expect(api.indexOf('EARLY_START')).toBeLessThan(api.indexOf('password.toUpperCase()'));
+    expect(api).not.toMatch(/EARLY_START|todavia-no/);
   });
 });

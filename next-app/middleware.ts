@@ -16,10 +16,8 @@ import { ORDER_KEY_RE, REPAGO_COOKIE_MAX_AGE, repagoCookie } from '@/lib/repago-
  *   19:00  EARLY_START  se comparte la contraseña (Mejores Amigos / WhatsApp)
  *   20:00  PUBLIC_OPEN  apertura para todos, sin contraseña
  *
- * `EARLY_START` no cambia quién puede entrar —la contraseña funciona apenas
- * empieza el bloqueo— sino qué muestra la pantalla: antes de esa hora el
- * countdown apunta a la apertura y después aparece el campo de contraseña.
- * Lo usa /acceso; acá se exporta para que haya una sola fuente de las tres.
+ * Durante todo el cierre se puede entrar con la contraseña. Las 19:00 son
+ * solamente la difusión de la clave; no cambian la autorización.
  */
 // Las tres horas y la cookie viven en lib/cyber-gate.ts, que también usa
 // /acceso: así la pantalla cuenta hacia la hora en la que de verdad abre.
@@ -161,7 +159,9 @@ async function handle(request: NextRequest) {
   // Bloquear → redirigir al gate
   const url = request.nextUrl.clone();
   url.pathname = '/acceso';
-  return NextResponse.redirect(url);
+  const response = NextResponse.redirect(url);
+  response.headers.set('Cache-Control', 'private, no-store');
+  return response;
 }
 
 export const config = {

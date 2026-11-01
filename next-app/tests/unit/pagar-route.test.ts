@@ -410,7 +410,15 @@ describe('middleware: la clave sale de la URL antes de renderizar', () => {
   });
 
   it('sin clave en la URL no redirige', async () => {
-    const res = await visit('/pagar/3311');
-    expect(res.headers.get('location')).toBeNull();
+    // Esta prueba aísla el intercambio de la key; durante el cierre del Cyber
+    // el gate sí debe redirigir una visita pública a /acceso.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-31T23:59:59-03:00'));
+    try {
+      const res = await visit('/pagar/3311');
+      expect(res.headers.get('location')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
