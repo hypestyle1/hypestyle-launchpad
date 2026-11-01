@@ -42,6 +42,8 @@ interface ProductCardProps {
   customizable?: boolean;
   /** Muestra el precio promocional en negro (no en rojo). Usado en New In. */
   mutedPrice?: boolean;
+  /** El preview puede mostrar importes futuros, pero no una oferta activa. */
+  showDiscountBadge?: boolean;
   /**
    * Card compacta para grillas densas (3 columnas en mobile, Best sellers):
    * badge, nombre y precios bajan un escalón para no pisarse en ~115px de
@@ -100,7 +102,7 @@ export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
   href = "/productos", sizes, stock, giftNote, customizable, mutedPrice,
   dense, blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin, imagePriority,
-  vistaFoto = 'mockup', pricePresentation,
+  vistaFoto = 'mockup', pricePresentation, showDiscountBadge = true,
 }: ProductCardProps) {
   // Escalas de la card densa vs. la normal (ver prop `dense`).
   const badgePos = dense ? "top-2 left-2 px-1.5 py-0.5 text-[8px] tracking-[0.06em]" : "top-3 left-3 px-2.5 py-1 text-[10px] tracking-wider";
@@ -263,7 +265,7 @@ export default function ProductCard({
             muestra: un "-3%" no es una oferta, es ruido.
             Arriba a la DERECHA para no pisar el badge "New In"/"Próximamente",
             y fuera del centro para no tapar la prenda. */}
-        {descuentoPct !== null && !outOfStock && !mutedPrice && (
+        {showDiscountBadge && descuentoPct !== null && !outOfStock && !mutedPrice && (
           <span
             className={`absolute ${dense ? 'top-2 right-2 px-1.5 py-0.5 text-[9px]' : 'top-3 right-3 px-2 py-1 text-[11px]'} z-10 rounded-[6px] bg-destructive font-bold tabular-nums tracking-[0.02em] text-white shadow-sm`}
           >

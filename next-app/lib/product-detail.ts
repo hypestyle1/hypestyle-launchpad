@@ -429,7 +429,7 @@ function fromWPNode(node: any): Product {
   const current  = parsePrice(node.price);
   const active   = explicit > 0 ? explicit : current;
   const price    = active > 0 ? active : regular;
-  const originalPrice = (price > 0 && price < regular) ? regular : undefined;
+  const originalPrice = (current > 0 && current === price && price < regular) ? regular : undefined;
 
   const allImages: string[] = [];
   if (node.image?.sourceUrl) allImages.push(node.image.sourceUrl);
@@ -593,7 +593,7 @@ export function isProductNotFoundError(err: unknown): boolean {
  */
 export async function fetchProductDetail(
   slug: string,
-  opts: { server?: boolean } = {},
+  opts: { server?: boolean; fresh?: boolean } = {},
 ): Promise<Product | undefined> {
   let data: { product: any } | undefined;
   try {
@@ -601,7 +601,8 @@ export async function fetchProductDetail(
       GET_PRODUCT,
       { slug },
       undefined,
-      opts.server ? { revalidate: SERVER_REVALIDATE } : undefined,
+      opts.server && !opts.fresh ? { revalidate: SERVER_REVALIDATE } : undefined,
+      opts.fresh ? 'no-store' : undefined,
     );
   } catch (err) {
     if (isProductNotFoundError(err)) return undefined;

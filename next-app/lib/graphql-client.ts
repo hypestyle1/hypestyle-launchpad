@@ -20,6 +20,7 @@ export async function fetchGraphQL<T>(
   // del browser ignora la opción). Sin esto, cada request a una ficha de
   // producto le pegaría de nuevo a WPGraphQL.
   next?: { revalidate: number },
+  cache?: RequestCache,
 ): Promise<T> {
   // Con reintentos: en build esto corre para el sitemap, los generateStaticParams
   // y las 109 fichas de producto, y un solo timeout contra WP tiraba el deploy.
@@ -29,6 +30,7 @@ export async function fetchGraphQL<T>(
     body: JSON.stringify({ query, variables }),
     signal,
     ...(next ? { next } : {}),
+    ...(cache ? { cache } : {}),
   });
   if (!response.ok) throw new Error('Network response was not ok');
   const { data, errors } = await response.json();
