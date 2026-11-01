@@ -13,6 +13,7 @@ import {
   cyberEstado,
   cyberCapturaAbierta,
 } from '@/lib/cyber-hype';
+import { cyberTakeoverVisible } from '@/lib/cyber-visibility-server';
 
 /**
  * CYBER HYPE — una sola página para las tres etapas del evento.
@@ -76,7 +77,7 @@ function PieMinimo() {
   );
 }
 
-export default function Page({
+export default async function Page({
   searchParams,
 }: {
   searchParams?: { fondo?: string; wa?: string };
@@ -86,7 +87,7 @@ export default function Page({
   const conTextura = searchParams?.fondo !== 'liso';
 
   /* ── EVENTO: el mismo takeover que la home ───────────────────────────── */
-  if (estado === 'evento') return <CyberTakeover />;
+  if (await cyberTakeoverVisible()) return <CyberTakeover />;
 
 
   /* ── PREVIA y CIERRE (la pantalla aprobada el 28/10, sin cambios) ────── */

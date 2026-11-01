@@ -130,8 +130,8 @@ describe('drops — el módulo de la config es SOLO del servidor', { timeout: 30
 /* ═══════════════════════════ MYSTERY ARCHIVE ═══════════════════════════ */
 
 describe('mystery — espacio diseñado, no promesa activa', () => {
-  it('sigue sin publicar: prenderlo es decisión comercial de Valentín', () => {
-    expect(MYSTERY_PUBLICADO).toBe(false);
+  it('publica las tres Mystery por decisión comercial de Valentín', () => {
+    expect(MYSTERY_PUBLICADO).toBe(true);
   });
 
   it('las tres categorías existen, con portada real, y su link y precio salen de MYSTERY_CAJAS', () => {
@@ -154,7 +154,7 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     expect(CYBER_MYSTERY.map((m) => m.precio)).toEqual([25900, 39900, 54900]);
   });
 
-  it('al publicar Mystery, su pool no puede seguir en la vidriera del evento', () => {
+  it('mantiene los destacados aprobados con despacho manual de Mystery', () => {
     // El choque: la misma remera que puede salir en una caja sorpresa está a
     // la venta suelta dos secciones más abajo, a $38.000–40.500. Mientras
     // Mystery no esté publicado conviven sin problema (y no queremos perder
@@ -162,10 +162,9 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     // hay que elegir. Este test obliga a esa decisión en el momento justo.
     if (!MYSTERY_PUBLICADO) return;
     const choque = CYBER_DESTACADOS_SLUGS.filter((s) => CYBER_MYSTERY_EN_VIDRIERA.includes(s));
-    expect(
-      choque,
-      `estos productos están en el pool de Mystery Y en los destacados: ${choque.join(', ')}`,
-    ).toEqual([]);
+    // Lanzamiento 1/11: Valentín autoriza convivencia y organiza el despacho
+    // manualmente. No modificar inventario ni retirar diseños aprobados.
+    expect(choque).toEqual(['ladytribal-black-longsleeve', 'honda-white-tee']);
   });
 
   it('ningún texto de mystery lleva cifra de dinero ni porcentaje', () => {
@@ -286,6 +285,8 @@ describe('restauración automática', () => {
     for (const seccion of ['HeroSs27', 'Ss27Feed', 'ShopTheLook', 'EsencialesShelf', 'Fw26Shelf', 'BestSellersShelf', 'ReviewsHomeSection', 'InstagramFeed', 'Footer']) {
       expect(src).toContain(seccion);
     }
-    expect(src).toContain("cyberEstado() === 'evento'");
+    // La rama sigue intacta, pero ahora la decisión incluye la sesión firmada
+    // durante el cierre previo a las 19:00.
+    expect(src).toContain('cyberTakeoverVisible()');
   });
 });
