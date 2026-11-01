@@ -58,11 +58,11 @@ export function fetchAllProducts(): Promise<NormalizedProduct[]> {
 }
 
 /** Igual que fetchAllProducts pero lanza CatalogUnavailableError si WordPress falla. */
-export function fetchAllProductsStrict(): Promise<NormalizedProduct[]> {
-  return fetchCatalog(true);
+export function fetchAllProductsStrict(fresh = false): Promise<NormalizedProduct[]> {
+  return fetchCatalog(true, fresh);
 }
 
-async function fetchCatalog(strict: boolean): Promise<NormalizedProduct[]> {
+async function fetchCatalog(strict: boolean, fresh = false): Promise<NormalizedProduct[]> {
   // WPGraphQL cachea el "first" a 100 por página sin importar lo que se pida
   // (confirmado en vivo) — hay que paginar por cursor igual que en
   // app/api/products/route.ts, si no los productos más allá del top-100
@@ -75,9 +75,9 @@ async function fetchCatalog(strict: boolean): Promise<NormalizedProduct[]> {
     // /special-prices. Un timeout suelto contra WP tiraba el deploy entero.
     const res = await fetchWithRetry(GRAPHQL_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(fresh ? { 'Cache-Control': 'no-cache' } : {}) },
       body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100, after } }),
-      next: { revalidate: 60 },
+      ...(fresh ? { cache: 'no-store' as const } : { next: { revalidate: 60 } }),
     });
     if (!res.ok) {
       if (strict) throw new CatalogUnavailableError(`HTTP ${res.status} en la página ${i + 1}`);

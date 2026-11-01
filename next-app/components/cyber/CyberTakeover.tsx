@@ -118,7 +118,7 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
 
         <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
-        <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} pricePreview={cyberPrices} preview={pricePreview} />
+        <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} pricePreview={cyberPrices} preview={pricePreview} serverTime={Date.now()} />
 
         {/* Shop the Look: el MISMO componente de la home, sin tocar. Va acá y
             no antes del catálogo a propósito — arriba le robaría atención a

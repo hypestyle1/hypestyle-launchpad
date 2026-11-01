@@ -319,26 +319,42 @@ export const CYBER_PACK_SLUGS: string[] = [
  *    dos están sin talle M.
  */
 export const CYBER_DESTACADOS_SLUGS: string[] = [
-  'regular-tees-3-pack-black-navy-white',
+  'regular-tee-black',
   'faith-over-everything-camo-hoodie',
-  'zolotye-kupola-washed-graphite-hoodie',
-  'regular-tees-3-pack-black',
+  'sleeveless-ranglan-black',
+  'napoli-tee-azul',
+  'regular-tees-3-pack-black-navy-white',
   'find-jesus-longsleeve-black',
   'sweatpant-grey-hstars',
-  'grey-camo-cap',
-  'splatter-hoodie-washed-grey',
+  'regular-tee-white',
+  'sleeveless-ranglan-white',
   'lettering-black-longsleeve',
-  'longsleeve-waffle-horses',
-  'camo-cap',
-  'hype-distressed-grey-hoodie',
-  // Las cuatro que completan la grilla a 16 (4 filas limpias en desktop, 8 en
-  // mobile). Banco verificado el 29/10: existen, publish, con stock y foto.
-  // `regular-tees-3-pack-white` entra por una razón que no es su facturación:
-  // es el ÚNICO 3 PACK con talle M, y el M es lo que más se pide.
-  'ladytribal-black-longsleeve',
-  'hype-washed-black-waffle-longsleeve',
-  'honda-white-tee',
   'regular-tees-3-pack-white',
+  'lettering-pink-jort',
+  'napoli-tee-blanca',
+  'zolotye-kupola-washed-graphite-hoodie',
+  'regular-tee-navy',
+  'ladytribal-black-longsleeve',
+  'sweatpant-pink',
+  'sleeveless-ranglan-grey',
+  'regular-tees-3-pack-black',
+  'longsleeve-waffle-horses',
+  'honda-white-tee',
+  'jort-cargo-realtree-beige',
+  'regular-tee-melange',
+  'splatter-hoodie-washed-grey',
+  'sleeveless-ranglan-militar-green',
+  'regular-tee-red',
+  'hype-washed-black-waffle-longsleeve',
+  'sweatpant-black-hstars',
+  'regular-tees-3-pack-navy',
+  'jort-cargo-realtree-pink',
+  'hype-distressed-grey-hoodie',
+  'grey-camo-cap',
+  'lettering-graphite-jort',
+  'camo-cap',
+  'lettering-melange-jort',
+  'sleeveless-ranglan',
 ];
 
 /**
@@ -372,7 +388,7 @@ export const CYBER_ACCESOS: {
   { id: 'tees', label: 'Remeras', href: '/tees', slugFoto: 'honda-white-tee' },
   { id: 'hoodies', label: 'Hoodies', href: '/hoodies', slugFoto: 'faith-over-everything-camo-hoodie' },
   { id: 'longsleeves', label: 'Longsleeves', href: '/longsleeves', slugFoto: 'find-jesus-longsleeve-black' },
-  { id: 'pants', label: 'Pantalones', href: '/pants', slugFoto: 'sweatpant-grey-hstars' },
+  { id: 'pants', label: 'Bottoms', href: '/abajo', slugFoto: 'sweatpant-grey-hstars' },
   { id: 'packs', label: 'Packs', href: '/colecciones/regular-tees', slugFoto: 'regular-tees-3-pack-black-navy-white' },
   // Mystery Archive y los 3 drops NO van acá: tienen su propia sección más
   // abajo y repetirlos era decir dos veces lo mismo (decisión del 29/10).
@@ -447,9 +463,15 @@ export const CYBER_FILTROS: CyberFiltro[] = [
   {
     // Pantalón + Accesorio: las dos categorías que facturan y no tenían filtro.
     id: 'bottoms',
-    label: 'Bottoms y accesorios',
-    cats: ['Pantalón', 'Jort', 'Accesorio'],
-    slugs: ['sweatpant-grey-hstars', 'grey-camo-cap', 'camo-cap'],
+    label: 'Bottoms',
+    cats: ['Pantalón', 'Jort', 'Short', 'Shorts', 'Bermuda'],
+    slugs: ['sweatpant-grey-hstars', 'sweatpant-pink', 'lettering-pink-jort', 'jort-cargo-realtree-beige', 'sweatpant-black-hstars'],
+  },
+  {
+    id: 'accesorios',
+    label: 'Accesorios',
+    cats: ['Accesorio'],
+    slugs: ['grey-camo-cap', 'camo-cap'],
   },
   {
     id: 'packs',
