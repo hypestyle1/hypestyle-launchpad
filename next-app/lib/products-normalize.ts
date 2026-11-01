@@ -1,4 +1,5 @@
 import { CUSTOMIZABLE_SLUGS } from './customizable';
+import { mysteryPortadas } from './mystery';
 
 export interface NormalizedProduct {
   id: string;
@@ -73,6 +74,7 @@ export function fromWPNode(node: any): NormalizedProduct {
   for (const g of node.galleryImages?.nodes ?? []) {
     if (g?.sourceUrl && !images.includes(g.sourceUrl)) images.push(g.sourceUrl);
   }
+  if (!images.length) images.push(...mysteryPortadas(node.slug));
   if (!images.length) images.push('');
 
   const sizes: string[] = [];

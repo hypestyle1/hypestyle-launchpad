@@ -1,4 +1,5 @@
 import { fetchGraphQL } from '@/lib/graphql-client';
+import { mysteryPortadas } from '@/lib/mystery';
 import { type Product } from '@/data/products';
 import { CUSTOMIZABLE_SLUGS } from '@/lib/customizable';
 import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
@@ -436,6 +437,7 @@ function fromWPNode(node: any): Product {
   (node.galleryImages?.nodes || []).forEach((g: any) => {
     if (g.sourceUrl && !allImages.includes(g.sourceUrl)) allImages.push(g.sourceUrl);
   });
+  if (!allImages.length) allImages.push(...mysteryPortadas(slug));
   if (!allImages.length) allImages.push('');
 
   // Video de producto (meta "product_video_url" en WP) — se muestra como 1er slide en la galería.
