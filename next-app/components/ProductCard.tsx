@@ -31,6 +31,8 @@ interface ProductCardProps {
   price: number;
   /** Solo presentación: el carrito y los eventos conservan price real. */
   pricePresentation?: { price: number; originalPrice: number };
+  /** Mientras Woo confirma la oferta Cyber: foto visible, sin precio cacheado ni compra rápida. */
+  pricePending?: boolean;
   originalPrice?: number;
   badge?: string;
   image: string;
@@ -102,7 +104,7 @@ export default function ProductCard({
   id, name, category, price, originalPrice, badge: badgeProp, image, images,
   href = "/productos", sizes, stock, giftNote, customizable, mutedPrice,
   dense, blurred, disableLink, checkStockFn = checkStock, onAddedToCart, tags, mountMargin, imagePriority,
-  vistaFoto = 'mockup', pricePresentation, showDiscountBadge = true,
+  vistaFoto = 'mockup', pricePresentation, showDiscountBadge = true, pricePending = false,
 }: ProductCardProps) {
   // Escalas de la card densa vs. la normal (ver prop `dense`).
   const badgePos = dense ? "top-2 left-2 px-1.5 py-0.5 text-[8px] tracking-[0.06em]" : "top-3 left-3 px-2.5 py-1 text-[10px] tracking-wider";
@@ -197,9 +199,10 @@ export default function ProductCard({
     return "bg-bg-dark text-primary-foreground";
   };
 
-  const hasSizes = !disableLink && !comingSoon && id && sizes && sizes.length > 0;
+  const hasSizes = !pricePending && !disableLink && !comingSoon && id && sizes && sizes.length > 0;
   // Producto totalmente agotado: todos los talles sin stock.
   const outOfStock = !!sizes && sizes.length > 0 && !!stock && sizes.every(s => stock[s] === "out");
+  const showSalePill = !pricePending && showDiscountBadge && descuentoPct !== null && !outOfStock && !mutedPrice;
 
   // Sin link (vidriera de un drop que todavía no se vende) la card es un
   // <div>: un <a> sin href no es un link para Google ni para un lector de
@@ -255,7 +258,7 @@ export default function ProductCard({
             {t('Sin stock')}
           </span>
         ) : badge ? (
-          <span className={`absolute ${badgePos} z-10 font-semibold uppercase ${badgeStyle()}`}>
+          <span className={`absolute ${showSalePill ? (dense ? "top-10 left-2 px-1.5 py-0.5 text-[8px] tracking-[0.06em]" : "top-12 left-3 px-2.5 py-1 text-[10px] tracking-wider") : badgePos} z-10 font-semibold uppercase ${badgeStyle()}`}>
             {badge}
           </span>
         ) : null}
@@ -266,11 +269,11 @@ export default function ProductCard({
             terminado en $900 el descuento real cae entre dos escalones, y es
             preferible declarar de menos que prometer de más. Debajo de 5% no se
             muestra: un "-3%" no es una oferta, es ruido.
-            Arriba a la DERECHA para no pisar el badge "New In"/"Próximamente",
-            y fuera del centro para no tapar la prenda. */}
-        {showDiscountBadge && descuentoPct !== null && !outOfStock && !mutedPrice && (
+            Arriba a la IZQUIERDA; si hay badge editorial, se coloca debajo.
+            Wishlist queda a la derecha sin superposiciones. */}
+        {showSalePill && (
           <span
-            className={`absolute ${dense ? 'top-2 right-2 px-1.5 py-0.5 text-[9px]' : 'top-3 right-3 px-2 py-1 text-[11px]'} z-10 rounded-[6px] bg-destructive font-bold tabular-nums tracking-[0.02em] text-white shadow-sm`}
+            className={`absolute ${dense ? 'top-2 left-2 px-2 py-1 text-[10px]' : 'top-3 left-3 px-2.5 py-1.5 text-[12px]'} z-10 rounded-[6px] bg-destructive font-bold tabular-nums tracking-[0.02em] text-white shadow-sm`}
           >
             −{descuentoPct}%
           </span>
@@ -304,6 +307,9 @@ export default function ProductCard({
       {/* Info */}
       <div className={dense ? "mt-2 px-0.5" : "mt-3 px-0.5"}>
         <p className={`${nameCls} leading-tight`}>{name}</p>
+        {pricePending ? (
+          <p className="mt-1 text-[11px] text-text-light" role="status">Precio en actualización</p>
+        ) : (
         <div className={`flex items-center flex-wrap ${dense ? "gap-1" : "gap-2"} mt-1`}>
           {/* Sin stock: ocultamos el precio promocional y mostramos el regular en neutro */}
           <span suppressHydrationWarning className={`${priceCls} font-semibold whitespace-nowrap ${originalPrice && !outOfStock && !mutedPrice ? "text-destructive" : ""}`}>
@@ -315,6 +321,7 @@ export default function ProductCard({
             </span>
           )}
         </div>
+        )}
 
         {colorways && colorways.length > 1 && (
           <div className="flex items-center gap-1.5 mt-1.5" aria-label={`${colorways.length} colores`}>

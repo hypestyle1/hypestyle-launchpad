@@ -33,7 +33,8 @@ describe('badge Cyber con precios efectivos Woo',()=>{
     const src=readFileSync(join(process.cwd(),'components/cyber/CyberCatalogoEvento.tsx'),'utf8');
     expect(src).not.toMatch(/\s+mutedPrice\s/);
     expect(src).toContain('originalPrice={live.preview ? undefined : p.originalPrice}');
-    expect(src).toContain('showDiscountBadge={!live.preview}');
+    expect(src).toContain('showDiscountBadge={!live.preview && !pricePending}');
+    expect(src).toContain('pricePending={pricePending}');
     expect(src).toContain('pricePresentation={live.preview ?');
   });
 });
