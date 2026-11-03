@@ -30,6 +30,7 @@ import PriceChangeNotice from '@/components/PriceChangeNotice';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import { FREE_SHIPPING_THRESHOLD, ahorroSucursal, alcanzaUmbral, costoEnvio, incluyeEnvioGratis, modoDeTarifa, ordenarTarifas, tarifaPorDefecto } from '@/lib/envio';
 import { isGiftCardItem } from '@/lib/gift-card';
+import { REF_MIN_COMPRA, getReferralCode } from '@/lib/referidos';
 import GiftProgressBar from '@/components/GiftProgressBar';
 import { Stepper } from '@/components/ui/stepper';
 import { ScrambleText } from '@/components/ui/scramble-text';
@@ -507,6 +508,39 @@ export default function Checkout() {
   // El 10% de transferencia va sobre lo físico; la gift card se paga entera.
   // Y va después del pack libre, igual que en el servidor.
   const transferTotal = Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.90) + subtotalGift - (descuento - packRegularDescuento) + envioCosto;
+
+  // Crédito de referido (Hype Rewards): si hay una reserva vigente (/r/<code>)
+  // y el amigo ya puso su mail, el backend valida TODO (primera compra,
+  // autorreferido, cupos) y emite el cupón de $8.000 atado a ese mail; acá se
+  // aplica como un cupón más. Si no corresponde, silencio: el checkout no se
+  // interrumpe. No corre con otro cupón puesto, promos de carrito activas,
+  // gift cards en el carrito ni por debajo de la compra mínima (no acumulable).
+  const referralIntentado = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (couponData || isInternational || subtotalGift > 0) return;
+    if (promo3x2Descuento > 0 || championDescuento > 0 || packRegularDescuento > 0) return;
+    if (subtotal < REF_MIN_COMPRA) return;
+    const refCode = getReferralCode();
+    if (!refCode) return;
+    const email = info.email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(email) || referralIntentado.current.has(email)) return;
+    referralIntentado.current.add(email);
+    (async () => {
+      try {
+        const r = await fetch('/api/referral-credit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: refCode, email, phone: info.telefono }),
+        });
+        const d = await r.json();
+        if (d?.valid && d.coupon) {
+          setCoupon(d.coupon);
+          setCouponData({ code: d.coupon, type: 'fixed', amount: Number(d.amount) || 0, description: 'Crédito de bienvenida' });
+        }
+      } catch { /* sin crédito: el checkout sigue igual */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info.email, info.telefono, couponData, isInternational, subtotal, subtotalGift, promo3x2Descuento, championDescuento, packRegularDescuento]);
 
   // InitiateCheckout / begin_checkout: al ENTRAR al checkout con carrito, no en el
   // paso 2. Estaba enganchado a la transición envío → pago, que es el tercer paso

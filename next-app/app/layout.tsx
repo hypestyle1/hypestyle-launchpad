@@ -6,6 +6,7 @@ import CartDrawer from '@/components/CartDrawer';
 import WishlistDrawer from '@/components/WishlistDrawer';
 import CookieBanner from '@/components/CookieBanner';
 import NewsletterPopup from '@/components/NewsletterPopup';
+import ReferralWelcomeModal from '@/components/referidos/ReferralWelcomeModal';
 import LocaleSuggestion from '@/components/LocaleSuggestion';
 import { cyberEstado } from '@/lib/cyber-hype';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -111,6 +112,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* En el layout y no en el home: dispara en las fichas de producto
               y la barra puede caer en cualquier página (ver lib/newsletter-popup). */}
           <NewsletterPopup />
+          {/* El amigo que entra por /r/<code>. Tiene prioridad sobre el popup de
+              newsletter (NewsletterPopup cede si hay una reserva pendiente):
+              dos modales apilados matan la llegada, y el mail se captura igual
+              en el checkout. */}
+          <ReferralWelcomeModal />
           <MetaPixel />
           <AttributionCapture />
           <MicrosoftClarity />

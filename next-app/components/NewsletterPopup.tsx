@@ -17,6 +17,7 @@ import {
   isExcludedPage,
   planPopup,
 } from '@/lib/newsletter-popup';
+import { hasReferralPending } from '@/lib/referidos';
 
 /**
  * Popup de newsletter en dos piezas (rediseño 29/09/2026, ref. Scuffers):
@@ -90,6 +91,11 @@ export default function NewsletterPopup() {
     // se suscriba. Solo se retira en las páginas donde no va (checkout, etc.).
     if (shownRef.current === 'bar' && !isExcludedPage(pathname)) return;
     setShown(null);
+
+    // Con una reserva de referido vigente, el amigo ya tiene SU modal (los
+    // $8.000) y su mail se captura en el checkout: apilar el de newsletter
+    // encima solo puede costarle la llegada. Cede el turno completo.
+    if (hasReferralPending()) return;
 
     if (cameFromOurEmail(location.search)) ls.set(STORAGE.subscribed, '1');
 
