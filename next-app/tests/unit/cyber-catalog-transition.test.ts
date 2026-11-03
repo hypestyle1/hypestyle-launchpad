@@ -23,7 +23,20 @@ describe('transición de precios Cyber en una pestaña abierta',()=>{
     const state=useCyberCatalogTransition(true,start-1000);
     expect(state.preview).toBe(false);expect(state.updating).toBe(true);expect(state.products).toBeUndefined();
     expect(mocks.queryOptions.queryKey).toEqual(['cyber-products-live']);
-    expect(mocks.queryOptions.staleTime).toBe(0);
+    expect(mocks.queryOptions.staleTime).toBe(60_000);
+    // La frontera puede responder active:false por desfase de relojes: la
+    // query reintenta sola hasta que el servidor confirme el evento.
+    expect(mocks.queryOptions.refetchInterval({ state: { data: { active: false, products: [], serverTime: start } } })).toBe(2_000);
+    expect(mocks.queryOptions.refetchInterval({ state: { data: { active: true, products: [], serverTime: start } } })).toBe(false);
+    expect(mocks.queryOptions.refetchInterval({ state: { data: undefined } })).toBe(false);
+  });
+  it('durante el evento no consulta Woo otra vez: vale el catálogo hidratado del servidor',()=>{
+    mocks.state=true; // checkLive arranca en true cuando preview=false
+    const state=useCyberCatalogTransition(false,start+1000);
+    expect(mocks.queryOptions.enabled).toBe(false);
+    expect(state.preview).toBe(false);
+    expect(state.updating).toBe(false);
+    expect(state.products).toBeUndefined();
   });
   it('muestra únicamente la respuesta de Woo autorizada por hora del servidor',()=>{
     mocks.state=true;

@@ -41,7 +41,10 @@ export function useCyberCatalogTransition(preview: boolean, serverTime: number) 
     staleTime: 60_000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-    refetchInterval: false,
+    // Carrera de relojes en la frontera: si el servidor todavía contesta
+    // active:false, reintenta hasta que confirme. Solo corre en pestañas
+    // preview; las visitas del evento no habilitan esta query.
+    refetchInterval: (q) => (q.state.data && !q.state.data.active ? 2_000 : false),
     retry: 1,
   });
   return {
