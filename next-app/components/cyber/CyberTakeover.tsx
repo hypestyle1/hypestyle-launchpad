@@ -11,9 +11,7 @@ import CyberMysterySection from './CyberMysterySection';
 import CyberCatalogoEvento from './CyberCatalogoEvento';
 import CyberCondiciones from './CyberCondiciones';
 import CyberRegalos from './CyberRegalos';
-import ShopTheLook from '@/components/ShopTheLook';
 import CyberCanal from './CyberCanal';
-import CyberNavCategorias from './CyberNavCategorias';
 import CyberEditorial, { CYBER_CATEGORIAS_EDITORIAL } from './CyberEditorial';
 import '@/components/cyber/cyber.css';
 import { whatsappUrl } from '@/lib/cyber-whatsapp';
@@ -21,7 +19,6 @@ import { CYBER_END, CYBER_START, cyberAhora, cyberUltimasHoras } from '@/lib/cyb
 import { cyberAuthenticated } from '@/lib/cyber-visibility-server';
 import cyberPrices from '@/lib/cyber-price-preview.json';
 import {
-  CYBER_ACCESOS,
   CYBER_DESTACADOS_SLUGS,
   CYBER_FILTROS,
   CYBER_MYSTERY,
@@ -63,7 +60,6 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
       ? { ...d, estado: 'revelado' as const, producto: CYBER_DROPS[0].producto! }
       : d,
   );
-  const hayRevelado = drops.some((d) => d.estado === 'revelado');
   const mostrarMystery = MYSTERY_PUBLICADO || process.env.NODE_ENV !== 'production';
   const urlWhatsApp = whatsappUrl();
 
@@ -85,63 +81,33 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           targetIso={CYBER_END}
           ultimasHoras={ultimasHoras}
           fondo={fondo ?? 'lucas'}
-          ctaHref={hayRevelado ? '#drops' : '#pack'}
-          ctaLabel={hayRevelado ? 'Ver las ofertas' : 'Explorar Cyber Hype'}
+          ctaHref="#catalogo"
+          ctaLabel="Ver las ofertas"
         />
 
-        {/* El recorrido (reordenado el 29/10). Antes los drops, los cuatro
-            beneficios, los regalos y Mystery caían uno detrás de otro y se
-            leían como un solo bloque amontonado. Ahora cada cosa tiene su
-            lugar y hay cambios de ritmo entre medio: negro, foto, grilla
-            clara, negro.
+        {/* Compra primero: el catálogo es el primer bloque después del hero.
+            Mystery funciona como tres productos pequeños; las categorías son
+            una banda editorial a pantalla completa, sin marco de tarjeta.
+            Drops y pack quedan después, como contenido secundario.
+            Shop the Look conserva su ruta propia pero no retrasa las ofertas.
+            Ninguna de estas decisiones toca checkout, precios ni descuentos. */}
+        <CyberCatalogoEvento
+          destacadosSlugs={CYBER_DESTACADOS_SLUGS}
+          filtros={CYBER_FILTROS}
+          pricePreview={cyberPrices}
+          preview={pricePreview}
+          serverTime={Date.now()}
+        />
 
-            1. 4 PACK — el producto estrella, lo primero comprable.
-            2. MYSTERY ARCHIVE — las tres cajas, el otro protagonista.
-            3. 3 DÍAS · 3 DROPS — sección propia, con aire alrededor.
-            4. Navegación editorial + catálogo — explorar y comprar.
-            5. REGALO POR COMPRA — justo después del catálogo, que es donde
-               sube el ticket: ya eligió, ahora le falta poco para el regalo.
-            6. Condiciones, canal y footer — al final, sin fricción. */}
-
-        {/* Lo primero despues del hero: que hay y como llegar. Quien viene
-            de un anuncio elige categoria antes de leer una linea sobre la
-            mecanica del evento. */}
-        <CyberNavCategorias accesos={CYBER_ACCESOS} />
-
-        <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
-
-        {mostrarMystery && (
-          <CyberMysterySection categorias={CYBER_MYSTERY} />
-        )}
-
-        <CyberDrops drops={drops} />
+        {mostrarMystery && <CyberMysterySection categorias={CYBER_MYSTERY} />}
 
         <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
-        <CyberCatalogoEvento destacadosSlugs={CYBER_DESTACADOS_SLUGS} filtros={CYBER_FILTROS} pricePreview={cyberPrices} preview={pricePreview} serverTime={Date.now()} />
+        <CyberDrops drops={drops} />
 
-        {/* Shop the Look: el MISMO componente de la home, sin tocar. Va acá y
-            no antes del catálogo a propósito — arriba le robaría atención a
-            las ofertas, que es lo que el evento vino a mostrar. Después de ver
-            precios, en cambio, la pregunta deja de ser "cuánto sale" y pasa a
-            ser "con qué lo combino", que es donde sube el ticket. */}
-        <div className="bg-white text-foreground">
-          <ShopTheLook />
-        </div>
+        <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
 
-        {/* El regalo, justo después del catálogo: es donde aparece la
-            fricción real —"llevo $78.000, me faltan $22.000 para la cadena"—
-            y donde un regalo deja de ser información para ser un motivo de
-            sumar. Más arriba llegaba descolgado: pedía recordar tres montos
-            antes de haber visto un solo precio. */}
         <CyberRegalos />
-
-        {/* La franja de 'precios finales / transferencia / envíos' ya no está
-            acá: esos tres datos ahora rotan en la announcement bar de arriba,
-            que los muestra en todas las páginas del evento y no interrumpe la
-            lectura entre el catálogo y las preguntas. Tenerlos en los dos
-            lados era decir lo mismo dos veces, y en mobile la franja se
-            cruzaba justo donde la persona viene bajando a comprar. */}
 
         <CyberCondiciones />
 
