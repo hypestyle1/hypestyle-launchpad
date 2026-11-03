@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ScrambleText } from '@/components/ui/scramble-text';
 import { isExcludedPage } from '@/lib/newsletter-popup';
 import {
-  REF_MIN_COMPRA, REF_MODAL_SHOWN, REF_VIGENCIA_DIAS,
+  REF_AMIGO, REF_MIN_COMPRA, REF_MODAL_SHOWN, REF_VIGENCIA_DIAS,
   formatRefMonto, getReferralCode, mirrorReferralCode,
 } from '@/lib/referidos';
 
@@ -41,7 +41,7 @@ export default function ReferralWelcomeModal() {
         });
         const d = await r.json();
         if (vivo && d?.ok) {
-          setDatos({ amigo: Number(d.amigo) || REF_MIN_COMPRA, nombre: d.nombre || undefined });
+          setDatos({ amigo: Number(d.amigo) || REF_AMIGO, nombre: d.nombre || undefined });
           try { sessionStorage.setItem(REF_MODAL_SHOWN, '1'); } catch { /* ok */ }
         }
       } catch { /* sin modal; la reserva queda igual */ }
@@ -93,7 +93,7 @@ export default function ReferralWelcomeModal() {
         </ScrambleText>
         <p className="text-[16px] md:text-[17px] font-medium tracking-[-0.015em] m-0">para tu primera compra en Hype</p>
         <p className="text-[13px] leading-[1.6] text-white/80 max-w-[300px] m-0">
-          Ya quedó guardado a tu nombre: cuando encuentres algo que te guste, lo ves descontado en el checkout. Sin códigos, sin registrarte.
+          Quedó guardado a tu nombre: lo ves descontado en el checkout. Sin códigos, sin registrarte.
         </p>
 
         <div className="flex flex-wrap justify-center gap-2">
@@ -114,7 +114,7 @@ export default function ReferralWelcomeModal() {
         </button>
 
         <p className="text-[10.5px] md:text-[11px] leading-[1.6] text-white/75 max-w-[320px] m-0">
-          Los {REF_VIGENCIA_DIAS} días corren desde hoy. No suma con otros descuentos ni promociones.
+          La invitación dura {REF_VIGENCIA_DIAS} días. No suma con otros descuentos ni promociones.
         </p>
 
         <button

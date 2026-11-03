@@ -30,7 +30,7 @@ import PriceChangeNotice from '@/components/PriceChangeNotice';
 import { quoteIntlShipping, CUSTOMS_NOTICE } from '@/lib/shipping-intl';
 import { FREE_SHIPPING_THRESHOLD, ahorroSucursal, alcanzaUmbral, costoEnvio, incluyeEnvioGratis, modoDeTarifa, ordenarTarifas, tarifaPorDefecto } from '@/lib/envio';
 import { isGiftCardItem } from '@/lib/gift-card';
-import { REF_MIN_COMPRA, getReferralCode } from '@/lib/referidos';
+import { REF_MIN_COMPRA, clearPendingCredit, getPendingCredit, getReferralCode } from '@/lib/referidos';
 import GiftProgressBar from '@/components/GiftProgressBar';
 import { Stepper } from '@/components/ui/stepper';
 import { ScrambleText } from '@/components/ui/scramble-text';
@@ -509,22 +509,50 @@ export default function Checkout() {
   // Y va después del pack libre, igual que en el servidor.
   const transferTotal = Math.round((subtotal - subtotalGift - packRegularDescuento) * 0.90) + subtotalGift - (descuento - packRegularDescuento) + envioCosto;
 
-  // Crédito de referido (Hype Rewards): si hay una reserva vigente (/r/<code>)
-  // y el amigo ya puso su mail, el backend valida TODO (primera compra,
-  // autorreferido, cupos) y emite el cupón de $8.000 atado a ese mail; acá se
-  // aplica como un cupón más. Si no corresponde, silencio: el checkout no se
-  // interrumpe. No corre con otro cupón puesto, promos de carrito activas,
-  // gift cards en el carrito ni por debajo de la compra mínima (no acumulable).
-  const referralIntentado = useRef<Set<string>>(new Set());
+  // Crédito Hype (referidos): dos caminos que terminan en el mismo cupón.
+  //  1. Crédito YA EMITIDO que viene de /credito ("Usar mis $X"): se aplica
+  //     directo; mail, mínimo y vigencia los re-valida Woo al crear el pedido.
+  //  2. Reserva de referido (/r/<code>) + mail puesto: el backend valida TODO
+  //     (primera compra, autorreferido, cupos) y emite el cupón de $8.000
+  //     atado a ese mail.
+  // Si no corresponde, silencio: el checkout no se interrumpe. No corre con
+  // otro cupón puesto, promos de carrito, gift cards en el carrito ni por
+  // debajo de la compra mínima (no acumulable).
+  //
+  // Reintentos y cambios de mail: un rechazo DEFINITIVO del backend (no es
+  // primera compra, autorreferido, ya usado) queda anotado por mail y no se
+  // repite; una falla transitoria (red, rate limit) se puede reintentar. Si el
+  // mail cambia con nuestro crédito puesto, el cupón del mail anterior se saca
+  // y el nuevo mail valida de cero — si no, Woo lo tiraría recién al confirmar.
+  const referralRechazado = useRef<Set<string>>(new Set());
+  const referralEnVuelo = useRef(false);
+  const referralAplicadoPara = useRef<string | null>(null);
   useEffect(() => {
+    const email = info.email.trim().toLowerCase();
+    const esNuestro = couponData?.description === 'Crédito de bienvenida' || couponData?.description === 'Crédito Hype';
+    if (esNuestro && referralAplicadoPara.current && email !== referralAplicadoPara.current) {
+      referralAplicadoPara.current = null;
+      setCoupon('');
+      setCouponData(null);
+      return; // el efecto vuelve a correr sin cupón y valida el mail nuevo
+    }
     if (couponData || isInternational || subtotalGift > 0) return;
     if (promo3x2Descuento > 0 || championDescuento > 0 || packRegularDescuento > 0) return;
     if (subtotal < REF_MIN_COMPRA) return;
+    if (!/^\S+@\S+\.\S+$/.test(email)) return;
+
+    const credito = getPendingCredit();
+    if (credito) {
+      referralAplicadoPara.current = email;
+      setCoupon(credito.code);
+      setCouponData({ code: credito.code, type: 'fixed', amount: credito.amount, description: 'Crédito Hype' });
+      clearPendingCredit();
+      return;
+    }
+
     const refCode = getReferralCode();
-    if (!refCode) return;
-    const email = info.email.trim().toLowerCase();
-    if (!/^\S+@\S+\.\S+$/.test(email) || referralIntentado.current.has(email)) return;
-    referralIntentado.current.add(email);
+    if (!refCode || referralRechazado.current.has(email) || referralEnVuelo.current) return;
+    referralEnVuelo.current = true;
     (async () => {
       try {
         const r = await fetch('/api/referral-credit', {
@@ -532,12 +560,17 @@ export default function Checkout() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code: refCode, email, phone: info.telefono }),
         });
-        const d = await r.json();
+        const d = await r.json().catch(() => null);
         if (d?.valid && d.coupon) {
+          referralAplicadoPara.current = email;
           setCoupon(d.coupon);
           setCouponData({ code: d.coupon, type: 'fixed', amount: Number(d.amount) || 0, description: 'Crédito de bienvenida' });
+        } else if (d && d.motivo && d.motivo !== 'reintentar' && d.motivo !== 'conexion') {
+          // Rechazo definitivo para ESTE mail; con otro mail se vuelve a intentar.
+          referralRechazado.current.add(email);
         }
-      } catch { /* sin crédito: el checkout sigue igual */ }
+      } catch { /* falla de red: se reintenta en el próximo cambio */ }
+      finally { referralEnVuelo.current = false; }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [info.email, info.telefono, couponData, isInternational, subtotal, subtotalGift, promo3x2Descuento, championDescuento, packRegularDescuento]);

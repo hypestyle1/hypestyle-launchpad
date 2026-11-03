@@ -10,13 +10,23 @@ import { REF_HOLD_DIAS, REF_MIN_COMPRA, REF_VIGENCIA_DIAS, formatRefMonto } from
 //   GET /api/referral-mail?type=premio-disponible&token=<t>
 //   GET /api/referral-mail?type=vencimiento&token=<t>
 //
-// Idempotencia: los dos de premio quedan marcados con meta en el pedido del
-// amigo (el PHP además los dispara desde caminos con candado); el de
-// vencimiento lo marca el PHP en el cupón ANTES de llamar.
+// Seguridad, en tres capas:
+//  1. AUTENTICACIÓN server a server: el PHP manda X-Hypestyle-Secret (el mismo
+//     secreto con el que el front le habla a WP). Sin header válido, 401 y no
+//     se manda nada. Fail closed si WP_SECRET no está configurado.
+//  2. VALIDACIÓN DE EVENTO: el tipo pedido tiene que coincidir con el estado
+//     real del crédito según el backend (un token de premio pendiente no puede
+//     disparar el mail de "disponible", y el de vencimiento solo sale si el
+//     cupón sigue vivo y vence dentro de las próximas 48 h).
+//  3. IDEMPOTENCIA: los de premio exigen `order` y quedan marcados con meta en
+//     el pedido del amigo ANTES de mandar; el de vencimiento lo marca el PHP
+//     en el cupón antes de llamar, y acá la validación de ventana corta
+//     cualquier replay tardío.
 
 export const dynamic = 'force-dynamic';
 
 const WP_URL        = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
+const WP_SECRET     = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
 const WC_KEY        = (process.env.WC_CONSUMER_KEY || '').trim();
 const WC_SEC        = (process.env.WC_CONSUMER_SECRET || '').trim();
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
@@ -75,12 +85,23 @@ async function sendEmail(to: { email: string; name?: string }, subject: string, 
 }
 
 export async function GET(req: NextRequest) {
+  // Capa 1: solo el backend puede disparar mails. Fail closed.
+  const provided = (req.headers.get('x-hypestyle-secret') || '').trim();
+  if (!WP_SECRET || provided !== WP_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const sp = req.nextUrl.searchParams;
   const type = sp.get('type') || '';
   const token = sp.get('token') || '';
   const orderId = parseInt(sp.get('order') || '0', 10) || 0;
   if (!token || !['premio-pendiente', 'premio-disponible', 'vencimiento'].includes(type)) {
     return NextResponse.json({ error: 'Parámetros faltantes' }, { status: 400 });
+  }
+  // Los mails de premio son por pedido: sin pedido no hay dónde anclar la
+  // idempotencia, así que no se mandan.
+  if (type !== 'vencimiento' && !orderId) {
+    return NextResponse.json({ error: 'order faltante' }, { status: 400 });
   }
   if (!BREVO_API_KEY) return NextResponse.json({ error: 'BREVO_API_KEY no configurada' }, { status: 500 });
 
@@ -91,16 +112,37 @@ export async function GET(req: NextRequest) {
   const to = { email: String(s.email || ''), name: String(s.nombre || '') || undefined };
   if (!to.email) return NextResponse.json({ ok: false, reason: 'sin-destinatario' });
 
-  // Idempotencia de los mails de premio: meta en el pedido del amigo.
+  // Capa 2: el evento pedido tiene que ser verdad AHORA según el backend.
+  const estado = String(s.estado || '');
+  if (type === 'premio-pendiente' && estado !== 'pendiente') {
+    return NextResponse.json({ ok: false, reason: `estado ${estado}, no pendiente` });
+  }
+  if (type === 'premio-disponible' && estado !== 'disponible') {
+    return NextResponse.json({ ok: false, reason: `estado ${estado}, no disponible` });
+  }
+  if (type === 'vencimiento') {
+    const venceTs = s.vence ? new Date(`${s.vence}T23:59:59`).getTime() : 0;
+    const vivo = estado === 'disponible' && Number(s.saldo) > 0;
+    const enVentana = venceTs > Date.now() && venceTs - Date.now() <= 48 * 3600_000;
+    if (!vivo || !enVentana) return NextResponse.json({ ok: false, reason: 'fuera de ventana' });
+  }
+
+  // Capa 3: idempotencia de los mails de premio — el flag se escribe ANTES de
+  // mandar (si Brevo falla, el PHP no reintenta solo y se resuelve a mano,
+  // que es mejor que un duplicado).
   const flag = `_hs_ref_mail_${type}`;
   if (orderId) {
     const or = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${orderId}`, { headers: { Authorization: wcAuth() }, cache: 'no-store' });
-    if (or.ok) {
-      const order = await or.json();
-      if ((order.meta_data || []).some((m: { key: string }) => m.key === flag)) {
-        return NextResponse.json({ ok: true, enviados: [] });
-      }
+    if (!or.ok) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
+    const order = await or.json();
+    if ((order.meta_data || []).some((m: { key: string }) => m.key === flag)) {
+      return NextResponse.json({ ok: true, enviados: [] });
     }
+    await fetch(`${WP_URL}/wp-json/wc/v3/orders/${orderId}`, {
+      method: 'PUT',
+      headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meta_data: [{ key: flag, value: new Date().toISOString() }] }),
+    });
   }
 
   const linkCredito = `${SITE_URL}/credito?t=${encodeURIComponent(token)}`;
@@ -129,14 +171,6 @@ export async function GET(req: NextRequest) {
       tarjetaCodigo(String(s.coupon || '')) + boton(SITE_URL, 'Ir a la tienda'),
       pieComun,
     ));
-  }
-
-  if (orderId) {
-    await fetch(`${WP_URL}/wp-json/wc/v3/orders/${orderId}`, {
-      method: 'PUT',
-      headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ meta_data: [{ key: flag, value: new Date().toISOString() }] }),
-    }).catch(() => {});
   }
 
   return NextResponse.json({ ok: true, enviados: [to.email] });

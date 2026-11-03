@@ -69,9 +69,8 @@ export function ReferralShareCard({ orderId, orderKey, className }: {
           </span>
           <h2 className="m-0 text-[24px] md:text-[30px] font-semibold leading-[1.2] tracking-[-0.025em]">Gracias por confiar en Hype.</h2>
           <p className="m-0 text-[13px] md:text-[14px] leading-[1.65] text-[#595347] md:max-w-[400px]">
-            Ahora queremos que tus amigos también vivan la experiencia. Regalale{' '}
-            <strong className="font-semibold text-foreground">{formatRefMonto(data.amigo)}</strong> a esa persona que sabés
-            que le va a gustar Hype. Cuando haga su primera compra, vos te llevás{' '}
+            Regalale <strong className="font-semibold text-foreground">{formatRefMonto(data.amigo)}</strong> a esa persona
+            que sabés que le va a gustar Hype. Cuando haga su primera compra, te llevás{' '}
             <strong className="font-semibold text-foreground">{formatRefMonto(data.premio)}</strong> para la próxima.
           </p>
           <div className="flex gap-2 md:gap-[10px] md:max-w-[400px]">
