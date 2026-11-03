@@ -32,12 +32,6 @@ import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
    precio del 3 PACK dentro de la ventana. Esta sección solo lo explica y
    acerca las remeras. */
 
-const PASOS = [
-  { n: '1', t: 'Elegí 4 Regular', d: 'Black, White, Melange, Navy y Red.' },
-  { n: '2', t: 'Sumalas al carrito', d: 'Mezclá colores y talles como quieras.' },
-  { n: '3', t: 'Pagás 3', d: 'El descuento se aplica solo. Sin código.' },
-];
-
 export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
   const { data } = useProducts();
 
@@ -48,21 +42,21 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
   }, [data, slugs]);
 
   return (
-    <section id="pack" className="bg-background px-4 py-12 text-foreground md:px-10 md:py-16">
+    <section id="pack" className="bg-background px-4 py-8 text-foreground md:px-10 md:py-12">
       <div className="mx-auto max-w-[1400px]">
         {/* ── Bloque principal: el mensaje y la foto, juntos ──────────────── */}
         <div className="grid grid-cols-1 overflow-hidden rounded-[16px] bg-[#0a0a0a] text-white md:grid-cols-[1.15fr_1fr]">
-          <div className="flex flex-col justify-between px-5 py-7 md:px-9 md:py-10">
+          <div className="flex flex-col justify-between px-5 py-6 md:px-9 md:py-8">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-white/45 md:text-[11px]">
                 Solo durante Cyber Hype
               </p>
-              <h2 className="mt-2.5 text-[40px] font-black uppercase leading-[0.86] tracking-[-0.02em] md:text-[62px]">
+              <h2 className="mt-2.5 text-[32px] font-black uppercase leading-[0.86] tracking-[-0.02em] md:text-[62px]">
                 Llevás 4,
                 <br />
                 pagás 3.
               </h2>
-              <p className="mt-3.5 max-w-[42ch] text-[14px] leading-[1.5] text-white/65 md:text-[15px]">
+              <p className="mt-2.5 max-w-[42ch] text-[13px] leading-[1.5] text-white/65 md:text-[15px]">
                 Elegí 4 Regular Tees, combiná colores y talles como quieras y pagá solamente 3.
               </p>
               {/* El precio cerrado del pack: el mismo que cobra
@@ -83,26 +77,9 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
               </p>
             </div>
 
-            {/* Los tres pasos, en banda */}
-            <ol className="mt-7 grid grid-cols-3 gap-3 border-t border-white/12 pt-5 md:mt-9 md:gap-4">
-              {PASOS.map((p) => (
-                <li key={p.n}>
-                  <span className="block text-[11px] font-black text-white/30 md:text-[12px]">
-                    {p.n}
-                  </span>
-                  <p className="mt-1 text-[11.5px] font-bold uppercase leading-[1.15] tracking-[0.04em] text-white md:text-[13px]">
-                    {p.t}
-                  </p>
-                  <p className="mt-1 text-[11px] leading-[1.4] text-white/50 md:text-[12.5px]">
-                    {p.d}
-                  </p>
-                </li>
-              ))}
-            </ol>
-
             <Link
               href="/colecciones/regular-tees"
-              className="mt-6 inline-flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-white px-8 text-[12px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] transition-transform duration-300 hover:scale-[1.02] md:mt-8 md:w-auto md:self-start md:px-10"
+              className="mt-4 inline-flex h-[48px] w-full items-center justify-center gap-2.5 rounded-full bg-white px-8 text-[12px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] transition-transform duration-300 hover:scale-[1.02] md:mt-8 md:w-auto md:self-start md:px-10"
             >
               Armá tu 4 PACK
               <svg width="15" height="10" viewBox="0 0 15 10" fill="none" aria-hidden="true">
@@ -119,7 +96,7 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
 
           {/* La foto del posteo del pack: las tres sobre hormigón. En mobile
               va debajo del texto, en una franja ancha que no roba scroll. */}
-          <div className="relative min-h-[240px] md:min-h-[460px]">
+          <div className="relative min-h-[150px] md:min-h-[300px]">
             <Image
               src="/cyber/pack/flatlay.webp"
               alt="Regular Tees — black, white y navy"
@@ -136,7 +113,7 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
             tira deslizable en mobile. */}
         {productos.length > 0 && (
           <>
-            <p className="mb-3 mt-8 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-light md:mb-4 md:mt-10">
+            <p className="mb-3 mt-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-light md:mb-4 md:mt-10">
               Los {productos.length} colores
             </p>
             <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-5 md:gap-4 md:overflow-visible md:px-0 md:pb-0">
