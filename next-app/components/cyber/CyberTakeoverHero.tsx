@@ -46,7 +46,7 @@ export default function CyberTakeoverHero({
   ctaLabel: string;
 }) {
   return (
-    <section className="relative h-[100svh] min-h-[620px] w-full overflow-hidden bg-[#0a0a0a] md:px-4 md:pb-4 md:pt-[calc(var(--offset)+6px)]">
+    <section className="relative h-[82svh] min-h-[560px] w-full md:h-[92svh] md:min-h-[640px] overflow-hidden bg-[#0a0a0a] md:px-4 md:pb-4 md:pt-[calc(var(--offset)+6px)]">
       <div className="relative h-full w-full overflow-hidden rounded-none bg-[#141414] md:rounded-[24px]">
         <CyberHeroFondo fondo={fondo} />
 
