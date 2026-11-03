@@ -78,17 +78,17 @@ export const CYBER_CATEGORIAS_EDITORIAL: TarjetaCategoria[] = [
 
 export default function CyberEditorial({ tarjetas }: { tarjetas: TarjetaCategoria[] }) {
   return (
-    <section className="bg-[#0a0a0a] px-4 py-10 md:px-10 md:py-12">
+    <section className="bg-[#0a0a0a] py-8 md:px-10 md:py-12">
       <div className="mx-auto max-w-[1400px]">
-        <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:pb-0">
+        <ul className="flex snap-x snap-mandatory gap-0 overflow-x-auto pb-1 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:pb-0">
           {tarjetas.map((t) => (
             <li
               key={t.id}
-              className="w-[82vw] max-w-[340px] shrink-0 snap-center md:w-auto md:max-w-none"
+              className="w-[82vw] shrink-0 snap-center md:w-auto"
             >
               <Link
                 href={t.href}
-                className="group relative block aspect-[4/5] overflow-hidden rounded-[16px] focus-visible:outline-white"
+                className="group relative block aspect-[4/5] overflow-hidden rounded-none focus-visible:outline-white"
               >
                 <Image
                   src={t.src}
