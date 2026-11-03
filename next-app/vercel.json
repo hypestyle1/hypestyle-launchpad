@@ -40,6 +40,10 @@
     {
       "path": "/api/admin/private-access/open",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/admin/wp-health",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
