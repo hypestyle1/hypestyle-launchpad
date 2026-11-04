@@ -47,7 +47,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = buildMetadata({
   title: 'CYBER HYPE',
-  description: `Tres días, del ${CYBER_FECHAS}. Dejá tu mail y te avisamos cuando abre.`,
+  description: `Del ${CYBER_FECHAS}. Dejá tu mail y te avisamos cuando abre.`,
   path: '/cyberhype',
   noindex: true,
 });
@@ -126,7 +126,7 @@ export default async function Page({
               </h1>
 
               <p className="mt-5 text-[15px] font-semibold uppercase tracking-[0.14em] text-white sm:text-[17px]">
-                2 · 3 · 4 de noviembre
+                2 al 8 de noviembre
               </p>
 
               <p className="mt-3 max-w-[40ch] text-[15px] leading-relaxed text-white/60 sm:text-[16px]">

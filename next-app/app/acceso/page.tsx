@@ -85,7 +85,7 @@ export default function AccesoPage() {
     <main className="flex min-h-[100svh] flex-col items-center justify-center bg-[#0a0a0a] px-6 py-12 text-white">
       <div className="w-full max-w-[380px]">
         <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/40">
-          2 · 3 · 4 de noviembre
+          2 al 8 de noviembre
         </p>
 
         <h1 className="text-[clamp(38px,13vw,56px)] leading-[0.86]">

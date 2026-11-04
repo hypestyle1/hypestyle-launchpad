@@ -80,25 +80,24 @@ describe('ventana del evento (hora de servidor)', () => {
     expect(packRegularUnidades()).toBe(3);
   });
 
-  it('el último minuto (4/11/2026 23:59 ART) entra completo y el 5/11 00:00 ya no', () => {
-    reloj('2026-11-04T23:59:00-03:00');
+  it('el último minuto (8/11/2026 23:59 ART) entra completo y el 9/11 00:00 ya no', () => {
+    reloj('2026-11-08T23:59:00-03:00');
     expect(packRegularUnidades()).toBe(4);
 
-    reloj('2026-11-04T23:59:59.999-03:00');
+    reloj('2026-11-08T23:59:59.999-03:00');
     expect(packRegularUnidades()).toBe(4);
     expect(packRegularX4Vigente()).toBe(true);
 
-    reloj('2026-11-05T00:00:00-03:00');
+    reloj('2026-11-09T00:00:00-03:00');
     expect(packRegularUnidades()).toBe(3);
     expect(packRegularX4Vigente()).toBe(false);
   });
 
-  it('el evento es 2–4/11, sin el encore: el 5/11 y el 8/11 ya son pack de 3', () => {
-    // Extender al 5–8/11 requiere autorización explícita y se hace moviendo
-    // PACK_REGULAR_X4_HASTA. Si alguien la mueve, este test lo cuenta.
-    reloj('2026-11-05T12:00:00-03:00');
+  it('el evento es 2–8/11 (extensión autorizada el 3/11): el 9/11 ya es pack de 3', () => {
+    // Extensión al 8/11 inclusive autorizada por Valentín el 3/11/2026.
+    reloj('2026-11-09T12:00:00-03:00');
     expect(packRegularUnidades()).toBe(3);
-    reloj('2026-11-08T23:00:00-03:00');
+    reloj('2026-11-10T23:00:00-03:00');
     expect(packRegularUnidades()).toBe(3);
   });
 
@@ -106,7 +105,7 @@ describe('ventana del evento (hora de servidor)', () => {
     // Vercel corre en UTC: 1/11 19:00 ART son las 22:00 UTC del 1/11. Sin el
     // offset escrito a mano el evento arrancaría a las 16:00 del 1/11 ART.
     expect(new Date(PACK_REGULAR_X4_DESDE).toISOString()).toBe('2026-11-01T22:00:00.000Z');
-    expect(new Date(PACK_REGULAR_X4_HASTA).toISOString()).toBe('2026-11-05T03:00:00.000Z');
+    expect(new Date(PACK_REGULAR_X4_HASTA).toISOString()).toBe('2026-11-09T03:00:00.000Z');
   });
 
   it('bien lejos de la ventana (hoy, y en 2027) es el pack de siempre', () => {

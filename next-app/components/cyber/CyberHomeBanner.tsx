@@ -68,7 +68,7 @@ export default function CyberHomeBanner() {
             </h2>
 
             <p className="mt-3.5 text-[12px] font-semibold uppercase tracking-[0.18em] text-white/70">
-              2 · 3 · 4 de noviembre
+              2 al 8 de noviembre
             </p>
             <p className="mt-2.5 max-w-[34ch] text-[14px] leading-[1.5] text-white/55">
               Tres días. Dejá tu mail y te avisamos apenas abra.

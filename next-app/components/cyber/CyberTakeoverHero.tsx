@@ -75,7 +75,7 @@ export default function CyberTakeoverHero({
         <div className="absolute inset-x-5 bottom-5 md:inset-x-10 md:bottom-9">
           <div className="max-w-[560px]">
             <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:text-[13px]">
-              {ultimasHoras ? 'Termina hoy · 23:59' : '2 · 3 · 4 de noviembre'}
+              {ultimasHoras ? 'Termina hoy · 23:59' : '2 al 8 de noviembre'}
             </p>
 
             <h1 className="mt-1 text-[clamp(32px,9vw,40px)] leading-[0.86] [text-shadow:0_2px_24px_rgba(0,0,0,0.5)] md:mt-3 md:text-[clamp(64px,6vw,86px)]">
