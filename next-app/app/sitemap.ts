@@ -25,6 +25,7 @@ const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[numb
   { path: '/colecciones/no-love-only-style/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/colecciones/pink-set-drop/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/colecciones/camo-set-drop/', changeFrequency: 'weekly', priority: 0.7 },
+  { path: '/colecciones/camo-drop/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/colecciones/race/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/colecciones/regular-tees/', changeFrequency: 'weekly', priority: 0.7 },
   { path: '/colecciones/mas-hype/', changeFrequency: 'weekly', priority: 0.7 },

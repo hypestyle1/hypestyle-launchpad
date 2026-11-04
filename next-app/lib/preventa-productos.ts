@@ -13,9 +13,12 @@ export interface PreventaProducto {
   desde: string;
 }
 
+/** Apertura de la preventa Camo (04/11/2026 20:00 ART). */
+export const CAMO_PREVENTA_LANZAMIENTO = '2026-11-04T20:00:00-03:00';
+
 const CAMO: PreventaProducto = {
   nota: 'PREVENTA · Entrega estimada a partir del viernes 13 de noviembre de 2026.',
-  desde: '2026-11-04T20:00:00-03:00',
+  desde: CAMO_PREVENTA_LANZAMIENTO,
 };
 
 export const PREVENTA_PRODUCTOS: Record<string, PreventaProducto> = {

@@ -123,7 +123,7 @@ const HORA_REVELACION = '11:00:00';
  * (previsto para el 4/11) — hasta entonces NO existen en Woo.
  *
  * ── Cómo se enciende (cuando la colección esté publicada en Woo) ──────────
- * 1. `href`: apuntar a la colección/categoría real (hoy es la ficha del 916).
+ * 1. `href`: ya apunta a /colecciones/camo-drop (las 4 prendas).
  * 2. `publicado: true`.
  * Con eso solo, el CTA de la sección camo pasa de "PRÓXIMAMENTE" (sin link) a
  * "VER COLECCIÓN". Nada más que tocar. No encender sin el stock de preventa
@@ -134,7 +134,8 @@ export const PREVENTA_ZIP_CAMO = {
   nombre: 'Colección Camo',
   colorways: 'Olive · Brown',
   eta: 'Entrega estimada: viernes 13/11',
-  href: '/producto/zip-hoodie-camo',
+  // Colección con las 4 prendas (app/colecciones/camo-drop), no la ficha del 916.
+  href: '/colecciones/camo-drop',
   img: '/cyber/drops/drop-02-camo.webp',
 } as const;
 
