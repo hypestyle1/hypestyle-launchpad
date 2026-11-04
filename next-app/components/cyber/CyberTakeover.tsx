@@ -10,7 +10,6 @@ import Cyber4Pack from './Cyber4Pack';
 import CyberMysterySection from './CyberMysterySection';
 import CyberCatalogoEvento from './CyberCatalogoEvento';
 import CyberCondiciones from './CyberCondiciones';
-import CyberPreventa from './CyberPreventa';
 import CyberRegalos from './CyberRegalos';
 import ShopTheLook from '@/components/ShopTheLook';
 import VistoEn from '@/components/VistoEn';
@@ -108,11 +107,10 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
 
         <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
+        {/* Camo unificado (4/11): el drop del Día 2 ES la pieza de preventa —
+            una sola sección editorial, sin banner duplicado. El CTA lo
+            gobierna PREVENTA_ZIP_CAMO en lib/cyber-cartelera. */}
         <CyberDrops drops={drops} />
-
-        {/* Preventa Zip Hoodie Camo, pegada al drop que la revela. Apagada en
-            producción hasta el OK comercial (PREVENTA_ZIP_CAMO.publicado). */}
-        <CyberPreventa />
 
         <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
 

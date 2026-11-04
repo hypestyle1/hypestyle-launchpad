@@ -3,23 +3,82 @@ import Link from 'next/link';
 import CyberRevealCountdown from './CyberRevealCountdown';
 import type { CyberDropPublico } from '@/lib/cyber-cartelera';
 
-/* LOS DROPS — los lanzamientos del evento.
+/* LOS DROPS — los lanzamientos del evento, con el camo como protagonista.
 
-   Rediseño 3/11: la sección deja de prometer "3 días · 3 drops" (el Día 3 se
-   eliminó: no hay tercer lanzamiento confirmado) y deja de vivir dentro de una
-   caja con borde, sombra y textura — era el bloque más pesado de la página y
-   el marco no agregaba nada que las fotos no hagan solas. Queda el negro
-   pelado, dos piezas grandes y la tipografía.
+   Unificación 4/11 (pedido de Valentín): el camo aparecía dos veces — como
+   tarjeta del Día 2 y como banner de preventa más abajo. Queda UNA sola
+   pieza editorial, acá: un split a lo ancho con la composición original
+   sobre beige, la info de preventa y el CTA. El Día 1 (ya comprable) pasa a
+   una fila compacta debajo: salió, se compra, no necesita media pantalla.
 
-   Sigue siendo un componente de SERVIDOR y presentacional: recibe la vista ya
-   saneada (dropsPublicos). Un drop bloqueado llega SIN producto, así que el
-   título y la foto no existen en el HTML hasta la revelación.
+   El CTA del camo lo gobierna PREVENTA_ZIP_CAMO (lib/cyber-cartelera):
+   apagado, el botón dice "PRÓXIMAMENTE" y no es un link — nada de botones
+   que lleven a páginas vacías; encendido (productos publicados + stock de
+   preventa cargado), el mismo lugar pasa a "VER COLECCIÓN" con el href real.
 
-   Preventa: un drop puede revelarse sin compra (href null) cuando las
-   unidades son entrantes. La tarjeta lo dice con un chip de vidrio y la fecha
-   estimada — nunca un CTA hacia una ficha sin stock. */
+   Sigue siendo un componente de SERVIDOR y presentacional: recibe la vista
+   ya saneada (dropsPublicos). Un drop bloqueado llega SIN producto, así que
+   el título y la foto no existen en el HTML hasta la revelación. */
+
+function CamoHero({ d }: { d: CyberDropPublico }) {
+  const p = d.producto!;
+  return (
+    <article className="grid grid-cols-1 overflow-hidden md:grid-cols-2 md:items-stretch">
+      <div className="relative aspect-square overflow-hidden bg-[#e9e5dc] md:aspect-auto md:min-h-[560px]">
+        <Image
+          src={p.img}
+          alt={p.nombre}
+          fill
+          sizes="(max-width: 768px) 100vw, 700px"
+          className="object-cover"
+        />
+        <span className="cyber-glass-light absolute left-3 top-3 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#0a0a0a] md:left-4 md:top-4 md:text-[10px]">
+          {d.dia} · {d.fecha}
+        </span>
+      </div>
+
+      <div className="flex flex-col justify-center bg-[#e9e5dc] px-5 py-7 text-[#0a0a0a] md:px-12 md:py-10">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#0a0a0a]/50 md:text-[11px]">
+          Preventa · unidades limitadas
+        </p>
+        <h3 className="mt-2 text-[32px] font-black uppercase leading-[0.9] tracking-[-0.01em] md:text-[48px]">
+          {p.nombre}
+        </h3>
+        <p className="mt-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#0a0a0a]/70 md:text-[14px]">
+          Olive · Brown
+        </p>
+        <p className="mt-3 max-w-[46ch] text-[13px] leading-[1.5] text-[#0a0a0a]/65 md:text-[14.5px]">
+          {p.claim} Son unidades de preventa: se reservan y se entregan cuando llegan. Entrega
+          estimada: viernes 13/11.
+        </p>
+        {p.href ? (
+          <Link
+            href={p.href}
+            className="mt-5 inline-flex h-[48px] w-full items-center justify-center rounded-full bg-[#0a0a0a] px-8 text-[12px] font-bold uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-85 md:mt-7 md:w-auto md:self-start md:px-10"
+          >
+            Ver colección
+          </Link>
+        ) : (
+          /* Sin link a propósito: la colección todavía no está publicada y un
+             botón hacia una página vacía es peor que la espera. Se activa
+             solo desde PREVENTA_ZIP_CAMO. */
+          <span
+            aria-disabled="true"
+            className="mt-5 inline-flex h-[48px] w-full cursor-default select-none items-center justify-center rounded-full border border-[#0a0a0a]/25 px-8 text-[12px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a]/50 md:mt-7 md:w-auto md:self-start md:px-10"
+          >
+            Próximamente
+          </span>
+        )}
+      </div>
+    </article>
+  );
+}
 
 export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
+  const esPreventa = (d: CyberDropPublico) => d.estado === 'revelado' && !!d.producto?.preventa;
+  const hero = drops.find(esPreventa);
+  const resto = drops.filter((d) => !esPreventa(d));
+
   return (
     <section id="drops" className="bg-[#0a0a0a] px-4 py-10 text-white md:px-10 md:py-14">
       <div className="mx-auto max-w-[1400px]">
@@ -37,92 +96,58 @@ export default function CyberDrops({ drops }: { drops: CyberDropPublico[] }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-          {drops.map((d) => (
-            <article key={d.id} className="group relative">
-              {/* Imagen o incógnita */}
-              <div className="relative aspect-square overflow-hidden bg-[#121212]">
+        {hero && <CamoHero d={hero} />}
+
+        {/* Lo ya lanzado (o por revelar), en filas compactas: no compite con
+            el protagonista de arriba. */}
+        <div className="mt-4 flex flex-col gap-3 md:mt-5">
+          {resto.map((d) => (
+            <article
+              key={d.id}
+              className="flex items-center gap-4 border border-white/12 bg-[#121212] p-3 md:gap-6 md:p-4"
+            >
+              <div className="relative h-[88px] w-[88px] shrink-0 overflow-hidden bg-[#1a1a1a] md:h-[120px] md:w-[120px]">
                 {d.estado === 'revelado' && d.producto ? (
                   <Image
                     src={d.producto.img}
                     alt={d.producto.nombre}
                     fill
-                    sizes="(max-width: 768px) 100vw, 680px"
-                    className="object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                    sizes="120px"
+                    className="object-cover"
                   />
                 ) : (
-                  /* Bloqueado: manchas suaves sobre negro, el "?" y el reloj.
-                     No hay ninguna imagen del producto en el HTML. */
-                  <div className="absolute inset-0 overflow-hidden bg-[#0e0e0e]">
-                    {d.velada ? (
-                      <img
-                        src={d.velada}
-                        alt=""
-                        aria-hidden
-                        loading="lazy"
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div
-                        aria-hidden
-                        className="absolute inset-[-25%] blur-[42px]"
-                        style={{
-                          background:
-                            'radial-gradient(38% 46% at 32% 36%, rgba(255,255,255,0.14), transparent 70%), radial-gradient(44% 40% at 72% 68%, rgba(255,255,255,0.07), transparent 72%)',
-                        }}
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-black/35" />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                      <span className="select-none text-[72px] font-black leading-none text-white/30 [text-shadow:0_2px_26px_rgba(0,0,0,0.75)]">
-                        ?
-                      </span>
-                      <p className="text-[15px] font-bold tabular-nums tracking-[0.04em] text-white/70 [text-shadow:0_2px_20px_rgba(0,0,0,0.7)] md:text-[16px]">
-                        <CyberRevealCountdown targetIso={d.revealAt} />
-                      </p>
-                    </div>
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="select-none text-[32px] font-black text-white/25">?</span>
                   </div>
                 )}
-                <span className="cyber-glass absolute left-3 top-3 inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white">
-                  {d.dia} · {d.fecha}
-                </span>
-                {d.estado === 'revelado' && d.producto?.preventa && (
-                  <span className="cyber-glass-light absolute bottom-3 left-3 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] md:text-[10px]">
-                    {d.producto.preventa}
-                  </span>
-                )}
               </div>
-
-              {/* Texto */}
-              <div className="flex flex-col gap-1 pt-3 md:pt-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
+                  {d.dia} · {d.fecha}
+                </p>
                 {d.estado === 'revelado' && d.producto ? (
                   <>
-                    <p className="text-[18px] font-black uppercase tracking-[0.02em] text-white md:text-[20px]">
+                    <p className="mt-0.5 truncate text-[15px] font-black uppercase tracking-[0.02em] text-white md:text-[17px]">
                       {d.producto.nombre}
                     </p>
-                    <p className="text-[12.5px] leading-[1.5] text-white/55 md:text-[13px]">
+                    <p className="mt-0.5 hidden text-[12px] leading-[1.4] text-white/50 md:block">
                       {d.producto.claim}
                     </p>
-                    {d.producto.href ? (
-                      <Link
-                        href={d.producto.href}
-                        className="mt-2.5 inline-flex h-[46px] w-full items-center justify-center rounded-full bg-white px-6 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0a0a0a] transition-opacity hover:opacity-85 md:w-auto md:self-start"
-                      >
-                        Ver el drop
-                      </Link>
-                    ) : (
-                      /* Preventa sin compra todavía: se dice, no se promete. */
-                      <p className="mt-1.5 text-[11.5px] leading-[1.45] text-white/40">
-                        La compra se abre con la preventa. Unidades limitadas.
-                      </p>
-                    )}
                   </>
                 ) : (
-                  <p className="text-[16px] font-black uppercase tracking-[0.02em] text-white/45">
-                    Por revelar
+                  <p className="mt-0.5 text-[15px] font-black uppercase tracking-[0.02em] text-white/45">
+                    Por revelar · <CyberRevealCountdown targetIso={d.revealAt} />
                   </p>
                 )}
               </div>
+              {d.estado === 'revelado' && d.producto?.href && (
+                <Link
+                  href={d.producto.href}
+                  className="inline-flex h-[40px] shrink-0 items-center justify-center rounded-full bg-white px-5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-[#0a0a0a] transition-opacity hover:opacity-85 md:h-[44px] md:px-6 md:text-[11px]"
+                >
+                  Ver el drop
+                </Link>
+              )}
             </article>
           ))}
         </div>

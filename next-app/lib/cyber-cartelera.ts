@@ -76,8 +76,35 @@ export interface CyberDrop {
  */
 const HORA_REVELACION = '11:00:00';
 
+/* ══════════════ PREVENTA — COLECCIÓN CAMO (el interruptor) ═══════════════ */
+
 /**
- * Los tres drops, uno por día. CONTENIDO SIN ASIGNAR a propósito: depende de
+ * 40 unidades entrantes (10 por talle, S–XL), entrega estimada viernes 13/11.
+ *
+ * Lo verificado en Woo el 3/11: `zip-hoodie-camo` (id 916, creado el 26/04,
+ * $112.500, variaciones 917–920 S–XL todas con stock 0, sin SKU, backorders
+ * en "no") es un RESTOCK: conserva su identidad y su ficha original. Los
+ * colorways Olive y Brown nuevos y los Jorts se cargan como productos nuevos
+ * (previsto para el 4/11) — hasta entonces NO existen en Woo.
+ *
+ * ── Cómo se enciende (cuando la colección esté publicada en Woo) ──────────
+ * 1. `href`: apuntar a la colección/categoría real (hoy es la ficha del 916).
+ * 2. `publicado: true`.
+ * Con eso solo, el CTA de la sección camo pasa de "PRÓXIMAMENTE" (sin link) a
+ * "VER COLECCIÓN". Nada más que tocar. No encender sin el stock de preventa
+ * cargado y el OK de Valentín.
+ */
+export const PREVENTA_ZIP_CAMO = {
+  publicado: false,
+  nombre: 'Colección Camo',
+  colorways: 'Olive · Brown',
+  eta: 'Entrega estimada: viernes 13/11',
+  href: '/producto/zip-hoodie-camo',
+  img: '/cyber/drops/drop-02-camo.webp',
+} as const;
+
+/**
+ * Los drops, uno por día. CONTENIDO SIN ASIGNAR a propósito: depende de
  * mercadería recibida y controlada (remeras/longsleeves nuevas el 3/11,
  * bermudas y camperas camo el 4/11 — tentativos del replanteo del 27/10).
  * Para publicar uno: asignar `producto` con el OK de Valentín.
@@ -102,16 +129,16 @@ export const CYBER_DROPS: CyberDrop[] = [
     dia: 'Día 2',
     fecha: 'mar 3/11',
     revealAt: `2026-11-03T${HORA_REVELACION}-03:00`,
-    // Revelado el 3/11 por pedido de Valentín: el conjunto camo completo, con
+    // Revelado el 3/11 por pedido de Valentín: la colección camo completa, con
     // la composición original de los cuatro productos (Zip Hoodie y Jort, en
-    // Olive y Brown). La COMPRA no se abre acá: las unidades entrantes son
-    // preventa (ver PREVENTA_ZIP_CAMO) y los colorways todavía no existen como
-    // productos en Woo — `href: null` deja la tarjeta sin CTA hasta ese OK.
+    // Olive y Brown). La COMPRA no se abre acá: el link deriva del interruptor
+    // PREVENTA_ZIP_CAMO — apagado, el CTA dice "Próximamente" sin llevar a
+    // ningún lado; encendido, pasa a "Ver colección".
     producto: {
-      nombre: 'Conjunto Camo',
+      nombre: PREVENTA_ZIP_CAMO.nombre,
       claim: 'Zip Hoodie y Jort Camo, en Olive y Brown.',
-      img: '/cyber/drops/drop-02-camo.webp',
-      href: null,
+      img: PREVENTA_ZIP_CAMO.img,
+      href: PREVENTA_ZIP_CAMO.publicado ? PREVENTA_ZIP_CAMO.href : null,
       preventa: 'Preventa · entrega estimada viernes 13/11',
     },
   },
@@ -120,30 +147,6 @@ export const CYBER_DROPS: CyberDrop[] = [
      rota en la cara del cliente. El evento comunica los lanzamientos que
      existen, no los que podrían existir. */
 ];
-
-/* ══════════════════ PREVENTA — ZIP HOODIE CAMO ══════════════════════════ */
-
-/**
- * 40 unidades entrantes (10 por talle, S–XL), entrega estimada viernes 13/11.
- *
- * Lo verificado en Woo el 3/11: existe UN producto `zip-hoodie-camo` (id 916,
- * creado el 26/04, $112.500, variaciones 917–920 S–XL todas con stock 0, sin
- * SKU, backorders en "no"). Los colorways Olive y Brown del conjunto nuevo NO
- * existen como productos, ni siquiera en borrador. Antes de encender esto hay
- * que decidir si la preventa es un restock del 916 o dos productos nuevos, y
- * cargar el stock como preventa — nada de eso se toca sin el OK de Valentín.
- *
- * `publicado: false` = el banner solo se monta fuera de producción (el mismo
- * candado que tuvo Mystery antes de publicarse).
- */
-export const PREVENTA_ZIP_CAMO = {
-  publicado: false,
-  nombre: 'Zip Hoodie Camo',
-  colorways: 'Olive · Brown',
-  eta: 'Entrega estimada: viernes 13/11',
-  href: '/producto/zip-hoodie-camo',
-  img: '/cyber/drops/drop-02-camo.webp',
-} as const;
 
 /** Lo ÚNICO del drop que puede viajar al navegador. */
 export interface CyberDropPublico {
