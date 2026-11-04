@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
+import { crearCortacircuitosPorClave } from '@/lib/wp-cortacircuitos';
 import { fetchProductSlugs } from '@/lib/wp-products';
+import { prerenderizarFichas } from '@/lib/build-env';
 import { getCachedDiscountStatus, GOAL_PRODUCT_SLUG } from '@/lib/goal-discount';
 import { fetchProductDetail } from '@/lib/product-detail';
 import { buildMetadata, truncate } from '@/lib/seo';
@@ -13,7 +16,9 @@ import ProductoClient from './ProductoClient';
 export const revalidate = 3600;
 export const dynamicParams = true;
 
+// En previews y CI no se prerenderizan las fichas: ver lib/build-env.ts.
 export async function generateStaticParams() {
+  if (!prerenderizarFichas()) return [];
   const slugs = await fetchProductSlugs();
   return slugs.map(slug => ({ slug }));
 }
@@ -26,8 +31,20 @@ async function getProduct(slug: string) {
   // Sin .catch(): undefined es SOLO "el slug no existe" (fetchProductDetail ya
   // distingue ese caso). Un WP caído lanza y Next conserva la última página
   // buena en vez de cachear un 404 durante una hora.
-  return fetchProductDetail(slug, { server: true });
+  //
+  // Incidente MySQL/Hostinger 4/11/2026: con `fetch` + revalidate, cada
+  // regeneración de la ficha ESPERABA a WordPress (y reintentaba en cada
+  // visita si fallaba). productoCompartido sirve el último dato bueno al
+  // instante y actualiza en segundo plano; ver lib/catalog.ts.
+  return productoCompartido(slug);
 }
+
+const protegerFicha = crearCortacircuitosPorClave(60_000);
+const productoCompartido = unstable_cache(
+  (slug: string) => protegerFicha(slug, () => fetchProductDetail(slug, { fresh: true })),
+  ['ficha-producto-v1'],
+  { revalidate: 60 },
+);
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const product = await getProduct(params.slug);
