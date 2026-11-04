@@ -13,6 +13,7 @@ import {
   CYBER_MYSTERY_EN_VIDRIERA,
   CYBER_PACK_SLUGS,
   MYSTERY_PUBLICADO,
+  PREVENTA_ZIP_CAMO,
   dropsPublicos,
 } from '@/lib/cyber-cartelera';
 import { MYSTERY_CAJAS } from '@/lib/mystery';
@@ -31,9 +32,9 @@ describe('drops — lo no revelado no existe para el navegador', () => {
   it('un drop revelado sin compra (preventa) no lleva CTA: href null y aviso', () => {
     const dos = CYBER_DROPS.find((d) => d.id === '02')!;
     expect(dos.producto).not.toBeNull();
-    // Mientras la preventa no esté cargada en Woo, la tarjeta no puede llevar
-    // a ninguna ficha: no existe una con stock que respalde el click.
-    expect(dos.producto!.href).toBeNull();
+    // Apagado, ninguna ficha respalda el click; encendido (04/11), va a la
+    // colección con las 4 prendas, nunca a una ficha suelta.
+    expect(dos.producto!.href).toBe(PREVENTA_ZIP_CAMO.publicado ? '/colecciones/camo-drop' : null);
     expect(dos.producto!.preventa).toMatch(/preventa/i);
   });
 
@@ -48,9 +49,14 @@ describe('drops — lo no revelado no existe para el navegador', () => {
         else expect(p.href, `${o.nombre} ${o.color} sin publicar no puede linkear`).toBeNull();
       });
     }
-    // Hoy: ninguna prenda camo existe en Woo; las 4 Raglan sí.
+    // Desde el 04/11 las 4 camo están publicadas, igual que las 4 Raglan.
     const camo = dropsPublicos(despues).find((d) => d.id === '02')!.producto!.piezas!;
-    expect(camo.every((p) => p.href === null)).toBe(true);
+    expect(camo.map((p) => p.href)).toEqual([
+      '/producto/zip-hoodie-camo-olive',
+      '/producto/zip-hoodie-camo',
+      '/producto/jort-camo-olive',
+      '/producto/jort-camo-brown',
+    ]);
     const raglan = dropsPublicos(despues).find((d) => d.id === '01')!.producto!.piezas!;
     expect(raglan.every((p) => p.href?.startsWith('/producto/'))).toBe(true);
   });

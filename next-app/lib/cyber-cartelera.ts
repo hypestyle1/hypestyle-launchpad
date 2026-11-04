@@ -130,7 +130,8 @@ const HORA_REVELACION = '11:00:00';
  * cargado y el OK de Valentín.
  */
 export const PREVENTA_ZIP_CAMO = {
-  publicado: false,
+  // Encendido el 04/11 ~18 h: colección publicada en Woo con stock de preventa.
+  publicado: true,
   nombre: 'Colección Camo',
   colorways: 'Olive · Brown',
   eta: 'Entrega estimada: viernes 13/11',
@@ -185,13 +186,12 @@ export const CYBER_DROPS: CyberDrop[] = [
       preventa: 'Preventa · entrega estimada viernes 13/11',
       // Slugs reales en Woo (4/11): Brown = #916 (restock, conserva ficha y
       // URL); Olive y los dos Jorts = borradores #4271 / #4277 / #4283.
-      // Todas en `publicado: false` hasta el lanzamiento (20:00 ART con OK
-      // de Valentín): sin link. Al publicar cada una en Woo, pasarla a true.
+      // Publicadas en Woo el 04/11 ~18 h (OK de Valentín): con link.
       piezas: [
-        { nombre: 'Zip Hoodie', color: 'Olive', img: '/cyber/drops/camo/zip-hoodie-olive.webp', slug: 'zip-hoodie-camo-olive', publicado: false },
-        { nombre: 'Zip Hoodie', color: 'Brown', img: '/cyber/drops/camo/zip-hoodie-brown.webp', slug: 'zip-hoodie-camo', publicado: false },
-        { nombre: 'Jort', color: 'Olive', img: '/cyber/drops/camo/jort-olive.webp', slug: 'jort-camo-olive', publicado: false },
-        { nombre: 'Jort', color: 'Brown', img: '/cyber/drops/camo/jort-brown.webp', slug: 'jort-camo-brown', publicado: false },
+        { nombre: 'Zip Hoodie', color: 'Olive', img: '/cyber/drops/camo/zip-hoodie-olive.webp', slug: 'zip-hoodie-camo-olive', publicado: true },
+        { nombre: 'Zip Hoodie', color: 'Brown', img: '/cyber/drops/camo/zip-hoodie-brown.webp', slug: 'zip-hoodie-camo', publicado: true },
+        { nombre: 'Jort', color: 'Olive', img: '/cyber/drops/camo/jort-olive.webp', slug: 'jort-camo-olive', publicado: true },
+        { nombre: 'Jort', color: 'Brown', img: '/cyber/drops/camo/jort-brown.webp', slug: 'jort-camo-brown', publicado: true },
       ],
     },
   },
