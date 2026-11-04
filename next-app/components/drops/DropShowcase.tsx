@@ -33,17 +33,23 @@ export interface DropShowcaseProps {
   jerarquia?: 'principal' | 'secundaria';
 }
 
+/* Hover: la prenda se eleva, crece apenas y proyecta una sombra que sigue su
+   silueta (drop-shadow sobre el PNG transparente, no una caja). Solo en
+   dispositivos con hover real — en touch no queda "pegado" ni interfiere con
+   el scroll; ahí la respuesta es un leve hundimiento al tocar (solo links).
+   Se aplica igual a las prendas sin link: mismo sistema visual, sin cursor
+   ni navegación. */
+const HOVER =
+  'transition-[transform,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ' +
+  '[filter:drop-shadow(0_0_0_rgba(10,10,10,0))] ' +
+  '[@media(hover:hover)]:group-hover:-translate-y-2 [@media(hover:hover)]:group-hover:scale-[1.045] ' +
+  '[@media(hover:hover)]:group-hover:[filter:drop-shadow(0_22px_24px_rgba(10,10,10,0.2))_drop-shadow(0_6px_8px_rgba(10,10,10,0.08))]';
+
 function Pieza({ p, sizes, principal }: { p: DropShowcasePieza; sizes: string; principal: boolean }) {
   const contenido = (
     <>
-      <div className="relative aspect-square">
-        <Image
-          src={p.img}
-          alt={`${p.nombre} ${p.color}`}
-          fill
-          sizes={sizes}
-          className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-        />
+      <div className={`relative aspect-square will-change-transform ${HOVER}`}>
+        <Image src={p.img} alt={`${p.nombre} ${p.color}`} fill sizes={sizes} className="object-contain" />
       </div>
       <p
         className={`mt-1 text-center font-bold uppercase leading-tight tracking-[0.06em] ${
@@ -56,11 +62,15 @@ function Pieza({ p, sizes, principal }: { p: DropShowcasePieza; sizes: string; p
   );
 
   return p.href ? (
-    <Link href={p.href} className="group block" aria-label={`${p.nombre} ${p.color}, ver producto`}>
+    <Link
+      href={p.href}
+      className="group block transition-transform duration-150 active:scale-[0.98] [@media(hover:hover)]:active:scale-100"
+      aria-label={`${p.nombre} ${p.color}, ver producto`}
+    >
       {contenido}
     </Link>
   ) : (
-    <div>{contenido}</div>
+    <div className="group">{contenido}</div>
   );
 }
 

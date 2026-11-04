@@ -10,6 +10,7 @@ import {
   TextoEnvios, TextoCambios, TablaMedidas, NotaCuidadoTalles, InterruptorModelo, NotaModelo, imgUrl, isVideo,
 } from './bloques';
 import { mysteryDe } from '@/lib/mystery';
+import { preventaDe } from '@/lib/preventa-productos';
 import {
   MysteryAhorro, MysteryBadge, MysteryComoFunciona, MysteryCondiciones, MysteryGarantia,
   MysteryMigas, MysteryPool, MysteryQueIncluye, MysteryVolver,
@@ -36,6 +37,9 @@ export default function Ficha(p: FichaProps) {
   // propio es la capa de información de ./mystery — qué recibís, cómo
   // funciona y el conjunto del que sale la prenda.
   const mystery = mysteryDe(product.slug);
+  // Preventa con fecha: solo comunicación (no toca carrito ni checkout). Se
+  // evalúa recién montado para que el server y el cliente no discrepen.
+  const preventa = p.mounted ? preventaDe(product.slug) : null;
   const actual = galleryImages[selectedImage];
   // La destacada de Woo es un mockup cuadrado sobre fondo transparente: en la
   // columna vertical se muestra entero en vez de recortarlo.
@@ -165,6 +169,11 @@ export default function Ficha(p: FichaProps) {
                   <Precio p={p} />
                 </div>
                 {mystery && <MysteryAhorro caja={mystery} />}
+                {preventa && (
+                  <p className="inline-flex w-fit items-center gap-2 rounded-full bg-[#0a0a0a] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-white">
+                    {preventa.nota}
+                  </p>
+                )}
                 {p.privateAccess ? <NotaPreventa pa={p.privateAccess} /> : <LineaResenas />}
               </div>
               <div className="lg:hidden flex-shrink-0 pt-0.5"><InterruptorModelo p={p} /></div>
@@ -180,7 +189,14 @@ export default function Ficha(p: FichaProps) {
                 : p.modelInfo && <div className="bg-bg-alt rounded-[10px] px-4 py-3">{p.modelInfo}</div>}
             </div>
             <div className="flex flex-col gap-2.5">
-              <LineaDespacho />
+              {preventa ? (
+                <p className="flex items-baseline gap-2 text-[12px] text-muted-foreground">
+                  <span className="w-[7px] h-[7px] rounded-full bg-amber-500 flex-shrink-0 -translate-y-px" />
+                  <span>Producto en preventa: se despacha cuando llega, con entrega estimada a partir del 13/11.</span>
+                </p>
+              ) : (
+                <LineaDespacho />
+              )}
               <BotonComprar p={p} />
             </div>
             {mystery && <MysteryComoFunciona caja={mystery} />}
