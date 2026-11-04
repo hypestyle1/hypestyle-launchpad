@@ -79,7 +79,7 @@ export const PACK_REGULAR_X4_DESDE = Date.parse('2026-11-01T19:00:00-03:00');
  * arranque del día siguiente para que el último minuto (4/11 23:59) entre
  * completo, con sus segundos.
  */
-export const PACK_REGULAR_X4_HASTA = Date.parse('2026-11-05T00:00:00-03:00');
+export const PACK_REGULAR_X4_HASTA = Date.parse('2026-11-09T00:00:00-03:00');
 
 /**
  * Precio promocional del pack de 4 dentro de la ventana: $66.300, CONGELADO acá

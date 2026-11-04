@@ -53,7 +53,7 @@ export type ModoValidacion = 'observar' | 'bloquear';
  * constante sin agregar esa regla, así que el candado no depende de que alguien
  * se acuerde.
  *
- * Y no se activa entre el 2 y el 4 de noviembre: la campaña es ventana cerrada.
+ * Y no se activa entre el 2 y el 8 de noviembre: la campaña es ventana cerrada.
  */
 export const BLOQUEO_HABILITADO = false;
 

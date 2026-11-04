@@ -259,8 +259,8 @@ describe('curaduría — productos reales, nada inventado', () => {
 /* ═══════════════ RESTAURACIÓN: el takeover se apaga solo ═══════════════ */
 
 describe('restauración automática', () => {
-  it('a las 00:00 del 5/11 el estado es cerrado y el takeover no se renderiza', () => {
-    expect(cyberEstado(en('2026-11-05T00:00:00-03:00'))).toBe('cerrado');
+  it('a las 00:00 del 9/11 el estado es cerrado y el takeover no se renderiza', () => {
+    expect(cyberEstado(en('2026-11-09T00:00:00-03:00'))).toBe('cerrado');
   });
 
   it('el kill switch CYBER_APAGADO=1 fuerza cerrado aun en pleno evento', () => {
@@ -274,8 +274,8 @@ describe('restauración automática', () => {
 
   it('últimas horas: solo el último día, y nunca fuera del evento', () => {
     expect(cyberUltimasHoras(en('2026-11-02T12:00:00-03:00'))).toBe(false);
-    expect(cyberUltimasHoras(en('2026-11-04T00:00:00-03:00'))).toBe(true);
-    expect(cyberUltimasHoras(en('2026-11-05T01:00:00-03:00'))).toBe(false);
+    expect(cyberUltimasHoras(en('2026-11-08T00:00:00-03:00'))).toBe(true);
+    expect(cyberUltimasHoras(en('2026-11-09T01:00:00-03:00'))).toBe(false);
   });
 
   it('la home SS27 sigue intacta: el takeover es una rama, no una edición', () => {

@@ -11,7 +11,7 @@ describe('refresco del pack en la frontera horaria', () => {
   it('consulta al servidor al abrir, sin activar el pack por el reloj del navegador', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2030-01-01T00:00:00Z'));
-    mocks.data = { unidades: 3, serverTime: '2026-11-01T21:59:59Z', desde: '2026-11-01T22:00:00Z', hasta: '2026-11-05T03:00:00Z' };
+    mocks.data = { unidades: 3, serverTime: '2026-11-01T21:59:59Z', desde: '2026-11-01T22:00:00Z', hasta: '2026-11-09T03:00:00Z' };
     expect(usePackRegularUnidades()).toBe(3);
     const cleanup = mocks.effect!();
     vi.advanceTimersByTime(1049);
@@ -24,7 +24,7 @@ describe('refresco del pack en la frontera horaria', () => {
   });
   it('cancela el timer anterior cuando cambia la respuesta', () => {
     vi.useFakeTimers();
-    mocks.data = { unidades: 3, serverTime: '2026-11-01T21:59:59Z', desde: '2026-11-01T22:00:00Z', hasta: '2026-11-05T03:00:00Z' };
+    mocks.data = { unidades: 3, serverTime: '2026-11-01T21:59:59Z', desde: '2026-11-01T22:00:00Z', hasta: '2026-11-09T03:00:00Z' };
     usePackRegularUnidades();
     const cleanup = mocks.effect!();
     if (typeof cleanup === 'function') cleanup();

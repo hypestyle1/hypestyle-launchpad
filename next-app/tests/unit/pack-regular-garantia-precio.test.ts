@@ -114,18 +114,18 @@ describe('bordes del cambio de ventana', () => {
     expect(pagaPorCuatro(cobrado)).toBeLessThan(pagaPorCuatro(vio));
   });
 
-  it('carrito armado 23:59 del 4/11 y pagado 00:01 del 5/11: se cobra justo lo mostrado', () => {
-    const vio = muestra('2026-11-04T23:59:00-03:00');
-    const cobrado = cobra('2026-11-05T00:01:00-03:00');
+  it('carrito armado 23:59 del 8/11 y pagado 00:01 del 9/11: se cobra justo lo mostrado', () => {
+    const vio = muestra('2026-11-08T23:59:00-03:00');
+    const cobrado = cobra('2026-11-09T00:01:00-03:00');
     expect(vio).toBe(4);
     expect(cobrado).toBe(4); // la gracia
     expect(pagaPorCuatro(cobrado)).toBe(pagaPorCuatro(vio));
     expect(pagaPorCuatro(cobrado)).toBe(PACK_REGULAR_X4_PRECIO);
   });
 
-  it('pasada la gracia (00:30 del 5/11) el servidor cobra el pack de 3 y el checkout tiene que avisar', () => {
-    const vio = muestra('2026-11-04T23:59:00-03:00');
-    const cobrado = cobra('2026-11-05T00:30:00-03:00');
+  it('pasada la gracia (00:30 del 9/11) el servidor cobra el pack de 3 y el checkout tiene que avisar', () => {
+    const vio = muestra('2026-11-08T23:59:00-03:00');
+    const cobrado = cobra('2026-11-09T00:30:00-03:00');
     expect(cobrado).toBe(3);
     // Acá el total cobrado es mayor que el mostrado: lo corta la guarda del
     // checkout (authorizedTotal vs montoAPagar), que muestra el total nuevo y

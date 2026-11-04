@@ -1,5 +1,5 @@
 /**
- * CYBER HYPE — el evento propio de Hype del 2 al 4 de noviembre de 2026.
+ * CYBER HYPE — el evento propio de Hype del 2 al 8 de noviembre de 2026.
  *
  * NO es Cyber Monday ni CACE: ni esos nombres ni esos logos aparecen en la
  * página. Es un evento de la marca.
@@ -44,16 +44,16 @@ export const CYBER_START = '2026-11-01T19:00:00-03:00';
 /**
  * Cierre. Instante exclusivo: a las 00:00 del 5/11 ya terminó, que es lo mismo
  * que "hasta el 4/11 23:59" y deja los bordes limpios. Coincide con el `hasta`
- * de la ventana del 4 PACK en producción (2026-11-05T03:00:00.000Z).
+ * de la ventana del 4 PACK en producción (2026-11-09T03:00:00.000Z).
  *
  * Una extensión al 5–7/11 es una decisión que todavía no está tomada: si se
  * aprueba, se mueve esta constante (y las otras dos superficies), no se agrega
  * una excepción.
  */
-export const CYBER_END = '2026-11-05T00:00:00-03:00';
+export const CYBER_END = '2026-11-09T00:00:00-03:00';
 
 /** El único dato duro que la landing comunica en la previa. */
-export const CYBER_FECHAS = '2, 3 y 4 de noviembre';
+export const CYBER_FECHAS = '2 al 8 de noviembre';
 
 /** Hora de apertura, en texto, para el copy. */
 export const CYBER_HORA_APERTURA = '20:00';
