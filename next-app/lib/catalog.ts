@@ -1,7 +1,7 @@
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 import { unstable_cache } from 'next/cache';
 import { crearCortacircuitos } from '@/lib/wp-cortacircuitos';
-import { fetchAllProductsStrict } from '@/lib/products-server';
+import { fetchAllProductsDentroDeCache } from '@/lib/products-server';
 import { productsForCategory, type CategoryConfig } from '@/lib/category-config';
 import type { NormalizedProduct } from '@/lib/products-normalize';
 
@@ -44,7 +44,7 @@ export const SLUGS_INTERNOS = new Set(['par-de-medias-hype', 'gift-card', 'sleev
 const proteger = crearCortacircuitos(60_000);
 
 async function leerCatalogoPublico(): Promise<NormalizedProduct[]> {
-  const productos = await proteger(() => fetchAllProductsStrict(true, { retries: 0, timeoutMs: 25_000 }));
+  const productos = await proteger(() => fetchAllProductsDentroDeCache({ retries: 0, timeoutMs: 25_000 }));
   return productos.filter(p => !SLUGS_INTERNOS.has(p.slug));
 }
 

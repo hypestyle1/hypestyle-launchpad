@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  * que ser lo mismo que después pinta el navegador con /api/products.
  */
 const catalogo = vi.fn();
-vi.mock('@/lib/products-server', () => ({ fetchAllProductsStrict: () => catalogo() }));
+vi.mock('@/lib/products-server', () => ({ fetchAllProductsDentroDeCache: () => catalogo() }));
 // La caché de Next y el cortacircuitos se prueban en catalogo-ultima-version.test.ts;
 // acá se prueba el contenido del catálogo, sin estado entre tests.
 vi.mock('next/cache', () => ({ unstable_cache: (fn: any) => fn }));
