@@ -42,15 +42,23 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
   }, [data, slugs]);
 
   return (
-    <section id="pack" className="bg-background px-4 py-10 text-foreground md:px-10 md:py-14">
+    <section
+      id="pack"
+      className="bg-[linear-gradient(180deg,#e7e6df_0%,#f1f0ec_38%,hsl(var(--background))_100%)] px-4 pb-10 pt-6 text-foreground md:px-10 md:pb-14 md:pt-10"
+    >
       <div className="mx-auto max-w-[1400px]">
         {/* ── Bloque principal (rediseño 3/11) ─────────────────────────────
             Fuera el panel negro gigante: la sección vive en claro, con una
             foto REAL de campaña (modelo con la Regular negra sobre ladrillo
             blanco) y el texto en un panel del mismo tono que el fondo de la
             foto. El vidrio aparece una sola vez, como chip sobre la imagen. */}
-        <div className="grid grid-cols-1 overflow-hidden md:grid-cols-2 md:items-stretch">
-          <div className="relative aspect-[4/5] overflow-hidden bg-[#f4f4f2] md:aspect-auto md:min-h-[560px]">
+        {/* Banner 4/11: contenedor redondeado con vidrio SUTIL — blanco
+            translúcido, borde claro, brillo arriba a la izquierda y sombra en
+            capas (una corta de contacto + una larga y difusa) para que se
+            despegue apenas de la página. La foto va adentro, también
+            redondeada, y sigue siendo la protagonista. */}
+        <div className="cyber-pack-glass relative grid grid-cols-1 rounded-[26px] p-1.5 md:grid-cols-2 md:items-stretch md:rounded-[32px] md:p-2">
+          <div className="relative aspect-[5/6] overflow-hidden rounded-[20px] bg-[#f4f4f2] md:aspect-auto md:min-h-[540px] md:rounded-[25px]">
             <Image
               src="/cyber/pack/modelo.webp"
               alt="Regular Tee black — campaña Hype"
@@ -64,7 +72,7 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
             </span>
           </div>
 
-          <div className="flex flex-col justify-center bg-[#f4f4f2] px-5 py-7 md:px-12 md:py-10">
+          <div className="relative flex flex-col justify-center px-4 pb-4 pt-5 md:px-12 md:py-10">
             <h2 className="text-[34px] font-black uppercase leading-[0.86] tracking-[-0.02em] md:text-[56px]">
               Llevás 4,
               <br />
@@ -83,7 +91,7 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
                 $6.400 y no $6.300: el 3 PACK bajó a $59.900 (66.300 −
                 59.900). Si se vuelve a mover alguno de los dos, este número
                 tiene que moverse con ellos. */}
-            <p className="mt-1.5 text-[13px] font-semibold leading-[1.4] text-foreground/75 md:text-[14.5px]">
+            <p className="mt-1.5 max-w-[44ch] text-[13px] font-semibold leading-[1.4] text-foreground/75 md:text-[14.5px]">
               Sumá una cuarta por solo $ 6.400 más. Descuento automático en el carrito, sin código.
             </p>
 
@@ -110,7 +118,7 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
             tira deslizable en mobile. */}
         {productos.length > 0 && (
           <>
-            <p className="mb-3 mt-5 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-light md:mb-4 md:mt-10">
+            <p className="mb-3 mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-light md:mb-4 md:mt-10">
               Los {productos.length} colores
             </p>
             <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-5 md:gap-4 md:overflow-visible md:px-0 md:pb-0">

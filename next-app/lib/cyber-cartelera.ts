@@ -30,6 +30,35 @@ import { MYSTERY_CAJAS } from './mystery';
 
 /* ═══════════════════════════ 3 DÍAS · 3 DROPS ═══════════════════════════ */
 
+/** Una prenda de un drop (mockup individual sobre transparente). */
+export interface CyberDropPieza {
+  /** Nombre corto, sin el colorway: "Zip Hoodie". */
+  nombre: string;
+  color: string;
+  img: string;
+  /** Slug de Woo; null = el producto todavía no existe. */
+  slug: string | null;
+  /** true solo si el producto está PUBLICADO en Woo. */
+  publicado: boolean;
+}
+
+/** Lo único de una prenda que viaja al navegador: el link ya resuelto. */
+export interface CyberDropPiezaPublica {
+  nombre: string;
+  color: string;
+  img: string;
+  href: string | null;
+}
+
+export function piezaPublica(p: CyberDropPieza): CyberDropPiezaPublica {
+  return {
+    nombre: p.nombre,
+    color: p.color,
+    img: p.img,
+    href: p.publicado && p.slug ? `/producto/${p.slug}` : null,
+  };
+}
+
 export interface CyberDrop {
   id: '01' | '02' | '03';
   /** El día como se lee en la cartelera. */
@@ -54,6 +83,12 @@ export interface CyberDrop {
     href: string | null;
     /** Aviso de preventa, si corresponde. Nunca prometer stock que no está. */
     preventa?: string;
+    /**
+     * Las prendas del drop, una por mockup. Cada una tiene su PROPIO candado:
+     * solo linkea a su ficha con `publicado: true` y un `slug` real. Así
+     * ninguna prenda sin publicar lleva a una página inexistente.
+     */
+    piezas?: CyberDropPieza[];
   };
   /**
    * Portada YA DESENFOCADA (archivo, no CSS) para un drop sin revelar: deja
@@ -122,6 +157,13 @@ export const CYBER_DROPS: CyberDrop[] = [
       claim: 'Creative Goods y Eagle, en Pink y Green.',
       img: '/cyber/drops/drop-01-definitivo.png',
       href: '/longsleeves',
+      // Las cuatro publicadas en Woo (verificado contra /api/products 4/11).
+      piezas: [
+        { nombre: 'Creative Goods', color: 'Pink', img: '/cyber/drops/raglan/creative-goods-pink.webp', slug: 'hype-creative-goods-pink-raglan-longsleeve', publicado: true },
+        { nombre: 'Creative Goods', color: 'Green', img: '/cyber/drops/raglan/creative-goods-green.webp', slug: 'hype-creative-goods-green-raglan-longsleeve', publicado: true },
+        { nombre: 'Eagle', color: 'Pink', img: '/cyber/drops/raglan/eagle-pink.webp', slug: 'dept-of-culture-eagle-pink-raglan-longsleeve', publicado: true },
+        { nombre: 'Eagle', color: 'Green', img: '/cyber/drops/raglan/eagle-green.webp', slug: 'dept-of-culture-eagle-green-raglan-longsleeve', publicado: true },
+      ],
     },
   },
   {
@@ -140,6 +182,15 @@ export const CYBER_DROPS: CyberDrop[] = [
       img: PREVENTA_ZIP_CAMO.img,
       href: PREVENTA_ZIP_CAMO.publicado ? PREVENTA_ZIP_CAMO.href : null,
       preventa: 'Preventa · entrega estimada viernes 13/11',
+      // Ninguna existe todavía en Woo (Olive/Brown y Jorts se cargan como
+      // productos nuevos): sin slug, sin link. Al publicarlas, completar
+      // `slug` y pasar `publicado: true` de a una.
+      piezas: [
+        { nombre: 'Zip Hoodie', color: 'Olive', img: '/cyber/drops/camo/zip-hoodie-olive.webp', slug: null, publicado: false },
+        { nombre: 'Zip Hoodie', color: 'Brown', img: '/cyber/drops/camo/zip-hoodie-brown.webp', slug: null, publicado: false },
+        { nombre: 'Jort', color: 'Olive', img: '/cyber/drops/camo/jort-olive.webp', slug: null, publicado: false },
+        { nombre: 'Jort', color: 'Brown', img: '/cyber/drops/camo/jort-brown.webp', slug: null, publicado: false },
+      ],
     },
   },
   /* Día 3 ELIMINADO el 3/11 (decisión de Valentín): no hay un tercer drop
@@ -161,7 +212,14 @@ export interface CyberDropPublico {
    */
   revealAt: string;
   /** Solo presente cuando estado === 'revelado'. */
-  producto?: { nombre: string; claim: string; img: string; href: string | null; preventa?: string };
+  producto?: {
+    nombre: string;
+    claim: string;
+    img: string;
+    href: string | null;
+    preventa?: string;
+    piezas?: CyberDropPiezaPublica[];
+  };
   /** Solo en 'bloqueado', y solo si hay portada velada. Nunca el nombre. */
   velada?: string;
 }
@@ -176,7 +234,14 @@ export function dropsPublicos(now: Date = new Date()): CyberDropPublico[] {
   return CYBER_DROPS.map((d) => {
     const revelado = d.producto !== null && t >= new Date(d.revealAt).getTime();
     const base = { id: d.id, dia: d.dia, fecha: d.fecha, revealAt: d.revealAt };
-    if (revelado) return { ...base, estado: 'revelado' as const, producto: d.producto! };
+    if (revelado) {
+      const { piezas, ...resto } = d.producto!;
+      return {
+        ...base,
+        estado: 'revelado' as const,
+        producto: { ...resto, ...(piezas ? { piezas: piezas.map(piezaPublica) } : {}) },
+      };
+    }
     return { ...base, estado: 'bloqueado' as const, ...(d.velada ? { velada: d.velada } : {}) };
   });
 }

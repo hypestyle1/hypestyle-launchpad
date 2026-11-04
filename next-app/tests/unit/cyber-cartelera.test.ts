@@ -37,6 +37,24 @@ describe('drops — lo no revelado no existe para el navegador', () => {
     expect(dos.producto!.preventa).toMatch(/preventa/i);
   });
 
+  it('cada prenda linkea a su ficha SOLO si está publicada y tiene slug', () => {
+    const despues = en('2026-11-04T23:00:00-03:00');
+    for (const d of dropsPublicos(despues)) {
+      const original = CYBER_DROPS.find((o) => o.id === d.id)!;
+      const piezas = d.producto?.piezas ?? [];
+      piezas.forEach((p, i) => {
+        const o = original.producto!.piezas![i];
+        if (o.publicado && o.slug) expect(p.href).toBe(`/producto/${o.slug}`);
+        else expect(p.href, `${o.nombre} ${o.color} sin publicar no puede linkear`).toBeNull();
+      });
+    }
+    // Hoy: ninguna prenda camo existe en Woo; las 4 Raglan sí.
+    const camo = dropsPublicos(despues).find((d) => d.id === '02')!.producto!.piezas!;
+    expect(camo.every((p) => p.href === null)).toBe(true);
+    const raglan = dropsPublicos(despues).find((d) => d.id === '01')!.producto!.piezas!;
+    expect(raglan.every((p) => p.href?.startsWith('/producto/'))).toBe(true);
+  });
+
   it('un drop sin producto asignado NUNCA se revela, aunque pase su hora', () => {
     const despues = en('2026-11-04T23:00:00-03:00');
     for (const d of dropsPublicos(despues)) {
@@ -61,9 +79,14 @@ describe('drops — lo no revelado no existe para el navegador', () => {
     // Un archivo servido se adivina por la URL: subir la portada del Camo sin
     // velar sería spoilear el drop aunque no apareciera en el HTML.
     const dir = join(RAIZ, 'public', 'cyber', 'drops');
-    const subidas = readdirSync(dir);
+    // Recursivo: las prendas individuales viven en subcarpetas (camo/, raglan/).
+    const subidas = (readdirSync(dir, { recursive: true }) as string[])
+      .map((p) => p.replace(/\\/g, '/'))
+      .filter((p) => statSync(join(dir, p)).isFile());
     const permitidas = CYBER_DROPS.flatMap((d) =>
-      [d.producto?.img, d.velada].filter(Boolean).map((p) => p!.split('/').pop()!),
+      [d.producto?.img, d.velada, ...(d.producto?.piezas ?? []).map((p) => p.img)]
+        .filter(Boolean)
+        .map((p) => p!.replace('/cyber/drops/', '')),
     );
     expect(subidas.sort()).toEqual(permitidas.sort());
 

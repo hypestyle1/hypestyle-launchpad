@@ -27,6 +27,7 @@ import {
   CYBER_PACK_SLUGS,
   MYSTERY_PUBLICADO,
   dropsPublicos,
+  piezaPublica,
   CYBER_DROPS,
 } from '@/lib/cyber-cartelera';
 
@@ -59,7 +60,14 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
   const pricePreview = authenticated && Date.now() < Date.parse(CYBER_START);
   const drops = dropsPublicos(cyberAhora()).map(d =>
     authenticated && d.id === '01'
-      ? { ...d, estado: 'revelado' as const, producto: CYBER_DROPS[0].producto! }
+      ? {
+          ...d,
+          estado: 'revelado' as const,
+          producto: {
+            ...CYBER_DROPS[0].producto!,
+            piezas: CYBER_DROPS[0].producto!.piezas?.map(piezaPublica),
+          },
+        }
       : d,
   );
   const mostrarMystery = MYSTERY_PUBLICADO || process.env.NODE_ENV !== 'production';
