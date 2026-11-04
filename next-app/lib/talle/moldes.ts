@@ -22,7 +22,7 @@
  * Todo en centímetros. Las propias tablas avisan: ±1 a 2 cm de confección.
  */
 
-export const VERSION_MOLDES = '2026-10-29';
+export const VERSION_MOLDES = '2026-11-04';
 
 /** Una fila de la tabla: un talle con sus medidas. */
 export interface FilaMolde {
@@ -204,6 +204,20 @@ export const MOLDES: Molde[] = [
     guias: ['tank-top-jpg-f0821530'],
     nota: 'Talle único: el recomendador no elige, solo dice cómo va a caer.',
     filas: [{ talle: 'Único', largo: 44, ancho: 32 }],
+  },
+  {
+    // No Love, Only Style - TOPs (#798). Antes compartía la tabla del tank
+    // top (44/32). Medida por Valentín el 04/11/2026: 44 de largo x 32 de
+    // ancho en plano, menos 2 cm de costuras → 42 / 30. Tiene tabla propia en
+    // Woo; el TANKTOPS (#47) sigue con la del tank top.
+    id: 'top-no-love',
+    nombre: 'top',
+    tipo: 'arriba',
+    holguraPecho: -4,
+    coefLargo: 0.263,
+    guias: ['tabla-talles-top-no-love'],
+    nota: 'Talle único: el recomendador no elige, solo dice cómo va a caer.',
+    filas: [{ talle: 'Único', largo: 42, ancho: 30 }],
   },
   {
     id: 'pantalon',
