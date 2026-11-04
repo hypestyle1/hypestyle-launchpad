@@ -50,7 +50,7 @@ export default function CyberMysterySection({
           {categorias.map((m) => (
             <article
               key={m.id}
-              className="group relative overflow-hidden rounded-[10px] border border-white/12 bg-[#121212] md:rounded-[16px]"
+              className="group relative flex flex-col overflow-hidden rounded-[10px] border border-white/12 bg-[#121212] md:rounded-[16px]"
             >
               <div className="relative aspect-square overflow-hidden">
                 <Image
@@ -65,8 +65,8 @@ export default function CyberMysterySection({
                     un chip superpuesto repetía el dato y tapaba la
                     composición. El dato sigue disponible abajo, en texto. */}
               </div>
-              <div className="flex flex-col gap-1 px-2 pb-3 pt-2 md:px-4 md:pb-4 md:pt-3">
-                <p className="text-[10px] font-black uppercase leading-tight tracking-[0.01em] text-white md:text-[20px]">
+              <div className="flex flex-1 flex-col gap-1 px-2 pb-3 pt-2 md:px-4 md:pb-4 md:pt-3">
+                <p className="text-[11px] font-black uppercase leading-tight tracking-[0.01em] text-white md:text-[20px]">
                   {m.nombre}
                 </p>
                 <p className="hidden text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 md:block">
@@ -79,12 +79,15 @@ export default function CyberMysterySection({
                     la ficha tienen que escribir el precio igual. Va en ARS fijo
                     como el resto del takeover (ver CyberRegalos); la ficha sí
                     responde al selector de moneda. */}
-                <p className="mt-1 text-[13px] font-black tracking-[-0.01em] text-white md:text-[21px]">
+                {/* mt-auto: precio y CTA anclados abajo — los nombres parten
+                    en 1 o 2 líneas según la caja y sin esto los botones de las
+                    tres cards quedaban a alturas distintas. */}
+                <p className="mt-auto pt-1 text-[14px] font-black tracking-[-0.01em] text-white md:text-[21px]">
                   $ {m.precio.toLocaleString('es-AR')}
                 </p>
                 <Link
                   href={m.href}
-                  className="mt-1.5 inline-flex h-[32px] items-center justify-center rounded-full bg-white px-1 text-[9px] font-bold uppercase tracking-[0.02em] text-[#0a0a0a] transition-opacity hover:opacity-85 md:h-[44px] md:px-6 md:text-[11px] md:tracking-[0.12em]"
+                  className="mt-1.5 inline-flex h-[34px] items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold uppercase tracking-[0.02em] text-[#0a0a0a] transition-opacity hover:opacity-85 md:h-[44px] md:px-6 md:text-[11px] md:tracking-[0.12em]"
                 >
                   Elegí tu talle
                 </Link>
