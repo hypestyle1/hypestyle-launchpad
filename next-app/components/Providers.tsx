@@ -11,7 +11,12 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  // retry 1 (React Query trae 3 por defecto). Las queries que pegan a
+  // WordPress ya pasan por fetchWithRetry: 3 reintentos acá × los de
+  // fetchWithRetry multiplicaban hasta ×16 una consulta fallida justo cuando
+  // WP está lento (incidente MySQL/Hostinger 2–4/11/2026). Las queries que
+  // definen su propio `retry` no cambian.
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: 1 } } }));
 
   return (
     <QueryClientProvider client={queryClient}>
