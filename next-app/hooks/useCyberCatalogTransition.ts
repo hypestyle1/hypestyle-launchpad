@@ -34,7 +34,10 @@ export function useCyberCatalogTransition(preview: boolean, serverTime: number) 
     queryKey: ['cyber-products-live'],
     enabled: preview && checkLive,
     queryFn: async () => {
-      const res = await fetch('/api/cyber-products-live', { cache: 'no-store' });
+      // Sin `cache: 'no-store'`: ese modo manda `Cache-Control: no-cache` y
+      // saltearía la CDN. La frescura la decide la ruta (sin caché en la
+      // apertura; después, como máximo ~2 min). Incidente MySQL 4/11/2026.
+      const res = await fetch('/api/cyber-products-live');
       if (!res.ok) throw new Error('No se pudieron actualizar los precios');
       return res.json();
     },

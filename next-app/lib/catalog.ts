@@ -1,5 +1,7 @@
 import { PHASE_PRODUCTION_BUILD } from 'next/constants';
-import { fetchAllProductsStrict } from '@/lib/products-server';
+import { unstable_cache } from 'next/cache';
+import { crearCortacircuitos } from '@/lib/wp-cortacircuitos';
+import { fetchAllProductsDentroDeCache } from '@/lib/products-server';
 import { productsForCategory, type CategoryConfig } from '@/lib/category-config';
 import type { NormalizedProduct } from '@/lib/products-normalize';
 
@@ -22,6 +24,31 @@ import type { NormalizedProduct } from '@/lib/products-normalize';
 // que en la grilla la blanca salía dos veces. No se despublica en Woo: se
 // saca de acá.
 export const SLUGS_INTERNOS = new Set(['par-de-medias-hype', 'gift-card', 'sleeveless-ranglan']);
+
+/**
+ * Incidente MySQL/Hostinger 4/11/2026 (16:07–16:2x): con WordPress lento, cada
+ * regeneración de ISR de un listado volvía a pedir el catálogo y ESPERABA la
+ * respuesta — así se comporta `fetch` con `next.revalidate` cuando la página
+ * se está regenerando (next/dist/server/lib/patch-fetch.js: "when stale and is
+ * revalidating we wait for fresh data"). La consulta se cortaba a los 15 s, la
+ * regeneración fallaba, la visita siguiente lo intentaba otra vez, y PHP seguía
+ * procesando los pedidos abortados: se ocuparon todos los procesos PHP.
+ *
+ * `unstable_cache` hace lo contrario: devuelve el último catálogo bueno al
+ * instante y lo actualiza en segundo plano; si esa actualización falla, el
+ * guardado sigue sirviendo (next/dist/server/web/spec-extension/unstable-cache.js).
+ * El cortacircuitos evita además que las actualizaciones en segundo plano
+ * insistan contra un WordPress caído: 1 intento a la vez y, tras una falla,
+ * 60 s de pausa. Un solo intento de hasta 25 s en vez de 4 de 15 s.
+ */
+const proteger = crearCortacircuitos(60_000);
+
+async function leerCatalogoPublico(): Promise<NormalizedProduct[]> {
+  const productos = await proteger(() => fetchAllProductsDentroDeCache({ retries: 0, timeoutMs: 25_000 }));
+  return productos.filter(p => !SLUGS_INTERNOS.has(p.slug));
+}
+
+const catalogoCompartido = unstable_cache(leerCatalogoPublico, ['catalogo-ssr-v1'], { revalidate: 60 });
 
 /**
  * Catálogo para el HTML inicial de los listados, para que Google vea las cards
@@ -54,7 +81,7 @@ export const SLUGS_INTERNOS = new Set(['par-de-medias-hype', 'gift-card', 'sleev
  */
 export async function fetchCatalogForSsr(): Promise<NormalizedProduct[]> {
   try {
-    return (await fetchAllProductsStrict()).filter(p => !SLUGS_INTERNOS.has(p.slug));
+    return await catalogoCompartido();
   } catch (err) {
     // Solo el mensaje: el error de fetch puede traer la request entera.
     const motivo = err instanceof Error ? err.message : String(err);

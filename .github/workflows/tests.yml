@@ -5,6 +5,8 @@ on:
     branches: [main]
   push:
     branches: [main]
+  # E2E a mano: Actions → Tests → Run workflow (ver el job e2e).
+  workflow_dispatch:
 
 # Un PR que recibe varios pushes seguidos cancela las corridas viejas.
 concurrency:
@@ -43,8 +45,16 @@ jobs:
   # motivos ajenos al PR enseña a ignorar los checks, que es justo lo que ya pasa
   # con `Vercel – launchpad`. Cuando falle, hay que mirarlo — pero decide una
   # persona, no el semáforo.
+  #
+  # Incidente MySQL/Hostinger 2–4/11/2026: este job hace un `npm run build`
+  # completo contra el WordPress de producción (~341 páginas) y después navega
+  # el sitio, en cada push. Junto con la build de Vercel eran dos builds por
+  # push, y las ráfagas que terminaron en revocación de permisos MySQL
+  # coinciden con builds. Hasta tener un backend que lo aguante, corre solo a
+  # mano y fuera del horario comercial.
   e2e:
     name: E2E (playwright)
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
