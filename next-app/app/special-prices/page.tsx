@@ -1,5 +1,5 @@
 import SaleView from "./SaleView";
-import { fetchAllProducts } from "@/lib/products-server";
+import { fetchCatalogForSsr } from "@/lib/catalog";
 import { BEST_SELLERS_SLUGS } from "@/lib/best-sellers";
 import JsonLd from "@/components/JsonLd";
 import { buildMetadata } from "@/lib/seo";
@@ -35,7 +35,11 @@ function descuento(p: { originalPrice?: number; price: number }) {
 }
 
 export default async function SalePage() {
-  const allProducts = await fetchAllProducts();
+  // Catálogo compartido (lib/catalog.ts): si WordPress no responde en el build
+  // devuelve [] (la página se rehace en la próxima regeneración) y en runtime
+  // conserva la última versión buena. Con fetchAllProducts directo, un WP lento
+  // hacía fallar la build entera de producción (4/11, build de 9f32387).
+  const allProducts = await fetchCatalogForSsr();
 
   // Los agotados se ocultan: en una liquidación, entrar a una ficha sin stock
   // es la peor experiencia posible. Siguen accesibles por /producto/[slug].
