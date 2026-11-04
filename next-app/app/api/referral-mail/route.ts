@@ -65,9 +65,12 @@ const fechaLarga = (iso?: string) => {
 };
 
 function layout(titulo: string, intro: string, cuerpo: string, pie: string) {
+  // El logo va en una banda negra a sangre, nunca suelto: Gmail en modo oscuro
+  // invierte los fondos pero no las imágenes, y un wordmark negro transparente
+  // desaparece. La banda queda intencional en los dos modos.
   return `<!doctype html><html lang="es"><body style="margin:0;background:#f5f5f5;padding:32px 12px;font-family:Arial,Helvetica,sans-serif;color:#0a0a0a;">
   <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;margin:0 auto;background:#ffffff;border-radius:10px;">
-    <tr><td style="padding:28px 28px 8px;text-align:center;"><img src="${SITE_URL}/logo-hypestyle-2026.png" alt="Hypestyle" height="24" style="height:24px;width:auto;"></td></tr>
+    <tr><td style="padding:0;"><img src="${SITE_URL}/mail-hype-band.png" alt="Hypestyle" width="560" style="display:block;width:100%;height:auto;border-radius:10px 10px 0 0;"></td></tr>
     <tr><td style="padding:8px 28px 0;text-align:center;">
       <h1 style="font-size:22px;margin:12px 0 8px;">${titulo}</h1>
       <p style="font-size:14px;line-height:1.6;color:#555;margin:0 0 24px;">${intro}</p>
