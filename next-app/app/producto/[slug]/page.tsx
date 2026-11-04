@@ -41,7 +41,7 @@ async function getProduct(slug: string) {
 
 const protegerFicha = crearCortacircuitosPorClave(60_000);
 const productoCompartido = unstable_cache(
-  (slug: string) => protegerFicha(slug, () => fetchProductDetail(slug, { fresh: true })),
+  (slug: string) => protegerFicha(slug, () => fetchProductDetail(slug)),
   ['ficha-producto-v1'],
   { revalidate: 60 },
 );

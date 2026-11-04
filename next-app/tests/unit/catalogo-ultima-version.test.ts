@@ -53,12 +53,35 @@ describe('catálogo de los listados', () => {
   it('pasa por unstable_cache (60 s) con un solo intento de hasta 25 s, sin reintentos', async () => {
     vi.resetModules();
     const llamadas: any[] = [];
-    const fetchAllProductsStrict = vi.fn(async (..._a: any[]) => [{ slug: 'remera' }, { slug: 'gift-card' }]);
-    vi.doMock('@/lib/products-server', () => ({ fetchAllProductsStrict }));
+    const fetchAllProductsDentroDeCache = vi.fn(async (..._a: any[]) => [{ slug: 'remera' }, { slug: 'gift-card' }]);
+    vi.doMock('@/lib/products-server', () => ({ fetchAllProductsDentroDeCache }));
     vi.doMock('next/cache', () => ({ unstable_cache: (fn: any, key: any, opts: any) => { llamadas.push({ key, opts }); return fn; } }));
     const { fetchCatalogForSsr } = await import('@/lib/catalog');
     expect(await fetchCatalogForSsr()).toEqual([{ slug: 'remera' }]);
     expect(llamadas).toEqual([{ key: ['catalogo-ssr-v1'], opts: { revalidate: 60 } }]);
-    expect(fetchAllProductsStrict).toHaveBeenCalledWith(true, { retries: 0, timeoutMs: 25_000 });
+    expect(fetchAllProductsDentroDeCache).toHaveBeenCalledWith({ retries: 0, timeoutMs: 25_000 });
+  });
+});
+
+describe('errores internos de Next no pausan las lecturas (deploy #661, 4/11 18:07)', () => {
+  it('un DYNAMIC_SERVER_USAGE no activa la pausa', async () => {
+    const proteger = crearCortacircuitos(60_000, () => 0);
+    const err = Object.assign(new Error('Dynamic server usage: no-store fetch'), { digest: 'DYNAMIC_SERVER_USAGE' });
+    await expect(proteger(() => Promise.reject(err))).rejects.toBe(err);
+    expect(await proteger(() => Promise.resolve('ok'))).toBe('ok');
+  });
+});
+
+describe('lecturas dentro de unstable_cache no mandan cache no-store', () => {
+  it('fetchAllProductsDentroDeCache no pasa cache ni next al fetch', async () => {
+    vi.resetModules();
+    const fetchWithRetry = vi.fn(async () => new Response(JSON.stringify({ data: { products: { nodes: [], pageInfo: { hasNextPage: false } } } }), { status: 200 }));
+    vi.doUnmock('@/lib/products-server');
+    vi.doMock('@/lib/fetch-retry', () => ({ fetchWithRetry }));
+    const { fetchAllProductsDentroDeCache } = await import('@/lib/products-server');
+    await fetchAllProductsDentroDeCache({ retries: 0 });
+    const init = (fetchWithRetry.mock.calls[0] as any[])[1];
+    expect(init.cache).toBeUndefined();
+    expect(init.next).toBeUndefined();
   });
 });

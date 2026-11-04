@@ -22,6 +22,17 @@ export class WordPressEnPausaError extends Error {
   }
 }
 
+/**
+ * Errores de control de Next (render dinámico, notFound, redirect): no son
+ * fallas de WordPress y no deben pausar las lecturas. El 4/11 18:07 un
+ * "Dynamic server usage" contado como falla dejó todas las fichas en pausa.
+ */
+export function esErrorInternoDeNext(e: unknown): boolean {
+  const err = e as { digest?: unknown; name?: unknown } | null;
+  const digest = typeof err?.digest === 'string' ? err.digest : '';
+  return digest === 'DYNAMIC_SERVER_USAGE' || digest.startsWith('NEXT_') || err?.name === 'DynamicServerError';
+}
+
 export function crearCortacircuitos(pausaMs = 60_000, ahora: () => number = Date.now) {
   let ultimaFalla = -Infinity;
   let enCurso: Promise<unknown> | null = null;
@@ -31,7 +42,7 @@ export function crearCortacircuitos(pausaMs = 60_000, ahora: () => number = Date
     if (enCurso) return enCurso as Promise<T>;
     const p = fn()
       .then(v => { ultimaFalla = -Infinity; return v; })
-      .catch(e => { ultimaFalla = ahora(); throw e; })
+      .catch(e => { if (!esErrorInternoDeNext(e)) ultimaFalla = ahora(); throw e; })
       .finally(() => { enCurso = null; });
     enCurso = p;
     return p;

@@ -62,7 +62,19 @@ export function fetchAllProductsStrict(fresh = false, retryOpts: { retries?: num
   return fetchCatalog(true, fresh, retryOpts);
 }
 
-async function fetchCatalog(strict: boolean, fresh = false, retryOpts: { retries?: number; timeoutMs?: number } = {}): Promise<NormalizedProduct[]> {
+/**
+ * Para usar SOLO dentro de `unstable_cache`. No manda `cache: 'no-store'` ni
+ * `next.revalidate`: `unstable_cache` ya fuerza "sin caché" para los fetch de
+ * adentro, y un `cache: 'no-store'` explícito hace que Next 14 corte la
+ * generación estática de la página con "Dynamic server usage: no-store fetch"
+ * (next/dist/server/lib/patch-fetch.js:559). Eso tiró todas las fichas a 500
+ * en el deploy de #661 (4/11 18:07, revertido con Instant Rollback).
+ */
+export function fetchAllProductsDentroDeCache(retryOpts: { retries?: number; timeoutMs?: number } = {}): Promise<NormalizedProduct[]> {
+  return fetchCatalog(true, 'dentro-de-cache', retryOpts);
+}
+
+async function fetchCatalog(strict: boolean, fresh: boolean | 'dentro-de-cache' = false, retryOpts: { retries?: number; timeoutMs?: number } = {}): Promise<NormalizedProduct[]> {
   // WPGraphQL cachea el "first" a 100 por página sin importar lo que se pida
   // (confirmado en vivo) — hay que paginar por cursor igual que en
   // app/api/products/route.ts, si no los productos más allá del top-100
@@ -75,9 +87,9 @@ async function fetchCatalog(strict: boolean, fresh = false, retryOpts: { retries
     // /special-prices. Un timeout suelto contra WP tiraba el deploy entero.
     const res = await fetchWithRetry(GRAPHQL_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(fresh ? { 'Cache-Control': 'no-cache' } : {}) },
+      headers: { 'Content-Type': 'application/json', ...(fresh === true ? { 'Cache-Control': 'no-cache' } : {}) },
       body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100, after } }),
-      ...(fresh ? { cache: 'no-store' as const } : { next: { revalidate: 60 } }),
+      ...(fresh === 'dentro-de-cache' ? {} : fresh ? { cache: 'no-store' as const } : { next: { revalidate: 60 } }),
     }, retryOpts);
     if (!res.ok) {
       if (strict) throw new CatalogUnavailableError(`HTTP ${res.status} en la página ${i + 1}`);
