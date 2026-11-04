@@ -197,7 +197,7 @@ function ModelInfo({ html }: { html: string }) {
   );
 }
 
-export default function ProductoClient({ slug, initialProduct, initialGoalDiscount = null, privateAccess, soloServidor }: { slug: string; initialProduct?: Product; initialGoalDiscount?: GoalDiscount | null; privateAccess?: PrivateAccessMode; soloServidor?: boolean }) {
+export default function ProductoClient({ slug, initialProduct, initialProductAt, initialGoalDiscount = null, privateAccess, soloServidor }: { slug: string; initialProduct?: Product; initialProductAt?: number; initialGoalDiscount?: GoalDiscount | null; privateAccess?: PrivateAccessMode; soloServidor?: boolean }) {
   const router = useRouter();
   const { formatPrice, currency, language, t } = useLocale();
   // initialProduct viene del servidor (page.tsx): el primer render ya sale con
@@ -207,7 +207,7 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   // `soloServidor` hace lo mismo para el preview local de Mystery, que todavía
   // no existe en Woo (lib/mystery-preview.ts, nunca en producción).
   const sinQuery = !!privateAccess || !!soloServidor;
-  const productQuery = useProduct(sinQuery ? undefined : slug, sinQuery ? undefined : initialProduct);
+  const productQuery = useProduct(sinQuery ? undefined : slug, sinQuery ? undefined : initialProduct, initialProductAt);
   const product = sinQuery ? initialProduct : productQuery.data;
   const isLoading = sinQuery ? false : productQuery.isLoading;
   // Descripción y ficha del modelo en el idioma elegido: IA, cacheada en el
