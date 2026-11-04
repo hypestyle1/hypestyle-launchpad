@@ -49,7 +49,7 @@ export async function GET() {
   try {
     const products = apertura ? await leerCatalogo() : await leerCatalogoCompartido();
     return NextResponse.json({ active, serverTime, products }, {
-      headers: apertura ? NO_STORE : { 'Cache-Control': `public, s-maxage=30, stale-while-revalidate=30` },
+      headers: apertura ? NO_STORE : { 'Cache-Control': `public, s-maxage=30, stale-while-revalidate=600` },
     });
   } catch {
     return NextResponse.json({ error: 'No se pudieron actualizar los precios' }, { status: 503, headers: NO_STORE });

@@ -71,8 +71,12 @@ export async function GET() {
     const status = err instanceof CatalogoNoDisponible ? 502 : 503;
     return NextResponse.json({ error: 'GraphQL fetch failed' }, { status, headers: { 'Cache-Control': 'no-store' } });
   }
+  // stale-while-revalidate 600: en una ruta de API Next espera a que termine la
+  // actualización en segundo plano antes de cerrar la respuesta; con WordPress
+  // colgado eso son hasta 25 s (medido 4/11 contra un WP falso). La CDN sirve
+  // la copia anterior al instante mientras la actualiza, así el cliente no espera.
   return NextResponse.json({ products: { nodes: nodos } }, {
-    headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=30' },
+    headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=600' },
   });
 }
 
