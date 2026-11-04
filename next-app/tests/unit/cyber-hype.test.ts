@@ -27,15 +27,15 @@ describe('CYBER HYPE — fechas', () => {
     expect(Date.parse(CYBER_END)).toBe(PACK_REGULAR_X4_HASTA);
   });
 
-  it('abre el domingo 1/11 a las 19:00 ART y cierra el 4/11 a las 23:59', () => {
+  it('abre el domingo 1/11 a las 19:00 ART y cierra el 8/11 a las 23:59', () => {
     // Movida del lunes 2/11 00:00 al domingo 20:00 el 28/10, decisión de
     // Valentín: prime time contra medianoche. 20:00 -03 = 23:00 UTC.
     expect(new Date(CYBER_START).toISOString()).toBe('2026-11-01T22:00:00.000Z');
-    expect(new Date(CYBER_END).toISOString()).toBe('2026-11-05T03:00:00.000Z');
+    expect(new Date(CYBER_END).toISOString()).toBe('2026-11-09T03:00:00.000Z');
   });
 
   it('el texto de fechas es el único dato duro que se comunica', () => {
-    expect(CYBER_FECHAS).toBe('2, 3 y 4 de noviembre');
+    expect(CYBER_FECHAS).toBe('2 al 8 de noviembre');
   });
 });
 
@@ -49,11 +49,11 @@ describe('CYBER HYPE — estado por fecha', () => {
 
   it('el primer segundo de la apertura ya es evento', () => {
     expect(cyberEstado(t('2026-11-01T20:00:00-03:00'))).toBe('evento');
-    expect(cyberEstado(t('2026-11-04T23:59:59-03:00'))).toBe('evento');
+    expect(cyberEstado(t('2026-11-08T23:59:59-03:00'))).toBe('evento');
   });
 
-  it('a las 00:00 del 5/11 está cerrado', () => {
-    expect(cyberEstado(t('2026-11-05T00:00:00-03:00'))).toBe('cerrado');
+  it('a las 00:00 del 9/11 está cerrado', () => {
+    expect(cyberEstado(t('2026-11-09T00:00:00-03:00'))).toBe('cerrado');
   });
 
   it('a las 19:00 ya es evento: es la hora del acceso anticipado', () => {
@@ -76,7 +76,7 @@ describe('CYBER HYPE — captación', () => {
   it('el reloj cuenta a la apertura, después al cierre, y después a nada', () => {
     expect(cyberProximoHito(new Date('2026-10-29T10:00:00-03:00'))).toEqual({ iso: CYBER_START, label: 'Abre en' });
     expect(cyberProximoHito(new Date('2026-11-03T10:00:00-03:00'))).toEqual({ iso: CYBER_END, label: 'Cierra en' });
-    expect(cyberProximoHito(new Date('2026-11-06T10:00:00-03:00'))).toBeNull();
+    expect(cyberProximoHito(new Date('2026-11-10T10:00:00-03:00'))).toBeNull();
   });
 });
 

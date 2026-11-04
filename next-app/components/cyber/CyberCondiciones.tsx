@@ -21,7 +21,7 @@ import Link from 'next/link';
 const CONDICIONES: { q: string; a: string }[] = [
   {
     q: '¿Cómo funcionan los precios del evento?',
-    a: 'Todos los precios que ves son finales: lo que ves es lo que pagás, del 2 al 4 de noviembre. El descuento por transferencia aplica como siempre.',
+    a: 'Todos los precios que ves son finales: lo que ves es lo que pagás, del 2 al 8 de noviembre. El descuento por transferencia aplica como siempre.',
   },
   {
     q: '¿Cómo es el 4 PACK de Regular Tees?',

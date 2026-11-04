@@ -73,7 +73,7 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
       <Navbar />
       <main className="bg-[#0a0a0a]">
         <h1 className="sr-only">
-          CYBER HYPE — el evento de HYPESTYLE del 2 al 4 de noviembre. Drops diarios, 4 PACK de
+          CYBER HYPE — el evento de HYPESTYLE del 2 al 8 de noviembre. Drops diarios, 4 PACK de
           Regular Tees y Mystery Archive.
         </h1>
 
