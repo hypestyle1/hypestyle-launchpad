@@ -155,6 +155,8 @@ describe('moldeDe', () => {
     expect(moldeDe({ sizeGuideImage: u('2026/04/hoodie-6ee7f834733a3d53f217703156212387-1024-1024.jpg') })?.id).toBe('buzo-boxy');
     expect(moldeDe({ sizeGuideImage: u('2026/05/TABLA-TALLES-ONLY-GOD.jpg') })?.id).toBe('remera-boxy');
     expect(moldeDe({ sizeGuideImage: u('2026/04/talles-jort-1bf83f7d29c7401c9e17704903182488-1024-1024.png') })?.id).toBe('bermuda');
+    expect(moldeDe({ sizeGuideImage: u('2026/11/tabla-talles-top-no-love-2026-11.jpg') })?.id).toBe('top-no-love');
+    expect(moldeDe({ sizeGuideImage: u('2026/04/tank-top-jpg-f08215306db91222a417707585926523-1024-1024.jpg') })?.id).toBe('top');
   });
 
   it('cae en categoría y fit cuando el producto no tiene tabla cargada', () => {

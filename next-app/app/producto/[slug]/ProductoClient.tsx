@@ -5,7 +5,7 @@ import { mysteryDe } from '@/lib/mystery';
 import { porcentajeDescuento } from '@/lib/descuento';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import Image, { getImageProps } from 'next/image';
 import { videoPoster } from '@/lib/video-posters';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
@@ -101,6 +101,8 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 }
 
 const DEFAULT_SIZE_GUIDE = 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/04/zip-jpg-256058c042fec5f31817766351541988-1024-1024.jpg';
+/** Ancho con que se muestra la guía de talles (modal de 520 px con 16 px de margen). */
+const GUIA_SIZES = '(max-width: 552px) calc(100vw - 32px), 520px';
 
 // Drop de lanzamiento con tratamiento visual propio (borde y fondo con color de marca).
 const NAPOLI_SLUGS = ['napoli-tee-blanca', 'napoli-tee-azul'];
@@ -128,6 +130,7 @@ function GoalDiscountCorner({ d }: { d: GoalDiscount | null }) {
 
 function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string }) {
   const { t } = useLocale();
+  const [cargada, setCargada] = useState(false);
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div className="bg-white w-full max-w-[520px] shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -137,8 +140,15 @@ function SizeGuideModal({ onClose, image }: { onClose: () => void; image: string
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 1l12 12M13 1L1 13" /></svg>
           </button>
         </div>
-        <div className="relative w-full">
-          <Image src={image} alt={t('Guía de talles')} width={520} height={600} className="w-full h-auto" />
+        {/* Las tablas son cuadradas (1024x1024) y vienen de WordPress, que es lento:
+            sin lugar reservado el modal se veía vacío varios segundos y parecía roto. */}
+        <div className="relative w-full aspect-square bg-[#e4e3e1]">
+          {!cargada && (
+            <p className="absolute inset-0 flex items-center justify-center text-[12px] text-foreground/40">{t('Cargando…')}</p>
+          )}
+          <Image src={image} alt={t('Guía de talles')} fill sizes={GUIA_SIZES} priority
+            onLoad={() => setCargada(true)}
+            className={`object-contain transition-opacity duration-200 ${cargada ? 'opacity-100' : 'opacity-0'}`} />
         </div>
       </div>
     </div>
@@ -320,6 +330,25 @@ export default function ProductoClient({ slug, initialProduct, initialGoalDiscou
   useEffect(() => {
     if (product?.slug) registrarVisto(product.slug);
   }, [product?.slug]);
+
+  // Precarga la guía de talles en segundo plano, con los mismos parámetros que
+  // usa el modal (fill + sizes): el navegador elige la misma variante y al
+  // tocar "Guía de talles" ya está en caché. Sin esto la imagen se pedía recién
+  // al abrir, pasaba por WordPress y el modal quedaba en blanco unos segundos.
+  const guiaTalles = product ? (product.sizeGuideImage || DEFAULT_SIZE_GUIDE) : null;
+  useEffect(() => {
+    if (!guiaTalles) return;
+    const precargar = () => {
+      const { props } = getImageProps({ src: guiaTalles, alt: '', fill: true, sizes: GUIA_SIZES });
+      const img = new window.Image();
+      if (props.sizes) img.sizes = props.sizes;
+      if (props.srcSet) img.srcset = props.srcSet;
+      img.src = props.src;
+    };
+    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
+    if (w.requestIdleCallback) w.requestIdleCallback(precargar);
+    else setTimeout(precargar, 1500);
+  }, [guiaTalles]);
 
   const viewContentSent = useRef<string | null>(null);
   useEffect(() => {
