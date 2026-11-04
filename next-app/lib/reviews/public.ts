@@ -72,7 +72,7 @@ async function getRealReviews(options: GetPublicReviewsOptions = {}): Promise<Pu
   const params = new URLSearchParams({ page: String(page), per_page: String(perPage), sort });
   if (stars) params.set('stars', String(stars));
   try {
-    const res = await fetch(`/api/public-reviews?${params.toString()}`, { cache: 'no-store' });
+    const res = await fetch(`/api/public-reviews?${params.toString()}`);
     if (!res.ok) return EMPTY_RESULT;
     const data = await res.json();
     if (!data || !Array.isArray(data.reviews)) return EMPTY_RESULT;
@@ -87,7 +87,7 @@ async function getRealReviews(options: GetPublicReviewsOptions = {}): Promise<Pu
 
 async function getRealSummary(): Promise<PublicReviewSummary> {
   try {
-    const res = await fetch('/api/public-reviews?per_page=1', { cache: 'no-store' });
+    const res = await fetch('/api/public-reviews?per_page=1');
     if (!res.ok) return { average: null, total: 0, distribution: { ...EMPTY_DISTRIBUTION }, isDemo: false };
     const data = await res.json();
     const s = data?.summary;
