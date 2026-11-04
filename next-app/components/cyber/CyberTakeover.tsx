@@ -111,16 +111,18 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           serverTime={Date.now()}
         />
 
-        {mostrarMystery && <CyberMysterySection categorias={CYBER_MYSTERY} />}
-
-        <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
-
-        {/* Camo unificado (4/11): el drop del Día 2 ES la pieza de preventa —
-            una sola sección editorial, sin banner duplicado. El CTA lo
-            gobierna PREVENTA_ZIP_CAMO en lib/cyber-cartelera. */}
+        {/* Camo + 4 PACK suben (4/11, pedido de Valentín): justo después del
+            catálogo y ANTES de Mystery, para que la preventa camo y la promo
+            del pack tengan presencia en la home. Van juntos porque el 4 PACK
+            arranca con el mismo beige en que termina Los drops. El CTA del
+            camo lo gobierna PREVENTA_ZIP_CAMO en lib/cyber-cartelera. */}
         <CyberDrops drops={drops} />
 
         <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
+
+        {mostrarMystery && <CyberMysterySection categorias={CYBER_MYSTERY} />}
+
+        <CyberEditorial tarjetas={CYBER_CATEGORIAS_EDITORIAL} />
 
         {/* Shop the Look y Visto En: los MISMOS componentes de la home, sin
             tocar. Van después del bloque comercial a propósito: acá la
