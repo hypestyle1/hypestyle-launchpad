@@ -15,6 +15,9 @@ import sitemap from '@/app/sitemap';
 const FUERA_DEL_SITEMAP = new Set([
   'acceso', 'admin', 'checkout', 'confirmacion', 'pendiente-de-pago', 'seguimiento',
   'subir-foto-final', 'resena', 'private-access', 'mayoristas', 'cyberhype',
+  // credito: página personal de referidos, solo accesible con token HMAC que
+  // viaja en los mails; noindex en su propio page.tsx.
+  'credito',
 ]);
 
 const APP = join(__dirname, '..', '..', 'app');
