@@ -10,6 +10,7 @@ import { ReceiptPrinter, type ReceiptStage } from '@/components/ReceiptPrinter';
 import { GiftCard } from '@/components/GiftCard';
 import { GIFT_CARD_SLUG } from '@/lib/gift-card';
 import { DynamicButton } from '@/components/ui/dynamic-button';
+import { ReferralShareCard } from '@/components/referidos/ReferralShareCard';
 
 type GiftCode = { code: string; monto: number; para_email?: string; para_nombre?: string; saldo?: number };
 
@@ -396,6 +397,13 @@ export default function ConfirmacionClient() {
             </ReceiptPrinter.Paper>
           </ReceiptPrinter.Output>
         </ReceiptPrinter>
+
+        {/* Referidos: regalá $8.000, ganate $12.000. Solo pedidos nacionales
+            con pago no rechazado; si el programa está pausado, el componente
+            no renderiza nada. */}
+        {!isRejected && !isPending && !isIntl && !!order?.wcOrderId && !!order.orderKey && (
+          <ReferralShareCard orderId={order.wcOrderId} orderKey={order.orderKey} className="mt-12" />
+        )}
 
         {giftCodes.length > 0 && !isRejected && (
           <div className="max-w-[420px] w-full mt-12">

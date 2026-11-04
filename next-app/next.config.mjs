@@ -104,6 +104,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "http", hostname: "hypestyle.local" },
+      { protocol: "http", hostname: "localhost" },
       { protocol: "https", hostname: "**.hypestyle.com" },
       { protocol: "https", hostname: "lightpink-rook-704850.hostingersite.com" },
     ],
