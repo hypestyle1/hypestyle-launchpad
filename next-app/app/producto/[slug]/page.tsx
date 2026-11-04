@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { fetchProductSlugs } from '@/lib/wp-products';
+import { prerenderizarFichas } from '@/lib/build-env';
 import { getCachedDiscountStatus, GOAL_PRODUCT_SLUG } from '@/lib/goal-discount';
 import { fetchProductDetail } from '@/lib/product-detail';
 import { buildMetadata, truncate } from '@/lib/seo';
@@ -13,7 +14,9 @@ import ProductoClient from './ProductoClient';
 export const revalidate = 3600;
 export const dynamicParams = true;
 
+// En previews y CI no se prerenderizan las fichas: ver lib/build-env.ts.
 export async function generateStaticParams() {
+  if (!prerenderizarFichas()) return [];
   const slugs = await fetchProductSlugs();
   return slugs.map(slug => ({ slug }));
 }
