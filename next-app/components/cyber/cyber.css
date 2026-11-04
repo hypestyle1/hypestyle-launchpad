@@ -3,6 +3,46 @@
    el reveal de FRANJAS monocromas (cyber-fx-slices, más abajo), adaptación
    verificada del footer de rotten-future.com. */
 
+/* ============ Liquid glass — SUTIL ============
+   Un solo acento de vidrio por sección, siempre como chip o panel chico,
+   nunca como fondo dominante. Geometría cuadrada, como el resto del sitio
+   (--radius: 0). La variante -light es para fotos o fondos claros. */
+.cyber-glass {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+.cyber-glass-light {
+  border: 1px solid rgba(10, 10, 10, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+}
+
+/* Banner 4 PACK — liquid glass sutil (4/11). Premium, no efecto: el vidrio
+   se nota en el borde, el brillo y la profundidad, no en el desenfoque. */
+.cyber-pack-glass {
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(10, 10, 10, 0.04),
+    0 2px 6px -2px rgba(10, 10, 10, 0.08),
+    0 28px 60px -30px rgba(10, 10, 10, 0.32);
+}
+.cyber-pack-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 38%);
+  opacity: 0.6;
+}
+
 /* Pulso del punto "EN VIVO" (variante evento). */
 @keyframes cyber-live-pulse {
   0%, 100% { opacity: 1; }

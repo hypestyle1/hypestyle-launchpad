@@ -13,6 +13,7 @@ import {
   CYBER_MYSTERY_EN_VIDRIERA,
   CYBER_PACK_SLUGS,
   MYSTERY_PUBLICADO,
+  PREVENTA_ZIP_CAMO,
   dropsPublicos,
 } from '@/lib/cyber-cartelera';
 import { MYSTERY_CAJAS } from '@/lib/mystery';
@@ -21,11 +22,43 @@ import { PACK_REGULAR_SLUGS } from '@/lib/promo-pack-regular';
 
 const en = (iso: string) => new Date(iso);
 
-/* ════════════════ 3 DÍAS · 3 DROPS — el secreto no se filtra ═══════════ */
+/* ════════════════ LOS DROPS — el secreto no se filtra ═══════════════════ */
 
 describe('drops — lo no revelado no existe para el navegador', () => {
-  it('son exactamente 3, uno por día del evento', () => {
-    expect(CYBER_DROPS.map((d) => d.fecha)).toEqual(['lun 2/11', 'mar 3/11', 'mié 4/11']);
+  it('son exactamente 2: el Día 3 se eliminó el 3/11 (sin drop confirmado)', () => {
+    expect(CYBER_DROPS.map((d) => d.fecha)).toEqual(['lun 2/11', 'mar 3/11']);
+  });
+
+  it('un drop revelado sin compra (preventa) no lleva CTA: href null y aviso', () => {
+    const dos = CYBER_DROPS.find((d) => d.id === '02')!;
+    expect(dos.producto).not.toBeNull();
+    // Apagado, ninguna ficha respalda el click; encendido (04/11), va a la
+    // colección con las 4 prendas, nunca a una ficha suelta.
+    expect(dos.producto!.href).toBe(PREVENTA_ZIP_CAMO.publicado ? '/colecciones/camo-drop' : null);
+    expect(dos.producto!.preventa).toMatch(/preventa/i);
+  });
+
+  it('cada prenda linkea a su ficha SOLO si está publicada y tiene slug', () => {
+    const despues = en('2026-11-04T23:00:00-03:00');
+    for (const d of dropsPublicos(despues)) {
+      const original = CYBER_DROPS.find((o) => o.id === d.id)!;
+      const piezas = d.producto?.piezas ?? [];
+      piezas.forEach((p, i) => {
+        const o = original.producto!.piezas![i];
+        if (o.publicado && o.slug) expect(p.href).toBe(`/producto/${o.slug}`);
+        else expect(p.href, `${o.nombre} ${o.color} sin publicar no puede linkear`).toBeNull();
+      });
+    }
+    // Desde el 04/11 las 4 camo están publicadas, igual que las 4 Raglan.
+    const camo = dropsPublicos(despues).find((d) => d.id === '02')!.producto!.piezas!;
+    expect(camo.map((p) => p.href)).toEqual([
+      '/producto/zip-hoodie-camo-olive',
+      '/producto/zip-hoodie-camo',
+      '/producto/jort-camo-olive',
+      '/producto/jort-camo-brown',
+    ]);
+    const raglan = dropsPublicos(despues).find((d) => d.id === '01')!.producto!.piezas!;
+    expect(raglan.every((p) => p.href?.startsWith('/producto/'))).toBe(true);
   });
 
   it('un drop sin producto asignado NUNCA se revela, aunque pase su hora', () => {
@@ -52,9 +85,14 @@ describe('drops — lo no revelado no existe para el navegador', () => {
     // Un archivo servido se adivina por la URL: subir la portada del Camo sin
     // velar sería spoilear el drop aunque no apareciera en el HTML.
     const dir = join(RAIZ, 'public', 'cyber', 'drops');
-    const subidas = readdirSync(dir);
+    // Recursivo: las prendas individuales viven en subcarpetas (camo/, raglan/).
+    const subidas = (readdirSync(dir, { recursive: true }) as string[])
+      .map((p) => p.replace(/\\/g, '/'))
+      .filter((p) => statSync(join(dir, p)).isFile());
     const permitidas = CYBER_DROPS.flatMap((d) =>
-      [d.producto?.img, d.velada].filter(Boolean).map((p) => p!.split('/').pop()!),
+      [d.producto?.img, d.velada, ...(d.producto?.piezas ?? []).map((p) => p.img)]
+        .filter(Boolean)
+        .map((p) => p!.replace('/cyber/drops/', '')),
     );
     expect(subidas.sort()).toEqual(permitidas.sort());
 
@@ -139,7 +177,10 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     // cajas son de la parte de arriba.
     expect(CYBER_MYSTERY.map((m) => m.id)).toEqual(['tees', 'longsleeves', 'hoodies']);
     for (const m of CYBER_MYSTERY) {
-      expect(m.img).toMatch(/^\/cyber\/mystery\//);
+      // Desde el 3/11 la card usa la portada OFICIAL de la ficha. El archivo
+      // tiene que existir en public/: una miniatura rota es una card muerta.
+      expect(m.img).toMatch(/^\/mystery\/portadas\//);
+      expect(() => statSync(join(RAIZ, 'public', ...m.img.split('/').filter(Boolean)))).not.toThrow();
       // Una sola fuente de verdad para precio y slug: si la tarjeta y la ficha
       // se separan, el cliente ve un precio en la home y otro al entrar.
       const caja = MYSTERY_CAJAS.find((c) => c.id === m.id);
@@ -164,7 +205,11 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     const choque = CYBER_DESTACADOS_SLUGS.filter((s) => CYBER_MYSTERY_EN_VIDRIERA.includes(s));
     // Lanzamiento 1/11: Valentín autoriza convivencia y organiza el despacho
     // manualmente. No modificar inventario ni retirar diseños aprobados.
-    expect(choque.sort()).toEqual(['napoli-tee-azul', 'napoli-tee-blanca', 'ladytribal-black-longsleeve', 'honda-white-tee', 'athletic-dept-pink-longsleeve'].sort());
+    // 3/11: entra athletic-dept-blue-longsleeve a destacados por ventas reales
+    // (5 u/30d). Ya convivía vía el filtro de Longsleeves (los filtros muestran
+    // la categoría completa): destacarla cambia posición, no disponibilidad.
+    // Misma logística de despacho manual que su gemela pink, ya autorizada.
+    expect(choque.sort()).toEqual(['napoli-tee-azul', 'napoli-tee-blanca', 'ladytribal-black-longsleeve', 'honda-white-tee', 'athletic-dept-pink-longsleeve', 'athletic-dept-blue-longsleeve'].sort());
   });
 
   it('ningún texto de mystery lleva cifra de dinero ni porcentaje', () => {
@@ -276,6 +321,16 @@ describe('restauración automática', () => {
     expect(cyberUltimasHoras(en('2026-11-02T12:00:00-03:00'))).toBe(false);
     expect(cyberUltimasHoras(en('2026-11-08T00:00:00-03:00'))).toBe(true);
     expect(cyberUltimasHoras(en('2026-11-09T01:00:00-03:00'))).toBe(false);
+  });
+
+  it('"termina hoy" NUNCA aparece en los días del medio (regresión del 4/11)', () => {
+    // La función tenía hardcodeado el 4/11 como último día; la extensión al
+    // 8/11 (PR #656) movió CYBER_END y producción dijo "ÚLTIMAS HORAS ·
+    // TERMINA HOY" desde la medianoche del 4 — cuatro días antes de tiempo.
+    // Ahora se deriva de CYBER_END: los días del medio jamás apuran de mentira.
+    for (const dia of ['04', '05', '06', '07']) {
+      expect(cyberUltimasHoras(en(`2026-11-${dia}T12:00:00-03:00`)), `el ${dia}/11 no es el último día`).toBe(false);
+    }
   });
 
   it('la home SS27 sigue intacta: el takeover es una rama, no una edición', () => {

@@ -76,45 +76,49 @@ export const CYBER_CATEGORIAS_EDITORIAL: TarjetaCategoria[] = [
   },
 ];
 
+/* ── Composición (corrección de Valentín, 3/11) ─────────────────────────────
+   Las tres fotos forman UNA pieza editorial a sangre: 100% del ancho de la
+   página, sin contenedor max-width y sin márgenes exteriores. En desktop son
+   tres columnas iguales de punta a punta; en mobile van una debajo de la
+   otra, cada una al ancho completo. La separación entre fotos es blanca y
+   mínima (4 px / 6 px) y las esquinas van RECTAS — solo acá: el resto de la
+   landing conserva su sistema (chips y botones píldora). Texto y CTA viven
+   sobre la imagen. */
+
 export default function CyberEditorial({ tarjetas }: { tarjetas: TarjetaCategoria[] }) {
   return (
-    <section className="bg-[#0a0a0a] px-4 py-10 md:px-10 md:py-12">
-      <div className="mx-auto max-w-[1400px]">
-        <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 md:pb-0">
-          {tarjetas.map((t) => (
-            <li
-              key={t.id}
-              className="w-[82vw] max-w-[340px] shrink-0 snap-center md:w-auto md:max-w-none"
+    <section className="bg-white py-1 md:py-1.5">
+      <ul className="flex flex-col gap-1 md:grid md:grid-cols-3 md:gap-1.5">
+        {tarjetas.map((t) => (
+          <li key={t.id}>
+            <Link
+              href={t.href}
+              className="group relative block aspect-[4/5] overflow-hidden rounded-none focus-visible:outline-white md:aspect-[3/4]"
             >
-              <Link
-                href={t.href}
-                className="group relative block aspect-[4/5] overflow-hidden rounded-[16px] focus-visible:outline-white"
-              >
-                <Image
-                  src={t.src}
-                  alt={t.alt}
-                  fill
-                  sizes="(max-width: 768px) 82vw, 33vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                  style={{ objectPosition: t.posicion }}
-                />
-                <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
-                <span className="absolute inset-x-4 bottom-4 md:inset-x-5 md:bottom-5">
-                  <span className="block text-[10px] font-semibold uppercase tracking-[0.24em] text-white/65">
-                    {t.kicker}
-                  </span>
-                  <span className="mt-1 block text-[24px] font-black uppercase leading-[0.95] tracking-[-0.01em] text-white md:text-[28px]">
-                    {t.titulo}
-                  </span>
-                  <span className="mt-3 inline-flex h-[42px] items-center justify-center rounded-full bg-white px-6 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0a0a0a] transition-opacity group-hover:opacity-85">
-                    {t.cta}
-                  </span>
+              <Image
+                src={t.src}
+                alt={t.alt}
+                fill
+                sizes="(max-width: 768px) 100vw, 34vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                style={{ objectPosition: t.posicion }}
+              />
+              <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+              <span className="absolute inset-x-5 bottom-5 md:inset-x-6 md:bottom-6">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.24em] text-white/65 md:text-[11px]">
+                  {t.kicker}
                 </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
+                <span className="mt-1 block text-[28px] font-black uppercase leading-[0.95] tracking-[-0.01em] text-white md:text-[30px]">
+                  {t.titulo}
+                </span>
+                <span className="mt-3 inline-flex h-[42px] items-center justify-center rounded-full bg-white px-6 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0a0a0a] transition-opacity group-hover:opacity-85">
+                  {t.cta}
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

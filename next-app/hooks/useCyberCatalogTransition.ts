@@ -25,9 +25,14 @@ export function useCyberCatalogTransition(preview: boolean, serverTime: number) 
     document.addEventListener('visibilitychange', wake);
     return () => { clearTimeout(timer); window.removeEventListener('focus', wake); document.removeEventListener('visibilitychange', wake); };
   }, [preview, serverTime]);
+  // Durante el evento los precios ya vienen hidratados desde Woo por el servidor
+  // (revalidate 60s). Evitamos una segunda consulta no-store por cada visita:
+  // con Hostinger saturado dejaba las cards indefinidamente sin precios.
+  // Solo una pestaña que estaba abierta ANTES del lanzamiento debe refrescarse
+  // al entrar en la ventana Cyber para no enseñar precios de la previa.
   const query = useQuery<{ active: boolean; serverTime: number; products: NormalizedProduct[] }>({
     queryKey: ['cyber-products-live'],
-    enabled: checkLive,
+    enabled: preview && checkLive,
     queryFn: async () => {
       // Sin `cache: 'no-store'`: ese modo manda `Cache-Control: no-cache` y
       // saltearía la CDN. La frescura la decide la ruta (sin caché en la
@@ -36,16 +41,19 @@ export function useCyberCatalogTransition(preview: boolean, serverTime: number) 
       if (!res.ok) throw new Error('No se pudieron actualizar los precios');
       return res.json();
     },
-    staleTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: 'always',
-    refetchInterval: q => q.state.data?.active ? 60_000 : 1000,
-    retry: 2,
+    staleTime: 60_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    // Carrera de relojes en la frontera: si el servidor todavía contesta
+    // active:false, reintenta hasta que confirme. Solo corre en pestañas
+    // preview; las visitas del evento no habilitan esta query.
+    refetchInterval: (q) => (q.state.data && !q.state.data.active ? 2_000 : false),
+    retry: 1,
   });
   return {
     preview: preview && !checkLive,
     products: checkLive && query.data?.active ? query.data.products : undefined,
-    updating: checkLive && !query.data?.active,
+    updating: preview && checkLive && !query.data?.active,
     error: query.isError,
     retry: query.refetch,
   };

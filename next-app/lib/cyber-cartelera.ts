@@ -30,6 +30,35 @@ import { MYSTERY_CAJAS } from './mystery';
 
 /* ═══════════════════════════ 3 DÍAS · 3 DROPS ═══════════════════════════ */
 
+/** Una prenda de un drop (mockup individual sobre transparente). */
+export interface CyberDropPieza {
+  /** Nombre corto, sin el colorway: "Zip Hoodie". */
+  nombre: string;
+  color: string;
+  img: string;
+  /** Slug de Woo; null = el producto todavía no existe. */
+  slug: string | null;
+  /** true solo si el producto está PUBLICADO en Woo. */
+  publicado: boolean;
+}
+
+/** Lo único de una prenda que viaja al navegador: el link ya resuelto. */
+export interface CyberDropPiezaPublica {
+  nombre: string;
+  color: string;
+  img: string;
+  href: string | null;
+}
+
+export function piezaPublica(p: CyberDropPieza): CyberDropPiezaPublica {
+  return {
+    nombre: p.nombre,
+    color: p.color,
+    img: p.img,
+    href: p.publicado && p.slug ? `/producto/${p.slug}` : null,
+  };
+}
+
 export interface CyberDrop {
   id: '01' | '02' | '03';
   /** El día como se lee en la cartelera. */
@@ -50,7 +79,16 @@ export interface CyberDrop {
     nombre: string;
     claim: string;
     img: string;
-    href: string;
+    /** null = revelado SIN compra (p. ej. preventa aún no cargada en Woo). */
+    href: string | null;
+    /** Aviso de preventa, si corresponde. Nunca prometer stock que no está. */
+    preventa?: string;
+    /**
+     * Las prendas del drop, una por mockup. Cada una tiene su PROPIO candado:
+     * solo linkea a su ficha con `publicado: true` y un `slug` real. Así
+     * ninguna prenda sin publicar lleva a una página inexistente.
+     */
+    piezas?: CyberDropPieza[];
   };
   /**
    * Portada YA DESENFOCADA (archivo, no CSS) para un drop sin revelar: deja
@@ -73,8 +111,37 @@ export interface CyberDrop {
  */
 const HORA_REVELACION = '11:00:00';
 
+/* ══════════════ PREVENTA — COLECCIÓN CAMO (el interruptor) ═══════════════ */
+
 /**
- * Los tres drops, uno por día. CONTENIDO SIN ASIGNAR a propósito: depende de
+ * 40 unidades entrantes (10 por talle, S–XL), entrega estimada viernes 13/11.
+ *
+ * Lo verificado en Woo el 3/11: `zip-hoodie-camo` (id 916, creado el 26/04,
+ * $112.500, variaciones 917–920 S–XL todas con stock 0, sin SKU, backorders
+ * en "no") es un RESTOCK: conserva su identidad y su ficha original. Los
+ * colorways Olive y Brown nuevos y los Jorts se cargan como productos nuevos
+ * (previsto para el 4/11) — hasta entonces NO existen en Woo.
+ *
+ * ── Cómo se enciende (cuando la colección esté publicada en Woo) ──────────
+ * 1. `href`: ya apunta a /colecciones/camo-drop (las 4 prendas).
+ * 2. `publicado: true`.
+ * Con eso solo, el CTA de la sección camo pasa de "PRÓXIMAMENTE" (sin link) a
+ * "VER COLECCIÓN". Nada más que tocar. No encender sin el stock de preventa
+ * cargado y el OK de Valentín.
+ */
+export const PREVENTA_ZIP_CAMO = {
+  // Encendido el 04/11 ~18 h: colección publicada en Woo con stock de preventa.
+  publicado: true,
+  nombre: 'Colección Camo',
+  colorways: 'Olive · Brown',
+  eta: 'Entrega estimada: viernes 13/11',
+  // Colección con las 4 prendas (app/colecciones/camo-drop), no la ficha del 916.
+  href: '/colecciones/camo-drop',
+  img: '/cyber/drops/drop-02-camo.webp',
+} as const;
+
+/**
+ * Los drops, uno por día. CONTENIDO SIN ASIGNAR a propósito: depende de
  * mercadería recibida y controlada (remeras/longsleeves nuevas el 3/11,
  * bermudas y camperas camo el 4/11 — tentativos del replanteo del 27/10).
  * Para publicar uno: asignar `producto` con el OK de Valentín.
@@ -92,6 +159,13 @@ export const CYBER_DROPS: CyberDrop[] = [
       claim: 'Creative Goods y Eagle, en Pink y Green.',
       img: '/cyber/drops/drop-01-definitivo.png',
       href: '/longsleeves',
+      // Las cuatro publicadas en Woo (verificado contra /api/products 4/11).
+      piezas: [
+        { nombre: 'Creative Goods', color: 'Pink', img: '/cyber/drops/raglan/creative-goods-pink.webp', slug: 'hype-creative-goods-pink-raglan-longsleeve', publicado: true },
+        { nombre: 'Creative Goods', color: 'Green', img: '/cyber/drops/raglan/creative-goods-green.webp', slug: 'hype-creative-goods-green-raglan-longsleeve', publicado: true },
+        { nombre: 'Eagle', color: 'Pink', img: '/cyber/drops/raglan/eagle-pink.webp', slug: 'dept-of-culture-eagle-pink-raglan-longsleeve', publicado: true },
+        { nombre: 'Eagle', color: 'Green', img: '/cyber/drops/raglan/eagle-green.webp', slug: 'dept-of-culture-eagle-green-raglan-longsleeve', publicado: true },
+      ],
     },
   },
   {
@@ -99,22 +173,32 @@ export const CYBER_DROPS: CyberDrop[] = [
     dia: 'Día 2',
     fecha: 'mar 3/11',
     revealAt: `2026-11-03T${HORA_REVELACION}-03:00`,
-    producto: null,
-    // La portada va VELADA, no borrosa por CSS: `drop-02-velada-v2.webp` es el
-    // archivo ya desenfocado a 48×48 px (150 bytes). Abrir la URL a mano no
-    // revela nada porque a esa resolución no queda información recuperable —
-    // un `blur()` de CSS, en cambio, serviría la foto entera. La original
-    // nunca entra a public/ hasta la revelación.
-    velada: '/cyber/drops/drop-02-velada-v2.webp',
+    // Revelado el 3/11 por pedido de Valentín: la colección camo completa, con
+    // la composición original de los cuatro productos (Zip Hoodie y Jort, en
+    // Olive y Brown). La COMPRA no se abre acá: el link deriva del interruptor
+    // PREVENTA_ZIP_CAMO — apagado, el CTA dice "Próximamente" sin llevar a
+    // ningún lado; encendido, pasa a "Ver colección".
+    producto: {
+      nombre: PREVENTA_ZIP_CAMO.nombre,
+      claim: 'Zip Hoodie y Jort Camo, en Olive y Brown.',
+      img: PREVENTA_ZIP_CAMO.img,
+      href: PREVENTA_ZIP_CAMO.publicado ? PREVENTA_ZIP_CAMO.href : null,
+      preventa: 'Preventa · entrega estimada viernes 13/11',
+      // Slugs reales en Woo (4/11): Brown = #916 (restock, conserva ficha y
+      // URL); Olive y los dos Jorts = borradores #4271 / #4277 / #4283.
+      // Publicadas en Woo el 04/11 ~18 h (OK de Valentín): con link.
+      piezas: [
+        { nombre: 'Zip Hoodie', color: 'Olive', img: '/cyber/drops/camo/zip-hoodie-olive.webp', slug: 'zip-hoodie-camo-olive', publicado: true },
+        { nombre: 'Zip Hoodie', color: 'Brown', img: '/cyber/drops/camo/zip-hoodie-brown.webp', slug: 'zip-hoodie-camo', publicado: true },
+        { nombre: 'Jort', color: 'Olive', img: '/cyber/drops/camo/jort-olive.webp', slug: 'jort-camo-olive', publicado: true },
+        { nombre: 'Jort', color: 'Brown', img: '/cyber/drops/camo/jort-brown.webp', slug: 'jort-camo-brown', publicado: true },
+      ],
+    },
   },
-  {
-    id: '03',
-    dia: 'Día 3',
-    fecha: 'mié 4/11',
-    revealAt: `2026-11-04T${HORA_REVELACION}-03:00`,
-    // Sin mockup y sin confirmación de producción: la tarjeta no revela nada.
-    producto: null,
-  },
+  /* Día 3 ELIMINADO el 3/11 (decisión de Valentín): no hay un tercer drop
+     confirmado, y una tarjeta "por revelar" que nunca se revela es una promesa
+     rota en la cara del cliente. El evento comunica los lanzamientos que
+     existen, no los que podrían existir. */
 ];
 
 /** Lo ÚNICO del drop que puede viajar al navegador. */
@@ -130,7 +214,14 @@ export interface CyberDropPublico {
    */
   revealAt: string;
   /** Solo presente cuando estado === 'revelado'. */
-  producto?: { nombre: string; claim: string; img: string; href: string };
+  producto?: {
+    nombre: string;
+    claim: string;
+    img: string;
+    href: string | null;
+    preventa?: string;
+    piezas?: CyberDropPiezaPublica[];
+  };
   /** Solo en 'bloqueado', y solo si hay portada velada. Nunca el nombre. */
   velada?: string;
 }
@@ -145,7 +236,14 @@ export function dropsPublicos(now: Date = new Date()): CyberDropPublico[] {
   return CYBER_DROPS.map((d) => {
     const revelado = d.producto !== null && t >= new Date(d.revealAt).getTime();
     const base = { id: d.id, dia: d.dia, fecha: d.fecha, revealAt: d.revealAt };
-    if (revelado) return { ...base, estado: 'revelado' as const, producto: d.producto! };
+    if (revelado) {
+      const { piezas, ...resto } = d.producto!;
+      return {
+        ...base,
+        estado: 'revelado' as const,
+        producto: { ...resto, ...(piezas ? { piezas: piezas.map(piezaPublica) } : {}) },
+      };
+    }
     return { ...base, estado: 'bloqueado' as const, ...(d.velada ? { velada: d.velada } : {}) };
   });
 }
@@ -217,7 +315,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     nombre: 'Mystery Tees',
     detalle: 'La puerta de entrada al archivo. Elegís tu talle; el modelo es sorpresa, dentro de las prendas que ves en la portada.',
     pool: '13 modelos en el pool',
-    img: '/cyber/mystery/tees-v5b.webp',
+    img: '/mystery/portadas/tees-a.webp',
     ...fichaMystery('tees'),
   },
   {
@@ -229,7 +327,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     // pila de 6 u, así que entra solo la Dept of Culture. Entre waffles
     // aportan 11 unidades reales, no 22 — ojo al armar las cajas.
     pool: '10 modelos en el pool',
-    img: '/cyber/mystery/longsleeves-v5b.webp',
+    img: '/mystery/portadas/longsleeves-a.webp',
     ...fichaMystery('longsleeves'),
   },
   {
@@ -241,7 +339,7 @@ export const CYBER_MYSTERY: CyberMysteryCategoria[] = [
     // 56 de las 128 unidades del pool son Half-Zip Polo: la familia de stock
     // más parejo y la de costo más bajo, o sea la que sostiene el margen.
     pool: '12 modelos en el pool',
-    img: '/cyber/mystery/hoodies-v5b.webp',
+    img: '/mystery/portadas/hoodies-a.webp',
     ...fichaMystery('hoodies'),
   },
 ];
@@ -319,26 +417,32 @@ export const CYBER_PACK_SLUGS: string[] = [
  *    dos están sin talle M.
  */
 export const CYBER_DESTACADOS_SLUGS: string[] = [
-  'faith-over-everything-camo-hoodie',
+  // ── Primera fila: los best sellers REALES (pedidos pagados de Woo, 30 días
+  //    al 3/11; unidades sumando talles). No es curaduría a ojo: es lo que la
+  //    gente compró, con stock vivo. cyberCatalogOrder ya manda lo agotado
+  //    al final, así que un quiebre no deja un hueco arriba.
+  'faith-over-everything-camo-hoodie',    //  9 u/30d — el hoodie que factura
+  'regular-tees-3-pack-black-navy-white', // 18 u/30d — lo MÁS vendido del sitio
+  'grey-camo-cap',                        // 11 u/30d
+  'sweatpant-black-hstars',               //  5 u/30d
+  'athletic-dept-blue-longsleeve',        //  5 u/30d — entra a destacados
+  'pack-x3-medias-hype',                  // 10 u/30d
+  'sweatpant-grey-hstars',                //  4 u/30d
   'find-jesus-longsleeve-black',
-  'grey-camo-cap',
+  // ── Después, la curaduría aprobada del 29/10 ──
   'sleeveless-ranglan-black',
   'napoli-tee-azul',
-  'sweatpant-grey-hstars',
   'zolotye-kupola-washed-graphite-hoodie',
   'camo-cap',
   'lettering-black-longsleeve',
-  'regular-tees-3-pack-black-navy-white',
   'splatter-hoodie-washed-grey',
   'napoli-tee-blanca',
   'sleeveless-ranglan-white',
   'sweatpant-pink',
   'longsleeve-waffle-horses',
-  'pack-x3-medias-hype',
   'hype-distressed-grey-hoodie',
   'honda-white-tee',
   'ladytribal-black-longsleeve',
-  'sweatpant-black-hstars',
   'athletic-dept-pink-longsleeve',
   'trucker-cap-no-faith-no-glory',
   'hype-washed-black-waffle-longsleeve',
@@ -355,7 +459,8 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
   'regular-tees-3-pack-navy',
   'lettering-pink-jort',
   'jort-cargo-realtree-beige',
-  'jort-cargo-realtree-pink',
+  // jort-cargo-realtree-pink salió el 3/11: quedaba 1 unidad (M) y la lista
+  // tiene cupo fijo de 36; entró athletic-dept-blue-longsleeve por ventas.
 ];
 
 /**

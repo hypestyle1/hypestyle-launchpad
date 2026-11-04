@@ -46,7 +46,7 @@ export default function CyberTakeoverHero({
   ctaLabel: string;
 }) {
   return (
-    <section className="relative h-[100svh] min-h-[620px] w-full overflow-hidden bg-[#0a0a0a] md:px-4 md:pb-4 md:pt-[calc(var(--offset)+6px)]">
+    <section className="relative h-[82svh] min-h-[560px] w-full md:h-[92svh] md:min-h-[640px] overflow-hidden bg-[#0a0a0a] md:px-4 md:pb-4 md:pt-[calc(var(--offset)+6px)]">
       <div className="relative h-full w-full overflow-hidden rounded-none bg-[#141414] md:rounded-[24px]">
         <CyberHeroFondo fondo={fondo} />
 
@@ -83,7 +83,7 @@ export default function CyberTakeoverHero({
             </h1>
 
             <p className="mt-2 max-w-[44ch] text-[12.5px] leading-[1.35] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:mt-4 md:text-[16px]">
-              Tres días. Un drop nuevo cada día, el 4 PACK de Regular Tees y el archivo abierto.
+              Hasta el 8/11: drops, el 4 PACK de Regular Tees y el archivo abierto.
             </p>
 
             <Link

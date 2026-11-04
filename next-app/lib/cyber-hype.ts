@@ -129,7 +129,11 @@ export function cyberProximoHito(now: Date = new Date()): { iso: string; label: 
  */
 export function cyberUltimasHoras(now: Date = new Date()): boolean {
   if (cyberEstado(now) !== 'evento') return false;
-  return now.getTime() >= new Date('2026-11-04T00:00:00-03:00').getTime();
+  // Derivado de CYBER_END, nunca una fecha escrita a mano: la extensión del
+  // evento al 8/11 (PR #656) movió el cierre pero esta función seguía diciendo
+  // "termina hoy" desde el 4/11 — producción mintió desde esa medianoche.
+  // El cierre es a las 00:00, así que el último día arranca 24 h antes.
+  return now.getTime() >= new Date(CYBER_END).getTime() - 24 * 60 * 60 * 1000;
 }
 
 /**

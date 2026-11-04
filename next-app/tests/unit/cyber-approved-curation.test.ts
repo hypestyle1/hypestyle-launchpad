@@ -4,44 +4,52 @@ import { CYBER_INITIAL_COUNT, CYBER_EXPANDED_COUNT } from '@/lib/cyber-catalog-v
 import { fromWPNode } from '@/lib/products-normalize';
 import { SLUGS_INTERNOS } from '@/lib/catalog';
 
-describe('curaduría comercial aprobada del 1/11', () => {
-  it('conserva los 24 aprobados en su orden y las 12 siguientes sin duplicados', () => {
-    expect(CYBER_DESTACADOS_SLUGS.slice(0,CYBER_INITIAL_COUNT)).toEqual([
-      'faith-over-everything-camo-hoodie',
+/* Curaduría del 3/11, pedida por Valentín para el rediseño del PR #655:
+   "abrir con best sellers reales, priorizando ventas y stock disponible".
+   La primera fila sale de los pedidos pagados de Woo (30 días al 3/11,
+   unidades sumando talles); el resto conserva la curaduría aprobada el 1/11.
+   Reemplaza al candado anterior (orden del 1/11), que este mismo archivo
+   protegía: si esta lista cambia, cambió una decisión comercial — que falle
+   y se mire. */
+
+describe('curaduría comercial del 3/11 — best sellers reales primero', () => {
+  it('conserva los 24 del orden aprobado y las 12 siguientes sin duplicados', () => {
+    expect(CYBER_DESTACADOS_SLUGS.slice(0, CYBER_INITIAL_COUNT)).toEqual([
+      'faith-over-everything-camo-hoodie', //  9 u/30d
+      'regular-tees-3-pack-black-navy-white', // 18 u/30d — lo más vendido
+      'grey-camo-cap', // 11 u/30d
+      'sweatpant-black-hstars', // 5 u/30d
+      'athletic-dept-blue-longsleeve', // 5 u/30d
+      'pack-x3-medias-hype', // 10 u/30d
+      'sweatpant-grey-hstars', // 4 u/30d
       'find-jesus-longsleeve-black',
-      'grey-camo-cap',
       'sleeveless-ranglan-black',
       'napoli-tee-azul',
-      'sweatpant-grey-hstars',
       'zolotye-kupola-washed-graphite-hoodie',
       'camo-cap',
       'lettering-black-longsleeve',
-      'regular-tees-3-pack-black-navy-white',
       'splatter-hoodie-washed-grey',
       'napoli-tee-blanca',
       'sleeveless-ranglan-white',
       'sweatpant-pink',
       'longsleeve-waffle-horses',
-      'pack-x3-medias-hype',
       'hype-distressed-grey-hoodie',
       'honda-white-tee',
       'ladytribal-black-longsleeve',
-      'sweatpant-black-hstars',
       'athletic-dept-pink-longsleeve',
       'trucker-cap-no-faith-no-glory',
       'hype-washed-black-waffle-longsleeve',
-      'regular-tees-3-pack-white',
     ]);
     expect(CYBER_DESTACADOS_SLUGS).toHaveLength(CYBER_EXPANDED_COUNT);
     expect(new Set(CYBER_DESTACADOS_SLUGS).size).toBe(36);
-    expect(CYBER_DESTACADOS_SLUGS.slice(0,24).filter(s=>/^regular-tee-/.test(s))).toEqual([]);
+    expect(CYBER_DESTACADOS_SLUGS.slice(0, 24).filter((s) => /^regular-tee-/.test(s))).toEqual([]);
   });
   it('el pack de medias es una ficha simple vendible, no la media interna de regalo', () => {
-    const product=fromWPNode({id:'2261',slug:'pack-x3-medias-hype',name:'Pack x3 Medias Hype',price:'28000',regularPrice:'28000',stockStatus:'IN_STOCK',stockQuantity:66,productCategories:{nodes:[{name:'accesorio'}]}});
+    const product = fromWPNode({ id: '2261', slug: 'pack-x3-medias-hype', name: 'Pack x3 Medias Hype', price: '28000', regularPrice: '28000', stockStatus: 'IN_STOCK', stockQuantity: 66, productCategories: { nodes: [{ name: 'accesorio' }] } });
     expect(SLUGS_INTERNOS.has(product.slug)).toBe(false);
     expect(product.price).toBe(28000);
     expect(product.sizes).toEqual(['Única']);
     expect(product.stock['Única']).toBe('ok');
-    expect(CYBER_DESTACADOS_SLUGS[15]).toBe(product.slug);
+    expect(CYBER_DESTACADOS_SLUGS[5]).toBe(product.slug);
   });
 });

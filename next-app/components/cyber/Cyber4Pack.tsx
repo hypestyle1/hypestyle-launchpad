@@ -32,12 +32,6 @@ import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
    precio del 3 PACK dentro de la ventana. Esta sección solo lo explica y
    acerca las remeras. */
 
-const PASOS = [
-  { n: '1', t: 'Elegí 4 Regular', d: 'Black, White, Melange, Navy y Red.' },
-  { n: '2', t: 'Sumalas al carrito', d: 'Mezclá colores y talles como quieras.' },
-  { n: '3', t: 'Pagás 3', d: 'El descuento se aplica solo. Sin código.' },
-];
-
 export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
   const { data } = useProducts();
 
@@ -48,61 +42,62 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
   }, [data, slugs]);
 
   return (
-    <section id="pack" className="bg-background px-4 py-12 text-foreground md:px-10 md:py-16">
+    <section
+      id="pack"
+      className="bg-[linear-gradient(180deg,#e7e6df_0%,#f1f0ec_38%,hsl(var(--background))_100%)] px-4 pb-10 pt-6 text-foreground md:px-10 md:pb-14 md:pt-10"
+    >
       <div className="mx-auto max-w-[1400px]">
-        {/* ── Bloque principal: el mensaje y la foto, juntos ──────────────── */}
-        <div className="grid grid-cols-1 overflow-hidden rounded-[16px] bg-[#0a0a0a] text-white md:grid-cols-[1.15fr_1fr]">
-          <div className="flex flex-col justify-between px-5 py-7 md:px-9 md:py-10">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-white/45 md:text-[11px]">
-                Solo durante Cyber Hype
-              </p>
-              <h2 className="mt-2.5 text-[40px] font-black uppercase leading-[0.86] tracking-[-0.02em] md:text-[62px]">
-                Llevás 4,
-                <br />
-                pagás 3.
-              </h2>
-              <p className="mt-3.5 max-w-[42ch] text-[14px] leading-[1.5] text-white/65 md:text-[15px]">
-                Elegí 4 Regular Tees, combiná colores y talles como quieras y pagá solamente 3.
-              </p>
-              {/* El precio cerrado del pack: el mismo que cobra
-                  `lib/promo-pack-regular.ts` dentro de la ventana. Sin precio
-                  tachado ni porcentaje, como el resto del evento. */}
-              <p className="mt-4 text-[17px] font-black uppercase tracking-[0.02em] text-white md:text-[20px]">
-                4 Regular Tees por $ 66.300
-              </p>
-              {/* El salto contra el 3 PACK, que es el argumento del upsell.
-                  $6.400 y no $6.300: el 3 PACK bajó a $59.900 (66.300 −
-                  59.900). Si se vuelve a mover alguno de los dos, este número
-                  tiene que moverse con ellos. */}
-              <p className="mt-2 text-[13.5px] font-semibold leading-[1.4] text-white/80 md:text-[14.5px]">
-                Sumá una cuarta por solo $ 6.400 más.
-              </p>
-              <p className="mt-1.5 text-[11.5px] leading-[1.45] text-white/45 md:text-[12.5px]">
-                Descuento automático en el carrito. Sin código.
-              </p>
-            </div>
+        {/* ── Bloque principal (rediseño 3/11) ─────────────────────────────
+            Fuera el panel negro gigante: la sección vive en claro, con una
+            foto REAL de campaña (modelo con la Regular negra sobre ladrillo
+            blanco) y el texto en un panel del mismo tono que el fondo de la
+            foto. El vidrio aparece una sola vez, como chip sobre la imagen. */}
+        {/* Banner 4/11: contenedor redondeado con vidrio SUTIL — blanco
+            translúcido, borde claro, brillo arriba a la izquierda y sombra en
+            capas (una corta de contacto + una larga y difusa) para que se
+            despegue apenas de la página. La foto va adentro, también
+            redondeada, y sigue siendo la protagonista. */}
+        <div className="cyber-pack-glass relative grid grid-cols-1 rounded-[26px] p-1.5 md:grid-cols-2 md:items-stretch md:rounded-[32px] md:p-2">
+          <div className="relative aspect-[5/6] overflow-hidden rounded-[20px] bg-[#f4f4f2] md:aspect-auto md:min-h-[540px] md:rounded-[25px]">
+            <Image
+              src="/cyber/pack/modelo.webp"
+              alt="Regular Tee black — campaña Hype"
+              fill
+              sizes="(max-width: 768px) 100vw, 700px"
+              className="object-cover"
+              style={{ objectPosition: '50% 20%' }}
+            />
+            <span className="cyber-glass-light absolute left-3 top-3 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#0a0a0a] md:left-4 md:top-4 md:text-[10px]">
+              Solo durante Cyber Hype
+            </span>
+          </div>
 
-            {/* Los tres pasos, en banda */}
-            <ol className="mt-7 grid grid-cols-3 gap-3 border-t border-white/12 pt-5 md:mt-9 md:gap-4">
-              {PASOS.map((p) => (
-                <li key={p.n}>
-                  <span className="block text-[11px] font-black text-white/30 md:text-[12px]">
-                    {p.n}
-                  </span>
-                  <p className="mt-1 text-[11.5px] font-bold uppercase leading-[1.15] tracking-[0.04em] text-white md:text-[13px]">
-                    {p.t}
-                  </p>
-                  <p className="mt-1 text-[11px] leading-[1.4] text-white/50 md:text-[12.5px]">
-                    {p.d}
-                  </p>
-                </li>
-              ))}
-            </ol>
+          <div className="relative flex flex-col justify-center px-4 pb-4 pt-5 md:px-12 md:py-10">
+            <h2 className="text-[34px] font-black uppercase leading-[0.86] tracking-[-0.02em] md:text-[56px]">
+              Llevás 4,
+              <br />
+              pagás 3.
+            </h2>
+            <p className="mt-2.5 max-w-[42ch] text-[13px] leading-[1.5] text-foreground/65 md:mt-3.5 md:text-[15px]">
+              Elegí 4 Regular Tees, combiná colores y talles como quieras y pagá solamente 3.
+            </p>
+            {/* El precio cerrado del pack: el mismo que cobra
+                `lib/promo-pack-regular.ts` dentro de la ventana. Sin precio
+                tachado ni porcentaje, como el resto del evento. */}
+            <p className="mt-4 text-[17px] font-black uppercase tracking-[0.02em] md:text-[20px]">
+              4 Regular Tees por $ 66.300
+            </p>
+            {/* El salto contra el 3 PACK, que es el argumento del upsell.
+                $6.400 y no $6.300: el 3 PACK bajó a $59.900 (66.300 −
+                59.900). Si se vuelve a mover alguno de los dos, este número
+                tiene que moverse con ellos. */}
+            <p className="mt-1.5 max-w-[44ch] text-[13px] font-semibold leading-[1.4] text-foreground/75 md:text-[14.5px]">
+              Sumá una cuarta por solo $ 6.400 más. Descuento automático en el carrito, sin código.
+            </p>
 
             <Link
               href="/colecciones/regular-tees"
-              className="mt-6 inline-flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-white px-8 text-[12px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a] transition-transform duration-300 hover:scale-[1.02] md:mt-8 md:w-auto md:self-start md:px-10"
+              className="mt-5 inline-flex h-[48px] w-full items-center justify-center gap-2.5 rounded-full bg-[#0a0a0a] px-8 text-[12px] font-bold uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-85 md:mt-7 md:w-auto md:self-start md:px-10"
             >
               Armá tu 4 PACK
               <svg width="15" height="10" viewBox="0 0 15 10" fill="none" aria-hidden="true">
@@ -116,19 +111,6 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
               </svg>
             </Link>
           </div>
-
-          {/* La foto del posteo del pack: las tres sobre hormigón. En mobile
-              va debajo del texto, en una franja ancha que no roba scroll. */}
-          <div className="relative min-h-[240px] md:min-h-[460px]">
-            <Image
-              src="/cyber/pack/flatlay.webp"
-              alt="Regular Tees — black, white y navy"
-              fill
-              sizes="(max-width: 768px) 100vw, 45vw"
-              className="object-cover"
-              style={{ objectPosition: '50% 45%' }}
-            />
-          </div>
         </div>
 
         {/* ── Las cinco Regular ───────────────────────────────────────────
@@ -136,7 +118,7 @@ export default function Cyber4Pack({ slugs }: { slugs: string[] }) {
             tira deslizable en mobile. */}
         {productos.length > 0 && (
           <>
-            <p className="mb-3 mt-8 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-light md:mb-4 md:mt-10">
+            <p className="mb-3 mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-text-light md:mb-4 md:mt-10">
               Los {productos.length} colores
             </p>
             <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-5 md:gap-4 md:overflow-visible md:px-0 md:pb-0">
