@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { unstable_cache } from 'next/cache';
 import { CYBER_START } from '@/lib/cyber-hype';
 import { fetchAllProductsStrict } from '@/lib/products-server';
-import { SLUGS_INTERNOS } from '@/lib/catalog';
+import { SLUGS_INTERNOS, fetchCatalogForSsr } from '@/lib/catalog';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,15 +26,17 @@ export const dynamic = 'force-dynamic';
  *
  * Sigue aislado de la caché compartida del carrito (clave propia).
  */
-const CACHE_SECONDS = 60;
 const VENTANA_APERTURA_MS = 2 * 60_000;
 
 async function leerCatalogo() {
   return (await fetchAllProductsStrict(true)).filter(p => !SLUGS_INTERNOS.has(p.slug));
 }
 
-// unstable_cache no guarda los errores: si WordPress falla, lanza y no queda cacheado.
-const leerCatalogoCompartido = unstable_cache(leerCatalogo, ['cyber-products-live-v1'], { revalidate: CACHE_SECONDS });
+// Integración 4/11: en vez de una caché propia, usa el MISMO catálogo
+// compartido que los listados (lib/catalog.ts: unstable_cache 60 s +
+// cortacircuitos + 1 intento). Una sola lectura del catálogo por minuto para
+// toda la tienda, y si WordPress falla se sirve la última versión buena.
+const leerCatalogoCompartido = fetchCatalogForSsr;
 
 const NO_STORE = { 'Cache-Control': 'private, no-store' };
 

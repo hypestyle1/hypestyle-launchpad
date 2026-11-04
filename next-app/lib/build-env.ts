@@ -9,5 +9,9 @@
  * (la ficha tiene dynamicParams = true). Producción prerenderiza igual que antes.
  */
 export function prerenderizarFichas(env: Record<string, string | undefined> = process.env): boolean {
-  return !(env.VERCEL_ENV === 'preview' || env.CI === 'true');
+  // Integración 4/11: también en producción, salvo PRERENDER_FICHAS=1. Cada
+  // merge disparaba una build de producción con ~220 consultas a WordPress.
+  // Con la ficha detrás de unstable_cache + cortacircuitos (page.tsx), la
+  // primera visita de cada ficha la genera y queda en caché.
+  return env.PRERENDER_FICHAS === '1';
 }

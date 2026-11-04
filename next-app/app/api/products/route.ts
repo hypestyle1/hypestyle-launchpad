@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { fetchWithRetry } from '@/lib/fetch-retry';
 import { SLUGS_INTERNOS } from '@/lib/catalog';
+import { unstable_cache } from 'next/cache';
+import { crearCortacircuitos } from '@/lib/wp-cortacircuitos';
 
 const GRAPHQL_URL = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'https://lightpink-rook-704850.hostingersite.com/graphql';
 
@@ -49,7 +51,32 @@ const GET_PRODUCTS = `
 export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
+/**
+ * Integración 4/11 (incidente MySQL/Hostinger): esta lectura es la "consulta de
+ * ~400 posts" que señaló Hostinger (≈150 productos + sus variaciones). Antes
+ * cada vencimiento de la caché de datos lanzaba una relectura por request, con
+ * 4 intentos de 15 s. Ahora pasa por unstable_cache (60 s, compartida) + el
+ * cortacircuitos: una lectura a la vez, 1 intento de hasta 25 s, 60 s de pausa
+ * tras una falla, y si WordPress falla se sirve la última versión buena.
+ */
+class CatalogoNoDisponible extends Error {}
+const proteger = crearCortacircuitos(60_000);
+const nodosCompartidos = unstable_cache(() => proteger(leerNodos), ['api-products-nodos-v1'], { revalidate: 60 });
+
 export async function GET() {
+  let nodos: any[];
+  try {
+    nodos = await nodosCompartidos();
+  } catch (err) {
+    const status = err instanceof CatalogoNoDisponible ? 502 : 503;
+    return NextResponse.json({ error: 'GraphQL fetch failed' }, { status, headers: { 'Cache-Control': 'no-store' } });
+  }
+  return NextResponse.json({ products: { nodes: nodos } }, {
+    headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=30' },
+  });
+}
+
+async function leerNodos(): Promise<any[]> {
   const allNodes: any[] = [];
   let after: string | null = null;
 
@@ -74,17 +101,13 @@ export async function GET() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: GET_PRODUCTS, variables: { first: 100, after } }),
-      next: { revalidate: 60 },
-    });
+      cache: 'no-store',
+    }, { retries: 0, timeoutMs: 25_000 });
 
-    if (!res.ok) {
-      return NextResponse.json({ error: 'GraphQL fetch failed' }, { status: 502 });
-    }
+    if (!res.ok) throw new CatalogoNoDisponible(`HTTP ${res.status}`);
 
     const { data, errors } = await res.json();
-    if (errors) {
-      return NextResponse.json({ error: errors[0].message }, { status: 500 });
-    }
+    if (errors) throw new CatalogoNoDisponible(String(errors[0]?.message ?? 'GraphQL error'));
 
     const page = data?.products;
     if (!page) break;
@@ -103,13 +126,9 @@ export async function GET() {
   // dedupe por id antes de devolver, así ningún consumidor de este endpoint
   // (home, colecciones, etc.) puede terminar mostrando la misma card dos veces.
   const seen = new Set<string>();
-  const uniqueNodes = allNodes.filter(n => {
+  return allNodes.filter(n => {
     if (seen.has(n.id)) return false;
     seen.add(n.id);
     return !SLUGS_INTERNOS.has(n.slug);
-  });
-
-  return NextResponse.json({ products: { nodes: uniqueNodes } }, {
-    headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=30' },
   });
 }
