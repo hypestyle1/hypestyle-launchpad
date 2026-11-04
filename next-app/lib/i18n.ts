@@ -374,6 +374,7 @@ const DICT: Dict = {
   'Gracias por bancar a la Selección hasta el final. La Nuestra queda con': { EN: 'Thanks for backing the national team until the end. La Nuestra stays at', PT: 'Obrigado por apoiar a Seleção até o fim. La Nuestra fica com', DE: 'Danke, dass du die Nationalmannschaft bis zum Schluss unterstützt hast. La Nuestra bleibt bei', FR: 'Merci d’avoir soutenu la sélection jusqu’au bout. La Nuestra reste à', IT: 'Grazie per aver sostenuto la Nazionale fino alla fine. La Nuestra resta al' },
   // Selección de color y talle
   'Color': { EN: 'Color', PT: 'Cor', DE: 'Farbe', FR: 'Couleur', IT: 'Colore' },
+  'Cargando…': { EN: 'Loading…', PT: 'Carregando…', DE: 'Wird geladen…', FR: 'Chargement…', IT: 'Caricamento…' },
   'Guía de talles': { EN: 'Size guide', PT: 'Guia de tamanhos', DE: 'Größentabelle', FR: 'Guide des tailles', IT: 'Guida alle taglie' },
   'Últimas unidades disponibles': { EN: 'Last units available', PT: 'Últimas unidades disponíveis', DE: 'Letzte Stücke verfügbar', FR: 'Dernières pièces disponibles', IT: 'Ultimi pezzi disponibili' },
   'Color agotado': { EN: 'Color sold out', PT: 'Cor esgotada', DE: 'Farbe ausverkauft', FR: 'Couleur épuisée', IT: 'Colore esaurito' },
