@@ -18,24 +18,39 @@ import { REF_HOLD_DIAS, REF_MIN_COMPRA, REF_VIGENCIA_DIAS, formatRefMonto } from
 //     real del crédito según el backend (un token de premio pendiente no puede
 //     disparar el mail de "disponible", y el de vencimiento solo sale si el
 //     cupón sigue vivo y vence dentro de las próximas 48 h).
-//  3. IDEMPOTENCIA: los de premio exigen `order` y quedan marcados con meta en
-//     el pedido del amigo ANTES de mandar; el de vencimiento lo marca el PHP
-//     en el cupón antes de llamar, y acá la validación de ventana corta
-//     cualquier replay tardío.
+//  3. IDEMPOTENCIA ATÓMICA Y RECUPERABLE: antes de mandar se reclama el envío
+//     en el backend (/referral-mail-claim: INSERT IGNORE + compare-and-swap,
+//     una sola operación, sin leer-y-escribir separado). Si Brevo acepta, se
+//     confirma (/referral-mail-confirm) y ese mail no sale nunca más; si Brevo
+//     falla, el claim queda 'pending' y vence a los 30 minutos, y el barrido
+//     diario re-dispara el aviso: ningún mail se pierde ni se duplica.
 
 export const dynamic = 'force-dynamic';
 
 const WP_URL        = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WP_SECRET     = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
-const WC_KEY        = (process.env.WC_CONSUMER_KEY || '').trim();
-const WC_SEC        = (process.env.WC_CONSUMER_SECRET || '').trim();
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 const SENDER_EMAIL  = 'pedidos@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
 const REPLY_TO      = 'hypestylearg@gmail.com';
 
-const wcAuth = () => 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
+// Claim/confirm contra el backend: una sola operación atómica por mail.
+async function mailClaim(accion: 'claim' | 'confirm', key: string): Promise<boolean> {
+  const r = await fetch(`${WP_URL}/wp-json/hypestyle/v1/referral-mail-${accion}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Hypestyle-Secret': WP_SECRET,
+      'Authorization': `Bearer ${WP_SECRET}`,
+    },
+    body: JSON.stringify({ key }),
+    cache: 'no-store',
+  });
+  const d = await r.json().catch(() => ({}));
+  return accion === 'claim' ? !!d?.claimed : !!d?.ok;
+}
+
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -127,28 +142,23 @@ export async function GET(req: NextRequest) {
     if (!vivo || !enVentana) return NextResponse.json({ ok: false, reason: 'fuera de ventana' });
   }
 
-  // Capa 3: idempotencia de los mails de premio — el flag se escribe ANTES de
-  // mandar (si Brevo falla, el PHP no reintenta solo y se resuelve a mano,
-  // que es mejor que un duplicado).
-  const flag = `_hs_ref_mail_${type}`;
-  if (orderId) {
-    const or = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${orderId}`, { headers: { Authorization: wcAuth() }, cache: 'no-store' });
-    if (!or.ok) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
-    const order = await or.json();
-    if ((order.meta_data || []).some((m: { key: string }) => m.key === flag)) {
-      return NextResponse.json({ ok: true, enviados: [] });
-    }
-    await fetch(`${WP_URL}/wp-json/wc/v3/orders/${orderId}`, {
-      method: 'PUT',
-      headers: { Authorization: wcAuth(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ meta_data: [{ key: flag, value: new Date().toISOString() }] }),
-    });
+  // Capa 3: claim atómico en el backend. Perdió el claim = alguien más lo
+  // mandó (o lo está mandando): salida limpia sin duplicado. Si WP no
+  // contesta, no hay reserva: no se manda nada y el barrido reintenta.
+  const claimKey = `${type}_${orderId || String(s.coupon || '')}`.toLowerCase();
+  const claimed = await mailClaim('claim', claimKey).catch(() => null);
+  if (claimed === null) {
+    return NextResponse.json({ error: 'claim inaccesible', retry: 'el barrido reintenta' }, { status: 502 });
+  }
+  if (!claimed) {
+    return NextResponse.json({ ok: true, dedup: true });
   }
 
   const linkCredito = `${SITE_URL}/credito?t=${encodeURIComponent(token)}`;
   const premio = formatRefMonto(Number(s.monto) || 12000);
-  const pieComun = `Compra mínima ${formatRefMonto(REF_MIN_COMPRA)}. No acumulable con otros descuentos ni promociones.`;
+  const pieComun = `Compra mínima ${formatRefMonto(REF_MIN_COMPRA)}. Se suma al 10% por transferencia; no a otros descuentos ni promociones.`;
 
+  try {
   if (type === 'premio-pendiente') {
     await sendEmail(to, `Tu amigo ya es de Hype: ${premio} en camino`, layout(
       'Tu amigo ya es de Hype',
@@ -165,13 +175,20 @@ export async function GET(req: NextRequest) {
     ));
   } else {
     const saldo = formatRefMonto(Number(s.saldo) || Number(s.monto) || 0);
-    await sendEmail(to, `Tu crédito de ${saldo} vence mañana`, layout(
-      'Tu crédito vence mañana',
+    await sendEmail(to, `Tu crédito de ${saldo} vence pronto`, layout(
+      'Tu crédito vence pronto',
       `Te quedan ${saldo} para usar en Hype hasta el ${esc(fechaLarga(s.vence) || 'final del día de mañana')}. Después de eso, se pierde.`,
       tarjetaCodigo(String(s.coupon || '')) + boton(SITE_URL, 'Ir a la tienda'),
       pieComun,
     ));
   }
+  } catch (err) {
+    // Brevo falló DESPUÉS de reservar: el claim queda 'pending' y vence a los
+    // 30 minutos; el barrido diario re-dispara este aviso. Nada se pierde.
+    return NextResponse.json({ error: `Brevo: ${String(err).slice(0, 200)}`, retry: 'el claim vence en 30 min y el barrido reintenta' }, { status: 502 });
+  }
+
+  await mailClaim('confirm', claimKey).catch(() => { /* el claim pending vence solo; peor caso: un reintento de más, que el claim dedupe */ });
 
   return NextResponse.json({ ok: true, enviados: [to.email] });
 }

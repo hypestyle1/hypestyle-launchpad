@@ -107,8 +107,8 @@ export function ReferralShareCard({ orderId, orderKey, className }: {
           </a>
           <p className="m-0 text-[10.5px] md:text-[11px] leading-[1.6] text-[#8a8375]">
             El crédito de tu amigo se descuenta directo en su primera compra. El tuyo se acredita {REF_HOLD_DIAS} días
-            después de esa compra y dura {REF_VIGENCIA_DIAS} días. Compra mínima {formatRefMonto(REF_MIN_COMPRA)}. No
-            acumulable con otros descuentos.
+            después de esa compra y dura {REF_VIGENCIA_DIAS} días. Compra mínima {formatRefMonto(REF_MIN_COMPRA)}. Se
+            suma al 10% por transferencia; no a otros descuentos.
           </p>
         </div>
       </div>

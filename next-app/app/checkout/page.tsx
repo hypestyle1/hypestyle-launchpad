@@ -527,6 +527,10 @@ export default function Checkout() {
   const referralRechazado = useRef<Set<string>>(new Set());
   const referralEnVuelo = useRef(false);
   const referralAplicadoPara = useRef<string | null>(null);
+  // El mail vigente AHORA, para que una respuesta asincrónica de un mail
+  // anterior no aplique su cupón al mail nuevo (se descarta al llegar).
+  const referralEmailVigente = useRef('');
+  referralEmailVigente.current = info.email.trim().toLowerCase();
   useEffect(() => {
     const email = info.email.trim().toLowerCase();
     const esNuestro = couponData?.description === 'Crédito de bienvenida' || couponData?.description === 'Crédito Hype';
@@ -541,12 +545,14 @@ export default function Checkout() {
     if (subtotal < REF_MIN_COMPRA) return;
     if (!/^\S+@\S+\.\S+$/.test(email)) return;
 
+    // El crédito guardado NO se borra acá: sigue disponible aunque cambie el
+    // mail o abandone el checkout. Se limpia recién cuando el pedido se crea
+    // con el cupón adentro (continuarAlPago); vencido, se autolimpia solo.
     const credito = getPendingCredit();
     if (credito) {
       referralAplicadoPara.current = email;
       setCoupon(credito.code);
       setCouponData({ code: credito.code, type: 'fixed', amount: credito.amount, description: 'Crédito Hype' });
-      clearPendingCredit();
       return;
     }
 
@@ -561,6 +567,10 @@ export default function Checkout() {
           body: JSON.stringify({ code: refCode, email, phone: info.telefono }),
         });
         const d = await r.json().catch(() => null);
+        // La respuesta es de ESTE mail: si mientras tanto lo cambiaron, el
+        // cupón emitido queda atado al mail viejo y no se aplica (el efecto
+        // vuelve a correr para el mail nuevo por su cuenta).
+        if (referralEmailVigente.current !== email) return;
         if (d?.valid && d.coupon) {
           referralAplicadoPara.current = email;
           setCoupon(d.coupon);
@@ -1051,6 +1061,13 @@ export default function Checkout() {
   // La orden ya existe en Woo: guarda el comprobante en sessionStorage y sale
   // hacia la pasarela (o la pantalla de transferencia/confirmación).
   const continuarAlPago = async (orderRes: OrdenCreada) => {
+    // El crédito Hype quedó dentro del pedido recién creado: se saca del
+    // storage para que no se re-aplique en una compra futura. Si este pago
+    // fallara, Woo libera el uso del cupón y el código sigue en el mail y en
+    // /credito para volver a usarlo.
+    if (!orderRes.couponDropped && (couponData?.description === 'Crédito Hype' || couponData?.description === 'Crédito de bienvenida')) {
+      clearPendingCredit();
+    }
     const isTransfer      = pago.metodo === 'transferencia';
     const isLocalTransfer = isTransfer && !isInternational;
     const isPaypal        = pago.metodo === 'paypal';

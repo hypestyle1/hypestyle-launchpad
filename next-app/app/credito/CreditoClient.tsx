@@ -172,8 +172,8 @@ export default function CreditoClient() {
               Usar mis {formatRefMonto(monto)}
             </a>
             <p className="mt-3 text-center text-[10.5px] leading-[1.6] text-muted-foreground max-w-[340px]">
-              Compra mínima {formatRefMonto(REF_MIN_COMPRA)}. No acumulable con otros descuentos ni promociones.
-              Tenés {REF_VIGENCIA_DIAS} días desde la acreditación.
+              Compra mínima {formatRefMonto(REF_MIN_COMPRA)}. Se suma al 10% por transferencia; no a otros descuentos
+              ni promociones. Tenés {REF_VIGENCIA_DIAS} días desde la acreditación.
             </p>
 
             {status.tipo === 'premio' && (

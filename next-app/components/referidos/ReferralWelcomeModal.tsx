@@ -93,7 +93,7 @@ export default function ReferralWelcomeModal() {
         </ScrambleText>
         <p className="text-[16px] md:text-[17px] font-medium tracking-[-0.015em] m-0">para tu primera compra en Hype</p>
         <p className="text-[13px] leading-[1.6] text-white/80 max-w-[300px] m-0">
-          Quedó guardado a tu nombre: lo ves descontado en el checkout. Sin códigos, sin registrarte.
+          Es para tu primera compra: ponés tu mail en el checkout y el descuento se aplica solo. Sin códigos, sin registrarte.
         </p>
 
         <div className="flex flex-wrap justify-center gap-2">
@@ -114,7 +114,7 @@ export default function ReferralWelcomeModal() {
         </button>
 
         <p className="text-[10.5px] md:text-[11px] leading-[1.6] text-white/75 max-w-[320px] m-0">
-          La invitación dura {REF_VIGENCIA_DIAS} días. No suma con otros descuentos ni promociones.
+          La invitación dura {REF_VIGENCIA_DIAS} días. Se suma al 10% por transferencia; no a otros descuentos ni promociones.
         </p>
 
         <button
