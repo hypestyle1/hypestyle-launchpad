@@ -30,6 +30,9 @@ export const dynamic = 'force-dynamic';
 const WP_URL        = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WP_SECRET     = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
 const BREVO_API_KEY = (process.env.BREVO_API_KEY || '').replace(/^﻿/, '').trim();
+// Override solo para entornos de prueba (demo local → Mailpit); en producción
+// no se setea y queda Brevo real.
+const BREVO_API_URL = process.env.BREVO_API_URL || 'https://api.brevo.com/v3/smtp/email';
 const SITE_URL      = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://hypestyle.com.ar';
 const SENDER_EMAIL  = 'pedidos@hypestyle.com.ar';
 const SENDER_NAME   = 'Hypestyle';
@@ -91,7 +94,7 @@ const tarjetaCodigo = (code: string) =>
   </tr></table>`;
 
 async function sendEmail(to: { email: string; name?: string }, subject: string, html: string) {
-  const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+  const r = await fetch(BREVO_API_URL, {
     method: 'POST',
     headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ sender: { name: SENDER_NAME, email: SENDER_EMAIL }, replyTo: { name: SENDER_NAME, email: REPLY_TO }, to: [to], subject, htmlContent: html }),
@@ -138,7 +141,11 @@ export async function GET(req: NextRequest) {
   if (type === 'vencimiento') {
     const venceTs = s.vence ? new Date(`${s.vence}T23:59:59`).getTime() : 0;
     const vivo = estado === 'disponible' && Number(s.saldo) > 0;
-    const enVentana = venceTs > Date.now() && venceTs - Date.now() <= 48 * 3600_000;
+    // 72 h sobre el FIN del día de vencimiento = la ventana de 48 h que mide el
+    // backend sobre su INICIO (el barrido dispara cuando faltan ≤48 h para las
+    // 00:00 del día que vence). Con 48 acá, la primera pasada del barrido caía
+    // "fuera de ventana" y el aviso quedaba sin reintento si Brevo fallaba.
+    const enVentana = venceTs > Date.now() && venceTs - Date.now() <= 72 * 3600_000;
     if (!vivo || !enVentana) return NextResponse.json({ ok: false, reason: 'fuera de ventana' });
   }
 
