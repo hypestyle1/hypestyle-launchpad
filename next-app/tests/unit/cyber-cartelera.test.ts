@@ -21,11 +21,20 @@ import { PACK_REGULAR_SLUGS } from '@/lib/promo-pack-regular';
 
 const en = (iso: string) => new Date(iso);
 
-/* ════════════════ 3 DÍAS · 3 DROPS — el secreto no se filtra ═══════════ */
+/* ════════════════ LOS DROPS — el secreto no se filtra ═══════════════════ */
 
 describe('drops — lo no revelado no existe para el navegador', () => {
-  it('son exactamente 3, uno por día del evento', () => {
-    expect(CYBER_DROPS.map((d) => d.fecha)).toEqual(['lun 2/11', 'mar 3/11', 'mié 4/11']);
+  it('son exactamente 2: el Día 3 se eliminó el 3/11 (sin drop confirmado)', () => {
+    expect(CYBER_DROPS.map((d) => d.fecha)).toEqual(['lun 2/11', 'mar 3/11']);
+  });
+
+  it('un drop revelado sin compra (preventa) no lleva CTA: href null y aviso', () => {
+    const dos = CYBER_DROPS.find((d) => d.id === '02')!;
+    expect(dos.producto).not.toBeNull();
+    // Mientras la preventa no esté cargada en Woo, la tarjeta no puede llevar
+    // a ninguna ficha: no existe una con stock que respalde el click.
+    expect(dos.producto!.href).toBeNull();
+    expect(dos.producto!.preventa).toMatch(/preventa/i);
   });
 
   it('un drop sin producto asignado NUNCA se revela, aunque pase su hora', () => {
@@ -139,7 +148,10 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     // cajas son de la parte de arriba.
     expect(CYBER_MYSTERY.map((m) => m.id)).toEqual(['tees', 'longsleeves', 'hoodies']);
     for (const m of CYBER_MYSTERY) {
-      expect(m.img).toMatch(/^\/cyber\/mystery\//);
+      // Desde el 3/11 la card usa la portada OFICIAL de la ficha. El archivo
+      // tiene que existir en public/: una miniatura rota es una card muerta.
+      expect(m.img).toMatch(/^\/mystery\/portadas\//);
+      expect(() => statSync(join(RAIZ, 'public', ...m.img.split('/').filter(Boolean)))).not.toThrow();
       // Una sola fuente de verdad para precio y slug: si la tarjeta y la ficha
       // se separan, el cliente ve un precio en la home y otro al entrar.
       const caja = MYSTERY_CAJAS.find((c) => c.id === m.id);
@@ -164,7 +176,11 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     const choque = CYBER_DESTACADOS_SLUGS.filter((s) => CYBER_MYSTERY_EN_VIDRIERA.includes(s));
     // Lanzamiento 1/11: Valentín autoriza convivencia y organiza el despacho
     // manualmente. No modificar inventario ni retirar diseños aprobados.
-    expect(choque.sort()).toEqual(['napoli-tee-azul', 'napoli-tee-blanca', 'ladytribal-black-longsleeve', 'honda-white-tee', 'athletic-dept-pink-longsleeve'].sort());
+    // 3/11: entra athletic-dept-blue-longsleeve a destacados por ventas reales
+    // (5 u/30d). Ya convivía vía el filtro de Longsleeves (los filtros muestran
+    // la categoría completa): destacarla cambia posición, no disponibilidad.
+    // Misma logística de despacho manual que su gemela pink, ya autorizada.
+    expect(choque.sort()).toEqual(['napoli-tee-azul', 'napoli-tee-blanca', 'ladytribal-black-longsleeve', 'honda-white-tee', 'athletic-dept-pink-longsleeve', 'athletic-dept-blue-longsleeve'].sort());
   });
 
   it('ningún texto de mystery lleva cifra de dinero ni porcentaje', () => {
@@ -276,6 +292,16 @@ describe('restauración automática', () => {
     expect(cyberUltimasHoras(en('2026-11-02T12:00:00-03:00'))).toBe(false);
     expect(cyberUltimasHoras(en('2026-11-08T00:00:00-03:00'))).toBe(true);
     expect(cyberUltimasHoras(en('2026-11-09T01:00:00-03:00'))).toBe(false);
+  });
+
+  it('"termina hoy" NUNCA aparece en los días del medio (regresión del 4/11)', () => {
+    // La función tenía hardcodeado el 4/11 como último día; la extensión al
+    // 8/11 (PR #656) movió CYBER_END y producción dijo "ÚLTIMAS HORAS ·
+    // TERMINA HOY" desde la medianoche del 4 — cuatro días antes de tiempo.
+    // Ahora se deriva de CYBER_END: los días del medio jamás apuran de mentira.
+    for (const dia of ['04', '05', '06', '07']) {
+      expect(cyberUltimasHoras(en(`2026-11-${dia}T12:00:00-03:00`)), `el ${dia}/11 no es el último día`).toBe(false);
+    }
   });
 
   it('la home SS27 sigue intacta: el takeover es una rama, no una edición', () => {

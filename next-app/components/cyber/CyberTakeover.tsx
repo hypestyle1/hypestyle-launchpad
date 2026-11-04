@@ -10,7 +10,10 @@ import Cyber4Pack from './Cyber4Pack';
 import CyberMysterySection from './CyberMysterySection';
 import CyberCatalogoEvento from './CyberCatalogoEvento';
 import CyberCondiciones from './CyberCondiciones';
+import CyberPreventa from './CyberPreventa';
 import CyberRegalos from './CyberRegalos';
+import ShopTheLook from '@/components/ShopTheLook';
+import VistoEn from '@/components/VistoEn';
 import CyberCanal from './CyberCanal';
 import CyberEditorial, { CYBER_CATEGORIAS_EDITORIAL } from './CyberEditorial';
 import '@/components/cyber/cyber.css';
@@ -69,7 +72,7 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
       <Navbar />
       <main className="bg-[#0a0a0a]">
         <h1 className="sr-only">
-          CYBER HYPE — el evento de HYPESTYLE del 2 al 8 de noviembre. Drops diarios, 4 PACK de
+          CYBER HYPE — el evento de HYPESTYLE del 2 al 8 de noviembre. Drops, 4 PACK de
           Regular Tees y Mystery Archive.
         </h1>
 
@@ -85,11 +88,13 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
           ctaLabel="Ver las ofertas"
         />
 
-        {/* Compra primero: el catálogo es el primer bloque después del hero.
-            Mystery funciona como tres productos pequeños; las categorías son
-            una banda editorial a pantalla completa, sin marco de tarjeta.
-            Drops y pack quedan después, como contenido secundario.
-            Shop the Look conserva su ruta propia pero no retrasa las ofertas.
+        {/* Compra primero: el catálogo es el primer bloque después del hero,
+            con los best sellers REALES arriba; Mystery son tres productos
+            más, en la misma página blanca. Las categorías son una pieza
+            editorial a sangre. Después el relato del evento (drops + preventa
+            camo), el 4 PACK, y el refuerzo editorial que ya existía en la
+            home (Shop the Look + Visto En) ANTES de regalos y condiciones:
+            suma prueba social sin interrumpir el camino de compra.
             Ninguna de estas decisiones toca checkout, precios ni descuentos. */}
         <CyberCatalogoEvento
           destacadosSlugs={CYBER_DESTACADOS_SLUGS}
@@ -105,7 +110,20 @@ export default async function CyberTakeover({ fondo }: { fondo?: CyberFondo } = 
 
         <CyberDrops drops={drops} />
 
+        {/* Preventa Zip Hoodie Camo, pegada al drop que la revela. Apagada en
+            producción hasta el OK comercial (PREVENTA_ZIP_CAMO.publicado). */}
+        <CyberPreventa />
+
         <Cyber4Pack slugs={CYBER_PACK_SLUGS} />
+
+        {/* Shop the Look y Visto En: los MISMOS componentes de la home, sin
+            tocar. Van después del bloque comercial a propósito: acá la
+            pregunta ya no es "cuánto sale" sino "cómo se usa" y "quién lo
+            usa" — conjuntos comprables y artistas con Hype puesto. */}
+        <div className="bg-white text-foreground">
+          <ShopTheLook />
+          <VistoEn />
+        </div>
 
         <CyberRegalos />
 

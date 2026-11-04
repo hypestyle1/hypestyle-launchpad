@@ -83,7 +83,7 @@ export default function CyberTakeoverHero({
             </h1>
 
             <p className="mt-2 max-w-[44ch] text-[12.5px] leading-[1.35] text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.6)] md:mt-4 md:text-[16px]">
-              Tres días. Un drop nuevo cada día, el 4 PACK de Regular Tees y el archivo abierto.
+              Hasta el 8/11: drops, el 4 PACK de Regular Tees y el archivo abierto.
             </p>
 
             <Link
