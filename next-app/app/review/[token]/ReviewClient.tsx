@@ -126,15 +126,29 @@ function Wordmark({ className = '' }: { className?: string }) {
   return <img src="/hype-wordmark.svg" alt="Hype" className={className} />;
 }
 
-function Shell({ children, footer }: { children: React.ReactNode; footer?: React.ReactNode }) {
+function Shell({ children, footer, backdrop }: { children: React.ReactNode; footer?: React.ReactNode; backdrop?: string }) {
   return (
-    <div className="min-h-[100dvh] bg-white text-black flex flex-col">
-      <header className="h-14 flex items-center justify-center border-b border-black/10 shrink-0">
+    <div className="relative min-h-[100dvh] bg-[#f0eee8] text-black flex flex-col overflow-x-clip">
+      {/* Fondo: la foto del producto desenfocada. Le da al vidrio algo que
+          refractar; sin nada detrás, el glass es un gris plano. */}
+      {backdrop && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={backdrop}
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 w-[140%] max-w-none h-[460px] object-cover blur-[60px] opacity-45 saturate-150"
+        />
+      )}
+      <header
+        className="sticky top-0 z-20 h-14 flex items-center justify-center shrink-0 border-b border-black/[0.06]"
+        style={{ background: 'var(--glass-nav-bg)', backdropFilter: 'var(--glass-nav-filter)', WebkitBackdropFilter: 'var(--glass-nav-filter)' }}
+      >
         <Link href="/" aria-label="Ir a Hype">
           <Wordmark className="h-[22px] w-auto" />
         </Link>
       </header>
-      <main className="flex-1 w-full max-w-[480px] mx-auto px-4">{children}</main>
+      <main className="relative flex-1 w-full max-w-[480px] mx-auto px-4">{children}</main>
       {footer}
     </div>
   );
@@ -156,18 +170,18 @@ function Skeleton() {
   return (
     <Shell>
       <div className="pt-8 animate-pulse" aria-label="Cargando">
-        <div className="h-3 w-24 bg-black/10" />
+        <div className="h-3 w-24 bg-black/10 rounded-[8px]" />
         <div className="h-7 w-56 bg-black/10 mt-3" />
         <div className="h-16 w-full bg-black/10 mt-6" />
         <div className="flex gap-4 mt-8">
-          <div className="w-24 h-[120px] bg-black/10" />
+          <div className="w-24 h-[120px] bg-black/10 rounded-[8px]" />
           <div className="flex-1">
-            <div className="h-4 w-full bg-black/10" />
+            <div className="h-4 w-full bg-black/10 rounded-[8px]" />
             <div className="h-4 w-2/3 bg-black/10 mt-2" />
           </div>
         </div>
         <div className="flex gap-2 mt-8 justify-center">
-          {[0, 1, 2, 3, 4].map(i => <div key={i} className="w-11 h-11 bg-black/10" />)}
+          {[0, 1, 2, 3, 4].map(i => <div key={i} className="w-11 h-11 bg-black/10 rounded-full" />)}
         </div>
       </div>
     </Shell>
@@ -200,9 +214,15 @@ function Stars({ value, onChange }: { value: number; onChange: (n: number) => vo
           </button>
         ))}
       </div>
-      <p className={`text-center text-sm mt-2 h-5 ${value ? 'text-black font-medium' : 'text-black/40'}`} aria-live="polite">
-        {value ? RATING_LABELS[value] : 'Tocá una estrella'}
-      </p>
+      <div className="flex justify-center mt-3 h-7" aria-live="polite">
+        {value ? (
+          <span className="hs-glass rounded-full px-3.5 h-7 inline-flex items-center text-[11px] font-bold uppercase tracking-[0.1em]">
+            {RATING_LABELS[value]}
+          </span>
+        ) : (
+          <span className="text-[13px] text-black/45 leading-7">Tocá una estrella</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -213,8 +233,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`h-9 px-3.5 text-[13px] border transition-colors ${
-        active ? 'bg-black text-white border-black' : 'bg-white text-black border-black/20 active:border-black'
+      className={`h-9 px-4 rounded-full text-[13px] transition-transform active:scale-[0.97] ${
+        active ? 'hs-glass-dark text-white' : 'hs-glass text-black'
       }`}
     >
       {children}
@@ -285,7 +305,7 @@ function PhotoPicker({
     <div>
       <div className="flex gap-2">
         {photos.map(photo => (
-          <div key={photo.key} className="relative w-[76px] h-[95px] overflow-hidden bg-black/5">
+          <div key={photo.key} className="relative w-[76px] h-[95px] overflow-hidden rounded-[10px] bg-black/5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={photo.preview} alt="" className={`w-full h-full object-cover ${photo.status === 'ready' ? '' : 'opacity-50'}`} />
             {photo.status === 'uploading' && (
@@ -308,7 +328,7 @@ function PhotoPicker({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className={`${photos.length ? 'w-[76px]' : 'flex-1'} h-[95px] border border-dashed border-black/30 flex flex-col items-center justify-center gap-1.5 active:border-black transition-colors`}
+            className={`${photos.length ? 'w-[76px]' : 'flex-1'} h-[95px] rounded-[12px] border border-dashed border-black/25 bg-white/40 flex flex-col items-center justify-center gap-1.5 active:border-black transition-colors`}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
               <path d="M4 7h3l2-2h6l2 2h3v12H4z" />
@@ -343,7 +363,7 @@ function CopyCode({ code }: { code: string }) {
     <button
       type="button"
       onClick={copy}
-      className="w-full h-12 bg-white text-black text-sm font-semibold active:opacity-80"
+      className="w-full h-12 rounded-[12px] bg-white text-black text-[12px] font-bold uppercase tracking-[0.1em] active:opacity-80"
     >
       {copied ? 'Código copiado' : 'Copiar código'}
     </button>
@@ -494,11 +514,11 @@ export default function ReviewClient({ token }: { token: string }) {
         <div className="mt-8 flex flex-col gap-2 max-w-[320px] mx-auto">
           <a
             href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Hola! Quería dejar mi reseña pero el link no me funciona')}`}
-            className="h-12 bg-black text-white text-sm font-semibold flex items-center justify-center"
+            className="h-12 hs-glass-dark rounded-[12px] text-white text-[12px] font-bold uppercase tracking-[0.1em] flex items-center justify-center"
           >
             Escribinos por WhatsApp
           </a>
-          <Link href="/" className="h-12 border border-black/20 text-sm font-medium flex items-center justify-center">
+          <Link href="/" className="h-12 hs-glass rounded-[12px] text-black text-[12px] font-bold uppercase tracking-[0.1em] flex items-center justify-center">
             Ir a la tienda
           </Link>
         </div>
@@ -512,7 +532,7 @@ export default function ReviewClient({ token }: { token: string }) {
     return (
       <Shell>
         <div className="pt-12 pb-12">
-          <div className="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center mx-auto" aria-hidden>
+          <div className="w-14 h-14 rounded-full hs-glass-dark text-white flex items-center justify-center mx-auto" aria-hidden>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M5 12.5l4.5 4.5L19 7.5" />
             </svg>
@@ -525,10 +545,10 @@ export default function ReviewClient({ token }: { token: string }) {
           </p>
 
           {coupon && (
-            <div className="bg-black text-white p-5 mt-8">
-              <p className="text-[11px] uppercase tracking-[0.14em] text-white/60">Tu regalo</p>
-              <p className="text-[20px] font-semibold mt-1">{stripTrailingZeros(coupon.value)}% OFF en tu próxima compra</p>
-              <div className="border border-dashed border-white/40 mt-4 py-4 text-center">
+            <div className="hs-glass-dark rounded-[16px] text-white p-5 mt-8">
+              <span className="inline-flex items-center h-6 px-3 rounded-full bg-white/15 border border-white/20 text-[10px] font-bold uppercase tracking-[0.12em]">Tu regalo</span>
+              <p className="text-[20px] font-semibold mt-3">{stripTrailingZeros(coupon.value)}% OFF en tu próxima compra</p>
+              <div className="rounded-[12px] border border-dashed border-white/35 mt-4 py-4 text-center">
                 <p className="text-[22px] font-bold tracking-[0.12em] select-all">{coupon.code}</p>
               </div>
               <div className="mt-3">
@@ -541,14 +561,14 @@ export default function ReviewClient({ token }: { token: string }) {
           )}
 
           {lowestRating <= 2 && (
-            <div className="border border-black/15 p-5 mt-6">
+            <div className="hs-glass rounded-[16px] p-5 mt-6">
               <p className="text-[15px] font-semibold">¿Lo resolvemos?</p>
               <p className="text-sm text-black/60 mt-1">
                 Lamentamos que no haya estado a la altura. Escribinos y lo vemos con vos.
               </p>
               <a
                 href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola! Dejé una reseña del pedido #${data?.order_number} y quería contarles qué pasó`)}`}
-                className="mt-4 h-12 bg-black text-white text-sm font-semibold flex items-center justify-center"
+                className="mt-4 h-12 hs-glass-dark rounded-[12px] text-white text-[12px] font-bold uppercase tracking-[0.1em] flex items-center justify-center"
               >
                 Hablar por WhatsApp
               </a>
@@ -557,7 +577,7 @@ export default function ReviewClient({ token }: { token: string }) {
 
           <Link
             href="/"
-            className={`mt-6 h-12 text-sm font-semibold flex items-center justify-center ${coupon ? 'border border-black' : 'bg-black text-white'}`}
+            className={`mt-6 h-12 flex items-center justify-center ${coupon ? 'hs-glass rounded-[12px] text-black text-[12px] font-bold uppercase tracking-[0.1em]' : 'hs-glass-dark rounded-[12px] text-white text-[12px] font-bold uppercase tracking-[0.1em]'}`}
           >
             {coupon ? 'Usarlo en la tienda' : 'Ir a la tienda'}
           </Link>
@@ -580,7 +600,7 @@ export default function ReviewClient({ token }: { token: string }) {
   if (total === 0) {
     return (
       <StatusScreen title="Ya dejaste tu reseña" body="Gracias por tomarte el tiempo. Ya tenemos tu opinión de todos los productos de este pedido.">
-        <Link href="/" className="mt-8 h-12 max-w-[320px] mx-auto bg-black text-white text-sm font-semibold flex items-center justify-center">
+        <Link href="/" className="mt-8 h-12 max-w-[320px] mx-auto hs-glass-dark rounded-[12px] text-white text-[12px] font-bold uppercase tracking-[0.1em] flex items-center justify-center">
           Ir a la tienda
         </Link>
       </StatusScreen>
@@ -595,7 +615,10 @@ export default function ReviewClient({ token }: { token: string }) {
   const submitting = status === 'submitting';
 
   const footer = (
-    <div className="sticky bottom-0 bg-white border-t border-black/10 shrink-0">
+    <div
+      className="sticky bottom-0 z-20 shrink-0 border-t border-black/[0.06]"
+      style={{ background: 'var(--glass-sticky-bg)', backdropFilter: 'var(--glass-sticky-filter)', WebkitBackdropFilter: 'var(--glass-sticky-filter)' }}
+    >
       <div className="max-w-[480px] mx-auto px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
         {errorMsg && <p className="text-[12px] text-red-600 mb-2">{errorMsg}</p>}
         {isLast ? (
@@ -603,7 +626,7 @@ export default function ReviewClient({ token }: { token: string }) {
             type="button"
             onClick={submit}
             disabled={!anyRated || anyUploading || submitting}
-            className="w-full h-[52px] bg-black text-white text-[15px] font-semibold disabled:opacity-30 transition-opacity"
+            className="w-full h-[52px] hs-glass-dark rounded-[12px] text-white text-[12px] font-bold uppercase tracking-[0.1em] disabled:opacity-30 transition-opacity"
           >
             {submitting ? 'Enviando…' : anyUploading ? 'Subiendo fotos…' : total > 1 ? 'Enviar reseñas' : 'Enviar reseña'}
           </button>
@@ -611,7 +634,7 @@ export default function ReviewClient({ token }: { token: string }) {
           <button
             type="button"
             onClick={() => goTo(step + 1)}
-            className="w-full h-[52px] bg-black text-white text-[15px] font-semibold disabled:opacity-30"
+            className="w-full h-[52px] hs-glass-dark rounded-[12px] text-white text-[12px] font-bold uppercase tracking-[0.1em] disabled:opacity-30 transition-opacity"
             disabled={!rated}
           >
             Siguiente
@@ -630,20 +653,20 @@ export default function ReviewClient({ token }: { token: string }) {
   );
 
   return (
-    <Shell footer={footer}>
+    <Shell footer={footer} backdrop={current.image}>
       <div ref={topRef} className="scroll-mt-4" />
 
       {/* Encabezado */}
       <section className="pt-7">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-black/50">Pedido #{data.order_number}</p>
-        <h1 className="text-[26px] font-semibold leading-[1.15] mt-2">
+        <span className="hs-glass rounded-full inline-flex items-center h-7 px-3 text-[10px] font-bold uppercase tracking-[0.12em]">Pedido #{data.order_number}</span>
+        <h1 className="text-[26px] font-semibold leading-[1.15] mt-3">
           {name ? `${name}, ¿qué tal te quedó?` : '¿Qué tal te quedó?'}
         </h1>
         <p className="text-sm text-black/60 mt-2">Te lleva un minuto. Tu opinión ayuda a otros a elegir.</p>
       </section>
 
       {data.incentive && step === 0 && (
-        <div className="bg-black text-white px-4 py-3.5 mt-5 flex items-center gap-3">
+        <div className="hs-glass-dark rounded-[12px] text-white px-4 py-3.5 mt-5 flex items-center gap-3">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="shrink-0" aria-hidden>
             <rect x="3" y="8" width="18" height="13" />
             <path d="M3 12h18M12 8v13M12 8c-1.5-3-6-3.5-6-1s4 1 6 1zm0 0c1.5-3 6-3.5 6-1s-4 1-6 1z" />
@@ -667,16 +690,16 @@ export default function ReviewClient({ token }: { token: string }) {
           </div>
           <div className="flex gap-1">
             {reviewable.map((item, i) => (
-              <div key={item.order_item_id} className={`h-[3px] flex-1 ${i <= step ? 'bg-black' : 'bg-black/10'}`} />
+              <div key={item.order_item_id} className={`h-[3px] flex-1 rounded-full ${i <= step ? 'bg-black' : 'bg-black/10'}`} />
             ))}
           </div>
         </div>
       )}
 
       {/* Producto */}
-      <section className="mt-6 pb-8">
+      <section className="hs-glass rounded-[16px] mt-6 mb-8 p-4">
         <div className="flex gap-4 items-center">
-          <div className="w-24 h-[120px] bg-[#f4f4f4] shrink-0 overflow-hidden">
+          <div className="w-24 h-[120px] bg-white/70 rounded-[10px] shrink-0 overflow-hidden">
             {current.image && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={current.image} alt="" className="w-full h-full object-cover" />
@@ -684,7 +707,11 @@ export default function ReviewClient({ token }: { token: string }) {
           </div>
           <div className="min-w-0">
             <p className="text-[15px] font-medium leading-snug">{title}</p>
-            {size && <p className="text-[13px] text-black/50 mt-1">Talle {size}</p>}
+            {size && (
+              <span className="mt-2 inline-flex items-center h-6 px-2.5 rounded-full bg-white/70 border border-black/10 text-[10px] font-bold uppercase tracking-[0.1em]">
+                Talle {size}
+              </span>
+            )}
           </div>
         </div>
 
@@ -728,7 +755,7 @@ export default function ReviewClient({ token }: { token: string }) {
               </label>
               <textarea
                 id={`txt-${current.order_item_id}`}
-                className="w-full border border-black/20 px-3 py-3 text-[16px] leading-snug focus:outline-none focus:border-black resize-none"
+                className="hs-glass w-full rounded-[12px] px-3.5 py-3 text-[16px] leading-snug outline-none resize-none placeholder:text-black/40"
                 rows={4}
                 maxLength={1800}
                 placeholder={placeholderFor(currentRow.rating)}
