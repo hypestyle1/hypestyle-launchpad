@@ -169,11 +169,6 @@ export default function Ficha(p: FichaProps) {
                   <Precio p={p} />
                 </div>
                 {mystery && <MysteryAhorro caja={mystery} />}
-                {preventa && (
-                  <p className="inline-flex w-fit items-center gap-2 rounded-full bg-[#0a0a0a] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-white">
-                    {preventa.nota}
-                  </p>
-                )}
                 {p.privateAccess ? <NotaPreventa pa={p.privateAccess} /> : <LineaResenas />}
               </div>
               <div className="lg:hidden flex-shrink-0 pt-0.5"><InterruptorModelo p={p} /></div>

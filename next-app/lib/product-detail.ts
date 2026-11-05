@@ -181,9 +181,16 @@ const HSTARS_PANT_COLORWAYS = [
   { label: 'Pink', value: '#f28ac4', slug: 'sweatpant-pink', image: `${WP}/2026/04/pink-pant-frente-d2aece9f35633cd72f17766492253841-1024-1024.png` },
   { label: 'Camo', value: '#5b6b3a', slug: 'sweatpant-camo', image: `${WP}/2026/04/pantcamo_frente-694798096206866e2a17752460835900-1024-1024.png` },
 ];
+// Camo Drop (04/11, Valentín): el par es Alga (olive, estampa rosa) y
+// Chocolate (brown = #916, estampa naranja). La píldora lleva el color de la
+// estampa, no el del camo. La Zip Pink salió del grupo: sin stock.
 const ZIP_HOODIE_COLORWAYS = [
-  { label: 'Camo', value: '#5b6b3a', slug: 'zip-hoodie-camo', image: `${WP}/2026/04/zipcamo_frente-f2a08e52e942c03cff17752461590807-1024-1024.png` },
-  { label: 'Pink', value: '#f28ac4', slug: 'zip-hoodie-pink', image: `${WP}/2026/04/pink-zip-frente-fb1312b6e42f00f03717766492551864-1024-1024.png` },
+  { label: 'Camo Alga',      value: '#e58ab8', slug: 'zip-hoodie-camo-olive', image: '/cyber/drops/camo/zip-hoodie-olive.webp' },
+  { label: 'Camo Chocolate', value: '#f08a1c', slug: 'zip-hoodie-camo',       image: '/cyber/drops/camo/zip-hoodie-brown.webp' },
+];
+const JORT_CAMO_COLORWAYS = [
+  { label: 'Camo Alga',      value: '#e58ab8', slug: 'jort-camo-olive', image: '/cyber/drops/camo/jort-olive.webp' },
+  { label: 'Camo Chocolate', value: '#f08a1c', slug: 'jort-camo-brown', image: '/cyber/drops/camo/jort-brown.webp' },
 ];
 const HS_CO_HOODIE_COLORWAYS = [
   { label: 'Melange', value: '#d6d6d6', slug: 'hs-co-green-hoodie', image: `${WP}/2026/08/hs-Co-melange-y-verde-esmeralda-2.png` },
@@ -321,7 +328,9 @@ const COLORWAYS: Record<string, typeof HALF_ZIP_COLORWAYS> = {
   'sweatpant-pink': HSTARS_PANT_COLORWAYS,
   'sweatpant-camo': HSTARS_PANT_COLORWAYS,
   'zip-hoodie-camo': ZIP_HOODIE_COLORWAYS,
-  'zip-hoodie-pink': ZIP_HOODIE_COLORWAYS,
+  'zip-hoodie-camo-olive': ZIP_HOODIE_COLORWAYS,
+  'jort-camo-olive': JORT_CAMO_COLORWAYS,
+  'jort-camo-brown': JORT_CAMO_COLORWAYS,
   'hs-co-green-hoodie': HS_CO_HOODIE_COLORWAYS,
   'hs-co-grey-hoodie': HS_CO_HOODIE_COLORWAYS,
   'he-died-so-i-could-live-melange-hoodie': HE_DIED_HOODIE_COLORWAYS,
