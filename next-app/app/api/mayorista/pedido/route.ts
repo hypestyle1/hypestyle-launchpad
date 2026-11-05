@@ -15,6 +15,7 @@ import { parseBloqueo, mensajeBloqueo } from '@/lib/mayorista-exclusividad';
 import { IDEMPOTENCY_META, isValidIdempotencyKey, ordersWithKey, replayOf, resolveDuplicate } from '@/lib/mayorista-idempotency';
 import { pagoInfoFromEnv, pagoHtml } from '@/lib/mayorista-pago';
 import { rateLimited, RATE_LIMITS } from '@/lib/rate-limit';
+import { paymentDeadline, paymentWindowFor, fmtDeadlineAR, PAGO_VENCE_META } from '@/lib/mayorista-flash';
 
 // Woo puede tardar cerca de un minuto en crear una orden grande. Si la función
 // se corta antes, la orden queda creada pero el cliente ve un error.
@@ -75,6 +76,12 @@ interface ShippingInfo {
 
 // Líneas de total de los mails: si se usó saldo a favor, se muestra el
 // subtotal, el descuento y lo que queda a pagar.
+// Campaña con plazo de pago (lib/mayorista-flash.ts): el aviso va pegado al total.
+function pagoVenceHtml(campaign: CampaignSummary, total: number): string {
+  if (!campaign?.pagoVence) return '';
+  return `<p style="font-size:13px;margin-top:10px;padding:8px 10px;border:1px solid #c00;color:#c00">El precio ${esc(campaign.name)} vale si la transferencia se acredita antes del <b>${esc(fmtDeadlineAR(campaign.pagoVence))} (hora Argentina)</b>. Pasado ese plazo, el pedido se cobra a precio mayorista normal: ${formatArs(total + campaign.discountTotal)}.</p>`;
+}
+
 function totalsHtml(total: number, credit: number, campaign?: { name: string; discountTotal: number }): string {
   // Con campaña: el subtotal a mayorista normal, el descuento de la campaña y
   // el total ya con descuento (que es `total`).
@@ -120,7 +127,7 @@ async function saveCustomerProfile(customerId: number, billing: Record<string, u
   if (!res.ok) console.error('[mayorista/pedido] no se pudo guardar el perfil del cliente:', res.status);
 }
 
-type CampaignSummary = { id: string; name: string; discountTotal: number } | null;
+type CampaignSummary = { id: string; name: string; discountTotal: number; pagoVence?: string } | null;
 
 async function sendAdminEmail(label: string, shipping: ShippingInfo, items: PedidoItem[], total: number, credit: number, orderNumber: string, campaign: CampaignSummary, consignacion: { pct: number } | null) {
   if (!BREVO_API_KEY) return;
@@ -148,6 +155,7 @@ async function sendAdminEmail(label: string, shipping: ShippingInfo, items: Pedi
       <tbody>${rows}</tbody>
     </table>
     ${totalsHtml(total, credit, campaign)}
+    ${pagoVenceHtml(campaign, total)}
     <p style="font-size:12px;color:#888">Orden WooCommerce #${orderNumber} (on-hold).</p>
   </div>`;
 
@@ -192,7 +200,7 @@ async function sendCustomerEmail(toEmail: string, items: PedidoItem[], total: nu
     </table>
     ${consignacion
       ? `<p style="font-size:13px;margin-top:10px">Mercadería entregada, a precio de lista: <b>${formatArs(total)}</b></p>`
-      : totalsHtml(total, credit, campaign) + pagoHtml(pagoInfoFromEnv(), orderNumber)}
+      : totalsHtml(total, credit, campaign) + pagoVenceHtml(campaign, total) + pagoHtml(pagoInfoFromEnv(), orderNumber)}
   </div>`;
 
   await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -334,7 +342,11 @@ export async function POST(req: NextRequest) {
 
     const appliedCampaign = pricing.lines.find(l => l.campaign)?.campaign ?? null;
     const campaignSummary: CampaignSummary = appliedCampaign
-      ? { id: appliedCampaign.campaignId, name: appliedCampaign.campaignName, discountTotal: pricing.discountTotal }
+      ? {
+          id: appliedCampaign.campaignId, name: appliedCampaign.campaignName, discountTotal: pricing.discountTotal,
+          // Plazo de pago (Flash Cyber): corre desde que se confirma el pedido.
+          ...(!consignacion && paymentWindowFor(appliedCampaign.campaignId) ? { pagoVence: paymentDeadline(appliedCampaign.campaignId)! } : {}),
+        }
       : null;
 
     // Para los mails: las líneas con el precio que efectivamente se cobra.
@@ -472,6 +484,7 @@ export async function POST(req: NextRequest) {
           { key: '_wholesale_campaign_id', value: campaignSummary.id },
           { key: '_wholesale_campaign_name', value: campaignSummary.name },
           { key: '_wholesale_campaign_discount_total', value: String(campaignSummary.discountTotal) },
+          ...(campaignSummary.pagoVence ? [{ key: PAGO_VENCE_META, value: campaignSummary.pagoVence }] : []),
         ] : []),
         { key: '_es_mayorista', value: 'true' },
         // Consignación: la orden no es una venta cobrada, es mercadería

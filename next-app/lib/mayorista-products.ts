@@ -90,6 +90,9 @@ export interface MayoristaProduct {
   // Fecha de alta en Woo (ISO, sin zona). Para "Novedades" y el badge "Nuevo"
   // (lib/mayorista-catalog-sort.ts).
   createdAt?: string;
+  // Unidades pagadas en los últimos 60 días (tienda + mayoristas), para
+  // "Más vendidos". Las carga la página en el server (lib/mayorista-best-sellers.ts).
+  sales?: number;
 }
 
 /**

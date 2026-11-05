@@ -5,11 +5,12 @@
 // novedades (lo último que entró a Woo) y precio. El badge "Nuevo" marca lo
 // cargado en los últimos NEW_DAYS, salvo lo que ya lleva "Nuevo drop".
 
-import type { MayoristaProduct } from './mayorista-products';
+import { isPurchasable, type MayoristaProduct } from './mayorista-products';
 
-export type CatalogSort = 'disponibilidad' | 'novedades' | 'precio-asc' | 'precio-desc';
+export type CatalogSort = 'mas-vendidos' | 'disponibilidad' | 'novedades' | 'precio-asc' | 'precio-desc';
 
 export const CATALOG_SORT_LABELS: Record<CatalogSort, string> = {
+  'mas-vendidos': 'Más vendidos',
   disponibilidad: 'Disponibilidad',
   novedades: 'Novedades',
   'precio-asc': 'Precio: menor a mayor',
@@ -38,6 +39,9 @@ export function sortCatalog(products: MayoristaProduct[], sort: CatalogSort): Ma
   const time = (p: MayoristaProduct) => { const t = Date.parse(p.createdAt ?? ''); return Number.isFinite(t) ? t : 0; };
   withIndex.sort((a, b) => {
     switch (sort) {
+      // Más vendidos (unidades pagadas 60 días, lib/mayorista-best-sellers.ts):
+      // lo pedible primero; empate → orden de disponibilidad.
+      case 'mas-vendidos': return Number(isPurchasable(b.p)) - Number(isPurchasable(a.p)) || (b.p.sales ?? 0) - (a.p.sales ?? 0) || a.i - b.i;
       case 'novedades': return time(b.p) - time(a.p) || a.i - b.i;
       case 'precio-asc': return effectivePrice(a.p) - effectivePrice(b.p) || a.i - b.i;
       case 'precio-desc': return effectivePrice(b.p) - effectivePrice(a.p) || a.i - b.i;

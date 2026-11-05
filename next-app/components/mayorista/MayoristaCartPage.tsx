@@ -19,6 +19,7 @@ import { MIN_ORDER_UNAVAILABLE_MESSAGE, WHATSAPP_URL } from '@/lib/mayorista-cop
 import { newIdempotencyKey } from '@/lib/mayorista-idempotency';
 import { pagoSteps, pagoDetailLines, type PagoInfo } from '@/lib/mayorista-pago';
 import MayoristaExclusividadBanner from './MayoristaExclusividadBanner';
+import { paymentWindowFor, paymentWindowCopy, fmtDeadlineAR } from '@/lib/mayorista-flash';
 
 // Cuánto se espera a que aparezca la orden cuando el envío falló sin respuesta
 // clara: Woo tardó ~57 s en crear una de 42 líneas.
@@ -185,7 +186,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
   const [recentOrder, setRecentOrder] = useState<{ order: RecentOrder; confirmPrices: boolean } | null>(null);
   const [recentNotice, setRecentNotice] = useState<RecentOrder | null>(null);
   const [verifying, setVerifying] = useState(false);
-  const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number; campaign?: { name: string; discountTotal: number } | null } | null>(null);
+  const [confirmed, setConfirmed] = useState<{ orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number; campaign?: { name: string; discountTotal: number; pagoVence?: string } | null } | null>(null);
   // Mínimo que va a validar el servidor (override, campaña o general). Mientras
   // es null no se puede continuar: si WordPress no respondió, `minOrderError`
   // lo explica y ofrece reintentar en vez de dejar pasar un pedido que el
@@ -412,7 +413,7 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
     return found;
   }
 
-  function showConfirmed(order: { orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number; campaign?: { name: string; discountTotal: number } | null }) {
+  function showConfirmed(order: { orderNumber: string; items: MayoristaCartItem[]; total: number; creditUsed: number; campaign?: { name: string; discountTotal: number; pagoVence?: string } | null }) {
     setPriceChange(null);
     setRecentOrder(null);
     setRecentNotice(null);
@@ -592,6 +593,11 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
               <span className="text-foreground/80">Ahorraste con {confirmed.campaign.name}</span>
               <span className="font-medium">−{fmt(confirmed.campaign.discountTotal)}</span>
             </div>
+          )}
+          {confirmed.campaign?.pagoVence && (
+            <p className="mt-3 rounded-[10px] border border-sale px-3 py-2 text-[12px] leading-snug text-sale">
+              Transferí antes del <b>{fmtDeadlineAR(confirmed.campaign.pagoVence)}</b> (hora Argentina) para mantener el precio {confirmed.campaign.name}. Después de ese plazo el pedido se cobra a precio mayorista normal: {fmt(confirmed.total + confirmed.campaign.discountTotal)}.
+            </p>
           )}
           {confirmed.creditUsed > 0 && (
             <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-[13px]">
@@ -874,6 +880,13 @@ export default function MayoristaCartPage({ catalog = [], campaignName = null }:
               <p className="text-[12px] text-muted-foreground">No pagás nada ahora. Liquidás a medida que vendés y lo que no se venda vuelve.</p>
             )}
             {campaignDiscount > 0 && <p className="text-[12px] text-sale">Ahorrás {fmt(campaignDiscount)} con {name}.</p>}
+            {(() => {
+              // Campaña con plazo de pago (Flash Cyber): se avisa antes de confirmar.
+              const hours = campaignDiscount > 0 && !consignacion
+                ? items.map(i => paymentWindowFor(lineInfo[lineKey(i)]?.campaign?.id)).find((h): h is number => h != null) ?? null
+                : null;
+              return hours ? <p className="rounded-[10px] border border-sale px-3 py-2 text-[12px] leading-snug text-sale">{paymentWindowCopy(hours)}</p> : null;
+            })()}
             <MayoristaDivisaNota className="pt-1" />
             {creditUsed > 0 && (
               <>

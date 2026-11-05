@@ -5,6 +5,7 @@ import { fetchMayoristaProducts } from '@/lib/mayorista-products';
 import { loadCampaignsForPortal } from '@/lib/mayorista-campaigns-portal';
 import { decorateCatalog, campaignBanner } from '@/lib/mayorista-campaign-view';
 import { fetchMayoristaDrop } from '@/lib/mayorista-drop-server';
+import { fetchBestSellerUnits } from '@/lib/mayorista-best-sellers';
 
 // El catálogo se decora con la campaña vigente en el servidor (misma lib que
 // usa el pedido). ?preview=<token> ve una campaña en borrador (ver
@@ -15,8 +16,13 @@ export default async function MayoristasPage({ searchParams }: { searchParams?: 
   // El drop nuevo (colección de Private Access) entra antes que al público:
   // ver lib/mayorista-drop.ts. Si falla, el catálogo sigue sin él.
   const drop = await fetchMayoristaDrop().catch(() => null);
-  const [products, campaigns] = await Promise.all([fetchMayoristaProducts(drop), loadCampaignsForPortal(searchParams?.preview)]);
-  const decorated = decorateCatalog(products, campaigns);
+  const [products, campaigns, units] = await Promise.all([
+    fetchMayoristaProducts(drop),
+    loadCampaignsForPortal(searchParams?.preview),
+    fetchBestSellerUnits().catch(() => new Map<number, number>()),
+  ]);
+  // "Más vendidos" (orden por defecto del catálogo): unidades pagadas 60 días.
+  const decorated = decorateCatalog(products, campaigns).map(p => ({ ...p, sales: units.get(p.productId) ?? 0 }));
   const banner = campaignBanner(products, campaigns);
   const preview = !!searchParams?.preview && !!banner;
   const dropCount = decorated.filter(p => p.drop).length;

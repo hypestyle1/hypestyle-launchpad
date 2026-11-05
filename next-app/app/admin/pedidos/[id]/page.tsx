@@ -7,6 +7,9 @@ import { MpRefundBlock } from '@/components/admin/MpRefund';
 import { WC_ORDER_STATUSES, WC_STATUS_LABELS } from '@/lib/wc-order-status';
 import type { Entrega } from '@/lib/orders-entrega';
 import { fetchQueEscribe } from '@/lib/admin-pedidos-cache';
+import { fmtDeadlineAR } from '@/lib/mayorista-flash';
+
+const fmtArs = (n: number) => '$' + Math.round(n).toLocaleString('es-AR');
 
 const WP_SECRET_KEY = 'hype_admin_key';
 const SITE_URL = 'https://hypestyle.com.ar';
@@ -39,6 +42,7 @@ type Order = {
   total: number; shipping_total: number; discount_total: number;
   feeLines: { id: number; name: string; total: number }[];
   isMayorista: boolean;
+  wholesaleCampaign?: { name: string; discountTotal: number; pagoVence: string | null } | null;
   isGift: boolean;
   payment_method: string; payment_method_title: string;
   payment?: PaymentInfo;
@@ -1111,6 +1115,23 @@ export default function OrderDetailPage() {
                     <div className="mt-2 pt-2 border-t border-border text-[12px]">
                       <span className="text-muted-foreground/70">Envío:</span>{' '}
                       <span className="font-medium text-foreground">{order.envio?.resumen || `Via Cargo — a sucursal · ${order.viaCargoSucursal}`}</span>
+                    </div>
+                  )}
+                  {order.wholesaleCampaign && (
+                    <div className="mt-2 pt-2 border-t border-border text-[12px] space-y-0.5">
+                      <div>
+                        <span className="text-muted-foreground/70">Campaña:</span>{' '}
+                        <span className="font-medium text-foreground">{order.wholesaleCampaign.name} · −{fmtArs(order.wholesaleCampaign.discountTotal)}</span>
+                      </div>
+                      {order.wholesaleCampaign.pagoVence && (() => {
+                        const vencido = Date.now() > new Date(order.wholesaleCampaign.pagoVence).getTime();
+                        return (
+                          <div className={vencido ? 'text-red-700 font-medium' : 'text-foreground'}>
+                            Pago {vencido ? 'VENCIDO' : 'vence'}: {fmtDeadlineAR(order.wholesaleCampaign.pagoVence)} (ART)
+                            {vencido && order.status === 'on-hold' && ' · si no pagó, cobrar a precio mayorista normal: ' + fmtArs(order.total + order.wholesaleCampaign.discountTotal)}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </>

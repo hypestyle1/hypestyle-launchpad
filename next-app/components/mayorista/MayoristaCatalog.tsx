@@ -8,6 +8,7 @@ import MayoristaDropBanner, { type MayoristaDropProps } from './MayoristaDropBan
 import MayoristaDropPopup from './MayoristaDropPopup';
 import type { MayoristaProduct } from '@/lib/mayorista-products';
 import { filterByPromo, sortPromoFirst, type CampaignBanner, type PromoFilter } from '@/lib/mayorista-campaign-view';
+import { WHOLESALE_FACTOR } from '@/lib/mayorista-pricing';
 import { sortCatalog, isNewProduct, CATALOG_SORT_LABELS, type CatalogSort } from '@/lib/mayorista-catalog-sort';
 import { useMayoristaPerfil } from '@/context/MayoristaPerfilContext';
 import MayoristaDivisaNota from './MayoristaDivisaNota';
@@ -29,7 +30,7 @@ export default function MayoristaCatalog({ products, banner, preview, drop }: { 
   const [promo, setPromo] = useState<PromoFilter>('all');
   const [onlyDrop, setOnlyDrop] = useState(false);
   const [onlyNew, setOnlyNew] = useState(false);
-  const [sort, setSort] = useState<CatalogSort>('disponibilidad');
+  const [sort, setSort] = useState<CatalogSort>('mas-vendidos');
   const [pillarsOpen, setPillarsOpen] = useState(true);
   const catalogRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +59,9 @@ export default function MayoristaCatalog({ products, banner, preview, drop }: { 
     return matchesCategory && matchesSearch;
   }), sort);
   const promoActive = promo !== 'all';
+  // "55% off sobre lista": el extra de la campaña sobre el 50% mayorista.
+  const listOff = banner && banner.maxDiscount > 0 ? Math.round((1 - WHOLESALE_FACTOR * (1 - banner.maxDiscount)) * 100) : 0;
+  const endsShort = banner ? (() => { const parts = Object.fromEntries(new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'long', day: 'numeric', month: 'numeric' }).formatToParts(new Date(banner.endsAt)).map(x => [x.type, x.value])); return `${parts.weekday} ${parts.day}/${parts.month}`; })() : '';
   const anyFilter = search !== '' || category !== 'Todos' || promoActive || onlyDrop || onlyNew;
   const scrollToCatalog = () => catalogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const showDrop = () => { setOnlyDrop(true); setOnlyNew(false); setPromo('all'); setCategory('Todos'); scrollToCatalog(); };
@@ -95,7 +99,7 @@ export default function MayoristaCatalog({ products, banner, preview, drop }: { 
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
           <h2 className="text-lg font-bold tracking-tight">{onlyDrop && drop ? `${drop.name}${drop.subtitle ? ` ${drop.subtitle}` : ''}` : promoActive && banner ? banner.name : onlyNew ? 'Novedades' : 'Catálogo'}</h2>
           <p className="text-[12px] text-muted-foreground">
-            {onlyDrop && drop ? `${filtered.length} modelos nuevos · ${drop.beforePublic ? `antes que el público (sale el ${drop.publicOpenLabel})` : 'recién salidos'}` : promoActive && banner ? `${filtered.length} productos en ${banner.badge.toLowerCase()} · precio mayorista con el extra ya aplicado` : consignacion ? `Precios de lista. De cada venta te quedás con el ${consignacion.pct}% y nos liquidás el resto.` : '50% del PVP. Pedís hoy, lo preparamos esta semana.'}
+            {onlyDrop && drop ? `${filtered.length} modelos nuevos · ${drop.beforePublic ? `antes que el público (sale el ${drop.publicOpenLabel})` : 'recién salidos'}` : promoActive && banner ? `${filtered.length} productos en ${banner.badge.toLowerCase()} · precio con el ${Math.round(banner.maxDiscount * 100)}% adicional ya aplicado` : consignacion ? `Precios de lista. De cada venta te quedás con el ${consignacion.pct}% y nos liquidás el resto.` : banner && listOff ? `${banner.badge}: ${listOff}% off sobre lista hasta el ${endsShort}. Pedís hoy, lo preparamos esta semana.` : '50% del PVP. Pedís hoy, lo preparamos esta semana.'}
           </p>
         </div>
         <MayoristaDivisaNota className="mb-3" />
@@ -126,7 +130,7 @@ export default function MayoristaCatalog({ products, banner, preview, drop }: { 
             <button type="button" aria-pressed={promo === 'promo'} onClick={() => setPromo(promo === 'promo' ? 'all' : 'promo')} className={chip(promo === 'promo')}>
               Solo {banner.badge.toLowerCase()}
             </button>
-            {banner.groups.filter(g => g.count > 0).map(g => (
+            {banner.groups.filter(g => g.count > 0 && !(banner.groups.filter(x => x.count > 0).length === 1 && g.label.toLowerCase() === banner.badge.toLowerCase())).map(g => (
               <button key={g.key} type="button" aria-pressed={typeof promo === 'object' && promo.group === g.key} onClick={() => setPromo(typeof promo === 'object' && promo.group === g.key ? 'all' : { group: g.key })} className={chip(typeof promo === 'object' && promo.group === g.key)}>
                 {g.label}
               </button>

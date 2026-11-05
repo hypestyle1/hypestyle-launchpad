@@ -38,6 +38,8 @@ export interface CampaignBanner {
   endsAt: string;
   /** Mayor descuento de la campaña, para "HASTA 20% EXTRA". */
   maxDiscount: number;
+  /** Menor descuento > 0: si es igual al máximo, el hero dice "10% adicional" sin "Hasta". */
+  minDiscount: number;
   groups: { key: string; label: string; discount: number; count: number }[];
   /** Productos de la campaña que están en el catálogo (con stock). */
   productCount: number;
@@ -85,6 +87,7 @@ export function campaignBanner(products: MayoristaProduct[], campaigns: Wholesal
     cta: c.cta || 'Ver la liquidación', secondary: c.secondary || NEXT_DROP_TEXT,
     startsAt: c.startsAt, endsAt: c.endsAt,
     maxDiscount: Math.max(0, ...c.items.map(i => discountOfItem(c, i))),
+    minDiscount: Math.min(...c.items.map(i => discountOfItem(c, i)).filter(d => d > 0), 1),
     groups,
     productCount: c.items.filter(i => inCatalog.has(i.productId)).length,
   };
