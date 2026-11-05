@@ -180,6 +180,26 @@ function sinRetrocesos(filas: FilaMolde[], campo: 'ancho' | 'cintura'): number[]
   });
 }
 
+/**
+ * En mujer, las prendas unisex buscan la mitad de holgura de pecho.
+ *
+ * Las holguras de [[moldes.ts]] están pensadas para un cuerpo de hombre, donde
+ * el contorno de pecho sigue al ancho de espalda. En una mujer el busto no es
+ * espalda: un buzo boxy ya le cae suelto con bastante menos holgura. Con la
+ * holgura entera, para conseguir los 30 cm del boxy el recomendador le daba L
+ * a una chica de 1,55 m y 77 kg — 9 cm más de largo y de manga de lo que pide
+ * su altura (Valentín, 04/11/2026, Zip Hoodie Camo). Con la mitad le da S.
+ *
+ * Solo toca las prendas con holgura positiva: los tops (holgura negativa) ya
+ * están cortados para mujer.
+ */
+export const FACTOR_HOLGURA_MUJER = 0.5;
+
+export function holguraPechoPara(molde: Molde, genero: Genero): number {
+  const h = molde.holguraPecho ?? 10;
+  return genero === 'mujer' && h > 0 ? h * FACTOR_HOLGURA_MUJER : h;
+}
+
 interface EjeCalculado {
   eje: Eje;
   objetivo: number;
@@ -195,7 +215,7 @@ function ejesDe(molde: Molde, cuerpo: Cuerpo): EjeCalculado[] {
     // La tabla da la mitad del contorno: x2 para compararlo con el cuerpo.
     ejes.push({
       eje: 'pecho',
-      objetivo: cm.pecho + (molde.holguraPecho ?? 10),
+      objetivo: cm.pecho + holguraPechoPara(molde, cuerpo.genero),
       valores: sinRetrocesos(molde.filas, 'ancho').map(v => v * 2),
     });
   } else {
