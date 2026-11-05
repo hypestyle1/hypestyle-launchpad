@@ -163,6 +163,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     discount_total:       parseFloat(o.discount_total),
     feeLines: (o.fee_lines as any[])?.map((f: any) => ({ id: f.id, name: f.name, total: parseFloat(f.total) })) || [],
     isMayorista: getMeta('_es_mayorista') === 'true',
+    // Campaña mayorista con plazo de pago (Flash Cyber, lib/mayorista-flash.ts).
+    wholesaleCampaign: getMeta('_wholesale_campaign_id')
+      ? {
+          name: getMeta('_wholesale_campaign_name'),
+          discountTotal: Number(getMeta('_wholesale_campaign_discount_total')) || 0,
+          pagoVence: getMeta('_wholesale_pago_vence') || null,
+        }
+      : null,
     isGift: getMeta('_es_regalo') === 'true',
     payment_method:       o.payment_method,
     payment_method_title: o.payment_method_title,
