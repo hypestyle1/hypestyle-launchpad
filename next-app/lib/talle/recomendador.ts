@@ -195,6 +195,14 @@ function sinRetrocesos(filas: FilaMolde[], campo: 'ancho' | 'cintura'): number[]
  */
 export const FACTOR_HOLGURA_MUJER = 0.5;
 
+/**
+ * En mujer y prenda unisex, que sobre pecho pesa la mitad. Sin esto, una mujer
+ * alta y con algo de peso (1,75 m / 80 kg) recibía S en el buzo boxy aunque le
+ * quedaba 3 cm corto: el pecho suelto de la M pesaba más que el largo
+ * (Valentín, 05/11/2026). Quedarse corto de pecho sigue castigándose entero.
+ */
+export const CASTIGO_SUELTO_MUJER = 0.5;
+
 export function holguraPechoPara(molde: Molde, genero: Genero): number {
   const h = molde.holguraPecho ?? 10;
   return genero === 'mujer' && h > 0 ? h * FACTOR_HOLGURA_MUJER : h;
@@ -288,13 +296,15 @@ export function recomendar(molde: Molde, cuerpo: Cuerpo, tallesConStock?: string
 
   const pesoTotal = ejes.reduce((s, e) => s + PESO_EJE[e.eje], 0);
 
+  // En mujer, una prenda unisex que sobra de pecho no molesta: que decida el largo.
+  const sueltoSobra = cuerpo.genero === 'mujer' && (molde.holguraPecho ?? 10) > 0;
   const candidatos: Candidato[] = molde.filas.map((fila, i) => {
     let puntaje = 0;
     const lecturas: Lectura[] = [];
     for (const e of ejes) {
       const desvio = e.valores[i] - e.objetivo;
       const unidades = desvio / TOLERANCIA[e.eje];
-      const castigo = desvio < 0 ? CASTIGO_CHICO : 1;
+      const castigo = desvio < 0 ? CASTIGO_CHICO : sueltoSobra && e.eje === 'pecho' ? CASTIGO_SUELTO_MUJER : 1;
       puntaje += (PESO_EJE[e.eje] / pesoTotal) * (unidades * castigo) ** 2;
       lecturas.push(leer(e.eje, desvio));
     }

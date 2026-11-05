@@ -166,6 +166,12 @@ describe('recomendar — mujer en prendas unisex', () => {
     }
   });
 
+  it("a una mujer alta no le da un boxy corto", () => {
+    // 1,75 m / 80 kg: la S le queda 3 cm corta de largo (Valentín, 05/11/2026).
+    expect(talle("buzo-boxy", mujer(175, 80))).toBe("M");
+    expect(talle("buzo-boxy", mujer(155, 77))).toBe("S");
+  });
+
   it('no toca a hombre', () => {
     expect(talle('buzo-boxy', hombre(178, 80))).toBe('L');
     expect(talle('remera-boxy', hombre(178, 80))).toBe('M');
