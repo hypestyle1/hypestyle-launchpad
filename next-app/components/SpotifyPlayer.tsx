@@ -28,7 +28,9 @@ export default function SpotifyPlayer() {
     pathname?.startsWith('/checkout') ||
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/mayoristas') ||
-    pathname?.startsWith('/cyberhype')
+    pathname?.startsWith('/cyberhype') ||
+    pathname?.startsWith('/review/') ||
+    pathname?.startsWith('/resena')
   ) return null;
 
   function toggle() {

@@ -25,7 +25,9 @@ export default function CookieBanner() {
   const { t } = useLocale();
   const pathname = usePathname();
   const boxRef = useRef<HTMLDivElement>(null);
-  const isAdmin = !!pathname?.startsWith("/admin");
+  // En /review/{token} el cartel tapaba el botón de enviar (fijo al pie). El
+  // consentimiento no cambia: se sigue pidiendo en el resto del sitio.
+  const isAdmin = !!pathname?.startsWith("/admin") || !!pathname?.startsWith("/review/");
   // Mientras el cartel está abajo, WhatsApp, el reproductor y la pastilla de reseñas suben.
   useBottomShift(boxRef, bannerOpen && !isAdmin);
 
