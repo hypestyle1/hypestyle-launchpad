@@ -61,7 +61,7 @@ export const revalidate = 60;
  */
 class CatalogoNoDisponible extends Error {}
 const proteger = crearCortacircuitos(60_000);
-const nodosCompartidos = unstable_cache(() => proteger(leerNodos), ['api-products-nodos-v1'], { revalidate: 60 });
+const nodosCompartidos = unstable_cache(() => proteger(leerNodos), ['api-products-nodos-v1'], { revalidate: 300 });
 
 export async function GET() {
   let nodos: any[];

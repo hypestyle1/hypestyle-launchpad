@@ -15,7 +15,7 @@ describe('/api/products', () => {
     mocks.fetch.mockResolvedValueOnce(pagina([{ id: '1', slug: 'remera' }, { id: '2', slug: 'gift-card' }, { id: '1', slug: 'remera' }]));
     const res = await GET();
     expect((await res.json()).products.nodes).toEqual([{ id: '1', slug: 'remera' }]);
-    expect(mocks.cached).toContainEqual({ key: ['api-products-nodos-v1'], opts: { revalidate: 60 } });
+    expect(mocks.cached).toContainEqual({ key: ['api-products-nodos-v1'], opts: { revalidate: 300 } });
     const [, init, opts] = mocks.fetch.mock.calls[0];
     expect(init.cache).toBe('no-store');
     expect(opts).toEqual({ retries: 0, timeoutMs: 25_000 });

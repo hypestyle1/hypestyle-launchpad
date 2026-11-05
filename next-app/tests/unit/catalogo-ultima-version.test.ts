@@ -58,7 +58,7 @@ describe('catálogo de los listados', () => {
     vi.doMock('next/cache', () => ({ unstable_cache: (fn: any, key: any, opts: any) => { llamadas.push({ key, opts }); return fn; } }));
     const { fetchCatalogForSsr } = await import('@/lib/catalog');
     expect(await fetchCatalogForSsr()).toEqual([{ slug: 'remera' }]);
-    expect(llamadas).toEqual([{ key: ['catalogo-ssr-v1'], opts: { revalidate: 60 } }]);
+    expect(llamadas).toEqual([{ key: ['catalogo-ssr-v1'], opts: { revalidate: 300 } }]);
     expect(fetchAllProductsDentroDeCache).toHaveBeenCalledWith({ retries: 0, timeoutMs: 25_000 });
   });
 });

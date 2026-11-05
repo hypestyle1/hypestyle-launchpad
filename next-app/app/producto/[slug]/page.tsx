@@ -43,7 +43,7 @@ const protegerFicha = crearCortacircuitosPorClave(60_000);
 const productoCompartido = unstable_cache(
   (slug: string) => protegerFicha(slug, () => fetchProductDetail(slug)),
   ['ficha-producto-v1'],
-  { revalidate: 60 },
+  { revalidate: 300 }, // 4/11: 60 s disparaba actualizaciones constantes contra WP con tráfico alto
 );
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
