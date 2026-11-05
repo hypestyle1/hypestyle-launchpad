@@ -21,6 +21,7 @@ const config: CollectionConfig = {
     { label: 'Zip Hoodie', slugs: ['zip-hoodie-camo-olive', 'zip-hoodie-camo'] },
     { label: 'Jort', slugs: ['jort-camo-olive', 'jort-camo-brown'] },
   ],
+  foto: { src: '/colecciones/camo-drop/zip-camo-chocolate-piso.webp', alt: 'Zip Hoodie Camo Chocolate sobre piso de hormigón' },
 };
 
 const PATH = '/colecciones/camo-drop';
