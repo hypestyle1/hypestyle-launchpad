@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { fetchQueEscribe } from '@/lib/admin-pedidos-cache';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 
@@ -180,7 +181,7 @@ export default function NuevoPedidoPage() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch('/api/admin/orders/create', {
+      const res = await fetchQueEscribe('/api/admin/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({

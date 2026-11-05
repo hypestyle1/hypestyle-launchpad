@@ -2,7 +2,8 @@
 
 import { Fragment, useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import PendienteEstampar, { POD_PENDIENTES_CACHE } from '@/components/admin/PendienteEstampar';
+import PendienteEstampar from '@/components/admin/PendienteEstampar';
+import { pedidosCache, invalidarCachePedidos } from '@/lib/admin-pedidos-cache';
 import GiftCardsPanel from '@/components/admin/GiftCardsPanel';
 import { HoldToConfirm } from '@/components/ui/hold-to-confirm';
 import OrderQuickView, { type OrderDetail } from '@/components/admin/OrderQuickView';
@@ -113,24 +114,11 @@ function fmtDate(s: string) {
        + ' · ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-/**
- * Lo que ya se trajo de WooCommerce vive en memoria hasta que se recarga la
- * página (F5), se toca "Actualizar" o se escribe algo. Ni el paso del tiempo, ni
- * volver a la pestaña desde el portal de Andreani, ni ir al detalle de un pedido
- * y volver disparan una consulta: cada lista de ~479 pedidos son varios segundos
- * de WP en Hostinger, y antes se pagaban cada vez que el equipo cambiaba de
- * pestaña. Está a nivel módulo (no en un ref) para sobrevivir al remontaje de
- * la página en la navegación interna; un F5 lo vacía. El encabezado muestra
- * siempre de cuándo es el dato.
- */
-const ORDERS_CACHE = new Map<string, { at: number; data: ApiPedidos }>();
-let COUNTS_CACHE: Counts | null = null;
+// Caché en memoria hasta F5 / "Actualizar" / una escritura: ver lib/admin-pedidos-cache.
+// El encabezado muestra siempre de cuándo es el dato.
+const ORDERS_CACHE = pedidosCache.orders as Map<string, { at: number; data: ApiPedidos }>;
 /** Al salir o con una clave rechazada: lo guardado no se le muestra a la próxima clave. */
-function olvidarCache() {
-  ORDERS_CACHE.clear();
-  COUNTS_CACHE = null;
-  POD_PENDIENTES_CACHE.data = null;
-}
+const olvidarCache = invalidarCachePedidos;
 
 function daysSince(s: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(s).getTime()) / 86400000));
@@ -302,7 +290,7 @@ export default function PedidosPage() {
       setCounts(data);
       // Sólo se guarda un conteo completo: uno a medias se vuelve a pedir al
       // remontar en vez de quedar fijo como si fuera bueno.
-      COUNTS_CACHE = data.ok ? data : null;
+      pedidosCache.counts = data.ok ? data : null;
       // La ruta ya distingue "cero" de "no se pudo consultar": los conteos que
       // fallaron vienen en null y el detalle en `errores`.
       setCountsError(data.ok ? null : `Contadores incompletos — ${(data.errores || []).join(' · ') || 'faltan pedidos de la consulta'}`);
@@ -313,7 +301,7 @@ export default function PedidosPage() {
 
   useEffect(() => {
     if (!authed || !adminKey) return;
-    if (COUNTS_CACHE) { setCounts(COUNTS_CACHE); return; }
+    if (pedidosCache.counts) { setCounts(pedidosCache.counts as Counts); return; }
     fetchCounts(adminKey);
   }, [authed, adminKey, fetchCounts]);
 

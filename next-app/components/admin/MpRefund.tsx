@@ -11,6 +11,7 @@
 // /api/admin/orders/[id]/refund (server-side, sección `reembolsos`).
 
 import { useCallback, useEffect, useState } from 'react';
+import { fetchQueEscribe } from '@/lib/admin-pedidos-cache';
 
 type HsRefund = {
   mpRefundId: string | null; paymentId: string; amount: number; type: 'full' | 'partial'; at: string; actor: string;
@@ -73,7 +74,7 @@ export function MpRefundBlock({ orderId, orderNumber, adminKey, mpUrl, isMp, onC
     setRepairing(mpRefundId);
     setRepairMsg('');
     try {
-      const r = await fetch(`/api/admin/orders/${orderId}/refund`, {
+      const r = await fetchQueEscribe(`/api/admin/orders/${orderId}/refund`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ action: 'repair', mpRefundId }),
       });

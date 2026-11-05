@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { POD_SIZES, SIN_TALLE, ordenTalle, type PodPendiente } from '@/lib/pod';
+import { pedidosCache } from '@/lib/admin-pedidos-cache';
 
 // Cola de estampado: las prendas print on demand de los pedidos que todavía
 // están por empaquetar. Son las únicas que hay que mandar a hacer — en cuanto
@@ -39,15 +40,11 @@ function comoTexto(data: PodPendiente): string {
   return out.join('\n').trim();
 }
 
-/**
- * La cola leída queda en memoria hasta F5 o el botón de actualizar: ir al
- * detalle de un pedido y volver remonta el panel y no tiene que volver a
- * pegarle a WP. La página de pedidos la vacía al salir.
- */
-export const POD_PENDIENTES_CACHE: { data: PodPendiente | null } = { data: null };
-
 export default function PendienteEstampar({ adminKey }: { adminKey: string }) {
-  const [data, setData]         = useState<PodPendiente | null>(POD_PENDIENTES_CACHE.data);
+  // La cola leída queda en memoria (lib/admin-pedidos-cache) hasta F5, el botón
+  // de actualizar o una escritura: ir al detalle de un pedido y volver remonta
+  // el panel y no tiene que volver a pegarle a WP.
+  const [data, setData]         = useState<PodPendiente | null>(pedidosCache.pod as PodPendiente | null);
   const [cargando, setCargando] = useState(false);
   const [error, setError]       = useState('');
   // Colapsado por defecto: abierto empujaba la lista de pedidos ~2 pantallas
@@ -76,7 +73,7 @@ export default function PendienteEstampar({ adminKey }: { adminKey: string }) {
         return;
       }
       setData(json); setError('');
-      POD_PENDIENTES_CACHE.data = json;
+      pedidosCache.pod = json;
     } catch {
       setError('Error al conectar.');
     } finally {
@@ -84,7 +81,7 @@ export default function PendienteEstampar({ adminKey }: { adminKey: string }) {
     }
   }, [adminKey]);
 
-  useEffect(() => { if (!POD_PENDIENTES_CACHE.data) load(); }, [load]);
+  useEffect(() => { if (!pedidosCache.pod) load(); }, [load]);
 
   const talles = useMemo(() => (data ? tallesDe(data) : []), [data]);
 

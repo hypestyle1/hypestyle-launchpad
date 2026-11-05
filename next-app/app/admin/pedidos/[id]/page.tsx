@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { MpRefundBlock } from '@/components/admin/MpRefund';
 import { WC_ORDER_STATUSES, WC_STATUS_LABELS } from '@/lib/wc-order-status';
 import type { Entrega } from '@/lib/orders-entrega';
+import { fetchQueEscribe } from '@/lib/admin-pedidos-cache';
 
 const WP_SECRET_KEY = 'hype_admin_key';
 const SITE_URL = 'https://hypestyle.com.ar';
@@ -212,7 +213,7 @@ export default function OrderDetailPage() {
       // es lo que quedó guardado en Woo, no lo que se pidió. Sin esto se perdían
       // las marcas de "enviado" (un estado que WC rechaza con 400) y cualquier
       // cambio que un plugin revirtiera después del PUT.
-      const res = await fetch('/api/admin/set-status', {
+      const res = await fetchQueEscribe('/api/admin/set-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ orderId: order.id, status: newStatus }),
@@ -241,7 +242,7 @@ export default function OrderDetailPage() {
   async function confirmCancel() {
     if (!order) return;
     setCancelLoading(true);
-    await fetch('/api/admin/set-status', {
+    await fetchQueEscribe('/api/admin/set-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
       body: JSON.stringify({ orderId: order.id, status: 'cancelled', restoreStock: cancelRestoreStock }),
@@ -249,7 +250,7 @@ export default function OrderDetailPage() {
     setStatus('cancelled');
     setOrder(prev => prev ? { ...prev, status: 'cancelled' } : prev);
     if (cancelNotify) {
-      await fetch(`/api/admin/send-order-emails?order_id=${order.id}&action=cancellation`, {
+      await fetchQueEscribe(`/api/admin/send-order-emails?order_id=${order.id}&action=cancellation`, {
         headers: { 'x-admin-key': adminKey },
       });
     }
@@ -261,7 +262,7 @@ export default function OrderDetailPage() {
     if (!order) return;
     setTrackSaving(true);
     setTrackMsg('');
-    const res = await fetch('/api/admin/set-tracking', {
+    const res = await fetchQueEscribe('/api/admin/set-tracking', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
       body: JSON.stringify({ orderId: order.id, trackingNumber: tracking }),
@@ -279,7 +280,7 @@ export default function OrderDetailPage() {
     try {
       // Vía el proxy server-side: el secreto compartido con WordPress no puede
       // viajar en el bundle del cliente.
-      const res = await fetch(`/api/admin/sync-tracking/${order.id}`, {
+      const res = await fetchQueEscribe(`/api/admin/sync-tracking/${order.id}`, {
         method: 'POST',
         headers: { 'x-admin-key': adminKey },
       });
@@ -301,7 +302,7 @@ export default function OrderDetailPage() {
   async function sendEmail(action: 'confirmation' | 'tracking' | 'abandoned') {
     if (!order) return;
     setEmailMsg('Enviando...');
-    const res = await fetch(`/api/admin/send-order-emails?order_id=${order.id}&action=${action}`, {
+    const res = await fetchQueEscribe(`/api/admin/send-order-emails?order_id=${order.id}&action=${action}`, {
       headers: { 'x-admin-key': adminKey },
     });
     const data = await res.json();
@@ -317,7 +318,7 @@ export default function OrderDetailPage() {
     setDispatchLoading(true);
     setDispatchMsg('');
     try {
-      const res = await fetch('/api/admin/mark-dispatched', {
+      const res = await fetchQueEscribe('/api/admin/mark-dispatched', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ orderId: order.id }),
@@ -341,7 +342,7 @@ export default function OrderDetailPage() {
     setDispatchLoading(true);
     setDispatchMsg('');
     try {
-      const res = await fetch('/api/admin/undo-dispatch', {
+      const res = await fetchQueEscribe('/api/admin/undo-dispatch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ orderId: order.id }),
@@ -391,7 +392,7 @@ export default function OrderDetailPage() {
     setRemovingItemId(lineItemId);
     setRemoveItemMsg('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/remove-item`, {
+      const res = await fetchQueEscribe(`/api/admin/orders/${order.id}/remove-item`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ lineItemId, newQuantity }),
@@ -426,7 +427,7 @@ export default function OrderDetailPage() {
     setShippingSaving(true);
     setShippingMsg('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/update-shipping`, {
+      const res = await fetchQueEscribe(`/api/admin/orders/${order.id}/update-shipping`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({
@@ -457,7 +458,7 @@ export default function OrderDetailPage() {
     setAddingItem(true);
     setAddItemMsg('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/add-items`, {
+      const res = await fetchQueEscribe(`/api/admin/orders/${order.id}/add-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({
@@ -481,7 +482,7 @@ export default function OrderDetailPage() {
     setApplyingDiscount(true);
     setDiscountMsg('');
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}/add-items`, {
+      const res = await fetchQueEscribe(`/api/admin/orders/${order.id}/add-items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
         body: JSON.stringify({ items: [], discountName: discountName || 'Descuento', discountAmount: amount }),
@@ -504,7 +505,7 @@ export default function OrderDetailPage() {
     if (!order) return;
     setNoteSaving(true);
     setNoteMsg('');
-    const res = await fetch('/api/admin/order-note', {
+    const res = await fetchQueEscribe('/api/admin/order-note', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
       body: JSON.stringify({ orderId: order.id, note: noteText }),
