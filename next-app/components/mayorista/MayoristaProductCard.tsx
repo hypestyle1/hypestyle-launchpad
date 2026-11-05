@@ -11,6 +11,7 @@ import { useMayoristaCart } from '@/context/MayoristaCartContext';
 import { sizeLevel, stockKey, canOrder, isPurchasable, isUnconfirmed, type MayoristaProduct } from '@/lib/mayorista-products';
 import { PROMO_TAG_LABEL } from '@/lib/mayorista-campaign-view';
 import { isNewProduct } from '@/lib/mayorista-catalog-sort';
+import { listOffPct } from '@/lib/mayorista-flash';
 import MayoristaAddedNotice from './MayoristaAddedNotice';
 
 export default function MayoristaProductCard({ product }: { product: MayoristaProduct }) {
@@ -93,7 +94,7 @@ export default function MayoristaProductCard({ product }: { product: MayoristaPr
           </span>
         ) : product.promo ? (
           <span className="absolute top-2.5 left-2.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-sale text-sale-foreground">
-            {product.promo.badge} · −{Math.round(product.promo.discount * 100)}%
+            {product.promo.badge} · −{listOffPct(product.promo.price, product.regularPrice)}% lista
           </span>
         ) : product.drop ? (
           <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-[6px] bg-bg-dark text-primary-foreground">

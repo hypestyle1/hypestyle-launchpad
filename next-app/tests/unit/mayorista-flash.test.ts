@@ -21,12 +21,12 @@ describe('plazo de pago de campaña mayorista', () => {
   });
 });
 
-describe('Flash Cyber = 60% off lista (20% extra sobre el 50%)', () => {
+describe('Flash Cyber = 55% off lista (10% extra sobre el 50%)', () => {
   const flash: WholesaleCampaign = {
     id: FLASH_CYBER_CAMPAIGN_ID, name: 'Flash Cyber', status: 'active',
     startsAt: '2026-11-05T00:00:00-03:00', endsAt: arDate('2026-11-08', 'end'),
     badge: 'Flash Cyber', headline: '', text: '', minOrder: null,
-    groups: [{ key: 'flash', label: 'Flash Cyber', discount: 0.2 }],
+    groups: [{ key: 'flash', label: 'Flash Cyber', discount: 0.1 }],
     items: [{ productId: 1, group: 'flash' }],
     createdAt: '', updatedAt: '', history: [],
   };
@@ -38,9 +38,9 @@ describe('Flash Cyber = 60% off lista (20% extra sobre el 50%)', () => {
     total: 140000, changes: [], unpriced: [],
   };
 
-  it('un producto de lista $100.000 sale $40.000; el excluido sigue al 50%', () => {
+  it('un producto de lista $100.000 sale $45.000; el excluido sigue al 50%', () => {
     const r = applyCampaign(base, [flash], '2026-11-06T12:00:00-03:00');
-    expect(r.lines[0].unitPrice).toBe(40000);
+    expect(r.lines[0].unitPrice).toBe(45000);
     expect(r.lines[1].unitPrice).toBe(40000); // sweater: lista 80.000 × 0,5, sin campaña
     expect(r.lines[1].campaign).toBeNull();
   });

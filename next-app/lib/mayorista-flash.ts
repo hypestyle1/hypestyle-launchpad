@@ -17,6 +17,22 @@ export const PAYMENT_WINDOW_HOURS: Readonly<Record<string, number>> = {
   [FLASH_CYBER_CAMPAIGN_ID]: 24,
 };
 
+// Foto del hero por campaña (mismo motivo que el plazo: el PHP no guarda
+// campos nuevos). Zip Hoodie Camo Olive, foto real de producto en Woo.
+export const CAMPAIGN_HERO_IMAGE: Readonly<Record<string, string>> = {
+  [FLASH_CYBER_CAMPAIGN_ID]: 'https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/2026/11/zip-hoodie-camo-olive-foto-1-scaled.jpg',
+};
+
+export function heroImageFor(campaignId?: string | null): string | null {
+  return (campaignId && CAMPAIGN_HERO_IMAGE[campaignId]) || null;
+}
+
+/** % off sobre precio de lista de un precio de campaña (ej. 45.000 sobre 100.000 → 55). */
+export function listOffPct(price: number, regularPrice: number): number {
+  if (!(regularPrice > 0) || !(price >= 0)) return 0;
+  return Math.round((1 - price / regularPrice) * 100);
+}
+
 export const PAGO_VENCE_META = '_wholesale_pago_vence';
 
 export function paymentWindowFor(campaignId?: string | null): number | null {
