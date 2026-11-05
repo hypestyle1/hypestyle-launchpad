@@ -459,9 +459,10 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
   'regular-tees-3-pack-black',
   'regular-tees-3-pack-navy',
   'lettering-pink-jort',
-  'jort-cargo-realtree-beige',
   // jort-cargo-realtree-pink salió el 3/11: quedaba 1 unidad (M) y la lista
   // tiene cupo fijo de 36; entró athletic-dept-blue-longsleeve por ventas.
+  // jort-cargo-realtree-beige salió el 5/11 por el mismo cupo: entró
+  // no-service-for-the-faithless-white en el 3er lugar.
 ];
 
 /**

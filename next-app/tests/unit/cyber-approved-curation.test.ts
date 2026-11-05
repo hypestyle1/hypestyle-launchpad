@@ -17,6 +17,7 @@ describe('curaduría comercial del 3/11 — best sellers reales primero', () => 
     expect(CYBER_DESTACADOS_SLUGS.slice(0, CYBER_INITIAL_COUNT)).toEqual([
       'faith-over-everything-camo-hoodie', //  9 u/30d
       'regular-tees-3-pack-black-navy-white', // 18 u/30d — lo más vendido
+      'no-service-for-the-faithless-white', // 5/11: pedido de Valentín, 30% OFF
       'grey-camo-cap', // 11 u/30d
       'sweatpant-black-hstars', // 5 u/30d
       'athletic-dept-blue-longsleeve', // 5 u/30d
@@ -38,7 +39,6 @@ describe('curaduría comercial del 3/11 — best sellers reales primero', () => 
       'ladytribal-black-longsleeve',
       'athletic-dept-pink-longsleeve',
       'trucker-cap-no-faith-no-glory',
-      'hype-washed-black-waffle-longsleeve',
     ]);
     expect(CYBER_DESTACADOS_SLUGS).toHaveLength(CYBER_EXPANDED_COUNT);
     expect(new Set(CYBER_DESTACADOS_SLUGS).size).toBe(36);
@@ -50,6 +50,6 @@ describe('curaduría comercial del 3/11 — best sellers reales primero', () => 
     expect(product.price).toBe(28000);
     expect(product.sizes).toEqual(['Única']);
     expect(product.stock['Única']).toBe('ok');
-    expect(CYBER_DESTACADOS_SLUGS[5]).toBe(product.slug);
+    expect(CYBER_DESTACADOS_SLUGS[6]).toBe(product.slug);
   });
 });
