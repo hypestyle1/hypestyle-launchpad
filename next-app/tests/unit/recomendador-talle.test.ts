@@ -148,6 +148,30 @@ describe('recomendar — comportamiento', () => {
   });
 });
 
+describe('recomendar — mujer en prendas unisex', () => {
+  it('a una chica de 1,55 y 77 kg no le da L en el zip hoodie boxy', () => {
+    // El caso que reportó Valentín el 04/11/2026 en el Zip Hoodie Camo Olive.
+    expect(talle('buzo-boxy', mujer(155, 77))).toBe('S');
+    expect(talle('remera-boxy', mujer(155, 77))).toBe('S');
+    expect(talle('remera-oversize', mujer(155, 77))).toBe('S');
+  });
+
+  it('a igual altura y peso, la mujer nunca recibe más talle que el hombre en una prenda unisex', () => {
+    const orden = ['S', 'M', 'L', 'XL'];
+    for (const id of ['buzo-boxy', 'remera-boxy', 'remera-oversize', 'longsleeve-oversize']) {
+      for (const [a, p] of [[155, 60], [155, 77], [165, 70], [175, 80]]) {
+        expect(orden.indexOf(talle(id, mujer(a, p))), `${id} ${a}/${p}`)
+          .toBeLessThanOrEqual(orden.indexOf(talle(id, hombre(a, p))));
+      }
+    }
+  });
+
+  it('no toca a hombre', () => {
+    expect(talle('buzo-boxy', hombre(178, 80))).toBe('L');
+    expect(talle('remera-boxy', hombre(178, 80))).toBe('M');
+  });
+});
+
 describe('moldeDe', () => {
   it('encuentra la tabla por la imagen de guía de talles de Woo', () => {
     const u = (f: string) => `https://lightpink-rook-704850.hostingersite.com/wp-content/uploads/${f}`;
