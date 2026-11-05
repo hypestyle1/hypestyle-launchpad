@@ -423,6 +423,7 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
   //    al final, así que un quiebre no deja un hueco arriba.
   'faith-over-everything-camo-hoodie',    //  9 u/30d — el hoodie que factura
   'regular-tees-3-pack-black-navy-white', // 18 u/30d — lo MÁS vendido del sitio
+  'no-service-for-the-faithless-white',   // 5/11: portada nueva + 30% OFF ($61.200 → $42.900), pedido de Valentín
   'grey-camo-cap',                        // 11 u/30d
   'sweatpant-black-hstars',               //  5 u/30d
   'athletic-dept-blue-longsleeve',        //  5 u/30d — entra a destacados
