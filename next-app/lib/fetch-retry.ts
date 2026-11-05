@@ -23,7 +23,10 @@ interface RetryOptions {
   timeoutMs?: number;
 }
 
-const DEFAULTS: Required<RetryOptions> = { retries: 3, baseDelayMs: 400, timeoutMs: 15_000 };
+// retries=1: con WP saturado, cada reintento extra multiplica la carga sobre la
+// misma base que ya no responde (caídas del 2-4/11/2026). Un reintento alcanza
+// para blips transitorios; más que eso es amplificación.
+const DEFAULTS: Required<RetryOptions> = { retries: 1, baseDelayMs: 400, timeoutMs: 15_000 };
 
 function shouldRetryStatus(status: number): boolean {
   return status >= 500 || status === 429;

@@ -48,7 +48,7 @@ async function leerCatalogoPublico(): Promise<NormalizedProduct[]> {
   return productos.filter(p => !SLUGS_INTERNOS.has(p.slug));
 }
 
-const catalogoCompartido = unstable_cache(leerCatalogoPublico, ['catalogo-ssr-v1'], { revalidate: 60 });
+const catalogoCompartido = unstable_cache(leerCatalogoPublico, ['catalogo-ssr-v1'], { revalidate: 300 });
 
 /**
  * Catálogo para el HTML inicial de los listados, para que Google vea las cards

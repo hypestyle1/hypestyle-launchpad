@@ -575,7 +575,7 @@ async function resolveColorwayImages(product: Product): Promise<void> {
 }
 
 /** Cuánto cachea Next el producto en el fetch del servidor, en segundos. */
-const SERVER_REVALIDATE = 60;
+export const SERVER_REVALIDATE = 60;
 
 /**
  * WPGraphQL responde con un error (no con `product: null`) cuando el slug no

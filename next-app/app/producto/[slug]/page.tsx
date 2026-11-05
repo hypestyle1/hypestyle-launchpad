@@ -5,7 +5,7 @@ import { crearCortacircuitosPorClave } from '@/lib/wp-cortacircuitos';
 import { fetchProductSlugs } from '@/lib/wp-products';
 import { prerenderizarFichas } from '@/lib/build-env';
 import { getCachedDiscountStatus, GOAL_PRODUCT_SLUG } from '@/lib/goal-discount';
-import { fetchProductDetail } from '@/lib/product-detail';
+import { fetchProductDetail, SERVER_REVALIDATE } from '@/lib/product-detail';
 import { buildMetadata, truncate } from '@/lib/seo';
 import { SLUGS_INTERNOS } from '@/lib/catalog';
 import { productJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
@@ -43,7 +43,7 @@ const protegerFicha = crearCortacircuitosPorClave(60_000);
 const productoCompartido = unstable_cache(
   (slug: string) => protegerFicha(slug, () => fetchProductDetail(slug)),
   ['ficha-producto-v1'],
-  { revalidate: 60 },
+  { revalidate: 300 }, // 4/11: 60 s disparaba actualizaciones constantes contra WP con tráfico alto
 );
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -115,6 +115,10 @@ export default async function ProductoPage({ params }: { params: { slug: string 
       <ProductoClient
         slug={params.slug}
         initialProduct={product}
+        // Peor caso de edad del dato: el fetch del producto se cachea
+        // SERVER_REVALIDATE segundos, así que puede ser así de viejo al
+        // renderizar. useProduct lo re-pide desde el browser si se pasó.
+        initialProductAt={Date.now() - SERVER_REVALIDATE * 1000}
         initialGoalDiscount={initialGoalDiscount}
         soloServidor={!!previo}
       />
