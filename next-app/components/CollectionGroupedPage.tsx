@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Image from 'next/image';
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,7 +11,14 @@ import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 import type { NormalizedProduct } from "@/lib/products-normalize";
 
-interface Group { label: string; slugs: string[] }
+interface Group {
+  label: string;
+  slugs: string[];
+  /** Foto editorial opcional del grupo (04/11, Camo Drop). Con 2 productos en
+      una grilla de 4, ocupa las 2 columnas libres en desktop; en mobile va a
+      todo el ancho debajo de las cards. Sin `foto`, la grilla no cambia. */
+  foto?: { src: string; alt: string; pos?: string };
+}
 
 export interface CollectionConfig {
   title: string;
@@ -87,6 +95,18 @@ export default function CollectionGroupedPage({ config, initialProducts }: { con
                       href={`/producto/${p.slug}`}
                     />
                   ))}
+                  {group.foto && (
+                    <div className="relative col-span-2 aspect-[4/5] overflow-hidden bg-bg-alt lg:aspect-auto lg:min-h-full">
+                      <Image
+                        src={group.foto.src}
+                        alt={group.foto.alt}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-cover"
+                        style={{ objectPosition: group.foto.pos ?? 'center' }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             );

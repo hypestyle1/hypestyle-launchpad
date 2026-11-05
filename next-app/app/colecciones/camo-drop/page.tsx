@@ -18,8 +18,16 @@ const config: CollectionConfig = {
   title: 'Camo Drop',
   subtitle: 'Preventa · Entrega estimada a partir del viernes 13 de noviembre de 2026',
   groups: [
-    { label: 'Zip Hoodie', slugs: ['zip-hoodie-camo-olive', 'zip-hoodie-camo'] },
-    { label: 'Jort', slugs: ['jort-camo-olive', 'jort-camo-brown'] },
+    {
+      label: 'Zip Hoodie',
+      slugs: ['zip-hoodie-camo-olive', 'zip-hoodie-camo'],
+      foto: { src: '/colecciones/camo-drop/zip-camo-alga-piso.webp', alt: 'Zip Hoodie Camo Alga sobre piso de hormigón', pos: 'center 38%' },
+    },
+    {
+      label: 'Jort',
+      slugs: ['jort-camo-olive', 'jort-camo-brown'],
+      foto: { src: '/colecciones/camo-drop/zip-camo-chocolate-piso.webp', alt: 'Zip Hoodie Camo Chocolate sobre piso de hormigón', pos: 'center 38%' },
+    },
   ],
 };
 
