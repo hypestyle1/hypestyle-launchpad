@@ -11,14 +11,7 @@ import { useReveal } from "@/hooks/useReveal";
 import { useProducts } from "@/hooks/useProducts";
 import type { NormalizedProduct } from "@/lib/products-normalize";
 
-interface Group {
-  label: string;
-  slugs: string[];
-  /** Foto editorial opcional del grupo (04/11, Camo Drop). Con 2 productos en
-      una grilla de 4, ocupa las 2 columnas libres en desktop; en mobile va a
-      todo el ancho debajo de las cards. Sin `foto`, la grilla no cambia. */
-  foto?: { src: string; alt: string; pos?: string };
-}
+interface Group { label: string; slugs: string[] }
 
 export interface CollectionConfig {
   title: string;
@@ -32,6 +25,11 @@ export interface CollectionConfig {
   groups: Group[];
   /** Enlace a una página hermana (p. ej. el lookbook de la colección). */
   related?: { href: string; label: string };
+  /** Foto editorial opcional (04/11, Camo Drop). En desktop las cards pasan a
+      la mitad izquierda (2 columnas) y la foto ocupa la mitad derecha, vertical
+      y fija al scrollear; en mobile va una vez, después de los productos. Sin
+      `foto`, la página queda igual que siempre. */
+  foto?: { src: string; alt: string };
 }
 
 /**
@@ -66,7 +64,7 @@ export default function CollectionGroupedPage({ config, initialProducts }: { con
               {config.related.label} <span aria-hidden>→</span>
             </a>
           )}
-          {config.groups.map(group => {
+          {(() => { const grupos = config.groups.map(group => {
             const items = group.slugs.map(s => bySlug[s]).filter(Boolean);
             if (items.length === 0) return null;
             return (
@@ -77,7 +75,7 @@ export default function CollectionGroupedPage({ config, initialProducts }: { con
                     <span className="text-[12px] md:text-[13px] text-muted-foreground tabular-nums">{items.length}</span>
                   </div>
                 )}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9">
+                <div className={`grid grid-cols-2 ${config.foto ? '' : 'lg:grid-cols-4 '}gap-x-2 md:gap-x-3 gap-y-7 lg:gap-y-9`}>
                   {items.map(p => (
                     <ProductCard
                       key={p.slug}
@@ -95,22 +93,19 @@ export default function CollectionGroupedPage({ config, initialProducts }: { con
                       href={`/producto/${p.slug}`}
                     />
                   ))}
-                  {group.foto && (
-                    <div className="relative col-span-2 aspect-[4/5] overflow-hidden bg-bg-alt lg:aspect-auto lg:min-h-full">
-                      <Image
-                        src={group.foto.src}
-                        alt={group.foto.alt}
-                        fill
-                        sizes="(max-width: 1024px) 100vw, 50vw"
-                        className="object-cover"
-                        style={{ objectPosition: group.foto.pos ?? 'center' }}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             );
-          })}
+          });
+          if (!config.foto) return grupos;
+          return (
+            <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-3">
+              <div>{grupos}</div>
+              <div className="relative mt-12 aspect-[4/5] overflow-hidden bg-bg-alt lg:sticky lg:top-[calc(var(--offset)+16px)] lg:mt-[46px]">
+                <Image src={config.foto.src} alt={config.foto.alt} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+              </div>
+            </div>
+          ); })()}
         </section>
       </main>
       <Footer />
