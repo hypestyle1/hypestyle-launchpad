@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import PendienteEstampar from '@/components/admin/PendienteEstampar';
+import PendienteEstampar, { POD_PENDIENTES_CACHE } from '@/components/admin/PendienteEstampar';
 import GiftCardsPanel from '@/components/admin/GiftCardsPanel';
 import { HoldToConfirm } from '@/components/ui/hold-to-confirm';
 import OrderQuickView, { type OrderDetail } from '@/components/admin/OrderQuickView';
@@ -41,19 +41,6 @@ type ApiPedidos = {
   /** Cuántos de esos se revisaron acá. Menos que coincidenciasWc = búsqueda recortada. */
   revisados?: number;
 };
-/**
- * Mientras la respuesta guardada tenga menos de FRESCO_MS se usa tal cual, sin
- * pegarle a WooCommerce: recorrer los tabs de flujo sale gratis. Entre FRESCO_MS
- * y CACHE_TTL_MS se muestra al instante y se revalida en segundo plano. Más
- * viejo que eso, se vuelve a pedir esperando la respuesta.
- *
- * Si revalidáramos en cada cambio de tab, tres clics seguirían siendo tres
- * consultas de ~6 s a WP: no bloquearían la pantalla, pero el server igual las
- * paga. El encabezado muestra siempre de cuándo es el dato.
- */
-const FRESCO_MS = 15_000;
-const CACHE_TTL_MS = 60_000;
-
 type Counts = {
   porEmpaquetar: number | null; empaquetados: number | null; enviadosSinMarcar: number | null;
   pendientes: number | null; enEspera: number | null; fallidos: number | null; completados: number | null;
@@ -126,6 +113,25 @@ function fmtDate(s: string) {
        + ' · ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
+/**
+ * Lo que ya se trajo de WooCommerce vive en memoria hasta que se recarga la
+ * página (F5), se toca "Actualizar" o se escribe algo. Ni el paso del tiempo, ni
+ * volver a la pestaña desde el portal de Andreani, ni ir al detalle de un pedido
+ * y volver disparan una consulta: cada lista de ~479 pedidos son varios segundos
+ * de WP en Hostinger, y antes se pagaban cada vez que el equipo cambiaba de
+ * pestaña. Está a nivel módulo (no en un ref) para sobrevivir al remontaje de
+ * la página en la navegación interna; un F5 lo vacía. El encabezado muestra
+ * siempre de cuándo es el dato.
+ */
+const ORDERS_CACHE = new Map<string, { at: number; data: ApiPedidos }>();
+let COUNTS_CACHE: Counts | null = null;
+/** Al salir o con una clave rechazada: lo guardado no se le muestra a la próxima clave. */
+function olvidarCache() {
+  ORDERS_CACHE.clear();
+  COUNTS_CACHE = null;
+  POD_PENDIENTES_CACHE.data = null;
+}
+
 function daysSince(s: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(s).getTime()) / 86400000));
 }
@@ -189,7 +195,7 @@ export default function PedidosPage() {
   // Respuestas de /api/admin/orders por clave de consulta. Los 3 tabs de flujo
   // comparten la misma clave ('processing'), así que cambiar de tab no vuelve a
   // descargar nada: se filtra lo que ya está en memoria.
-  const cacheRef  = useRef(new Map<string, { at: number; data: ApiPedidos }>());
+  const cacheRef  = useRef(ORDERS_CACHE);
   // Pedidos desplegados con la flecha + detalle ya cargado de cada uno.
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const detailCache = useRef(new Map<number, OrderDetail>());
@@ -225,7 +231,7 @@ export default function PedidosPage() {
    * los mismos datos que ya estaban en memoria.
    *
    * Acá la respuesta se guarda por clave de consulta y se reutiliza al
-   * instante, revalidando en segundo plano. Para que no se pueda confundir un
+   * instante, sin revalidar en segundo plano. Para que no se pueda confundir un
    * dato guardado con uno recién traído, el encabezado muestra de cuándo es y
    * hay un botón para forzar la relectura; cualquier escritura tira el caché.
    */
@@ -239,23 +245,20 @@ export default function PedidosPage() {
     const cacheKey = params.toString();
     const seq = ++fetchSeq.current;
     const cached = cacheRef.current.get(cacheKey);
-    const edad = cached ? Date.now() - cached.at : Infinity;
-    const sirve = !forzar && !!cached && edad < CACHE_TTL_MS;
+    const sirve = !forzar && !!cached;
 
     setSelected(new Set());
     if (sirve) {
+      // Ya está en memoria: no se le pega a WP. Para releer está "Actualizar" o F5.
       aplicar(cached!.data, cached!.at);
       setLoading(false);
-      // Recién traído: no hay nada que revalidar. Cambiar de tab no cuesta una
-      // consulta a WP.
-      if (edad < FRESCO_MS) return;
-    } else {
-      setLoading(true);
+      return;
     }
+    setLoading(true);
 
     try {
       const res = await fetch(`/api/admin/orders?${params}`, { headers: { 'x-admin-key': key } });
-      if (res.status === 403) { setAuthed(false); sessionStorage.removeItem(WP_SECRET_KEY); return; }
+      if (res.status === 403) { olvidarCache(); setAuthed(false); sessionStorage.removeItem(WP_SECRET_KEY); return; }
       const data = await res.json().catch(() => null);
       // La revalidación en segundo plano no compite con el fetch del usuario:
       // si la vista ya cambió de consulta, lo que llega sólo va al caché.
@@ -297,6 +300,9 @@ export default function PedidosPage() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data) { setCountsError(`No se pudieron cargar los contadores (HTTP ${res.status})`); return; }
       setCounts(data);
+      // Sólo se guarda un conteo completo: uno a medias se vuelve a pedir al
+      // remontar en vez de quedar fijo como si fuera bueno.
+      COUNTS_CACHE = data.ok ? data : null;
       // La ruta ya distingue "cero" de "no se pudo consultar": los conteos que
       // fallaron vienen en null y el detalle en `errores`.
       setCountsError(data.ok ? null : `Contadores incompletos — ${(data.errores || []).join(' · ') || 'faltan pedidos de la consulta'}`);
@@ -306,7 +312,9 @@ export default function PedidosPage() {
   }, []);
 
   useEffect(() => {
-    if (authed && adminKey) fetchCounts(adminKey);
+    if (!authed || !adminKey) return;
+    if (COUNTS_CACHE) { setCounts(COUNTS_CACHE); return; }
+    fetchCounts(adminKey);
   }, [authed, adminKey, fetchCounts]);
 
   useEffect(() => {
@@ -321,19 +329,9 @@ export default function PedidosPage() {
     else searchRef.current = setTimeout(correr, 400);
   }, [authed, adminKey, filter, search, fetchOrders]);
 
-  // Al volver a la pestaña, revalidar: el equipo deja el panel abierto y los
-  // pedidos cambian desde el checkout y desde el portal de Andreani.
-  useEffect(() => {
-    if (!authed || !adminKey) return;
-    const alVolver = () => {
-      if (document.visibilityState !== 'visible') return;
-      invalidar();
-      fetchCounts(adminKey);
-      if (filter !== GIFT_CARDS_FILTER) fetchOrders(adminKey, filter, search, page, true);
-    };
-    document.addEventListener('visibilitychange', alVolver);
-    return () => document.removeEventListener('visibilitychange', alVolver);
-  }, [authed, adminKey, filter, search, page, fetchOrders, fetchCounts, invalidar]);
+  // Volver a la pestaña (p. ej. desde el portal de Andreani) NO relee: antes un
+  // listener de visibilitychange tiraba el caché y pedía lista + contadores en
+  // cada regreso. Para traer lo nuevo están "Actualizar" y F5.
 
   useEffect(() => {
     if (!authed || !adminKey || filter === GIFT_CARDS_FILTER) return;
@@ -609,7 +607,7 @@ export default function PedidosPage() {
             + Cargar pedido
           </Link>
           <button
-            onClick={() => { sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
+            onClick={() => { olvidarCache(); sessionStorage.removeItem(WP_SECRET_KEY); setAuthed(false); setAdminKey(''); }}
             className="text-[11px] text-muted-foreground/70 hover:text-foreground/80 px-2 py-1 rounded hover:bg-muted"
           >
             Salir
