@@ -34,7 +34,7 @@ describe('curaduría comercial del 3/11 — best sellers reales primero', () => 
       'splatter-hoodie-washed-grey',
       'napoli-tee-blanca',
       'half-zip-polo-black', // 6/11
-      'hype-creative-goods-green-raglan-longsleeve', // 7/11
+      'athletic-dept-white-grey-print-tee', // 7/11: reemplaza al green raglan
       'sweatpant-pink',
       'longsleeve-waffle-horses',
       'hype-distressed-grey-hoodie',

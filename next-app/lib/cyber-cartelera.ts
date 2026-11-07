@@ -441,14 +441,14 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
   'splatter-hoodie-washed-grey',
   'napoli-tee-blanca',
   'half-zip-polo-black',                  // 6/11: mucho stock
-  'hype-creative-goods-green-raglan-longsleeve', // 7/11: 7 u/30d, 34% OFF (reemplaza sleeveless white, 0 u/30d)
+  'athletic-dept-white-grey-print-tee',   // 7/11: 7 u/30d, 39% OFF. Sube al #20: Valentín sacó el green raglan
   'sweatpant-pink',
   'longsleeve-waffle-horses',
   'hype-distressed-grey-hoodie',
   'department-of-culture-washed-black-waffle-longsleeve', // 7/11: 8 u/30d, 25% OFF (reemplaza honda white, 0 u/30d)
   'ladytribal-black-longsleeve',
   'athletic-dept-pink-longsleeve',
-  'athletic-dept-white-grey-print-tee',   // 7/11: 7 u/30d, 39% OFF (reemplaza trucker cap, 0 u/30d)
+  'athletic-dept-navy-tee',               // 7/11: 4 u/30d, 39% OFF, pila navy (distinta de la blanca)
   'hype-washed-black-waffle-longsleeve',
   'regular-tees-3-pack-white',
   // Segunda tanda: las individuales quedan detrás de los 24 aprobados.
