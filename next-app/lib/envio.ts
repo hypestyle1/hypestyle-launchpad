@@ -124,6 +124,13 @@ export interface ContextoEnvio {
   /** Subtotal de lo que viaja: las gift cards no cuentan. */
   subtotalFisico: number;
   cuponEnvioGratis?: boolean;
+  /**
+   * El cupón de envío gratis vale solo para retiro en sucursal (meta
+   * `_hs_envio_alcance = sucursal` en el cupón de Woo, ver
+   * lib/cupon-envio-gratis). Sin esto, un cupón de envío gratis cubre los dos
+   * modos, como siempre. Nació con PERDON (cierre CYBER HYPE, 7–8/11/2026).
+   */
+  cuponSoloSucursal?: boolean;
   internacional?: boolean;
   /** El carrito tiene un producto de ENVIO_GRATIS_SLUGS (ver incluyeEnvioGratis). */
   productoConEnvioGratis?: boolean;
@@ -142,12 +149,12 @@ export function alcanzaUmbral({ subtotalFisico, internacional, productoConEnvioG
  * ¿Este modo de entrega sale gratis?
  * - Exterior: nunca.
  * - Cupón de envío gratis: sí, en cualquier modo (es un beneficio que Hype
- *   entrega a mano).
+ *   entrega a mano), salvo que el cupón sea solo para sucursal.
  * - Umbral: solo sucursal.
  */
 export function envioBonificado(modo: ModoEntrega, ctx: ContextoEnvio): boolean {
   if (ctx.internacional) return false;
-  if (ctx.cuponEnvioGratis) return true;
+  if (ctx.cuponEnvioGratis && (!ctx.cuponSoloSucursal || modo === 'sucursal')) return true;
   return modo === 'sucursal' && alcanzaUmbral(ctx);
 }
 
@@ -161,7 +168,12 @@ export function envioBonificado(modo: ModoEntrega, ctx: ContextoEnvio): boolean 
  */
 export function costoEnvio(tarifa: TarifaEnvio, tarifas: TarifaEnvio[], ctx: ContextoEnvio): number {
   if (ctx.internacional) return tarifa.cost;
-  if (ctx.cuponEnvioGratis) return 0;
+  if (ctx.cuponEnvioGratis) {
+    if (!ctx.cuponSoloSucursal) return 0;
+    // Cupón solo sucursal: la sucursal sale gratis; el domicilio sigue la
+    // regla de siempre (tarifa completa bajo el umbral, diferencia sobre él).
+    if (modoDeTarifa(tarifa) === 'sucursal') return 0;
+  }
   if (!alcanzaUmbral(ctx)) return tarifa.cost;
 
   const referencia = tarifaSucursal(tarifas) ?? tarifaPorDefecto(tarifas) ?? tarifa;

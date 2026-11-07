@@ -147,7 +147,11 @@ describe('paridad checkout <-> Woo - HYPE10 al 10%', () => {
 });
 
 /* --- La ruta: el carrito viaja al PHP y la elegibilidad vuelve --- */
-vi.mock('@/lib/cupon-envio-gratis', () => ({ cuponConEnvioGratis: async () => false }));
+vi.mock('@/lib/cupon-envio-gratis', () => ({
+  cuponConEnvioGratis: async () => false,
+  envioDeCupon: async () => ({ gratis: false, soloSucursal: false }),
+  normalizarCodigoCupon: (c: unknown) => String(c ?? ''),
+}));
 
 let enviadoAlPhp: any = null;
 

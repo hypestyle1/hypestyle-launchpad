@@ -209,7 +209,7 @@ export default function Checkout() {
   // `items`: la elegibilidad por línea que devuelve /validate-coupon (el backend
   // resuelve el slug a id de Woo y dice qué línea cobra el descuento). Sin ella
   // —backend viejo o cupón de carrito— el cálculo cae al % sobre todo el subtotal.
-  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean; first10?: First10Info; items?: ElegibilidadLinea[] | null } | null>(null);
+  const [couponData, setCouponData] = useState<{ code: string; type: string; amount: number; description?: string; free_shipping?: boolean; free_shipping_scope?: 'todos' | 'sucursal'; first10?: First10Info; items?: ElegibilidadLinea[] | null } | null>(null);
   const [couponValidating, setCouponValidating] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [info, setInfo] = useState<InfoForm>({
@@ -395,12 +395,15 @@ export default function Checkout() {
   }, [hydrated]);
 
   const subtotal = total;
-  // El cupón de envío gratis cubre cualquier modo de entrega; el umbral, solo sucursal.
+  // El cupón de envío gratis cubre cualquier modo de entrega, salvo los que
+  // vienen acotados a sucursal (PERDON); el umbral, solo sucursal.
   const couponFreeShip = !isInternational && !!couponData?.free_shipping;
+  const couponSoloSucursal = couponFreeShip && couponData?.free_shipping_scope === 'sucursal';
   // El umbral de envío gratis se mide sobre lo físico: una gift card no viaja.
   const envioCtx = {
     subtotalFisico: subtotal - subtotalGift,
     cuponEnvioGratis: couponFreeShip,
+    cuponSoloSucursal: couponSoloSucursal,
     internacional: isInternational,
     // El regalo por compra no se paga: no trae el envío incluido aunque sea uno de esos productos.
     productoConEnvioGratis: incluyeEnvioGratis(items.filter((i) => !i.isGift).map((i) => i.id)),
@@ -412,7 +415,9 @@ export default function Checkout() {
   const ahorroEnSucursal = ahorroSucursal(shippingRates);
   // Si el cotizador falla y el carrito ya tenía el envío bonificado, el pedido
   // sigue sin tarifa elegida en vez de morir en este paso.
-  const shippingReady = soloGift ? true : isInternational ? !!selectedRate : sobreUmbral || couponFreeShip || !!selectedRate;
+  // Un cupón solo-sucursal no alcanza: hay que elegir la tarifa, porque el
+  // domicilio se cobra y sin tarifa el servidor no puede verificar el modo.
+  const shippingReady = soloGift ? true : isInternational ? !!selectedRate : sobreUmbral || (couponFreeShip && !couponSoloSucursal) || !!selectedRate;
   // Un cupón de monto fijo (o una gift card) nunca descuenta más que el subtotal:
   // sin este tope una gift card de $250k sobre un carrito de $80k daba negativo.
   // FIRST10 pide $100.000 en productos: si el carrito baja del mínimo con el
@@ -435,7 +440,7 @@ export default function Checkout() {
       // elegibles: HYPE10 excluye 12 productos y Woo descuenta SOLO el resto.
       body: JSON.stringify({ code: codigo, total: subtotal, email, items: lineasCupon.map((l) => ({ id: l.id, quantity: l.quantity })) }),
     });
-    return await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; gift_card?: boolean; first10?: First10Info; items?: ElegibilidadLinea[] | null; error?: string };
+    return await res.json() as { valid: boolean; code?: string; type?: string; amount?: number; free_shipping?: boolean; free_shipping_scope?: 'todos' | 'sucursal'; gift_card?: boolean; first10?: First10Info; items?: ElegibilidadLinea[] | null; error?: string };
   };
 
   // Un cupón personal se valida contra el mail, así que si lo cambian DESPUÉS de
@@ -1214,7 +1219,7 @@ export default function Checkout() {
                         setCouponError('Una gift card no sirve para comprar otra gift card');
                       } else if (data.valid && data.code && data.type && data.amount !== undefined) {
                         cuponValidadoPara.current = data.code + '|' + info.email.trim().toLowerCase();
-                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping, first10: data.first10, items: data.items ?? null });
+                        setCouponData({ code: data.code, type: data.type, amount: data.amount, free_shipping: data.free_shipping, free_shipping_scope: data.free_shipping_scope, first10: data.first10, items: data.items ?? null });
                       }
                       else { setCouponError(data.error || 'Código inválido'); }
                     } catch { setCouponError('Error al validar el código'); }
@@ -1453,7 +1458,9 @@ export default function Checkout() {
                 falta={couponFreeShip || sobreUmbral ? 0 : FREE_SHIPPING_THRESHOLD - envioCtx.subtotalFisico}
                 progreso={couponFreeShip || sobreUmbral ? 1 : envioCtx.subtotalFisico / FREE_SHIPPING_THRESHOLD}
               >
-                {couponFreeShip ? (
+                {couponSoloSucursal ? (
+                  <>Tu código bonifica el <span className="font-semibold text-foreground">envío a sucursal</span>. A domicilio se cobra la tarifa normal.</>
+                ) : couponFreeShip ? (
                   'Cupón de envío gratis aplicado.'
                 ) : sobreUmbral ? (
                   <>Tu compra tiene <span className="font-semibold text-foreground">envío gratis a sucursal</span>.</>

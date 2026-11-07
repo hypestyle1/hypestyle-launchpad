@@ -113,6 +113,35 @@ describe('cupón de envío gratis', () => {
   });
 });
 
+describe('cupón de envío gratis solo para sucursal (PERDON)', () => {
+  const perdon = { cuponEnvioGratis: true, cuponSoloSucursal: true };
+  it('bajo el umbral: sucursal gratis, domicilio a tarifa completa', () => {
+    expect(envioBonificado('sucursal', { ...BAJO, ...perdon })).toBe(true);
+    expect(envioBonificado('domicilio', { ...BAJO, ...perdon })).toBe(false);
+    expect(costoEnvio(SUCURSAL, TARIFAS, { ...BAJO, ...perdon })).toBe(0);
+    expect(costoEnvio(ESTANDAR, TARIFAS, { ...BAJO, ...perdon })).toBe(ESTANDAR.cost);
+    expect(costoEnvio(LLEGA_HOY, TARIFAS, { ...BAJO, ...perdon })).toBe(LLEGA_HOY.cost);
+  });
+  it('sobre el umbral el domicilio sigue pagando solo la diferencia, como sin cupón', () => {
+    expect(costoEnvio(SUCURSAL, TARIFAS, { ...SOBRE, ...perdon })).toBe(0);
+    expect(costoEnvio(ESTANDAR, TARIFAS, { ...SOBRE, ...perdon })).toBe(costoEnvio(ESTANDAR, TARIFAS, SOBRE));
+  });
+  it('CP sin sucursal: no hay nada que bonificar, el domicilio paga', () => {
+    const sinSucursal = [ESTANDAR, LLEGA_HOY];
+    expect(costoEnvio(ESTANDAR, sinSucursal, { ...BAJO, ...perdon })).toBe(ESTANDAR.cost);
+  });
+  it('al exterior no vale', () => {
+    const FEDEX: TarifaEnvio = { id: 'fedex_international', label: 'FedEx International', cost: 85000 };
+    const afuera = { subtotalFisico: 50000, internacional: true, ...perdon };
+    expect(envioBonificado('sucursal', afuera)).toBe(false);
+    expect(costoEnvio(FEDEX, [FEDEX], afuera)).toBe(85000);
+  });
+  it('sin la marca solo-sucursal, un cupón de envío gratis sigue cubriendo los dos modos', () => {
+    const viejo = { cuponEnvioGratis: true, cuponSoloSucursal: false };
+    expect(costoEnvio(ESTANDAR, TARIFAS, { ...BAJO, ...viejo })).toBe(0);
+  });
+});
+
 describe('envíos al exterior', () => {
   const FEDEX: TarifaEnvio = { id: 'fedex_international', label: 'FedEx International', cost: 85000 };
   const afuera = { subtotalFisico: 500000, internacional: true };
