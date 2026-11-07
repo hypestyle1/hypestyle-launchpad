@@ -89,7 +89,7 @@ export function isExcludedPage(pathname: string): boolean {
   // cyberhype (landing de CYBER HYPE): el popup ofrece HYPE10 y ahí se está
   // captando el mail para el evento, donde ese 10% se suma a los packs. Dos
   // formularios peleando por el mismo mail, y uno de los dos regalando margen.
-  return /^\/(admin|checkout|confirmacion|pendiente-de-pago|pagar|mayoristas|acceso|private-access|cyberhype|api)(\/|$)/.test(pathname);
+  return /^\/(admin|checkout|confirmacion|pendiente-de-pago|pagar|mayoristas|acceso|private-access|cyberhype|api|review|resena)(\/|$)/.test(pathname);
 }
 
 /** Lo llama la confirmación de compra: a un cliente no se le pide el email de nuevo. Solo en el browser. */

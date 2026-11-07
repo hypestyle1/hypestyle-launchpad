@@ -19,6 +19,10 @@ export const RETAIL_CHROME_HIDDEN_PREFIXES = [
   // encima del formulario en mobile y mandan a otro lado a quien vino a dejar
   // el mail. La página tiene un trabajo y nada tiene que competir con él.
   '/cyberhype',
+  // Link personal de reseña (/review/{token}) y su autoservicio (/resena):
+  // el botón de enviar va fijo al pie y el WhatsApp flotante caía encima.
+  '/review/',
+  '/resena',
 ] as const;
 
 export function isRetailChromeHidden(pathname: string | null | undefined): boolean {
