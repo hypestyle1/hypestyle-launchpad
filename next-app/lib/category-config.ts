@@ -24,6 +24,11 @@ export interface CategoryConfig {
   categories: string[];
   tag?: string;
   tabs?: SubTab[];
+  /**
+   * Slugs que esta página no muestra aunque entren por categoría. Se compara
+   * por prefijo, así los colorways nuevos de un pack quedan afuera solos.
+   */
+  excludeSlugPrefixes?: string[];
 }
 
 export const CATEGORY_MAP: Record<string, CategoryConfig> = {
@@ -99,6 +104,10 @@ export const CATEGORY_MAP: Record<string, CategoryConfig> = {
     subtitle: 'Drops limitados · Envíos a todo el mundo',
     seoDescription: 'El catálogo completo de HYPESTYLE: hoodies, remeras, pants, jorts, sets y accesorios. Drops limitados, envíos a todo el mundo.',
     categories: [],
+    // 6/11, pedido de Valentín: los 3 PACK de Regular (un producto por
+    // combinación de colores) tapaban el resto de la grilla. Siguen en /sets y
+    // en la ficha de cada Regular; acá el cliente arma su combinación.
+    excludeSlugPrefixes: ['regular-tees-3-pack-'],
   },
   '/tees': {
     title: 'Tees',
@@ -142,7 +151,7 @@ export function getCategoryConfig(path: string): CategoryConfig | undefined {
  * si tiene, de su tag. Lo usan CategoriaPage y su wrapper server, que manda
  * solo este subconjunto en el HTML inicial (no el catálogo entero).
  */
-export function productsForCategory<P extends { category: string; tags: string[] }>(
+export function productsForCategory<P extends { slug: string; category: string; tags: string[] }>(
   products: P[],
   config: CategoryConfig,
 ): P[] {
@@ -150,5 +159,7 @@ export function productsForCategory<P extends { category: string; tags: string[]
     ? products
     : products.filter(p => config.categories.includes(p.category));
   if (config.tag) base = base.filter(p => p.tags.includes(config.tag!));
+  const excluir = config.excludeSlugPrefixes;
+  if (excluir?.length) base = base.filter(p => !excluir.some(pre => p.slug.startsWith(pre)));
   return base;
 }
