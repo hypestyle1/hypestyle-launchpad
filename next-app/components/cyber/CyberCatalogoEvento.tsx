@@ -9,8 +9,14 @@ import { useCyberCatalogTransition } from '@/hooks/useCyberCatalogTransition';
 import { DESCUENTO_TRANSFERENCIA } from '@/lib/precio-servidor';
 import { FREE_SHIPPING_THRESHOLD } from '@/lib/envio';
 import { CreditCard, Truck, Zap } from 'lucide-react';
+import { CYBER_END } from '@/lib/cyber-hype';
 
 const formatARS = (n: number) => `$${n.toLocaleString('es-AR')}`;
+
+// Último día del evento, derivado de CYBER_END (que es el 9/11 00:00 ART): "8 de noviembre".
+const ultimoDia = new Date(Date.parse(CYBER_END) - 1).toLocaleDateString('es-AR', {
+  day: 'numeric', month: 'long', timeZone: 'America/Argentina/Buenos_Aires',
+});
 
 /* Catálogo del evento — el sitio entero comprable sin salir del takeover.
 
@@ -94,14 +100,6 @@ export default function CyberCatalogoEvento({
     return out;
   }, [data, filtros, destacadosSlugs]);
 
-  // "Hasta X% OFF" sale de los precios reales con stock, nunca de una cifra
-  // escrita a mano. Mientras los precios se verifican o es vista previa, no se muestra.
-  const maxOff = useMemo(() => {
-    if (!data || live.preview || pricePending) return 0;
-    return data.reduce((m, p) => (hayStock(p) && p.originalPrice && p.originalPrice > p.price
-      ? Math.max(m, Math.floor((1 - p.price / p.originalPrice) * 100)) : m), 0);
-  }, [data, live.preview, pricePending]);
-
   const pestañas = [
     { id: 'destacados', label: 'Destacados' },
     ...filtros.map((f) => ({ id: f.id, label: f.label })),
@@ -114,7 +112,7 @@ export default function CyberCatalogoEvento({
   // Beneficios vigentes, leídos de las constantes del checkout (no de texto suelto).
   const transferencia = Math.round(DESCUENTO_TRANSFERENCIA * 100);
   const beneficios = [
-    { Icono: Zap, texto: `${transferencia}% extra con transferencia` },
+    { Icono: Zap, texto: `${transferencia}% extra pagando con transferencia` },
     { Icono: CreditCard, texto: 'Hasta 3 cuotas sin interés' },
     { Icono: Truck, texto: `Envío gratis a sucursal desde ${formatARS(FREE_SHIPPING_THRESHOLD)}` },
   ];
@@ -122,26 +120,27 @@ export default function CyberCatalogoEvento({
   return (
     <section id="catalogo" className="bg-background px-4 py-12 text-foreground md:px-10 md:py-16">
       <div className="mx-auto max-w-[1400px]">
-        {/* Cabecera editorial (rediseño 7/11, referencia de Valentín). Radius 0,
-            sin cajas ni sombras: la jerarquía la hacen la tipografía y el aire. */}
-        <header className="pt-2 md:pt-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-foreground/70 md:text-[12px]">
+        {/* Cabecera editorial — 2ª iteración 7/11 (dirección EME Studios):
+            título en caja baja y peso medium, en la escala de SectionHeader;
+            la bajada informa, no grita. Radius 0, sin cajas ni sombras. */}
+        <header className="max-w-[640px] pt-1 md:pt-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-foreground/55 md:text-[11px]">
             Todo el evento
           </p>
-          <h2 className="mt-3 text-[clamp(2.6rem,11.5vw,7.5rem)] font-black uppercase leading-[0.86] tracking-[-0.045em] md:mt-4">
+          <h2 className="mt-3 text-[30px] font-medium leading-[1.02] tracking-[-0.025em] md:mt-4 md:text-[44px]">
             Catálogo Cyber
           </h2>
-          <p className="mt-4 text-[15px] font-normal leading-snug text-foreground/85 md:mt-5 md:text-[22px]">
-            {live.preview
-              ? 'Vista previa: las ofertas arrancan a las 19:00. El carrito conserva el precio vigente.'
-              : pricePending
-                ? 'Verificando precios Cyber…'
-                : <>{maxOff > 0 && <><span className="block md:inline">Hasta {maxOff}% OFF</span><span aria-hidden className="mx-3.5 hidden text-foreground/40 md:inline">·</span></>}<span className="block md:inline">{transferencia}% extra pagando con transferencia</span></>}
+          <p className="mt-3 text-[14px] font-normal leading-[1.55] text-foreground/60 md:mt-4 md:text-[16px]">
+            La selección completa de Cyber Hype. Disponible hasta el {ultimoDia}.
           </p>
+          {live.preview && (
+            <p className="mt-2 text-[12px] text-text-light">Vista previa: las ofertas arrancan a las 19:00. El carrito conserva el precio vigente.</p>
+          )}
         </header>
 
-        {/* Índice de categorías: esquinas rectas, subrayado en la activa, contadores reales. */}
-        <nav aria-label="Categorías del catálogo" className="relative -mx-4 mt-8 md:mx-0 md:mt-12">
+        {/* Índice de categorías: esquinas rectas, contadores reales. Hover:
+            gris → negro; el subrayado crece de izquierda a derecha (≈220 ms). */}
+        <nav aria-label="Categorías del catálogo" className="relative -mx-4 mt-9 md:mx-0 md:mt-12">
           <div className="flex snap-x snap-mandatory scroll-px-4 overflow-x-auto scroll-smooth px-4 [scrollbar-width:none] md:scroll-px-0 md:px-0 [&::-webkit-scrollbar]:hidden">
             {pestañas.map((p) => {
               const activa = vista === p.id;
@@ -152,25 +151,36 @@ export default function CyberCatalogoEvento({
                   type="button"
                   aria-pressed={activa}
                   onClick={() => { setVista(p.id); setExpanded(false); }}
-                  className={`group relative z-10 shrink-0 snap-start whitespace-nowrap pb-3.5 pr-7 pt-1 text-left text-[12px] font-bold uppercase tracking-[0.16em] transition-colors md:pb-4 md:pr-12 md:text-[14px] md:tracking-[0.18em] ${
-                    activa ? 'text-foreground' : 'text-foreground/45 hover:text-foreground'
+                  className={`group relative z-10 shrink-0 snap-start touch-manipulation whitespace-nowrap pr-7 text-left text-[11px] font-semibold uppercase tracking-[0.16em] outline-none transition-colors duration-200 ease-out md:pr-11 md:text-[12px] md:tracking-[0.18em] focus-visible:text-foreground ${
+                    activa ? 'text-foreground' : 'text-foreground/40 hover:text-foreground active:text-foreground'
                   }`}
                 >
-                  {p.label}
-                  {n ? <span className="ml-2 font-semibold tabular-nums text-foreground/35">{n}</span> : null}
-                  <span aria-hidden className={`absolute bottom-0 left-0 right-7 h-[3px] bg-foreground transition-opacity md:right-12 ${activa ? 'opacity-100' : 'opacity-0'}`} />
+                  <span className="inline-flex flex-col items-stretch">
+                    <span className="pb-3 pt-1 md:pb-3.5">
+                      {p.label}
+                      {n ? <span className={`ml-2 font-medium tabular-nums transition-colors duration-200 ${activa ? 'text-foreground/45' : 'text-foreground/30 group-hover:text-foreground/45'}`}>{n}</span> : null}
+                    </span>
+                    <span
+                      aria-hidden
+                      className={`block h-[2px] ease-out motion-reduce:!transition-none ${
+                        activa ? 'w-full bg-foreground' : 'w-0 bg-foreground/25 group-hover:w-full group-focus-visible:w-full'
+                      }`}
+                      style={{ transitionProperty: 'width, background-color', transitionDuration: '220ms' }}
+                    />
+                  </span>
                 </button>
               );
             })}
           </div>
-          <div aria-hidden className="absolute inset-x-4 bottom-0 -z-0 h-px bg-border-mid md:inset-x-0" />
+          <div aria-hidden className="absolute inset-x-4 bottom-0 h-px bg-foreground/10 md:inset-x-0" />
         </nav>
 
-        {/* Beneficios vigentes: una línea fina, sin tarjetas. */}
-        <ul className="mb-8 mt-5 grid grid-cols-1 gap-y-3 bg-muted px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.11em] text-foreground md:mb-10 md:mt-7 md:grid-cols-3 md:gap-0 md:px-0 md:py-5 md:text-[12px] md:tracking-[0.18em]">
-          {beneficios.map(({ Icono, texto }, i) => (
-            <li key={texto} className={`flex items-center gap-3 md:justify-center md:gap-4 ${i > 0 ? 'md:border-l md:border-border-mid' : ''}`}>
-              <Icono aria-hidden strokeWidth={1.6} className="h-[18px] w-[18px] shrink-0 md:h-6 md:w-6" />
+        {/* Beneficios: una línea liviana debajo del índice, sin caja ni mayúsculas,
+            para que no compita con el título ni con las categorías. */}
+        <ul className="mb-8 mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-normal text-foreground/55 md:mb-10 md:mt-5 md:gap-x-9 md:text-[13px]">
+          {beneficios.map(({ Icono, texto }) => (
+            <li key={texto} className="flex items-center gap-2">
+              <Icono aria-hidden strokeWidth={1.25} className="h-[14px] w-[14px] shrink-0 text-foreground/45" />
               {texto}
             </li>
           ))}
