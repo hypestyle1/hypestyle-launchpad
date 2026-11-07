@@ -9,7 +9,7 @@ import { getPromoChampionStatus } from '@/lib/promo-champion-status';
 import { getActiveDiscountStatus } from '@/lib/goal-discount';
 import { GOAL_DISCOUNT_SLUG } from '@/hooks/useGoalDiscount';
 import { cotizarAndreani } from '@/lib/andreani-cotizador';
-import { cuponConEnvioGratis } from '@/lib/cupon-envio-gratis';
+import { envioDeCupon, normalizarCodigoCupon } from '@/lib/cupon-envio-gratis';
 import { incluyeEnvioGratis } from '@/lib/envio';
 import { packRegularUnidadesAlCobrar, precioPackRegular } from '@/lib/promo-pack-regular';
 import {
@@ -109,12 +109,14 @@ export async function calcularPedido(args: {
       const r = await cotizarAndreani({ cp: args.envio.cp, provincia: args.envio.provincia, valor: subtotal(lineas) }).catch(() => null);
       tarifas = r?.rates && r.rates.length > 0 ? r.rates : null;
     }
+    const envioCupon = await envioDeCupon(args.envio.cupon ? normalizarCodigoCupon(args.envio.cupon) : null);
     envio = envioNacional({
       tarifas,
       tarifaId: args.envio.tarifaId,
       costoCliente: args.envio.costoCliente,
       subtotalFisico,
-      cuponEnvioGratis: await cuponConEnvioGratis(args.envio.cupon),
+      cuponEnvioGratis: envioCupon.gratis,
+      cuponSoloSucursal: envioCupon.soloSucursal,
       productoConEnvioGratis: incluyeEnvioGratis(lineasFisicas(lineas).map((l) => l.id)),
     });
     const eCliente = Math.round(Number(args.envio.costoCliente) || 0);

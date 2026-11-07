@@ -158,11 +158,13 @@ export function envioNacional(args: {
   costoCliente: unknown;
   subtotalFisico: number;
   cuponEnvioGratis: boolean;
+  /** El cupón de envío gratis vale solo para sucursal (ver lib/envio). */
+  cuponSoloSucursal?: boolean;
   productoConEnvioGratis?: boolean;
 }): ResultadoEnvio {
-  const { tarifas, tarifaId, subtotalFisico, cuponEnvioGratis, productoConEnvioGratis } = args;
+  const { tarifas, tarifaId, subtotalFisico, cuponEnvioGratis, cuponSoloSucursal, productoConEnvioGratis } = args;
   if (subtotalFisico <= 0) return { verificado: true, costo: 0, tarifa: { id: '', label: '', cost: 0 } };
-  const ctx = { subtotalFisico, cuponEnvioGratis, productoConEnvioGratis, internacional: false };
+  const ctx = { subtotalFisico, cuponEnvioGratis, cuponSoloSucursal, productoConEnvioGratis, internacional: false };
 
   if (!tarifas || tarifas.length === 0) {
     const c = Math.max(0, Math.round(Number(args.costoCliente) || 0));

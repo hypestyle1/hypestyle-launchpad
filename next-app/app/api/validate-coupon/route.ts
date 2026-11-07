@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cuponConEnvioGratis } from '@/lib/cupon-envio-gratis';
+import { envioDeCupon, normalizarCodigoCupon } from '@/lib/cupon-envio-gratis';
 
 const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WP_SECRET = (process.env.WP_SECRET || '').replace(/^﻿/, '').trim();
@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
     // de Woo y devuelve la elegibilidad por línea: así el descuento que se
     // muestra es el que Woo va a aplicar, y el front no mantiene una segunda
     // lista de exclusiones (ver lib/cupon-lineas).
-    const { code, total, email, items } = await req.json();
+    const body = await req.json();
+    const { total, email, items } = body;
+    const code = normalizarCodigoCupon(body?.code);
     const lineas = Array.isArray(items)
       ? items.slice(0, 60).map((it: { id?: unknown; quantity?: unknown; qty?: unknown }) => ({
           id: String(it?.id ?? ''),
@@ -36,7 +38,12 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    if (data?.valid) data.free_shipping = await cuponConEnvioGratis(code);
+    if (data?.valid) {
+      const envio = await envioDeCupon(code);
+      data.free_shipping = envio.gratis;
+      // 'sucursal' = el código bonifica solo el retiro en sucursal (PERDON).
+      if (envio.gratis) data.free_shipping_scope = envio.soloSucursal ? 'sucursal' : 'todos';
+    }
     return NextResponse.json(data);
   } catch (err) {
     console.error('[validate-coupon proxy]', err);
