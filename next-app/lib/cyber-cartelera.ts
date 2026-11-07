@@ -417,27 +417,30 @@ export const CYBER_PACK_SLUGS: string[] = [
  *    dos están sin talle M.
  */
 export const CYBER_DESTACADOS_SLUGS: string[] = [
-  // ── Primera fila: los best sellers REALES (pedidos pagados de Woo, 30 días
-  //    al 3/11; unidades sumando talles). No es curaduría a ojo: es lo que la
-  //    gente compró, con stock vivo. cyberCatalogOrder ya manda lo agotado
-  //    al final, así que un quiebre no deja un hueco arriba.
-  'faith-over-everything-camo-hoodie',    //  9 u/30d — el hoodie que factura
+  // ── 6/11, pedido de Valentín: abre el half zip melange (stock alto en todos
+  //    los talles, no aparecía en la sección) y el camo Faith Over Everything
+  //    baja a la 3ª fila mobile — la oferta lo está dejando sin stock (XL
+  //    agotado, L/M bajos). Los otros dos half zip van más abajo, separados.
+  'half-zip-polo-melange',                // 6/11: abre la sección, mucho stock
   'regular-tees-3-pack-black-navy-white', // 18 u/30d — lo MÁS vendido del sitio
   'no-service-for-the-faithless-white',   // 5/11: portada nueva + 30% OFF ($61.200 → $42.900), pedido de Valentín
   'grey-camo-cap',                        // 11 u/30d
+  'faith-over-everything-camo-hoodie',    //  9 u/30d — baja a la 3ª fila (6/11) para cuidar el stock que queda
   'sweatpant-black-hstars',               //  5 u/30d
   'athletic-dept-blue-longsleeve',        //  5 u/30d — entra a destacados
   'pack-x3-medias-hype',                  // 10 u/30d
   'sweatpant-grey-hstars',                //  4 u/30d
   'find-jesus-longsleeve-black',
-  // ── Después, la curaduría aprobada del 29/10 ──
+  // ── Después, la curaduría aprobada del 29/10 (con los half zip intercalados) ──
   'sleeveless-ranglan-black',
+  'half-zip-polo-navy',                   // 6/11: mucho stock
   'napoli-tee-azul',
   'zolotye-kupola-washed-graphite-hoodie',
   'camo-cap',
   'lettering-black-longsleeve',
   'splatter-hoodie-washed-grey',
   'napoli-tee-blanca',
+  'half-zip-polo-black',                  // 6/11: mucho stock
   'sleeveless-ranglan-white',
   'sweatpant-pink',
   'longsleeve-waffle-horses',
@@ -456,13 +459,13 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
   'regular-tee-red',
   'sleeveless-ranglan-grey',
   'sleeveless-ranglan-militar-green',
-  'regular-tees-3-pack-black',
-  'regular-tees-3-pack-navy',
-  'lettering-pink-jort',
   // jort-cargo-realtree-pink salió el 3/11: quedaba 1 unidad (M) y la lista
   // tiene cupo fijo de 36; entró athletic-dept-blue-longsleeve por ventas.
   // jort-cargo-realtree-beige salió el 5/11 por el mismo cupo: entró
   // no-service-for-the-faithless-white en el 3er lugar.
+  // 6/11: salen regular-tees-3-pack-black, regular-tees-3-pack-navy y
+  // lettering-pink-jort por el mismo cupo (entran los 3 half zip). Siguen en
+  // el catálogo, después de los 36 y en sus filtros.
 ];
 
 /**
