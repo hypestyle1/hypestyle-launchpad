@@ -34,11 +34,11 @@ describe('curaduría comercial del 3/11 — best sellers reales primero', () => 
       'splatter-hoodie-washed-grey',
       'napoli-tee-blanca',
       'half-zip-polo-black', // 6/11
-      'sleeveless-ranglan-white',
+      'hype-creative-goods-green-raglan-longsleeve', // 7/11
       'sweatpant-pink',
       'longsleeve-waffle-horses',
       'hype-distressed-grey-hoodie',
-      'honda-white-tee',
+      'department-of-culture-washed-black-waffle-longsleeve', // 7/11
     ]);
 
     expect(CYBER_DESTACADOS_SLUGS).toHaveLength(CYBER_EXPANDED_COUNT);
