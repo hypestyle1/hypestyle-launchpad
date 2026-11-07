@@ -417,55 +417,53 @@ export const CYBER_PACK_SLUGS: string[] = [
  *    dos están sin talle M.
  */
 export const CYBER_DESTACADOS_SLUGS: string[] = [
-  // ── 6/11, pedido de Valentín: abre el half zip melange (stock alto en todos
-  //    los talles, no aparecía en la sección) y el camo Faith Over Everything
-  //    baja a la 3ª fila mobile — la oferta lo está dejando sin stock (XL
-  //    agotado, L/M bajos). Los otros dos half zip van más abajo, separados.
-  'half-zip-polo-melange',                // 6/11: abre la sección, mucho stock
-  'regular-tees-3-pack-black-navy-white', // 18 u/30d — lo MÁS vendido del sitio
-  'no-service-for-the-faithless-white',   // 5/11: portada nueva + 30% OFF ($61.200 → $42.900), pedido de Valentín
-  'grey-camo-cap',                        // 11 u/30d
-  'faith-over-everything-camo-hoodie',    //  9 u/30d — baja a la 3ª fila (6/11) para cuidar el stock que queda
-  'sweatpant-black-hstars',               //  5 u/30d
-  'athletic-dept-blue-longsleeve',        //  5 u/30d — entra a destacados
-  'pack-x3-medias-hype',                  // 10 u/30d
-  'sweatpant-grey-hstars',                //  4 u/30d
+  // ── 7/11, criterio de Valentín: VARIEDAD. En los primeros 24 (lo que se ve
+  //    sin "ver más") va un solo color por producto; los otros colorways bajan
+  //    a 25–36, intercalados. Excepción: los 3 half zip (pedido del 6/11).
+  //    Las Regular individuales suben (la black al #8): venden más que casi
+  //    todo lo que tenían adelante.
+  'half-zip-polo-melange',                   // 6/11: abre la sección, 40% OFF, mucho stock
+  'regular-tees-3-pack-black-navy-white',    // 18 u/30d — lo MÁS vendido del sitio
+  'no-service-for-the-faithless-white',      // 5/11: portada nueva + 30% OFF
+  'grey-camo-cap',                           // 11 u/30d
+  'faith-over-everything-camo-hoodie',       // 9 u/30d — 3ª fila mobile para cuidar el stock
+  'sweatpant-black-hstars',                  // 5 u/30d
+  'athletic-dept-blue-longsleeve',           // 5 u/30d
+  'regular-tee-black',                       // 7/11: 19 u/30d, la individual que más vende — sube a la 4ª fila
+  'pack-x3-medias-hype',                     // 10 u/30d
   'find-jesus-longsleeve-black',
-  // ── Después, la curaduría aprobada del 29/10 (con los half zip intercalados) ──
   'sleeveless-ranglan-black',
-  'half-zip-polo-navy',                   // 6/11: mucho stock
+  'half-zip-polo-navy',                      // 6/11: 40% OFF, mucho stock
   'napoli-tee-azul',
+  'lamb-of-god-pink-tee',                    // 7/11: Valentín — "la venimos vendiendo bien"
   'zolotye-kupola-washed-graphite-hoodie',
-  'camo-cap',
   'lettering-black-longsleeve',
   'splatter-hoodie-washed-grey',
-  'napoli-tee-blanca',
-  'half-zip-polo-black',                  // 6/11: mucho stock
-  'hype-creative-goods-green-raglan-longsleeve', // 7/11: 7 u/30d, 34% OFF (reemplaza sleeveless white, 0 u/30d)
-  'sweatpant-pink',
+  'athletic-dept-white-grey-print-tee',      // 7/11: 7 u/30d, 39% OFF
+  'half-zip-polo-black',                     // 6/11: 40% OFF, mucho stock
+  'sweatpant-pink',                          // 50% OFF
   'longsleeve-waffle-horses',
   'hype-distressed-grey-hoodie',
-  'department-of-culture-washed-black-waffle-longsleeve', // 7/11: 8 u/30d, 25% OFF (reemplaza honda white, 0 u/30d)
+  'department-of-culture-washed-black-waffle-longsleeve', // 7/11: 8 u/30d, 25% OFF
   'ladytribal-black-longsleeve',
-  'athletic-dept-pink-longsleeve',
-  'athletic-dept-white-grey-print-tee',   // 7/11: 7 u/30d, 39% OFF (reemplaza trucker cap, 0 u/30d)
+  // ── 25–36: los otros colorways, intercalados para que no se lean en bloque ──
+  'regular-tee-white',                       // 16 u/30d
+  'sweatpant-grey-hstars',
+  'napoli-tee-blanca',
+  'regular-tee-navy',                        // 8 u/30d
+  'camo-cap',                                // 8 u/30d
   'hype-washed-black-waffle-longsleeve',
-  'regular-tees-3-pack-white',
-  // Segunda tanda: las individuales quedan detrás de los 24 aprobados.
-  'regular-tee-black',
-  'regular-tee-white',
-  'regular-tee-navy',
-  'regular-tee-melange',
+  'regular-tee-melange',                     // 6 u/30d
+  'athletic-dept-washed-grey-polo',          // 9 u/30d, sin descuento
+  'athletic-dept-pink-longsleeve',           // 8 u/30d
   'regular-tee-red',
-  'dept-of-culture-eagle-pink-raglan-longsleeve', // 7/11: 8 u/30d, 34% OFF (reemplaza sleeveless grey, 0 u/30d)
-  'athletic-dept-washed-grey-polo',       // 7/11: 9 u/30d, sin descuento (reemplaza sleeveless militar, 0 u/30d)
-  // jort-cargo-realtree-pink salió el 3/11: quedaba 1 unidad (M) y la lista
-  // tiene cupo fijo de 36; entró athletic-dept-blue-longsleeve por ventas.
-  // jort-cargo-realtree-beige salió el 5/11 por el mismo cupo: entró
-  // no-service-for-the-faithless-white en el 3er lugar.
-  // 6/11: salen regular-tees-3-pack-black, regular-tees-3-pack-navy y
-  // lettering-pink-jort por el mismo cupo (entran los 3 half zip). Siguen en
-  // el catálogo, después de los 36 y en sus filtros.
+  'only-god-can-judge-me-blanca',            // 29% OFF
+  'regular-tees-3-pack-white',
+  // Historial de salidas por cupo (36): jort-cargo-realtree-pink (3/11),
+  // jort-cargo-realtree-beige (5/11), 3-pack black/navy y lettering-pink-jort
+  // (6/11), honda-white-tee, trucker-cap y sleeveless white/grey/militar (7/11,
+  // 0 u/30d). 7/11 Valentín sacó hype-creative-goods-green-raglan y
+  // dept-of-culture-eagle-pink-raglan. Todos siguen en el catálogo y sus filtros.
 ];
 
 /**
