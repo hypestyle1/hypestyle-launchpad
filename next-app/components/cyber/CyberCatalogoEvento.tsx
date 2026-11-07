@@ -6,6 +6,11 @@ import ProductCard from '@/components/ProductCard';
 import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
 import { cyberCardPrice, cyberCatalogOrder, cyberCategoryMatches, CYBER_INITIAL_COUNT, CYBER_EXPANDED_COUNT } from '@/lib/cyber-catalog-view';
 import { useCyberCatalogTransition } from '@/hooks/useCyberCatalogTransition';
+import { DESCUENTO_TRANSFERENCIA } from '@/lib/precio-servidor';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/envio';
+import { CreditCard, Truck, Zap } from 'lucide-react';
+
+const formatARS = (n: number) => `$${n.toLocaleString('es-AR')}`;
 
 /* Catálogo del evento — el sitio entero comprable sin salir del takeover.
 
@@ -76,42 +81,100 @@ export default function CyberCatalogoEvento({
     return cyberCatalogOrder([...curados, ...resto], f.slugs);
   }, [data, vista, destacadosSlugs, filtros]);
 
+  const hayStock = (p: NormalizedProduct) => Object.values(p.stock ?? {}).some((s) => s !== 'out');
+
+  // Cuántas prendas con stock tiene cada filtro: el número va junto a la pestaña.
+  const conteos = useMemo(() => {
+    const out: Record<string, number> = {};
+    if (!data) return out;
+    for (const f of filtros) out[f.id] = data.filter((p) => cyberCategoryMatches(p.category, f) && hayStock(p)).length;
+    // Destacados: los curados que hoy tienen stock (la grilla muestra hasta 36).
+    const bySlug = new Map(data.map((p) => [p.slug, p]));
+    out.destacados = destacadosSlugs.filter((s) => { const p = bySlug.get(s); return p && hayStock(p); }).length;
+    return out;
+  }, [data, filtros, destacadosSlugs]);
+
+  // "Hasta X% OFF" sale de los precios reales con stock, nunca de una cifra
+  // escrita a mano. Mientras los precios se verifican o es vista previa, no se muestra.
+  const maxOff = useMemo(() => {
+    if (!data || live.preview || pricePending) return 0;
+    return data.reduce((m, p) => (hayStock(p) && p.originalPrice && p.originalPrice > p.price
+      ? Math.max(m, Math.floor((1 - p.price / p.originalPrice) * 100)) : m), 0);
+  }, [data, live.preview, pricePending]);
+
   const pestañas = [
     { id: 'destacados', label: 'Destacados' },
     ...filtros.map((f) => ({ id: f.id, label: f.label })),
     // "Todo" salió el 7/11: mostraba exactamente lo mismo que Destacados.
   ];
 
+  const visibles = Math.min(lista.length, CYBER_EXPANDED_COUNT);
+  const faltan = visibles - CYBER_INITIAL_COUNT;
+
+  // Beneficios vigentes, leídos de las constantes del checkout (no de texto suelto).
+  const transferencia = Math.round(DESCUENTO_TRANSFERENCIA * 100);
+  const beneficios = [
+    { Icono: Zap, texto: `${transferencia}% extra con transferencia` },
+    { Icono: CreditCard, texto: 'Hasta 3 cuotas sin interés' },
+    { Icono: Truck, texto: `Envío gratis a sucursal desde ${formatARS(FREE_SHIPPING_THRESHOLD)}` },
+  ];
+
   return (
     <section id="catalogo" className="bg-background px-4 py-12 text-foreground md:px-10 md:py-16">
       <div className="mx-auto max-w-[1400px]">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3 md:mb-6">
-          <div>
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.26em] text-text-light md:text-[11px]">
-              Todo el evento
-            </p>
-            <h2 className="text-[26px] font-black uppercase leading-[0.95] tracking-[-0.01em] md:text-[36px]">
-              Catálogo Cyber
-            </h2>
-          </div>
-          <p className="text-[12px] text-text-light">{live.preview ? 'Vista previa Cyber: ofertas desde las 19:00. El carrito conserva el precio vigente.' : pricePending ? 'Verificando precios Cyber. Los importes aparecen cuando Woo los confirma.' : 'Precios finales. Lo que ves es lo que pagás.'}</p>
-        </div>
+        {/* Cabecera editorial (rediseño 7/11, referencia de Valentín). Radius 0,
+            sin cajas ni sombras: la jerarquía la hacen la tipografía y el aire. */}
+        <header className="pt-2 md:pt-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.34em] text-foreground/70 md:text-[12px]">
+            Todo el evento
+          </p>
+          <h2 className="mt-3 text-[clamp(2.6rem,11.5vw,7.5rem)] font-black uppercase leading-[0.86] tracking-[-0.045em] md:mt-4">
+            Catálogo Cyber
+          </h2>
+          <p className="mt-4 text-[15px] font-normal leading-snug text-foreground/85 md:mt-5 md:text-[22px]">
+            {live.preview
+              ? 'Vista previa: las ofertas arrancan a las 19:00. El carrito conserva el precio vigente.'
+              : pricePending
+                ? 'Verificando precios Cyber…'
+                : <>{maxOff > 0 && <><span className="block md:inline">Hasta {maxOff}% OFF</span><span aria-hidden className="mx-3.5 hidden text-foreground/40 md:inline">·</span></>}<span className="block md:inline">{transferencia}% extra pagando con transferencia</span></>}
+          </p>
+        </header>
 
-        <div className="-mx-4 mb-6 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
-          {pestañas.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => { setVista(p.id); setExpanded(false); }}
-              className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${
-                vista === p.id
-                  ? 'border-foreground bg-foreground text-background'
-                  : 'border-border-mid text-foreground/70 hover:border-foreground/50 hover:text-foreground'
-              }`}
-            >
-              {p.label}
-            </button>
+        {/* Índice de categorías: esquinas rectas, subrayado en la activa, contadores reales. */}
+        <nav aria-label="Categorías del catálogo" className="relative -mx-4 mt-8 md:mx-0 md:mt-12">
+          <div className="flex snap-x snap-mandatory scroll-px-4 overflow-x-auto scroll-smooth px-4 [scrollbar-width:none] md:scroll-px-0 md:px-0 [&::-webkit-scrollbar]:hidden">
+            {pestañas.map((p) => {
+              const activa = vista === p.id;
+              const n = conteos[p.id];
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  aria-pressed={activa}
+                  onClick={() => { setVista(p.id); setExpanded(false); }}
+                  className={`group relative z-10 shrink-0 snap-start whitespace-nowrap pb-3.5 pr-7 pt-1 text-left text-[12px] font-bold uppercase tracking-[0.16em] transition-colors md:pb-4 md:pr-12 md:text-[14px] md:tracking-[0.18em] ${
+                    activa ? 'text-foreground' : 'text-foreground/45 hover:text-foreground'
+                  }`}
+                >
+                  {p.label}
+                  {n ? <span className="ml-2 font-semibold tabular-nums text-foreground/35">{n}</span> : null}
+                  <span aria-hidden className={`absolute bottom-0 left-0 right-7 h-[3px] bg-foreground transition-opacity md:right-12 ${activa ? 'opacity-100' : 'opacity-0'}`} />
+                </button>
+              );
+            })}
+          </div>
+          <div aria-hidden className="absolute inset-x-4 bottom-0 -z-0 h-px bg-border-mid md:inset-x-0" />
+        </nav>
+
+        {/* Beneficios vigentes: una línea fina, sin tarjetas. */}
+        <ul className="mb-8 mt-5 grid grid-cols-1 gap-y-3 bg-muted px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.11em] text-foreground md:mb-10 md:mt-7 md:grid-cols-3 md:gap-0 md:px-0 md:py-5 md:text-[12px] md:tracking-[0.18em]">
+          {beneficios.map(({ Icono, texto }, i) => (
+            <li key={texto} className={`flex items-center gap-3 md:justify-center md:gap-4 ${i > 0 ? 'md:border-l md:border-border-mid' : ''}`}>
+              <Icono aria-hidden strokeWidth={1.6} className="h-[18px] w-[18px] shrink-0 md:h-6 md:w-6" />
+              {texto}
+            </li>
           ))}
-        </div>
+        </ul>
 
         {live.updating && <p role="status" className="mb-4 text-xs text-text-light">{live.error ? 'No pudimos actualizar los precios. ' : 'Consultando precios Cyber… '}{live.error && <button type="button" className="underline" onClick={() => void live.retry()}>Reintentar</button>}</p>}
         <div className="grid grid-cols-2 gap-x-3 gap-y-7 md:grid-cols-3 md:gap-x-4 md:gap-y-9 lg:grid-cols-4">
@@ -137,14 +200,15 @@ export default function CyberCatalogoEvento({
           ))}
         </div>
 
-        <div className="mt-10 flex justify-center">
-          {!expanded && lista.length > CYBER_INITIAL_COUNT ? (
-            <button type="button" onClick={() => setExpanded(true)} className="inline-flex h-[52px] items-center justify-center rounded-full border border-foreground/25 px-10 text-[12px] font-bold uppercase tracking-[0.12em] text-foreground transition-colors hover:border-foreground">
+        <div className="mt-12 flex justify-center md:mt-16">
+          {!expanded && faltan > 0 ? (
+            <button type="button" onClick={() => setExpanded(true)} className="inline-flex h-[56px] w-full items-center justify-center gap-3 border border-foreground px-14 text-[12px] font-bold uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground hover:text-background md:w-auto">
               Ver más
+              <span className="font-semibold tabular-nums opacity-50">+{faltan}</span>
             </button>
           ) : <Link
             href="/productos"
-            className="inline-flex h-[52px] items-center justify-center rounded-full border border-foreground/25 px-10 text-[12px] font-bold uppercase tracking-[0.12em] text-foreground transition-colors hover:border-foreground"
+            className="inline-flex h-[54px] w-full items-center justify-center border border-foreground px-12 text-[12px] font-bold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-foreground hover:text-background md:w-auto"
           >
             Ver toda la colección
           </Link>}
