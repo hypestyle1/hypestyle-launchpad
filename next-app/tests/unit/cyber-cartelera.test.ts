@@ -212,7 +212,9 @@ describe('mystery — espacio diseñado, no promesa activa', () => {
     // 6/11: entra half-zip-polo-black (pedido de Valentín, mucho stock). Ya
     // convivía vía el filtro de Longsleeves; destacarlo cambia posición, no
     // disponibilidad. Mismo despacho manual de Mystery.
-    expect(choque.sort()).toEqual(['napoli-tee-azul', 'napoli-tee-blanca', 'ladytribal-black-longsleeve', 'honda-white-tee', 'athletic-dept-pink-longsleeve', 'athletic-dept-blue-longsleeve', 'half-zip-polo-black'].sort());
+    // 7/11: sale honda-white-tee (0 u/30d) y entra dept-of-culture-eagle-pink
+    // (8 u/30d, ya a la venta en el filtro Longsleeves). Mismo criterio.
+    expect(choque.sort()).toEqual(['napoli-tee-azul', 'napoli-tee-blanca', 'ladytribal-black-longsleeve', 'athletic-dept-pink-longsleeve', 'athletic-dept-blue-longsleeve', 'half-zip-polo-black', 'dept-of-culture-eagle-pink-raglan-longsleeve'].sort());
   });
 
   it('ningún texto de mystery lleva cifra de dinero ni porcentaje', () => {

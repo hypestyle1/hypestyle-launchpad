@@ -441,14 +441,14 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
   'splatter-hoodie-washed-grey',
   'napoli-tee-blanca',
   'half-zip-polo-black',                  // 6/11: mucho stock
-  'sleeveless-ranglan-white',
+  'hype-creative-goods-green-raglan-longsleeve', // 7/11: 7 u/30d, 34% OFF (reemplaza sleeveless white, 0 u/30d)
   'sweatpant-pink',
   'longsleeve-waffle-horses',
   'hype-distressed-grey-hoodie',
-  'honda-white-tee',
+  'department-of-culture-washed-black-waffle-longsleeve', // 7/11: 8 u/30d, 25% OFF (reemplaza honda white, 0 u/30d)
   'ladytribal-black-longsleeve',
   'athletic-dept-pink-longsleeve',
-  'trucker-cap-no-faith-no-glory',
+  'athletic-dept-white-grey-print-tee',   // 7/11: 7 u/30d, 39% OFF (reemplaza trucker cap, 0 u/30d)
   'hype-washed-black-waffle-longsleeve',
   'regular-tees-3-pack-white',
   // Segunda tanda: las individuales quedan detrás de los 24 aprobados.
@@ -457,8 +457,8 @@ export const CYBER_DESTACADOS_SLUGS: string[] = [
   'regular-tee-navy',
   'regular-tee-melange',
   'regular-tee-red',
-  'sleeveless-ranglan-grey',
-  'sleeveless-ranglan-militar-green',
+  'dept-of-culture-eagle-pink-raglan-longsleeve', // 7/11: 8 u/30d, 34% OFF (reemplaza sleeveless grey, 0 u/30d)
+  'athletic-dept-washed-grey-polo',       // 7/11: 9 u/30d, sin descuento (reemplaza sleeveless militar, 0 u/30d)
   // jort-cargo-realtree-pink salió el 3/11: quedaba 1 unidad (M) y la lista
   // tiene cupo fijo de 36; entró athletic-dept-blue-longsleeve por ventas.
   // jort-cargo-realtree-beige salió el 5/11 por el mismo cupo: entró
