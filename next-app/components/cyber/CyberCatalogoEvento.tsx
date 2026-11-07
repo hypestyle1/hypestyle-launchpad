@@ -62,7 +62,7 @@ export default function CyberCatalogoEvento({
     const pick = (slugs: string[]) =>
       slugs.map((s) => bySlug.get(s)).filter(Boolean) as NormalizedProduct[];
 
-    if (vista === 'destacados' || vista === 'todo') return cyberCatalogOrder(data, destacadosSlugs);
+    if (vista === 'destacados') return cyberCatalogOrder(data, destacadosSlugs);
 
     const f = filtros.find((x) => x.id === vista);
     if (!f) return [];
@@ -79,7 +79,7 @@ export default function CyberCatalogoEvento({
   const pestañas = [
     { id: 'destacados', label: 'Destacados' },
     ...filtros.map((f) => ({ id: f.id, label: f.label })),
-    { id: 'todo', label: 'Todo' },
+    // "Todo" salió el 7/11: mostraba exactamente lo mismo que Destacados.
   ];
 
   return (
