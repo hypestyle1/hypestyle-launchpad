@@ -87,16 +87,15 @@ export default function CyberCatalogoEvento({
     return cyberCatalogOrder([...curados, ...resto], f.slugs);
   }, [data, vista, destacadosSlugs, filtros]);
 
-  const hayStock = (p: NormalizedProduct) => Object.values(p.stock ?? {}).some((s) => s !== 'out');
-
-  // Cuántas prendas con stock tiene cada filtro: el número va junto a la pestaña.
+  // Cuántos productos lista cada pestaña: el mismo conjunto que pinta la grilla
+  // (incluye los agotados, que van al final a propósito), así el número y lo
+  // que se ve coinciden. Destacados: los curados presentes en el catálogo.
   const conteos = useMemo(() => {
     const out: Record<string, number> = {};
     if (!data) return out;
-    for (const f of filtros) out[f.id] = data.filter((p) => cyberCategoryMatches(p.category, f) && hayStock(p)).length;
-    // Destacados: los curados que hoy tienen stock (la grilla muestra hasta 36).
-    const bySlug = new Map(data.map((p) => [p.slug, p]));
-    out.destacados = destacadosSlugs.filter((s) => { const p = bySlug.get(s); return p && hayStock(p); }).length;
+    for (const f of filtros) out[f.id] = data.filter((p) => cyberCategoryMatches(p.category, f)).length;
+    const slugs = new Set(data.map((p) => p.slug));
+    out.destacados = destacadosSlugs.filter((s) => slugs.has(s)).length;
     return out;
   }, [data, filtros, destacadosSlugs]);
 
@@ -132,19 +131,19 @@ export default function CyberCatalogoEvento({
   ];
 
   return (
-    <section id="catalogo" className="bg-background px-4 pb-12 pt-9 text-foreground md:px-10 md:py-16">
+    <section id="catalogo" className="bg-background px-4 pb-12 pt-7 text-foreground md:px-10 md:py-16">
       <div className="mx-auto max-w-[1400px]">
-        {/* Cabecera editorial — iteraciones 2 y 3 del 7/11 (dirección EME Studios):
+        {/* Cabecera editorial — iteraciones 2 a 4 del 7/11 (dirección EME Studios):
             título en caja baja y peso medium; la bajada informa, no grita.
             Radius 0, sin cajas ni sombras. */}
         <header className="max-w-[640px] md:pt-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-foreground/55 md:text-[11px]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-foreground/60 md:text-[11px]">
             Todo el evento
           </p>
           <h2 className="mt-2.5 text-[34px] font-medium leading-[1.02] tracking-[-0.03em] md:mt-4 md:text-[44px] md:tracking-[-0.025em]">
             Catálogo Cyber
           </h2>
-          <p className="mt-2.5 text-[14px] font-normal leading-[1.5] text-foreground/70 md:mt-4 md:text-[16px]">
+          <p className="mt-2.5 text-[14px] font-normal leading-[1.5] text-foreground/75 md:mt-4 md:text-[16px]">
             La selección completa de Cyber Hype. Disponible hasta el {ultimoDia}.
           </p>
           {live.preview && (
@@ -154,7 +153,7 @@ export default function CyberCatalogoEvento({
 
         {/* Índice de categorías: esquinas rectas, contadores reales. Hover:
             gris → negro; el subrayado crece de izquierda a derecha (≈220 ms). */}
-        <nav aria-label="Categorías del catálogo" className="relative -mx-4 mt-6 md:mx-0 md:mt-12">
+        <nav aria-label="Categorías del catálogo" className="relative -mx-4 mt-6 md:mx-0 md:mt-10">
           <div
             ref={indiceRef}
             onScroll={medirIndice}
@@ -201,17 +200,17 @@ export default function CyberCatalogoEvento({
         {/* Beneficios — iteración 3: grilla con divisores finos. Mobile: transferencia
             y cuotas en dos columnas, envío a todo el ancho. Desktop: tres columnas
             iguales que ocupan todo el ancho. Liviano: no compite con el título. */}
-        <ul className="mb-6 grid grid-cols-2 border-b border-foreground/10 text-[11.5px] font-normal leading-[1.35] text-foreground/65 md:mb-10 md:text-[13px] lg:grid-cols-3">
+        <ul className="mb-5 grid grid-cols-2 border-b border-foreground/10 text-[11.5px] font-normal leading-[1.35] text-foreground/75 md:mb-10 md:text-[13px] lg:grid-cols-3">
           {beneficios.map(({ Icono, texto }, i) => (
             <li
               key={texto}
               className={`flex items-center gap-2 py-3 md:gap-2.5 md:py-4 ${
                 i === 0 ? 'border-r border-foreground/10 pr-3 md:pr-6'
                 : i === 1 ? 'pl-3 md:pl-6 lg:border-r lg:border-foreground/10 lg:px-6'
-                : 'col-span-2 border-t border-foreground/10 lg:col-span-1 lg:border-t-0 lg:pl-6'
+                : 'col-span-2 hidden border-t border-foreground/10 md:flex lg:col-span-1 lg:border-t-0 lg:pl-6'
               }`}
             >
-              <Icono aria-hidden strokeWidth={1.25} className="h-[15px] w-[15px] shrink-0 text-foreground/50" />
+              <Icono aria-hidden strokeWidth={1.25} className="h-[15px] w-[15px] shrink-0 text-foreground/60" />
               <span>{texto}</span>
             </li>
           ))}
@@ -243,13 +242,13 @@ export default function CyberCatalogoEvento({
 
         <div className="mt-12 flex justify-center md:mt-16">
           {!expanded && faltan > 0 ? (
-            <button type="button" onClick={() => setExpanded(true)} className="inline-flex h-[56px] w-full items-center justify-center gap-3 border border-foreground px-14 text-[12px] font-bold uppercase tracking-[0.2em] text-foreground transition-colors hover:bg-foreground hover:text-background md:w-auto">
+            <button type="button" onClick={() => setExpanded(true)} className="inline-flex h-[54px] w-full items-center justify-center gap-3 rounded-[14px] border border-foreground px-14 text-[12px] font-bold uppercase tracking-[0.18em] text-foreground transition-colors duration-200 ease-out hover:bg-foreground hover:text-background active:bg-foreground/90 active:text-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-foreground md:w-auto">
               Ver más
-              <span className="font-semibold tabular-nums opacity-50">+{faltan}</span>
+              <span className="font-semibold tabular-nums opacity-45">+{faltan}</span>
             </button>
           ) : <Link
             href="/productos"
-            className="inline-flex h-[54px] w-full items-center justify-center border border-foreground px-12 text-[12px] font-bold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-foreground hover:text-background md:w-auto"
+            className="inline-flex h-[54px] w-full items-center justify-center gap-3 rounded-[14px] border border-foreground px-14 text-[12px] font-bold uppercase tracking-[0.18em] text-foreground transition-colors duration-200 ease-out hover:bg-foreground hover:text-background active:bg-foreground/90 active:text-background focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-foreground md:w-auto"
           >
             Ver toda la colección
           </Link>}
