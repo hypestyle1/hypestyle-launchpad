@@ -15,31 +15,32 @@ import { SLUGS_INTERNOS } from '@/lib/catalog';
 describe('curaduría comercial del 3/11 — best sellers reales primero', () => {
   it('conserva los 24 del orden aprobado y las 12 siguientes sin duplicados', () => {
     expect(CYBER_DESTACADOS_SLUGS.slice(0, CYBER_INITIAL_COUNT)).toEqual([
-      'faith-over-everything-camo-hoodie', //  9 u/30d
+      'half-zip-polo-melange', // 6/11: abre la sección (mucho stock)
       'regular-tees-3-pack-black-navy-white', // 18 u/30d — lo más vendido
       'no-service-for-the-faithless-white', // 5/11: pedido de Valentín, 30% OFF
       'grey-camo-cap', // 11 u/30d
+      'faith-over-everything-camo-hoodie', // 9 u/30d — 3ª fila mobile desde el 6/11 (poco stock)
       'sweatpant-black-hstars', // 5 u/30d
       'athletic-dept-blue-longsleeve', // 5 u/30d
       'pack-x3-medias-hype', // 10 u/30d
       'sweatpant-grey-hstars', // 4 u/30d
       'find-jesus-longsleeve-black',
       'sleeveless-ranglan-black',
+      'half-zip-polo-navy', // 6/11
       'napoli-tee-azul',
       'zolotye-kupola-washed-graphite-hoodie',
       'camo-cap',
       'lettering-black-longsleeve',
       'splatter-hoodie-washed-grey',
       'napoli-tee-blanca',
+      'half-zip-polo-black', // 6/11
       'sleeveless-ranglan-white',
       'sweatpant-pink',
       'longsleeve-waffle-horses',
       'hype-distressed-grey-hoodie',
       'honda-white-tee',
-      'ladytribal-black-longsleeve',
-      'athletic-dept-pink-longsleeve',
-      'trucker-cap-no-faith-no-glory',
     ]);
+
     expect(CYBER_DESTACADOS_SLUGS).toHaveLength(CYBER_EXPANDED_COUNT);
     expect(new Set(CYBER_DESTACADOS_SLUGS).size).toBe(36);
     expect(CYBER_DESTACADOS_SLUGS.slice(0, 24).filter((s) => /^regular-tee-/.test(s))).toEqual([]);
@@ -50,6 +51,6 @@ describe('curaduría comercial del 3/11 — best sellers reales primero', () => 
     expect(product.price).toBe(28000);
     expect(product.sizes).toEqual(['Única']);
     expect(product.stock['Única']).toBe('ok');
-    expect(CYBER_DESTACADOS_SLUGS[6]).toBe(product.slug);
+    expect(CYBER_DESTACADOS_SLUGS[7]).toBe(product.slug);
   });
 });
