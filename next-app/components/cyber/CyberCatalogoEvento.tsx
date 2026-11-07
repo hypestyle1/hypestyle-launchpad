@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
 import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
 import { cyberCardPrice, cyberCatalogOrder, cyberCategoryMatches, CYBER_INITIAL_COUNT, CYBER_EXPANDED_COUNT } from '@/lib/cyber-catalog-view';
@@ -100,6 +100,20 @@ export default function CyberCatalogoEvento({
     return out;
   }, [data, filtros, destacadosSlugs]);
 
+  // Pista de "hay más para deslizar": un fundido a la derecha del índice que se
+  // apaga al llegar al final (y no aparece si todo entra, como en desktop).
+  const indiceRef = useRef<HTMLDivElement>(null);
+  const [quedaIndice, setQuedaIndice] = useState(false);
+  const medirIndice = useCallback(() => {
+    const el = indiceRef.current;
+    if (el) setQuedaIndice(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+  useEffect(() => {
+    medirIndice();
+    window.addEventListener('resize', medirIndice);
+    return () => window.removeEventListener('resize', medirIndice);
+  }, [medirIndice, conteos]);
+
   const pestañas = [
     { id: 'destacados', label: 'Destacados' },
     ...filtros.map((f) => ({ id: f.id, label: f.label })),
@@ -112,25 +126,25 @@ export default function CyberCatalogoEvento({
   // Beneficios vigentes, leídos de las constantes del checkout (no de texto suelto).
   const transferencia = Math.round(DESCUENTO_TRANSFERENCIA * 100);
   const beneficios = [
-    { Icono: Zap, texto: `${transferencia}% extra pagando con transferencia` },
+    { Icono: Zap, texto: `${transferencia}% extra con transferencia` },
     { Icono: CreditCard, texto: 'Hasta 3 cuotas sin interés' },
     { Icono: Truck, texto: `Envío gratis a sucursal desde ${formatARS(FREE_SHIPPING_THRESHOLD)}` },
   ];
 
   return (
-    <section id="catalogo" className="bg-background px-4 py-12 text-foreground md:px-10 md:py-16">
+    <section id="catalogo" className="bg-background px-4 pb-12 pt-9 text-foreground md:px-10 md:py-16">
       <div className="mx-auto max-w-[1400px]">
-        {/* Cabecera editorial — 2ª iteración 7/11 (dirección EME Studios):
-            título en caja baja y peso medium, en la escala de SectionHeader;
-            la bajada informa, no grita. Radius 0, sin cajas ni sombras. */}
-        <header className="max-w-[640px] pt-1 md:pt-4">
+        {/* Cabecera editorial — iteraciones 2 y 3 del 7/11 (dirección EME Studios):
+            título en caja baja y peso medium; la bajada informa, no grita.
+            Radius 0, sin cajas ni sombras. */}
+        <header className="max-w-[640px] md:pt-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-foreground/55 md:text-[11px]">
             Todo el evento
           </p>
-          <h2 className="mt-3 text-[30px] font-medium leading-[1.02] tracking-[-0.025em] md:mt-4 md:text-[44px]">
+          <h2 className="mt-2.5 text-[34px] font-medium leading-[1.02] tracking-[-0.03em] md:mt-4 md:text-[44px] md:tracking-[-0.025em]">
             Catálogo Cyber
           </h2>
-          <p className="mt-3 text-[14px] font-normal leading-[1.55] text-foreground/60 md:mt-4 md:text-[16px]">
+          <p className="mt-2.5 text-[14px] font-normal leading-[1.5] text-foreground/70 md:mt-4 md:text-[16px]">
             La selección completa de Cyber Hype. Disponible hasta el {ultimoDia}.
           </p>
           {live.preview && (
@@ -140,8 +154,12 @@ export default function CyberCatalogoEvento({
 
         {/* Índice de categorías: esquinas rectas, contadores reales. Hover:
             gris → negro; el subrayado crece de izquierda a derecha (≈220 ms). */}
-        <nav aria-label="Categorías del catálogo" className="relative -mx-4 mt-9 md:mx-0 md:mt-12">
-          <div className="flex snap-x snap-mandatory scroll-px-4 overflow-x-auto scroll-smooth px-4 [scrollbar-width:none] md:scroll-px-0 md:px-0 [&::-webkit-scrollbar]:hidden">
+        <nav aria-label="Categorías del catálogo" className="relative -mx-4 mt-6 md:mx-0 md:mt-12">
+          <div
+            ref={indiceRef}
+            onScroll={medirIndice}
+            className="flex snap-x snap-mandatory scroll-px-4 overflow-x-auto overscroll-x-contain scroll-smooth px-4 [scrollbar-width:none] md:scroll-px-0 md:px-0 lg:justify-between [&::-webkit-scrollbar]:hidden"
+          >
             {pestañas.map((p) => {
               const activa = vista === p.id;
               const n = conteos[p.id];
@@ -151,7 +169,7 @@ export default function CyberCatalogoEvento({
                   type="button"
                   aria-pressed={activa}
                   onClick={() => { setVista(p.id); setExpanded(false); }}
-                  className={`group relative z-10 shrink-0 snap-start touch-manipulation whitespace-nowrap pr-7 text-left text-[11px] font-semibold uppercase tracking-[0.16em] outline-none transition-colors duration-200 ease-out md:pr-11 md:text-[12px] md:tracking-[0.18em] focus-visible:text-foreground ${
+                  className={`group relative z-10 shrink-0 snap-start touch-manipulation whitespace-nowrap pr-7 text-left text-[11px] font-semibold uppercase tracking-[0.16em] outline-none transition-colors duration-200 ease-out md:pr-11 lg:pr-0 md:text-[12px] md:tracking-[0.18em] focus-visible:text-foreground ${
                     activa ? 'text-foreground' : 'text-foreground/40 hover:text-foreground active:text-foreground'
                   }`}
                 >
@@ -173,15 +191,28 @@ export default function CyberCatalogoEvento({
             })}
           </div>
           <div aria-hidden className="absolute inset-x-4 bottom-0 h-px bg-foreground/10 md:inset-x-0" />
+          {/* Fundido a la derecha: indica que el índice sigue. Se apaga al final. */}
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute bottom-px right-0 top-0 z-20 w-12 bg-gradient-to-l from-background via-background/80 to-transparent transition-opacity duration-200 md:w-16 ${quedaIndice ? 'opacity-100' : 'opacity-0'}`}
+          />
         </nav>
 
-        {/* Beneficios: una línea liviana debajo del índice, sin caja ni mayúsculas,
-            para que no compita con el título ni con las categorías. */}
-        <ul className="mb-8 mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[12px] font-normal text-foreground/55 md:mb-10 md:mt-5 md:gap-x-9 md:text-[13px]">
-          {beneficios.map(({ Icono, texto }) => (
-            <li key={texto} className="flex items-center gap-2">
-              <Icono aria-hidden strokeWidth={1.25} className="h-[14px] w-[14px] shrink-0 text-foreground/45" />
-              {texto}
+        {/* Beneficios — iteración 3: grilla con divisores finos. Mobile: transferencia
+            y cuotas en dos columnas, envío a todo el ancho. Desktop: tres columnas
+            iguales que ocupan todo el ancho. Liviano: no compite con el título. */}
+        <ul className="mb-6 grid grid-cols-2 border-b border-foreground/10 text-[11.5px] font-normal leading-[1.35] text-foreground/65 md:mb-10 md:text-[13px] lg:grid-cols-3">
+          {beneficios.map(({ Icono, texto }, i) => (
+            <li
+              key={texto}
+              className={`flex items-center gap-2 py-3 md:gap-2.5 md:py-4 ${
+                i === 0 ? 'border-r border-foreground/10 pr-3 md:pr-6'
+                : i === 1 ? 'pl-3 md:pl-6 lg:border-r lg:border-foreground/10 lg:px-6'
+                : 'col-span-2 border-t border-foreground/10 lg:col-span-1 lg:border-t-0 lg:pl-6'
+              }`}
+            >
+              <Icono aria-hidden strokeWidth={1.25} className="h-[15px] w-[15px] shrink-0 text-foreground/50" />
+              <span>{texto}</span>
             </li>
           ))}
         </ul>
