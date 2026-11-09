@@ -108,7 +108,8 @@ const DICT: Dict = {
   'Iniciar compra': { EN: 'Checkout', PT: 'Finalizar compra', DE: 'Zur Kasse', FR: 'Commander', IT: 'Vai al checkout' },
 
   // — AnnouncementBar —
-  'Envío gratis a sucursal desde $180.000': { EN: 'Argentina: free pickup-point shipping over $180.000', PT: 'Argentina: frete grátis para retirada a partir de $180.000', DE: 'Argentinien: kostenloser Versand an eine Abholstelle ab $180.000', FR: 'Argentine : livraison gratuite en point relais dès $180.000', IT: 'Argentina: spedizione gratuita al punto di ritiro da $180.000' },
+  'Envío gratis a sucursal desde $150.000': { EN: 'Argentina: free pickup-point shipping over $150.000', PT: 'Argentina: frete grátis para retirada a partir de $150.000', DE: 'Argentinien: kostenloser Versand an eine Abholstelle ab $150.000', FR: 'Argentine : livraison gratuite en point relais dès $150.000', IT: 'Argentina: spedizione gratuita al punto di ritiro da $150.000' },
+  'Envío gratis a domicilio desde $300.000': { EN: 'Argentina: free home delivery over $300.000', PT: 'Argentina: frete grátis para entrega em casa a partir de $300.000', DE: 'Argentinien: kostenlose Lieferung nach Hause ab $300.000', FR: 'Argentine : livraison gratuite à domicile dès $300.000', IT: 'Argentina: consegna a domicilio gratuita da $300.000' },
   'Hasta 3 cuotas sin interés': { EN: 'Up to 3 interest-free installments', PT: 'Até 3x sem juros', DE: 'Bis zu 3 zinsfreie Raten', FR: "Jusqu'à 3 fois sans frais", IT: 'Fino a 3 rate senza interessi' },
   'Worldwide Shipping vía FedEx': { EN: 'Worldwide shipping via FedEx', PT: 'Envio mundial via FedEx', DE: 'Weltweiter Versand mit FedEx', FR: 'Livraison mondiale via FedEx', IT: 'Spedizione in tutto il mondo con FedEx' },
   '30 días para cambios y devoluciones': { EN: '30 days for exchanges & returns', PT: '30 dias para trocas e devoluções', DE: '30 Tage für Umtausch und Rückgabe', FR: '30 jours pour échanges et retours', IT: '30 giorni per cambi e resi' },

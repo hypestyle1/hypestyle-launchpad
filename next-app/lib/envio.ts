@@ -1,8 +1,13 @@
 /**
  * Regla de envío gratis para Argentina — fuente única.
  *
- * El envío gratis es SOLO para retiro en sucursal. Quien elige domicilio paga
- * la diferencia contra la sucursal: a Hype le cuesta lo mismo bonificar una
+ * Dos umbrales (decisión de Valentín, 9/11/2026):
+ * - Sucursal gratis desde FREE_SHIPPING_THRESHOLD ($150.000; antes $180.000).
+ * - Domicilio (estándar y llega hoy) gratis desde DOMICILIO_FREE_THRESHOLD
+ *   ($300.000). Antes salía gratis por accidente, porque el plugin de Andreani
+ *   devolvía 0 desde ese monto; ahora es una regla explícita y no depende del
+ *   plugin.
+ * Entre los dos umbrales, quien elige domicilio paga la diferencia contra la sucursal: a Hype le cuesta lo mismo bonificar una
  * sucursal que descontarla de un domicilio, y el cliente que ya llegó al umbral
  * no siente el domicilio como un castigo. Medido el 29/09/2026 sobre 23 envíos,
  * domicilio costaba 33% más ($ 2.984 por envío) y era el 83% de los despachos.
@@ -16,16 +21,19 @@
  * IMPORTANTE: el plugin de Andreani en WooCommerce tiene su propio
  * `envio_gratis_monto` (Ajustes → Envíos → Argentina → Andreani Envios) y no
  * distingue sucursal de domicilio. Si queda activo bonifica los dos modos en
- * cualquier camino de compra que no sea este checkout. El cotizador que usa el
- * sitio (`hype_shipping_rates`) hoy devuelve el precio lleno también por encima
- * del umbral, y esta regla depende de eso: si el plugin empezara a devolver 0,
- * el domicilio saldría gratis.
+ * cualquier camino de compra que no sea este checkout. Al 9/11/2026 está en
+ * $300.000 para los tres modos, y el cotizador del sitio devuelve 0 desde ahí:
+ * coincide con DOMICILIO_FREE_THRESHOLD. Si alguien lo baja en el plugin, el
+ * domicilio saldría gratis antes de tiempo.
  *
  * El número es una decisión comercial: no se cambia sin avisar. Al cambiarlo
  * hay que actualizar el texto visible (AnnouncementBar y
  * lib/i18n.ts).
  */
-export const FREE_SHIPPING_THRESHOLD = 180000;
+export const FREE_SHIPPING_THRESHOLD = 150000;
+
+/** Desde acá también el domicilio (estándar y llega hoy) sale gratis. Solo Argentina. */
+export const DOMICILIO_FREE_THRESHOLD = 300000;
 
 /**
  * Productos que traen el envío a sucursal incluido en el precio: con uno de
@@ -145,16 +153,24 @@ export function alcanzaUmbral({ subtotalFisico, internacional, productoConEnvioG
   return !!productoConEnvioGratis || subtotalFisico >= FREE_SHIPPING_THRESHOLD;
 }
 
+/** ¿El carrito llegó al umbral de domicilio gratis? Nunca para el exterior. */
+export function alcanzaUmbralDomicilio({ subtotalFisico, internacional }: ContextoEnvio): boolean {
+  if (internacional) return false;
+  return subtotalFisico >= DOMICILIO_FREE_THRESHOLD;
+}
+
 /**
  * ¿Este modo de entrega sale gratis?
  * - Exterior: nunca.
  * - Cupón de envío gratis: sí, en cualquier modo (es un beneficio que Hype
  *   entrega a mano), salvo que el cupón sea solo para sucursal.
- * - Umbral: solo sucursal.
+ * - Umbral de sucursal: solo sucursal.
+ * - Umbral de domicilio: todos los modos.
  */
 export function envioBonificado(modo: ModoEntrega, ctx: ContextoEnvio): boolean {
   if (ctx.internacional) return false;
   if (ctx.cuponEnvioGratis && (!ctx.cuponSoloSucursal || modo === 'sucursal')) return true;
+  if (alcanzaUmbralDomicilio(ctx)) return true;
   return modo === 'sucursal' && alcanzaUmbral(ctx);
 }
 
@@ -174,6 +190,7 @@ export function costoEnvio(tarifa: TarifaEnvio, tarifas: TarifaEnvio[], ctx: Con
     // regla de siempre (tarifa completa bajo el umbral, diferencia sobre él).
     if (modoDeTarifa(tarifa) === 'sucursal') return 0;
   }
+  if (alcanzaUmbralDomicilio(ctx)) return 0;
   if (!alcanzaUmbral(ctx)) return tarifa.cost;
 
   const referencia = tarifaSucursal(tarifas) ?? tarifaPorDefecto(tarifas) ?? tarifa;

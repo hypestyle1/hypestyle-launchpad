@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  DOMICILIO_FREE_THRESHOLD,
   FREE_SHIPPING_THRESHOLD,
   ahorroSucursal,
   alcanzaUmbral,
@@ -21,6 +22,40 @@ const TARIFAS = [ESTANDAR, SUCURSAL, LLEGA_HOY];
 
 const BAJO = { subtotalFisico: 81358 };
 const SOBRE = { subtotalFisico: 195000 };
+const DOMICILIO = { subtotalFisico: DOMICILIO_FREE_THRESHOLD };
+
+describe('umbrales vigentes (9/11/2026)', () => {
+  it('sucursal desde $150.000 y domicilio desde $300.000', () => {
+    expect(FREE_SHIPPING_THRESHOLD).toBe(150000);
+    expect(DOMICILIO_FREE_THRESHOLD).toBe(300000);
+  });
+});
+
+describe('domicilio gratis desde DOMICILIO_FREE_THRESHOLD', () => {
+  it('en el umbral exacto todos los modos salen gratis', () => {
+    expect(envioBonificado('domicilio', DOMICILIO)).toBe(true);
+    expect(costoEnvio(ESTANDAR, TARIFAS, DOMICILIO)).toBe(0);
+    expect(costoEnvio(LLEGA_HOY, TARIFAS, DOMICILIO)).toBe(0);
+    expect(costoEnvio(SUCURSAL, TARIFAS, DOMICILIO)).toBe(0);
+  });
+  it('un peso abajo, el domicilio paga la diferencia contra la sucursal', () => {
+    const casi = { subtotalFisico: DOMICILIO_FREE_THRESHOLD - 1 };
+    expect(envioBonificado('domicilio', casi)).toBe(false);
+    expect(costoEnvio(ESTANDAR, TARIFAS, casi)).toBe(2775);
+  });
+  it('no depende de que el plugin devuelva 0', () => {
+    expect(costoEnvio(ESTANDAR, TARIFAS, { subtotalFisico: 450000 })).toBe(0);
+  });
+  it('nunca para el exterior', () => {
+    const fedex: TarifaEnvio = { id: 'fedex', label: 'FedEx', cost: 85000 };
+    expect(costoEnvio(fedex, [fedex], { ...DOMICILIO, internacional: true })).toBe(85000);
+    expect(envioBonificado('domicilio', { ...DOMICILIO, internacional: true })).toBe(false);
+  });
+  it('un cupón solo sucursal no le saca el domicilio gratis a un carrito que pasó los $300.000', () => {
+    const perdon = { cuponEnvioGratis: true, cuponSoloSucursal: true };
+    expect(costoEnvio(ESTANDAR, TARIFAS, { ...DOMICILIO, ...perdon })).toBe(0);
+  });
+});
 
 describe('modoDeTarifa', () => {
   it('reconoce la sucursal por id o por label', () => {
