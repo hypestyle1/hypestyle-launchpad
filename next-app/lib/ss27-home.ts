@@ -127,7 +127,9 @@ export const SS27_PROXIMAMENTE: { src: string; alt: string }[] = [
  * que el home ya precarga; no tocan /colecciones/ss27 ni Private Access.
  * Cuando la gorra nueva esté cargada en Woo, sumar su slug acá.
  */
-export const SS27_HOME_EXTRA_SLUGS = ['pack-x3-medias-hype'];
+// chain-hype (9/11, pedido de Valentín): completa la fila de Accesorios, que
+// quedaba con un hueco de 1 card en desktop.
+export const SS27_HOME_EXTRA_SLUGS = ['pack-x3-medias-hype', 'chain-hype'];
 
 /** Carrusel grande de Remeras: una foto por modelo, cada una lleva a su ficha. */
 export const SS27_REMERAS_CAROUSEL: { src: string; alt: string; title: string; href: string }[] = [

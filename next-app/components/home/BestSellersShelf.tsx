@@ -5,6 +5,7 @@ import ProductCard from '@/components/ProductCard';
 import CollectionIndex from '@/components/collection/CollectionIndex';
 import { useScrollSpy } from '@/components/collection/useScrollSpy';
 import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
+import { yaMostradosArriba } from '@/lib/home-curaduria';
 
 /**
  * Best sellers con la piel del sistema nuevo y el MISMO patrón sticky que las
@@ -24,6 +25,26 @@ import { useProducts, type NormalizedProduct } from '@/hooks/useProducts';
  */
 
 const GRUPOS: { id: string; label: string; slugs: string[] }[] = [
+  {
+    // 9/11 (post-Cyber, pedido de Valentín): lo que quedaba del estante FW26
+    // entra acá, PRIMERO, antes que Clásicos. El estante FW26 sale de la home.
+    // Lo que ya está en Lo más elegido se filtra solo (yaMostradosArriba).
+    id: 'fw26',
+    label: 'FW26',
+    slugs: [
+      'hoodie-grey-hstars',
+      'sweatpant-grey-hstars',
+      'hoodie-black-hstars',
+      'half-zip-polo-navy',
+      'half-zip-polo-melange',
+      'sweatpant-pink',
+      'lion-of-judah-stone-wash-hoodie',
+      'ladytribal-black-longsleeve',
+      'hs-co-grey-hoodie',
+      'napoli-tee-blanca',
+      'stars-for-venezuela-hoodie',
+    ],
+  },
   {
     // Primero (pedido 12/10): los gráficos de siempre, 2 filas completas.
     id: 'clasicos',
@@ -194,10 +215,17 @@ export default function BestSellersShelf() {
 
   const grupos = useMemo(() => {
     const bySlug = new Map(allProducts.map((p) => [p.slug, p]));
+    const vistos = new Set<string>();
     return GRUPOS.map((g) => {
-      const items = g.slugs.map((s) => bySlug.get(s)).filter(Boolean) as NormalizedProduct[];
-      // Lo agotado va al fondo de la fila: primero lo que se puede comprar.
-      return { ...g, items: [...items.filter(enStock), ...items.filter((p) => !enStock(p))] };
+      // Home post-Cyber (9/11): sin repetidos y sin agotados. Afuera lo que ya
+      // apareció más arriba (Lo más elegido, camo, Regular), lo que se repita
+      // entre grupos y lo agotado: recorrido corto y limpio.
+      const items = (g.slugs.map((s) => bySlug.get(s)).filter(Boolean) as NormalizedProduct[]).filter((p) => {
+        if (vistos.has(p.slug) || yaMostradosArriba(p) || !enStock(p)) return false;
+        vistos.add(p.slug);
+        return true;
+      });
+      return { ...g, items };
     }).filter((g) => g.items.length > 0);
   }, [allProducts]);
 

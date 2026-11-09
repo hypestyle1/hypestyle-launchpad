@@ -344,7 +344,7 @@ describe('restauración automática', () => {
     // El archivo de la home tiene que conservar sus secciones de siempre;
     // si alguien las borra "porque está el takeover", este test lo frena.
     const src = readFileSync(join(RAIZ, 'app', 'page.tsx'), 'utf8');
-    for (const seccion of ['HeroSs27', 'Ss27Feed', 'ShopTheLook', 'EsencialesShelf', 'Fw26Shelf', 'BestSellersShelf', 'ReviewsHomeSection', 'InstagramFeed', 'Footer']) {
+    for (const seccion of ['HeroSs27', 'Ss27Feed', 'ShopTheLook', 'CategoriasChips', 'MasElegidosShelf', 'CamoColeccionHome', 'CategoriasEditorial', 'RegularTeesPack', 'MysteryHome', 'BestSellersShelf', 'ReviewsHomeSection', 'InstagramFeed', 'Footer']) {
       expect(src).toContain(seccion);
     }
     // La rama sigue intacta, pero ahora la decisión incluye la sesión firmada

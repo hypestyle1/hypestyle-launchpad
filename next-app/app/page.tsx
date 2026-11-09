@@ -2,9 +2,13 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import ShopTheLook from '@/components/ShopTheLook';
 import VistoEn from '@/components/VistoEn';
-import EsencialesShelf from '@/components/home/EsencialesShelf';
-import Fw26Shelf from '@/components/home/Fw26Shelf';
 import BestSellersShelf from '@/components/home/BestSellersShelf';
+import CategoriasChips from '@/components/home/CategoriasChips';
+import CategoriasEditorial from '@/components/home/CategoriasEditorial';
+import MysteryHome from '@/components/home/MysteryHome';
+import MasElegidosShelf from '@/components/home/MasElegidosShelf';
+import CamoColeccionHome from '@/components/home/CamoColeccionHome';
+import RegularTeesPack from '@/components/home/RegularTeesPack';
 import EditorialBanner from '@/components/EditorialBanner';
 import FlashSaleSection from '@/components/FlashSaleSection';
 import Promo3x2Section from '@/components/Promo3x2Section';
@@ -48,7 +52,7 @@ function fondoHero(q: string | undefined): CyberFondo {
 }
 import Ss27Feed from '@/components/ss27-home/Ss27Feed';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
-import { fetchAllProducts } from '@/lib/products-server';
+import { fetchCatalogForSsr } from '@/lib/catalog';
 import { fetchHomeReviews } from '@/lib/reviews/server';
 import { loadSs27Page } from '@/lib/ss27-coleccion-server';
 import { SS27_HOME_EXTRA_SLUGS } from '@/lib/ss27-home';
@@ -69,8 +73,13 @@ export const metadata = buildMetadata({
   path: '/',
 });
 
-// Antes de las 19:00 la respuesta depende de la cookie firmada del gate.
-export const dynamic = 'force-dynamic';
+// Velocidad (9/11): la home se regenera cada 60 s (ISR) y se sirve desde la
+// caché de Vercel, como las páginas de categoría. Antes era force-dynamic por
+// el gate con cookie del Cyber: cada visita se armaba de cero (TTFB de hasta
+// 3,2 s en frío). Pasado el evento, cyberTakeoverVisible() devuelve false sin
+// leer cookies, así que no hace falta render dinámico. Si se vuelve a usar un
+// gate con cookie, hay que volver a force-dynamic.
+export const revalidate = 60;
 
 /**
  * NewInFW26, BasicosSection, BackInStock y MasHypeSection comparten la query
@@ -107,15 +116,22 @@ export default async function Home({
   // Las reseñas van por separado: no pasan por React Query, la sección las
   // recibe por props. Sin esto se montaba vacía y a los 6–9s insertaba ~715px
   // arriba de #new-in-fw26, que era lo último que quedaba del CLS del home.
-  const [, reviews, ss27] = await Promise.all([
-    queryClient.prefetchQuery({ queryKey: ['products'], queryFn: fetchAllProducts }),
+  //
+  // Catálogo (9/11, velocidad): sale de fetchCatalogForSsr, el mismo catálogo
+  // compartido y cacheado que usan las páginas de categoría (lib/catalog). Se
+  // espera directo, NO con prefetchQuery: prefetchQuery se traga el error y
+  // con ISR eso guardaría una home vacía. Así, si WP falla en una regeneración,
+  // Next descarta esa versión y sigue sirviendo la última buena; en el build
+  // devuelve [] y la grilla la carga el cliente (no tira el deploy).
+  const [catalog, reviews, ss27] = await Promise.all([
+    fetchCatalogForSsr(),
     fetchHomeReviews(4),
     loadSs27Page(),
   ]);
+  queryClient.setQueryData(['products'], catalog);
 
   // Lo que acompaña al drop sin ser de la colección (medias, gorra): sale del
   // catálogo que ya se precargó arriba. Ver SS27_HOME_EXTRA_SLUGS.
-  const catalog = queryClient.getQueryData<NormalizedProduct[]>(['products']) ?? [];
   const extras: Ss27Product[] = SS27_HOME_EXTRA_SLUGS
     .filter((slug) => !ss27.products.some((p) => p.slug === slug))
     .map((slug) => catalog.find((p) => p.slug === slug))
@@ -144,22 +160,26 @@ export default async function Home({
         <div className="relative z-10 bg-white">
           <Promo3x2Section />
           <FlashSaleSection />
+          {/* Home post-Cyber (9/11, pedido de Valentín): la mayor cantidad de
+              productos en el menor recorrido, sin repetir ninguno (la
+              deduplicación vive en lib/home-curaduria). Orden: atajos por
+              categoría → lo que más factura → New In Camo → SS27 → banners de
+              categoría (los de la landing de Cyber) → pack de Regular (reemplaza
+              a Esenciales, conserva id="basicos") → Mystery → Best sellers con
+              FW26 primero (el estante FW26 sale) → prueba social. */}
+          <CategoriasChips />
+          <MasElegidosShelf />
+          <CamoColeccionHome />
           <Ss27Feed products={ss27.state === 'open' ? [...ss27.products, ...extras] : []} />
-          <ShopTheLook />
-          {/* Visto en (17/10): artistas con Hype puesto, arriba de los estantes
-              para que la prueba social no quede al fondo del home. */}
+          <CategoriasEditorial />
+          {/* Visto en (17/10): artistas con Hype puesto. Sube arriba del pack
+              Regular el 9/11 (pedido de Valentín): más protagonismo para la
+              prueba social, antes de la promo. */}
           <VistoEn />
-          {/* Rediseño 2026 (aprobado 12/10): debajo del drop, los estantes del
-              sistema nuevo con índice sticky propio y handoff nativo entre sí.
-              Esenciales reemplaza a BasicosSection (conserva id="basicos"),
-              Fw26Shelf condensa a NewInFW26 (id="new-in-fw26") y BestSellers
-              reorganiza a BackInStock por familias (id="back-in-stock") — los
-              ids se mantienen para que los anclajes del menú sigan andando.
-              VideoSection y MasHypeSection salen: la home no se alarga (sus
-              productos viven en /colecciones/mas-hype y el video en la ficha). */}
-          <EsencialesShelf />
-          <Fw26Shelf />
+          <RegularTeesPack />
+          <MysteryHome />
           <BestSellersShelf />
+          <ShopTheLook />
           <EditorialBanner />
           <ReviewsHomeSection initial={reviews} />
           {/* Último bloque antes del footer, a propósito: Clarity muestra que casi
