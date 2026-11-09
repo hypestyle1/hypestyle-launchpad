@@ -235,6 +235,90 @@ async function limitarAlEvento(email: string, listas: number[], listaEvento: num
   }
 }
 
+const BREVO_HEADERS = () => ({ 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' });
+
+/**
+ * Alta normal del sitio (footer, popup y barra): lista de newsletter + mail de
+ * bienvenida con HYPE10.
+ *
+ * Distingue "alta nueva" de "ya estaba en la lista" (issue #625). Antes todo
+ * iba con `updateEnabled`, y quien mandaba su mail de nuevo recibía otra vez la
+ * bienvenida con HYPE10 y se le reiniciaba la secuencia (SIGNUP_DATE y
+ * WELCOME_STEP pisados). Ahora:
+ *
+ *  1. Se intenta crear el contacto SIN updateEnabled. Si no existía, es un alta
+ *     nueva: sin requests extra respecto de antes.
+ *  2. Si Brevo dice que ya existe, se mira si está en la lista de newsletter.
+ *     - Está → "ya-suscripto": no se reenvía la bienvenida ni se toca su
+ *       secuencia. Solo se actualiza PREFERENCIA si la acaba de elegir.
+ *     - No está (cliente que compró, alta del Cyber, etc.) → se lo suma a la
+ *       lista con la secuencia de bienvenida, igual que un alta nueva.
+ *
+ * La respuesta depende solo de si el mail está en la lista, nunca de si está
+ * dado de baja (en Brevo la baja no saca de las listas): no se puede usar este
+ * formulario para averiguar quién se dio de baja.
+ */
+async function altaNormal(email: string, firstName: string, pref: string) {
+  const atributos = {
+    ...(firstName ? { NOMBRE: firstName } : {}),
+    ...(pref ? { PREFERENCIA: pref } : {}),
+    SIGNUP_DATE: new Date().toISOString(),
+    WELCOME_STEP: 1,
+  };
+
+  const crear = await fetch('https://api.brevo.com/v3/contacts', {
+    method: 'POST',
+    headers: BREVO_HEADERS(),
+    body: JSON.stringify({ email, attributes: atributos, listIds: [NEWSLETTER_LIST_ID] }),
+  });
+
+  if (!crear.ok) {
+    const err = await crear.json().catch(() => ({}));
+    if (err?.code !== 'duplicate_parameter') {
+      return NextResponse.json({ ok: false, error: 'Brevo error', detail: err }, { status: 500 });
+    }
+
+    const actualizar = (body: unknown) =>
+      fetch(`https://api.brevo.com/v3/contacts/${encodeURIComponent(email)}`, {
+        method: 'PUT',
+        headers: BREVO_HEADERS(),
+        body: JSON.stringify(body),
+      });
+
+    const { listas } = await leerContacto(email);
+    if (listas.includes(NEWSLETTER_LIST_ID)) {
+      // Lo que eligió en el popup sí se guarda; si falla no es motivo para
+      // decirle que no quedó anotado (ya lo estaba).
+      if (pref) await actualizar({ attributes: { PREFERENCIA: pref } }).catch(() => null);
+      return NextResponse.json({ ok: true, estado: 'ya-suscripto' });
+    }
+
+    const sumar = await actualizar({ attributes: atributos, listIds: [NEWSLETTER_LIST_ID] });
+    if (!sumar.ok) {
+      const detail = await sumar.json().catch(() => ({}));
+      return NextResponse.json({ ok: false, error: 'Brevo error', detail }, { status: 500 });
+    }
+  }
+
+  // Mail de bienvenida con el cupón. Si este envío falla, el alta igual quedó
+  // hecha y welcome-sweep sigue la secuencia: no se le dice "error" a alguien
+  // que sí quedó en la lista.
+  await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: BREVO_HEADERS(),
+    body: JSON.stringify({
+      sender:      { name: 'Hypestyle', email: 'info@hypestyle.com.ar' },
+      replyTo:     { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
+      to:          [{ email }],
+      subject:     '¡Tu 10% off te espera — Hypestyle!',
+      htmlContent: buildWelcomeHtml(firstName),
+      tags:        ['welcome-step-1'],
+    }),
+  }).catch(() => null);
+
+  return NextResponse.json({ ok: true, estado: 'alta', listId: NEWSLETTER_LIST_ID, bienvenida: true });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -319,13 +403,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await (esCyber ? ensureCyberAttributes(BREVO_API_KEY) : ensureWelcomeAttributes(BREVO_API_KEY));
+    if (!esCyber) {
+      await ensureWelcomeAttributes(BREVO_API_KEY);
+      return altaNormal(email, firstName, pref);
+    }
 
-    // Alta en la lista. NOMBRE es el atributo de nombre de la cuenta (FIRSTNAME no
-    // existe: Brevo lo descartaba en silencio y la lista quedó sin nombres).
-    // PREFERENCIA (hombre/mujer/todo) es lo que eligió en el popup, para mandar
-    // los drops de mujer solo a quien los pidió. SIGNUP_DATE/WELCOME_STEP son
-    // para que welcome-sweep sepa cuándo mandar los siguientes pasos.
+    await ensureCyberAttributes(BREVO_API_KEY);
+
+    // Alta en la lista del evento. NOMBRE es el atributo de nombre de la cuenta
+    // (FIRSTNAME no existe: Brevo lo descartaba en silencio).
     //
     // CYBER HYPE va con HYPE72='yes' + HYPE72_DATE (cuándo dio el consentimiento)
     // + HYPE72_CONSENT (qué texto aceptó) y SIN SIGNUP_DATE/WELCOME_STEP, a
@@ -348,15 +434,11 @@ export async function POST(req: NextRequest) {
         attributes: {
           ...(firstName ? { NOMBRE: firstName } : {}),
           ...(pref ? { PREFERENCIA: pref } : {}),
-          ...(esCyber
-            ? {
-                HYPE72: 'yes',
-                HYPE72_DATE: new Date().toISOString(),
-                HYPE72_CONSENT: CYBER_CONSENT_VERSION,
-                ...(reoptin ? { HYPE72_REOPTIN: 'yes' } : {}),
-                ...atributosUtm(body),
-              }
-            : { SIGNUP_DATE: new Date().toISOString(), WELCOME_STEP: 1 }),
+          HYPE72: 'yes',
+          HYPE72_DATE: new Date().toISOString(),
+          HYPE72_CONSENT: CYBER_CONSENT_VERSION,
+          ...(reoptin ? { HYPE72_REOPTIN: 'yes' } : {}),
+          ...atributosUtm(body),
         },
         listIds: [listId],
         updateEnabled: true,
@@ -376,28 +458,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Send welcome email with coupon — solo el alta normal del sitio.
-    if (!esCyber) {
-      await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: { 'api-key': BREVO_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sender:      { name: 'Hypestyle', email: 'info@hypestyle.com.ar' },
-          replyTo:     { name: 'Hypestyle', email: 'hypestylearg@gmail.com' },
-          to:          [{ email }],
-          subject:     '¡Tu 10% off te espera — Hypestyle!',
-          htmlContent: buildWelcomeHtml(firstName),
-          tags:        ['welcome-step-1'],
-        }),
-      });
-    }
-
     // Respuesta uniforme para el alta del evento: no dice a qué lista entró, si
     // el contacto ya existía ni si estaba dado de baja. Desde afuera, todas las
     // altas se ven iguales.
-    if (esCyber) return NextResponse.json({ ok: true, estado: 'alta' });
-
-    return NextResponse.json({ ok: true, estado: 'alta', listId, bienvenida: true });
+    return NextResponse.json({ ok: true, estado: 'alta' });
   } catch (err: any) {
     return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });
   }

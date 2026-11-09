@@ -17,6 +17,9 @@ import {
   isExcludedPage,
   planPopup,
 } from '@/lib/newsletter-popup';
+import { altaNewsletter, mensajeError, MENSAJES_EXITO, type MotivoAlta } from '@/lib/newsletter-cliente';
+
+type Exito = keyof typeof MENSAJES_EXITO;
 
 /**
  * Popup de newsletter en dos piezas (rediseño 29/09/2026, ref. Scuffers):
@@ -54,13 +57,6 @@ function readSource(): TrafficSource {
 
 const LEGAL = 'Al suscribirte aceptás recibir novedades de Hype por email. Podés darte de baja cuando quieras.';
 
-async function subscribe(email: string, preferencia: Preferencia | null) {
-  await fetch('/api/newsletter-subscribe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, preferencia }),
-  });
-}
 
 export default function NewsletterPopup() {
   const pathname = usePathname() || '/';
@@ -190,6 +186,9 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
   const [preferencia, setPreferencia] = useState<Preferencia | null>(null);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  // Qué contestó el servidor. 'done' sale SOLO con un alta confirmada (#625);
+  // un error se queda en el paso 2 con el mail tipeado, listo para reintentar.
+  const [resultado, setResultado] = useState<MotivoAlta | null>(null);
   // El video del fondo solo se monta en desktop: un <video autoPlay> se
   // descarga aunque su display sea none, y en mobile la foto no se ve.
   const [wide, setWide] = useState(false);
@@ -226,11 +225,14 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
     e.preventDefault();
     if (!email || loading) return;
     setLoading(true);
-    try { await subscribe(email, preferencia); } catch {}
+    const r = await altaNewsletter({ email, preferencia, origen: 'popup' });
     setLoading(false);
+    setResultado(r.motivo);
+    if (!r.ok) return;
     onSubscribed();
     setStep('done');
   };
+  const error = resultado ? mensajeError(resultado) : null;
 
   return (
     <div
@@ -320,11 +322,13 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
                     ref={emailRef}
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); if (error) setResultado(null); }}
                     placeholder="Tu email"
                     required
                     autoComplete="email"
-                    className="flex-1 min-w-0 px-5 py-[15px] rounded-full text-[14px] text-white placeholder:text-white/70 focus:outline-none focus:ring-2 focus:ring-white/60"
+                    aria-invalid={resultado === 'email-invalido'}
+                    aria-describedby={error ? 'popup-newsletter-error' : undefined}
+                    className="flex-1 min-w-0 px-5 py-[15px] rounded-full text-[16px] md:text-[14px] text-white placeholder:text-white/70 focus:outline-none focus:ring-2 focus:ring-white/60"
                     style={glassInput}
                   />
                   <button
@@ -332,9 +336,14 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
                     disabled={loading}
                     className="rounded-full bg-white text-[#0a0a0a] px-6 py-[15px] text-[13px] font-semibold whitespace-nowrap disabled:opacity-70"
                   >
-                    {loading ? 'Enviando...' : 'Quiero mi 10%'}
+                    {loading ? 'Enviando…' : error ? 'Reintentar' : 'Quiero mi 10%'}
                   </button>
                 </form>
+                {error && (
+                  <p id="popup-newsletter-error" role="alert" className="mt-3 text-[13px] font-medium text-white">
+                    {error}
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => setStep(1)}
@@ -346,8 +355,8 @@ function Modal({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: (
             )}
 
             {step === 'done' && (
-              <p className="text-[18px] md:text-[21px] font-medium tracking-[-0.015em]">
-                Listo. Revisá tu email, ahí está el código.
+              <p aria-live="polite" className="text-[18px] md:text-[21px] font-medium tracking-[-0.015em]">
+                {MENSAJES_EXITO[(resultado ?? 'alta') as Exito]}
               </p>
             )}
           </div>
@@ -378,6 +387,7 @@ function Bar({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: () 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [resultado, setResultado] = useState<MotivoAlta | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   // Mientras la barra está abajo, WhatsApp, el reproductor y la pastilla de reseñas suben.
   useBottomShift(boxRef);
@@ -392,11 +402,14 @@ function Bar({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: () 
     e.preventDefault();
     if (!email || loading) return;
     setLoading(true);
-    try { await subscribe(email, null); } catch {}
+    const r = await altaNewsletter({ email, origen: 'barra' });
     setLoading(false);
+    setResultado(r.motivo);
+    if (!r.ok) return;
     onSubscribed();
     setDone(true);
   };
+  const error = resultado ? mensajeError(resultado) : null;
 
   return (
     <div ref={boxRef} className="fixed inset-x-0 bottom-0 z-[190] flex justify-center px-[10px] pb-3 md:px-4 md:pb-[18px] pointer-events-none">
@@ -436,17 +449,20 @@ function Bar({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: () 
         </div>
 
         {done ? (
-          <p className="basis-full md:basis-auto md:flex-1 text-[13px] font-medium text-foreground py-3">Listo. Revisá tu email.</p>
+          <p aria-live="polite" className="basis-full md:basis-auto md:flex-1 text-[13px] font-medium text-foreground py-3">{MENSAJES_EXITO[(resultado ?? 'alta') as Exito]}</p>
         ) : (
-          <form onSubmit={submit} className="basis-full md:basis-auto md:flex-1 flex gap-2 min-w-0">
+          <div className="basis-full md:basis-auto md:flex-1 min-w-0">
+          <form onSubmit={submit} className="flex gap-2 min-w-0">
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); if (error) setResultado(null); }}
               placeholder="Tu email"
               required
               autoComplete="email"
-              className="flex-1 min-w-0 px-[18px] py-[13px] rounded-full text-[13px] text-foreground placeholder:text-foreground/45 focus:outline-none focus:ring-2 focus:ring-foreground/20"
+              aria-invalid={resultado === 'email-invalido'}
+              aria-describedby={error ? 'barra-newsletter-error' : undefined}
+              className="flex-1 min-w-0 px-[18px] py-[13px] rounded-full text-[16px] md:text-[13px] text-foreground placeholder:text-foreground/45 focus:outline-none focus:ring-2 focus:ring-foreground/20"
               style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)' }}
             />
             <button
@@ -454,9 +470,15 @@ function Bar({ onClose, onSubscribed }: { onClose: () => void; onSubscribed: () 
               disabled={loading}
               className="rounded-full bg-[#0a0a0a] text-white px-[18px] md:px-6 py-[13px] text-[12px] font-bold uppercase tracking-[0.08em] whitespace-nowrap disabled:opacity-70"
             >
-              {loading ? '...' : 'Unirme'}
+              {loading ? '…' : error ? 'Reintentar' : 'Unirme'}
             </button>
           </form>
+          {error && (
+            <p id="barra-newsletter-error" role="alert" className="mt-2 px-2 text-[12px] font-medium text-foreground">
+              {error}
+            </p>
+          )}
+          </div>
         )}
       </div>
     </div>
