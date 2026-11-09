@@ -6,6 +6,8 @@ import { useReveal } from "@/hooks/useReveal";
 import { useLocale, LANGUAGES } from "@/context/LocaleContext";
 import { CURRENCIES } from "@/lib/currency";
 import { CANAL_OFICIAL } from "@/lib/cyber-whatsapp";
+import { altaNewsletter, mensajeError, MENSAJES_EXITO, type MotivoAlta } from "@/lib/newsletter-cliente";
+import { STORAGE } from "@/lib/newsletter-popup";
 
 // Rediseño 2026: el Shop del footer habla la misma arquitectura que el mega
 // menú (prendas directas), e "Info" se parte en POLÍTICAS (lo legal/ayuda) y
@@ -82,14 +84,25 @@ function FooterLink({ link, t }: { link: { label: string; href: string }; t: (s:
 
 export default function Footer() {
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  // Antes era `submitted` y se ponía en true sin llamar a la API (#625): el
+  // footer decía "listo" y el mail nunca llegaba a Brevo. Ahora "listo" sale
+  // solo de una respuesta confirmada del servidor.
+  const [estado, setEstado] = useState<'idle' | 'enviando' | MotivoAlta>('idle');
   const { language, setLanguage, currency, setCurrency, t } = useLocale();
   const ref = useReveal();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) setSubmitted(true);
+    if (estado === 'enviando' || !email.trim()) return;
+    setEstado('enviando');
+    const { ok, motivo } = await altaNewsletter({ email, origen: 'footer' });
+    // Igual que el popup: con el alta confirmada, el popup no vuelve a pedirle el mail.
+    if (ok) { try { localStorage.setItem(STORAGE.subscribed, '1'); } catch {} }
+    setEstado(motivo);
   };
+
+  const exito = estado === 'alta' || estado === 'ya-suscripto';
+  const error = estado === 'idle' || estado === 'enviando' ? null : mensajeError(estado);
 
   return (
     <footer className="bg-bg-dark text-primary-foreground" ref={ref}>
@@ -109,25 +122,41 @@ export default function Footer() {
               {t('*No es acumulable con otras promociones')}
             </p>
 
-            {submitted ? (
-              <p className="text-[13px] text-primary-foreground/50">{t('✓ ¡Listo! Ya sos parte del círculo.')}</p>
+            {exito ? (
+              <p aria-live="polite" data-testid="footer-newsletter-ok" className="text-[13px] text-primary-foreground/70">
+                {t(MENSAJES_EXITO[estado as keyof typeof MENSAJES_EXITO])}
+              </p>
             ) : (
-              <form onSubmit={handleSubmit} className="flex border-b border-primary-foreground/30 focus-within:border-primary-foreground transition-colors max-w-sm">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
-                  className="flex-1 bg-transparent py-3 text-[13px] text-primary-foreground placeholder:text-primary-foreground/25 focus:outline-none"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="text-[12px] font-semibold uppercase tracking-wider text-primary-foreground/60 hover:text-primary-foreground transition-colors px-2 py-3"
-                >
-                  →
-                </button>
-              </form>
+              <>
+                <form onSubmit={handleSubmit} aria-label="Newsletter" className="flex border-b border-primary-foreground/30 focus-within:border-primary-foreground transition-colors max-w-sm">
+                  <input
+                    type="email"
+                    value={email}
+                    // Al corregir el mail, el error de antes ya no aplica.
+                    onChange={(e) => { setEmail(e.target.value); if (error) setEstado('idle'); }}
+                    placeholder="tu@email.com"
+                    aria-label={t('Tu email')}
+                    aria-invalid={estado === 'email-invalido'}
+                    aria-describedby={error ? 'footer-newsletter-error' : undefined}
+                    autoComplete="email"
+                    className="flex-1 min-w-0 bg-transparent py-3 text-[16px] md:text-[13px] text-primary-foreground placeholder:text-primary-foreground/25 focus:outline-none"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={estado === 'enviando'}
+                    aria-label={estado === 'enviando' ? t('Enviando') : t('Suscribirme')}
+                    className="min-w-[44px] text-[12px] font-semibold uppercase tracking-wider text-primary-foreground/60 hover:text-primary-foreground transition-colors px-2 py-3 disabled:opacity-50 disabled:cursor-wait"
+                  >
+                    {estado === 'enviando' ? '…' : '→'}
+                  </button>
+                </form>
+                {error && (
+                  <p id="footer-newsletter-error" role="alert" className="mt-2.5 max-w-sm text-[12px] text-primary-foreground/80">
+                    {t(error)}
+                  </p>
+                )}
+              </>
             )}
           </div>
 

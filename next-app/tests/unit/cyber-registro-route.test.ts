@@ -376,7 +376,86 @@ describe('defensas del endpoint público', () => {
   });
 });
 
-describe('alta normal del sitio (no se toca)', () => {
+/**
+ * Issue #625: el footer y el popup ahora muestran "listo" solo si la ruta lo
+ * confirma, y distinguen "ya estabas en la lista". Lo que cuidan estos tests:
+ * que el que ya estaba no reciba de nuevo HYPE10 ni se le reinicie la
+ * secuencia, y que la respuesta no delate quién se dio de baja.
+ */
+describe('alta normal: mail que ya existe en Brevo', () => {
+  const duplicado = () => { respuestaAlta = { ok: false, body: { code: 'duplicate_parameter' } }; };
+  const actualizaciones = () => llamadas.filter((l) => l.method === 'PUT' && l.url.startsWith(BREVO_CONTACTS + '/'));
+
+  it('el alta nueva no usa updateEnabled (si existe, Brevo lo dice y se decide aparte)', async () => {
+    const r = await post({ email: 'nueva@gmail.com', origen: 'footer' });
+    expect(r.json).toMatchObject({ ok: true, estado: 'alta' });
+    expect(alta()!.body.updateEnabled).toBeUndefined();
+    expect(alta()!.body.listIds).toEqual([3]);
+    expect(bienvenida()).toBeDefined();
+  });
+
+  it('si ya está en la newsletter: "ya-suscripto", sin bienvenida y sin reiniciar la secuencia', async () => {
+    duplicado();
+    contactoExistente = { email: 'ya@gmail.com', emailBlacklisted: false, listIds: [3, 6] };
+    const r = await post({ email: 'ya@gmail.com', origen: 'footer' });
+    expect(r.status).toBe(200);
+    expect(r.json).toEqual({ ok: true, estado: 'ya-suscripto' });
+    expect(bienvenida()).toBeUndefined();
+    expect(actualizaciones()).toHaveLength(0);
+  });
+
+  it('si ya está y eligió preferencia en el popup, se guarda solo la preferencia', async () => {
+    duplicado();
+    contactoExistente = { email: 'ya@gmail.com', emailBlacklisted: false, listIds: [3] };
+    await post({ email: 'ya@gmail.com', preferencia: 'mujer', origen: 'popup' });
+    const puts = actualizaciones();
+    expect(puts).toHaveLength(1);
+    expect(puts[0].body).toEqual({ attributes: { PREFERENCIA: 'mujer' } });
+    expect(bienvenida()).toBeUndefined();
+  });
+
+  it('si existe pero no está en la newsletter (compró, Cyber), se lo suma con la bienvenida', async () => {
+    duplicado();
+    contactoExistente = { email: 'cliente@gmail.com', emailBlacklisted: false, listIds: [6] };
+    const r = await post({ email: 'cliente@gmail.com', origen: 'footer' });
+    expect(r.json).toMatchObject({ ok: true, estado: 'alta', listId: 3 });
+    const puts = actualizaciones();
+    expect(puts).toHaveLength(1);
+    expect(puts[0].body.listIds).toEqual([3]);
+    expect(puts[0].body.attributes.WELCOME_STEP).toBe(1);
+    expect(bienvenida()).toBeDefined();
+  });
+
+  it('si no se lo puede sumar a la lista, es un error (el formulario no dice "listo")', async () => {
+    duplicado();
+    desvinculacionFalla = true; // el mock hace fallar cualquier PUT a un contacto
+    contactoExistente = { email: 'cliente@gmail.com', emailBlacklisted: false, listIds: [] };
+    const r = await post({ email: 'cliente@gmail.com', origen: 'footer' });
+    expect(r.status).toBe(500);
+    expect(r.json.ok).toBe(false);
+    expect(bienvenida()).toBeUndefined();
+  });
+
+  it('un error de Brevo que no es duplicado devuelve 500', async () => {
+    respuestaAlta = { ok: false, body: { code: 'invalid_parameter' } };
+    const r = await post({ email: 'alguien@gmail.com', origen: 'footer' });
+    expect(r.status).toBe(500);
+    expect(r.json.ok).toBe(false);
+    expect(bienvenida()).toBeUndefined();
+  });
+
+  it('la respuesta no delata la baja: suscripto activo y dado de baja contestan igual', async () => {
+    duplicado();
+    contactoExistente = { email: 'a@gmail.com', emailBlacklisted: false, listIds: [3] };
+    const activo = await post({ email: 'a@gmail.com', origen: 'footer' });
+    contactoExistente = { email: 'b@gmail.com', emailBlacklisted: true, listIds: [3] };
+    const deBaja = await post({ email: 'b@gmail.com', origen: 'footer' });
+    expect(deBaja.status).toBe(activo.status);
+    expect(deBaja.json).toEqual(activo.json);
+  });
+});
+
+describe('alta normal del sitio', () => {
   it('sin origen va a la lista 3, con SIGNUP_DATE y con la bienvenida', async () => {
     const r = await post({ email: 'alguien@gmail.com', preferencia: 'todo' });
     expect(r.json).toMatchObject({ ok: true, listId: 3, bienvenida: true });

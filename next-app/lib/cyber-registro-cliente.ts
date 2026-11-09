@@ -17,6 +17,7 @@
  * Ninguno de los dos le pide nada a la persona ni se ve en pantalla.
  */
 import type { OrigenUtm } from '@/lib/cyber-utm';
+import { altaNewsletter } from '@/lib/newsletter-cliente';
 
 export type ResultadoRegistro = 'alta' | 'email-invalido' | 'demasiados-intentos' | 'error';
 
@@ -31,21 +32,10 @@ export interface DatosRegistro {
 }
 
 export async function registrarCyber({ email, empresa = '', ms, utm }: DatosRegistro): Promise<ResultadoRegistro> {
-  try {
-    const res = await fetch('/api/newsletter-subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, preferencia: null, origen: 'cyber', empresa, ms, ...utm }),
-    });
-
-    if (res.status === 400) return 'email-invalido';
-    if (res.status === 429) return 'demasiados-intentos';
-    if (!res.ok) return 'error'; // incluye el 503 de "falta la lista configurada"
-
-    const data = await res.json().catch(() => null);
-    return data?.ok ? 'alta' : 'error';
-  } catch {
-    // Sin red: el formulario ofrece reintentar.
-    return 'error';
-  }
+  // Mismo cliente que el footer y el popup (lib/newsletter-cliente): mira el
+  // status y el JSON (el 503 de "falta la lista configurada" es un error). El
+  // endpoint del evento nunca dice "ya suscripto" —la respuesta es uniforme a
+  // propósito—, pero si algún día lo dijera sigue siendo un alta.
+  const { motivo } = await altaNewsletter({ email, origen: 'cyber', extra: { empresa, ms, ...utm } });
+  return motivo === 'ya-suscripto' ? 'alta' : motivo;
 }
