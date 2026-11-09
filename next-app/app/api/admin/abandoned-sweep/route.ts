@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminHeaders } from '@/lib/admin-auth';
+import { ESTADOS_PAGADO, pagoDeLaMismaPersona, type PedidoPersona } from '@/lib/abandoned-ya-pago';
 
 const WP_URL    = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY    = process.env.WC_CONSUMER_KEY    || '';
@@ -27,6 +28,24 @@ async function eligible(status: string) {
   if (!res.ok) return [];
   const data = (await res.json()) as any[];
   return data.filter(o => (o.billing?.email || ''));
+}
+
+// Pedidos pagados (o con transferencia en revisión) desde el más viejo que se
+// puede mandar hasta ahora. null si Woo no respondió: el que llama no manda nada.
+async function pagadosRecientes(): Promise<PedidoPersona[] | null> {
+  const after = iso(MAX_HOURS * 3600_000);
+  const out: PedidoPersona[] = [];
+  for (let page = 1; page <= 10; page++) {
+    const res = await fetch(
+      `${WP_URL}/wp-json/wc/v3/orders?status=${ESTADOS_PAGADO.join(',')}&per_page=100&page=${page}&after=${after}&_fields=id,number,status,billing,meta_data,date_created`,
+      { headers: { Authorization: wcAuth() }, cache: 'no-store' }
+    ).catch(() => null);
+    if (!res || !res.ok) return null;
+    const data = (await res.json()) as PedidoPersona[];
+    out.push(...data);
+    if (data.length < 100) return out;
+  }
+  return out;
 }
 
 // Step ya mandado para este pedido. Compatibilidad con el flag viejo _hs_abandoned_sent
@@ -63,8 +82,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, disabled: true, message: 'Carrito abandonado en pausa (setear ABANDONED_ENABLED=true para activar).' });
   }
 
-  const orders = [...await eligible('pending'), ...await eligible('failed')];
+  const candidatos = [...await eligible('pending'), ...await eligible('failed')];
   const origin = req.nextUrl.origin;
+
+  // Quien ya pagó otro pedido (un reintento, otro medio) no recibe el mail.
+  // Si no se pueden leer los pagados, no se manda nada: mejor un mail menos que
+  // escribirle "¿te olvidaste algo?" a alguien que ya compró.
+  const pagados = await pagadosRecientes();
+  if (!pagados) {
+    return NextResponse.json({ ok: false, error: 'no se pudieron leer los pedidos pagados; no se mandó nada' }, { status: 502 });
+  }
+  const excluidos: { pedido: string; pago: string }[] = [];
+  const orders = candidatos.filter(o => {
+    const pago = pagoDeLaMismaPersona(o, pagados);
+    if (pago) excluidos.push({ pedido: String(o.number ?? o.id), pago: String(pago.number ?? pago.id) });
+    return !pago;
+  });
 
   // Dedup POR CLIENTE: un cliente con varios pedidos sin pagar (ej: 5 reintentos) recibe UN solo mail.
   // Se le manda por el pedido más reciente y se marcan TODOS sus pedidos como enviados.
@@ -104,5 +137,5 @@ export async function GET(req: NextRequest) {
     } catch { /* sigue con el resto */ }
   }
 
-  return NextResponse.json({ ok: true, candidatos: orders.length, clientes: byEmail.size, enviados: sent.length, detalle: sent });
+  return NextResponse.json({ ok: true, candidatos: candidatos.length, ya_pagaron: excluidos, clientes: byEmail.size, enviados: sent.length, detalle: sent });
 }

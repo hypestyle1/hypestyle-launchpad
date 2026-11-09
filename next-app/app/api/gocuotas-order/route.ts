@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gocuotasWebhookToken } from '@/lib/gocuotas-webhook-token';
 import { wcGet } from '@/lib/wc-admin';
 import { totalCobrable } from '@/lib/total-cobrable';
+import { telefonoGocuotas } from '@/lib/gocuotas-telefono';
+import { urlVueltaGocuotas } from '@/lib/repago-link';
 
 const GC_BASE  = 'https://www.gocuotas.com';
 const SITE_URL = 'https://hypestyle.com.ar';
@@ -39,19 +41,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'GOcuotas API key not configured' }, { status: 500 });
     }
 
-    // Normalizar a formato internacional argentino: 549 + código de área + número.
-    // Los celulares en AR necesitan el "9" después del 54 (mismo criterio que ya
-    // se usa para los links de WhatsApp en admin/pedidos) — sin el 9, el número
-    // queda mal formado y GOcuotas puede rechazar o no poder validar al cliente.
-    const digits = phone ? phone.replace(/\D/g, '') : '';
-    const clean  = digits.startsWith('0') ? digits.slice(1) : digits;
-    const phoneE164 = clean ? (clean.startsWith('54') ? clean : `549${clean}`) : '';
+    // GOcuotas manda un SMS de validación a este número y no deja corregirlo.
+    // Formato: 549 + 10 dígitos. Antes un "54..." sin el 9 viajaba tal cual y
+    // un número incompleto llegaba igual; ahora no se crea el checkout.
+    const tel = telefonoGocuotas(phone);
+    if (tel.ok === false) {
+      return NextResponse.json({ error: tel.error, campo: 'telefono' }, { status: 422 });
+    }
+    const phoneE164 = tel.phone;
 
     const payload = {
       amount_in_cents:    Math.round(total * 100),
       order_reference_id: String(wcOrderId),
       url_success:  `${SITE_URL}/confirmacion/?order_id=${wcOrderId}&key=${orderKey}&gocuotas=approved`,
-      url_failure:  `${SITE_URL}/checkout/?gocuotas=failed`,
+      url_failure:  urlVueltaGocuotas(SITE_URL, wcOrderId, orderKey),
       // Token por pedido: es lo único que autentica el POST de vuelta (GOcuotas
       // no firma sus webhooks). Ver lib/gocuotas-webhook-token.ts.
       webhook_url:  `${SITE_URL}/api/gocuotas-webhook?token=${gocuotasWebhookToken(wcOrderId)}`,

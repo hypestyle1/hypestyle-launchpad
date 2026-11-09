@@ -10,6 +10,7 @@ import { COMING_SOON_TAG } from '@/lib/private-access/normalize';
 import { errorEsDeCupon, razonCupon, regaloFirst10DeLineas } from '@/lib/first10';
 import { clientIp, clientUserAgent } from '@/lib/client-ip';
 import { validarClienteServidor, opcionesDesdePayload, modoValidacion, resumenParaLog, cuerpo422, metaValidacion } from '@/lib/validacion-cliente-servidor';
+import { telefonoGocuotas } from '@/lib/gocuotas-telefono';
 
 const WP_URL  = process.env.NEXT_PUBLIC_WP_URL || 'https://lightpink-rook-704850.hostingersite.com';
 const WC_KEY  = process.env.WC_CONSUMER_KEY    || '';
@@ -108,6 +109,15 @@ export async function POST(req: NextRequest) {
     }
     if (modo === 'bloquear' && validacion.reglasQueBloquean.length) {
       return NextResponse.json(cuerpo422(validacion.errores, false), { status: 422 });
+    }
+    // GOcuotas manda un SMS de validación a este número y no deja corregirlo:
+    // sin un celular argentino completo el pago no puede terminar. Se rechaza
+    // antes de crear el pedido, en cualquier modo, y el checkout marca el campo.
+    if (paymentMethod === 'gocuotas') {
+      const tel = telefonoGocuotas(customer?.telefono);
+      if (tel.ok === false) {
+        return NextResponse.json(cuerpo422({ telefono: tel.error }, false), { status: 422 });
+      }
     }
 
     // Precio, descuento y envío salen del servidor (auditoría 28/09, C1). Del
