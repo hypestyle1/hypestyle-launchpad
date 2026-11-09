@@ -21,6 +21,9 @@ export async function fetchGraphQL<T>(
   // producto le pegaría de nuevo a WPGraphQL.
   next?: { revalidate: number },
   cache?: RequestCache,
+  // Reintentos de fetchWithRetry (por defecto 1). La ficha del servidor usa 0:
+  // si falla, Next sirve la última versión buena y reintentar solo suma carga.
+  retry?: { retries?: number },
 ): Promise<T> {
   // Con reintentos: en build esto corre para el sitemap, los generateStaticParams
   // y las 109 fichas de producto, y un solo timeout contra WP tiraba el deploy.
@@ -31,7 +34,7 @@ export async function fetchGraphQL<T>(
     signal,
     ...(next ? { next } : {}),
     ...(cache ? { cache } : {}),
-  });
+  }, retry);
   if (!response.ok) throw new Error('Network response was not ok');
   const { data, errors } = await response.json();
   if (errors) throw new Error(errors[0].message);

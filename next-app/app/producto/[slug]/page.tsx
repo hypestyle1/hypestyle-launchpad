@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
-import { crearCortacircuitosPorClave } from '@/lib/wp-cortacircuitos';
+import { crearProteccionFichas } from '@/lib/wp-cortacircuitos';
 import { fetchProductSlugs } from '@/lib/wp-products';
 import { prerenderizarFichas } from '@/lib/build-env';
 import { getCachedDiscountStatus, GOAL_PRODUCT_SLUG } from '@/lib/goal-discount';
-import { fetchProductDetail, SERVER_REVALIDATE } from '@/lib/product-detail';
+import { fetchProductDetailParaFicha, aplicarImagenesDeColorway, SERVER_REVALIDATE } from '@/lib/product-detail';
+import { fetchCatalogForSsr } from '@/lib/catalog';
 import { buildMetadata, truncate } from '@/lib/seo';
 import { SLUGS_INTERNOS } from '@/lib/catalog';
 import { productJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
@@ -28,7 +29,7 @@ export async function generateStaticParams() {
  * componente piden el mismo producto y sale una sola llamada a WPGraphQL.
  */
 async function getProduct(slug: string) {
-  // Sin .catch(): undefined es SOLO "el slug no existe" (fetchProductDetail ya
+  // Sin .catch(): undefined es SOLO "el slug no existe" (fetchProductDetailParaFicha ya
   // distingue ese caso). Un WP caído lanza y Next conserva la última página
   // buena en vez de cachear un 404 durante una hora.
   //
@@ -39,12 +40,30 @@ async function getProduct(slug: string) {
   return productoCompartido(slug);
 }
 
-const protegerFicha = crearCortacircuitosPorClave(60_000);
+// Por slug: una lectura por ficha a la vez y 60 s de pausa tras una falla.
+// Global: como mucho 2 fichas leyendo WordPress a la vez por instancia
+// (9/11/2026: un crawler disparaba ~300 refrescos juntos).
+const protegerFicha = crearProteccionFichas(2, 60_000);
 const productoCompartido = unstable_cache(
-  (slug: string) => protegerFicha(slug, () => fetchProductDetail(slug)),
+  (slug: string) => protegerFicha(slug, () => fetchProductDetailParaFicha(slug)),
   ['ficha-producto-v1'],
   { revalidate: 300 }, // 4/11: 60 s disparaba actualizaciones constantes contra WP con tráfico alto
 );
+
+/**
+ * Miniaturas de las colorways desde el catálogo compartido (una lectura cada
+ * 5 min para toda la tienda) en vez de una consulta por ficha. Si el catálogo
+ * no está disponible, la ficha sale igual con las imágenes de COLORWAYS, como
+ * hacía antes cuando la consulta de colorways fallaba.
+ */
+async function conImagenesDeColorway<T extends Parameters<typeof aplicarImagenesDeColorway>[0]>(product: T): Promise<T> {
+  if (product.colors.length < 2) return product;
+  try {
+    return aplicarImagenesDeColorway(product, await fetchCatalogForSsr()) as T;
+  } catch {
+    return product;
+  }
+}
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const product = await getProduct(params.slug);
@@ -94,7 +113,7 @@ export default async function ProductoPage({ params }: { params: { slug: string 
   // producción `mysteryPreview` devuelve undefined. Al crear los productos
   // este bloque y lib/mystery-preview.ts se borran.
   const previo = productoWoo ? undefined : mysteryPreview(params.slug);
-  const product = productoWoo ?? previo;
+  const product = productoWoo ? await conImagenesDeColorway(productoWoo) : previo;
 
   // 404 real. Antes el fetch era client-side y un slug inexistente devolvía
   // HTTP 200 con el cartel "Producto no encontrado" — un soft 404, que Google
