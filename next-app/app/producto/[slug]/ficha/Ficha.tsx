@@ -116,7 +116,7 @@ export default function Ficha(p: FichaProps) {
 
           <div onClick={e => e.stopPropagation()}
             className="hidden lg:flex absolute left-4 bottom-4 flex-col gap-1.5 max-h-[62%] overflow-y-auto">
-            {galleryImages.slice(0, 7).map((img, i) => (
+            {galleryImages.map((img, i) => (
               <button key={img} onClick={() => p.onSelectImage(i)} aria-current={i === selectedImage}
                 aria-label={`${isVideo(img) ? t('Ver video') : `${t('Ver imagen')} ${i + 1}`} — ${product.name}`}
                 className={`relative w-[46px] h-[60px] flex-shrink-0 overflow-hidden bg-bg-alt transition-opacity duration-150 ${i === selectedImage ? 'opacity-100 outline outline-1 outline-foreground -outline-offset-1' : 'opacity-60 hover:opacity-100'}`}>
