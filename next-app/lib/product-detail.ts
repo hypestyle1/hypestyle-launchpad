@@ -26,7 +26,7 @@ const GET_PRODUCT = `
         stockStatus
         stockQuantity
         image { sourceUrl }
-        galleryImages { nodes { sourceUrl } }
+        galleryImages(first: 100) { nodes { sourceUrl } }
         productCategories { nodes { name } }
         attributes { nodes { name options } }
         metaData { key value }
@@ -35,7 +35,7 @@ const GET_PRODUCT = `
         price
         regularPrice
         image { sourceUrl }
-        galleryImages { nodes { sourceUrl } }
+        galleryImages(first: 100) { nodes { sourceUrl } }
         productCategories { nodes { name } }
         attributes { nodes { name options } }
         metaData { key value }
