@@ -145,27 +145,47 @@ function totalOf(items: FbItem[]): number {
   return items.reduce((sum, i) => sum + (i.price ?? 0) * (i.quantity ?? 1), 0);
 }
 
+/**
+ * ViewContent y AddToCart eran los dos únicos eventos del embudo que viajaban
+ * SOLO por el navegador. La auditoría del 27/10/2026 midió el costo: Meta
+ * recibía ~1/3 de los reales — el mismo agujero de entrega (bloqueadores, ITP,
+ * navegadores in-app) que ya se había medido en el InitiateCheckout. Desde acá
+ * salen por los dos caminos con el MISMO event_id, igual que el resto.
+ *
+ * Sin `user` a propósito: en la ficha y en la grilla no hay ningún dato de la
+ * persona que mandar, y no corresponde inventarlo. El match server-side se
+ * sostiene con las cookies _fbp/_fbc (las agrega sendCapi), la IP y el user
+ * agent que la ruta lee de la request.
+ */
 export function fbViewContent(item: FbItem & { category?: string }): void {
-  fbTrack('ViewContent', {
+  if (!trackingAllowed()) return;
+  const customData = {
     content_ids: [item.id],
     content_type: 'product',
     content_name: item.name,
     content_category: item.category,
     value: item.price ?? 0,
     currency: CURRENCY,
-  });
+  };
+  const eventId = newEventId();
+  fbTrack('ViewContent', customData, eventId);
+  sendCapi('ViewContent', eventId, customData);
 }
 
 export function fbAddToCart(item: FbItem): void {
+  if (!trackingAllowed()) return;
   const quantity = item.quantity ?? 1;
-  fbTrack('AddToCart', {
+  const customData = {
     content_ids: [item.id],
     content_type: 'product',
     content_name: item.name,
     contents: [{ id: item.id, quantity }],
     value: (item.price ?? 0) * quantity,
     currency: CURRENCY,
-  });
+  };
+  const eventId = newEventId();
+  fbTrack('AddToCart', customData, eventId);
+  sendCapi('AddToCart', eventId, customData);
 }
 
 /**
