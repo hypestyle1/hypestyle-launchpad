@@ -1,6 +1,7 @@
 'use client';
 
 import { porcentajeDescuento } from '@/lib/descuento';
+import { estiloMockup } from '@/lib/mockup-ajustes';
 import { useEffect, useRef, useState } from "react";
 import Image, { getImageProps } from "next/image";
 import { imgSrc } from "@/lib/img";
@@ -189,12 +190,12 @@ export default function ProductCard({
 
   const badgeStyle = () => {
     if (!badge) return "";
-    if (badge === "New In") return "bg-white text-foreground rounded-[4px] shadow-sm";
+    if (badge === "New In") return "bg-white/70 backdrop-blur-md text-foreground rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-white/60";
     if (badge === "Próximamente") return "bg-black/70 backdrop-blur-md text-white rounded-[6px]";
     if (badge === "Pre-Venta") return "bg-amber-500 text-black rounded-[6px]";
     if (badge === "New") return "bg-bg-dark text-primary-foreground";
     if (badge === "Best Seller") return "bg-muted-foreground text-primary-foreground";
-    if (badge === "Back") return "bg-white text-foreground rounded-[4px] shadow-sm";
+    if (badge === "Back") return "bg-white/70 backdrop-blur-md text-foreground rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-white/60";
     if (badge.startsWith("−")) return "bg-sale text-sale-foreground rounded-[6px] font-bold";
     return "bg-bg-dark text-primary-foreground";
   };
@@ -218,7 +219,7 @@ export default function ProductCard({
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image */}
-      <div className="relative aspect-square overflow-hidden rounded-[4px] bg-bg-alt">
+      <div className="relative aspect-square overflow-hidden rounded-[10px] bg-bg-alt transition-shadow duration-300 [@media(hover:hover)]:group-hover:shadow-[0_14px_30px_-16px_rgba(10,10,10,0.28)]">
         {miniatura && (
           <div
             aria-hidden="true"
@@ -235,6 +236,7 @@ export default function ProductCard({
             priority={imagePriority === 'lcp'}
             loading={imagePriority === 'eager' ? 'eager' : undefined}
             onLoad={() => setFotoLista(true)}
+            style={verModelo ? undefined : estiloMockup(id)}
             className={`object-cover ${verModelo ? "object-center" : "object-top"} transition-all duration-500 ${blurred ? "blur-lg scale-110" : ""} ${
               (hovered && hoverImage && hoverLoaded) || (miniatura && !fotoLista) ? "opacity-0" : "opacity-100"
             }`}

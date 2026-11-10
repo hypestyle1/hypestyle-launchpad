@@ -4,7 +4,7 @@ import JsonLd from '@/components/JsonLd';
 import { initialProductsBySlugs } from '@/lib/catalog';
 import { buildMetadata } from '@/lib/seo';
 import { collectionJsonLd, breadcrumbJsonLd } from '@/lib/jsonld';
-import { CAMO_PREVENTA_LANZAMIENTO } from '@/lib/preventa-productos';
+import { CAMO_PREVENTA_LANZAMIENTO, camoEnPreventa } from '@/lib/preventa-productos';
 
 /* CAMO DROP (preventa, drop 02 de Cyber Hype) — destino del CTA
    "Ver colección" de Los drops. Reúne las cuatro prendas: Zip Hoodie y Jort,
@@ -16,7 +16,7 @@ import { CAMO_PREVENTA_LANZAMIENTO } from '@/lib/preventa-productos';
 
 const config: CollectionConfig = {
   title: 'Camo Drop',
-  subtitle: 'Preventa · Entrega estimada a partir del viernes 13 de noviembre de 2026',
+  subtitle: 'Zip Hoodie y Jort, en Olive y Brown',
   groups: [
     { label: 'Zip Hoodie', slugs: ['zip-hoodie-camo-olive', 'zip-hoodie-camo'] },
     { label: 'Jort', slugs: ['jort-camo-olive', 'jort-camo-brown'] },
@@ -25,7 +25,9 @@ const config: CollectionConfig = {
 };
 
 const PATH = '/colecciones/camo-drop';
-const SEO_DESCRIPTION = 'Camo Drop en preventa: Zip Hoodie y Jort en Olive y Brown. Entrega estimada a partir del 13/11.';
+const SEO_DESCRIPTION = 'Camo Drop: Zip Hoodie y Jort en Olive y Brown.';
+// Mientras dura la preventa, el subtítulo la avisa; desde el 14/11 se va solo.
+const SUBTITULO_PREVENTA = 'Preventa · Entrega estimada a partir del viernes 13 de noviembre de 2026';
 
 export const metadata = buildMetadata({ title: config.title, description: SEO_DESCRIPTION, path: PATH });
 
@@ -45,7 +47,10 @@ export default async function CamoDropPage() {
           ]),
         ]}
       />
-      <CollectionGroupedPage config={config} initialProducts={initialProducts} />
+      <CollectionGroupedPage
+        config={camoEnPreventa() ? { ...config, subtitle: SUBTITULO_PREVENTA } : config}
+        initialProducts={initialProducts}
+      />
     </>
   );
 }
