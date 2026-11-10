@@ -5,6 +5,7 @@ import { Check, Copy, MessageCircle } from 'lucide-react';
 import { DynamicButton } from '@/components/ui/dynamic-button';
 import { imgSrc } from '@/lib/img';
 import type { RepagoMethod, RepagoView, StockProblem } from '@/lib/repago';
+import type { VueltaPagar } from '@/lib/repago-link';
 
 const WA_NUMBER = '5491178292430';
 
@@ -36,7 +37,7 @@ function stockText(p: StockProblem): string {
   return `${label} se agotó.`;
 }
 
-export default function PagarClient({ view, vuelta }: { view: RepagoView | null; vuelta: 'rechazado' | 'pendiente' | null }) {
+export default function PagarClient({ view, vuelta }: { view: RepagoView | null; vuelta: VueltaPagar }) {
   const [method, setMethod] = useState<RepagoMethod | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -168,6 +169,12 @@ export default function PagarClient({ view, vuelta }: { view: RepagoView | null;
 
         {vuelta === 'rechazado' && <Notice>El pago anterior fue rechazado y no se te cobró nada. Podés probar de nuevo o elegir otro medio.</Notice>}
         {vuelta === 'pendiente' && <Notice>El pago anterior quedó pendiente en Mercado Pago. Si ya lo completaste, esperá unos minutos antes de volver a pagar.</Notice>}
+        {vuelta === 'gocuotas' && (
+          <Notice>
+            El pago con GOcuotas no se completó. Tu pedido sigue abierto: terminalo acá con otro medio
+            {view.transferDiscount > 0 ? ', y por transferencia tenés 10% off.' : '.'}
+          </Notice>
+        )}
 
         <div className="space-y-2" role="radiogroup" aria-label="Medio de pago">
           {view.methods.map(m => {

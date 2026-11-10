@@ -11,6 +11,20 @@ function wcAuth() {
   return 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SEC}`).toString('base64');
 }
 
+/** Nota en el pedido. Si falla, solo se loguea: nunca corta el webhook. */
+async function addNote(orderId: unknown, note: string): Promise<void> {
+  try {
+    const noteRes = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${orderId}/notes`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
+      body:    JSON.stringify({ note }),
+    });
+    if (!noteRes.ok) console.error('[gocuotas-webhook] nota no guardada:', noteRes.status);
+  } catch (e) {
+    console.error('[gocuotas-webhook] nota no guardada:', e);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as Record<string, unknown>;
@@ -52,6 +66,14 @@ export async function POST(req: NextRequest) {
     const method = String(order.payment_method || '').toLowerCase();
     if (!method.includes('gocuotas')) {
       console.error('[gocuotas-webhook] el pedido', orderId, 'no es de GOcuotas (', method, ')');
+      // Desde que la vuelta de GOcuotas lleva a /pagar, la persona puede pasar el
+      // pedido a tarjeta o transferencia mientras el checkout de GOcuotas sigue
+      // abierto (vence a los ~30 min). Si igual lo termina allá, el aprobado no
+      // puede perderse en un 409 mudo: queda una alerta en el pedido para revisar
+      // el doble cobro. El pedido no se toca.
+      if (status === 'approved') {
+        await addNote(orderId, `ALERTA — GOcuotas aprobó un pago para este pedido, pero el pedido ya estaba con otro medio (${method || 'sin medio'}). Revisar si hubo doble cobro y reintegrar uno. ${gocuotasWebhookNote(body, order.date_created_gmt)}`);
+      }
       return NextResponse.json({ ok: false, error: 'payment method mismatch' }, { status: 409 });
     }
 
@@ -59,16 +81,7 @@ export async function POST(req: NextRequest) {
     // cuotas, minutos desde la creación). Sin esto un `failed` no se puede leer:
     // no se sabe si fue un rechazo o un checkout que venció sin que nadie pagara.
     // Si la nota falla no se corta nada: el cambio de estado es lo que importa.
-    try {
-      const noteRes = await fetch(`${WP_URL}/wp-json/wc/v3/orders/${orderId}/notes`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: wcAuth() },
-        body:    JSON.stringify({ note: gocuotasWebhookNote(body, order.date_created_gmt) }),
-      });
-      if (!noteRes.ok) console.error('[gocuotas-webhook] nota no guardada:', noteRes.status);
-    } catch (e) {
-      console.error('[gocuotas-webhook] nota no guardada:', e);
-    }
+    await addNote(orderId, gocuotasWebhookNote(body, order.date_created_gmt));
 
     // Igual que el plugin oficial de WooCommerce de GOcuotas: 'approved' pasa la
     // orden a processing (y recién ahí manda la confirmación real al cliente —

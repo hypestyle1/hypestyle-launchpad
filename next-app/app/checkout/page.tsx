@@ -40,6 +40,7 @@ import { Button } from '@/components/ui/button';
 import { FloatingInput, FloatingSelect } from '@/components/ui/floating-field';
 import { Check } from '@/components/ui/check';
 import { validarInfo, sugerirEmail, camposVisibles, type CampoInfo, type DatosInfo } from '@/lib/checkout-validacion';
+import { telefonoGocuotas } from '@/lib/gocuotas-telefono';
 import { leerDatos, guardarDatos, borrarDatos } from '@/lib/checkout-recordar';
 import { MedioDePago, type MetodoPago } from '@/components/checkout/MedioDePago';
 import { PagoSeguroBadge, NotaPagoSeguro, FranjaConfianza } from '@/components/checkout/Confianza';
@@ -882,6 +883,22 @@ export default function Checkout() {
     // Si escribió un usuario válido y pagó sin tocar "Sumarme", igual se guarda.
     const instagram = pago.instagram || (instagramValido(igBorrador.current) ? '@' + igBorrador.current : '');
     if (instagram) guardarDatos({ instagram });
+    // GOcuotas valida a la persona con un SMS a este número y en su pantalla no
+    // se puede corregir: con un celular incompleto queda trabada (auditoría
+    // 9/11/2026). Se frena acá, con el campo marcado, antes de crear el pedido.
+    if (pago.metodo === 'gocuotas' && !isInternational) {
+      const tel = telefonoGocuotas(info.telefono);
+      if (tel.ok === false) {
+        valoresRechazados.current = { ...valoresRechazados.current, telefono: info.telefono };
+        setErroresServidor(prev => ({ ...prev, telefono: tel.error }));
+        setTocados(prev => ({ ...prev, telefono: true }));
+        setStep('info');
+        requestAnimationFrame(() => {
+          document.querySelector<HTMLInputElement>('form [aria-invalid="true"]')?.focus();
+        });
+        return;
+      }
+    }
     setSubmitting(true);
     setSubmitError(null);
     const isTransfer      = pago.metodo === 'transferencia';
