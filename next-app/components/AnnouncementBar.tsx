@@ -3,10 +3,13 @@
 import { useLocale } from "@/context/LocaleContext";
 
 // El envío gratis es solo para Argentina: a quien entra desde afuera no se le muestra.
-const ENVIO_GRATIS = "Envío gratis a sucursal desde $180.000";
+const ENVIO_GRATIS = "Envío gratis a sucursal desde $150.000";
+const ENVIO_GRATIS_DOMICILIO = "Envío gratis a domicilio desde $300.000";
+const SOLO_ARGENTINA = new Set([ENVIO_GRATIS, ENVIO_GRATIS_DOMICILIO]);
 
 const items = [
   ENVIO_GRATIS,
+  ENVIO_GRATIS_DOMICILIO,
   "Hasta 3 cuotas sin interés",
   "Worldwide Shipping vía FedEx",
   "30 días para cambios y devoluciones",
@@ -16,7 +19,7 @@ const items = [
 export default function AnnouncementBar() {
   const { t, country } = useLocale();
   const desdeAfuera = country !== null && country !== 'AR';
-  const base = (desdeAfuera ? items.filter((i) => i !== ENVIO_GRATIS) : items).map(t);
+  const base = (desdeAfuera ? items.filter((i) => !SOLO_ARGENTINA.has(i)) : items).map(t);
   const repeated = [...base, ...base, ...base, ...base];
 
   return (
