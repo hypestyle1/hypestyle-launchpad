@@ -604,7 +604,18 @@ export function isProductNotFoundError(err: unknown): boolean {
  */
 export async function fetchProductDetail(
   slug: string,
-  opts: { server?: boolean; fresh?: boolean } = {},
+  opts: {
+    server?: boolean;
+    fresh?: boolean;
+    /** Reintentos ante error de red/5xx (por defecto 1). */
+    retries?: number;
+    /**
+     * false = no pedir las miniaturas de las colorways a WPGraphQL (2ª consulta).
+     * La ficha del servidor las toma del catálogo compartido con
+     * aplicarImagenesDeColorway().
+     */
+    colorways?: boolean;
+  } = {},
 ): Promise<Product | undefined> {
   let data: { product: any } | undefined;
   try {
@@ -614,6 +625,7 @@ export async function fetchProductDetail(
       undefined,
       opts.server && !opts.fresh ? { revalidate: SERVER_REVALIDATE } : undefined,
       opts.fresh ? 'no-store' : undefined,
+      opts.retries === undefined ? undefined : { retries: opts.retries },
     );
   } catch (err) {
     if (isProductNotFoundError(err)) return undefined;
@@ -621,8 +633,49 @@ export async function fetchProductDetail(
   }
   if (!data?.product) return undefined;
   const product = fromWPNode(data.product);
-  await resolveColorwayImages(product);
+  if (opts.colorways !== false) await resolveColorwayImages(product);
   return product;
+}
+
+/**
+ * La lectura que hace la ficha del servidor (app/producto/[slug]/page.tsx):
+ * UNA consulta a WPGraphQL, sin reintento (9/11/2026). Antes eran hasta 4
+ * (GetProduct + ColorwayImgs, cada una con 1 reintento) por cada ficha que
+ * refrescaba su caché; con un crawler recorriendo ~300 fichas eso daba olas de
+ * más de 1.000 consultas en pocos minutos. Las miniaturas de las colorways se
+ * completan después con aplicarImagenesDeColorway() desde el catálogo.
+ */
+export function fetchProductDetailParaFicha(slug: string): Promise<Product | undefined> {
+  return fetchProductDetail(slug, { retries: 0, colorways: false });
+}
+
+/**
+ * Lo mismo que resolveColorwayImages pero con el catálogo compartido en vez de
+ * una consulta aparte: la miniatura de cada colorway es la foto destacada del
+ * producto hermano. El catálogo trae solo productos publicados, así que un
+ * hermano que no está (borrador, privado) se saca del selector, igual que
+ * cuando WPGraphQL devolvía null. El producto actual siempre queda.
+ * Devuelve un producto nuevo; no modifica el que recibe (puede venir de caché).
+ */
+export function aplicarImagenesDeColorway(
+  product: Product,
+  catalogo: ReadonlyArray<{ slug: string; image?: string }>,
+): Product {
+  const colors = product.colors;
+  if (colors.length < 2 || colors.some(c => !c.slug)) return product;
+  // Catálogo vacío = no hubo lectura (ej. build con WP lento), no "no hay
+  // hermanos publicados": sin datos no se saca ningún color del selector.
+  if (catalogo.length === 0) return product;
+  const imagenPorSlug = new Map(catalogo.map(p => [p.slug, p.image]));
+  return {
+    ...product,
+    colors: colors
+      .filter(c => c.slug === product.slug || imagenPorSlug.has(c.slug!))
+      .map(c => {
+        const imagen = imagenPorSlug.get(c.slug!);
+        return imagen ? { ...c, image: imagen } : c;
+      }),
+  };
 }
 
 /**

@@ -49,6 +49,49 @@ export function crearCortacircuitos(pausaMs = 60_000, ahora: () => number = Date
   };
 }
 
+/**
+ * Máximo `max` lecturas a la vez por instancia; las demás esperan su turno en
+ * orden de llegada (no se descartan).
+ *
+ * Por qué (9/11/2026): el cortacircuitos por clave frena los reintentos de UNA
+ * ficha, pero no la ola. Un crawler que recorre las ~300 fichas hacía que cada
+ * una refrescara su caché a la vez: 6/11 00:21 ART, 1.354 POST /graphql en
+ * 4 min, a ~25 por segundo (el guard de Hostinger corta en 15 conexiones/s).
+ * Con el límite, la misma recorrida llega a WordPress de a pocas.
+ */
+export function crearLimiteConcurrencia(max: number) {
+  let activas = 0;
+  const cola: (() => void)[] = [];
+  const liberar = () => {
+    activas--;
+    const siguiente = cola.shift();
+    if (siguiente) { activas++; siguiente(); }
+  };
+  return async function limitar<T>(fn: () => Promise<T>): Promise<T> {
+    if (activas < max) activas++;
+    else await new Promise<void>(r => cola.push(r));
+    try {
+      return await fn();
+    } finally {
+      liberar();
+    }
+  };
+}
+
+/**
+ * Protección de las fichas: cortacircuitos por slug (una lectura por ficha a la
+ * vez, pausa tras falla) + límite global de lecturas simultáneas a WordPress.
+ * El límite va por DENTRO del cortacircuitos: los pedidos repetidos de una
+ * misma ficha comparten la lectura en curso y no ocupan lugares de la cola.
+ */
+export function crearProteccionFichas(maxSimultaneas = 2, pausaMs = 60_000, ahora: () => number = Date.now) {
+  const porClave = crearCortacircuitosPorClave(pausaMs, ahora);
+  const limitar = crearLimiteConcurrencia(maxSimultaneas);
+  return function proteger<T>(clave: string, fn: () => Promise<T>): Promise<T> {
+    return porClave(clave, () => limitar(fn));
+  };
+}
+
 /** Un cortacircuitos independiente por clave (ej. una ficha por slug). */
 export function crearCortacircuitosPorClave(pausaMs = 60_000, ahora: () => number = Date.now) {
   const porClave = new Map<string, ReturnType<typeof crearCortacircuitos>>();
