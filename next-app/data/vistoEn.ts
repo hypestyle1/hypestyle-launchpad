@@ -10,7 +10,7 @@
  *
  * Fotos: 1080x1350 (4:5) en public/visto-en/, exportadas de las selecciones
  * aprobadas en `Redes & Pauta` (NICKI NICOLE/POST, CEROUNNO/FOTOS CEROUNNO/
- * SELECCION POST, FRO ART MEDIA/export, POLIMA, MIR NICOLAS, JUGO, NEO PISTEA, FER PALACIO). Una foto por artista (dos si son productos distintos) y el orden alterna artistas.
+ * SELECCION POST, FRO ART MEDIA/export, POLIMA, MIR NICOLAS, JUGO, NEO PISTEA, FER PALACIO, DOLY FLACKKO). Una foto por artista (dos si son productos distintos) y el orden alterna artistas.
  *
  * No se etiqueta a fotógrafos ni a modelos, solo al artista.
  */
@@ -56,6 +56,8 @@ export const VISTO_EN: VistoEnPost[] = [
   { id: 'ferpa-0142', artista: 'Fer Palacio', ig: ['ferpalaci0'], contexto: 'Ferpa Drop 2020', link: { href: '/lookbook-ferpa', label: 'Ver el lookbook' }, alt: 'Fer Palacio con el hoodie tie dye del Ferpa Drop', slugs: [], fueraDeCatalogo: [{ nombre: 'Ferpa Drop Hoodie Tie Dye', imagen: '/visto-en/prendas/ferpa-drop-hoodie.webp' }] },
   { id: 'cerounno-01', artista: 'Cerounno', ig: ['cerounno'], alt: 'Cerounno con el Half-Zip Polo Black', slugs: CEROUNNO },
   { id: 'fro-f023', artista: 'FRO!', ig: ['frozouda'], contexto: 'Prueba de sonido de ART MEDIA', alt: 'FRO! con el conjunto camo en la prueba de sonido', slugs: CAMO },
+  // Doly Flackko (92K al 13/11/2026), en vivo con la Camo Cap Grey.
+  { id: 'doly-00481', artista: 'Doly Flackko', ig: ['dolyflackko'], contexto: 'En vivo', alt: 'Doly Flackko en vivo con la Camo Cap Grey', slugs: ['grey-camo-cap'] },
   // Mir Nicolás: merch de La Ciudad del Pop (StyleRap&Culture), no está en Woo.
   { id: 'mir-04470', artista: 'Mir Nicolás', ig: ['mirnicolas.vyg'], contexto: 'La Ciudad del Pop', link: { href: '/lookbook-mir', label: 'Ver el lookbook' }, fueraDeCatalogo: [{ nombre: 'City Pop Tee Black', imagen: '/visto-en/prendas/city-pop-tee-black.webp' }], alt: 'Mir Nicolás con la remera de La Ciudad del Pop', slugs: [] },
   // Jugo: Black Zip Hoodie V2 y Beanie Tribals, nunca estuvieron en Woo.
